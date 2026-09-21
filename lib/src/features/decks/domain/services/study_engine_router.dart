@@ -81,8 +81,8 @@ class StudyEngineRouter {
     UserStorageService? userStorageService,
   }) : _connectivity = connectivity ?? Connectivity(),
        _isolateManager = isolateManager ?? LocalInferenceIsolateManager(),
-       _offlineGuard = offlineGuard ??
-           ExperimentalOfflineGuard(connectivity: connectivity),
+       _offlineGuard =
+           offlineGuard ?? ExperimentalOfflineGuard(connectivity: connectivity),
        _dio = dio ?? Dio(),
        _subscriptionGuard = subscriptionGuard,
        _userStorageService = userStorageService;
@@ -171,7 +171,9 @@ class StudyEngineRouter {
     }
 
     if (mode == StudyEngineExecutionMode.offlineOnDevice) {
-      debugPrint('[StudyEngineRouter] Offline: Checking on-device model availability...');
+      debugPrint(
+        '[StudyEngineRouter] Offline: Checking on-device model availability...',
+      );
       final sharedModelPath = await LocalLlmEngineClient.findSharedModelPath();
       if (sharedModelPath == null) {
         return const StudyPackResult(
@@ -267,7 +269,9 @@ class StudyEngineRouter {
     int count = 5,
     String? sourceText,
   }) async {
-    debugPrint('[StudyEngineRouter] Routing deck creation strictly to Backend Cloud AI...');
+    debugPrint(
+      '[StudyEngineRouter] Routing deck creation strictly to Backend Cloud AI...',
+    );
     try {
       final cards = await _fetchFromCloud(
         topic: topic,
@@ -302,7 +306,8 @@ class StudyEngineRouter {
     required int count,
     String? sourceText,
   }) async {
-    final userToken = _userStorageService?.getToken() ??
+    final userToken =
+        _userStorageService?.getToken() ??
         (locator.isRegistered<UserStorageService>()
             ? locator<UserStorageService>().getToken()
             : null);

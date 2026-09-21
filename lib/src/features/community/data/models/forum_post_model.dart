@@ -53,10 +53,9 @@ class ForumPostModel {
   final List<ForumReplyModel> replies;
 
   int get netVotes => upvotes - downvotes;
-  int get topLevelRepliesCount =>
-      replies.isNotEmpty
-          ? replies.where((r) => !r.isNested).length
-          : repliesCount;
+  int get topLevelRepliesCount => replies.isNotEmpty
+      ? replies.where((r) => !r.isNested).length
+      : repliesCount;
 
   static List<String> extractMediaUrls(String content, [dynamic rawMedia]) {
     final results = <String>[];
@@ -93,7 +92,10 @@ class ForumPostModel {
           }
         }
       } else {
-        final parts = trimmed.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+        final parts = trimmed
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty);
         for (final part in parts) {
           if (!results.contains(part)) results.add(part);
         }
@@ -101,7 +103,9 @@ class ForumPostModel {
     }
 
     // 2. Metadata HTML comments embedded in content: <!-- media: [...] -->
-    final commentMatch = RegExp(r'<!--\s*media:\s*(\[[\s\S]*?\])\s*-->').firstMatch(content);
+    final commentMatch = RegExp(
+      r'<!--\s*media:\s*(\[[\s\S]*?\])\s*-->',
+    ).firstMatch(content);
     if (commentMatch != null) {
       try {
         final decoded = jsonDecode(commentMatch.group(1)!);
@@ -117,7 +121,9 @@ class ForumPostModel {
     }
 
     // 3. Markdown images embedded in content: ![alt](url)
-    final mdMatches = RegExp(r'!\[.*?\]\((https?:\/\/[^\s\)]+|[^\s\)]+\.(?:png|jpg|jpeg|webp|gif|svg))\)').allMatches(content);
+    final mdMatches = RegExp(
+      r'!\[.*?\]\((https?:\/\/[^\s\)]+|[^\s\)]+\.(?:png|jpg|jpeg|webp|gif|svg))\)',
+    ).allMatches(content);
     for (final match in mdMatches) {
       final url = match.group(1)?.trim();
       if (url != null && url.isNotEmpty && !results.contains(url)) {
@@ -154,7 +160,10 @@ class ForumPostModel {
           }
         } catch (_) {}
       } else {
-        final parts = trimmed.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+        final parts = trimmed
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty);
         for (final part in parts) {
           if (!results.contains(part)) results.add(part);
         }
@@ -162,7 +171,9 @@ class ForumPostModel {
     }
 
     // 2. Metadata HTML comments embedded in content: <!-- tags: [...] -->
-    final commentMatch = RegExp(r'<!--\s*tags:\s*(\[[\s\S]*?\])\s*-->').firstMatch(content);
+    final commentMatch = RegExp(
+      r'<!--\s*tags:\s*(\[[\s\S]*?\])\s*-->',
+    ).firstMatch(content);
     if (commentMatch != null) {
       try {
         final decoded = jsonDecode(commentMatch.group(1)!);
@@ -179,10 +190,15 @@ class ForumPostModel {
 
     // 3. Fallback to Hashtags in content if empty
     if (results.isEmpty) {
-      final hashMatches = RegExp(r'(?:^|\s)#([a-zA-Z0-9_\-]+)').allMatches(content);
+      final hashMatches = RegExp(
+        r'(?:^|\s)#([a-zA-Z0-9_\-]+)',
+      ).allMatches(content);
       for (final match in hashMatches) {
         final tag = match.group(1)?.trim();
-        if (tag != null && tag.isNotEmpty && !RegExp(r'^\d+$').hasMatch(tag) && !results.contains(tag)) {
+        if (tag != null &&
+            tag.isNotEmpty &&
+            !RegExp(r'^\d+$').hasMatch(tag) &&
+            !results.contains(tag)) {
           results.add(tag);
         }
       }
@@ -219,7 +235,8 @@ class ForumPostModel {
         .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
         .toList();
     final topLevelCount = parsedReplies.where((r) => !r.isNested).length;
-    final explicitCount = (json['replies_count'] as num?)?.toInt() ??
+    final explicitCount =
+        (json['replies_count'] as num?)?.toInt() ??
         (json['reply_count'] as num?)?.toInt() ??
         (json['comments_count'] as num?)?.toInt();
     final repliesCount = explicitCount != null && explicitCount > 0
@@ -230,12 +247,17 @@ class ForumPostModel {
     final parsedTags = extractTags(content, json['tags']);
     final parsedMedia = extractMediaUrls(
       content,
-      json['media_urls'] ?? json['mediaUrls'] ?? json['image_url'] ?? json['imageUrl'],
+      json['media_urls'] ??
+          json['mediaUrls'] ??
+          json['image_url'] ??
+          json['imageUrl'],
     );
     final voiceNote = extractVoiceNote(
       content,
-      rawUrl: json['voice_note_url'] as String? ?? json['voiceNoteUrl'] as String?,
-      rawDuration: (json['voice_note_duration_seconds'] as num?)?.toInt() ??
+      rawUrl:
+          json['voice_note_url'] as String? ?? json['voiceNoteUrl'] as String?,
+      rawDuration:
+          (json['voice_note_duration_seconds'] as num?)?.toInt() ??
           (json['voiceNoteDurationSeconds'] as num?)?.toInt(),
     );
 
@@ -253,7 +275,8 @@ class ForumPostModel {
       syllabusTag: json['syllabus_tag'] as String? ?? 'General',
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
       downvotes: (json['downvotes'] as num?)?.toInt() ?? 0,
-      userVote: (json['user_vote'] as num?)?.toInt() ??
+      userVote:
+          (json['user_vote'] as num?)?.toInt() ??
           (json['userVote'] as num?)?.toInt() ??
           0,
       repliesCount: repliesCount,
@@ -261,12 +284,13 @@ class ForumPostModel {
       mediaUrls: parsedMedia,
       voiceNoteUrl: voiceNote.url,
       voiceNoteDurationSeconds: voiceNote.duration,
-      socraticHint: json['socratic_hint'] as String? ?? json['socraticHint'] as String?,
+      socraticHint:
+          json['socratic_hint'] as String? ?? json['socraticHint'] as String?,
       socraticHintGeneratedAt: json['socratic_hint_generated_at'] != null
           ? DateTime.tryParse(json['socratic_hint_generated_at'] as String)
           : (json['socraticHintGeneratedAt'] != null
-              ? DateTime.tryParse(json['socraticHintGeneratedAt'] as String)
-              : null),
+                ? DateTime.tryParse(json['socraticHintGeneratedAt'] as String)
+                : null),
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -298,7 +322,8 @@ class ForumPostModel {
         'voice_note_duration_seconds': voiceNoteDurationSeconds,
       if (socraticHint != null) 'socratic_hint': socraticHint,
       if (socraticHintGeneratedAt != null)
-        'socratic_hint_generated_at': socraticHintGeneratedAt!.toIso8601String(),
+        'socratic_hint_generated_at': socraticHintGeneratedAt!
+            .toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'forum_replies': replies.map((r) => r.toJson()).toList(),
     };
@@ -449,19 +474,25 @@ class ForumReplyModel {
     final content = json['content'] as String? ?? '';
     final parsedMedia = extractMediaUrls(
       content,
-      json['media_urls'] ?? json['mediaUrls'] ?? json['image_url'] ?? json['imageUrl'],
+      json['media_urls'] ??
+          json['mediaUrls'] ??
+          json['image_url'] ??
+          json['imageUrl'],
     );
     final voiceNote = extractVoiceNote(
       content,
-      rawUrl: json['voice_note_url'] as String? ?? json['voiceNoteUrl'] as String?,
-      rawDuration: (json['voice_note_duration_seconds'] as num?)?.toInt() ??
+      rawUrl:
+          json['voice_note_url'] as String? ?? json['voiceNoteUrl'] as String?,
+      rawDuration:
+          (json['voice_note_duration_seconds'] as num?)?.toInt() ??
           (json['voiceNoteDurationSeconds'] as num?)?.toInt(),
     );
 
     return ForumReplyModel(
       id: json['id'] as String,
       postId: json['post_id'] as String? ?? '',
-      parentReplyId: json['parent_reply_id'] as String? ??
+      parentReplyId:
+          json['parent_reply_id'] as String? ??
           json['parentReplyId'] as String?,
       authorId: json['author_id'] as String? ?? '',
       authorName: json['author_name'] as String? ?? 'Peer',
@@ -471,10 +502,12 @@ class ForumReplyModel {
       isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
       downvotes: (json['downvotes'] as num?)?.toInt() ?? 0,
-      userVote: (json['user_vote'] as num?)?.toInt() ??
+      userVote:
+          (json['user_vote'] as num?)?.toInt() ??
           (json['userVote'] as num?)?.toInt() ??
           0,
-      repliesCount: (json['replies_count'] as num?)?.toInt() ??
+      repliesCount:
+          (json['replies_count'] as num?)?.toInt() ??
           (json['repliesCount'] as num?)?.toInt() ??
           (json['reply_count'] as num?)?.toInt() ??
           (json['replyCount'] as num?)?.toInt() ??

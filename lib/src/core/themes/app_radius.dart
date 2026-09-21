@@ -36,7 +36,10 @@ class AppRadius {
   }
 
   /// Computes a concentric [BorderRadius] for nested children.
-  static BorderRadius concentricBorderRadius(double outerRadius, double padding) {
+  static BorderRadius concentricBorderRadius(
+    double outerRadius,
+    double padding,
+  ) {
     return BorderRadius.circular(concentric(outerRadius, padding));
   }
 }

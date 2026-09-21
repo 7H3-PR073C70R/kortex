@@ -178,7 +178,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: colors.success.withAlpha(60)),
                 ),
-                tileColor: colors.success.withAlpha(context.isDarkMode ? 30 : 15),
+                tileColor: colors.success.withAlpha(
+                  context.isDarkMode ? 30 : 15,
+                ),
                 leading: Icon(
                   Icons.check_circle_rounded,
                   color: colors.success,
@@ -209,7 +211,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: colors.warning.withAlpha(60)),
                 ),
-                tileColor: colors.warning.withAlpha(context.isDarkMode ? 30 : 15),
+                tileColor: colors.warning.withAlpha(
+                  context.isDarkMode ? 30 : 15,
+                ),
                 leading: Icon(
                   Icons.timelapse_rounded,
                   color: colors.warning,
@@ -1050,7 +1054,7 @@ class _CoOpSprintBanner extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.warning.withAlpha(isDark ? 30 : 15),
+            color: colors.black.withAlpha(isDark ? 30 : 10),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -2014,12 +2018,6 @@ class _ActiveSpeakersBanner extends StatelessWidget {
             .withAlpha(220),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: colors.recallEasy.withAlpha(100)),
-        boxShadow: [
-          BoxShadow(
-            color: colors.recallEasy.withAlpha(30),
-            blurRadius: 8,
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2120,13 +2118,12 @@ class _GlowAvatarState extends State<_GlowAvatar>
           height: widget.size + 16,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: cColors.primary.withAlpha((80 * _pulse.value).round()),
-                blurRadius: 24 * _pulse.value,
-                spreadRadius: 4 * _pulse.value,
+            border: Border.all(
+              color: cColors.primary.withValues(
+                alpha: _pulse.value.clamp(0.2, 1.0),
               ),
-            ],
+              width: 2,
+            ),
           ),
           child: child,
         );
@@ -2191,12 +2188,6 @@ class _LivePulseBadgeState extends State<_LivePulseBadge>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: cColors.error.withValues(alpha: _fade.value),
-                boxShadow: [
-                  BoxShadow(
-                    color: cColors.error.withAlpha((80 * _fade.value).round()),
-                    blurRadius: 6,
-                  ),
-                ],
               ),
             ),
             const SizedBox(width: 5),
@@ -2349,7 +2340,7 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      color: colors.black.withAlpha(isDark ? 40 : 15),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

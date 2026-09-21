@@ -53,7 +53,7 @@ class LocalLlmDownloadBar extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.primary.withAlpha(isDark ? 40 : 20),
+                    color: colors.black.withAlpha(isDark ? 40 : 15),
                     blurRadius: 18,
                     offset: const Offset(0, 4),
                   ),

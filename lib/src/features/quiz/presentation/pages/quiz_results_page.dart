@@ -69,11 +69,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       if (widget.showCelebrationDialog && isPassed) {
         final title = isMillionaire
             ? (widget.currentTier >= 12
-                ? 'Millionaire Champion! 🏆'
-                : 'Tier ${widget.currentTier} Conquered! ⚡')
-            : (score >= 90
-                ? 'Mastery Aced! 🌟'
-                : 'Assessment Complete! 🎯');
+                  ? 'Millionaire Champion! 🏆'
+                  : 'Tier ${widget.currentTier} Conquered! ⚡')
+            : (score >= 90 ? 'Mastery Aced! 🌟' : 'Assessment Complete! 🎯');
 
         final subtitle = isMillionaire
             ? 'Earned ${widget.currentTier * 100 + widget.speedBonusXp} XP in Millionaire Mode'
@@ -92,9 +90,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
             xpEarned: isMillionaire
                 ? (widget.currentTier * 100) + widget.speedBonusXp
                 : (widget.result.correctAnswers * 15),
-            emoji: isMillionaire
-                ? '👑'
-                : (score >= 90 ? '🌟' : '🎯'),
+            emoji: isMillionaire ? '👑' : (score >= 90 ? '🌟' : '🎯'),
           ),
         );
       }
@@ -119,8 +115,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     final speedBonusXp = widget.speedBonusXp;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
@@ -149,8 +146,14 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        if (isDark) colors.surfaceSecondary else colors.surfacePrimary,
-                        if (isDark) colors.backgroundSecondary else colors.surfaceSecondary,
+                        if (isDark)
+                          colors.surfaceSecondary
+                        else
+                          colors.surfacePrimary,
+                        if (isDark)
+                          colors.backgroundSecondary
+                        else
+                          colors.surfaceSecondary,
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -164,7 +167,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: colors.syllabotAccent.withValues(alpha: 0.25),
+                        color: colors.black.withValues(
+                          alpha: isDark ? 0.35 : 0.12,
+                        ),
                         blurRadius: 20,
                         offset: const Offset(0, 6),
                       ),
@@ -180,17 +185,22 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             colors: currentTier >= 12
-                                ? [colors.warning, colors.warning.withAlpha(200)]
+                                ? [
+                                    colors.warning,
+                                    colors.warning.withAlpha(200),
+                                  ]
                                 : isWalkedAway
-                                    ? [colors.success, colors.success.withAlpha(200)]
-                                    : [colors.syllabotAccent, colors.primary],
+                                ? [
+                                    colors.success,
+                                    colors.success.withAlpha(200),
+                                  ]
+                                : [colors.syllabotAccent, colors.primary],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: (currentTier >= 12
-                                      ? colors.warning
-                                      : colors.success)
-                                  .withValues(alpha: 0.4),
+                              color: colors.black.withValues(
+                                alpha: isDark ? 0.4 : 0.15,
+                              ),
                               blurRadius: 18,
                               offset: const Offset(0, 4),
                             ),
@@ -200,8 +210,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                           currentTier >= 12
                               ? Icons.emoji_events_rounded
                               : isWalkedAway
-                                  ? Icons.savings_rounded
-                                  : Icons.military_tech_rounded,
+                              ? Icons.savings_rounded
+                              : Icons.military_tech_rounded,
                           size: 36,
                           color: colors.white,
                         ),
@@ -211,8 +221,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                         currentTier >= 12
                             ? 'MILLIONAIRE CHAMPION! 🏆'
                             : isWalkedAway
-                                ? 'STRATEGIC CASH-OUT! 💰'
-                                : 'TIER $currentTier ASCENT REACHED! ⚡',
+                            ? 'STRATEGIC CASH-OUT! 💰'
+                            : 'TIER $currentTier ASCENT REACHED! ⚡',
                         textAlign: TextAlign.center,
                         style: typography.title3.bold.copyWith(
                           color: colors.white,
@@ -224,8 +234,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                         currentTier >= 12
                             ? 'You conquered all 12 rungs of the ladder with flawless cognitive retrieval.'
                             : isWalkedAway
-                                ? 'You exercised executive self-regulation and safely banked Tier $currentTier XP!'
-                                : 'You climbed through Tier $currentTier with banked checkpoint safety net.',
+                            ? 'You exercised executive self-regulation and safely banked Tier $currentTier XP!'
+                            : 'You climbed through Tier $currentTier with banked checkpoint safety net.',
                         textAlign: TextAlign.center,
                         style: typography.footnote.regular.copyWith(
                           color: colors.white.withAlpha(200),
@@ -234,7 +244,10 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                       const SizedBox(height: 18),
                       // XP Reward Matrix
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(AppRadius.card),
@@ -250,13 +263,21 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                               value: '$currentTier / 12',
                               color: colors.warning,
                             ),
-                            Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
+                            Container(
+                              width: 1,
+                              height: 28,
+                              color: colors.white.withAlpha(50),
+                            ),
                             _StatColumn(
                               title: 'SPEED BONUS',
                               value: '+$speedBonusXp XP',
                               color: colors.success,
                             ),
-                            Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
+                            Container(
+                              width: 1,
+                              height: 28,
+                              color: colors.white.withAlpha(50),
+                            ),
                             _StatColumn(
                               title: 'BANKED XP',
                               value: '${(currentTier * 100) + speedBonusXp}',
@@ -275,7 +296,10 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                     gradient: LinearGradient(
                       colors: [
                         gradeColor.withValues(alpha: isDark ? 0.25 : 0.12),
-                        (isDark ? colors.surfaceSecondary : colors.surfacePrimary).withValues(alpha: 0.95),
+                        (isDark
+                                ? colors.surfaceSecondary
+                                : colors.surfacePrimary)
+                            .withValues(alpha: 0.95),
                       ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -356,7 +380,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                      color: isDark
+                          ? colors.surfaceSecondary
+                          : colors.surfacePrimary,
                       borderRadius: BorderRadius.circular(AppRadius.card),
                       border: Border.all(
                         color: isWeak
@@ -401,7 +427,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                           ),
                           decoration: BoxDecoration(
                             color: badgeColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                             border: Border.all(
                               color: badgeColor.withValues(alpha: 0.4),
                             ),
@@ -420,7 +448,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 }),
 
               // 4. Diagnostic Mistake Autopsy (Cognitive Learning Science)
-              if (!isPassed && result.totalQuestions > result.correctAnswers) ...[
+              if (!isPassed &&
+                  result.totalQuestions > result.correctAnswers) ...[
                 const SizedBox(height: 24),
                 Text(
                   'Diagnostic Mistake Autopsy',
@@ -439,7 +468,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: colors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
+                    color: colors.warning.withValues(
+                      alpha: isDark ? 0.15 : 0.08,
+                    ),
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(
                       color: colors.warning.withValues(alpha: 0.35),
@@ -519,10 +550,16 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
-                      icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
+                      icon: Icon(
+                        Icons.style_rounded,
+                        size: 20,
+                        color: colors.white,
+                      ),
                       label: Text(
                         l10n.practiceWeakCards,
-                        style: typography.callout.bold.copyWith(color: colors.white),
+                        style: typography.callout.bold.copyWith(
+                          color: colors.white,
+                        ),
                       ),
                       onPressed: () => _handlePracticeWeakFlashcards(context),
                       style: ElevatedButton.styleFrom(
@@ -540,14 +577,22 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                     width: double.infinity,
                     height: 44,
                     child: OutlinedButton.icon(
-                      icon: Icon(Icons.help_outline_rounded, size: 18, color: colors.warning),
+                      icon: Icon(
+                        Icons.help_outline_rounded,
+                        size: 18,
+                        color: colors.warning,
+                      ),
                       label: Text(
                         'Ask Pod for Help (+100 XP Bounty)',
-                        style: typography.caption.bold.copyWith(color: colors.warning),
+                        style: typography.caption.bold.copyWith(
+                          color: colors.warning,
+                        ),
                       ),
                       onPressed: () => _handleAskPodForHelp(context),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: colors.warning.withAlpha(isDark ? 100 : 70)),
+                        side: BorderSide(
+                          color: colors.warning.withAlpha(isDark ? 100 : 70),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppRadius.card),
                         ),
@@ -565,8 +610,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
 
   void _handleAskPodForHelp(BuildContext context) {
     unawaited(HapticFeedback.lightImpact());
-    final incorrectQuestions =
-        widget.questions.where((q) => !q.isCorrect).toList();
+    final incorrectQuestions = widget.questions
+        .where((q) => !q.isCorrect)
+        .toList();
     final questionToAsk = incorrectQuestions.isNotEmpty
         ? incorrectQuestions.first
         : widget.questions.firstOrNull;
@@ -590,7 +636,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
         )
         ..writeln('Correct Answer: ${questionToAsk.correctAnswer}');
       if (questionToAsk.explanation.isNotEmpty) {
-        contentBuf.writeln('\nExplanation:\n${questionToAsk.explanation.replaceAll('**', '')}');
+        contentBuf.writeln(
+          '\nExplanation:\n${questionToAsk.explanation.replaceAll('**', '')}',
+        );
       }
       contentBuf.writeln(
         '\n💡 I missed this question during practice. Can someone in the cohort break down how to approach it?',
@@ -607,35 +655,36 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
         initialSyllabusTag: topicTag,
         initialIsQuestion: true,
         contextBadge: 'Quiz Review Bounty • $topicTag',
-        onSubmit: ({
-          required title,
-          required content,
-          required track,
-          latexContent,
-          isQuestion = true,
-          syllabusTag = 'General',
-          isAnonymous = true,
-        }) {
-          if (locator.isRegistered<CommunityHubBloc>()) {
-            final effectiveTag = questionToAsk?.subTopic ?? syllabusTag;
-            locator<CommunityHubBloc>().add(
-              CreateForumPostEvent(
-                title: title,
-                content: content,
-                track: track,
-                latexContent: latexContent,
-                isQuestion: true,
-                syllabusTag: effectiveTag,
-                isAnonymous: isAnonymous,
-              ),
-            );
-          }
-          context.showSnackBar(
-            message:
-                'Question bounty posted to class cohort! 🎯 (+100 XP Bounty)',
-            type: SnackBarType.success,
-          );
-        },
+        onSubmit:
+            ({
+              required title,
+              required content,
+              required track,
+              latexContent,
+              isQuestion = true,
+              syllabusTag = 'General',
+              isAnonymous = true,
+            }) {
+              if (locator.isRegistered<CommunityHubBloc>()) {
+                final effectiveTag = questionToAsk?.subTopic ?? syllabusTag;
+                locator<CommunityHubBloc>().add(
+                  CreateForumPostEvent(
+                    title: title,
+                    content: content,
+                    track: track,
+                    latexContent: latexContent,
+                    isQuestion: true,
+                    syllabusTag: effectiveTag,
+                    isAnonymous: isAnonymous,
+                  ),
+                );
+              }
+              context.showSnackBar(
+                message:
+                    'Question bounty posted to class cohort! 🎯 (+100 XP Bounty)',
+                type: SnackBarType.success,
+              );
+            },
       ),
     );
   }
@@ -652,8 +701,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     }
 
     // Prioritize questions that were answered incorrectly; fallback to all questions
-    final incorrectQuestions =
-        widget.questions.where((q) => !q.isCorrect).toList();
+    final incorrectQuestions = widget.questions
+        .where((q) => !q.isCorrect)
+        .toList();
     final questionsToUse = incorrectQuestions.isNotEmpty
         ? incorrectQuestions
         : widget.questions;
@@ -676,9 +726,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
         for (final d in allDecks) {
           if (d.courseCode != null &&
               d.courseCode!.isNotEmpty &&
-              widget.result.quizTitle
-                  .toLowerCase()
-                  .contains(d.courseCode!.toLowerCase())) {
+              widget.result.quizTitle.toLowerCase().contains(
+                d.courseCode!.toLowerCase(),
+              )) {
             resolvedCourseId = d.courseId;
             resolvedCourseCode = d.courseCode;
             break;
@@ -687,7 +737,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       }
     }
 
-    final convertUseCase = locator.isRegistered<ConvertFailedQuizToDeckUseCase>()
+    final convertUseCase =
+        locator.isRegistered<ConvertFailedQuizToDeckUseCase>()
         ? locator<ConvertFailedQuizToDeckUseCase>()
         : ConvertFailedQuizToDeckUseCase(locator<DecksRemoteDataSource>());
 

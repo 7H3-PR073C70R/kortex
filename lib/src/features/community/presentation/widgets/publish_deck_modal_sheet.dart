@@ -176,9 +176,14 @@ class PublishDeckModalSheet extends HookWidget {
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
                     borderRadius: AppRadius.radiusCard,
                     border: Border.all(
                       color: colors.primary.withAlpha(isDark ? 50 : 25),
@@ -253,7 +258,8 @@ class PublishDeckModalSheet extends HookWidget {
                           titleController.text = deck.title;
                           subjectController.text = deck.subject;
                           descriptionController.text = deck.description ?? '';
-                          syllabusTagController.text = deck.courseCode ?? 'General';
+                          syllabusTagController.text =
+                              deck.courseCode ?? 'General';
                           if (categories.contains(deck.category)) {
                             selectedCategory.value = deck.category;
                           }
@@ -320,7 +326,9 @@ class PublishDeckModalSheet extends HookWidget {
                       },
                       selectedColor: colors.primary.withAlpha(40),
                       labelStyle: typography.caption.bold.copyWith(
-                        color: isSelected ? colors.primary : colors.textSecondary,
+                        color: isSelected
+                            ? colors.primary
+                            : colors.textSecondary,
                       ),
                     );
                   }).toList(),
@@ -336,7 +344,9 @@ class PublishDeckModalSheet extends HookWidget {
                       borderRadius: AppRadius.radiusCard,
                       boxShadow: [
                         BoxShadow(
-                          color: colors.primary.withAlpha(isDark ? (isHovered ? 110 : 80) : (isHovered ? 70 : 50)),
+                          color: colors.black.withAlpha(
+                            isHovered ? (isDark ? 60 : 30) : (isDark ? 40 : 20),
+                          ),
                           blurRadius: isHovered ? 16 : 12,
                           offset: Offset(0, isHovered ? 6 : 4),
                         ),
@@ -356,17 +366,26 @@ class PublishDeckModalSheet extends HookWidget {
                               unawaited(HapticFeedback.mediumImpact());
 
                               var cardsJson = <Map<String, dynamic>>[];
-                              var totalCards = selectedDeck.value?.totalCards ?? 10;
+                              var totalCards =
+                                  selectedDeck.value?.totalCards ?? 10;
 
                               if (selectedDeck.value != null) {
                                 try {
                                   var cards = selectedDeck.value!.cards;
                                   if (cards.isEmpty &&
-                                      locator.isRegistered<DecksRemoteDataSource>()) {
-                                    cards = await locator<DecksRemoteDataSource>()
-                                        .getDeckCards(selectedDeck.value!.id);
+                                      locator
+                                          .isRegistered<
+                                            DecksRemoteDataSource
+                                          >()) {
+                                    cards =
+                                        await locator<DecksRemoteDataSource>()
+                                            .getDeckCards(
+                                              selectedDeck.value!.id,
+                                            );
                                   }
-                                  cardsJson = cards.map((c) => c.toJson()).toList();
+                                  cardsJson = cards
+                                      .map((c) => c.toJson())
+                                      .toList();
                                   if (cards.isNotEmpty) {
                                     totalCards = cards.length;
                                   }
@@ -376,7 +395,9 @@ class PublishDeckModalSheet extends HookWidget {
                               onSubmit(
                                 title: title,
                                 subject: subject,
-                                description: desc.isNotEmpty ? desc : 'Community Deck',
+                                description: desc.isNotEmpty
+                                    ? desc
+                                    : 'Community Deck',
                                 category: selectedCategory.value,
                                 syllabusTag: tag.isNotEmpty ? tag : 'General',
                                 totalCards: totalCards,

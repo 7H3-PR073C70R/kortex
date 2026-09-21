@@ -35,14 +35,14 @@ class QuizRepositoryImpl implements QuizRepository {
     LocalStorageService? localStorageService,
     UserStorageService? userStorageService,
     UserActivityService? userActivityService,
-  })  : _decksRepository = decksRepository,
-        _ingestionRepository = ingestionRepository,
-        _pastQuestionsRepository = pastQuestionsRepository,
-        _studyEngineRouter = studyEngineRouter,
-        _dio = dio,
-        _localStorageService = localStorageService,
-        _userStorageService = userStorageService,
-        _userActivityService = userActivityService;
+  }) : _decksRepository = decksRepository,
+       _ingestionRepository = ingestionRepository,
+       _pastQuestionsRepository = pastQuestionsRepository,
+       _studyEngineRouter = studyEngineRouter,
+       _dio = dio,
+       _localStorageService = localStorageService,
+       _userStorageService = userStorageService,
+       _userActivityService = userActivityService;
 
   final DecksRepository? _decksRepository;
   final IngestionRepository? _ingestionRepository;
@@ -53,8 +53,7 @@ class QuizRepositoryImpl implements QuizRepository {
   final UserStorageService? _userStorageService;
   final UserActivityService? _userActivityService;
 
-  static const String cbtSubmissionsStorageKey =
-      'kortex_cbt_test_submissions';
+  static const String cbtSubmissionsStorageKey = 'kortex_cbt_test_submissions';
 
   DecksRepository? get _effectiveDecksRepo =>
       _decksRepository ??
@@ -144,25 +143,29 @@ class QuizRepositoryImpl implements QuizRepository {
         if (rawQuestions != null && rawQuestions.isNotEmpty) {
           return rawQuestions.map((q) {
             final map = q as Map<String, dynamic>;
-            final options = (map['options'] as List<dynamic>?)
+            final options =
+                (map['options'] as List<dynamic>?)
                     ?.map((e) => e.toString())
                     .toList() ??
                 [];
             final correctIdx = map['correct_index'] as int? ?? 0;
-            final correctAns = map['correct_answer'] as String? ??
+            final correctAns =
+                map['correct_answer'] as String? ??
                 (correctIdx < options.length
                     ? options[correctIdx]
                     : (options.isNotEmpty ? options.first : ''));
 
             return QuizQuestionModel(
-              id: map['id'] as String? ??
+              id:
+                  map['id'] as String? ??
                   'q-${DateTime.now().microsecondsSinceEpoch}',
               prompt: (map['question'] ?? map['prompt'] ?? '') as String,
               type: QuizQuestionType.multipleChoice,
               options: options,
               correctAnswer: correctAns,
               explanation: (map['explanation'] as String?) ?? '',
-              subTopic: (map['sub_topic'] as String?) ??
+              subTopic:
+                  (map['sub_topic'] as String?) ??
                   deckTitle ??
                   'Deck Assessment',
               latexFormula: map['latex_formula'] as String?,
@@ -179,13 +182,16 @@ class QuizRepositoryImpl implements QuizRepository {
 
     // 2. Fetch cards from the deck to drive StudyEngineRouter or local synthesis
     final cardsResult = await _effectiveDecksRepo?.getDeckCards(deckId);
-    final deckCards = cardsResult?.fold(
-      (failure) => <FlashcardEntity>[],
-      (cards) => cards,
-    ) ?? <FlashcardEntity>[];
+    final deckCards =
+        cardsResult?.fold(
+          (failure) => <FlashcardEntity>[],
+          (cards) => cards,
+        ) ??
+        <FlashcardEntity>[];
 
     if (deckCards.isEmpty) {
-      final isExam = deckId.toLowerCase().startsWith('exam') ||
+      final isExam =
+          deckId.toLowerCase().startsWith('exam') ||
           deckId.toLowerCase().startsWith('cbt_') ||
           (deckTitle != null &&
               (deckTitle.toLowerCase().contains('exam') ||
@@ -283,7 +289,8 @@ class QuizRepositoryImpl implements QuizRepository {
     if (synthesized.isNotEmpty) return synthesized;
 
     throw const ServerException(
-      message: 'Failed to synthesize quiz questions from the provided deck cards.',
+      message:
+          'Failed to synthesize quiz questions from the provided deck cards.',
     );
   }
 
@@ -327,18 +334,21 @@ class QuizRepositoryImpl implements QuizRepository {
         if (rawQuestions != null && rawQuestions.isNotEmpty) {
           return rawQuestions.map((q) {
             final map = q as Map<String, dynamic>;
-            final options = (map['options'] as List<dynamic>?)
+            final options =
+                (map['options'] as List<dynamic>?)
                     ?.map((e) => e.toString())
                     .toList() ??
                 [];
             final correctIdx = map['correct_index'] as int? ?? 0;
-            final correctAns = map['correct_answer'] as String? ??
+            final correctAns =
+                map['correct_answer'] as String? ??
                 (correctIdx < options.length
                     ? options[correctIdx]
                     : (options.isNotEmpty ? options.first : ''));
 
             return QuizQuestionModel(
-              id: map['id'] as String? ??
+              id:
+                  map['id'] as String? ??
                   'q-${DateTime.now().microsecondsSinceEpoch}',
               prompt: (map['question'] ?? map['prompt'] ?? '') as String,
               type: QuizQuestionType.multipleChoice,
@@ -369,7 +379,8 @@ class QuizRepositoryImpl implements QuizRepository {
       final matching = docs?.where((d) => d.id == documentId).firstOrNull;
       if (matching == null) {
         throw ServerException(
-          message: 'Unable to locate document "$documentId" for quiz generation.',
+          message:
+              'Unable to locate document "$documentId" for quiz generation.',
         );
       }
 
@@ -404,7 +415,8 @@ class QuizRepositoryImpl implements QuizRepository {
     }
 
     throw const ServerException(
-      message: 'Failed to generate quiz questions from this document. Please ensure the document contains readable study material.',
+      message:
+          'Failed to generate quiz questions from this document. Please ensure the document contains readable study material.',
     );
   }
 
@@ -417,8 +429,9 @@ class QuizRepositoryImpl implements QuizRepository {
     return Future<QuizResultEntity>.sync(() async {
       final total = questions.length;
       final correctCount = questions.where((q) => q.isCorrect).length;
-      final scorePercent =
-          total > 0 ? ((correctCount / total) * 100).round() : 0;
+      final scorePercent = total > 0
+          ? ((correctCount / total) * 100).round()
+          : 0;
       final completedAt = DateTime.now();
 
       final topicGroups = <String, List<QuizQuestionEntity>>{};
@@ -456,12 +469,13 @@ class QuizRepositoryImpl implements QuizRepository {
       try {
         final storage = _effectiveLocalStorage;
         if (storage != null) {
-          final existingJson =
-              storage.getPreference(key: cbtSubmissionsStorageKey);
+          final existingJson = storage.getPreference(
+            key: cbtSubmissionsStorageKey,
+          );
           final submissionsList =
               (existingJson != null && existingJson.isNotEmpty
-                  ? (jsonDecode(existingJson) as List<dynamic>)
-                  : <dynamic>[])
+                    ? (jsonDecode(existingJson) as List<dynamic>)
+                    : <dynamic>[])
                 ..add(resultModel.toJson());
           // Keep up to 200 persistent CBT submissions
           if (submissionsList.length > 200) {
@@ -485,8 +499,9 @@ class QuizRepositoryImpl implements QuizRepository {
           await activity.recordStudySession(
             cardsReviewed: total,
             durationSeconds: durationSeconds,
-            retentionScore:
-                total > 0 ? (correctCount / total).clamp(0.0, 1.0) : 0.0,
+            retentionScore: total > 0
+                ? (correctCount / total).clamp(0.0, 1.0)
+                : 0.0,
             masteredCards: correctCount,
           );
         }
@@ -560,19 +575,20 @@ class QuizRepositoryImpl implements QuizRepository {
         card.sourceTopic ?? deckTitle,
         defaultTopic: 'Flashcard Concept',
       );
-      final explanation = QuizContentSanitizer.extractExplanation(card.back) ??
+      final explanation =
+          QuizContentSanitizer.extractExplanation(card.back) ??
           'Concept: "$cleanPrompt" corresponds to "$correctAnswer".';
 
       final otherBacks = cards
           .where(
-            (c) =>
-                c.id != card.id &&
-                c.back.trim().isNotEmpty,
+            (c) => c.id != card.id && c.back.trim().isNotEmpty,
           )
           .map((c) => QuizContentSanitizer.cleanOptionText(c.back))
-          .where((ans) =>
-              ans.isNotEmpty &&
-              ans.toLowerCase() != correctAnswer.toLowerCase())
+          .where(
+            (ans) =>
+                ans.isNotEmpty &&
+                ans.toLowerCase() != correctAnswer.toLowerCase(),
+          )
           .toSet()
           .toList();
 
@@ -610,7 +626,8 @@ class QuizRepositoryImpl implements QuizRepository {
           correctAnswer: correctAnswer,
           explanation: explanation,
           subTopic: cleanSubTopic,
-          latexFormula: card.frontLatex ??
+          latexFormula:
+              card.frontLatex ??
               card.backLatex ??
               (card.front.contains(r'\') ? card.front : null),
         ),
@@ -625,8 +642,7 @@ class QuizRepositoryImpl implements QuizRepository {
     required String examId,
     int count = 10,
   }) {
-    final cleanTitle =
-        examTitle.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+    final cleanTitle = examTitle.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
     final questions = <QuizQuestionModel>[];
 
     final coreCompetencies = [
@@ -730,14 +746,14 @@ class QuizRepositoryImpl implements QuizRepository {
 
       final otherBacks = cards
           .where(
-            (c) =>
-                c.id != card.id &&
-                c.back.trim().isNotEmpty,
+            (c) => c.id != card.id && c.back.trim().isNotEmpty,
           )
           .map((c) => QuizContentSanitizer.cleanOptionText(c.back))
-          .where((ans) =>
-              ans.isNotEmpty &&
-              ans.toLowerCase() != correctAnswer.toLowerCase())
+          .where(
+            (ans) =>
+                ans.isNotEmpty &&
+                ans.toLowerCase() != correctAnswer.toLowerCase(),
+          )
           .toSet()
           .toList();
 

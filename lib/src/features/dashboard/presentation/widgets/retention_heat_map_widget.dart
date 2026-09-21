@@ -82,7 +82,9 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
     super.initState();
     final now = DateTime.now();
     final normalized = _getNormalized28Days(widget.analytics.heatMapData);
-    final todayMatch = normalized.where((d) => _isSameDay(d.date, now)).firstOrNull;
+    final todayMatch = normalized
+        .where((d) => _isSameDay(d.date, now))
+        .firstOrNull;
     _selectedDay = todayMatch ?? normalized.lastOrNull;
   }
 
@@ -91,7 +93,9 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
     super.didUpdateWidget(oldWidget);
     if (_selectedDay != null) {
       final normalized = _getNormalized28Days(widget.analytics.heatMapData);
-      final match = normalized.where((d) => _isSameDay(d.date, _selectedDay!.date)).firstOrNull;
+      final match = normalized
+          .where((d) => _isSameDay(d.date, _selectedDay!.date))
+          .firstOrNull;
       if (match != null) {
         _selectedDay = match;
       }
@@ -146,7 +150,9 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: colors.primary.withAlpha(isDark ? 50 : 25),
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                           ),
                           child: Icon(
                             Icons.grid_view_rounded,
@@ -263,7 +269,8 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: rowDays.map((day) {
-                                final isSelected = _selectedDay != null &&
+                                final isSelected =
+                                    _selectedDay != null &&
                                     _isSameDay(_selectedDay!.date, day.date);
                                 final color = _getIntensityColor(
                                   day.intensityLevel,
@@ -277,12 +284,16 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                                       '${day.cardsReviewed} cards',
                                   child: InkWell(
                                     onTap: () {
-                                      unawaited(HapticFeedback.selectionClick());
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
                                       setState(() {
                                         _selectedDay = isSelected ? null : day;
                                       });
                                     },
-                                    borderRadius: BorderRadius.circular(AppRadius.micro),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.micro,
+                                    ),
                                     child: AnimatedContainer(
                                       duration: AppMotion.snappy,
                                       curve: AppMotion.easeOutCubic,
@@ -290,7 +301,9 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                                       height: cellWidth,
                                       decoration: BoxDecoration(
                                         color: color,
-                                        borderRadius: BorderRadius.circular(AppRadius.micro),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.micro,
+                                        ),
                                         border: Border.all(
                                           color: isSelected
                                               ? colors.textPrimary

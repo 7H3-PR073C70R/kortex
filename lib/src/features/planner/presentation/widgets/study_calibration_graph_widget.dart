@@ -64,7 +64,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.primary.withValues(alpha: 0.06),
+            color: colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -255,8 +255,10 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                         borderRadius: AppRadius.radiusCard,
                         boxShadow: [
                           BoxShadow(
-                            color: colors.primary.withValues(
-                              alpha: isHovered ? 0.45 : 0.3,
+                            color: colors.black.withValues(
+                              alpha: isDark
+                                  ? (isHovered ? 0.45 : 0.3)
+                                  : (isHovered ? 0.25 : 0.15),
                             ),
                             blurRadius: isHovered ? 16 : 12,
                             offset: Offset(0, isHovered ? 6 : 4),
@@ -331,7 +333,9 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
             boxShadow: isHovered
                 ? [
                     BoxShadow(
-                      color: color.withValues(alpha: 0.15),
+                      color: colors.black.withValues(
+                        alpha: isDark ? 0.25 : 0.08,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),

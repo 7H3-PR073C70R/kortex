@@ -66,12 +66,12 @@ class QuizDuelState extends Equatable {
 
   @override
   List<Object?> get props => [
-        match,
-        status,
-        remainingSeconds,
-        selectedOptionIndex,
-        currentUserId,
-        errorMessage,
-        isSubmitting,
-      ];
+    match,
+    status,
+    remainingSeconds,
+    selectedOptionIndex,
+    currentUserId,
+    errorMessage,
+    isSubmitting,
+  ];
 }

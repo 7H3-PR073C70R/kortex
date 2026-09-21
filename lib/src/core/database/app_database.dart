@@ -25,116 +25,138 @@ part 'app_database.g.dart';
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(executor ?? driftDatabase(name: 'kortex_drift'));
+    : super(executor ?? driftDatabase(name: 'kortex_drift'));
 
   @override
   int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        beforeOpen: (details) async {
-          await customStatement('PRAGMA foreign_keys = ON');
-          // Self-healing check in case columns are missing on existing device databases
-          try {
-            await customStatement('ALTER TABLE forum_posts ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE forum_posts ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE forum_replies ADD COLUMN parent_reply_id TEXT REFERENCES forum_replies(id) ON DELETE CASCADE;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE forum_replies ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
-          try {
-            await customStatement('ALTER TABLE forum_replies ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;');
-          } on Object catch (_) {}
-          // Self-healing: FSRS-6 native columns on flashcards table
-          await ensureFsrsColumnsExist();
-        },
-        onCreate: (m) async {
-          await m.createAll();
-          await _createIndicesAndTriggers();
-        },
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(examEvents);
-            await m.createTable(forumPosts);
-            await m.createTable(forumReplies);
-            await m.createTable(syllabotSessions);
-            await m.createTable(syllabotMessages);
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+      // Self-healing check in case columns are missing on existing device databases
+      try {
+        await customStatement(
+          'ALTER TABLE forum_posts ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;',
+        );
+      } on Object catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE forum_posts ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;',
+        );
+      } on Object catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE forum_replies ADD COLUMN parent_reply_id TEXT REFERENCES forum_replies(id) ON DELETE CASCADE;',
+        );
+      } on Object catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE forum_replies ADD COLUMN downvotes INTEGER NOT NULL DEFAULT 0;',
+        );
+      } on Object catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE forum_replies ADD COLUMN user_vote INTEGER NOT NULL DEFAULT 0;',
+        );
+      } on Object catch (_) {}
+      // Self-healing: FSRS-6 native columns on flashcards table
+      await ensureFsrsColumnsExist();
+    },
+    onCreate: (m) async {
+      await m.createAll();
+      await _createIndicesAndTriggers();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(examEvents);
+        await m.createTable(forumPosts);
+        await m.createTable(forumReplies);
+        await m.createTable(syllabotSessions);
+        await m.createTable(syllabotMessages);
 
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_forum_posts_track ON forum_posts(track);',
-            );
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_forum_posts_created_at ON forum_posts(created_at DESC);',
-            );
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_forum_replies_post_id ON forum_replies(post_id);',
-            );
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_syllabot_messages_session_id ON syllabot_messages(session_id);',
-            );
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_exam_events_target_date ON exam_events(target_date);',
-            );
-          }
-          if (from < 3) {
-            await m.createTable(thoughtParkingLots);
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_thought_parking_lots_created_at ON thought_parking_lots(created_at DESC);',
-            );
-          }
-          if (from < 4) {
-            try {
-              await m.addColumn(forumPosts, forumPosts.downvotes);
-            } on Object catch (_) {}
-            try {
-              await m.addColumn(forumPosts, forumPosts.userVote);
-            } on Object catch (_) {}
-            try {
-              await m.addColumn(forumReplies, forumReplies.parentReplyId);
-            } on Object catch (_) {}
-            try {
-              await m.addColumn(forumReplies, forumReplies.downvotes);
-            } on Object catch (_) {}
-            try {
-              await m.addColumn(forumReplies, forumReplies.userVote);
-            } on Object catch (_) {}
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_forum_replies_parent_reply_id ON forum_replies(parent_reply_id);',
-            );
-          }
-          if (from < 5) {
-            // Add FSRS-6 native memory state columns to local flashcards table.
-            // Names match the remote Supabase schema (migration 20260831140000) exactly
-            // to guarantee seamless upsert_fsrs_review_batch RPC round-trips.
-            try {
-              await customStatement('ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;');
-            } on Object catch (_) {}
-            try {
-              await customStatement('ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;');
-            } on Object catch (_) {}
-            try {
-              await customStatement('ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;');
-            } on Object catch (_) {}
-            try {
-              await customStatement('ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;');
-            } on Object catch (_) {}
-            try {
-              await customStatement('ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;');
-            } on Object catch (_) {}
-            try {
-              await customStatement('ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;');
-            } on Object catch (_) {}
-          }
-          if (from < 6) {
-            await ensureFsrsColumnsExist();
-          }
-        },
-      );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_forum_posts_track ON forum_posts(track);',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_forum_posts_created_at ON forum_posts(created_at DESC);',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_forum_replies_post_id ON forum_replies(post_id);',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_syllabot_messages_session_id ON syllabot_messages(session_id);',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_exam_events_target_date ON exam_events(target_date);',
+        );
+      }
+      if (from < 3) {
+        await m.createTable(thoughtParkingLots);
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_thought_parking_lots_created_at ON thought_parking_lots(created_at DESC);',
+        );
+      }
+      if (from < 4) {
+        try {
+          await m.addColumn(forumPosts, forumPosts.downvotes);
+        } on Object catch (_) {}
+        try {
+          await m.addColumn(forumPosts, forumPosts.userVote);
+        } on Object catch (_) {}
+        try {
+          await m.addColumn(forumReplies, forumReplies.parentReplyId);
+        } on Object catch (_) {}
+        try {
+          await m.addColumn(forumReplies, forumReplies.downvotes);
+        } on Object catch (_) {}
+        try {
+          await m.addColumn(forumReplies, forumReplies.userVote);
+        } on Object catch (_) {}
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_forum_replies_parent_reply_id ON forum_replies(parent_reply_id);',
+        );
+      }
+      if (from < 5) {
+        // Add FSRS-6 native memory state columns to local flashcards table.
+        // Names match the remote Supabase schema (migration 20260831140000) exactly
+        // to guarantee seamless upsert_fsrs_review_batch RPC round-trips.
+        try {
+          await customStatement(
+            'ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;',
+          );
+        } on Object catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;',
+          );
+        } on Object catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;',
+          );
+        } on Object catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;',
+          );
+        } on Object catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;',
+          );
+        } on Object catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;',
+          );
+        } on Object catch (_) {}
+      }
+      if (from < 6) {
+        await ensureFsrsColumnsExist();
+      }
+    },
+  );
 
   Future<void> _createIndicesAndTriggers() async {
     // Standard indices
@@ -172,9 +194,9 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_exam_events_target_date ON exam_events(target_date);',
     );
 
-          // SQLite FTS5 Virtual Tables and triggers for sub-millisecond search
-          try {
-            await customStatement('''
+    // SQLite FTS5 Virtual Tables and triggers for sub-millisecond search
+    try {
+      await customStatement('''
               CREATE VIRTUAL TABLE IF NOT EXISTS flashcards_fts USING fts5(
                 card_id UNINDEXED,
                 front,
@@ -183,20 +205,20 @@ class AppDatabase extends _$AppDatabase {
               );
             ''');
 
-            await customStatement('''
+      await customStatement('''
               CREATE TRIGGER IF NOT EXISTS flashcards_ai AFTER INSERT ON flashcards BEGIN
                 INSERT INTO flashcards_fts(card_id, front, back, source_topic)
                 VALUES (new.id, new.front, new.back, new.source_topic);
               END;
             ''');
 
-            await customStatement('''
+      await customStatement('''
               CREATE TRIGGER IF NOT EXISTS flashcards_ad AFTER DELETE ON flashcards BEGIN
                 DELETE FROM flashcards_fts WHERE card_id = old.id;
               END;
             ''');
 
-            await customStatement('''
+      await customStatement('''
               CREATE TRIGGER IF NOT EXISTS flashcards_au AFTER UPDATE ON flashcards BEGIN
                 DELETE FROM flashcards_fts WHERE card_id = old.id;
                 INSERT INTO flashcards_fts(card_id, front, back, source_topic)
@@ -204,7 +226,7 @@ class AppDatabase extends _$AppDatabase {
               END;
             ''');
 
-            await customStatement('''
+      await customStatement('''
               CREATE VIRTUAL TABLE IF NOT EXISTS past_questions_fts USING fts5(
                 question_id UNINDEXED,
                 prompt,
@@ -213,29 +235,29 @@ class AppDatabase extends _$AppDatabase {
               );
             ''');
 
-            await customStatement('''
+      await customStatement('''
               CREATE TRIGGER IF NOT EXISTS past_questions_ai AFTER INSERT ON past_questions BEGIN
                 INSERT INTO past_questions_fts(question_id, prompt, explanation, topic)
                 VALUES (new.id, new.prompt, new.explanation, new.topic);
               END;
             ''');
 
-            await customStatement('''
+      await customStatement('''
               CREATE TRIGGER IF NOT EXISTS past_questions_ad AFTER DELETE ON past_questions BEGIN
                 DELETE FROM past_questions_fts WHERE question_id = old.id;
               END;
             ''');
 
-            await customStatement('''
+      await customStatement('''
               CREATE TRIGGER IF NOT EXISTS past_questions_au AFTER UPDATE ON past_questions BEGIN
                 DELETE FROM past_questions_fts WHERE question_id = old.id;
                 INSERT INTO past_questions_fts(question_id, prompt, explanation, topic)
                 VALUES (new.id, new.prompt, new.explanation, new.topic);
               END;
             ''');
-          } on Object {
-            // Non-fatal if FTS5 is not enabled in standard mock build
-          }
+    } on Object {
+      // Non-fatal if FTS5 is not enabled in standard mock build
+    }
   }
 
   // ==========================================
@@ -243,21 +265,19 @@ class AppDatabase extends _$AppDatabase {
   // ==========================================
 
   Future<List<DeckEntry>> getAllDecks() {
-    return (select(decks)
-          ..orderBy([
-            (t) => OrderingTerm(
-                  expression: t.lastStudied,
-                  mode: OrderingMode.desc,
-                  nulls: NullsOrder.last,
-                ),
-            (t) => OrderingTerm(expression: t.title),
-          ]))
+    return (select(decks)..orderBy([
+          (t) => OrderingTerm(
+            expression: t.lastStudied,
+            mode: OrderingMode.desc,
+            nulls: NullsOrder.last,
+          ),
+          (t) => OrderingTerm(expression: t.title),
+        ]))
         .get();
   }
 
   Future<DeckEntry?> getDeckById(String id) {
-    return (select(decks)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(decks)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<void> upsertDeckEntry(DecksCompanion deck) {
@@ -280,14 +300,24 @@ class AppDatabase extends _$AppDatabase {
     final now = DateTime.now();
     await (update(decks)..where((t) => t.id.equals(deckId))).write(
       DecksCompanion(
-        masteryRate: masteryRate != null ? Value(masteryRate) : const Value.absent(),
+        masteryRate: masteryRate != null
+            ? Value(masteryRate)
+            : const Value.absent(),
         dueCards: dueCards != null ? Value(dueCards) : const Value.absent(),
-        totalCards: totalCards != null ? Value(totalCards) : const Value.absent(),
-        lastStudied: lastStudied != null ? Value(lastStudied) : const Value.absent(),
+        totalCards: totalCards != null
+            ? Value(totalCards)
+            : const Value.absent(),
+        lastStudied: lastStudied != null
+            ? Value(lastStudied)
+            : const Value.absent(),
         courseId: courseId != null ? Value(courseId) : const Value.absent(),
-        courseCode: courseCode != null ? Value(courseCode) : const Value.absent(),
+        courseCode: courseCode != null
+            ? Value(courseCode)
+            : const Value.absent(),
         subject: subject != null ? Value(subject) : const Value.absent(),
-        description: description != null ? Value(description) : const Value.absent(),
+        description: description != null
+            ? Value(description)
+            : const Value.absent(),
         colorHex: colorHex != null ? Value(colorHex) : const Value.absent(),
         iconName: iconName != null ? Value(iconName) : const Value.absent(),
         updatedAt: Value(now),
@@ -304,19 +334,19 @@ class AppDatabase extends _$AppDatabase {
     String? courseCode,
     String? subject,
   }) async {
-    await (delete(decks)
-          ..where((t) {
-            var predicate = t.courseId.equals(courseId);
-            if (courseCode != null && courseCode.isNotEmpty) {
-              predicate = predicate |
-                  t.courseCode.lower().equals(courseCode.toLowerCase());
-            }
-            if (subject != null && subject.isNotEmpty) {
-              predicate = predicate |
-                  t.subject.lower().equals(subject.toLowerCase());
-            }
-            return predicate;
-          }))
+    await (delete(decks)..where((t) {
+          var predicate = t.courseId.equals(courseId);
+          if (courseCode != null && courseCode.isNotEmpty) {
+            predicate =
+                predicate |
+                t.courseCode.lower().equals(courseCode.toLowerCase());
+          }
+          if (subject != null && subject.isNotEmpty) {
+            predicate =
+                predicate | t.subject.lower().equals(subject.toLowerCase());
+          }
+          return predicate;
+        }))
         .go();
   }
 
@@ -334,9 +364,9 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) => t.deckId.equals(deckId))
           ..orderBy([
             (t) => OrderingTerm(
-                  expression: t.nextDueDate,
-                  nulls: NullsOrder.first,
-                ),
+              expression: t.nextDueDate,
+              nulls: NullsOrder.first,
+            ),
             (t) => OrderingTerm(expression: t.id),
           ]))
         .get();
@@ -353,20 +383,22 @@ class AppDatabase extends _$AppDatabase {
       query.where(
         (t) =>
             t.deckId.equals(deckId) &
-            (t.nextDueDate.isNull() | t.nextDueDate.isSmallerOrEqualValue(threshold)),
+            (t.nextDueDate.isNull() |
+                t.nextDueDate.isSmallerOrEqualValue(threshold)),
       );
     } else {
       query.where(
         (t) =>
-            t.nextDueDate.isNull() | t.nextDueDate.isSmallerOrEqualValue(threshold),
+            t.nextDueDate.isNull() |
+            t.nextDueDate.isSmallerOrEqualValue(threshold),
       );
     }
 
     query.orderBy([
       (t) => OrderingTerm(
-            expression: t.nextDueDate,
-            nulls: NullsOrder.first,
-          ),
+        expression: t.nextDueDate,
+        nulls: NullsOrder.first,
+      ),
     ]);
 
     return query.get();
@@ -375,14 +407,18 @@ class AppDatabase extends _$AppDatabase {
   Future<void> upsertFlashcardEntry(FlashcardsCompanion card) async {
     if (card.deckId.present && card.deckId.value.isNotEmpty) {
       final deckId = card.deckId.value;
-      final existing =
-          await (select(decks)..where((d) => d.id.equals(deckId)))
-              .getSingleOrNull();
+      final existing = await (select(
+        decks,
+      )..where((d) => d.id.equals(deckId))).getSingleOrNull();
       if (existing == null) {
         final now = DateTime.now();
         final resolvedTitle = DeckTitleResolver.resolveTitle(deckId: deckId);
-        final resolvedSubject = DeckTitleResolver.resolveSubject(deckId: deckId);
-        final resolvedCategory = DeckTitleResolver.resolveCategory(deckId: deckId);
+        final resolvedSubject = DeckTitleResolver.resolveSubject(
+          deckId: deckId,
+        );
+        final resolvedCategory = DeckTitleResolver.resolveCategory(
+          deckId: deckId,
+        );
         await into(decks).insert(
           DecksCompanion.insert(
             id: deckId,
@@ -422,6 +458,7 @@ class AppDatabase extends _$AppDatabase {
       await recalculateDeckStatsForId(card.deckId.value);
     }
   }
+
   bool _fsrsColumnsChecked = false;
 
   /// Ensures all native FSRS-6 columns exist on the flashcards table even if
@@ -432,28 +469,42 @@ class AppDatabase extends _$AppDatabase {
       final info = await customSelect('PRAGMA table_info(flashcards);').get();
       final cols = info.map((r) => r.read<String>('name')).toSet();
       if (!cols.contains('stability')) {
-        await customStatement('ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;');
+        await customStatement(
+          'ALTER TABLE flashcards ADD COLUMN stability REAL NOT NULL DEFAULT 0.0;',
+        );
       }
       if (!cols.contains('difficulty')) {
-        await customStatement('ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;');
+        await customStatement(
+          'ALTER TABLE flashcards ADD COLUMN difficulty REAL NOT NULL DEFAULT 0.0;',
+        );
       }
       if (!cols.contains('elapsed_days')) {
-        await customStatement('ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;');
+        await customStatement(
+          'ALTER TABLE flashcards ADD COLUMN elapsed_days INTEGER NOT NULL DEFAULT 0;',
+        );
       }
       if (!cols.contains('scheduled_days')) {
-        await customStatement('ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;');
+        await customStatement(
+          'ALTER TABLE flashcards ADD COLUMN scheduled_days INTEGER NOT NULL DEFAULT 0;',
+        );
       }
       if (!cols.contains('lapses')) {
-        await customStatement('ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;');
+        await customStatement(
+          'ALTER TABLE flashcards ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;',
+        );
       }
       if (!cols.contains('state')) {
-        await customStatement('ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;');
+        await customStatement(
+          'ALTER TABLE flashcards ADD COLUMN state INTEGER NOT NULL DEFAULT 0;',
+        );
       }
       _fsrsColumnsChecked = true;
     } on Object catch (_) {}
   }
 
-  Future<void> batchUpsertFlashcards(List<FlashcardsCompanion> cardsList) async {
+  Future<void> batchUpsertFlashcards(
+    List<FlashcardsCompanion> cardsList,
+  ) async {
     if (cardsList.isEmpty) return;
 
     final deckIds = cardsList
@@ -462,8 +513,9 @@ class AppDatabase extends _$AppDatabase {
         .toSet();
 
     for (final deckId in deckIds) {
-      final existing = await (select(decks)..where((d) => d.id.equals(deckId)))
-          .getSingleOrNull();
+      final existing = await (select(
+        decks,
+      )..where((d) => d.id.equals(deckId))).getSingleOrNull();
 
       if (existing != null) {
         final resolvedTitle = DeckTitleResolver.resolveTitle(
@@ -538,9 +590,9 @@ class AppDatabase extends _$AppDatabase {
     final now = DateTime.now();
     final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
-    final allCards = await (select(flashcards)
-          ..where((t) => t.deckId.equals(deckId)))
-        .get();
+    final allCards = await (select(
+      flashcards,
+    )..where((t) => t.deckId.equals(deckId))).get();
 
     if (allCards.isEmpty) {
       await (update(decks)..where((t) => t.id.equals(deckId))).write(
@@ -651,9 +703,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<List<FsrsReviewLogEntry>> getAllReviewLogs() {
-    return (select(fsrsReviewLogs)
-          ..orderBy([(t) => OrderingTerm(expression: t.reviewedAtUtc)]))
-        .get();
+    return (select(
+      fsrsReviewLogs,
+    )..orderBy([(t) => OrderingTerm(expression: t.reviewedAtUtc)])).get();
   }
 
   // ==========================================
@@ -662,15 +714,16 @@ class AppDatabase extends _$AppDatabase {
 
   Future<int> countPastQuestions() async {
     final countExp = pastQuestions.id.count();
-    final row = await (selectOnly(pastQuestions)..addColumns([countExp]))
-        .getSingle();
+    final row = await (selectOnly(
+      pastQuestions,
+    )..addColumns([countExp])).getSingle();
     return row.read(countExp) ?? 0;
   }
 
   Future<int> deleteMockPastQuestions() {
-    return (delete(pastQuestions)
-          ..where((t) => t.id.like('jamb_1999_%') | t.id.like('mock_%')))
-        .go();
+    return (delete(
+      pastQuestions,
+    )..where((t) => t.id.like('jamb_1999_%') | t.id.like('mock_%'))).go();
   }
 
   Future<void> batchInsertPastQuestions(
@@ -707,7 +760,8 @@ class AppDatabase extends _$AppDatabase {
           variables: [
             Variable.withString('$sanitized*'),
             if (examType != null) Variable.withString(examType),
-            if (subject != null && subject != 'all') Variable.withString(subject),
+            if (subject != null && subject != 'all')
+              Variable.withString(subject),
             if (year != null) Variable.withInt(year),
             if (limit > 0) Variable.withInt(limit),
           ],
@@ -724,7 +778,9 @@ class AppDatabase extends _$AppDatabase {
     if (examType != null && examType.isNotEmpty) {
       query.where((t) => t.examType.lower().equals(examType.toLowerCase()));
     }
-    if (subject != null && subject.isNotEmpty && subject.toLowerCase() != 'all') {
+    if (subject != null &&
+        subject.isNotEmpty &&
+        subject.toLowerCase() != 'all') {
       query.where((t) => t.subject.lower().equals(subject.toLowerCase()));
     }
     if (year != null) {
@@ -787,14 +843,15 @@ class AppDatabase extends _$AppDatabase {
   // ==========================================
 
   Future<List<CourseModuleEntry>> getAllCourseModules() {
-    return (select(courseModules)
-          ..orderBy([(t) => OrderingTerm(expression: t.title)]))
-        .get();
+    return (select(
+      courseModules,
+    )..orderBy([(t) => OrderingTerm(expression: t.title)])).get();
   }
 
   Future<CourseModuleEntry?> getCourseModuleById(String id) {
-    return (select(courseModules)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      courseModules,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<void> batchUpsertCourseModules(
@@ -818,14 +875,15 @@ class AppDatabase extends _$AppDatabase {
   // ==========================================
 
   Future<List<ExamEventEntry>> getAllExamEvents() {
-    return (select(examEvents)
-          ..orderBy([(t) => OrderingTerm(expression: t.targetDate)]))
-        .get();
+    return (select(
+      examEvents,
+    )..orderBy([(t) => OrderingTerm(expression: t.targetDate)])).get();
   }
 
   Future<ExamEventEntry?> getExamEventById(String id) {
-    return (select(examEvents)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      examEvents,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<void> upsertExamEvent(ExamEventsCompanion event) {
@@ -862,8 +920,9 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<ForumPostEntry?> getForumPostById(String id) {
-    return (select(forumPosts)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      forumPosts,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<void> upsertForumPost(ForumPostsCompanion post) {
@@ -927,16 +986,16 @@ class AppDatabase extends _$AppDatabase {
   // ==========================================
 
   Future<List<SyllabotSessionEntry>> getAllSyllabotSessions() {
-    return (select(syllabotSessions)
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
-          ]))
+    return (select(syllabotSessions)..orderBy([
+          (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+        ]))
         .get();
   }
 
   Future<SyllabotSessionEntry?> getSyllabotSessionById(String id) {
-    return (select(syllabotSessions)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      syllabotSessions,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<void> upsertSyllabotSession(SyllabotSessionsCompanion session) {
@@ -979,14 +1038,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> deleteSyllabotMessagesForSession(String sessionId) {
-    return (delete(syllabotMessages)..where((t) => t.sessionId.equals(sessionId)))
-        .go();
+    return (delete(
+      syllabotMessages,
+    )..where((t) => t.sessionId.equals(sessionId))).go();
   }
 
   Future<void> deleteExpiredSyllabotMessages(DateTime cutoff) {
-    return (delete(syllabotMessages)
-          ..where((t) => t.createdAt.isSmallerThanValue(cutoff)))
-        .go();
+    return (delete(
+      syllabotMessages,
+    )..where((t) => t.createdAt.isSmallerThanValue(cutoff))).go();
   }
 
   // --- Thought Parking Lot (ADHD Accessibility) ---
@@ -1002,13 +1062,12 @@ class AppDatabase extends _$AppDatabase {
     if (deckId != null) {
       query = query..where((t) => t.deckId.equals(deckId));
     }
-    return (query
-          ..orderBy([
-            (t) => OrderingTerm(
-                  expression: t.createdAt,
-                  mode: OrderingMode.desc,
-                ),
-          ]))
+    return (query..orderBy([
+          (t) => OrderingTerm(
+            expression: t.createdAt,
+            mode: OrderingMode.desc,
+          ),
+        ]))
         .get();
   }
 

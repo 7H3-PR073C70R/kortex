@@ -189,8 +189,8 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                       final itemWidth = isCompact
                           ? 36.0
                           : ((constraints.maxWidth - ((count - 1) * spacing)) /
-                                  count)
-                              .clamp(26.0, 50.0);
+                                    count)
+                                .clamp(26.0, 50.0);
 
                       final dayItems = List.generate(
                         count,
@@ -205,7 +205,9 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                                 _selectedDayIndex = index;
                               });
                             },
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                             child: Container(
                               width: itemWidth,
                               margin: isCompact
@@ -220,7 +222,9 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                                         isDark ? 60 : 30,
                                       )
                                     : colors.transparent,
-                                borderRadius: BorderRadius.circular(AppRadius.badge),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
                                 border: Border.all(
                                   color: _selectedDayIndex == index
                                       ? colors.primary.withAlpha(

@@ -95,7 +95,9 @@ class ManualCardEditorView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? colors.surfaceSecondary.withAlpha(100) : colors.surfaceSecondary,
+              color: isDark
+                  ? colors.surfaceSecondary.withAlpha(100)
+                  : colors.surfaceSecondary,
               borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
             ),
@@ -110,13 +112,29 @@ class ManualCardEditorView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                AppTextField(controller: optionAController, label: 'Option A', hintText: 'Option A text'),
+                AppTextField(
+                  controller: optionAController,
+                  label: 'Option A',
+                  hintText: 'Option A text',
+                ),
                 const SizedBox(height: 8),
-                AppTextField(controller: optionBController, label: 'Option B', hintText: 'Option B text'),
+                AppTextField(
+                  controller: optionBController,
+                  label: 'Option B',
+                  hintText: 'Option B text',
+                ),
                 const SizedBox(height: 8),
-                AppTextField(controller: optionCController, label: 'Option C', hintText: 'Option C text'),
+                AppTextField(
+                  controller: optionCController,
+                  label: 'Option C',
+                  hintText: 'Option C text',
+                ),
                 const SizedBox(height: 8),
-                AppTextField(controller: optionDController, label: 'Option D', hintText: 'Option D text'),
+                AppTextField(
+                  controller: optionDController,
+                  label: 'Option D',
+                  hintText: 'Option D text',
+                ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -142,16 +160,22 @@ class ManualCardEditorView extends StatelessWidget {
                             height: 32,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: isSelected ? colors.primary : colors.surfaceTertiary,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.surfaceTertiary,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isSelected ? colors.primary : colors.surfaceBorder,
+                                color: isSelected
+                                    ? colors.primary
+                                    : colors.surfaceBorder,
                               ),
                             ),
                             child: Text(
                               opt,
                               style: typography.caption.bold.copyWith(
-                                color: isSelected ? colors.white : colors.textPrimary,
+                                color: isSelected
+                                    ? colors.white
+                                    : colors.textPrimary,
                               ),
                             ),
                           ),
@@ -170,7 +194,8 @@ class ManualCardEditorView extends StatelessWidget {
         AppTextField(
           controller: backController,
           label: 'Solution / Answer / Back',
-          hintText: r'e.g. \( 3x^2 \). Power rule states d/dx[x^n] = n*x^(n-1).',
+          hintText:
+              r'e.g. \( 3x^2 \). Power rule states d/dx[x^n] = n*x^(n-1).',
           maxLines: 3,
         ),
         const SizedBox(height: 12),
@@ -231,7 +256,9 @@ class ManualCardEditorView extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDark ? colors.surfaceSecondary.withAlpha(100) : colors.surfacePrimary,
+                  color: isDark
+                      ? colors.surfaceSecondary.withAlpha(100)
+                      : colors.surfacePrimary,
                   borderRadius: BorderRadius.circular(AppRadius.panel),
                   border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
                 ),
@@ -276,7 +303,11 @@ class ManualCardEditorView extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.delete_outline_rounded, size: 18, color: colors.error),
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        size: 18,
+                        color: colors.error,
+                      ),
                       onPressed: () => onRemoveCard(idx),
                       tooltip: 'Remove Card',
                     ),
@@ -290,7 +321,9 @@ class ManualCardEditorView extends StatelessWidget {
 
         // Submit Manual Deck Button
         AppButton(
-          text: isSubmitting ? 'Creating Study Deck...' : 'Save Deck (${addedCards.length} Cards)',
+          text: isSubmitting
+              ? 'Creating Study Deck...'
+              : 'Save Deck (${addedCards.length} Cards)',
           isLoading: isSubmitting,
           onPressed: isSubmitting ? null : onSubmit,
           prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 18),

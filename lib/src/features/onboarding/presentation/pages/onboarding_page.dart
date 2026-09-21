@@ -192,13 +192,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: colors.primary.withAlpha(
+                                          color: colors.black.withAlpha(
                                             isDark
-                                                ? (isHovered ? 140 : 110)
-                                                : (isHovered ? 100 : 75),
+                                                ? (isHovered ? 60 : 40)
+                                                : (isHovered ? 35 : 20),
                                           ),
-                                          blurRadius: isHovered ? 24 : 18,
-                                          offset: Offset(0, isHovered ? 8 : 6),
+                                          blurRadius: isHovered ? 12 : 8,
+                                          offset: Offset(0, isHovered ? 4 : 3),
                                         ),
                                       ],
                                     ),

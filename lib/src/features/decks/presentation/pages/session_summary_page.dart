@@ -37,8 +37,9 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
   @override
   void initState() {
     super.initState();
-    _confettiController =
-        ConfettiController(duration: const Duration(seconds: 3));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
     _confettiController.play();
     unawaited(HapticFeedback.heavyImpact());
   }
@@ -98,7 +99,10 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 580),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -118,7 +122,7 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: colors.success.withAlpha(100),
+                              color: colors.black.withAlpha(isDark ? 50 : 20),
                               blurRadius: 28,
                               offset: const Offset(0, 8),
                             ),
@@ -198,10 +202,14 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                               color: isDark
                                   ? colors.surfaceSecondary.withAlpha(160)
                                   : colors.surfacePrimary.withAlpha(220),
-                              borderRadius: BorderRadius.circular(AppRadius.dialog),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.dialog,
+                              ),
                               border: Border.all(
                                 color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(70)
+                                    ? colors.surfaceBorderHighlight.withAlpha(
+                                        70,
+                                      )
                                     : colors.surfaceBorder.withAlpha(130),
                               ),
                             ),
@@ -261,7 +269,9 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                           text: 'Done for Now',
                           variant: AppButtonVariant.outline,
                           onPressed: () {
-                            unawaited(context.router.replace(const MainRoute()));
+                            unawaited(
+                              context.router.replace(const MainRoute()),
+                            );
                           },
                         ),
                       ] else ...[
@@ -269,7 +279,9 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                         AppButton(
                           text: l10n.sessionSummaryReturnDashboard,
                           onPressed: () {
-                            unawaited(context.router.replace(const MainRoute()));
+                            unawaited(
+                              context.router.replace(const MainRoute()),
+                            );
                           },
                         ),
                         const SizedBox(height: 12),

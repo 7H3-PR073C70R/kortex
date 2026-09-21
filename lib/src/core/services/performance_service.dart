@@ -54,7 +54,7 @@ class _NoOpAppTrace implements AppTrace {
 /// Service wrapping Firebase Performance Monitoring.
 class PerformanceService {
   PerformanceService({FirebasePerformance? performance})
-      : _performance = performance;
+    : _performance = performance;
 
   FirebasePerformance? _performance;
 

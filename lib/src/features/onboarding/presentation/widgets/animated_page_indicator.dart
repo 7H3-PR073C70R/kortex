@@ -50,9 +50,6 @@ class AnimatedPageIndicator extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: List.generate(count, (index) {
           final isSelected = index == currentIndex;
-          final shadowColor = isSelected
-              ? resolvedActive.withAlpha(isDark ? 100 : 70)
-              : context.colors.transparent;
 
           final label = semanticLabelBuilder != null
               ? semanticLabelBuilder!(index + 1, count)
@@ -91,16 +88,6 @@ class AnimatedPageIndicator extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: effectiveColor,
                         borderRadius: BorderRadius.circular(borderRadius),
-                        boxShadow: [
-                          if (isSelected || isHovered)
-                            BoxShadow(
-                              color: isSelected
-                                  ? shadowColor
-                                  : resolvedActive.withAlpha(isDark ? 50 : 30),
-                              blurRadius: isHovered ? 8 : 6,
-                              offset: const Offset(0, 1),
-                            ),
-                        ],
                       ),
                     ),
                   ),

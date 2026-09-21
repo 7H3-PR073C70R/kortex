@@ -7,7 +7,6 @@ class AppEnv {
       ? (dotenv.env['API_KEY'] ?? dotenv.env['SUPABASE_ANON_KEY'] ?? '')
       : '';
   static String get liveKitUrl => dotenv.isInitialized
-      ? (dotenv.env['LIVEKIT_URL'] ??
-          'wss://kortexify-nj9viqjp.livekit.cloud')
+      ? (dotenv.env['LIVEKIT_URL'] ?? 'wss://kortexify-nj9viqjp.livekit.cloud')
       : 'wss://kortexify-nj9viqjp.livekit.cloud';
 }

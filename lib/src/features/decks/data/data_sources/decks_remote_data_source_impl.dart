@@ -22,9 +22,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     UserStorageService? userStorage,
     LocalStorageService? storageService,
     DecksLocalDataSource? localDataSource,
-  })  : _userStorage = userStorage,
-        _storageService = storageService,
-        _localDataSourceOverride = localDataSource;
+  }) : _userStorage = userStorage,
+       _storageService = storageService,
+       _localDataSourceOverride = localDataSource;
 
   final DecksApiClient _client;
   final UserStorageService? _userStorage;
@@ -71,7 +71,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
   List<CuratedCourseModel> _getRegisteredCourses() {
     try {
-      final raw = _localStorage?.getPreference(key: PrefKeys.userCuratedCourses);
+      final raw = _localStorage?.getPreference(
+        key: PrefKeys.userCuratedCourses,
+      );
       if (raw != null && raw.isNotEmpty) {
         final list = jsonDecode(raw) as List<dynamic>;
         return list
@@ -101,8 +103,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
   void _persistLocalDecksToStorage() {
     try {
-      final jsonStr =
-          jsonEncode(_localCreatedDecks.map((d) => d.toJson()).toList());
+      final jsonStr = jsonEncode(
+        _localCreatedDecks.map((d) => d.toJson()).toList(),
+      );
       unawaited(
         _localStorage?.savePreference(
           key: PrefKeys.persistedUserDecks,
@@ -130,7 +133,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
     // 2. Supplement / Fallback: SharedPreferences loader
     try {
-      final raw = _localStorage?.getPreference(key: PrefKeys.persistedUserDecks);
+      final raw = _localStorage?.getPreference(
+        key: PrefKeys.persistedUserDecks,
+      );
       if (raw != null && raw.isNotEmpty) {
         final list = jsonDecode(raw) as List<dynamic>;
         final loaded = list
@@ -143,7 +148,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           } else {
             if (deck.lastStudied != null &&
                 (_localCreatedDecks[idx].lastStudied == null ||
-                    deck.lastStudied!.isAfter(_localCreatedDecks[idx].lastStudied!))) {
+                    deck.lastStudied!.isAfter(
+                      _localCreatedDecks[idx].lastStudied!,
+                    ))) {
               _localCreatedDecks[idx] = deck;
             }
           }
@@ -205,9 +212,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
       // Bulk Insert Associated Flashcards
       try {
-        final cardsPayload = cards
-            .where((c) => _isValidUuid(c.id))
-            .map((c) {
+        final cardsPayload = cards.where((c) => _isValidUuid(c.id)).map((c) {
           return <String, dynamic>{
             'id': c.id,
             'deck_id': deck.id,
@@ -220,8 +225,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
             'interval': c.interval,
             'repetitions': c.repetitions,
             'ease_factor': c.easeFactor,
-            'next_due_date':
-                (c.nextDueDate ?? DateTime.now()).toIso8601String(),
+            'next_due_date': (c.nextDueDate ?? DateTime.now())
+                .toIso8601String(),
           };
         }).toList();
 
@@ -257,11 +262,11 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         if (factory != null && factory.isSecondaryTrack(track)) {
           final registeredCourses = _getRegisteredCourses();
           if (registeredCourses.isNotEmpty) {
-            final canonicalDecks =
-                await factory.generateCanonicalDecksForCourses(
-              courses: registeredCourses,
-              track: track,
-            );
+            final canonicalDecks = await factory
+                .generateCanonicalDecksForCourses(
+                  courses: registeredCourses,
+                  track: track,
+                );
             for (final cd in canonicalDecks) {
               if (!fallbackList.any((d) => d.id == cd.id)) {
                 fallbackList.add(cd);
@@ -278,8 +283,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       final remoteDecks = await _client.getUserDecks();
       final remoteIds = remoteDecks.map((d) => d.id).toSet();
       final updatedRemote = remoteDecks.map((remote) {
-        final localMatch =
-            _localCreatedDecks.where((d) => d.id == remote.id).firstOrNull;
+        final localMatch = _localCreatedDecks
+            .where((d) => d.id == remote.id)
+            .firstOrNull;
         if (localMatch != null && localMatch.masteryRate > remote.masteryRate) {
           return remote.copyWith(
             masteryRate: localMatch.masteryRate,
@@ -304,14 +310,15 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         if (factory != null && factory.isSecondaryTrack(track)) {
           final registeredCourses = _getRegisteredCourses();
           if (registeredCourses.isNotEmpty) {
-            final canonicalDecks =
-                await factory.generateCanonicalDecksForCourses(
-              courses: registeredCourses,
-              track: track,
-            );
+            final canonicalDecks = await factory
+                .generateCanonicalDecksForCourses(
+                  courses: registeredCourses,
+                  track: track,
+                );
             for (final cd in canonicalDecks) {
-              final localMatch =
-                  _localCreatedDecks.where((d) => d.id == cd.id).firstOrNull;
+              final localMatch = _localCreatedDecks
+                  .where((d) => d.id == cd.id)
+                  .firstOrNull;
               final effectiveDeck = localMatch != null
                   ? cd.copyWith(
                       masteryRate: localMatch.masteryRate,
@@ -330,7 +337,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       return resultList.map(DeckTitleResolver.enrichDeckModel).toList();
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
-        final isAuthOrNotFound = e is DioException &&
+        final isAuthOrNotFound =
+            e is DioException &&
             (e.response?.statusCode == 401 ||
                 e.response?.statusCode == 403 ||
                 e.response?.statusCode == 404);
@@ -353,14 +361,15 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         if (factory != null && factory.isSecondaryTrack(track)) {
           final registeredCourses = _getRegisteredCourses();
           if (registeredCourses.isNotEmpty) {
-            final canonicalDecks =
-                await factory.generateCanonicalDecksForCourses(
-              courses: registeredCourses,
-              track: track,
-            );
+            final canonicalDecks = await factory
+                .generateCanonicalDecksForCourses(
+                  courses: registeredCourses,
+                  track: track,
+                );
             for (final cd in canonicalDecks) {
-              final localMatch =
-                  _localCreatedDecks.where((d) => d.id == cd.id).firstOrNull;
+              final localMatch = _localCreatedDecks
+                  .where((d) => d.id == cd.id)
+                  .firstOrNull;
               final effectiveDeck = localMatch != null
                   ? cd.copyWith(
                       masteryRate: localMatch.masteryRate,
@@ -400,8 +409,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     }
 
     // 0. Check in-memory created decks
-    final inMemoryDeck =
-        _localCreatedDecks.where((d) => d.id == deckId).firstOrNull;
+    final inMemoryDeck = _localCreatedDecks
+        .where((d) => d.id == deckId)
+        .firstOrNull;
     if (inMemoryDeck != null && inMemoryDeck.cards.isNotEmpty) {
       _localDeckCards[deckId] = inMemoryDeck.cards;
       return inMemoryDeck.cards;
@@ -449,7 +459,8 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         }
       } on Object catch (e, stack) {
         if (_crashlyticsService != null) {
-          final isAuthOrNotFound = e is DioException &&
+          final isAuthOrNotFound =
+              e is DioException &&
               (e.response?.statusCode == 401 ||
                   e.response?.statusCode == 403 ||
                   e.response?.statusCode == 404);
@@ -469,13 +480,17 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
   }
 
   @override
-  Future<void> updateDeckCards(String deckId, List<FlashcardModel> cards) async {
+  Future<void> updateDeckCards(
+    String deckId,
+    List<FlashcardModel> cards,
+  ) async {
     _localDeckCards[deckId] = cards;
 
     final dueCount = cards.where((c) => c.isDueToday).length;
     final masteredCount = cards.where((c) => c.repetitions >= 1).length;
-    final calculatedMasteryRate =
-        cards.isNotEmpty ? (masteredCount / cards.length) : 0.0;
+    final calculatedMasteryRate = cards.isNotEmpty
+        ? (masteredCount / cards.length)
+        : 0.0;
 
     final deckIdx = _localCreatedDecks.indexWhere((d) => d.id == deckId);
     if (deckIdx >= 0) {
@@ -522,12 +537,13 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         _localDeckCards[deckId] ?? updatedCards ?? const <FlashcardModel>[];
     final masteredCount = cards.where((c) => c.repetitions >= 1).length;
     final totalCount = cards.isNotEmpty ? cards.length : cardsReviewed;
-    final calculatedMasteryRate = masteryRate ??
+    final calculatedMasteryRate =
+        masteryRate ??
         (totalCount > 0
             ? (masteredCount > 0
-                    ? masteredCount / totalCount
-                    : (retentionScore > 0 ? retentionScore : 1.0))
-                .clamp(0.0, 1.0)
+                      ? masteredCount / totalCount
+                      : (retentionScore > 0 ? retentionScore : 1.0))
+                  .clamp(0.0, 1.0)
             : 1.0);
     final calculatedDueCards =
         dueCards ?? cards.where((c) => c.isDueToday).length;
@@ -629,8 +645,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           d.courseCode!.toLowerCase() == courseCode.toLowerCase()) {
         return true;
       }
-      if (subject != null &&
-          d.subject.toLowerCase() == subject.toLowerCase()) {
+      if (subject != null && d.subject.toLowerCase() == subject.toLowerCase()) {
         return true;
       }
       return false;

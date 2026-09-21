@@ -67,7 +67,8 @@ class PastQuestionsRemoteDataSourceImpl
   }) async {
     final cleanCode = courseCode?.trim().toLowerCase();
     final memoryMatches = _inMemoryQuestions.where((q) {
-      final matchCourse = (courseId != null && q.courseId == courseId) ||
+      final matchCourse =
+          (courseId != null && q.courseId == courseId) ||
           (cleanCode != null &&
               q.courseCode != null &&
               q.courseCode!.trim().toLowerCase() == cleanCode);

@@ -77,7 +77,6 @@ class DashboardRepositoryImpl implements DashboardRepository {
         .makeRequest();
   }
 
-
   @override
   Future<Either<Failure, String>> quickStartMockExam({
     required String examId,

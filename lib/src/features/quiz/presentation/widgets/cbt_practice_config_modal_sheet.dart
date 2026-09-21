@@ -89,14 +89,23 @@ class CbtPracticeConfigModalSheet extends HookWidget {
 
     // Question count state: default to min(recommendedCount, availableCount)
     final selectedCount = useState<int>(
-      allQuestions.length >= recommendedCount ? recommendedCount : allQuestions.length.clamp(1, 100),
+      allQuestions.length >= recommendedCount
+          ? recommendedCount
+          : allQuestions.length.clamp(1, 100),
     );
 
     final isStarting = useState<bool>(false);
 
     // Available count options
-    final countOptions = [10, 20, 30, 40].where((c) => c <= allQuestions.length || c == 10).toList();
-    if (!countOptions.contains(allQuestions.length) && allQuestions.length < 40 && allQuestions.isNotEmpty) {
+    final countOptions = [
+      10,
+      20,
+      30,
+      40,
+    ].where((c) => c <= allQuestions.length || c == 10).toList();
+    if (!countOptions.contains(allQuestions.length) &&
+        allQuestions.length < 40 &&
+        allQuestions.isNotEmpty) {
       countOptions
         ..add(allQuestions.length)
         ..sort();
@@ -123,7 +132,9 @@ class CbtPracticeConfigModalSheet extends HookWidget {
       final countToTake = isMillionaire.value ? 12 : selectedCount.value;
       final finalQuestions = candidateQuestions.take(countToTake).toList();
 
-      final quizQuestions = finalQuestions.map(QuizQuestionEntity.fromPastQuestion).toList();
+      final quizQuestions = finalQuestions
+          .map(QuizQuestionEntity.fromPastQuestion)
+          .toList();
 
       final durationMinutes = isMillionaire.value
           ? null
@@ -135,7 +146,9 @@ class CbtPracticeConfigModalSheet extends HookWidget {
         context.router.push(
           QuizWorkspaceRoute(
             deckId: 'cbt_${courseId}_${DateTime.now().millisecondsSinceEpoch}',
-            deckTitle: isMillionaire.value ? '$courseCode Millionaire Challenge' : '$courseCode $title',
+            deckTitle: isMillionaire.value
+                ? '$courseCode Millionaire Challenge'
+                : '$courseCode $title',
             subject: courseTitle,
             durationMinutes: durationMinutes,
             initialQuestions: quizQuestions,
@@ -144,8 +157,8 @@ class CbtPracticeConfigModalSheet extends HookWidget {
             assessmentMode: isMillionaire.value
                 ? AssessmentMode.millionaireMode
                 : (isMockExam
-                    ? AssessmentMode.examSimulationMode
-                    : AssessmentMode.discoveryMode),
+                      ? AssessmentMode.examSimulationMode
+                      : AssessmentMode.discoveryMode),
           ),
         ),
       );
@@ -241,8 +254,12 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                     child: Row(
                       children: [
                         Icon(
-                          isMockExam ? Icons.timer_outlined : Icons.bolt_rounded,
-                          color: isMockExam ? colors.primary : colors.syllabotAccent,
+                          isMockExam
+                              ? Icons.timer_outlined
+                              : Icons.bolt_rounded,
+                          color: isMockExam
+                              ? colors.primary
+                              : colors.syllabotAccent,
                           size: 22,
                         ),
                         const SizedBox(width: 12),
@@ -251,9 +268,13 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                isMockExam ? 'Timed Examination Mode' : 'Interactive Drill Mode',
+                                isMockExam
+                                    ? 'Timed Examination Mode'
+                                    : 'Interactive Drill Mode',
                                 style: typography.caption.bold.copyWith(
-                                  color: isMockExam ? colors.primary : colors.syllabotAccent,
+                                  color: isMockExam
+                                      ? colors.primary
+                                      : colors.syllabotAccent,
                                   fontSize: 12.5,
                                 ),
                               ),
@@ -397,8 +418,8 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                     text: isMillionaire.value
                         ? 'Start Millionaire Arcade (12 Tiers 🏆)'
                         : (isMockExam
-                            ? 'Start Mock Exam (${selectedCount.value} Questions)'
-                            : 'Start Practice Drill (${selectedCount.value} Questions)'),
+                              ? 'Start Mock Exam (${selectedCount.value} Questions)'
+                              : 'Start Practice Drill (${selectedCount.value} Questions)'),
                     isLoading: isStarting.value,
                     onPressed: isStarting.value ? null : handleStart,
                   ),
@@ -443,13 +464,13 @@ class _ChoiceChip extends StatelessWidget {
         final bgColor = isSelected
             ? colors.primary
             : (isHovered
-                ? colors.primary.withAlpha(isDark ? 25 : 12)
-                : defaultBg);
+                  ? colors.primary.withAlpha(isDark ? 25 : 12)
+                  : defaultBg);
         final borderColor = isSelected
             ? colors.primary
             : (isHovered
-                ? colors.primary.withAlpha(isDark ? 85 : 55)
-                : defaultBorder);
+                  ? colors.primary.withAlpha(isDark ? 85 : 55)
+                  : defaultBorder);
 
         return ShrinkableButton(
           onTap: onTap,
@@ -478,7 +499,10 @@ class _ChoiceChip extends StatelessWidget {
                 if (badge != null) ...[
                   const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2.5,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? colors.white.withAlpha(40)

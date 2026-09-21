@@ -26,15 +26,18 @@ class CardSyncQueue {
     String? authToken,
   }) : _dio = dio ?? Dio(),
        _connectivity = connectivity ?? Connectivity(),
-       _storageService = storageService ??
+       _storageService =
+           storageService ??
            (locator.isRegistered<LocalStorageService>()
                ? locator<LocalStorageService>()
                : null),
-       _userStorageService = userStorageService ??
+       _userStorageService =
+           userStorageService ??
            (locator.isRegistered<UserStorageService>()
                ? locator<UserStorageService>()
                : null),
-       _appDatabase = appDatabase ??
+       _appDatabase =
+           appDatabase ??
            (locator.isRegistered<AppDatabase>()
                ? locator<AppDatabase>()
                : null),
@@ -96,18 +99,22 @@ class CardSyncQueue {
       if (raw != null && raw.isNotEmpty) {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          final existingUuids =
-              _inMemoryLogBuffer.map((l) => l.transactionUuid).toSet();
+          final existingUuids = _inMemoryLogBuffer
+              .map((l) => l.transactionUuid)
+              .toSet();
           for (final item in decoded) {
             if (item is Map<String, dynamic>) {
               final log = FsrsReviewLog.fromMap(item);
-              if (!existingUuids.contains(log.transactionUuid) && !log.isSynced) {
+              if (!existingUuids.contains(log.transactionUuid) &&
+                  !log.isSynced) {
                 _inMemoryLogBuffer.add(log);
               }
             } else if (item is Map) {
-              final log =
-                  FsrsReviewLog.fromMap(Map<String, dynamic>.from(item));
-              if (!existingUuids.contains(log.transactionUuid) && !log.isSynced) {
+              final log = FsrsReviewLog.fromMap(
+                Map<String, dynamic>.from(item),
+              );
+              if (!existingUuids.contains(log.transactionUuid) &&
+                  !log.isSynced) {
                 _inMemoryLogBuffer.add(log);
               }
             }
@@ -122,8 +129,9 @@ class CardSyncQueue {
   Future<void> _loadDriftLogs() async {
     try {
       final entries = await _appDatabase!.getUnsyncedReviewLogs();
-      final existingUuids =
-          _inMemoryLogBuffer.map((l) => l.transactionUuid).toSet();
+      final existingUuids = _inMemoryLogBuffer
+          .map((l) => l.transactionUuid)
+          .toSet();
       for (final e in entries) {
         if (!existingUuids.contains(e.transactionUuid)) {
           _inMemoryLogBuffer.add(
@@ -245,8 +253,9 @@ class CardSyncQueue {
     var syncedCount = 0;
 
     try {
-      final pendingLogs =
-          _inMemoryLogBuffer.where((log) => !log.isSynced).toList();
+      final pendingLogs = _inMemoryLogBuffer
+          .where((log) => !log.isSynced)
+          .toList();
 
       if (pendingLogs.isEmpty) {
         await _persistLogs();

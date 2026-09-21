@@ -105,11 +105,11 @@ class TtsConfig {
 
   @override
   int get hashCode => Object.hash(
-        gender,
-        speechRateMultiplier,
-        baseSpeechRate,
-        pitch,
-        volume,
-        language,
-      );
+    gender,
+    speechRateMultiplier,
+    baseSpeechRate,
+    pitch,
+    volume,
+    language,
+  );
 }

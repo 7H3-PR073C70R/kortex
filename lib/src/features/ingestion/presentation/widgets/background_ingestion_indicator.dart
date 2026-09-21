@@ -154,13 +154,11 @@ class _BackgroundIngestionIndicatorState
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: isCompleted
-                                          ? colors.success.withAlpha(
-                                              isHovered ? 60 : 35,
-                                            )
-                                          : colors.primary.withAlpha(
-                                              isHovered ? 60 : 35,
-                                            ),
+                                      color: colors.black.withAlpha(
+                                        isHovered
+                                            ? (isDark ? 60 : 30)
+                                            : (isDark ? 40 : 15),
+                                      ),
                                       blurRadius: isHovered ? 18 : 14,
                                       offset: const Offset(0, 4),
                                     ),
@@ -255,38 +253,40 @@ class _BackgroundIngestionIndicatorState
                                         PlatformHoverBuilder(
                                           builder:
                                               (context, isCloseHovered, child) {
-                                            return AnimatedContainer(
-                                              duration: AppMotion.snappy,
-                                              curve: AppMotion.easeOutCubic,
-                                              decoration: BoxDecoration(
-                                                color: isCloseHovered
-                                                    ? colors.surfaceSecondary
-                                                    : Colors.transparent,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: IconButton(
-                                                icon: Icon(
-                                                  Icons.close_rounded,
-                                                  size: 16,
-                                                  color: isCloseHovered
-                                                      ? colors.textPrimary
-                                                      : colors.textSecondary,
-                                                ),
-                                                padding: EdgeInsets.zero,
-                                                constraints:
-                                                    const BoxConstraints(
-                                                      minWidth: 28,
-                                                      minHeight: 28,
+                                                return AnimatedContainer(
+                                                  duration: AppMotion.snappy,
+                                                  curve: AppMotion.easeOutCubic,
+                                                  decoration: BoxDecoration(
+                                                    color: isCloseHovered
+                                                        ? colors
+                                                              .surfaceSecondary
+                                                        : Colors.transparent,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: IconButton(
+                                                    icon: Icon(
+                                                      Icons.close_rounded,
+                                                      size: 16,
+                                                      color: isCloseHovered
+                                                          ? colors.textPrimary
+                                                          : colors
+                                                                .textSecondary,
                                                     ),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    _dismissedDocId =
-                                                        currentDocId;
-                                                  });
-                                                },
-                                              ),
-                                            );
-                                          },
+                                                    padding: EdgeInsets.zero,
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                          minWidth: 28,
+                                                          minHeight: 28,
+                                                        ),
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _dismissedDocId =
+                                                            currentDocId;
+                                                      });
+                                                    },
+                                                  ),
+                                                );
+                                              },
                                         ),
                                       ],
                                     ),

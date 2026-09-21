@@ -106,13 +106,13 @@ class ScholarHubCard extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(
+                                    color: colors.black.withAlpha(
                                       isDark
-                                          ? (isHovered ? 110 : 80)
-                                          : (isHovered ? 65 : 40),
+                                          ? (isHovered ? 60 : 40)
+                                          : (isHovered ? 25 : 15),
                                     ),
-                                    blurRadius: isHovered ? 14 : 10,
-                                    offset: Offset(0, isHovered ? 4 : 3),
+                                    blurRadius: isHovered ? 12 : 8,
+                                    offset: Offset(0, isHovered ? 4 : 2),
                                   ),
                                 ],
                               ),

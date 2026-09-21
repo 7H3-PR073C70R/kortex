@@ -56,7 +56,14 @@ class UploadPastQuestionsView extends StatelessWidget {
               : () async {
                   AppFeedback.light();
                   final doc = await FilePickerService().pickStudyDocument(
-                    extensions: const ['pdf', 'png', 'jpg', 'jpeg', 'txt', 'pptx'],
+                    extensions: const [
+                      'pdf',
+                      'png',
+                      'jpg',
+                      'jpeg',
+                      'txt',
+                      'pptx',
+                    ],
                   );
                   if (doc != null) {
                     pickedFile.value = doc;
@@ -73,7 +80,9 @@ class UploadPastQuestionsView extends StatelessWidget {
               border: Border.all(
                 color: pickedFile.value != null
                     ? colors.primary
-                    : (isDark ? colors.surfaceBorderHighlight.withAlpha(60) : colors.surfaceBorder),
+                    : (isDark
+                          ? colors.surfaceBorderHighlight.withAlpha(60)
+                          : colors.surfaceBorder),
                 width: pickedFile.value != null ? 1.5 : 1.0,
               ),
             ),
@@ -136,7 +145,11 @@ class UploadPastQuestionsView extends StatelessWidget {
                       AppFeedback.light();
                       pickedFile.value = null;
                     },
-                    icon: Icon(Icons.close_rounded, size: 16, color: colors.error),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: colors.error,
+                    ),
                     label: Text(
                       'Remove File',
                       style: typography.caption.bold.copyWith(
@@ -175,7 +188,7 @@ class UploadPastQuestionsView extends StatelessWidget {
                       child: Text(
                         statusText,
                         style: typography.caption.bold.copyWith(
-                           color: colors.primary,
+                          color: colors.primary,
                           fontSize: 12.5,
                         ),
                       ),
@@ -197,7 +210,9 @@ class UploadPastQuestionsView extends StatelessWidget {
 
         // Action Trigger Button
         AppButton(
-          text: isCalibrating ? 'Calibrating via LLM...' : 'Extract, Calibrate & Generate Deck',
+          text: isCalibrating
+              ? 'Calibrating via LLM...'
+              : 'Extract, Calibrate & Generate Deck',
           isLoading: isCalibrating,
           onPressed: isCalibrating ? null : onExecuteCalibration,
           prefixIcon: const Icon(Icons.auto_awesome_rounded, size: 18),

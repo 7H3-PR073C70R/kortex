@@ -67,7 +67,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       track: effectiveTrack,
       questionsOnly: state.questionsOnly,
       sortFilter: state.selectedForumFilter,
-      searchQuery: state.forumSearchQuery.isNotEmpty ? state.forumSearchQuery : null,
+      searchQuery: state.forumSearchQuery.isNotEmpty
+          ? state.forumSearchQuery
+          : null,
     );
     final circlesRes = await _repository.fetchStudyCircles(
       track: effectiveTrack,
@@ -238,7 +240,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       track: effectiveTrack,
       questionsOnly: state.questionsOnly,
       sortFilter: state.selectedForumFilter,
-      searchQuery: state.forumSearchQuery.isNotEmpty ? state.forumSearchQuery : null,
+      searchQuery: state.forumSearchQuery.isNotEmpty
+          ? state.forumSearchQuery
+          : null,
     );
     res.fold(
       (_) {},
@@ -264,8 +268,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     Emitter<CommunityState> emit,
   ) async {
     emit(state.copyWith(forumSearchQuery: event.query));
-    final effectiveTrack =
-        state.selectedTrack == 'All' ? null : state.selectedTrack;
+    final effectiveTrack = state.selectedTrack == 'All'
+        ? null
+        : state.selectedTrack;
     final res = await _repository.fetchForumPosts(
       track: effectiveTrack,
       questionsOnly: state.questionsOnly,
@@ -294,7 +299,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     DeleteForumPostEvent event,
     Emitter<CommunityState> emit,
   ) async {
-    final updated = state.forumPosts.where((p) => p.id != event.postId).toList();
+    final updated = state.forumPosts
+        .where((p) => p.id != event.postId)
+        .toList();
     emit(state.copyWith(forumPosts: updated));
     await _repository.deleteForumPost(event.postId);
   }
@@ -311,8 +318,12 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       current.add(event.postId);
     }
     var updatedPosts = state.forumPosts;
-    if ((state.selectedForumFilter == 'saved' || state.selectedForumFilter == 'bookmarks') && isCurrentlyBookmarked) {
-      updatedPosts = state.forumPosts.where((p) => p.id != event.postId).toList();
+    if ((state.selectedForumFilter == 'saved' ||
+            state.selectedForumFilter == 'bookmarks') &&
+        isCurrentlyBookmarked) {
+      updatedPosts = state.forumPosts
+          .where((p) => p.id != event.postId)
+          .toList();
     }
     emit(state.copyWith(bookmarkedPostIds: current, forumPosts: updatedPosts));
     await _repository.toggleBookmarkForumPost(event.postId);
@@ -335,7 +346,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       track: effectiveTrack,
       questionsOnly: state.questionsOnly,
       sortFilter: state.selectedForumFilter,
-      searchQuery: state.forumSearchQuery.isNotEmpty ? state.forumSearchQuery : null,
+      searchQuery: state.forumSearchQuery.isNotEmpty
+          ? state.forumSearchQuery
+          : null,
       offset: currentOffset,
       cursorCreatedAt: state.lastCreatedAt,
       cursorId: state.lastId,
@@ -347,8 +360,9 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       },
       (newPosts) {
         final existingIds = state.forumPosts.map((p) => p.id).toSet();
-        final uniqueNewPosts =
-            newPosts.where((p) => !existingIds.contains(p.id)).toList();
+        final uniqueNewPosts = newPosts
+            .where((p) => !existingIds.contains(p.id))
+            .toList();
         final updatedPosts = [...state.forumPosts, ...uniqueNewPosts];
         final lastPost = updatedPosts.isNotEmpty ? updatedPosts.last : null;
         emit(

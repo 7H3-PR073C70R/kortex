@@ -281,8 +281,8 @@ class _CommunityHubView extends HookWidget {
                         borderRadius: AppRadius.radiusPanel,
                         boxShadow: [
                           BoxShadow(
-                            color: colors.primary.withAlpha(
-                              isHovered ? 100 : (isDark ? 80 : 50),
+                            color: colors.black.withAlpha(
+                              isHovered ? 50 : 20,
                             ),
                             blurRadius: isHovered ? 14 : 10,
                             offset: Offset(0, isHovered ? 4 : 3),
@@ -1012,8 +1012,8 @@ class _ForumPostsList extends HookWidget {
                                   borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colors.primary.withAlpha(
-                                        isDark ? 90 : 60,
+                                      color: colors.black.withAlpha(
+                                        isDark ? 50 : 20,
                                       ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 3),
@@ -1314,8 +1314,8 @@ class _ForumPostsList extends HookWidget {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: colors.primary.withAlpha(
-                          isHovered ? 100 : (isDark ? 80 : 50),
+                        color: colors.black.withAlpha(
+                          isHovered ? (isDark ? 50 : 20) : (isDark ? 30 : 10),
                         ),
                         blurRadius: isHovered ? 12 : 8,
                         offset: Offset(0, isHovered ? 3 : 2),

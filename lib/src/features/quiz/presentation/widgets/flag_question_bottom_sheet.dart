@@ -21,19 +21,27 @@ enum FlagQuestionReason {
 /// Community quality audit modal for flagging flawed quiz questions (QZ-14).
 class FlagQuestionBottomSheet extends HookWidget {
   const FlagQuestionBottomSheet({
-    required this.questionId, required this.questionSnippet, super.key,
+    required this.questionId,
+    required this.questionSnippet,
+    super.key,
     this.onSubmitReport,
   });
 
   final String questionId;
   final String questionSnippet;
-  final void Function(String questionId, FlagQuestionReason reason, String notes)? onSubmitReport;
+  final void Function(
+    String questionId,
+    FlagQuestionReason reason,
+    String notes,
+  )?
+  onSubmitReport;
 
   static Future<void> show(
     BuildContext context, {
     required String questionId,
     required String questionSnippet,
-    void Function(String questionId, FlagQuestionReason reason, String notes)? onSubmitReport,
+    void Function(String questionId, FlagQuestionReason reason, String notes)?
+    onSubmitReport,
   }) {
     final colors = context.colors;
     return showModalBottomSheet<void>(
@@ -54,7 +62,9 @@ class FlagQuestionBottomSheet extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final selectedReason = useState<FlagQuestionReason>(FlagQuestionReason.wrongAnswer);
+    final selectedReason = useState<FlagQuestionReason>(
+      FlagQuestionReason.wrongAnswer,
+    );
     final commentController = useTextEditingController();
     final isSubmitting = useState<bool>(false);
 
@@ -73,7 +83,9 @@ class FlagQuestionBottomSheet extends HookWidget {
           ),
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
             border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
           ),
           child: SingleChildScrollView(
@@ -102,7 +114,11 @@ class FlagQuestionBottomSheet extends HookWidget {
                         color: colors.error.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
-                      child: Icon(Icons.flag_rounded, color: colors.error, size: 20),
+                      child: Icon(
+                        Icons.flag_rounded,
+                        color: colors.error,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Text(
@@ -151,28 +167,43 @@ class FlagQuestionBottomSheet extends HookWidget {
                     borderRadius: BorderRadius.circular(AppRadius.badge),
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 3),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: isSelected ? colors.primary.withValues(alpha: 0.1) : colors.transparent,
+                        color: isSelected
+                            ? colors.primary.withValues(alpha: 0.1)
+                            : colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
-                          color: isSelected ? colors.primary : colors.surfaceBorder.withValues(alpha: 0.5),
+                          color: isSelected
+                              ? colors.primary
+                              : colors.surfaceBorder.withValues(alpha: 0.5),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
-                            isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                            isSelected
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
                             size: 18,
-                            color: isSelected ? colors.primary : colors.textSecondary,
+                            color: isSelected
+                                ? colors.primary
+                                : colors.textSecondary,
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               reason.label,
                               style: typography.caption.regular.copyWith(
-                                color: isSelected ? colors.textPrimary : colors.textSecondary,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                color: isSelected
+                                    ? colors.textPrimary
+                                    : colors.textSecondary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                               ),
                             ),
                           ),
@@ -188,7 +219,9 @@ class FlagQuestionBottomSheet extends HookWidget {
                   maxLines: 2,
                   decoration: InputDecoration(
                     hintText: 'Additional details or proposed correction...',
-                    hintStyle: typography.caption.regular.copyWith(color: colors.textSecondary),
+                    hintStyle: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
                     filled: true,
                     fillColor: colors.surfacePrimary,
                     contentPadding: const EdgeInsets.all(12),
@@ -201,7 +234,9 @@ class FlagQuestionBottomSheet extends HookWidget {
                 const SizedBox(height: 16),
                 // Submit Button
                 AppButton(
-                  text: isSubmitting.value ? 'Submitting Report...' : 'Submit Quality Report',
+                  text: isSubmitting.value
+                      ? 'Submitting Report...'
+                      : 'Submit Quality Report',
                   isLoading: isSubmitting.value,
                   onPressed: () {
                     AppFeedback.correct();

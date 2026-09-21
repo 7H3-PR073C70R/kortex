@@ -92,7 +92,7 @@ class HeaderProfileBar extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 80 : 30),
+                              color: colors.black.withAlpha(isDark ? 50 : 20),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -187,18 +187,30 @@ class HeaderProfileBar extends StatelessWidget {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(AppRadius.panel),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.panel,
+                                ),
                                 color: isDark
                                     ? (isHovered
-                                        ? colors.surfaceSecondary.withAlpha(200)
-                                        : colors.surfaceSecondary.withAlpha(150))
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              200,
+                                            )
+                                          : colors.surfaceSecondary.withAlpha(
+                                              150,
+                                            ))
                                     : (isHovered
-                                        ? colors.surfacePrimary
-                                        : colors.surfacePrimary.withAlpha(210)),
+                                          ? colors.surfacePrimary
+                                          : colors.surfacePrimary.withAlpha(
+                                              210,
+                                            )),
                                 border: Border.all(
                                   color: isHovered
-                                      ? colors.warning.withAlpha(isDark ? 120 : 90)
-                                      : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
+                                      ? colors.warning.withAlpha(
+                                          isDark ? 120 : 90,
+                                        )
+                                      : colors.surfaceBorder.withAlpha(
+                                          isDark ? 60 : 35,
+                                        ),
                                 ),
                               ),
                               child: Row(
@@ -364,7 +376,9 @@ class HeaderProfileBar extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: colors.primary,
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                           ),
                           child: Text(
                             l10n.dashboardCalibrateButton,
@@ -425,14 +439,16 @@ class _HeaderIconButton extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: isDark
                       ? (isHovered
-                          ? colors.surfaceSecondary.withAlpha(220)
-                          : colors.surfaceSecondary.withAlpha(150))
+                            ? colors.surfaceSecondary.withAlpha(220)
+                            : colors.surfaceSecondary.withAlpha(150))
                       : (isHovered
-                          ? colors.surfacePrimary
-                          : colors.surfacePrimary.withAlpha(210)),
+                            ? colors.surfacePrimary
+                            : colors.surfacePrimary.withAlpha(210)),
                   border: Border.all(
                     color: isHovered
-                        ? (borderHighlightColor ?? colors.primary).withAlpha(isDark ? 140 : 100)
+                        ? (borderHighlightColor ?? colors.primary).withAlpha(
+                            isDark ? 140 : 100,
+                          )
                         : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                   ),
                 ),

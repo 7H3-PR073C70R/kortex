@@ -113,7 +113,8 @@ class LocalInferenceIsolateManager {
     }
 
     // 1. Primary: Genuine on-device GGUF inference via FlutterLlama native runtime
-    if (FlutterLlama.instance.isModelLoaded || await _tryLoadLlamaModel(modelPath)) {
+    if (FlutterLlama.instance.isModelLoaded ||
+        await _tryLoadLlamaModel(modelPath)) {
       try {
         final cards = await _generateWithLlama(
           topic: topic,
@@ -337,11 +338,15 @@ class LocalInferenceIsolateManager {
       final rawTopic = topicMatch != null ? topicMatch.group(1)!.trim() : '';
       final cleanTopic = rawTopic.isNotEmpty
           ? rawTopic.replaceAll(RegExp(r'\s*\(Part\s+\d+\)'), '').trim()
-          : (prompt.length > 50 ? prompt.substring(0, 50).trim() : prompt.trim());
+          : (prompt.length > 50
+                ? prompt.substring(0, 50).trim()
+                : prompt.trim());
 
       // Extract context
       final contextMatch = RegExp(r'Context:\s*([\s\S]+)').firstMatch(prompt);
-      final contextText = contextMatch != null ? contextMatch.group(1)!.trim() : prompt;
+      final contextText = contextMatch != null
+          ? contextMatch.group(1)!.trim()
+          : prompt;
 
       final cards = <Map<String, dynamic>>[];
 
@@ -359,9 +364,11 @@ class LocalInferenceIsolateManager {
         if (explanation.length < 10) continue;
 
         cards.add({
-          'front': 'What is the role and definition of "$concept" in $cleanTopic?',
+          'front':
+              'What is the role and definition of "$concept" in $cleanTopic?',
           'back': explanation,
-          'explanation': 'Key principle synthesized from $cleanTopic on-device.',
+          'explanation':
+              'Key principle synthesized from $cleanTopic on-device.',
           'maxTokens': maxTokens,
           'isLocalInference': true,
         });
@@ -378,9 +385,11 @@ class LocalInferenceIsolateManager {
         for (var i = 0; i < sentences.length && cards.length < 4; i++) {
           final sentence = sentences[i];
           cards.add({
-            'front': 'In the context of $cleanTopic, explain the significance of:\n"${sentence.substring(0, sentence.length > 70 ? 70 : sentence.length)}..."',
+            'front':
+                'In the context of $cleanTopic, explain the significance of:\n"${sentence.substring(0, sentence.length > 70 ? 70 : sentence.length)}..."',
             'back': sentence,
-            'explanation': 'Extracted via on-device semantic analysis for $cleanTopic.',
+            'explanation':
+                'Extracted via on-device semantic analysis for $cleanTopic.',
             'maxTokens': maxTokens,
             'isLocalInference': true,
           });

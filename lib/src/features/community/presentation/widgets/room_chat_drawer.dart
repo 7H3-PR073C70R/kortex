@@ -286,7 +286,10 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? colors.surfaceTertiary
@@ -334,7 +337,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withAlpha(isDark ? 80 : 50),
+                        color: colors.black.withAlpha(isDark ? 40 : 15),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -444,8 +447,12 @@ class _ChatMessageBubble extends StatelessWidget {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(14),
             topRight: const Radius.circular(14),
-            bottomLeft: isMe ? const Radius.circular(14) : const Radius.circular(3),
-            bottomRight: isMe ? const Radius.circular(3) : const Radius.circular(14),
+            bottomLeft: isMe
+                ? const Radius.circular(14)
+                : const Radius.circular(3),
+            bottomRight: isMe
+                ? const Radius.circular(3)
+                : const Radius.circular(14),
           ),
           boxShadow: [
             BoxShadow(
@@ -456,8 +463,9 @@ class _ChatMessageBubble extends StatelessWidget {
           ],
         ),
         child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!isMe && message.senderName.isNotEmpty) ...[

@@ -55,9 +55,13 @@ class TrackForumPostCard extends HookWidget {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
-        backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        backgroundColor: isDark
+            ? colors.surfaceSecondary
+            : colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
         ),
         builder: (ctx) {
           return SafeArea(
@@ -65,7 +69,10 @@ class TrackForumPostCard extends HookWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 580),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 8,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -78,165 +85,196 @@ class TrackForumPostCard extends HookWidget {
                           borderRadius: AppRadius.radiusMicro,
                         ),
                       ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.ios_share_rounded,
-                      color: colors.textPrimary,
-                    ),
-                    title: Text(
-                      'Share Thread',
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(ctx).pop();
-                      unawaited(
-                        SharePlus.instance.share(
-                          ShareParams(
-                            text:
-                                'Check out this forum discussion: ${post.title}\n\n${post.content}',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.link_rounded,
-                      color: colors.textPrimary,
-                    ),
-                    title: Text(
-                      'Copy Link',
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(ctx).pop();
-                      unawaited(
-                        Clipboard.setData(
-                          ClipboardData(
-                            text: 'https://kortex.app/forum/post/${post.id}',
-                          ),
-                        ),
-                      );
-                      context.showSnackBar(
-                        message: 'Post link copied to clipboard',
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.flag_outlined,
-                      color: colors.error,
-                    ),
-                    title: Text(
-                      'Report Content',
-                      style: typography.body.medium.copyWith(
-                        color: colors.error,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(ctx).pop();
-                      unawaited(
-                        ReportContentModalSheet.show(
-                          context,
-                          contentType: 'forum_post',
-                          contentId: post.id,
-                          postId: post.id,
-                          contentTitle: post.title,
-                        ),
-                      );
-                    },
-                  ),
-                  if (() {
-                    final userStorage = locator.isRegistered<UserStorageService>()
-                        ? locator<UserStorageService>()
-                        : null;
-                    final currentUserId = userStorage?.getUserId();
-                    final currentUserName = userStorage?.getUserDisplayName();
-                    return (currentUserId != null && currentUserId == post.authorId) ||
-                        (currentUserName != null && currentUserName == post.authorName);
-                  }())
-                    ListTile(
-                      leading: Icon(
-                        Icons.delete_outline_rounded,
-                        color: colors.error,
-                      ),
-                      title: Text(
-                        'Delete Discussion',
-                        style: typography.body.medium.copyWith(
-                          color: colors.error,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      onTap: () async {
-                        Navigator.of(ctx).pop();
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (dialogCtx) => AlertDialog(
-                            backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: Text('Delete Discussion?', style: typography.title3.bold.copyWith(color: colors.textPrimary)),
-                            content: Text(
-                              'Are you sure you want to permanently delete this discussion thread and all its replies?',
-                              style: typography.body.regular.copyWith(color: colors.textSecondary),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(dialogCtx).pop(false),
-                                child: Text('Cancel', style: typography.body.medium.copyWith(color: colors.textSecondary)),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: colors.error,
-                                  foregroundColor: colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                onPressed: () => Navigator.of(dialogCtx).pop(true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirm == true) {
-                          if (locator.isRegistered<CommunityHubBloc>()) {
-                            locator<CommunityHubBloc>().add(DeleteForumPostEvent(post.id));
-                          }
-                          if (context.mounted) {
-                            context.showSnackBar(message: 'Discussion deleted successfully');
-                          }
-                        }
-                      },
-                    ),
-                  Builder(
-                    builder: (innerCtx) {
-                      final currentUserId = locator<UserStorageService>().getUserId();
-                      final isAuthor = currentUserId != null &&
-                          currentUserId.trim().isNotEmpty &&
-                          currentUserId.trim() == post.authorId.trim();
-
-                      if (!isAuthor) return const SizedBox.shrink();
-
-                      return ListTile(
+                      ListTile(
                         leading: Icon(
-                          Icons.delete_outline_rounded,
+                          Icons.ios_share_rounded,
+                          color: colors.textPrimary,
+                        ),
+                        title: Text(
+                          'Share Thread',
+                          style: typography.body.medium.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.of(ctx).pop();
+                          unawaited(
+                            SharePlus.instance.share(
+                              ShareParams(
+                                text:
+                                    'Check out this forum discussion: ${post.title}\n\n${post.content}',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(
+                          Icons.link_rounded,
+                          color: colors.textPrimary,
+                        ),
+                        title: Text(
+                          'Copy Link',
+                          style: typography.body.medium.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.of(ctx).pop();
+                          unawaited(
+                            Clipboard.setData(
+                              ClipboardData(
+                                text:
+                                    'https://kortex.app/forum/post/${post.id}',
+                              ),
+                            ),
+                          );
+                          context.showSnackBar(
+                            message: 'Post link copied to clipboard',
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: Icon(
+                          Icons.flag_outlined,
                           color: colors.error,
                         ),
                         title: Text(
-                          'Delete Discussion',
-                          style: typography.body.bold.copyWith(
+                          'Report Content',
+                          style: typography.body.medium.copyWith(
                             color: colors.error,
                           ),
                         ),
                         onTap: () {
                           Navigator.of(ctx).pop();
-                          _confirmDeletePost(context);
+                          unawaited(
+                            ReportContentModalSheet.show(
+                              context,
+                              contentType: 'forum_post',
+                              contentId: post.id,
+                              postId: post.id,
+                              contentTitle: post.title,
+                            ),
+                          );
                         },
-                      );
-                    },
-                  ),
+                      ),
+                      if (() {
+                        final userStorage =
+                            locator.isRegistered<UserStorageService>()
+                            ? locator<UserStorageService>()
+                            : null;
+                        final currentUserId = userStorage?.getUserId();
+                        final currentUserName = userStorage
+                            ?.getUserDisplayName();
+                        return (currentUserId != null &&
+                                currentUserId == post.authorId) ||
+                            (currentUserName != null &&
+                                currentUserName == post.authorName);
+                      }())
+                        ListTile(
+                          leading: Icon(
+                            Icons.delete_outline_rounded,
+                            color: colors.error,
+                          ),
+                          title: Text(
+                            'Delete Discussion',
+                            style: typography.body.medium.copyWith(
+                              color: colors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onTap: () async {
+                            Navigator.of(ctx).pop();
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (dialogCtx) => AlertDialog(
+                                backgroundColor: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfacePrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: Text(
+                                  'Delete Discussion?',
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                content: Text(
+                                  'Are you sure you want to permanently delete this discussion thread and all its replies?',
+                                  style: typography.body.regular.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogCtx).pop(false),
+                                    child: Text(
+                                      'Cancel',
+                                      style: typography.body.medium.copyWith(
+                                        color: colors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: colors.error,
+                                      foregroundColor: colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    onPressed: () =>
+                                        Navigator.of(dialogCtx).pop(true),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              if (locator.isRegistered<CommunityHubBloc>()) {
+                                locator<CommunityHubBloc>().add(
+                                  DeleteForumPostEvent(post.id),
+                                );
+                              }
+                              if (context.mounted) {
+                                context.showSnackBar(
+                                  message: 'Discussion deleted successfully',
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      Builder(
+                        builder: (innerCtx) {
+                          final currentUserId = locator<UserStorageService>()
+                              .getUserId();
+                          final isAuthor =
+                              currentUserId != null &&
+                              currentUserId.trim().isNotEmpty &&
+                              currentUserId.trim() == post.authorId.trim();
+
+                          if (!isAuthor) return const SizedBox.shrink();
+
+                          return ListTile(
+                            leading: Icon(
+                              Icons.delete_outline_rounded,
+                              color: colors.error,
+                            ),
+                            title: Text(
+                              'Delete Discussion',
+                              style: typography.body.bold.copyWith(
+                                color: colors.error,
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.of(ctx).pop();
+                              _confirmDeletePost(context);
+                            },
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -257,7 +295,9 @@ class TrackForumPostCard extends HookWidget {
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
           shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusDialog),
           title: Text(
             'Delete Discussion?',
@@ -265,24 +305,32 @@ class TrackForumPostCard extends HookWidget {
           ),
           content: Text(
             'Are you sure you want to delete "${post.title}"? This action cannot be undone and all replies will be removed.',
-            style: typography.body.regular.copyWith(color: colors.textSecondary),
+            style: typography.body.regular.copyWith(
+              color: colors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
               child: Text(
                 'Cancel',
-                style: typography.body.medium.copyWith(color: colors.textSecondary),
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.error,
-                shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusBadge),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.radiusBadge,
+                ),
               ),
               onPressed: () {
                 Navigator.of(dialogCtx).pop();
-                context.read<CommunityHubBloc>().add(DeleteForumPostEvent(post.id));
+                context.read<CommunityHubBloc>().add(
+                  DeleteForumPostEvent(post.id),
+                );
                 context.showSnackBar(message: 'Discussion deleted');
               },
               child: Text(
@@ -321,17 +369,21 @@ class TrackForumPostCard extends HookWidget {
             borderRadius: AppRadius.radiusPanel,
             border: Border.all(
               color: post.isVerifiedSolution
-                  ? colors.success.withAlpha(isDark ? (isHovered ? 120 : 60) : (isHovered ? 80 : 40))
+                  ? colors.success.withAlpha(
+                      isDark ? (isHovered ? 120 : 60) : (isHovered ? 80 : 40),
+                    )
                   : isHovered
-                      ? colors.primary.withAlpha(isDark ? 80 : 60)
-                      : (isDark
-                          ? colors.surfaceBorder.withAlpha(30)
-                          : colors.surfaceBorder.withAlpha(15)),
+                  ? colors.primary.withAlpha(isDark ? 80 : 60)
+                  : (isDark
+                        ? colors.surfaceBorder.withAlpha(30)
+                        : colors.surfaceBorder.withAlpha(15)),
               width: isHovered ? 1.5 : 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: colors.black.withAlpha(isDark ? (isHovered ? 50 : 25) : (isHovered ? 16 : 6)),
+                color: colors.black.withAlpha(
+                  isDark ? (isHovered ? 50 : 25) : (isHovered ? 16 : 6),
+                ),
                 blurRadius: isHovered ? 14 : 8,
                 offset: Offset(0, isHovered ? 4 : 2),
               ),
@@ -384,10 +436,14 @@ class TrackForumPostCard extends HookWidget {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: colors.success.withAlpha(isDark ? 35 : 20),
+                                  color: colors.success.withAlpha(
+                                    isDark ? 35 : 20,
+                                  ),
                                   borderRadius: AppRadius.radiusMicro,
                                   border: Border.all(
-                                    color: colors.success.withAlpha(isDark ? 70 : 40),
+                                    color: colors.success.withAlpha(
+                                      isDark ? 70 : 40,
+                                    ),
                                   ),
                                 ),
                                 child: Row(
@@ -410,27 +466,33 @@ class TrackForumPostCard extends HookWidget {
                                 ),
                               ),
                             PlatformHoverBuilder(
-                              builder: (context, isMoreHovered, child) => AnimatedContainer(
-                                duration: AppMotion.snappy,
-                                curve: AppMotion.easeOutCubic,
-                                decoration: BoxDecoration(
-                                  color: isMoreHovered
-                                      ? colors.surfaceBorder.withAlpha(isDark ? 40 : 25)
-                                      : colors.transparent,
-                                  borderRadius: AppRadius.radiusMicro,
-                                ),
-                                child: ShrinkableButton(
-                                  onTap: () => _showPostOptionsMenu(context),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4),
-                                    child: Icon(
-                                      Icons.more_horiz_rounded,
-                                      size: 20,
-                                      color: isMoreHovered ? colors.textPrimary : colors.textSecondary,
+                              builder: (context, isMoreHovered, child) =>
+                                  AnimatedContainer(
+                                    duration: AppMotion.snappy,
+                                    curve: AppMotion.easeOutCubic,
+                                    decoration: BoxDecoration(
+                                      color: isMoreHovered
+                                          ? colors.surfaceBorder.withAlpha(
+                                              isDark ? 40 : 25,
+                                            )
+                                          : colors.transparent,
+                                      borderRadius: AppRadius.radiusMicro,
+                                    ),
+                                    child: ShrinkableButton(
+                                      onTap: () =>
+                                          _showPostOptionsMenu(context),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(
+                                          Icons.more_horiz_rounded,
+                                          size: 20,
+                                          color: isMoreHovered
+                                              ? colors.textPrimary
+                                              : colors.textSecondary,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
                             ),
                           ],
                         ),
@@ -446,7 +508,9 @@ class TrackForumPostCard extends HookWidget {
                           children: [
                             CircleAvatar(
                               radius: 17,
-                              backgroundColor: colors.primary.withAlpha(isDark ? 50 : 30),
+                              backgroundColor: colors.primary.withAlpha(
+                                isDark ? 50 : 30,
+                              ),
                               child: Text(
                                 post.authorName.isNotEmpty
                                     ? post.authorName[0].toUpperCase()
@@ -501,7 +565,9 @@ class TrackForumPostCard extends HookWidget {
                                     vertical: 1.5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: colors.warning.withAlpha(isDark ? 35 : 20),
+                                    color: colors.warning.withAlpha(
+                                      isDark ? 35 : 20,
+                                    ),
                                     borderRadius: AppRadius.radiusMicro,
                                   ),
                                   child: Text(
@@ -727,7 +793,9 @@ class TrackForumPostCard extends HookWidget {
                                 borderRadius: AppRadius.radiusBadge,
                               ),
                               child: Text(
-                                tag.startsWith('#') ? tag.toLowerCase() : '#${tag.toLowerCase()}',
+                                tag.startsWith('#')
+                                    ? tag.toLowerCase()
+                                    : '#${tag.toLowerCase()}',
                                 style: typography.caption.medium.copyWith(
                                   color: colors.textSecondary,
                                   fontSize: 11,
@@ -770,15 +838,23 @@ class TrackForumPostCard extends HookWidget {
                             // Upvote / Downvote Capsule
                             Container(
                               height: 32,
-                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: (isUpvoted || isDownvoted)
                                     ? (isUpvoted
-                                        ? colors.primary.withAlpha(isDark ? 35 : 20)
-                                        : colors.error.withAlpha(isDark ? 35 : 20))
+                                          ? colors.primary.withAlpha(
+                                              isDark ? 35 : 20,
+                                            )
+                                          : colors.error.withAlpha(
+                                              isDark ? 35 : 20,
+                                            ))
                                     : (isDark
-                                        ? colors.surfacePrimary.withAlpha(180)
-                                        : colors.surfaceSecondary.withAlpha(120)),
+                                          ? colors.surfacePrimary.withAlpha(180)
+                                          : colors.surfaceSecondary.withAlpha(
+                                              120,
+                                            )),
                                 borderRadius: AppRadius.radiusBadge,
                               ),
                               child: Row(
@@ -788,7 +864,9 @@ class TrackForumPostCard extends HookWidget {
                                     onTap: onUpvoteTap == null
                                         ? null
                                         : () {
-                                            unawaited(HapticFeedback.selectionClick());
+                                            unawaited(
+                                              HapticFeedback.selectionClick(),
+                                            );
                                             onUpvoteTap!();
                                           },
                                     child: Padding(
@@ -806,15 +884,17 @@ class TrackForumPostCard extends HookWidget {
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
                                     child: Text(
                                       '${post.netVotes}',
                                       style: typography.caption.bold.copyWith(
                                         color: isUpvoted
                                             ? colors.primary
                                             : isDownvoted
-                                                ? colors.error
-                                                : colors.textPrimary,
+                                            ? colors.error
+                                            : colors.textPrimary,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -823,7 +903,9 @@ class TrackForumPostCard extends HookWidget {
                                     onTap: onDownvoteTap == null
                                         ? null
                                         : () {
-                                            unawaited(HapticFeedback.selectionClick());
+                                            unawaited(
+                                              HapticFeedback.selectionClick(),
+                                            );
                                             onDownvoteTap!();
                                           },
                                     child: Padding(
@@ -848,7 +930,9 @@ class TrackForumPostCard extends HookWidget {
                             // Reply Pill
                             Container(
                               height: 32,
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? colors.surfacePrimary.withAlpha(180)
@@ -884,87 +968,115 @@ class TrackForumPostCard extends HookWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             PlatformHoverBuilder(
-                              builder: (context, isShareHovered, child) => AnimatedContainer(
-                                duration: AppMotion.snappy,
-                                curve: AppMotion.easeOutCubic,
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: isShareHovered
-                                      ? colors.primary.withAlpha(isDark ? 40 : 25)
-                                      : colors.transparent,
-                                  borderRadius: AppRadius.radiusMicro,
-                                ),
-                                child: ShrinkableButton(
-                                  onTap: () {
-                                    unawaited(HapticFeedback.lightImpact());
-                                    unawaited(
-                                      SharePlus.instance.share(
-                                        ShareParams(
-                                          text:
-                                              'Check out this forum discussion: ${post.title}\n\n${post.content}',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.ios_share_rounded,
-                                      size: 18,
-                                      color: isShareHovered ? colors.primary : colors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Builder(
-                              builder: (context) {
-                                final hubBloc = context.watch<CommunityHubBloc?>();
-                                final isBookmarked = hubBloc?.state.bookmarkedPostIds.contains(post.id) ?? false;
-                                return PlatformHoverBuilder(
-                                  builder: (context, isBmHovered, child) => AnimatedContainer(
+                              builder: (context, isShareHovered, child) =>
+                                  AnimatedContainer(
                                     duration: AppMotion.snappy,
                                     curve: AppMotion.easeOutCubic,
                                     width: 32,
                                     height: 32,
                                     decoration: BoxDecoration(
-                                      color: isBmHovered
-                                          ? colors.primary.withAlpha(isDark ? 40 : 25)
+                                      color: isShareHovered
+                                          ? colors.primary.withAlpha(
+                                              isDark ? 40 : 25,
+                                            )
                                           : colors.transparent,
                                       borderRadius: AppRadius.radiusMicro,
                                     ),
                                     child: ShrinkableButton(
-                                      onTap: () async {
+                                      onTap: () {
                                         unawaited(HapticFeedback.lightImpact());
-                                        if (hubBloc != null) {
-                                          hubBloc.add(ToggleBookmarkForumPostEvent(post.id));
-                                        } else {
-                                          final repo = locator<CommunityRepository>();
-                                          await repo.toggleBookmarkForumPost(post.id);
-                                        }
-                                        final newBookmarked = !isBookmarked;
-                                        if (context.mounted) {
-                                          context.showSnackBar(
-                                            message: newBookmarked
-                                                ? 'Thread saved to bookmarks'
-                                                : 'Thread removed from bookmarks',
-                                          );
-                                        }
+                                        unawaited(
+                                          SharePlus.instance.share(
+                                            ShareParams(
+                                              text:
+                                                  'Check out this forum discussion: ${post.title}\n\n${post.content}',
+                                            ),
+                                          ),
+                                        );
                                       },
                                       child: Center(
                                         child: Icon(
-                                          isBookmarked
-                                              ? Icons.bookmark_rounded
-                                              : Icons.bookmark_border_rounded,
-                                          size: 19,
-                                          color: isBookmarked
+                                          Icons.ios_share_rounded,
+                                          size: 18,
+                                          color: isShareHovered
                                               ? colors.primary
-                                              : (isBmHovered ? colors.primary : colors.textSecondary),
+                                              : colors.textSecondary,
                                         ),
                                       ),
                                     ),
                                   ),
+                            ),
+                            const SizedBox(width: 4),
+                            Builder(
+                              builder: (context) {
+                                final hubBloc = context
+                                    .watch<CommunityHubBloc?>();
+                                final isBookmarked =
+                                    hubBloc?.state.bookmarkedPostIds.contains(
+                                      post.id,
+                                    ) ??
+                                    false;
+                                return PlatformHoverBuilder(
+                                  builder: (context, isBmHovered, child) =>
+                                      AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.easeOutCubic,
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: isBmHovered
+                                              ? colors.primary.withAlpha(
+                                                  isDark ? 40 : 25,
+                                                )
+                                              : colors.transparent,
+                                          borderRadius: AppRadius.radiusMicro,
+                                        ),
+                                        child: ShrinkableButton(
+                                          onTap: () async {
+                                            unawaited(
+                                              HapticFeedback.lightImpact(),
+                                            );
+                                            if (hubBloc != null) {
+                                              hubBloc.add(
+                                                ToggleBookmarkForumPostEvent(
+                                                  post.id,
+                                                ),
+                                              );
+                                            } else {
+                                              final repo =
+                                                  locator<
+                                                    CommunityRepository
+                                                  >();
+                                              await repo
+                                                  .toggleBookmarkForumPost(
+                                                    post.id,
+                                                  );
+                                            }
+                                            final newBookmarked = !isBookmarked;
+                                            if (context.mounted) {
+                                              context.showSnackBar(
+                                                message: newBookmarked
+                                                    ? 'Thread saved to bookmarks'
+                                                    : 'Thread removed from bookmarks',
+                                              );
+                                            }
+                                          },
+                                          child: Center(
+                                            child: Icon(
+                                              isBookmarked
+                                                  ? Icons.bookmark_rounded
+                                                  : Icons
+                                                        .bookmark_border_rounded,
+                                              size: 19,
+                                              color: isBookmarked
+                                                  ? colors.primary
+                                                  : (isBmHovered
+                                                        ? colors.primary
+                                                        : colors.textSecondary),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                 );
                               },
                             ),

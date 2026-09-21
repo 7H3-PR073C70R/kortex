@@ -36,7 +36,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late final AnimationController _pulseController;
   late final Animation<double> _logoScaleAnimation;
   late final Animation<double> _logoOpacityAnimation;
-  late final Animation<double> _glowExpansionAnimation;
   late final Animation<double> _textFadeAnimation;
   Timer? _navigationTimer;
   bool _showBiometricChallenge = false;
@@ -69,13 +68,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       CurvedAnimation(
         parent: _entranceController,
         curve: const Interval(0, 0.45, curve: Curves.easeIn),
-      ),
-    );
-
-    _glowExpansionAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-        parent: _entranceController,
-        curve: const Interval(0.3, 0.9, curve: Curves.easeOutCubic),
       ),
     );
 
@@ -307,7 +299,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
-    final isDark = context.isDarkMode;
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
 
@@ -329,51 +320,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 final opacity = disableAnimations
                     ? 1.0
                     : _logoOpacityAnimation.value;
-                final glowExpand = disableAnimations
-                    ? 1.0
-                    : _glowExpansionAnimation.value.clamp(0.0, 1.0);
-                final pulse = disableAnimations ? 0.5 : _pulseController.value;
-
-                final glowAlpha =
-                    ((isDark ? 90 : 50) * glowExpand * (0.6 + 0.4 * pulse))
-                        .round()
-                        .clamp(0, 255);
-
                 return Opacity(
                   opacity: opacity,
                   child: Transform.scale(
                     scale: scale,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Dynamic Multi-layered Ambient Glow Aura
-                        Container(
-                          width: 140,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.primary.withAlpha(glowAlpha),
-                                blurRadius: 48,
-                                spreadRadius: 12,
-                              ),
-                              BoxShadow(
-                                color: colors.syllabotAccent.withAlpha(
-                                  glowAlpha ~/ 2,
-                                ),
-                                blurRadius: 32,
-                                spreadRadius: 6,
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Sharp Vector Logo
-                        AppAssets.svgs.kortexLogo.svg(
-                          width: 92,
-                          height: 92,
-                        ),
-                      ],
+                    child: AppAssets.svgs.kortexLogo.svg(
+                      width: 92,
+                      height: 92,
                     ),
                   ),
                 );

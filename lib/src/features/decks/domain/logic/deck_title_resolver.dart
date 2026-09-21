@@ -67,7 +67,9 @@ class DeckTitleResolver {
     }
 
     // Format: canonical_deck_{exam}_{subject}_{year} or canonical_{exam}_{subject}_{year}
-    final raw = deckId.replaceFirst('canonical_deck_', '').replaceFirst('canonical_', '');
+    final raw = deckId
+        .replaceFirst('canonical_deck_', '')
+        .replaceFirst('canonical_', '');
     final parts = raw.split('_');
 
     if (parts.isEmpty) {
@@ -78,10 +80,10 @@ class DeckTitleResolver {
     final exam = (examRaw == 'UTME' || examRaw == 'JAMB')
         ? 'JAMB'
         : (examRaw == 'NECO' || examRaw == 'SSCE')
-            ? 'NECO'
-            : examRaw.isNotEmpty
-                ? examRaw
-                : 'WAEC';
+        ? 'NECO'
+        : examRaw.isNotEmpty
+        ? examRaw
+        : 'WAEC';
 
     int? year;
     String subjectRaw;
@@ -104,9 +106,12 @@ class DeckTitleResolver {
       subjectRaw = '';
     }
 
-    final cleanSubjectKey = subjectRaw.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
-    final resolvedSubject = _knownSubjectNames[cleanSubjectKey] ??
-        _formatRawSubject(subjectRaw);
+    final cleanSubjectKey = subjectRaw.toLowerCase().replaceAll(
+      RegExp('[^a-z0-9]'),
+      '',
+    );
+    final resolvedSubject =
+        _knownSubjectNames[cleanSubjectKey] ?? _formatRawSubject(subjectRaw);
 
     return (
       exam: exam,
@@ -125,9 +130,11 @@ class DeckTitleResolver {
     // Split by underscore, space, or hyphen and title case
     final tokens = spaced.split(RegExp(r'[_\s\-]+')).where((t) => t.isNotEmpty);
     return tokens
-        .map((t) => t.length > 1
-            ? '${t[0].toUpperCase()}${t.substring(1).toLowerCase()}'
-            : t.toUpperCase())
+        .map(
+          (t) => t.length > 1
+              ? '${t[0].toUpperCase()}${t.substring(1).toLowerCase()}'
+              : t.toUpperCase(),
+        )
         .join(' ');
   }
 
@@ -147,9 +154,12 @@ class DeckTitleResolver {
     if (canonical.exam != null) {
       final exam = canonical.exam!;
       final yearStr = canonical.year != null ? '${canonical.year} ' : '';
-      final subj = canonical.subject ??
+      final subj =
+          canonical.subject ??
           (subject != null && !isGenericSubject(subject) ? subject : null) ??
-          (courseCode != null && courseCode.isNotEmpty ? courseCode : 'Past Questions');
+          (courseCode != null && courseCode.isNotEmpty
+              ? courseCode
+              : 'Past Questions');
 
       return '$exam $yearStr$subj Past Questions'.replaceAll('  ', ' ').trim();
     }
@@ -229,7 +239,9 @@ class DeckTitleResolver {
       currentCategory: deck.category,
     );
 
-    if (title == deck.title && subject == deck.subject && category == deck.category) {
+    if (title == deck.title &&
+        subject == deck.subject &&
+        category == deck.category) {
       return deck;
     }
 
@@ -259,7 +271,9 @@ class DeckTitleResolver {
       currentCategory: deck.category,
     );
 
-    if (title == deck.title && subject == deck.subject && category == deck.category) {
+    if (title == deck.title &&
+        subject == deck.subject &&
+        category == deck.category) {
       return deck;
     }
 

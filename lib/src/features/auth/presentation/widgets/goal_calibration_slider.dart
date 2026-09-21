@@ -76,9 +76,9 @@ class GoalCalibrationSlider extends StatelessWidget {
                       borderRadius: AppRadius.radiusCard,
                       boxShadow: [
                         BoxShadow(
-                          color: colors.primary.withAlpha(isHovered ? 60 : 30),
-                          blurRadius: isHovered ? 10 : 6,
-                          offset: Offset(0, isHovered ? 3 : 2),
+                          color: colors.black.withAlpha(isHovered ? 40 : 15),
+                          blurRadius: isHovered ? 8 : 4,
+                          offset: Offset(0, isHovered ? 2 : 1),
                         ),
                       ],
                     ),

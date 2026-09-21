@@ -46,8 +46,10 @@ class Flashcards extends Table {
   IntColumn get elapsedDays => integer().withDefault(const Constant(0))();
   IntColumn get scheduledDays => integer().withDefault(const Constant(0))();
   IntColumn get lapses => integer().withDefault(const Constant(0))();
+
   /// FSRS card state: 0=new, 1=learning, 2=review, 3=relearning
-  IntColumn get fsrsState => integer().named('state').withDefault(const Constant(0))();
+  IntColumn get fsrsState =>
+      integer().named('state').withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -110,8 +112,7 @@ class CourseModules extends Table {
   TextColumn get iconName => text().withDefault(const Constant('menu_book'))();
   TextColumn get colorHex => text().withDefault(const Constant('#2563EB'))();
   TextColumn get pdfDownloadUrl => text().nullable()();
-  RealColumn get syllabusCoverage =>
-      real().withDefault(const Constant(0.75))();
+  RealColumn get syllabusCoverage => real().withDefault(const Constant(0.75))();
   DateTimeColumn get updatedAt => dateTime()();
 
   @override

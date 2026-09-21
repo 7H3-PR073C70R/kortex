@@ -27,6 +27,7 @@ abstract class FlashcardModel with _$FlashcardModel {
     @Default(0) int fsrsElapsedDays,
     @Default(0) int fsrsScheduledDays,
     @Default(0) int fsrsLapses,
+
     /// FSRS learning state: 0=new, 1=learning, 2=review, 3=relearning.
     @Default(0) int fsrsState,
   }) = _FlashcardModel;

@@ -204,7 +204,9 @@ class _BadgeCard extends StatelessWidget {
                   badge.title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: badge.isUnlocked ? colors.textPrimary : colors.textSecondary,
+                    color: badge.isUnlocked
+                        ? colors.textPrimary
+                        : colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 4),

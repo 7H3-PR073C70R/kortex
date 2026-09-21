@@ -181,7 +181,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     String? cursorId,
   }) async {
     // If keyset cursor is provided, prioritize fast RPC
-    if (cursorCreatedAt != null && (sortFilter == null || sortFilter == 'latest' || sortFilter == 'trending')) {
+    if (cursorCreatedAt != null &&
+        (sortFilter == null ||
+            sortFilter == 'latest' ||
+            sortFilter == 'trending')) {
       try {
         return await fetchForumPostsKeyset(
           track: track,
@@ -317,10 +320,18 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           if (sortFilter == 'myPosts' || sortFilter == 'my_posts') {
             final myId = _userStorage?.getUserId();
             final myName = _userStorage?.getUserDisplayName();
-            cachedPosts = cachedPosts.where((p) => (myId != null && p.authorId == myId) || (myName != null && p.authorName == myName)).toList();
+            cachedPosts = cachedPosts
+                .where(
+                  (p) =>
+                      (myId != null && p.authorId == myId) ||
+                      (myName != null && p.authorName == myName),
+                )
+                .toList();
           } else if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
             final bookmarked = await getBookmarkedForumPostIds();
-            cachedPosts = cachedPosts.where((p) => bookmarked.contains(p.id)).toList();
+            cachedPosts = cachedPosts
+                .where((p) => bookmarked.contains(p.id))
+                .toList();
           }
           if (cachedPosts.isNotEmpty) {
             if (searchQuery != null && searchQuery.trim().isNotEmpty) {
@@ -353,12 +364,15 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }) async {
     try {
       final res = await _client.fetchForumPostsKeyset({
-        if (track != null && track.isNotEmpty && track != 'All') 'p_track': track,
-        if (cursorCreatedAt != null) 'p_cursor_created_at': cursorCreatedAt.toIso8601String(),
+        if (track != null && track.isNotEmpty && track != 'All')
+          'p_track': track,
+        if (cursorCreatedAt != null)
+          'p_cursor_created_at': cursorCreatedAt.toIso8601String(),
         if (cursorId != null && cursorId.isNotEmpty) 'p_cursor_id': cursorId,
         'p_limit': limit,
         'p_sort': sortFilter,
-        if (searchQuery != null && searchQuery.trim().isNotEmpty) 'p_search_query': searchQuery.trim(),
+        if (searchQuery != null && searchQuery.trim().isNotEmpty)
+          'p_search_query': searchQuery.trim(),
         'p_questions_only': questionsOnly,
       });
 
@@ -378,7 +392,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           _crashlyticsService!.recordError(
             e,
             stack,
-            reason: 'CommunityRemoteDataSource.fetchForumPostsKeyset failed, falling back',
+            reason:
+                'CommunityRemoteDataSource.fetchForumPostsKeyset failed, falling back',
           ),
         );
       }
@@ -408,7 +423,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         final data = res.data as Map<String, dynamic>;
         // Cache post and replies to local data source
         if (data['post'] is Map<String, dynamic> && _localDataSource != null) {
-          final post = ForumPostModel.fromJson(data['post'] as Map<String, dynamic>);
+          final post = ForumPostModel.fromJson(
+            data['post'] as Map<String, dynamic>,
+          );
           unawaited(_localDataSource!.saveForumPost(post));
         }
         if (data['replies'] is List && _localDataSource != null) {
@@ -547,7 +564,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           if (cached.isNotEmpty) {
             if (topLevelOnly) {
               return cached
-                  .where((r) => r.parentReplyId == null || r.parentReplyId!.isEmpty)
+                  .where(
+                    (r) => r.parentReplyId == null || r.parentReplyId!.isEmpty,
+                  )
                   .toList();
             } else if (parentReplyId != null && parentReplyId.isNotEmpty) {
               return cached
@@ -581,8 +600,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     try {
       if (_localDataSource != null) {
         final cached = await _localDataSource!.getForumPosts(track: track);
-        if (cached.any((p) => p.title.trim().toLowerCase() == title.trim().toLowerCase())) {
-          throw Exception('A discussion thread with this title already exists in $track.');
+        if (cached.any(
+          (p) => p.title.trim().toLowerCase() == title.trim().toLowerCase(),
+        )) {
+          throw Exception(
+            'A discussion thread with this title already exists in $track.',
+          );
         }
       }
 
@@ -592,9 +615,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         'title': 'ilike.${title.trim()}',
         'limit': 1,
       });
-      final existingData = existingRes.data is List ? (existingRes.data as List) : <dynamic>[];
+      final existingData = existingRes.data is List
+          ? (existingRes.data as List)
+          : <dynamic>[];
       if (existingData.isNotEmpty) {
-        throw Exception('A discussion thread with this title already exists in $track.');
+        throw Exception(
+          'A discussion thread with this title already exists in $track.',
+        );
       }
     } on Exception catch (e) {
       if (e.toString().contains('already exists')) {
@@ -616,7 +643,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       enrichedContent += '\n<!-- media: ${jsonEncode(mediaUrls)} -->';
     }
     if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty) {
-      final durPart = voiceNoteDurationSeconds != null ? ' duration:$voiceNoteDurationSeconds' : '';
+      final durPart = voiceNoteDurationSeconds != null
+          ? ' duration:$voiceNoteDurationSeconds'
+          : '';
       enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
     }
     if (tags != null && tags.isNotEmpty) {
@@ -631,10 +660,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         'latex_content': latexContent.trim(),
       'is_question': isQuestion,
       'syllabus_tag': syllabusTag,
-      if (tags != null && tags.isNotEmpty)
-        'tags': tags,
-      if (mediaUrls != null && mediaUrls.isNotEmpty)
-        'media_urls': mediaUrls,
+      if (tags != null && tags.isNotEmpty) 'tags': tags,
+      if (mediaUrls != null && mediaUrls.isNotEmpty) 'media_urls': mediaUrls,
       if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
         'voice_note_url': voiceNoteUrl.trim(),
       'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
@@ -657,7 +684,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (post.tags.isEmpty && tags != null && tags.isNotEmpty) {
       post = post.copyWith(tags: tags);
     }
-    if (post.voiceNoteUrl == null && voiceNoteUrl != null && voiceNoteUrl.isNotEmpty) {
+    if (post.voiceNoteUrl == null &&
+        voiceNoteUrl != null &&
+        voiceNoteUrl.isNotEmpty) {
       post = post.copyWith(
         voiceNoteUrl: voiceNoteUrl,
         voiceNoteDurationSeconds: voiceNoteDurationSeconds,
@@ -682,8 +711,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       return await _client.createForumPost(payload);
     } catch (e) {
       final errStr = _extractPostgrestErrorString(e);
-      if (errStr.contains('PGRST204') || errStr.contains('Could not find the') || errStr.contains('schema cache')) {
-        final match = RegExp("Could not find the '([^']+)' column").firstMatch(errStr);
+      if (errStr.contains('PGRST204') ||
+          errStr.contains('Could not find the') ||
+          errStr.contains('schema cache')) {
+        final match = RegExp(
+          "Could not find the '([^']+)' column",
+        ).firstMatch(errStr);
         final missingCol = match?.group(1);
         final fallback = Map<String, dynamic>.from(payload);
         if (missingCol != null && fallback.containsKey(missingCol)) {
@@ -753,7 +786,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       enrichedContent += '\n<!-- media: ${jsonEncode(mediaUrls)} -->';
     }
     if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty) {
-      final durPart = voiceNoteDurationSeconds != null ? ' duration:$voiceNoteDurationSeconds' : '';
+      final durPart = voiceNoteDurationSeconds != null
+          ? ' duration:$voiceNoteDurationSeconds'
+          : '';
       enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
     }
 
@@ -764,8 +799,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         'latex_content': latexContent,
       if (parentReplyId != null && parentReplyId.trim().isNotEmpty)
         'parent_reply_id': parentReplyId,
-      if (mediaUrls != null && mediaUrls.isNotEmpty)
-        'media_urls': mediaUrls,
+      if (mediaUrls != null && mediaUrls.isNotEmpty) 'media_urls': mediaUrls,
       if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
         'voice_note_url': voiceNoteUrl.trim(),
       'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
@@ -787,7 +821,9 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     if (reply.mediaUrls.isEmpty && mediaUrls != null && mediaUrls.isNotEmpty) {
       reply = reply.copyWith(mediaUrls: mediaUrls);
     }
-    if (reply.voiceNoteUrl == null && voiceNoteUrl != null && voiceNoteUrl.isNotEmpty) {
+    if (reply.voiceNoteUrl == null &&
+        voiceNoteUrl != null &&
+        voiceNoteUrl.isNotEmpty) {
       reply = reply.copyWith(
         voiceNoteUrl: voiceNoteUrl,
         voiceNoteDurationSeconds: voiceNoteDurationSeconds,
@@ -812,8 +848,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       return await _client.replyToForumPost(payload);
     } catch (e) {
       final errStr = _extractPostgrestErrorString(e);
-      if (errStr.contains('PGRST204') || errStr.contains('Could not find the') || errStr.contains('schema cache')) {
-        final match = RegExp("Could not find the '([^']+)' column").firstMatch(errStr);
+      if (errStr.contains('PGRST204') ||
+          errStr.contains('Could not find the') ||
+          errStr.contains('schema cache')) {
+        final match = RegExp(
+          "Could not find the '([^']+)' column",
+        ).firstMatch(errStr);
         final missingCol = match?.group(1);
         final fallback = Map<String, dynamic>.from(payload);
         if (missingCol != null && fallback.containsKey(missingCol)) {
@@ -921,7 +961,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     required int voteDirection,
   }) async {
     try {
-      final cache = _replyCache[postId] ??
+      final cache =
+          _replyCache[postId] ??
           await _localDataSource?.getRepliesForPost(postId) ??
           [];
       final replyIndex = cache.indexWhere((r) => r.id == replyId);

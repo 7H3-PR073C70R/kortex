@@ -55,8 +55,7 @@ class CuratedCourseCarousel extends StatelessWidget {
             const SizedBox(height: 12),
             ShrinkableButton(
               onTap: () async {
-                final result =
-                    await context.router.push(CurateCoursesRoute());
+                final result = await context.router.push(CurateCoursesRoute());
                 if (result == true && context.mounted) {
                   context.read<DashboardBloc>().add(const DashboardRefreshed());
                 }
@@ -150,10 +149,15 @@ class CuratedCourseCarousel extends StatelessWidget {
                   ShrinkableButton(
                     onTap: () {
                       AppFeedback.light();
-                      unawaited(context.router.push(const AllCuratedCoursesRoute()));
+                      unawaited(
+                        context.router.push(const AllCuratedCoursesRoute()),
+                      );
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.primary.withAlpha(20),
                         borderRadius: BorderRadius.circular(AppRadius.badge),
@@ -192,18 +196,25 @@ class CuratedCourseCarousel extends StatelessWidget {
                         ),
                       );
                       if (result == true && context.mounted) {
-                        context.read<DashboardBloc>().add(const DashboardRefreshed());
+                        context.read<DashboardBloc>().add(
+                          const DashboardRefreshed(),
+                        );
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: isDark
                             ? colors.surfaceSecondary.withAlpha(140)
                             : colors.surfacePrimary,
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
+                          color: colors.surfaceBorder.withAlpha(
+                            isDark ? 60 : 35,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -293,15 +304,21 @@ class _CourseCard extends StatelessWidget {
         ? locator<DecksBloc>().state.allDecks
         : const <DeckEntity>[];
 
-    final matchingDecks = allDecks.where((d) =>
-        d.courseId == course.id ||
-        (d.courseCode != null && d.courseCode == course.courseCode) ||
-        d.subject.toLowerCase() == course.title.toLowerCase()).toList();
+    final matchingDecks = allDecks
+        .where(
+          (d) =>
+              d.courseId == course.id ||
+              (d.courseCode != null && d.courseCode == course.courseCode) ||
+              d.subject.toLowerCase() == course.title.toLowerCase(),
+        )
+        .toList();
 
     final totalCards = matchingDecks.fold<int>(0, (s, d) => s + d.totalCards);
     final hasDecks = matchingDecks.isNotEmpty;
     final realCoverage = hasDecks
-        ? (matchingDecks.fold<double>(0, (s, d) => s + d.masteryRate) / matchingDecks.length).clamp(0.0, 1.0)
+        ? (matchingDecks.fold<double>(0, (s, d) => s + d.masteryRate) /
+                  matchingDecks.length)
+              .clamp(0.0, 1.0)
         : 0.0;
     final coveragePercent = (realCoverage * 100).toInt();
     final deckCountText = hasDecks
@@ -310,8 +327,7 @@ class _CourseCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label:
-          '${course.courseCode} ${course.title}. $deckCountText.',
+      label: '${course.courseCode} ${course.title}. $deckCountText.',
       child: PlatformHoverBuilder(
         builder: (context, isHovered, child) {
           return ShrinkableButton(
@@ -340,11 +356,11 @@ class _CourseCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.panel),
                     color: isDark
                         ? (isHovered
-                            ? colors.surfaceSecondary.withAlpha(190)
-                            : colors.surfaceSecondary.withAlpha(150))
+                              ? colors.surfaceSecondary.withAlpha(190)
+                              : colors.surfaceSecondary.withAlpha(150))
                         : (isHovered
-                            ? colors.surfacePrimary
-                            : colors.surfacePrimary.withAlpha(210)),
+                              ? colors.surfacePrimary
+                              : colors.surfacePrimary.withAlpha(210)),
                     border: Border.all(
                       color: isHovered
                           ? colors.primary.withAlpha(isDark ? 120 : 90)
@@ -366,7 +382,9 @@ class _CourseCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary.withAlpha(isDark ? 50 : 25),
-                              borderRadius: BorderRadius.circular(AppRadius.micro),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
                             ),
                             child: Text(
                               course.courseCode,
@@ -378,10 +396,17 @@ class _CourseCard extends StatelessWidget {
                           ),
                           if (course.hasActivePastPapers)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2.5,
+                              ),
                               decoration: BoxDecoration(
-                                color: colors.success.withAlpha(isDark ? 35 : 20),
-                                borderRadius: BorderRadius.circular(AppRadius.micro),
+                                color: colors.success.withAlpha(
+                                  isDark ? 35 : 20,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.micro,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -444,10 +469,14 @@ class _CourseCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
                             child: Container(
                               height: 4,
-                              color: colors.surfaceBorder.withAlpha(isDark ? 50 : 80),
+                              color: colors.surfaceBorder.withAlpha(
+                                isDark ? 50 : 80,
+                              ),
                               child: FractionallySizedBox(
                                 widthFactor: realCoverage.clamp(
                                   0.0,

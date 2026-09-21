@@ -443,8 +443,8 @@ class LmsImportModalSheet extends HookWidget {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colors.primary.withAlpha(
-                                        isHovered ? 90 : 60,
+                                      color: colors.black.withAlpha(
+                                        isHovered ? 50 : 25,
                                       ),
                                       blurRadius: isHovered ? 16 : 12,
                                       offset: const Offset(0, 4),
@@ -678,7 +678,7 @@ class _LmsCourseCard extends StatelessWidget {
             boxShadow: isHovered
                 ? [
                     BoxShadow(
-                      color: colors.primary.withAlpha(20),
+                      color: colors.black.withAlpha(isDark ? 30 : 10),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

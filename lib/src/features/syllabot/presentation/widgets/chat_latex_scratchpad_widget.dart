@@ -35,7 +35,8 @@ class ScratchpadPainter extends CustomPainter {
 
     for (final stroke in strokes) {
       if (stroke.points.isEmpty) continue;
-      final path = Path()..moveTo(stroke.points.first.dx, stroke.points.first.dy);
+      final path = Path()
+        ..moveTo(stroke.points.first.dx, stroke.points.first.dy);
       for (var i = 1; i < stroke.points.length; i++) {
         path.lineTo(stroke.points[i].dx, stroke.points[i].dy);
       }
@@ -43,7 +44,8 @@ class ScratchpadPainter extends CustomPainter {
     }
 
     if (currentStroke.isNotEmpty) {
-      final path = Path()..moveTo(currentStroke.first.dx, currentStroke.first.dy);
+      final path = Path()
+        ..moveTo(currentStroke.first.dx, currentStroke.first.dy);
       for (var i = 1; i < currentStroke.length; i++) {
         path.lineTo(currentStroke[i].dx, currentStroke[i].dy);
       }
@@ -58,7 +60,8 @@ class ScratchpadPainter extends CustomPainter {
 /// In-chat Math Scratchpad enabling handwritten math formulas to LaTeX conversion (SYL-13).
 class ChatLatexScratchpadWidget extends HookWidget {
   const ChatLatexScratchpadWidget({
-    required this.onInsertLatex, super.key,
+    required this.onInsertLatex,
+    super.key,
   });
 
   final ValueChanged<String> onInsertLatex;
@@ -144,7 +147,11 @@ class ChatLatexScratchpadWidget extends HookWidget {
                       color: colors.primary.withValues(alpha: 0.12),
                       borderRadius: AppRadius.radiusCard,
                     ),
-                    child: Icon(Icons.draw_rounded, color: colors.primary, size: 20),
+                    child: Icon(
+                      Icons.draw_rounded,
+                      color: colors.primary,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -159,7 +166,9 @@ class ChatLatexScratchpadWidget extends HookWidget {
                     builder: (context, isHovered, child) {
                       return IconButton(
                         icon: const Icon(Icons.undo_rounded, size: 20),
-                        color: isHovered ? colors.primary : colors.textSecondary,
+                        color: isHovered
+                            ? colors.primary
+                            : colors.textSecondary,
                         tooltip: 'Undo last stroke',
                         onPressed: strokes.value.isEmpty ? null : undoStroke,
                       );
@@ -168,7 +177,10 @@ class ChatLatexScratchpadWidget extends HookWidget {
                   PlatformHoverBuilder(
                     builder: (context, isHovered, child) {
                       return IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 20,
+                        ),
                         color: colors.error,
                         tooltip: 'Clear canvas',
                         onPressed: strokes.value.isEmpty ? null : clearAll,
@@ -184,7 +196,9 @@ class ChatLatexScratchpadWidget extends HookWidget {
                 decoration: BoxDecoration(
                   color: colors.surfacePrimary,
                   borderRadius: AppRadius.radiusPanel,
-                  border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: colors.surfaceBorder.withValues(alpha: 0.5),
+                  ),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: GestureDetector(
@@ -192,7 +206,8 @@ class ChatLatexScratchpadWidget extends HookWidget {
                     currentStroke.value = [details.localPosition];
                   },
                   onPanUpdate: (details) {
-                    currentStroke.value = List.of(currentStroke.value)..add(details.localPosition);
+                    currentStroke.value = List.of(currentStroke.value)
+                      ..add(details.localPosition);
                   },
                   onPanEnd: (_) {
                     if (currentStroke.value.isNotEmpty) {
@@ -215,14 +230,21 @@ class ChatLatexScratchpadWidget extends HookWidget {
               const SizedBox(height: 14),
               // OCR LaTeX Preview
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: colors.surfaceSecondary,
                   borderRadius: AppRadius.radiusCard,
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.functions_rounded, color: colors.primary, size: 18),
+                    Icon(
+                      Icons.functions_rounded,
+                      color: colors.primary,
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -241,7 +263,11 @@ class ChatLatexScratchpadWidget extends HookWidget {
               // Insert CTA Button
               AppButton(
                 text: 'Insert Formula into Chat',
-                prefixIcon: Icon(Icons.add_rounded, size: 18, color: colors.white),
+                prefixIcon: Icon(
+                  Icons.add_rounded,
+                  size: 18,
+                  color: colors.white,
+                ),
                 onPressed: () {
                   AppFeedback.correct();
                   onInsertLatex(recognizedLatex.value);

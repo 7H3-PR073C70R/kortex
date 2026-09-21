@@ -86,9 +86,14 @@ class FsrsRatingActionBar extends StatelessWidget {
                               onRateRating(b.rating);
                             },
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                filter: ImageFilter.blur(
+                                  sigmaX: 12,
+                                  sigmaY: 12,
+                                ),
                                 child: AnimatedContainer(
                                   duration: AppMotion.snappy,
                                   curve: AppMotion.snappyCurve,
@@ -97,12 +102,14 @@ class FsrsRatingActionBar extends StatelessWidget {
                                     horizontal: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(AppRadius.card),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.card,
+                                    ),
                                     color: isHovered
                                         ? b.color.withAlpha(isDark ? 65 : 45)
                                         : (isDark
-                                            ? b.color.withAlpha(35)
-                                            : b.color.withAlpha(22)),
+                                              ? b.color.withAlpha(35)
+                                              : b.color.withAlpha(22)),
                                     border: Border.all(
                                       color: b.color.withAlpha(
                                         isHovered ? 180 : (isDark ? 110 : 85),
@@ -111,11 +118,13 @@ class FsrsRatingActionBar extends StatelessWidget {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: b.color.withAlpha(
-                                          isHovered ? (isDark ? 70 : 35) : (isDark ? 40 : 15),
+                                        color: colors.black.withAlpha(
+                                          isHovered
+                                              ? (isDark ? 50 : 20)
+                                              : (isDark ? 30 : 8),
                                         ),
-                                        blurRadius: isHovered ? 14 : 10,
-                                        offset: Offset(0, isHovered ? 4 : 3),
+                                        blurRadius: isHovered ? 14 : 8,
+                                        offset: Offset(0, isHovered ? 4 : 2),
                                       ),
                                     ],
                                   ),
@@ -145,10 +154,11 @@ class FsrsRatingActionBar extends StatelessWidget {
                                       // Keyboard Key Hint
                                       Text(
                                         l10n.studyRatingKeyShortcut(b.shortcut),
-                                        style: typography.caption.regular.copyWith(
-                                          color: colors.textMuted,
-                                          fontSize: 10,
-                                        ),
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textMuted,
+                                              fontSize: 10,
+                                            ),
                                       ),
                                     ],
                                   ),

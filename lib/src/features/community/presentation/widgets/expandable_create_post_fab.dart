@@ -68,14 +68,9 @@ class ExpandableCreatePostFab extends StatelessWidget {
               borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: colors.primary.withAlpha(isDark ? 90 : 60),
-                  blurRadius: 18,
+                  color: colors.black.withAlpha(isDark ? 80 : 35),
+                  blurRadius: 16,
                   offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 70 : 25),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
                 ),
               ],
               border: Border.all(

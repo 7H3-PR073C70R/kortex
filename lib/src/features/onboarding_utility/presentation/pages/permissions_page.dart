@@ -222,9 +222,9 @@ class _PermissionsHeader extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: colors.primary.withAlpha(isDark ? 80 : 60),
-                blurRadius: 28,
-                spreadRadius: 2,
+                color: colors.black.withAlpha(isDark ? 60 : 25),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -330,18 +330,12 @@ class _PermissionCard extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: isGranted
-                        ? colors.success.withAlpha(
-                            isDark
-                                ? (isCardHovered ? 45 : 30)
-                                : (isCardHovered ? 30 : 20),
-                          )
-                        : colors.black.withAlpha(
-                            isDark
-                                ? (isCardHovered ? 45 : 30)
-                                : (isCardHovered ? 18 : 10),
-                          ),
-                    blurRadius: isCardHovered ? 20 : 16,
+                    color: colors.black.withAlpha(
+                      isDark
+                          ? (isCardHovered ? 45 : 30)
+                          : (isCardHovered ? 18 : 10),
+                    ),
+                    blurRadius: isCardHovered ? 16 : 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -429,8 +423,10 @@ class _PermissionCard extends StatelessWidget {
                                 boxShadow: isBtnHovered
                                     ? [
                                         BoxShadow(
-                                          color: colors.primary.withAlpha(30),
-                                          blurRadius: 8,
+                                          color: colors.black.withAlpha(
+                                            isDark ? 40 : 15,
+                                          ),
+                                          blurRadius: 6,
                                           offset: const Offset(0, 2),
                                         ),
                                       ]

@@ -26,8 +26,12 @@ class ForumSocraticHintService {
   /// without confusing meta-instructions that cause small models to echo templates.
   static String buildPrompt(ForumPostEntity post) {
     final buffer = StringBuffer()
-      ..writeln('You are Syllabot, an expert academic tutor with subject mastery across STEM and Humanities.')
-      ..writeln('A student in "${post.track}" (${post.syllabusTag.isNotEmpty ? post.syllabusTag : post.track}) posted this discussion/problem:')
+      ..writeln(
+        'You are Syllabot, an expert academic tutor with subject mastery across STEM and Humanities.',
+      )
+      ..writeln(
+        'A student in "${post.track}" (${post.syllabusTag.isNotEmpty ? post.syllabusTag : post.track}) posted this discussion/problem:',
+      )
       ..writeln()
       ..writeln('Question Title: "${post.title}"');
 
@@ -86,7 +90,11 @@ class ForumSocraticHintService {
     }
 
     // Check for instruction header repetitions without substantive content
-    final lines = text.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    final lines = text
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
     if (lines.length <= 3) {
       final isAllHeaders = lines.every(
         (l) =>
@@ -94,7 +102,9 @@ class ForumSocraticHintService {
             l.startsWith('Concept Breakdown') ||
             l.startsWith('Socratic Checkpoint:'),
       );
-      if (isAllHeaders && lower.contains('explain') && lower.contains('analyze')) {
+      if (isAllHeaders &&
+          lower.contains('explain') &&
+          lower.contains('analyze')) {
         return true;
       }
     }
@@ -116,7 +126,13 @@ class ForumSocraticHintService {
         post.socraticHint!.trim().isNotEmpty &&
         !isTemplateOrGenericEcho(post.socraticHint!)) {
       final cachedText = post.socraticHint!
-          .replaceAll(RegExp(r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*', caseSensitive: false), '')
+          .replaceAll(
+            RegExp(
+              r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*',
+              caseSensitive: false,
+            ),
+            '',
+          )
           .trim();
       return '🤖 Syllabot Socratic Hint:\n\n$cachedText';
     }
@@ -140,7 +156,8 @@ class ForumSocraticHintService {
             .forEach(buffer.write);
 
         final cloudCandidate = buffer.toString().trim();
-        if (cloudCandidate.isNotEmpty && !isTemplateOrGenericEcho(cloudCandidate)) {
+        if (cloudCandidate.isNotEmpty &&
+            !isTemplateOrGenericEcho(cloudCandidate)) {
           candidate = cloudCandidate;
         }
       } on Object catch (_) {
@@ -164,7 +181,8 @@ class ForumSocraticHintService {
             .forEach(buffer.write);
 
         final localCandidate = buffer.toString().trim();
-        if (localCandidate.isNotEmpty && !isTemplateOrGenericEcho(localCandidate)) {
+        if (localCandidate.isNotEmpty &&
+            !isTemplateOrGenericEcho(localCandidate)) {
           candidate = localCandidate;
         }
       } on Object catch (_) {}
@@ -201,7 +219,10 @@ class ForumSocraticHintService {
 
     // Step 5: Clean up any markdown or prefix formatting
     final cleanText = candidate
-        .replaceAll(RegExp(r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*', caseSensitive: false), '')
+        .replaceAll(
+          RegExp(r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*', caseSensitive: false),
+          '',
+        )
         .trim();
 
     final result = '🤖 Syllabot Socratic Hint:\n\n$cleanText';

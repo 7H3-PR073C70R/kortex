@@ -16,7 +16,7 @@ abstract class LocalStorageService {
 
 class LocalStorageServiceImpl implements LocalStorageService {
   LocalStorageServiceImpl({SharedPreferences? preferences})
-      : _preferences = preferences;
+    : _preferences = preferences;
 
   SharedPreferences? _preferences;
 

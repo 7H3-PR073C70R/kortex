@@ -114,7 +114,8 @@ class ExperimentalOfflineGuard {
   }) async {
     try {
       await preflightCheck(
-        userSettings: userSettings ??
+        userSettings:
+            userSettings ??
             const OfflineAiUserSettings(enableExperimentalOfflineAI: true),
       );
       return await action();
@@ -139,7 +140,8 @@ class ExperimentalOfflineGuard {
     );
     try {
       await guard.preflightCheck(
-        userSettings: settings ??
+        userSettings:
+            settings ??
             const OfflineAiUserSettings(enableExperimentalOfflineAI: true),
       );
       return null;

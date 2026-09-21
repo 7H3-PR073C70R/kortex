@@ -152,8 +152,10 @@ class OcrLatexLiveEditor extends HookWidget {
                                           boxShadow: isHovered
                                               ? [
                                                   BoxShadow(
-                                                    color: colors.primary
-                                                        .withAlpha(25),
+                                                    color: colors.black
+                                                        .withAlpha(
+                                                          isDark ? 40 : 15,
+                                                        ),
                                                     blurRadius: 10,
                                                     offset: const Offset(0, 4),
                                                   ),

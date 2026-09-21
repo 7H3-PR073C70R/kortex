@@ -1205,12 +1205,14 @@ class AuthChatView extends HookWidget {
                                             boxShadow: hasInputText.value
                                                 ? [
                                                     BoxShadow(
-                                                      color: colors.primary
-                                                          .withAlpha(80),
-                                                      blurRadius: 10,
+                                                      color: colors.black
+                                                          .withAlpha(
+                                                            isDark ? 50 : 25,
+                                                          ),
+                                                      blurRadius: 8,
                                                       offset: const Offset(
                                                         0,
-                                                        3,
+                                                        2,
                                                       ),
                                                     ),
                                                   ]
@@ -1323,10 +1325,10 @@ class _BotMessageBubble extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: isError
-                              ? colors.error.withAlpha(isDark ? 60 : 30)
-                              : colors.black.withAlpha(isDark ? 40 : 10),
-                          blurRadius: isError ? 14 : 8,
+                          color: colors.black.withAlpha(
+                            isError ? (isDark ? 60 : 25) : (isDark ? 40 : 10),
+                          ),
+                          blurRadius: isError ? 12 : 8,
                           offset: const Offset(0, 3),
                         ),
                       ],
@@ -1496,8 +1498,10 @@ class _UserMessageBubble extends HookWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.primary.withAlpha(50),
-                      blurRadius: 10,
+                      color: colors.black.withAlpha(
+                        context.isDarkMode ? 40 : 12,
+                      ),
+                      blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -1744,15 +1748,13 @@ class _ActionChipButton extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: isPrimary
-                            ? colors.primary.withAlpha(isHovered ? 70 : 40)
-                            : colors.black.withAlpha(
-                                isDark
-                                    ? (isHovered ? 80 : 50)
-                                    : (isHovered ? 25 : 10),
-                              ),
-                        blurRadius: isHovered ? 14 : 10,
-                        offset: Offset(0, isHovered ? 4 : 3),
+                        color: colors.black.withAlpha(
+                          isDark
+                              ? (isHovered ? 70 : 40)
+                              : (isHovered ? 25 : 10),
+                        ),
+                        blurRadius: isHovered ? 12 : 8,
+                        offset: Offset(0, isHovered ? 3 : 2),
                       ),
                     ],
                   ),
@@ -1905,15 +1907,6 @@ class _PasswordRequirementItem extends StatelessWidget {
                 color: isMet ? successColor : colors.surfaceBorderHighlight,
                 width: 1.4,
               ),
-              boxShadow: isMet
-                  ? [
-                      BoxShadow(
-                        color: successColor.withAlpha(80),
-                        blurRadius: 6,
-                        spreadRadius: 0.5,
-                      ),
-                    ]
-                  : null,
             ),
             child: isMet
                 ? Center(

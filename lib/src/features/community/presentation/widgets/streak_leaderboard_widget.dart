@@ -145,9 +145,14 @@ class StreakLeaderboardWidget extends StatelessWidget {
                 duration: AppMotion.snappy,
                 curve: AppMotion.easeOutCubic,
                 margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? (isHovered ? 55 : 40) : (isHovered ? 30 : 20)),
+                  color: colors.primary.withAlpha(
+                    isDark ? (isHovered ? 55 : 40) : (isHovered ? 30 : 20),
+                  ),
                   borderRadius: AppRadius.radiusCard,
                   border: Border.all(
                     color: colors.primary,
@@ -155,7 +160,9 @@ class StreakLeaderboardWidget extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.primary.withAlpha(isDark ? (isHovered ? 40 : 15) : (isHovered ? 25 : 10)),
+                      color: colors.black.withAlpha(
+                        isHovered ? (isDark ? 50 : 20) : (isDark ? 30 : 10),
+                      ),
                       blurRadius: isHovered ? 12 : 6,
                       offset: Offset(0, isHovered ? 3 : 1),
                     ),
@@ -317,24 +324,34 @@ class StreakLeaderboardWidget extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: entry.isCurrentUser
-                        ? colors.primary.withAlpha(isDark ? (isItemHovered ? 55 : 40) : (isItemHovered ? 30 : 20))
+                        ? colors.primary.withAlpha(
+                            isDark
+                                ? (isItemHovered ? 55 : 40)
+                                : (isItemHovered ? 30 : 20),
+                          )
                         : isItemHovered
-                            ? (isDark ? colors.surfaceElevated : colors.surfaceSecondary)
-                            : (isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfacePrimary),
+                        ? (isDark
+                              ? colors.surfaceElevated
+                              : colors.surfaceSecondary)
+                        : (isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfacePrimary),
                     borderRadius: AppRadius.radiusCard,
                     border: Border.all(
                       color: entry.isCurrentUser
                           ? colors.primary
                           : isItemHovered
-                              ? colors.primary.withAlpha(isDark ? 80 : 50)
-                              : colors.primary.withAlpha(isDark ? 30 : 15),
+                          ? colors.primary.withAlpha(isDark ? 80 : 50)
+                          : colors.primary.withAlpha(isDark ? 30 : 15),
                       width: entry.isCurrentUser || isItemHovered ? 1.5 : 1.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: colors.black.withAlpha(isDark ? (isItemHovered ? 30 : 10) : (isItemHovered ? 12 : 4)),
+                        color: colors.black.withAlpha(
+                          isDark
+                              ? (isItemHovered ? 30 : 10)
+                              : (isItemHovered ? 12 : 4),
+                        ),
                         blurRadius: isItemHovered ? 8 : 4,
                         offset: Offset(0, isItemHovered ? 2 : 1),
                       ),

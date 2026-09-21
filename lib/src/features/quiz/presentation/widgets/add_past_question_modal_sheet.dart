@@ -52,18 +52,20 @@ class AddPastQuestionModalSheet extends HookWidget {
     PastQuestionsBloc? pastQuestionsBloc,
     void Function(List<PastQuestionEntity>)? onAdded,
   }) {
-    final effectiveSubject = mappedSubject ?? defaultSubject ?? 'General Studies';
+    final effectiveSubject =
+        mappedSubject ?? defaultSubject ?? 'General Studies';
     final effectiveCourseCode = courseCode ?? 'GEN101';
     final effectiveCourseId = courseId ?? 'course_gen';
     final effectiveCourseTitle = courseTitle ?? effectiveSubject;
     final effectiveExamCategory = examCategory ?? ExamCategory.waec;
 
-    final bloc = pastQuestionsBloc ??
+    final bloc =
+        pastQuestionsBloc ??
         (context.mounted
             ? (tryReadBloc<PastQuestionsBloc>(context) ??
-                (locator.isRegistered<PastQuestionsBloc>()
-                    ? locator<PastQuestionsBloc>()
-                    : null))
+                  (locator.isRegistered<PastQuestionsBloc>()
+                      ? locator<PastQuestionsBloc>()
+                      : null))
             : null);
 
     return showModalBottomSheet<bool>(
@@ -174,7 +176,8 @@ class AddPastQuestionModalSheet extends HookWidget {
 
         if (result.questions.isEmpty && context.mounted) {
           context.showSnackBar(
-            message: 'No questions could be isolated from this file. You can enter them manually.',
+            message:
+                'No questions could be isolated from this file. You can enter them manually.',
           );
         }
       } on Object catch (e) {
@@ -201,7 +204,8 @@ class AddPastQuestionModalSheet extends HookWidget {
       try {
         final entities = questions.map((m) => m.toEntity()).toList();
 
-        final bloc = pastQuestionsBloc ??
+        final bloc =
+            pastQuestionsBloc ??
             (locator.isRegistered<PastQuestionsBloc>()
                 ? locator<PastQuestionsBloc>()
                 : null);
@@ -258,7 +262,12 @@ class AddPastQuestionModalSheet extends HookWidget {
         options.addAll(optList);
 
         correctLabel = correctOptionLabel.value;
-        correctIdx = ['A', 'B', 'C', 'D'].indexOf(correctLabel).clamp(0, options.length - 1);
+        correctIdx = [
+          'A',
+          'B',
+          'C',
+          'D',
+        ].indexOf(correctLabel).clamp(0, options.length - 1);
       }
 
       isSubmitting.value = true;
@@ -278,8 +287,8 @@ class AddPastQuestionModalSheet extends HookWidget {
           explanation: explanationController.text.trim().isNotEmpty
               ? explanationController.text.trim()
               : (isTheory
-                  ? 'Model answer verified for $courseCode.'
-                  : 'Option $correctLabel is verified based on curriculum standards.'),
+                    ? 'Model answer verified for $courseCode.'
+                    : 'Option $correctLabel is verified based on curriculum standards.'),
           topic: topicController.text.trim().isNotEmpty
               ? topicController.text.trim()
               : courseTitle,
@@ -289,7 +298,8 @@ class AddPastQuestionModalSheet extends HookWidget {
           courseCode: courseCode,
         );
 
-        final bloc = pastQuestionsBloc ??
+        final bloc =
+            pastQuestionsBloc ??
             (locator.isRegistered<PastQuestionsBloc>()
                 ? locator<PastQuestionsBloc>()
                 : null);
@@ -321,7 +331,9 @@ class AddPastQuestionModalSheet extends HookWidget {
         child: Container(
           decoration: BoxDecoration(
             color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
           ),
           child: SafeArea(
             top: false,
@@ -338,7 +350,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                           height: 4.5,
                           decoration: BoxDecoration(
                             color: colors.surfaceBorder,
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
                           ),
                         ),
                       ),
@@ -349,9 +363,15 @@ class AddPastQuestionModalSheet extends HookWidget {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: colors.primary.withAlpha(25),
-                              borderRadius: BorderRadius.circular(AppRadius.badge),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
                             ),
-                            child: Icon(Icons.post_add_rounded, size: 20, color: colors.primary),
+                            child: Icon(
+                              Icons.post_add_rounded,
+                              size: 20,
+                              color: colors.primary,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -379,7 +399,11 @@ class AddPastQuestionModalSheet extends HookWidget {
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.close_rounded, color: colors.textSecondary, size: 20),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: colors.textSecondary,
+                              size: 20,
+                            ),
                             onPressed: () => Navigator.of(context).pop(false),
                           ),
                         ],
@@ -434,9 +458,17 @@ class AddPastQuestionModalSheet extends HookWidget {
                           calibratedQuestions: calibratedQuestions.value,
                           onPickFile: () async {
                             AppFeedback.light();
-                            final doc = await FilePickerService().pickStudyDocument(
-                              extensions: const ['pdf', 'png', 'jpg', 'jpeg', 'txt', 'pptx'],
-                            );
+                            final doc = await FilePickerService()
+                                .pickStudyDocument(
+                                  extensions: const [
+                                    'pdf',
+                                    'png',
+                                    'jpg',
+                                    'jpeg',
+                                    'txt',
+                                    'pptx',
+                                  ],
+                                );
                             if (doc != null) {
                               pickedFile.value = doc;
                               calibratedQuestions.value = [];
@@ -515,7 +547,8 @@ class AddPastQuestionModalSheet extends HookWidget {
           child: Row(
             children: [
               ...recentYears.map((yr) {
-                final isSelected = !isCustomYear.value && selectedYear.value == yr;
+                final isSelected =
+                    !isCustomYear.value && selectedYear.value == yr;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ShrinkableButton(
@@ -525,14 +558,21 @@ class AddPastQuestionModalSheet extends HookWidget {
                       selectedYear.value = yr;
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? colors.primary
-                            : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
+                            : (isDark
+                                  ? colors.surfaceSecondary
+                                  : colors.surfaceBorder.withAlpha(50)),
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
-                          color: isSelected ? colors.primary : colors.surfaceBorder,
+                          color: isSelected
+                              ? colors.primary
+                              : colors.surfaceBorder,
                         ),
                       ),
                       child: Text(
@@ -552,14 +592,21 @@ class AddPastQuestionModalSheet extends HookWidget {
                   isCustomYear.value = true;
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: isCustomYear.value
                         ? colors.primary
-                        : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
+                        : (isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfaceBorder.withAlpha(50)),
                     borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
-                      color: isCustomYear.value ? colors.primary : colors.surfaceBorder,
+                      color: isCustomYear.value
+                          ? colors.primary
+                          : colors.surfaceBorder,
                     ),
                   ),
                   child: Row(
@@ -568,13 +615,17 @@ class AddPastQuestionModalSheet extends HookWidget {
                       Icon(
                         Icons.edit_calendar_rounded,
                         size: 13,
-                        color: isCustomYear.value ? colors.white : colors.textSecondary,
+                        color: isCustomYear.value
+                            ? colors.white
+                            : colors.textSecondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Other',
                         style: typography.caption.bold.copyWith(
-                          color: isCustomYear.value ? colors.white : colors.textPrimary,
+                          color: isCustomYear.value
+                              ? colors.white
+                              : colors.textPrimary,
                           fontSize: 12,
                         ),
                       ),
@@ -625,7 +676,9 @@ class AddPastQuestionModalSheet extends HookWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             decoration: BoxDecoration(
-              color: isDark ? colors.surfaceSecondary.withAlpha(120) : colors.surfacePrimary,
+              color: isDark
+                  ? colors.surfaceSecondary.withAlpha(120)
+                  : colors.surfacePrimary,
               borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
                 color: file != null ? colors.primary : colors.surfaceBorder,
@@ -641,7 +694,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    file != null ? Icons.check_circle_rounded : Icons.cloud_upload_outlined,
+                    file != null
+                        ? Icons.check_circle_rounded
+                        : Icons.cloud_upload_outlined,
                     size: 28,
                     color: colors.primary,
                   ),
@@ -650,13 +705,19 @@ class AddPastQuestionModalSheet extends HookWidget {
                 if (file == null) ...[
                   Text(
                     'Upload Past Paper (PDF, Images, TXT)',
-                    style: typography.body.bold.copyWith(color: colors.textPrimary, fontSize: 14),
+                    style: typography.body.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 14,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Extracts MCQs & theory questions, solves answers & explains reasoning.',
                     textAlign: TextAlign.center,
-                    style: typography.footnote.regular.copyWith(color: colors.textSecondary, fontSize: 11.5),
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11.5,
+                    ),
                   ),
                 ] else ...[
                   Text(
@@ -664,12 +725,18 @@ class AddPastQuestionModalSheet extends HookWidget {
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: typography.body.bold.copyWith(color: colors.textPrimary, fontSize: 13.5),
+                    style: typography.body.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 13.5,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${(file.bytes.length / (1024 * 1024)).toStringAsFixed(2)} MB • Ready for AI',
-                    style: typography.footnote.regular.copyWith(color: colors.success, fontSize: 11.5),
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.success,
+                      fontSize: 11.5,
+                    ),
                   ),
                 ],
               ],
@@ -720,9 +787,13 @@ class AddPastQuestionModalSheet extends HookWidget {
 
         if (calibratedQuestions.isEmpty)
           AppButton(
-            text: isCalibrating ? 'Analyzing & Calibrating...' : 'Extract & Calibrate with AI',
+            text: isCalibrating
+                ? 'Analyzing & Calibrating...'
+                : 'Extract & Calibrate with AI',
             isLoading: isCalibrating,
-            onPressed: isCalibrating || file == null ? null : onExecuteCalibration,
+            onPressed: isCalibrating || file == null
+                ? null
+                : onExecuteCalibration,
             prefixIcon: const Icon(Icons.auto_awesome_rounded, size: 16),
           )
         else ...[
@@ -736,12 +807,19 @@ class AddPastQuestionModalSheet extends HookWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.check_circle_rounded, size: 18, color: colors.success),
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 18,
+                  color: colors.success,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Extracted ${calibratedQuestions.length} Questions (${calibratedQuestions.where((q) => !q.toEntity().isTheory).length} MCQ, ${calibratedQuestions.where((q) => q.toEntity().isTheory).length} Theory)',
-                    style: typography.caption.bold.copyWith(color: colors.success, fontSize: 12),
+                    style: typography.caption.bold.copyWith(
+                      color: colors.success,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],
@@ -767,7 +845,10 @@ class AddPastQuestionModalSheet extends HookWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: isTheory
                               ? colors.syllabotAccent.withAlpha(30)
@@ -777,7 +858,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                         child: Text(
                           isTheory ? 'THEORY / ESSAY' : 'MULTIPLE CHOICE',
                           style: typography.caption.bold.copyWith(
-                            color: isTheory ? colors.syllabotAccent : colors.primary,
+                            color: isTheory
+                                ? colors.syllabotAccent
+                                : colors.primary,
                             fontSize: 9.5,
                           ),
                         ),
@@ -785,21 +868,30 @@ class AddPastQuestionModalSheet extends HookWidget {
                       if (!isTheory)
                         Text(
                           'Correct: ${q.correctOptionLabel}',
-                          style: typography.caption.bold.copyWith(color: colors.success, fontSize: 11),
+                          style: typography.caption.bold.copyWith(
+                            color: colors.success,
+                            fontSize: 11,
+                          ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
                     q.prompt,
-                    style: typography.body.bold.copyWith(color: colors.textPrimary, fontSize: 12.5),
+                    style: typography.body.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 12.5,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     q.explanation,
-                    style: typography.footnote.regular.copyWith(color: colors.textSecondary, fontSize: 11),
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -858,7 +950,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                   decoration: BoxDecoration(
                     color: !isTheory
                         ? colors.primary.withAlpha(25)
-                        : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
+                        : (isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfaceBorder.withAlpha(50)),
                     borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
                       color: !isTheory ? colors.primary : colors.surfaceBorder,
@@ -869,7 +963,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                     child: Text(
                       'Multiple Choice (MCQ)',
                       style: typography.caption.bold.copyWith(
-                        color: !isTheory ? colors.primary : colors.textSecondary,
+                        color: !isTheory
+                            ? colors.primary
+                            : colors.textSecondary,
                         fontSize: 11.5,
                       ),
                     ),
@@ -889,10 +985,14 @@ class AddPastQuestionModalSheet extends HookWidget {
                   decoration: BoxDecoration(
                     color: isTheory
                         ? colors.syllabotAccent.withAlpha(25)
-                        : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
+                        : (isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfaceBorder.withAlpha(50)),
                     borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
-                      color: isTheory ? colors.syllabotAccent : colors.surfaceBorder,
+                      color: isTheory
+                          ? colors.syllabotAccent
+                          : colors.surfaceBorder,
                       width: isTheory ? 1.5 : 1.0,
                     ),
                   ),
@@ -900,7 +1000,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                     child: Text(
                       'Theory / Essay',
                       style: typography.caption.bold.copyWith(
-                        color: isTheory ? colors.syllabotAccent : colors.textSecondary,
+                        color: isTheory
+                            ? colors.syllabotAccent
+                            : colors.textSecondary,
                         fontSize: 11.5,
                       ),
                     ),
@@ -915,7 +1017,10 @@ class AddPastQuestionModalSheet extends HookWidget {
         // Prompt
         Text(
           'Question Stem / Problem Statement',
-          style: typography.caption.bold.copyWith(color: colors.textPrimary, fontSize: 13),
+          style: typography.caption.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 13,
+          ),
         ),
         const SizedBox(height: 6),
         AppTextField(
@@ -931,23 +1036,55 @@ class AddPastQuestionModalSheet extends HookWidget {
         if (!isTheory) ...[
           Text(
             'Options & Correct Answer',
-            style: typography.caption.bold.copyWith(color: colors.textPrimary, fontSize: 13),
+            style: typography.caption.bold.copyWith(
+              color: colors.textPrimary,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 8),
-          _buildOptionField('A', optionAController, correctOptionLabel, colors, typography),
+          _buildOptionField(
+            'A',
+            optionAController,
+            correctOptionLabel,
+            colors,
+            typography,
+          ),
           const SizedBox(height: 8),
-          _buildOptionField('B', optionBController, correctOptionLabel, colors, typography),
+          _buildOptionField(
+            'B',
+            optionBController,
+            correctOptionLabel,
+            colors,
+            typography,
+          ),
           const SizedBox(height: 8),
-          _buildOptionField('C', optionCController, correctOptionLabel, colors, typography),
+          _buildOptionField(
+            'C',
+            optionCController,
+            correctOptionLabel,
+            colors,
+            typography,
+          ),
           const SizedBox(height: 8),
-          _buildOptionField('D', optionDController, correctOptionLabel, colors, typography),
+          _buildOptionField(
+            'D',
+            optionDController,
+            correctOptionLabel,
+            colors,
+            typography,
+          ),
           const SizedBox(height: 14),
         ],
 
         // Explanation / Model Answer
         Text(
-          isTheory ? 'Model Answer, Rubric & Rationale' : 'Explanation (Why that is the answer)',
-          style: typography.caption.bold.copyWith(color: colors.textPrimary, fontSize: 13),
+          isTheory
+              ? 'Model Answer, Rubric & Rationale'
+              : 'Explanation (Why that is the answer)',
+          style: typography.caption.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 13,
+          ),
         ),
         const SizedBox(height: 6),
         AppTextField(
@@ -962,7 +1099,10 @@ class AddPastQuestionModalSheet extends HookWidget {
         // Topic
         Text(
           'Specific Topic / Syllabus Unit',
-          style: typography.caption.bold.copyWith(color: colors.textPrimary, fontSize: 13),
+          style: typography.caption.bold.copyWith(
+            color: colors.textPrimary,
+            fontSize: 13,
+          ),
         ),
         const SizedBox(height: 6),
         AppTextField(
@@ -980,7 +1120,9 @@ class AddPastQuestionModalSheet extends HookWidget {
                     ? 'Diagram: ${attachedImagePath.value!.split('/').last}'
                     : 'Optional Diagram Attachment',
                 style: typography.caption.medium.copyWith(
-                  color: attachedImagePath.value != null ? colors.primary : colors.textSecondary,
+                  color: attachedImagePath.value != null
+                      ? colors.primary
+                      : colors.textSecondary,
                   fontSize: 12,
                 ),
                 maxLines: 1,
@@ -997,10 +1139,17 @@ class AddPastQuestionModalSheet extends HookWidget {
                   attachedImagePath.value = doc.path;
                 }
               },
-              icon: Icon(Icons.add_photo_alternate_outlined, size: 16, color: colors.primary),
+              icon: Icon(
+                Icons.add_photo_alternate_outlined,
+                size: 16,
+                color: colors.primary,
+              ),
               label: Text(
                 attachedImagePath.value != null ? 'Change' : 'Add Diagram',
-                style: typography.caption.bold.copyWith(color: colors.primary, fontSize: 12),
+                style: typography.caption.bold.copyWith(
+                  color: colors.primary,
+                  fontSize: 12,
+                ),
               ),
             ),
             if (attachedImagePath.value != null)
@@ -1015,7 +1164,9 @@ class AddPastQuestionModalSheet extends HookWidget {
         const SizedBox(height: 20),
 
         AppButton(
-          text: isSubmitting ? 'Saving Question...' : 'Save Question to $courseCode',
+          text: isSubmitting
+              ? 'Saving Question...'
+              : 'Save Question to $courseCode',
           isLoading: isSubmitting,
           onPressed: isSubmitting ? null : onSave,
           prefixIcon: const Icon(Icons.add_task_rounded, size: 16),
@@ -1044,7 +1195,9 @@ class AddPastQuestionModalSheet extends HookWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: isCorrect ? colors.success : colors.surfaceBorder.withAlpha(60),
+              color: isCorrect
+                  ? colors.success
+                  : colors.surfaceBorder.withAlpha(60),
               shape: BoxShape.circle,
             ),
             child: Center(

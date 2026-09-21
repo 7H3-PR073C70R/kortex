@@ -24,9 +24,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     UserActivityService? userActivityService,
     LocalStorageService? storageService,
     AppDatabase? database,
-  })  : _userActivityService = userActivityService,
-        _storageService = storageService,
-        _database = database;
+  }) : _userActivityService = userActivityService,
+       _storageService = storageService,
+       _database = database;
 
   final DashboardApiClient _client;
   final UserActivityService? _userActivityService;
@@ -71,10 +71,12 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final raw = _storage?.getPreference(key: '__calibration_profile');
       if (raw != null && raw.isNotEmpty) {
         final jsonMap = jsonDecode(raw) as Map<String, dynamic>;
-        final subjects = (jsonMap['highSchoolSubjects'] as List<dynamic>?)
-            ?.map((e) => e.toString().trim())
-            .where((s) => s.isNotEmpty)
-            .toList() ?? [];
+        final subjects =
+            (jsonMap['highSchoolSubjects'] as List<dynamic>?)
+                ?.map((e) => e.toString().trim())
+                .where((s) => s.isNotEmpty)
+                .toList() ??
+            [];
         final examName = (jsonMap['highSchoolExam'] as String?) ?? 'WAEC';
 
         if (subjects.isNotEmpty) {
@@ -86,13 +88,16 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             CuratedCourseModel? bestMatch;
             for (final c in catalog) {
               final cTitleLower = c.title.toLowerCase();
-              final isNameMatch = cTitleLower == lower ||
+              final isNameMatch =
+                  cTitleLower == lower ||
                   cTitleLower.contains(lower) ||
                   lower.contains(cTitleLower) ||
                   c.courseCode.toLowerCase() == lower;
 
               if (isNameMatch) {
-                if (c.department.toLowerCase().contains(examName.toLowerCase())) {
+                if (c.department.toLowerCase().contains(
+                  examName.toLowerCase(),
+                )) {
                   bestMatch = c;
                   break;
                 }
@@ -108,7 +113,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
               matched.add(
                 CuratedCourseModel(
                   id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
-                  courseCode: subject.length > 4 ? subject.substring(0, 4).toUpperCase() : subject.toUpperCase(),
+                  courseCode: subject.length > 4
+                      ? subject.substring(0, 4).toUpperCase()
+                      : subject.toUpperCase(),
                   title: subject,
                   department: '$examName - General Studies',
                   totalMaterials: 25,
@@ -122,7 +129,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
 
           if (matched.isNotEmpty) {
             try {
-              final jsonStr = jsonEncode(matched.map((c) => c.toJson()).toList());
+              final jsonStr = jsonEncode(
+                matched.map((c) => c.toJson()).toList(),
+              );
               unawaited(
                 _storage?.savePreference(
                   key: PrefKeys.userCuratedCourses,
@@ -143,48 +152,53 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final raw = _storage?.getPreference(key: PrefKeys.persistedUserDecks);
       if (raw != null && raw.isNotEmpty) {
         final list = jsonDecode(raw) as List<dynamic>;
-        return list.map((e) {
-          final m = e as Map<String, dynamic>;
-          final deckId = (m['id'] as String?) ?? 'deck';
-          final rawTitle = (m['title'] as String?) ?? 'Study Deck';
-          final rawSubject = (m['subject'] as String?) ?? 'General Studies';
-          final rawCategory = (m['category'] as String?) ?? 'General';
-          final due = ((m['dueCards'] ?? m['due_cards']) as int?) ?? 0;
-          final total = ((m['totalCards'] ?? m['total_cards']) as int?) ?? 10;
-          final mastery =
-              ((m['masteryRate'] ?? m['mastery_rate']) as num?)?.toDouble() ??
+        return list
+            .map((e) {
+              final m = e as Map<String, dynamic>;
+              final deckId = (m['id'] as String?) ?? 'deck';
+              final rawTitle = (m['title'] as String?) ?? 'Study Deck';
+              final rawSubject = (m['subject'] as String?) ?? 'General Studies';
+              final rawCategory = (m['category'] as String?) ?? 'General';
+              final due = ((m['dueCards'] ?? m['due_cards']) as int?) ?? 0;
+              final total =
+                  ((m['totalCards'] ?? m['total_cards']) as int?) ?? 10;
+              final mastery =
+                  ((m['masteryRate'] ?? m['mastery_rate']) as num?)
+                      ?.toDouble() ??
                   0.0;
-          final lastStudied =
-              ((m['lastStudied'] ?? m['last_studied']) as String?) ??
+              final lastStudied =
+                  ((m['lastStudied'] ?? m['last_studied']) as String?) ??
                   DateTime.now().toIso8601String();
 
-          final resolvedTitle = DeckTitleResolver.resolveTitle(
-            deckId: deckId,
-            currentTitle: rawTitle,
-            subject: rawSubject,
-            category: rawCategory,
-          );
-          final resolvedSubject = DeckTitleResolver.resolveSubject(
-            deckId: deckId,
-            currentSubject: rawSubject,
-          );
-          final resolvedCategory = DeckTitleResolver.resolveCategory(
-            deckId: deckId,
-            currentCategory: rawCategory,
-          );
+              final resolvedTitle = DeckTitleResolver.resolveTitle(
+                deckId: deckId,
+                currentTitle: rawTitle,
+                subject: rawSubject,
+                category: rawCategory,
+              );
+              final resolvedSubject = DeckTitleResolver.resolveSubject(
+                deckId: deckId,
+                currentSubject: rawSubject,
+              );
+              final resolvedCategory = DeckTitleResolver.resolveCategory(
+                deckId: deckId,
+                currentCategory: rawCategory,
+              );
 
-          return StudyDeckModel(
-            id: deckId,
-            title: resolvedTitle,
-            subject: resolvedSubject,
-            totalCards: total,
-            dueCards: due,
-            retentionRate: mastery,
-            lastReviewedIso: lastStudied,
-            category: resolvedCategory,
-            colorHex: m['colorHex'] as String?,
-          );
-        }).where((d) => d.dueCards > 0).toList();
+              return StudyDeckModel(
+                id: deckId,
+                title: resolvedTitle,
+                subject: resolvedSubject,
+                totalCards: total,
+                dueCards: due,
+                retentionRate: mastery,
+                lastReviewedIso: lastStudied,
+                category: resolvedCategory,
+                colorHex: m['colorHex'] as String?,
+              );
+            })
+            .where((d) => d.dueCards > 0)
+            .toList();
       }
     } on Object catch (_) {}
     return const [];
@@ -197,8 +211,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     // 1. Query DecksRemoteDataSource which has the unified canonical + created decks
     try {
       if (locator.isRegistered<DecksRemoteDataSource>()) {
-        final deckModels =
-            await locator<DecksRemoteDataSource>().getUserDecks();
+        final deckModels = await locator<DecksRemoteDataSource>()
+            .getUserDecks();
         for (final d in deckModels) {
           if (d.dueCards > 0 && seenIds.add(d.id)) {
             results.add(
@@ -209,8 +223,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                 totalCards: d.totalCards,
                 dueCards: d.dueCards,
                 retentionRate: d.masteryRate,
-                lastReviewedIso:
-                    (d.lastStudied ?? DateTime.now()).toIso8601String(),
+                lastReviewedIso: (d.lastStudied ?? DateTime.now())
+                    .toIso8601String(),
                 category: d.category,
               ),
             );
@@ -234,8 +248,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                 totalCards: d.totalCards,
                 dueCards: d.dueCards,
                 retentionRate: d.masteryRate,
-                lastReviewedIso:
-                    (d.lastStudied ?? DateTime.now()).toIso8601String(),
+                lastReviewedIso: (d.lastStudied ?? DateTime.now())
+                    .toIso8601String(),
                 category: d.category,
               ),
             );
@@ -265,8 +279,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       var feed = await _client.getDashboardFeed(const {});
       if (feed.curatedCourses.isNotEmpty) {
         try {
-          final jsonStr =
-              jsonEncode(feed.curatedCourses.map((c) => c.toJson()).toList());
+          final jsonStr = jsonEncode(
+            feed.curatedCourses.map((c) => c.toJson()).toList(),
+          );
           unawaited(
             _storage?.savePreference(
               key: PrefKeys.userCuratedCourses,
@@ -310,7 +325,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       }
       return feed;
     } on Object catch (_) {
-      return _generateFallbackFeedModel(liveAnalytics, fallbackDecks: activeDueDecks);
+      return _generateFallbackFeedModel(
+        liveAnalytics,
+        fallbackDecks: activeDueDecks,
+      );
     }
   }
 
@@ -339,8 +357,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                   totalCards: d.totalCards,
                   dueCards: d.dueCards,
                   retentionRate: d.masteryRate,
-                  lastReviewedIso:
-                      (d.lastStudied ?? DateTime.now()).toIso8601String(),
+                  lastReviewedIso: (d.lastStudied ?? DateTime.now())
+                      .toIso8601String(),
                   category: d.category,
                 ),
               )
@@ -392,8 +410,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     try {
       final remoteCourses = await _client.getUserCuratedCourses();
       if (remoteCourses.isNotEmpty) {
-        final jsonStr =
-            jsonEncode(remoteCourses.map((c) => c.toJson()).toList());
+        final jsonStr = jsonEncode(
+          remoteCourses.map((c) => c.toJson()).toList(),
+        );
         await _storage?.savePreference(
           key: PrefKeys.userCuratedCourses,
           data: jsonStr,
@@ -417,19 +436,36 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final catalogMap = {for (final c in catalog) c.id: c};
 
       final models = courses.map((m) {
-        final id = (m['id'] as String?) ?? 'course_${DateTime.now().microsecondsSinceEpoch}';
+        final id =
+            (m['id'] as String?) ??
+            'course_${DateTime.now().microsecondsSinceEpoch}';
         final catalogMatch = catalogMap[id];
 
         return CuratedCourseModel(
           id: id,
-          courseCode: (m['courseCode'] as String?) ?? catalogMatch?.courseCode ?? 'CRS',
+          courseCode:
+              (m['courseCode'] as String?) ?? catalogMatch?.courseCode ?? 'CRS',
           title: (m['title'] as String?) ?? catalogMatch?.title ?? '',
-          department: (m['department'] as String?) ?? catalogMatch?.department ?? 'General Studies',
-          totalMaterials: (m['totalMaterials'] as int?) ?? catalogMatch?.totalMaterials ?? 15,
-          hasActivePastPapers: (m['hasActivePastPapers'] as bool?) ?? catalogMatch?.hasActivePastPapers ?? true,
-          iconName: (m['iconName'] as String?) ?? catalogMatch?.iconName ?? 'school',
-          colorHex: (m['colorHex'] as String?) ?? catalogMatch?.colorHex ?? '#6366F1',
-          syllabusCoverage: (m['syllabusCoverage'] as num?)?.toDouble() ?? catalogMatch?.syllabusCoverage ?? 0.70,
+          department:
+              (m['department'] as String?) ??
+              catalogMatch?.department ??
+              'General Studies',
+          totalMaterials:
+              (m['totalMaterials'] as int?) ??
+              catalogMatch?.totalMaterials ??
+              15,
+          hasActivePastPapers:
+              (m['hasActivePastPapers'] as bool?) ??
+              catalogMatch?.hasActivePastPapers ??
+              true,
+          iconName:
+              (m['iconName'] as String?) ?? catalogMatch?.iconName ?? 'school',
+          colorHex:
+              (m['colorHex'] as String?) ?? catalogMatch?.colorHex ?? '#6366F1',
+          syllabusCoverage:
+              (m['syllabusCoverage'] as num?)?.toDouble() ??
+              catalogMatch?.syllabusCoverage ??
+              0.70,
         );
       }).toList();
 
@@ -468,7 +504,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         CuratedCourseModel? bestMatch;
         for (final c in catalog) {
           final cTitleLower = c.title.toLowerCase();
-          final isNameMatch = cTitleLower == lower ||
+          final isNameMatch =
+              cTitleLower == lower ||
               cTitleLower.contains(lower) ||
               lower.contains(cTitleLower) ||
               c.courseCode.toLowerCase() == lower;
@@ -490,7 +527,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           matched.add(
             CuratedCourseModel(
               id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
-              courseCode: subject.length > 4 ? subject.substring(0, 4).toUpperCase() : subject.toUpperCase(),
+              courseCode: subject.length > 4
+                  ? subject.substring(0, 4).toUpperCase()
+                  : subject.toUpperCase(),
               title: subject,
               department: '$examName - General Studies',
               totalMaterials: 25,
@@ -587,7 +626,9 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     if (data is Map<String, dynamic> && data['sessionId'] != null) {
       return data['sessionId'].toString();
     }
-    throw const ServerException(message: 'Invalid session response from server');
+    throw const ServerException(
+      message: 'Invalid session response from server',
+    );
   }
 
   DashboardFeedModel _generateFallbackFeedModel(
@@ -641,49 +682,345 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   List<CuratedCourseModel> _generateDefaultCatalogCourses() {
     const curatedSubjects = [
       // Core
-      (code: 'MTH', title: 'Mathematics', stream: 'Core', icon: 'calculate', color: '#6366F1', materials: 48, coverage: 0.95),
-      (code: 'ENG', title: 'English Language', stream: 'Core', icon: 'auto_stories', color: '#F59E0B', materials: 52, coverage: 0.92),
-      (code: 'CIV', title: 'Civic Education', stream: 'Core', icon: 'policy', color: '#10B981', materials: 26, coverage: 0.88),
-      (code: 'DPR', title: 'Data Processing', stream: 'Core', icon: 'terminal', color: '#8B5CF6', materials: 28, coverage: 0.85),
-      (code: 'CMP', title: 'Computer Studies', stream: 'Core', icon: 'laptop', color: '#06B6D4', materials: 30, coverage: 0.87),
+      (
+        code: 'MTH',
+        title: 'Mathematics',
+        stream: 'Core',
+        icon: 'calculate',
+        color: '#6366F1',
+        materials: 48,
+        coverage: 0.95,
+      ),
+      (
+        code: 'ENG',
+        title: 'English Language',
+        stream: 'Core',
+        icon: 'auto_stories',
+        color: '#F59E0B',
+        materials: 52,
+        coverage: 0.92,
+      ),
+      (
+        code: 'CIV',
+        title: 'Civic Education',
+        stream: 'Core',
+        icon: 'policy',
+        color: '#10B981',
+        materials: 26,
+        coverage: 0.88,
+      ),
+      (
+        code: 'DPR',
+        title: 'Data Processing',
+        stream: 'Core',
+        icon: 'terminal',
+        color: '#8B5CF6',
+        materials: 28,
+        coverage: 0.85,
+      ),
+      (
+        code: 'CMP',
+        title: 'Computer Studies',
+        stream: 'Core',
+        icon: 'laptop',
+        color: '#06B6D4',
+        materials: 30,
+        coverage: 0.87,
+      ),
 
       // Sciences
-      (code: 'PHY', title: 'Physics', stream: 'Sciences', icon: 'bolt', color: '#06B6D4', materials: 44, coverage: 0.90),
-      (code: 'CHM', title: 'Chemistry', stream: 'Sciences', icon: 'biotech', color: '#EC4899', materials: 40, coverage: 0.89),
-      (code: 'BIO', title: 'Biology', stream: 'Sciences', icon: 'eco', color: '#10B981', materials: 46, coverage: 0.91),
-      (code: 'FMTH', title: 'Further Mathematics', stream: 'Sciences', icon: 'functions', color: '#4F46E5', materials: 35, coverage: 0.85),
-      (code: 'AGR', title: 'Agricultural Science', stream: 'Sciences', icon: 'agriculture', color: '#84CC16', materials: 29, coverage: 0.86),
-      (code: 'TD', title: 'Technical Drawing', stream: 'Sciences', icon: 'architecture', color: '#F97316', materials: 24, coverage: 0.82),
-      (code: 'ANH', title: 'Animal Husbandry', stream: 'Sciences', icon: 'pets', color: '#A855F7', materials: 25, coverage: 0.84),
-      (code: 'PHE', title: 'Physical Education', stream: 'Sciences', icon: 'fitness_center', color: '#14B8A6', materials: 22, coverage: 0.80),
+      (
+        code: 'PHY',
+        title: 'Physics',
+        stream: 'Sciences',
+        icon: 'bolt',
+        color: '#06B6D4',
+        materials: 44,
+        coverage: 0.90,
+      ),
+      (
+        code: 'CHM',
+        title: 'Chemistry',
+        stream: 'Sciences',
+        icon: 'biotech',
+        color: '#EC4899',
+        materials: 40,
+        coverage: 0.89,
+      ),
+      (
+        code: 'BIO',
+        title: 'Biology',
+        stream: 'Sciences',
+        icon: 'eco',
+        color: '#10B981',
+        materials: 46,
+        coverage: 0.91,
+      ),
+      (
+        code: 'FMTH',
+        title: 'Further Mathematics',
+        stream: 'Sciences',
+        icon: 'functions',
+        color: '#4F46E5',
+        materials: 35,
+        coverage: 0.85,
+      ),
+      (
+        code: 'AGR',
+        title: 'Agricultural Science',
+        stream: 'Sciences',
+        icon: 'agriculture',
+        color: '#84CC16',
+        materials: 29,
+        coverage: 0.86,
+      ),
+      (
+        code: 'TD',
+        title: 'Technical Drawing',
+        stream: 'Sciences',
+        icon: 'architecture',
+        color: '#F97316',
+        materials: 24,
+        coverage: 0.82,
+      ),
+      (
+        code: 'ANH',
+        title: 'Animal Husbandry',
+        stream: 'Sciences',
+        icon: 'pets',
+        color: '#A855F7',
+        materials: 25,
+        coverage: 0.84,
+      ),
+      (
+        code: 'PHE',
+        title: 'Physical Education',
+        stream: 'Sciences',
+        icon: 'fitness_center',
+        color: '#14B8A6',
+        materials: 22,
+        coverage: 0.80,
+      ),
 
       // Commercial
-      (code: 'ECN', title: 'Economics', stream: 'Commercial', icon: 'trending_up', color: '#3B82F6', materials: 38, coverage: 0.87),
-      (code: 'COM', title: 'Commerce', stream: 'Commercial', icon: 'storefront', color: '#0284C7', materials: 30, coverage: 0.82),
-      (code: 'ACC', title: 'Accounts - Principles of Accounts', stream: 'Commercial', icon: 'receipt_long', color: '#2563EB', materials: 34, coverage: 0.84),
-      (code: 'BKP', title: 'Book Keeping', stream: 'Commercial', icon: 'menu_book', color: '#0D9488', materials: 26, coverage: 0.81),
-      (code: 'MKT', title: 'Marketing', stream: 'Commercial', icon: 'campaign', color: '#E11D48', materials: 27, coverage: 0.83),
-      (code: 'INS', title: 'Insurance', stream: 'Commercial', icon: 'shield', color: '#6D28D9', materials: 24, coverage: 0.80),
-      (code: 'OFP', title: 'Office Practice', stream: 'Commercial', icon: 'business_center', color: '#475569', materials: 22, coverage: 0.79),
+      (
+        code: 'ECN',
+        title: 'Economics',
+        stream: 'Commercial',
+        icon: 'trending_up',
+        color: '#3B82F6',
+        materials: 38,
+        coverage: 0.87,
+      ),
+      (
+        code: 'COM',
+        title: 'Commerce',
+        stream: 'Commercial',
+        icon: 'storefront',
+        color: '#0284C7',
+        materials: 30,
+        coverage: 0.82,
+      ),
+      (
+        code: 'ACC',
+        title: 'Accounts - Principles of Accounts',
+        stream: 'Commercial',
+        icon: 'receipt_long',
+        color: '#2563EB',
+        materials: 34,
+        coverage: 0.84,
+      ),
+      (
+        code: 'BKP',
+        title: 'Book Keeping',
+        stream: 'Commercial',
+        icon: 'menu_book',
+        color: '#0D9488',
+        materials: 26,
+        coverage: 0.81,
+      ),
+      (
+        code: 'MKT',
+        title: 'Marketing',
+        stream: 'Commercial',
+        icon: 'campaign',
+        color: '#E11D48',
+        materials: 27,
+        coverage: 0.83,
+      ),
+      (
+        code: 'INS',
+        title: 'Insurance',
+        stream: 'Commercial',
+        icon: 'shield',
+        color: '#6D28D9',
+        materials: 24,
+        coverage: 0.80,
+      ),
+      (
+        code: 'OFP',
+        title: 'Office Practice',
+        stream: 'Commercial',
+        icon: 'business_center',
+        color: '#475569',
+        materials: 22,
+        coverage: 0.79,
+      ),
 
       // Arts & Humanities
-      (code: 'LIT', title: 'Literature in English', stream: 'Arts', icon: 'menu_book', color: '#D97706', materials: 36, coverage: 0.89),
-      (code: 'GOV', title: 'Government', stream: 'Arts', icon: 'account_balance', color: '#8B5CF6', materials: 32, coverage: 0.86),
-      (code: 'GEO', title: 'Geography', stream: 'Arts', icon: 'public', color: '#0D9488', materials: 28, coverage: 0.80),
-      (code: 'HIS', title: 'History', stream: 'Arts', icon: 'history_edu', color: '#78350F', materials: 25, coverage: 0.82),
-      (code: 'CRK', title: 'Christian Religious Knowledge (CRK)', stream: 'Arts', icon: 'church', color: '#B45309', materials: 29, coverage: 0.85),
-      (code: 'IRK', title: 'Islamic Religious Knowledge (IRK)', stream: 'Arts', icon: 'mosque', color: '#047857', materials: 29, coverage: 0.85),
-      (code: 'FRE', title: 'French', stream: 'Arts', icon: 'translate', color: '#3B82F6', materials: 26, coverage: 0.81),
-      (code: 'YOR', title: 'Yoruba', stream: 'Arts', icon: 'language', color: '#EA580C', materials: 24, coverage: 0.80),
-      (code: 'IGB', title: 'Igbo', stream: 'Arts', icon: 'language', color: '#16A34A', materials: 24, coverage: 0.80),
-      (code: 'HAU', title: 'Hausa', stream: 'Arts', icon: 'language', color: '#9333EA', materials: 24, coverage: 0.80),
-      (code: 'ARA', title: 'Arabic', stream: 'Arts', icon: 'translate', color: '#059669', materials: 22, coverage: 0.78),
-      (code: 'ART', title: 'Fine Arts', stream: 'Arts', icon: 'palette', color: '#BE185D', materials: 25, coverage: 0.83),
-      (code: 'MUS', title: 'Music', stream: 'Arts', icon: 'music_note', color: '#6366F1', materials: 23, coverage: 0.80),
-      (code: 'HEC', title: 'Home Economics', stream: 'Arts', icon: 'home', color: '#CA8A04', materials: 25, coverage: 0.81),
-      (code: 'FDN', title: 'Food and Nutrition', stream: 'Arts', icon: 'restaurant', color: '#E11D48', materials: 26, coverage: 0.82),
-      (code: 'CCP', title: 'Catering Craft Practice', stream: 'Arts', icon: 'dinner_dining', color: '#D97706', materials: 24, coverage: 0.79),
-      (code: 'HMG', title: 'Home Management', stream: 'Arts', icon: 'roofing', color: '#475569', materials: 23, coverage: 0.78),
+      (
+        code: 'LIT',
+        title: 'Literature in English',
+        stream: 'Arts',
+        icon: 'menu_book',
+        color: '#D97706',
+        materials: 36,
+        coverage: 0.89,
+      ),
+      (
+        code: 'GOV',
+        title: 'Government',
+        stream: 'Arts',
+        icon: 'account_balance',
+        color: '#8B5CF6',
+        materials: 32,
+        coverage: 0.86,
+      ),
+      (
+        code: 'GEO',
+        title: 'Geography',
+        stream: 'Arts',
+        icon: 'public',
+        color: '#0D9488',
+        materials: 28,
+        coverage: 0.80,
+      ),
+      (
+        code: 'HIS',
+        title: 'History',
+        stream: 'Arts',
+        icon: 'history_edu',
+        color: '#78350F',
+        materials: 25,
+        coverage: 0.82,
+      ),
+      (
+        code: 'CRK',
+        title: 'Christian Religious Knowledge (CRK)',
+        stream: 'Arts',
+        icon: 'church',
+        color: '#B45309',
+        materials: 29,
+        coverage: 0.85,
+      ),
+      (
+        code: 'IRK',
+        title: 'Islamic Religious Knowledge (IRK)',
+        stream: 'Arts',
+        icon: 'mosque',
+        color: '#047857',
+        materials: 29,
+        coverage: 0.85,
+      ),
+      (
+        code: 'FRE',
+        title: 'French',
+        stream: 'Arts',
+        icon: 'translate',
+        color: '#3B82F6',
+        materials: 26,
+        coverage: 0.81,
+      ),
+      (
+        code: 'YOR',
+        title: 'Yoruba',
+        stream: 'Arts',
+        icon: 'language',
+        color: '#EA580C',
+        materials: 24,
+        coverage: 0.80,
+      ),
+      (
+        code: 'IGB',
+        title: 'Igbo',
+        stream: 'Arts',
+        icon: 'language',
+        color: '#16A34A',
+        materials: 24,
+        coverage: 0.80,
+      ),
+      (
+        code: 'HAU',
+        title: 'Hausa',
+        stream: 'Arts',
+        icon: 'language',
+        color: '#9333EA',
+        materials: 24,
+        coverage: 0.80,
+      ),
+      (
+        code: 'ARA',
+        title: 'Arabic',
+        stream: 'Arts',
+        icon: 'translate',
+        color: '#059669',
+        materials: 22,
+        coverage: 0.78,
+      ),
+      (
+        code: 'ART',
+        title: 'Fine Arts',
+        stream: 'Arts',
+        icon: 'palette',
+        color: '#BE185D',
+        materials: 25,
+        coverage: 0.83,
+      ),
+      (
+        code: 'MUS',
+        title: 'Music',
+        stream: 'Arts',
+        icon: 'music_note',
+        color: '#6366F1',
+        materials: 23,
+        coverage: 0.80,
+      ),
+      (
+        code: 'HEC',
+        title: 'Home Economics',
+        stream: 'Arts',
+        icon: 'home',
+        color: '#CA8A04',
+        materials: 25,
+        coverage: 0.81,
+      ),
+      (
+        code: 'FDN',
+        title: 'Food and Nutrition',
+        stream: 'Arts',
+        icon: 'restaurant',
+        color: '#E11D48',
+        materials: 26,
+        coverage: 0.82,
+      ),
+      (
+        code: 'CCP',
+        title: 'Catering Craft Practice',
+        stream: 'Arts',
+        icon: 'dinner_dining',
+        color: '#D97706',
+        materials: 24,
+        coverage: 0.79,
+      ),
+      (
+        code: 'HMG',
+        title: 'Home Management',
+        stream: 'Arts',
+        icon: 'roofing',
+        color: '#475569',
+        materials: 23,
+        coverage: 0.78,
+      ),
     ];
 
     final highSchoolCourses = <CuratedCourseModel>[];

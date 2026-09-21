@@ -48,8 +48,9 @@ class DecksLocalDataSourceImpl implements DecksLocalDataSource {
   Future<void> saveDeck(DeckModel deck, {List<FlashcardModel>? cards}) async {
     final cardsToSave = cards ?? deck.cards;
     final deckComp = _deckToCompanion(deck);
-    final cardsComp =
-        cardsToSave.map((c) => _cardToCompanion(c, deck.id)).toList();
+    final cardsComp = cardsToSave
+        .map((c) => _cardToCompanion(c, deck.id))
+        .toList();
     await _appDatabase.batchUpsertDeckAndCardsTransaction(
       deckComp,
       cardsComp,
@@ -58,8 +59,7 @@ class DecksLocalDataSourceImpl implements DecksLocalDataSource {
 
   @override
   Future<void> saveCards(String deckId, List<FlashcardModel> cards) async {
-    final cardsComp =
-        cards.map((c) => _cardToCompanion(c, deckId)).toList();
+    final cardsComp = cards.map((c) => _cardToCompanion(c, deckId)).toList();
     await _appDatabase.batchUpsertFlashcards(cardsComp);
   }
 
@@ -211,8 +211,9 @@ class DecksLocalDataSourceImpl implements DecksLocalDataSource {
     FlashcardModel card, [
     String? fallbackDeckId,
   ]) {
-    final deckId =
-        card.deckId.isNotEmpty ? card.deckId : (fallbackDeckId ?? '');
+    final deckId = card.deckId.isNotEmpty
+        ? card.deckId
+        : (fallbackDeckId ?? '');
     final now = DateTime.now();
     return FlashcardsCompanion(
       id: Value(card.id),

@@ -37,8 +37,8 @@ class SubjectFilterBar extends StatelessWidget {
                   onSelected: (_) {
                     unawaited(HapticFeedback.selectionClick());
                     context.read<PastQuestionsBloc>().add(
-                          ChangeSubjectEvent(subj),
-                        );
+                      ChangeSubjectEvent(subj),
+                    );
                   },
                   selectedColor: colors.primary,
                   backgroundColor: isDark
@@ -144,8 +144,8 @@ class YearFilterButton extends StatelessWidget {
               color: isSpecific
                   ? colors.primary.withAlpha(isDark ? 45 : 20)
                   : (isDark
-                      ? colors.surfaceSecondary.withAlpha(120)
-                      : colors.surfacePrimary),
+                        ? colors.surfaceSecondary.withAlpha(120)
+                        : colors.surfacePrimary),
               borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(
                 color: isSpecific

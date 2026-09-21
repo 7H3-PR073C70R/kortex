@@ -198,7 +198,8 @@ class _SyllabotChatView extends HookWidget {
       if (!report.isSupported) {
         if (pageContext.mounted) {
           pageContext.showSnackBar(
-            message: report.unsupportedReason ??
+            message:
+                report.unsupportedReason ??
                 'Your device does not meet the hardware requirements for On-Device AI.',
             type: SnackBarType.error,
           );
@@ -219,7 +220,9 @@ class _SyllabotChatView extends HookWidget {
             onDownloadComplete: () {
               if (pageContext.mounted) {
                 pageContext.read<SyllabotChatBloc>().add(
-                  const ChangeEngineTypeEvent(ExecutionEngineType.localOnDevice),
+                  const ChangeEngineTypeEvent(
+                    ExecutionEngineType.localOnDevice,
+                  ),
                 );
               }
             },
@@ -300,7 +303,8 @@ class _SyllabotChatView extends HookWidget {
       }
 
       final storage = locator<LocalStorageService>();
-      final isAlreadyConverted = state.isConvertedToDeck ||
+      final isAlreadyConverted =
+          state.isConvertedToDeck ||
           storage.getPreference(key: 'syllabot_converted_${state.sessionId}') !=
               null;
       if (isAlreadyConverted) {
@@ -324,18 +328,28 @@ class _SyllabotChatView extends HookWidget {
 
       if (userPrompts.isNotEmpty) {
         if (userPrompts.length == 1) {
-          final clean = userPrompts.first.replaceAll(RegExp(r'[?!.]+$'), '').trim();
+          final clean = userPrompts.first
+              .replaceAll(RegExp(r'[?!.]+$'), '')
+              .trim();
           derivedTitle = clean.length > 38
               ? '${clean.substring(0, 35)}...'
               : clean;
         } else {
-          final clean1 = userPrompts.first.replaceAll(RegExp(r'[?!.]+$'), '').trim();
-          final cleanLast = userPrompts.last.replaceAll(RegExp(r'[?!.]+$'), '').trim();
+          final clean1 = userPrompts.first
+              .replaceAll(RegExp(r'[?!.]+$'), '')
+              .trim();
+          final cleanLast = userPrompts.last
+              .replaceAll(RegExp(r'[?!.]+$'), '')
+              .trim();
           if (clean1.toLowerCase() == cleanLast.toLowerCase()) {
-            derivedTitle = clean1.length > 38 ? '${clean1.substring(0, 35)}...' : clean1;
+            derivedTitle = clean1.length > 38
+                ? '${clean1.substring(0, 35)}...'
+                : clean1;
           } else {
             final combined = '$clean1 & $cleanLast';
-            derivedTitle = combined.length > 42 ? '${combined.substring(0, 39)}...' : combined;
+            derivedTitle = combined.length > 42
+                ? '${combined.substring(0, 39)}...'
+                : combined;
           }
         }
 
@@ -348,7 +362,8 @@ class _SyllabotChatView extends HookWidget {
             lower.contains('adjective') ||
             lower.contains('preposition')) {
           derivedCourseCode = 'ENG 101';
-          if (lower.contains('part of speech') || lower.contains('parts of speech')) {
+          if (lower.contains('part of speech') ||
+              lower.contains('parts of speech')) {
             derivedTitle = 'Parts of Speech & Grammar';
           }
         } else if (lower.contains('circle') ||
@@ -586,36 +601,38 @@ class _SyllabotChatView extends HookWidget {
                           unawaited(
                             CreatePostBottomSheet.show(
                               context,
-                              onSubmit: ({
-                                required title,
-                                required content,
-                                required track,
-                                latexContent,
-                                isQuestion = false,
-                                syllabusTag = 'AI Insights',
-                                isAnonymous = false,
-                              }) {
-                                if (locator.isRegistered<CommunityHubBloc>()) {
-                                  locator<CommunityHubBloc>().add(
-                                    CreateForumPostEvent(
-                                      title: title,
-                                      content: content.isNotEmpty
-                                          ? content
-                                          : lastAiText,
-                                      track: track,
-                                      latexContent: latexContent,
-                                      isQuestion: isQuestion,
-                                      syllabusTag: syllabusTag,
-                                      isAnonymous: isAnonymous,
-                                    ),
-                                  );
-                                }
-                                context.showSnackBar(
-                                  message:
-                                      'Shared insight with your cohort! 💡',
-                                  type: SnackBarType.success,
-                                );
-                              },
+                              onSubmit:
+                                  ({
+                                    required title,
+                                    required content,
+                                    required track,
+                                    latexContent,
+                                    isQuestion = false,
+                                    syllabusTag = 'AI Insights',
+                                    isAnonymous = false,
+                                  }) {
+                                    if (locator
+                                        .isRegistered<CommunityHubBloc>()) {
+                                      locator<CommunityHubBloc>().add(
+                                        CreateForumPostEvent(
+                                          title: title,
+                                          content: content.isNotEmpty
+                                              ? content
+                                              : lastAiText,
+                                          track: track,
+                                          latexContent: latexContent,
+                                          isQuestion: isQuestion,
+                                          syllabusTag: syllabusTag,
+                                          isAnonymous: isAnonymous,
+                                        ),
+                                      );
+                                    }
+                                    context.showSnackBar(
+                                      message:
+                                          'Shared insight with your cohort! 💡',
+                                      type: SnackBarType.success,
+                                    );
+                                  },
                             ),
                           );
                         },
@@ -697,258 +714,274 @@ class _SyllabotChatView extends HookWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 860),
               child: Column(
-            children: [
-              // 1. Main Chat Area (Empty Syllabot Greeting or Message Stream)
-              Expanded(
-                child: BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
-                  builder: (context, state) {
-                    if (state.messages.isEmpty &&
-                        state.streamingText.isEmpty &&
-                        state.status != SyllabotStatus.streaming) {
-                      return _buildEmptySyllabotGreeting(
-                        context,
-                        colors,
-                        typography,
-                        l10n,
-                        textController,
-                        calibrationProfileState.value,
-                      );
-                    }
+                children: [
+                  // 1. Main Chat Area (Empty Syllabot Greeting or Message Stream)
+                  Expanded(
+                    child: BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+                      builder: (context, state) {
+                        if (state.messages.isEmpty &&
+                            state.streamingText.isEmpty &&
+                            state.status != SyllabotStatus.streaming) {
+                          return _buildEmptySyllabotGreeting(
+                            context,
+                            colors,
+                            typography,
+                            l10n,
+                            textController,
+                            calibrationProfileState.value,
+                          );
+                        }
 
-                    return _buildMessageListView(
-                      context,
-                      state,
-                      colors,
-                      typography,
-                      scrollController,
-                      ttsHandler,
-                      userIsAtBottom,
-                    );
-                  },
-                ),
-              ),
-
-              // 2. Actionable Error Banner with 1-Tap Prompt Retry & Offline
-              // Switch
-              BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
-                buildWhen: (p, c) =>
-                    p.status != c.status ||
-                    p.errorMessage != c.errorMessage ||
-                    p.engineType != c.engineType,
-                builder: (context, state) {
-                  if (state.status != SyllabotStatus.error ||
-                      state.errorMessage == null ||
-                      state.errorMessage!.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final isCloudError =
-                      state.engineType == ExecutionEngineType.cloudRemote;
-
-                  return Container(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
+                        return _buildMessageListView(
+                          context,
+                          state,
+                          colors,
+                          typography,
+                          scrollController,
+                          ttsHandler,
+                          userIsAtBottom,
+                        );
+                      },
                     ),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colors.error.withAlpha(isDark ? 35 : 20),
-                      borderRadius: BorderRadius.circular(AppRadius.panel),
-                      border: Border.all(
-                        color: colors.error.withAlpha(isDark ? 90 : 70),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              isCloudError
-                                  ? Icons.wifi_off_rounded
-                                  : Icons.error_outline_rounded,
-                              color: colors.error,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                isCloudError
-                                    ? (state.errorMessage ??
-                                          'Network error. Connect to network or '
-                                              'switch to On-Device AI.')
-                                    : 'On-Device Engine encountered an issue. '
-                                          'Tap retry.',
-                                style: typography.caption.medium.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                          ],
+                  ),
+
+                  // 2. Actionable Error Banner with 1-Tap Prompt Retry & Offline
+                  // Switch
+                  BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+                    buildWhen: (p, c) =>
+                        p.status != c.status ||
+                        p.errorMessage != c.errorMessage ||
+                        p.engineType != c.engineType,
+                    builder: (context, state) {
+                      if (state.status != SyllabotStatus.error ||
+                          state.errorMessage == null ||
+                          state.errorMessage!.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final isCloudError =
+                          state.engineType == ExecutionEngineType.cloudRemote;
+
+                      return Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
                         ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colors.error.withAlpha(isDark ? 35 : 20),
+                          borderRadius: BorderRadius.circular(AppRadius.panel),
+                          border: Border.all(
+                            color: colors.error.withAlpha(isDark ? 90 : 70),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 1-Tap Switch to On-Device AI
-                            if (state.engineType ==
-                                ExecutionEngineType.cloudRemote)
-                              PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return ShrinkableButton(
-                                    onTap: () => handleEngineSwitch(
-                                      context,
-                                      ExecutionEngineType.localOnDevice,
+                            Row(
+                              children: [
+                                Icon(
+                                  isCloudError
+                                      ? Icons.wifi_off_rounded
+                                      : Icons.error_outline_rounded,
+                                  color: colors.error,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    isCloudError
+                                        ? (state.errorMessage ??
+                                              'Network error. Connect to network or '
+                                                  'switch to On-Device AI.')
+                                        : 'On-Device Engine encountered an issue. '
+                                              'Tap retry.',
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 12,
                                     ),
-                                    child: AnimatedContainer(
-                                      duration: AppMotion.snappy,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      margin: const EdgeInsets.only(right: 8),
-                                      decoration: BoxDecoration(
-                                        color: isHovered
-                                            ? colors.surfaceSecondary.withAlpha(220)
-                                            : colors.surfaceSecondary,
-                                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                                        border: Border.all(
-                                          color: isHovered
-                                              ? colors.primary.withAlpha(160)
-                                              : colors.surfaceBorder.withAlpha(120),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                // 1-Tap Switch to On-Device AI
+                                if (state.engineType ==
+                                    ExecutionEngineType.cloudRemote)
+                                  PlatformHoverBuilder(
+                                    builder: (context, isHovered, child) {
+                                      return ShrinkableButton(
+                                        onTap: () => handleEngineSwitch(
+                                          context,
+                                          ExecutionEngineType.localOnDevice,
                                         ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text(
-                                            '⚡',
-                                            style: TextStyle(fontSize: 10),
+                                        child: AnimatedContainer(
+                                          duration: AppMotion.snappy,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
                                           ),
-                                          const SizedBox(width: 5),
-                                          Text(
-                                            'Use On-Device AI',
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.textPrimary,
-                                              fontSize: 11.5,
+                                          margin: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isHovered
+                                                ? colors.surfaceSecondary
+                                                      .withAlpha(220)
+                                                : colors.surfaceSecondary,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.badge,
+                                            ),
+                                            border: Border.all(
+                                              color: isHovered
+                                                  ? colors.primary.withAlpha(
+                                                      160,
+                                                    )
+                                                  : colors.surfaceBorder
+                                                        .withAlpha(120),
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-
-                            // 1-Tap Retry Button
-                            if (state.lastPrompt != null)
-                              PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return ShrinkableButton(
-                                    onTap: () {
-                                      unawaited(HapticFeedback.mediumImpact());
-                                      context.read<SyllabotChatBloc>().add(
-                                        const RetryLastMessageEvent(),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Text(
+                                                '⚡',
+                                                style: TextStyle(fontSize: 10),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                'Use On-Device AI',
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color: colors.textPrimary,
+                                                      fontSize: 11.5,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       );
                                     },
-                                    child: AnimatedContainer(
-                                      duration: AppMotion.snappy,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isHovered
-                                            ? colors.error.withAlpha(220)
-                                            : colors.error,
-                                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.refresh_rounded,
-                                            color: colors.white,
-                                            size: 13,
+                                  ),
+
+                                // 1-Tap Retry Button
+                                if (state.lastPrompt != null)
+                                  PlatformHoverBuilder(
+                                    builder: (context, isHovered, child) {
+                                      return ShrinkableButton(
+                                        onTap: () {
+                                          unawaited(
+                                            HapticFeedback.mediumImpact(),
+                                          );
+                                          context.read<SyllabotChatBloc>().add(
+                                            const RetryLastMessageEvent(),
+                                          );
+                                        },
+                                        child: AnimatedContainer(
+                                          duration: AppMotion.snappy,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            l10n.retryAction,
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.white,
-                                              fontSize: 11.5,
+                                          decoration: BoxDecoration(
+                                            color: isHovered
+                                                ? colors.error.withAlpha(220)
+                                                : colors.error,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.badge,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.refresh_rounded,
+                                                color: colors.white,
+                                                size: 13,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                l10n.retryAction,
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color: colors.white,
+                                                      fontSize: 11.5,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
 
-              // 3. Syllabot Chat Bottom Bar (Download Progress vs Input Bar)
-              BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
-                builder: (context, state) {
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
-                    child: isDownloadingModel.value
-                        ? LocalLlmDownloadBar(
-                            progress: downloadProgress.value,
-                            onCancel: () => cancelModelDownload(context),
-                            currentEngine: state.engineType,
-                          )
-                        : SyllabotChatInputBar(
-                            controller: textController,
-                            socraticMode: state.socraticMode,
-                            engineType: state.engineType,
-                            isLoading: state.status == SyllabotStatus.streaming,
-                            isAiSpeaking: isAiSpeaking,
-                            onInterruptAi: ttsHandler.stop,
-                            onVoiceDialogueTap: () =>
-                                openVoiceDialogue(context, state),
-                            onModeChanged: (mode) {
-                              context.read<SyllabotChatBloc>().add(
-                                ChangeSocraticModeEvent(mode),
-                              );
-                            },
-                            onEngineChanged: (engine) =>
-                                handleEngineSwitch(context, engine),
-                            onSubmit: (prompt) {
-                              unawaited(ttsHandler.stop());
-                              final sid = UuidUtils.isValidUuid(state.sessionId)
-                                  ? state.sessionId
-                                  : UuidUtils.generate();
+                  // 3. Syllabot Chat Bottom Bar (Download Progress vs Input Bar)
+                  BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+                    builder: (context, state) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+                        child: isDownloadingModel.value
+                            ? LocalLlmDownloadBar(
+                                progress: downloadProgress.value,
+                                onCancel: () => cancelModelDownload(context),
+                                currentEngine: state.engineType,
+                              )
+                            : SyllabotChatInputBar(
+                                controller: textController,
+                                socraticMode: state.socraticMode,
+                                engineType: state.engineType,
+                                isLoading:
+                                    state.status == SyllabotStatus.streaming,
+                                isAiSpeaking: isAiSpeaking,
+                                onInterruptAi: ttsHandler.stop,
+                                onVoiceDialogueTap: () =>
+                                    openVoiceDialogue(context, state),
+                                onModeChanged: (mode) {
+                                  context.read<SyllabotChatBloc>().add(
+                                    ChangeSocraticModeEvent(mode),
+                                  );
+                                },
+                                onEngineChanged: (engine) =>
+                                    handleEngineSwitch(context, engine),
+                                onSubmit: (prompt) {
+                                  unawaited(ttsHandler.stop());
+                                  final sid =
+                                      UuidUtils.isValidUuid(state.sessionId)
+                                      ? state.sessionId
+                                      : UuidUtils.generate();
 
-                              context.read<SyllabotChatBloc>().add(
-                                SubmitPromptEvent(
-                                  prompt: prompt,
-                                  sessionId: sid,
-                                  socraticMode: state.socraticMode,
-                                  engineType: state.engineType,
-                                ),
-                              );
-                              scrollToBottom();
-                            },
-                          ),
-                  );
-                },
+                                  context.read<SyllabotChatBloc>().add(
+                                    SubmitPromptEvent(
+                                      prompt: prompt,
+                                      sessionId: sid,
+                                      socraticMode: state.socraticMode,
+                                      engineType: state.engineType,
+                                    ),
+                                  );
+                                  scrollToBottom();
+                                },
+                              ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
-}
+    );
+  }
 
   /// Empty Syllabot Greeting & Tailored Academic Suggestions
   Widget _buildEmptySyllabotGreeting(
@@ -1023,7 +1056,10 @@ class _SyllabotChatView extends HookWidget {
                           ),
                           child: Row(
                             children: [
-                              Text(s.icon, style: const TextStyle(fontSize: 18)),
+                              Text(
+                                s.icon,
+                                style: const TextStyle(fontSize: 18),
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -1089,7 +1125,9 @@ class _SyllabotChatView extends HookWidget {
       },
       child: ListView.builder(
         controller: scrollController,
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         itemCount:
             state.messages.length +

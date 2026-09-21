@@ -153,7 +153,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#F97316',
     materials: 24,
     coverage: 0.82,
-    description: 'Orthographic Projections, Isometric Drafting & Geometric Curves',
+    description:
+        'Orthographic Projections, Isometric Drafting & Geometric Curves',
   ),
   SubjectCatalogItem(
     code: 'ANH',
@@ -194,7 +195,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     icon: 'storefront',
     colorHex: '#0284C7',
     coverage: 0.82,
-    description: 'Trade, Banking, Insurance, Transport, Warehousing & E-commerce',
+    description:
+        'Trade, Banking, Insurance, Transport, Warehousing & E-commerce',
   ),
   SubjectCatalogItem(
     code: 'ACC',
@@ -256,7 +258,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#D97706',
     materials: 36,
     coverage: 0.89,
-    description: 'African & Non-African Prose, Poetry, Drama & Literary Criticism',
+    description:
+        'African & Non-African Prose, Poetry, Drama & Literary Criticism',
   ),
   SubjectCatalogItem(
     code: 'GOV',
@@ -266,7 +269,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#8B5CF6',
     materials: 32,
     coverage: 0.86,
-    description: 'Political Systems, Constitutions, Electoral Process, Foreign Policy',
+    description:
+        'Political Systems, Constitutions, Electoral Process, Foreign Policy',
   ),
   SubjectCatalogItem(
     code: 'GEO',
@@ -276,7 +280,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#0D9488',
     materials: 28,
     coverage: 0.80,
-    description: 'Physical Geography, Climatology, Map Reading, Regional Studies',
+    description:
+        'Physical Geography, Climatology, Map Reading, Regional Studies',
   ),
   SubjectCatalogItem(
     code: 'HIS',
@@ -286,7 +291,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#78350F',
     materials: 25,
     coverage: 0.82,
-    description: 'West African Kingdoms, Nigerian History, Colonial Era & World Wars',
+    description:
+        'West African Kingdoms, Nigerian History, Colonial Era & World Wars',
   ),
   SubjectCatalogItem(
     code: 'CRK',
@@ -295,7 +301,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     icon: 'church',
     colorHex: '#B45309',
     materials: 29,
-    description: 'Old & New Testament, Christian Ethics, Apostles & Early Church',
+    description:
+        'Old & New Testament, Christian Ethics, Apostles & Early Church',
   ),
   SubjectCatalogItem(
     code: 'IRK',
@@ -304,7 +311,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     icon: 'mosque',
     colorHex: '#047857',
     materials: 29,
-    description: 'Quran Studies, Hadith, Fiqh, Islamic History & Pillars of Faith',
+    description:
+        'Quran Studies, Hadith, Fiqh, Islamic History & Pillars of Faith',
   ),
   SubjectCatalogItem(
     code: 'FRE',
@@ -374,7 +382,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#6366F1',
     materials: 23,
     coverage: 0.80,
-    description: 'Rudiments of Music, Western Harmony, African Rhythms & Ear Training',
+    description:
+        'Rudiments of Music, Western Harmony, African Rhythms & Ear Training',
   ),
   SubjectCatalogItem(
     code: 'FDN',
@@ -384,7 +393,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#E11D48',
     materials: 26,
     coverage: 0.82,
-    description: 'Nutritional Science, Food Chemistry, Meal Planning & Preservation',
+    description:
+        'Nutritional Science, Food Chemistry, Meal Planning & Preservation',
   ),
 
   // ── SAT & International Prep ─────────────────────────────────────────────
@@ -406,7 +416,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#EC4899',
     materials: 32,
     coverage: 0.90,
-    description: 'Standard English conventions, expression of ideas & sentence structure',
+    description:
+        'Standard English conventions, expression of ideas & sentence structure',
   ),
   SubjectCatalogItem(
     code: 'SAT-M1',
@@ -426,7 +437,8 @@ const List<SubjectCatalogItem> kCuratedSubjectsCatalog = [
     colorHex: '#8B5CF6',
     materials: 36,
     coverage: 0.88,
-    description: 'Nonlinear functions, quadratics, ratios, rates & data analysis',
+    description:
+        'Nonlinear functions, quadratics, ratios, rates & data analysis',
   ),
 ];
 

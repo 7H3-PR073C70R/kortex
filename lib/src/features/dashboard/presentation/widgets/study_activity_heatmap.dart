@@ -141,7 +141,9 @@ class StudyActivityHeatmap extends StatelessWidget {
                           margin: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             color: cellColor,
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
                           ),
                         ),
                       ),

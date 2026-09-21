@@ -65,8 +65,9 @@ extension SyllabotStreamExtension on Dio {
 
     final buffer = StringBuffer();
 
-    await for (final textChunk
-        in stream.cast<List<int>>().transform(utf8.decoder)) {
+    await for (final textChunk in stream.cast<List<int>>().transform(
+      utf8.decoder,
+    )) {
       buffer.write(textChunk);
 
       final lines = buffer.toString().split('\n');
@@ -80,7 +81,8 @@ extension SyllabotStreamExtension on Dio {
             final decoded = jsonDecode(jsonStr);
             if (decoded is Map<String, dynamic>) {
               if (decoded.containsKey('error')) {
-                final rawMsg = decoded['message']?.toString() ??
+                final rawMsg =
+                    decoded['message']?.toString() ??
                     decoded['error']?.toString() ??
                     'AI provider error';
                 final cleanedMsg = _cleanErrorMessage(rawMsg);
@@ -119,7 +121,8 @@ extension SyllabotStreamExtension on Dio {
       try {
         final decoded = jsonDecode(jsonStr);
         if (decoded is Map<String, dynamic> && decoded.containsKey('error')) {
-          final rawMsg = decoded['message']?.toString() ??
+          final rawMsg =
+              decoded['message']?.toString() ??
               decoded['error']?.toString() ??
               'AI provider error';
           final cleanedMsg = _cleanErrorMessage(rawMsg);

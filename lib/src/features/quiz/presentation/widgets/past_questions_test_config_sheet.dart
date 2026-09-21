@@ -11,7 +11,10 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.da
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Bottom modal sheet allowing students to configure and start a timed CBT practice test.
-void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState state) {
+void showPastQuestionsTestConfigSheet(
+  BuildContext context,
+  PastQuestionsState state,
+) {
   final colors = context.colors;
   final typography = context.typography;
   final isDark = context.isDarkMode;
@@ -21,8 +24,12 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
       : const [2024, 2023, 2022, 2021, 2020, 2019, 2018];
 
   var isRandomSelection = state.selectedYear == null;
-  var selectedYear = state.selectedYear ?? (defaultYears.isNotEmpty ? defaultYears.first : 2024);
-  var selectedCount = state.questions.length > 10 ? 10 : (state.questions.isEmpty ? 10 : state.questions.length);
+  var selectedYear =
+      state.selectedYear ??
+      (defaultYears.isNotEmpty ? defaultYears.first : 2024);
+  var selectedCount = state.questions.length > 10
+      ? 10
+      : (state.questions.isEmpty ? 10 : state.questions.length);
   var isTimedMode = true;
   var isMillionaireMode = false;
 
@@ -32,8 +39,9 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
       backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.dialog),
+        ),
       ),
       builder: (bottomSheetContext) {
         return StatefulBuilder(
@@ -55,273 +63,314 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                               height: 4,
                               decoration: BoxDecoration(
                                 color: colors.surfaceBorder,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.micro),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.micro,
+                                ),
                               ),
                             ),
                           ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Configure ${state.selectedExam.displayName} Test',
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 17,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Practice a specific past paper year or generate a randomized mock test.',
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 1. Question Source: Random vs Exam Year
-                      Text(
-                        'Question Selection Mode',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ModeOptionCard(
-                              title: 'Random Mock',
-                              subtitle: 'Shuffle across all years',
-                              icon: Icons.shuffle_rounded,
-                              isSelected: isRandomSelection,
-                              onTap: () => setSheetState(() => isRandomSelection = true),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Configure ${state.selectedExam.displayName} Test',
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 17,
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ModeOptionCard(
-                              title: 'Specific Year',
-                              subtitle: 'Target an official paper',
-                              icon: Icons.calendar_today_rounded,
-                              isSelected: !isRandomSelection,
-                              onTap: () => setSheetState(() => isRandomSelection = false),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Practice a specific past paper year or generate a randomized mock test.',
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 11.5,
                             ),
                           ),
-                        ],
-                      ),
+                          const SizedBox(height: 16),
 
-                      // If specific year selected, show year pills
-                      if (!isRandomSelection) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          'Select Exam Year',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.textSecondary,
+                          // 1. Question Source: Random vs Exam Year
+                          Text(
+                            'Question Selection Mode',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: defaultYears.map((yr) {
-                              final isSelected = selectedYear == yr;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: ChoiceChip(
-                                  label: Text('$yr'),
-                                  selected: isSelected,
-                                  onSelected: (_) => setSheetState(() => selectedYear = yr),
-                                  selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
-                                  backgroundColor: colors.surfaceSecondary.withAlpha(100),
-                                  labelStyle: typography.caption.bold.copyWith(
-                                    color: isSelected ? colors.primary : colors.textSecondary,
-                                    fontSize: 12,
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ModeOptionCard(
+                                  title: 'Random Mock',
+                                  subtitle: 'Shuffle across all years',
+                                  icon: Icons.shuffle_rounded,
+                                  isSelected: isRandomSelection,
+                                  onTap: () => setSheetState(
+                                    () => isRandomSelection = true,
                                   ),
                                 ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ],
-
-                      const SizedBox(height: 16),
-
-                      // 2. Simulation Mode
-                      Text(
-                        'Test Simulation Mode',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ModeOptionCard(
-                              title: 'Timed CBT',
-                              subtitle: 'Strict countdown',
-                              icon: Icons.timer_outlined,
-                              isSelected: isTimedMode && !isMillionaireMode,
-                              onTap: () => setSheetState(() {
-                                isTimedMode = true;
-                                isMillionaireMode = false;
-                              }),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ModeOptionCard(
-                              title: 'Self-Paced',
-                              subtitle: 'Instant reveal',
-                              icon: Icons.school_outlined,
-                              isSelected: !isTimedMode && !isMillionaireMode,
-                              onTap: () => setSheetState(() {
-                                isTimedMode = false;
-                                isMillionaireMode = false;
-                              }),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ModeOptionCard(
-                              title: 'Millionaire',
-                              subtitle: 'Arcade ladder',
-                              icon: Icons.military_tech_rounded,
-                              isSelected: isMillionaireMode,
-                              onTap: () => setSheetState(() {
-                                isMillionaireMode = true;
-                                selectedCount = 12;
-                              }),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 3. Question Count Pills
-                      Text(
-                        'Question Count',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: (isMillionaireMode ? [12] : [5, 10, 20, 40]).map((count) {
-                          final isSelected = selectedCount == count;
-
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(isMillionaireMode ? '12 Rungs (Millionaire)' : '$count Qs'),
-                              selected: isSelected,
-                              onSelected: (_) => setSheetState(() => selectedCount = count),
-                              selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
-                              backgroundColor: colors.surfaceSecondary.withAlpha(100),
-                              labelStyle: typography.caption.bold.copyWith(
-                                color: isSelected ? colors.primary : colors.textSecondary,
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 22),
-
-                      // 4. Launch CTA
-                      ShrinkableButton(
-                        onTap: () {
-                          Navigator.pop(bottomSheetContext);
-
-                          // Pool questions
-                          var pool = List<PastQuestionEntity>.from(state.questions);
-                          if (!isRandomSelection) {
-                            final filtered = pool.where((q) => q.year == selectedYear).toList();
-                            if (filtered.isNotEmpty) {
-                              pool = filtered;
-                            }
-                          } else {
-                            pool.shuffle();
-                          }
-
-                          final count = selectedCount > pool.length && pool.isNotEmpty
-                              ? pool.length
-                              : selectedCount;
-
-                          final testQuestions = pool
-                              .take(count)
-                              .map(QuizQuestionEntity.fromPastQuestion)
-                              .toList();
-
-                          final testTitle = isMillionaireMode
-                              ? '${state.selectedExam.displayName} Millionaire Challenge'
-                              : (isRandomSelection
-                                  ? '${state.selectedExam.displayName} Random CBT Mock'
-                                  : '${state.selectedExam.displayName} $selectedYear Past Paper');
-
-                          Navigator.of(context).pop();
-
-                          unawaited(
-                            context.router.push(
-                              QuizWorkspaceRoute(
-                                deckId: 'cbt_${state.selectedExam.code}_${isRandomSelection ? "random" : selectedYear}',
-                                deckTitle: testTitle,
-                                subject: state.selectedSubject == 'All'
-                                    ? state.selectedExam.displayName
-                                    : state.selectedSubject,
-                                durationMinutes: isMillionaireMode
-                                    ? null
-                                    : (isTimedMode ? count : null),
-                                initialQuestions: testQuestions,
-                                assessmentMode: isMillionaireMode
-                                    ? AssessmentMode.millionaireMode
-                                    : (isTimedMode
-                                        ? AssessmentMode.examSimulationMode
-                                        : AssessmentMode.discoveryMode),
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.panel),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.primary.withAlpha(90),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: ModeOptionCard(
+                                  title: 'Specific Year',
+                                  subtitle: 'Target an official paper',
+                                  icon: Icons.calendar_today_rounded,
+                                  isSelected: !isRandomSelection,
+                                  onTap: () => setSheetState(
+                                    () => isRandomSelection = false,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                          child: Center(
-                            child: Text(
-                              isMillionaireMode
-                                  ? 'Start Millionaire Ascent Challenge (12 Rungs 🏆)'
+
+                          // If specific year selected, show year pills
+                          if (!isRandomSelection) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              'Select Exam Year',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: defaultYears.map((yr) {
+                                  final isSelected = selectedYear == yr;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ChoiceChip(
+                                      label: Text('$yr'),
+                                      selected: isSelected,
+                                      onSelected: (_) => setSheetState(
+                                        () => selectedYear = yr,
+                                      ),
+                                      selectedColor: colors.primary.withAlpha(
+                                        isDark ? 60 : 35,
+                                      ),
+                                      backgroundColor: colors.surfaceSecondary
+                                          .withAlpha(100),
+                                      labelStyle: typography.caption.bold
+                                          .copyWith(
+                                            color: isSelected
+                                                ? colors.primary
+                                                : colors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 16),
+
+                          // 2. Simulation Mode
+                          Text(
+                            'Test Simulation Mode',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ModeOptionCard(
+                                  title: 'Timed CBT',
+                                  subtitle: 'Strict countdown',
+                                  icon: Icons.timer_outlined,
+                                  isSelected: isTimedMode && !isMillionaireMode,
+                                  onTap: () => setSheetState(() {
+                                    isTimedMode = true;
+                                    isMillionaireMode = false;
+                                  }),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ModeOptionCard(
+                                  title: 'Self-Paced',
+                                  subtitle: 'Instant reveal',
+                                  icon: Icons.school_outlined,
+                                  isSelected:
+                                      !isTimedMode && !isMillionaireMode,
+                                  onTap: () => setSheetState(() {
+                                    isTimedMode = false;
+                                    isMillionaireMode = false;
+                                  }),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ModeOptionCard(
+                                  title: 'Millionaire',
+                                  subtitle: 'Arcade ladder',
+                                  icon: Icons.military_tech_rounded,
+                                  isSelected: isMillionaireMode,
+                                  onTap: () => setSheetState(() {
+                                    isMillionaireMode = true;
+                                    selectedCount = 12;
+                                  }),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // 3. Question Count Pills
+                          Text(
+                            'Question Count',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children:
+                                (isMillionaireMode ? [12] : [5, 10, 20, 40])
+                                    .map((count) {
+                                      final isSelected = selectedCount == count;
+
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: ChoiceChip(
+                                          label: Text(
+                                            isMillionaireMode
+                                                ? '12 Rungs (Millionaire)'
+                                                : '$count Qs',
+                                          ),
+                                          selected: isSelected,
+                                          onSelected: (_) => setSheetState(
+                                            () => selectedCount = count,
+                                          ),
+                                          selectedColor: colors.primary
+                                              .withAlpha(isDark ? 60 : 35),
+                                          backgroundColor: colors
+                                              .surfaceSecondary
+                                              .withAlpha(100),
+                                          labelStyle: typography.caption.bold
+                                              .copyWith(
+                                                color: isSelected
+                                                    ? colors.primary
+                                                    : colors.textSecondary,
+                                              ),
+                                        ),
+                                      );
+                                    })
+                                    .toList(),
+                          ),
+                          const SizedBox(height: 22),
+
+                          // 4. Launch CTA
+                          ShrinkableButton(
+                            onTap: () {
+                              Navigator.pop(bottomSheetContext);
+
+                              // Pool questions
+                              var pool = List<PastQuestionEntity>.from(
+                                state.questions,
+                              );
+                              if (!isRandomSelection) {
+                                final filtered = pool
+                                    .where((q) => q.year == selectedYear)
+                                    .toList();
+                                if (filtered.isNotEmpty) {
+                                  pool = filtered;
+                                }
+                              } else {
+                                pool.shuffle();
+                              }
+
+                              final count =
+                                  selectedCount > pool.length && pool.isNotEmpty
+                                  ? pool.length
+                                  : selectedCount;
+
+                              final testQuestions = pool
+                                  .take(count)
+                                  .map(QuizQuestionEntity.fromPastQuestion)
+                                  .toList();
+
+                              final testTitle = isMillionaireMode
+                                  ? '${state.selectedExam.displayName} Millionaire Challenge'
                                   : (isRandomSelection
-                                      ? 'Start Random CBT ($selectedCount Questions)'
-                                      : 'Start $selectedYear Past Paper ($selectedCount Qs)'),
-                              style: typography.callout.bold.copyWith(
-                                color: colors.white,
+                                        ? '${state.selectedExam.displayName} Random CBT Mock'
+                                        : '${state.selectedExam.displayName} $selectedYear Past Paper');
+
+                              Navigator.of(context).pop();
+
+                              unawaited(
+                                context.router.push(
+                                  QuizWorkspaceRoute(
+                                    deckId:
+                                        'cbt_${state.selectedExam.code}_${isRandomSelection ? "random" : selectedYear}',
+                                    deckTitle: testTitle,
+                                    subject: state.selectedSubject == 'All'
+                                        ? state.selectedExam.displayName
+                                        : state.selectedSubject,
+                                    durationMinutes: isMillionaireMode
+                                        ? null
+                                        : (isTimedMode ? count : null),
+                                    initialQuestions: testQuestions,
+                                    assessmentMode: isMillionaireMode
+                                        ? AssessmentMode.millionaireMode
+                                        : (isTimedMode
+                                              ? AssessmentMode
+                                                    .examSimulationMode
+                                              : AssessmentMode.discoveryMode),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.panel,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.black.withAlpha(
+                                      isDark ? 50 : 20,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  isMillionaireMode
+                                      ? 'Start Millionaire Ascent Challenge (12 Rungs 🏆)'
+                                      : (isRandomSelection
+                                            ? 'Start Random CBT ($selectedCount Questions)'
+                                            : 'Start $selectedYear Past Paper ($selectedCount Qs)'),
+                                  style: typography.callout.bold.copyWith(
+                                    color: colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
-    );
-  },
-),
-);
+    ),
+  );
 }
 
 class ModeOptionCard extends StatelessWidget {

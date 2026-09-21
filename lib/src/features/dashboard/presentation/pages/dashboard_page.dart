@@ -880,7 +880,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                       // 1-Tap Sprint Tile
                       if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
                         _NextBestActionCard(
-                          topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
+                          topDeck: feed.dueStudyDecks.firstWhere(
+                            (d) => d.totalCards > 0,
+                          ),
                         ),
                         const SizedBox(height: 20),
                       ],
@@ -1033,8 +1035,12 @@ class _NextBestActionCard extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  colors.primary.withAlpha(isDark ? (isHovered ? 75 : 55) : (isHovered ? 35 : 25)),
-                  colors.syllabotAccent.withAlpha(isDark ? (isHovered ? 55 : 40) : (isHovered ? 25 : 18)),
+                  colors.primary.withAlpha(
+                    isDark ? (isHovered ? 75 : 55) : (isHovered ? 35 : 25),
+                  ),
+                  colors.syllabotAccent.withAlpha(
+                    isDark ? (isHovered ? 55 : 40) : (isHovered ? 25 : 18),
+                  ),
                 ],
               ),
               borderRadius: AppRadius.radiusPanel,
@@ -1045,8 +1051,10 @@ class _NextBestActionCard extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.primary.withAlpha(isDark ? (isHovered ? 40 : 25) : (isHovered ? 20 : 10)),
-                  blurRadius: isHovered ? 14 : 10,
+                  color: colors.black.withAlpha(
+                    isDark ? (isHovered ? 40 : 20) : (isHovered ? 15 : 8),
+                  ),
+                  blurRadius: isHovered ? 10 : 6,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -1117,7 +1125,10 @@ class _NextBestActionCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary,
                     borderRadius: AppRadius.radiusBadge,
@@ -1179,8 +1190,8 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.syllabotAccent.withAlpha(isDark ? 20 : 10),
-                  blurRadius: isHovered ? 12 : 8,
+                  color: colors.black.withAlpha(isDark ? 30 : 10),
+                  blurRadius: isHovered ? 10 : 6,
                   offset: const Offset(0, 2),
                 ),
               ],
@@ -1197,13 +1208,6 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.success,
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.success.withAlpha(140),
-                            blurRadius: 6,
-                            spreadRadius: 1.5,
-                          ),
-                        ],
                       ),
                     ),
                     const SizedBox(width: 8),

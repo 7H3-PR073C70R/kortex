@@ -54,8 +54,7 @@ class PaywallScreen extends StatefulWidget {
   State<PaywallScreen> createState() => _PaywallScreenState();
 }
 
-class _PaywallScreenState extends State<PaywallScreen>
-    with SingleTickerProviderStateMixin {
+class _PaywallScreenState extends State<PaywallScreen> {
   Offerings? _offerings;
   Package? _selectedPackage;
   bool _isLoading = true;
@@ -63,29 +62,10 @@ class _PaywallScreenState extends State<PaywallScreen>
   String? _errorMessage;
   int _selectedPlanIndex = 0; // 0 = Annual, 1 = Monthly
 
-  late AnimationController _glowController;
-  late Animation<double> _glowAnimation;
-
   @override
   void initState() {
     super.initState();
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    );
-    unawaited(_glowController.repeat(reverse: true));
-
-    _glowAnimation = Tween<double>(begin: 0.6, end: 1).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
-    );
-
     unawaited(_fetchOfferings());
-  }
-
-  @override
-  void dispose() {
-    _glowController.dispose();
-    super.dispose();
   }
 
   void _selectPlan(int index) {
@@ -428,59 +408,50 @@ class _PaywallScreenState extends State<PaywallScreen>
   ) {
     return Column(
       children: [
-        AnimatedBuilder(
-          animation: _glowAnimation,
-          builder: (context, child) {
-            final alphaPrimary = (90 * _glowAnimation.value).toInt();
-            final alphaAccent = (70 * _glowAnimation.value).toInt();
-            final shadowAlpha = (50 * _glowAnimation.value).toInt();
-
-            return Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 14.w,
-                vertical: 6.h,
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: 14.w,
+            vertical: 6.h,
+          ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colors.primary.withAlpha(80),
+                colors.syllabotAccent.withAlpha(60),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: colors.primary.withAlpha(140),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.black.withAlpha(isDark ? 40 : 15),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colors.primary.withAlpha(alphaPrimary),
-                    colors.syllabotAccent.withAlpha(alphaAccent),
-                  ],
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                color: colors.warning,
+                size: 15,
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                l10n.paywallScholarBadge,
+                style: typography.caption.bold.copyWith(
+                  color: colors.white,
+                  fontSize: 11.sp,
+                  letterSpacing: 1.2,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: colors.primary.withAlpha(140),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withAlpha(shadowAlpha),
-                    blurRadius: 18,
-                    spreadRadius: 2,
-                  ),
-                ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    color: colors.warning,
-                    size: 15,
-                  ),
-                  SizedBox(width: 6.w),
-                  Text(
-                    l10n.paywallScholarBadge,
-                    style: typography.caption.bold.copyWith(
-                      color: colors.white,
-                      fontSize: 11.sp,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+            ],
+          ),
         ),
         SizedBox(height: 10.h),
         Text(
@@ -629,7 +600,11 @@ class _PaywallScreenState extends State<PaywallScreen>
                   boxShadow: [
                     if (isSelected)
                       BoxShadow(
-                        color: colors.primary.withAlpha(isHovered ? 60 : 40),
+                        color: colors.black.withAlpha(
+                          isDark
+                              ? (isHovered ? 60 : 45)
+                              : (isHovered ? 30 : 15),
+                        ),
                         blurRadius: isHovered ? 18 : 14,
                         offset: Offset(0, isHovered ? 5 : 4),
                       )
@@ -790,7 +765,11 @@ class _PaywallScreenState extends State<PaywallScreen>
                   boxShadow: [
                     if (isSelected)
                       BoxShadow(
-                        color: colors.primary.withAlpha(isHovered ? 60 : 40),
+                        color: colors.black.withAlpha(
+                          isDark
+                              ? (isHovered ? 60 : 45)
+                              : (isHovered ? 30 : 15),
+                        ),
                         blurRadius: isHovered ? 18 : 14,
                         offset: Offset(0, isHovered ? 5 : 4),
                       )
@@ -1142,10 +1121,10 @@ class _PaywallScreenState extends State<PaywallScreen>
                         borderRadius: AppRadius.radiusPanel,
                         boxShadow: [
                           BoxShadow(
-                            color: colors.primary.withAlpha(
+                            color: colors.black.withAlpha(
                               isDark
-                                  ? (isHovered ? 140 : 110)
-                                  : (isHovered ? 95 : 70),
+                                  ? (isHovered ? 80 : 55)
+                                  : (isHovered ? 45 : 25),
                             ),
                             blurRadius: isHovered ? 20 : 16,
                             offset: Offset(0, isHovered ? 6 : 4),

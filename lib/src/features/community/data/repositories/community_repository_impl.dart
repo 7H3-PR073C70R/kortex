@@ -123,7 +123,10 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
-  Future<Either<Failure, ({ForumPostEntity post, List<ForumReplyEntity> replies})>> fetchForumThreadTree({
+  Future<
+    Either<Failure, ({ForumPostEntity post, List<ForumReplyEntity> replies})>
+  >
+  fetchForumThreadTree({
     required String postId,
     int limit = 20,
     int subReplyLimit = 5,
@@ -138,8 +141,12 @@ class CommunityRepositoryImpl implements CommunityRepository {
           if (data == null || data['post'] == null) {
             throw Exception('Forum thread not found');
           }
-          final postModel = ForumPostModel.fromJson(data['post'] as Map<String, dynamic>);
-          final repliesList = data['replies'] is List ? (data['replies'] as List) : <dynamic>[];
+          final postModel = ForumPostModel.fromJson(
+            data['post'] as Map<String, dynamic>,
+          );
+          final repliesList = data['replies'] is List
+              ? (data['replies'] as List)
+              : <dynamic>[];
           final allReplies = <ForumReplyModel>[];
           for (final r in repliesList) {
             if (r is Map<String, dynamic>) {
@@ -227,9 +234,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   @override
   Future<Either<Failure, bool>> deleteForumPost(String postId) {
-    return _remoteDataSource
-        .deleteForumPost(postId)
-        .makeRequest();
+    return _remoteDataSource.deleteForumPost(postId).makeRequest();
   }
 
   @override
@@ -694,29 +699,21 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
   @override
   Future<Either<Failure, bool>> toggleForumPostSubscription(String postId) {
-    return _remoteDataSource
-        .toggleForumPostSubscription(postId)
-        .makeRequest();
+    return _remoteDataSource.toggleForumPostSubscription(postId).makeRequest();
   }
 
   @override
   Future<Either<Failure, bool>> isForumPostSubscribed(String postId) {
-    return _remoteDataSource
-        .isForumPostSubscribed(postId)
-        .makeRequest();
+    return _remoteDataSource.isForumPostSubscribed(postId).makeRequest();
   }
 
   @override
   Future<Either<Failure, bool>> toggleBookmarkForumPost(String postId) {
-    return _remoteDataSource
-        .toggleBookmarkForumPost(postId)
-        .makeRequest();
+    return _remoteDataSource.toggleBookmarkForumPost(postId).makeRequest();
   }
 
   @override
   Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds() {
-    return _remoteDataSource
-        .getBookmarkedForumPostIds()
-        .makeRequest();
+    return _remoteDataSource.getBookmarkedForumPostIds().makeRequest();
   }
 }

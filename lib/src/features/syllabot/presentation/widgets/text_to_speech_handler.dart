@@ -55,7 +55,8 @@ class TextToSpeechHandler {
   VoiceGender get voiceGender => _gender;
   double get speechRate => _speechRate;
   TtsConfig get config => _config;
-  bool get hasQueuedSentences => _sentenceQueue.isNotEmpty || _isProcessingQueue;
+  bool get hasQueuedSentences =>
+      _sentenceQueue.isNotEmpty || _isProcessingQueue;
 
   LocalStorageService? get _effectiveLocalStorage =>
       _localStorageService ??
@@ -67,12 +68,12 @@ class TextToSpeechHandler {
   // Priority Voice Lists: High-fidelity on-device Neural Voices
   // ---------------------------------------------------------------------------
   static const List<String> _iosFemaleVoicesPriority = [
-    'com.apple.voice.enhanced.en-US.Ava',      // Siri Neural Ava
+    'com.apple.voice.enhanced.en-US.Ava', // Siri Neural Ava
     'com.apple.voice.premium.en-US.Ava',
-    'com.apple.voice.enhanced.en-US.Allison',  // Clear, warm
+    'com.apple.voice.enhanced.en-US.Allison', // Clear, warm
     'com.apple.voice.premium.en-US.Allison',
     'com.apple.voice.enhanced.en-US.Samantha',
-    'com.apple.voice.enhanced.en-GB.Kate',     // British natural
+    'com.apple.voice.enhanced.en-GB.Kate', // British natural
     'com.apple.voice.enhanced.en-AU.Karen',
     'com.apple.voice.compact.en-US.Ava',
     'samantha',
@@ -80,11 +81,11 @@ class TextToSpeechHandler {
   ];
 
   static const List<String> _iosMaleVoicesPriority = [
-    'com.apple.voice.enhanced.en-US.Aaron',    // Siri Neural Aaron
+    'com.apple.voice.enhanced.en-US.Aaron', // Siri Neural Aaron
     'com.apple.voice.premium.en-US.Aaron',
-    'com.apple.voice.enhanced.en-US.Tom',      // Authentic male
+    'com.apple.voice.enhanced.en-US.Tom', // Authentic male
     'com.apple.voice.premium.en-US.Tom',
-    'com.apple.voice.enhanced.en-GB.Daniel',   // British articulate
+    'com.apple.voice.enhanced.en-GB.Daniel', // British articulate
     'com.apple.voice.premium.en-GB.Daniel',
     'com.apple.voice.enhanced.en-AU.Lee',
     'com.apple.voice.compact.en-US.Aaron',
@@ -94,7 +95,7 @@ class TextToSpeechHandler {
 
   static const List<String> _androidFemaleVoicesPriority = [
     'en-us-x-sfg-network', // Google Neural TTS
-    'en-us-x-sfg-local',   // Google Neural Offline
+    'en-us-x-sfg-local', // Google Neural Offline
     'en-us-x-iob-network',
     'en-us-x-iob-local',
     'en-us-x-iol-network',
@@ -105,7 +106,7 @@ class TextToSpeechHandler {
 
   static const List<String> _androidMaleVoicesPriority = [
     'en-us-x-tpc-network', // Google Neural TTS male
-    'en-us-x-tpc-local',   // Google Neural Offline male
+    'en-us-x-tpc-local', // Google Neural Offline male
     'en-us-x-tpd-network',
     'en-us-x-tpd-local',
     'en-us-x-iom-network',
@@ -121,16 +122,18 @@ class TextToSpeechHandler {
     try {
       final storage = _effectiveLocalStorage;
       if (storage != null) {
-        final savedGender =
-            storage.getPreference(key: PrefKeys.syllabotVoiceGender);
+        final savedGender = storage.getPreference(
+          key: PrefKeys.syllabotVoiceGender,
+        );
         if (savedGender != null) {
           _gender = VoiceGender.values.firstWhere(
             (g) => g.name == savedGender,
             orElse: () => VoiceGender.female,
           );
         }
-        final savedRate =
-            storage.getPreference(key: PrefKeys.syllabotSpeechRate);
+        final savedRate = storage.getPreference(
+          key: PrefKeys.syllabotSpeechRate,
+        );
         if (savedRate != null) {
           final parsed = double.tryParse(savedRate);
           if (parsed != null && parsed > 0) {
@@ -313,7 +316,16 @@ class TextToSpeechHandler {
         'wavenet',
       ];
       final genderKeywords = _gender == VoiceGender.female
-          ? ['ava', 'allison', 'samantha', 'karen', 'kate', 'victoria', 'female', 'woman']
+          ? [
+              'ava',
+              'allison',
+              'samantha',
+              'karen',
+              'kate',
+              'victoria',
+              'female',
+              'woman',
+            ]
           : ['aaron', 'daniel', 'tom', 'alex', 'oliver', 'lee', 'male', 'man'];
 
       for (final v in voiceList) {
@@ -369,8 +381,7 @@ class TextToSpeechHandler {
     final clean = SpeechTextNormalizer.normalize(rawSentence);
     if (clean.isEmpty) return;
 
-    if (_queueDrainedCompleter == null ||
-        _queueDrainedCompleter!.isCompleted) {
+    if (_queueDrainedCompleter == null || _queueDrainedCompleter!.isCompleted) {
       _queueDrainedCompleter = Completer<void>();
     }
 

@@ -58,7 +58,9 @@ class _DecksView extends HookWidget {
             ? colors.surfaceSecondary
             : colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
         ),
         builder: (bottomSheetContext) {
           return Center(
@@ -67,7 +69,10 @@ class _DecksView extends HookWidget {
               child: SafeArea(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 20,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,7 +83,9 @@ class _DecksView extends HookWidget {
                           height: 4,
                           decoration: BoxDecoration(
                             color: colors.surfaceBorder,
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
                           ),
                         ),
                       ),
@@ -186,7 +193,10 @@ class _DecksView extends HookWidget {
                   onRefresh: () async {
                     final completer = Completer<void>();
                     context.read<DecksBloc>().add(const DecksRefreshed());
-                    Timer(const Duration(milliseconds: 600), completer.complete);
+                    Timer(
+                      const Duration(milliseconds: 600),
+                      completer.complete,
+                    );
                     return completer.future;
                   },
                   color: colors.primary,
@@ -237,8 +247,8 @@ class _DecksView extends HookWidget {
                                 color: colors.primary,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 90 : 60,
+                                    color: colors.black.withAlpha(
+                                      isDark ? 60 : 30,
                                     ),
                                     blurRadius: 10,
                                     offset: const Offset(0, 2),
@@ -272,13 +282,15 @@ class _DecksView extends HookWidget {
                                       colors.surfaceSecondary,
                                     ],
                             ),
-                            borderRadius: BorderRadius.circular(AppRadius.panel),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.panel,
+                            ),
                             border: Border.all(
                               color: colors.primary.withValues(alpha: 0.35),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: colors.primary.withValues(
+                                color: colors.black.withValues(
                                   alpha: isDark ? 0.2 : 0.08,
                                 ),
                                 blurRadius: 14,
@@ -294,7 +306,9 @@ class _DecksView extends HookWidget {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: colors.primary.withValues(alpha: 0.2),
+                                      color: colors.primary.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
@@ -306,7 +320,8 @@ class _DecksView extends HookWidget {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Quick Focus Sprint',
@@ -353,7 +368,9 @@ class _DecksView extends HookWidget {
                                         ),
                                         decoration: BoxDecoration(
                                           color: colors.primary,
-                                          borderRadius: BorderRadius.circular(AppRadius.card),
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
                                         ),
                                         alignment: Alignment.center,
                                         child: Row(
@@ -402,15 +419,20 @@ class _DecksView extends HookWidget {
                                         ),
                                         decoration: BoxDecoration(
                                           color: isDark
-                                              ? colors.white.withValues(alpha: 0.1)
+                                              ? colors.white.withValues(
+                                                  alpha: 0.1,
+                                                )
                                               : colors.black.withValues(
                                                   alpha: 0.06,
                                                 ),
-                                          borderRadius: BorderRadius.circular(AppRadius.card),
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
                                           border: Border.all(
-                                            color: colors.surfaceBorder.withValues(
-                                              alpha: 0.6,
-                                            ),
+                                            color: colors.surfaceBorder
+                                                .withValues(
+                                                  alpha: 0.6,
+                                                ),
                                           ),
                                         ),
                                         alignment: Alignment.center,
@@ -467,7 +489,9 @@ class _DecksView extends HookWidget {
                                           color: colors.warning.withValues(
                                             alpha: isDark ? 0.2 : 0.12,
                                           ),
-                                          borderRadius: BorderRadius.circular(AppRadius.card),
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
                                           border: Border.all(
                                             color: colors.warning.withValues(
                                               alpha: 0.6,
@@ -507,10 +531,12 @@ class _DecksView extends HookWidget {
                                           FocusModeSetupModal.show(
                                             context,
                                             decks: state.allDecks,
-                                            initialDeck: state.allDecks.firstWhere(
-                                              (d) => d.dueCards > 0,
-                                              orElse: () => state.allDecks.first,
-                                            ),
+                                            initialDeck: state.allDecks
+                                                .firstWhere(
+                                                  (d) => d.dueCards > 0,
+                                                  orElse: () =>
+                                                      state.allDecks.first,
+                                                ),
                                           ),
                                         );
                                       },
@@ -525,7 +551,9 @@ class _DecksView extends HookWidget {
                                               colors.primary,
                                             ],
                                           ),
-                                          borderRadius: BorderRadius.circular(AppRadius.card),
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
                                         ),
                                         alignment: Alignment.center,
                                         child: Row(
@@ -559,209 +587,211 @@ class _DecksView extends HookWidget {
                         const SizedBox(height: 16),
                       ],
 
-                  // 2. Search Field - Unified full-width text field
-                  TextField(
-                    controller: searchController,
-                    style: typography.body.medium.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 14,
-                    ),
-                    cursorColor: colors.primary,
-                    decoration: InputDecoration(
-                      hintText: l10n.decksSearchHint,
-                      hintStyle: typography.body.regular.copyWith(
-                        color: colors.textMuted,
-                        fontSize: 13.5,
+                      // 2. Search Field - Unified full-width text field
+                      TextField(
+                        controller: searchController,
+                        style: typography.body.medium.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        cursorColor: colors.primary,
+                        decoration: InputDecoration(
+                          hintText: l10n.decksSearchHint,
+                          hintStyle: typography.body.regular.copyWith(
+                            color: colors.textMuted,
+                            fontSize: 13.5,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: colors.textSecondary,
+                            size: 20,
+                          ),
+                          suffixIcon: searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    color: colors.textSecondary,
+                                    size: 18,
+                                  ),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    context.read<DecksBloc>().add(
+                                      const DecksSearchQueryChanged(''),
+                                    );
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: isDark
+                              ? colors.surfaceSecondary.withAlpha(200)
+                              : colors.surfacePrimary,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(90)
+                                  : colors.surfaceBorder,
+                              width: 1.2,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(90)
+                                  : colors.surfaceBorder,
+                              width: 1.2,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            borderSide: BorderSide(
+                              color: colors.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        onChanged: (query) {
+                          context.read<DecksBloc>().add(
+                            DecksSearchQueryChanged(query),
+                          );
+                        },
                       ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: colors.textSecondary,
-                        size: 20,
-                      ),
-                      suffixIcon: searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: colors.textSecondary,
-                                size: 18,
-                              ),
-                              onPressed: () {
-                                searchController.clear();
+                      const SizedBox(height: 16),
+
+                      // 3. Filter Category Pills
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            _FilterChip(
+                              label: l10n.decksFilterAll,
+                              count: state.allDecks.length,
+                              isSelected: state.activeFilter == 'all',
+                              onTap: () {
                                 context.read<DecksBloc>().add(
-                                  const DecksSearchQueryChanged(''),
+                                  const DecksFilterChanged('all'),
                                 );
                               },
-                            )
-                          : null,
-                      filled: true,
-                      fillColor: isDark
-                          ? colors.surfaceSecondary.withAlpha(200)
-                          : colors.surfacePrimary,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        borderSide: BorderSide(
-                          color: isDark
-                              ? colors.surfaceBorderHighlight.withAlpha(90)
-                              : colors.surfaceBorder,
-                          width: 1.2,
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: l10n.decksFilterDue,
+                              count: state.allDecks
+                                  .where((d) => d.dueCards > 0)
+                                  .fold<int>(0, (sum, d) => sum + d.dueCards),
+                              isDueBadge: true,
+                              isSelected: state.activeFilter == 'due',
+                              onTap: () {
+                                context.read<DecksBloc>().add(
+                                  const DecksFilterChanged('due'),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: l10n.decksFilterMastered,
+                              isSelected: state.activeFilter == 'mastered',
+                              onTap: () {
+                                context.read<DecksBloc>().add(
+                                  const DecksFilterChanged('mastered'),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        borderSide: BorderSide(
-                          color: isDark
-                              ? colors.surfaceBorderHighlight.withAlpha(90)
-                              : colors.surfaceBorder,
-                          width: 1.2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        borderSide: BorderSide(
-                          color: colors.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    onChanged: (query) {
-                      context.read<DecksBloc>().add(
-                        DecksSearchQueryChanged(query),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
-                  // 3. Filter Category Pills
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: [
-                        _FilterChip(
-                          label: l10n.decksFilterAll,
-                          count: state.allDecks.length,
-                          isSelected: state.activeFilter == 'all',
-                          onTap: () {
-                            context.read<DecksBloc>().add(
-                              const DecksFilterChanged('all'),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: l10n.decksFilterDue,
-                          count: state.allDecks
-                              .where((d) => d.dueCards > 0)
-                              .fold<int>(0, (sum, d) => sum + d.dueCards),
-                          isDueBadge: true,
-                          isSelected: state.activeFilter == 'due',
-                          onTap: () {
-                            context.read<DecksBloc>().add(
-                              const DecksFilterChanged('due'),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: l10n.decksFilterMastered,
-                          isSelected: state.activeFilter == 'mastered',
-                          onTap: () {
-                            context.read<DecksBloc>().add(
-                              const DecksFilterChanged('mastered'),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 4. Decks List / Empty State
-                  if (state.filteredDecks.isEmpty)
-                    if (state.activeFilter == 'due')
-                      AppEmptyState(
-                        isHappy: true,
-                        title: 'All Caught Up! 🎉',
-                        subtitle: state.allDecks.isEmpty
-                            ? 'You have no due study decks for today. Create a new deck or import course materials to start practicing!'
-                            : "Awesome job! You've crushed all your spaced repetition reviews scheduled for today. Keep up the streak!",
-                        primaryActionLabel: state.allDecks.isEmpty
-                            ? l10n.decksCreateDeckButton
-                            : 'Review All Decks',
-                        onPrimaryAction: () {
-                          if (state.allDecks.isEmpty) {
-                            _showDeckCreationSheet(context);
-                          } else {
-                            context.read<DecksBloc>().add(
-                              const DecksFilterChanged('all'),
-                            );
-                          }
-                        },
-                        secondaryActionLabel: state.allDecks.isEmpty
-                            ? l10n.decksUploadDocTitle
-                            : 'Practice with Syllabot AI',
-                        onSecondaryAction: () {
-                          if (state.allDecks.isEmpty) {
-                            unawaited(
-                              context.router.push(DocumentIngestionRoute()),
-                            );
-                          } else {
-                            unawaited(
-                              context.router.push(
-                                SyllabotChatRoute(
-                                  initialPrompt:
-                                      'Give me a 5-question Socratic review drill across my active subjects.',
-                                  initialMode: SocraticMode.examSim,
+                      // 4. Decks List / Empty State
+                      if (state.filteredDecks.isEmpty)
+                        if (state.activeFilter == 'due')
+                          AppEmptyState(
+                            isHappy: true,
+                            title: 'All Caught Up! 🎉',
+                            subtitle: state.allDecks.isEmpty
+                                ? 'You have no due study decks for today. Create a new deck or import course materials to start practicing!'
+                                : "Awesome job! You've crushed all your spaced repetition reviews scheduled for today. Keep up the streak!",
+                            primaryActionLabel: state.allDecks.isEmpty
+                                ? l10n.decksCreateDeckButton
+                                : 'Review All Decks',
+                            onPrimaryAction: () {
+                              if (state.allDecks.isEmpty) {
+                                _showDeckCreationSheet(context);
+                              } else {
+                                context.read<DecksBloc>().add(
+                                  const DecksFilterChanged('all'),
+                                );
+                              }
+                            },
+                            secondaryActionLabel: state.allDecks.isEmpty
+                                ? l10n.decksUploadDocTitle
+                                : 'Practice with Syllabot AI',
+                            onSecondaryAction: () {
+                              if (state.allDecks.isEmpty) {
+                                unawaited(
+                                  context.router.push(DocumentIngestionRoute()),
+                                );
+                              } else {
+                                unawaited(
+                                  context.router.push(
+                                    SyllabotChatRoute(
+                                      initialPrompt:
+                                          'Give me a 5-question Socratic review drill across my active subjects.',
+                                      initialMode: SocraticMode.examSim,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          )
+                        else if (state.activeFilter == 'mastered')
+                          AppEmptyState(
+                            title: 'No Mastered Decks Yet 🎯',
+                            subtitle:
+                                'Keep reviewing your flashcards using FSRS-6 spaced repetition. As your retention reaches 90%+, mastered decks will appear here.',
+                            primaryActionLabel: 'Review All Decks',
+                            onPrimaryAction: () =>
+                                context.read<DecksBloc>().add(
+                                  const DecksFilterChanged('all'),
                                 ),
-                              ),
-                            );
-                          }
-                        },
-                      )
-                    else if (state.activeFilter == 'mastered')
-                      AppEmptyState(
-                        title: 'No Mastered Decks Yet 🎯',
-                        subtitle:
-                            'Keep reviewing your flashcards using FSRS-6 spaced repetition. As your retention reaches 90%+, mastered decks will appear here.',
-                        primaryActionLabel: 'Review All Decks',
-                        onPrimaryAction: () => context.read<DecksBloc>().add(
-                          const DecksFilterChanged('all'),
-                        ),
-                        secondaryActionLabel: l10n.decksCreateDeckButton,
-                        onSecondaryAction: () =>
-                            _showDeckCreationSheet(context),
-                      )
-                    else
-                      AppEmptyState(
-                        title: l10n.decksEmptyStateTitle,
-                        subtitle: l10n.decksEmptyStateSubtitle,
-                        primaryActionLabel: l10n.decksCreateDeckButton,
-                        onPrimaryAction: () => _showDeckCreationSheet(context),
-                        secondaryActionLabel: l10n.decksUploadDocTitle,
-                        onSecondaryAction: () => unawaited(
-                          context.router.push(DocumentIngestionRoute()),
-                        ),
-                      )
-                  else
-                    ...state.filteredDecks.map((deck) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: DeckListTileCard(deck: deck),
-                      );
-                    }),
-                ],
-              ),
-            );
-          },
+                            secondaryActionLabel: l10n.decksCreateDeckButton,
+                            onSecondaryAction: () =>
+                                _showDeckCreationSheet(context),
+                          )
+                        else
+                          AppEmptyState(
+                            title: l10n.decksEmptyStateTitle,
+                            subtitle: l10n.decksEmptyStateSubtitle,
+                            primaryActionLabel: l10n.decksCreateDeckButton,
+                            onPrimaryAction: () =>
+                                _showDeckCreationSheet(context),
+                            secondaryActionLabel: l10n.decksUploadDocTitle,
+                            onSecondaryAction: () => unawaited(
+                              context.router.push(DocumentIngestionRoute()),
+                            ),
+                          )
+                      else
+                        ...state.filteredDecks.map((deck) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: DeckListTileCard(deck: deck),
+                          );
+                        }),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   Widget _buildDecksShimmerSkeleton(

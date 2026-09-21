@@ -28,8 +28,12 @@ class MillionaireTieringEngine {
     if (questions.length <= targetCount) {
       // Sort existing questions by estimated difficulty
       final sorted = List<QuizQuestionEntity>.from(questions)
-        ..sort((a, b) => _calculateDifficultyScore(a, retentionEvaluator)
-            .compareTo(_calculateDifficultyScore(b, retentionEvaluator)));
+        ..sort(
+          (a, b) => _calculateDifficultyScore(
+            a,
+            retentionEvaluator,
+          ).compareTo(_calculateDifficultyScore(b, retentionEvaluator)),
+        );
       return sorted;
     }
 
@@ -37,8 +41,7 @@ class MillionaireTieringEngine {
     final scored = questions.map((q) {
       final score = _calculateDifficultyScore(q, retentionEvaluator);
       return (question: q, score: score);
-    }).toList()
-      ..sort((a, b) => a.score.compareTo(b.score));
+    }).toList()..sort((a, b) => a.score.compareTo(b.score));
 
     // Desired distribution: 4 Easy, 4 Medium, 4 Hard
     final easyTarget = math.max(1, (targetCount / 3).round());
@@ -131,7 +134,7 @@ class MillionaireTieringEngine {
     final avgOptionLength = q.options.isEmpty
         ? 0
         : q.options.fold<int>(0, (sum, opt) => sum + opt.length) /
-            q.options.length;
+              q.options.length;
     if (avgOptionLength > 40) {
       score += 0.2;
     } else if (avgOptionLength > 20) {

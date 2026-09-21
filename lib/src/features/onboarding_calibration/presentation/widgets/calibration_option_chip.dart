@@ -78,19 +78,15 @@ class CalibrationOptionChip extends StatelessWidget {
                   width: isSelected ? 1.5 : (isHovered ? 1.2 : 1.0),
                 ),
                 boxShadow: [
-                  if (isSelected)
+                  if (isSelected || isHovered)
                     BoxShadow(
-                      color: colors.primary.withAlpha(
-                        isDark ? (isHovered ? 70 : 50) : (isHovered ? 35 : 25),
+                      color: colors.black.withAlpha(
+                        isDark
+                            ? (isSelected ? 50 : 35)
+                            : (isSelected ? 20 : 10),
                       ),
-                      blurRadius: isHovered ? 18 : 14,
-                      offset: Offset(0, isHovered ? 6 : 4),
-                    )
-                  else if (isHovered)
-                    BoxShadow(
-                      color: colors.black.withAlpha(isDark ? 50 : 15),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+                      blurRadius: isHovered ? 12 : 8,
+                      offset: Offset(0, isHovered ? 3 : 2),
                     ),
                 ],
               ),

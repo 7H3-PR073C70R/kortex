@@ -19,7 +19,8 @@ class GetRemedialCardsUseCase
         final filtered = cards.where((card) {
           final isLowEase = card.easeFactor < 2.1;
           final isDueOrLapsed =
-              card.isDueToday || (card.repetitions == 0 && card.lastReviewed != null);
+              card.isDueToday ||
+              (card.repetitions == 0 && card.lastReviewed != null);
           return isLowEase || isDueOrLapsed;
         }).toList();
         return Right(filtered);

@@ -90,8 +90,8 @@ class FsrsAlgorithmEngine {
       reps: result.card.reps,
       lapses: result.card.lapses,
       lastReview: result.card.lastReview,
-      nextDueDate: result.card.due ??
-          now.add(Duration(days: result.card.scheduledDays)),
+      nextDueDate:
+          result.card.due ?? now.add(Duration(days: result.card.scheduledDays)),
     );
   }
 }

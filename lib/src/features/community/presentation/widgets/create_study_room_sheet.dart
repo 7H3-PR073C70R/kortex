@@ -235,7 +235,9 @@ class CreateStudyRoomSheet extends HookWidget {
                       },
                       selectedColor: colors.primary.withAlpha(40),
                       labelStyle: typography.caption.bold.copyWith(
-                        color: isSelected ? colors.primary : colors.textSecondary,
+                        color: isSelected
+                            ? colors.primary
+                            : colors.textSecondary,
                       ),
                     );
                   }).toList(),
@@ -269,7 +271,9 @@ class CreateStudyRoomSheet extends HookWidget {
                       },
                       selectedColor: colors.primary.withAlpha(40),
                       labelStyle: typography.caption.bold.copyWith(
-                        color: isSelected ? colors.primary : colors.textSecondary,
+                        color: isSelected
+                            ? colors.primary
+                            : colors.textSecondary,
                       ),
                     );
                   }).toList(),
@@ -285,7 +289,9 @@ class CreateStudyRoomSheet extends HookWidget {
                       borderRadius: AppRadius.radiusCard,
                       boxShadow: [
                         BoxShadow(
-                          color: colors.primary.withAlpha(isDark ? (isHovered ? 110 : 80) : (isHovered ? 70 : 50)),
+                          color: colors.black.withAlpha(
+                            isHovered ? (isDark ? 60 : 30) : (isDark ? 40 : 20),
+                          ),
                           blurRadius: isHovered ? 16 : 12,
                           offset: Offset(0, isHovered ? 6 : 4),
                         ),

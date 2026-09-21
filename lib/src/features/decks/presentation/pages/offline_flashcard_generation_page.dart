@@ -125,9 +125,13 @@ class _OfflineFlashcardGenerationPageState
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        backgroundColor: isDark
+            ? colors.surfaceSecondary
+            : colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
         ),
         builder: (sheetContext) {
           return Center(
@@ -176,7 +180,8 @@ class _OfflineFlashcardGenerationPageState
                       SizedBox(height: 14.h),
                       AppTextField(
                         controller: subjectController,
-                        hintText: 'Subject / Category (e.g. Physics, Mathematics)',
+                        hintText:
+                            'Subject / Category (e.g. Physics, Mathematics)',
                       ),
                       SizedBox(height: 24.h),
                       Row(
@@ -204,14 +209,18 @@ class _OfflineFlashcardGenerationPageState
                             child: AppButton(
                               text: 'Confirm & Save',
                               onPressed: () {
-                                final title = titleController.text.trim().isNotEmpty
+                                final title =
+                                    titleController.text.trim().isNotEmpty
                                     ? titleController.text.trim()
                                     : defaultTitle;
-                                final subject = subjectController.text.trim().isNotEmpty
+                                final subject =
+                                    subjectController.text.trim().isNotEmpty
                                     ? subjectController.text.trim()
                                     : 'General Studies';
                                 Navigator.of(sheetContext).pop();
-                                unawaited(_persistDeck(title: title, subject: subject));
+                                unawaited(
+                                  _persistDeck(title: title, subject: subject),
+                                );
                               },
                             ),
                           ),
@@ -410,13 +419,16 @@ class _OfflineFlashcardGenerationPageState
               child: ShrinkableButton(
                 onTap: _showSaveDeckDialog,
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 6.h,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary,
                     borderRadius: AppRadius.radiusCard,
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withAlpha(isDark ? 80 : 40),
+                        color: colors.black.withAlpha(isDark ? 50 : 20),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),

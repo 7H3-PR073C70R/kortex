@@ -818,7 +818,7 @@ class CreateForumDiscussionPage extends HookWidget {
                       borderRadius: AppRadius.radiusPanel,
                       boxShadow: [
                         BoxShadow(
-                          color: colors.primary.withAlpha(isHovered ? 90 : 50),
+                          color: colors.black.withAlpha(isHovered ? 50 : 20),
                           blurRadius: isHovered ? 12 : 8,
                           offset: Offset(0, isHovered ? 4 : 2),
                         ),

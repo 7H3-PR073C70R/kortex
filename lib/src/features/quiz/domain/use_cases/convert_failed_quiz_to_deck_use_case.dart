@@ -22,13 +22,15 @@ class ConvertFailedQuizToDeckUseCase {
   }) async {
     try {
       final incorrectQuestions = questions.where((q) => !q.isCorrect).toList();
-      final questionsToUse =
-          incorrectQuestions.isNotEmpty ? incorrectQuestions : questions;
+      final questionsToUse = incorrectQuestions.isNotEmpty
+          ? incorrectQuestions
+          : questions;
 
       if (questionsToUse.isEmpty && result.weaknesses.isEmpty) {
         return const Left(
           ServerFailure(
-            message: 'No questions or weaknesses available to generate flashcards.',
+            message:
+                'No questions or weaknesses available to generate flashcards.',
           ),
         );
       }
@@ -37,11 +39,13 @@ class ConvertFailedQuizToDeckUseCase {
       final resolvedCourseCode = courseCode?.trim();
       final resolvedCourseId = courseId?.trim();
 
-      final deckTitle = resolvedCourseCode != null && resolvedCourseCode.isNotEmpty
+      final deckTitle =
+          resolvedCourseCode != null && resolvedCourseCode.isNotEmpty
           ? '$resolvedCourseCode CBT Practice Deck'
           : '${result.quizTitle} - Practice Deck';
 
-      final subject = resolvedCourseCode ??
+      final subject =
+          resolvedCourseCode ??
           (result.weaknesses.isNotEmpty
               ? result.weaknesses.first.subTopic
               : 'Quiz Review');

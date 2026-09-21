@@ -189,34 +189,37 @@ class UserActivityServiceImpl implements UserActivityService {
       final notifs = locator<NotificationService>();
       final (title, body) = switch (streak) {
         3 => (
-            '🔥 3-Day Streak!',
-            'You studied 3 days in a row. Keep it up — the habit is forming!',
-          ),
+          '🔥 3-Day Streak!',
+          'You studied 3 days in a row. Keep it up — the habit is forming!',
+        ),
         7 => (
-            '🏅 One Week Streak!',
-            'A full week of studying! Your memory retention is compounding fast.',
-          ),
+          '🏅 One Week Streak!',
+          'A full week of studying! Your memory retention is compounding fast.',
+        ),
         14 => (
-            '💪 Two-Week Warrior!',
-            '14 consecutive days. Your brain is rewiring for mastery. Incredible!',
-          ),
+          '💪 Two-Week Warrior!',
+          '14 consecutive days. Your brain is rewiring for mastery. Incredible!',
+        ),
         30 => (
-            '🌙 30-Day Scholar!',
-            'A whole month of daily study. WAEC/JAMB mastery is within reach!',
-          ),
+          '🌙 30-Day Scholar!',
+          'A whole month of daily study. WAEC/JAMB mastery is within reach!',
+        ),
         60 => (
-            '⚡ 60-Day Legend!',
-            '60 days straight — you are in the top 1% of all Kortex scholars.',
-          ),
+          '⚡ 60-Day Legend!',
+          '60 days straight — you are in the top 1% of all Kortex scholars.',
+        ),
         100 => (
-            '🏆 Century Streak!',
-            '100 days of relentless studying. You are unstoppable. Keep pushing!',
-          ),
+          '🏆 Century Streak!',
+          '100 days of relentless studying. You are unstoppable. Keep pushing!',
+        ),
         365 => (
-            '🌟 One-Year Champion!',
-            'A full year of daily study! The Kortex Scholar Award is yours — infinite respect!',
-          ),
-        _ => ('🔥 Streak Milestone!', 'You hit a $streak-day streak! Keep going!'),
+          '🌟 One-Year Champion!',
+          'A full year of daily study! The Kortex Scholar Award is yours — infinite respect!',
+        ),
+        _ => (
+          '🔥 Streak Milestone!',
+          'You hit a $streak-day streak! Keep going!',
+        ),
       };
 
       unawaited(
@@ -260,7 +263,9 @@ class UserActivityServiceImpl implements UserActivityService {
 
   @override
   bool hasStudiedToday() {
-    final lastDateStr = _localStorageService.getPreference(key: _lastStudyDateKey);
+    final lastDateStr = _localStorageService.getPreference(
+      key: _lastStudyDateKey,
+    );
     if (lastDateStr == null || lastDateStr.isEmpty) return false;
     return lastDateStr == _toDateKey(DateTime.now());
   }

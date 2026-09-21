@@ -273,6 +273,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
   Widget _buildHeroCountdownCard(BuildContext context, ExamEventEntity exam) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     final days = exam.timeRemaining.inDays;
     final hours = exam.hoursRemaining;
@@ -292,7 +293,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
         borderRadius: AppRadius.radiusDialog,
         boxShadow: [
           BoxShadow(
-            color: colors.primary.withValues(alpha: 0.3),
+            color: colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -448,7 +449,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             boxShadow: isHovered
                 ? [
                     BoxShadow(
-                      color: colors.primary.withValues(alpha: 0.1),
+                      color: colors.black.withValues(
+                        alpha: isDark ? 0.35 : 0.1,
+                      ),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

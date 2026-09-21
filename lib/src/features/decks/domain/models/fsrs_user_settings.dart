@@ -13,7 +13,8 @@ class FsrsUserSettings {
 
   factory FsrsUserSettings.fromJson(Map<String, dynamic> json) {
     return FsrsUserSettings(
-      desiredRetention: (json['desiredRetention'] as num?)?.toDouble() ??
+      desiredRetention:
+          (json['desiredRetention'] as num?)?.toDouble() ??
           defaultDesiredRetention,
       preferredReminderHour:
           (json['preferredReminderHour'] as int?) ?? defaultReminderHour,

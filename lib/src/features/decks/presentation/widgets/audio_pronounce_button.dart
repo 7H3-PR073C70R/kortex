@@ -7,7 +7,8 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech
 /// An accessible button that reads flashcard text aloud using Text-To-Speech (FSR-12).
 class AudioPronounceButton extends HookWidget {
   const AudioPronounceButton({
-    required this.textToPronounce, super.key,
+    required this.textToPronounce,
+    super.key,
     this.ttsHandler,
     this.size = 36.0,
     this.iconSize = 18.0,
@@ -38,11 +39,15 @@ class AudioPronounceButton extends HookWidget {
       label: isSpeaking ? 'Stop audio pronunciation' : tooltip,
       button: true,
       child: Material(
-        color: isSpeaking ? colors.primary.withValues(alpha: 0.2) : colors.surfacePrimary,
+        color: isSpeaking
+            ? colors.primary.withValues(alpha: 0.2)
+            : colors.surfacePrimary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(size / 2),
           side: BorderSide(
-            color: isSpeaking ? colors.primary : colors.surfaceBorder.withValues(alpha: 0.5),
+            color: isSpeaking
+                ? colors.primary
+                : colors.surfaceBorder.withValues(alpha: 0.5),
           ),
         ),
         child: InkWell(

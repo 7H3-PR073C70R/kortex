@@ -164,8 +164,7 @@ class _IngestionLivePainter extends CustomPainter {
           themeColors.transparent,
         ],
         stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
-      ).createShader(Rect.fromLTWH(w * 0.08, scanY - 3, w * 0.32, 6))
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      ).createShader(Rect.fromLTWH(w * 0.08, scanY - 3, w * 0.32, 6));
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -175,19 +174,6 @@ class _IngestionLivePainter extends CustomPainter {
       scanPaint,
     );
 
-    // 2. Glowing pulse aura around center cortex core
-    final corePulse = math.sin(progress * 2 * math.pi) * 0.5 + 0.5;
-    final coreGlowPaint = Paint()
-      ..color = themeColors.primary.withAlpha(
-        (corePulse * 70).toInt().clamp(0, 255),
-      )
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-    canvas.drawCircle(
-      Offset(w * 0.49, h * 0.49),
-      16 + (corePulse * 6),
-      coreGlowPaint,
-    );
-
     // 3. Floating particle stream traveling from core to right flashcard
     final particle1T = (progress * 1.5) % 1.0;
     final p1X = (w * 0.55) + (particle1T * (w * 0.22));
@@ -195,8 +181,7 @@ class _IngestionLivePainter extends CustomPainter {
     final particlePaint = Paint()
       ..color = themeColors.syllabotAccent.withAlpha(
         ((1.0 - particle1T) * 220).toInt(),
-      )
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+      );
     canvas.drawCircle(Offset(p1X, p1Y), 3.5, particlePaint);
 
     final particle2T = ((progress + 0.5) * 1.5) % 1.0;
@@ -205,8 +190,7 @@ class _IngestionLivePainter extends CustomPainter {
     final particle2Paint = Paint()
       ..color = themeColors.primary.withAlpha(
         ((1.0 - particle2T) * 220).toInt(),
-      )
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+      );
     canvas.drawCircle(Offset(p2X, p2Y), 3.5, particle2Paint);
   }
 
@@ -326,8 +310,7 @@ class _OcrLivePainter extends CustomPainter {
 
     final linePaint = Paint()
       ..color = themeColors.syllabotAccent
-      ..strokeWidth = 2.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      ..strokeWidth = 2.0;
 
     canvas.drawLine(
       Offset(w * 0.1, sweepY),
@@ -446,8 +429,7 @@ class _RetentionLivePainter extends CustomPainter {
         (140 - (math.sin(pulse1) * 60)).toInt().clamp(0, 255),
       )
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      ..strokeWidth = 2.0;
     canvas.drawCircle(Offset(w * 0.49, h * 0.38), r1, ripple1Paint);
 
     // Milestone 2 (Day 14) pulsing ripple
@@ -458,17 +440,14 @@ class _RetentionLivePainter extends CustomPainter {
         (140 - (math.sin(pulse2) * 60)).toInt().clamp(0, 255),
       )
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      ..strokeWidth = 2.0;
     canvas.drawCircle(Offset(w * 0.84, h * 0.42), r2, ripple2Paint);
 
     // Retention curve energy spark traveling along trajectory
     final t = progress;
     final sparkX = (w * 0.49) + (t * (w * 0.35));
     final sparkY = (h * 0.38) + (math.sin(t * math.pi) * (h * 0.08));
-    final sparkPaint = Paint()
-      ..color = themeColors.white
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    final sparkPaint = Paint()..color = themeColors.white;
     canvas.drawCircle(Offset(sparkX, sparkY), 3, sparkPaint);
   }
 
@@ -558,32 +537,7 @@ class _SocraticLivePainter extends CustomPainter {
   final AppThemeColorsExtension themeColors;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // AI avatar glowing halo
-    final haloGlow = (progress * 80).toInt().clamp(0, 255);
-    final haloPaint = Paint()
-      ..color = themeColors.warning.withAlpha(haloGlow)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawCircle(
-      Offset(w * 0.12, h * 0.22),
-      8 + (progress * 4),
-      haloPaint,
-    );
-
-    // Mastery Dial live breathing arc glow
-    final dialPulse = (progress * 100).toInt().clamp(0, 255);
-    final dialPaint = Paint()
-      ..color = themeColors.syllabotAccent.withAlpha(dialPulse)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
-    canvas.drawCircle(
-      Offset(w * 0.76, h * 0.38),
-      24 + (progress * 6),
-      dialPaint,
-    );
-  }
+  void paint(Canvas canvas, Size size) {}
 
   @override
   bool shouldRepaint(covariant _SocraticLivePainter oldDelegate) =>

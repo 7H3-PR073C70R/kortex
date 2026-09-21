@@ -238,8 +238,8 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     final displayError = rawError.isNotEmpty
         ? rawError
         : (state.streamingText.isNotEmpty
-            ? state.streamingText
-            : 'Failed to complete Syllabot response. Tap retry to reconnect.');
+              ? state.streamingText
+              : 'Failed to complete Syllabot response. Tap retry to reconnect.');
 
     final errorMessage = ChatMessageEntity(
       id: UuidUtils.generate(),
@@ -331,7 +331,8 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
   ) async {
     var isConverted = false;
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);
@@ -397,11 +398,13 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     ConvertToDeckEvent event,
     Emitter<SyllabotChatState> emit,
   ) async {
-    final storage = _localStorageService ??
+    final storage =
+        _localStorageService ??
         (locator.isRegistered<LocalStorageService>()
             ? locator<LocalStorageService>()
             : null);
-    final isAlreadyConverted = state.isConvertedToDeck ||
+    final isAlreadyConverted =
+        state.isConvertedToDeck ||
         (storage?.getPreference(
               key: 'syllabot_converted_${event.sessionId}',
             ) !=
@@ -433,7 +436,8 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       ),
       (deck) {
         try {
-          final storage = _localStorageService ??
+          final storage =
+              _localStorageService ??
               (locator.isRegistered<LocalStorageService>()
                   ? locator<LocalStorageService>()
                   : null);

@@ -72,15 +72,24 @@ class LatexRichViewer extends StatelessWidget {
       var s = raw;
 
       // Strip reasoning tags & model prompt tokens & metadata comments
-      s = s.replaceAll(RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false), '');
+      s = s.replaceAll(
+        RegExp(r'<think>[\s\S]*?<\/think>', caseSensitive: false),
+        '',
+      );
       s = s.replaceAll(RegExp(r'<\/?think>', caseSensitive: false), '');
       s = s.replaceAll(RegExp(r'<\|[a-zA-Z0-9_\-]+\|>'), '');
       s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
 
       // Replace common HTML tags and entities
       s = s.replaceAll(RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false), '\n');
-      s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:b|strong)\s*>', caseSensitive: false), '**');
-      s = s.replaceAll(RegExp(r'<\s*\/?\s*(?:i|em)\s*>', caseSensitive: false), '*');
+      s = s.replaceAll(
+        RegExp(r'<\s*\/?\s*(?:b|strong)\s*>', caseSensitive: false),
+        '**',
+      );
+      s = s.replaceAll(
+        RegExp(r'<\s*\/?\s*(?:i|em)\s*>', caseSensitive: false),
+        '*',
+      );
       s = s.replaceAll('&quot;', '"');
       s = s.replaceAll('&#039;', "'");
       s = s.replaceAll('&#39;', "'");
@@ -102,7 +111,9 @@ class LatexRichViewer extends StatelessWidget {
     if (text.trim().isEmpty) return text;
 
     // Fast check: must contain enumeration indicators
-    if (!text.contains(RegExp(r'\(\d+\)|\b\d+[\.\)]|\[\d+\]|\([a-zA-Z]\)|\([ivxIVX]+\)'))) {
+    if (!text.contains(
+      RegExp(r'\(\d+\)|\b\d+[\.\)]|\[\d+\]|\([a-zA-Z]\)|\([ivxIVX]+\)'),
+    )) {
       return text;
     }
 
@@ -162,7 +173,9 @@ class LatexRichViewer extends StatelessWidget {
       final letters = <String>[];
       for (final m in matches) {
         final markerStr = m.group(2) ?? '';
-        final l = RegExp('[a-zA-Z]').firstMatch(markerStr)?.group(0)?.toLowerCase();
+        final l = RegExp(
+          '[a-zA-Z]',
+        ).firstMatch(markerStr)?.group(0)?.toLowerCase();
         if (l != null && l.length == 1) {
           letters.add(l);
         }
@@ -180,11 +193,24 @@ class LatexRichViewer extends StatelessWidget {
 
     // 3. Check roman numeral sequence: i, ii, iii...
     if (!isValidSequence && !isNumeric) {
-      const romans = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
+      const romans = [
+        'i',
+        'ii',
+        'iii',
+        'iv',
+        'v',
+        'vi',
+        'vii',
+        'viii',
+        'ix',
+        'x',
+      ];
       final extractedRomans = <String>[];
       for (final m in matches) {
         final markerStr = m.group(2) ?? '';
-        final r = RegExp('[ivxIVX]+').firstMatch(markerStr)?.group(0)?.toLowerCase();
+        final r = RegExp(
+          '[ivxIVX]+',
+        ).firstMatch(markerStr)?.group(0)?.toLowerCase();
         if (r != null) {
           extractedRomans.add(r);
         }
@@ -247,9 +273,11 @@ class LatexRichViewer extends StatelessWidget {
     }
 
     final inheritedStyle = DefaultTextStyle.of(context).style;
-    final defaultStyle = inheritedStyle.merge(style).copyWith(
-      fontFamilyFallback: _fontFamilyFallbacks,
-    );
+    final defaultStyle = inheritedStyle
+        .merge(style)
+        .copyWith(
+          fontFamilyFallback: _fontFamilyFallbacks,
+        );
 
     // Split text into structural blocks (paragraphs / block math)
     final hasBlockMath = _blockMathRegex.hasMatch(cleanText);
@@ -284,7 +312,8 @@ class LatexRichViewer extends StatelessWidget {
       var cleanFormula = rawMath;
       if (cleanFormula.startsWith(r'\[') && cleanFormula.endsWith(r'\]')) {
         cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
-      } else if (cleanFormula.startsWith(r'$$') && cleanFormula.endsWith(r'$$')) {
+      } else if (cleanFormula.startsWith(r'$$') &&
+          cleanFormula.endsWith(r'$$')) {
         cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
       }
       cleanFormula = cleanFormula.trim();
@@ -361,8 +390,9 @@ class LatexRichViewer extends StatelessWidget {
     final lineWidgets = <Widget>[];
 
     final isParagraphRtl = forceRtl ?? isRtlString(paragraph);
-    final paragraphDirection =
-        isParagraphRtl ? TextDirection.rtl : TextDirection.ltr;
+    final paragraphDirection = isParagraphRtl
+        ? TextDirection.rtl
+        : TextDirection.ltr;
 
     final isListParagraph = lines
         .where((l) => l.trim().isNotEmpty)
@@ -414,7 +444,8 @@ class LatexRichViewer extends StatelessWidget {
         lineStyle,
       );
 
-      final isItemInList = isListParagraph && _listLineRegex.hasMatch(trimmedLine);
+      final isItemInList =
+          isListParagraph && _listLineRegex.hasMatch(trimmedLine);
       lineWidgets.add(
         Directionality(
           textDirection: paragraphDirection,
@@ -442,8 +473,10 @@ class LatexRichViewer extends StatelessWidget {
       crossAxisAlignment: (isListParagraph && !isParagraphRtl)
           ? CrossAxisAlignment.start
           : (effectiveTextAlign == TextAlign.center
-              ? CrossAxisAlignment.center
-              : (isParagraphRtl ? CrossAxisAlignment.end : CrossAxisAlignment.start)),
+                ? CrossAxisAlignment.center
+                : (isParagraphRtl
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start)),
       mainAxisSize: MainAxisSize.min,
       children: lineWidgets,
     );
@@ -489,7 +522,8 @@ class LatexRichViewer extends StatelessWidget {
       formula = formula.trim();
 
       if (formula.isNotEmpty) {
-        final isLongFormula = formula.length > 35 || formula.split('=').length > 2;
+        final isLongFormula =
+            formula.length > 35 || formula.split('=').length > 2;
 
         spans.add(
           WidgetSpan(
@@ -551,7 +585,9 @@ class LatexRichViewer extends StatelessWidget {
     for (final match in _inlineMarkdownRegex.allMatches(text)) {
       if (match.start > lastIndex) {
         final plain = text.substring(lastIndex, match.start);
-        spans.add(TextSpan(text: _sanitizeLoneMarkdownSymbols(plain), style: baseStyle));
+        spans.add(
+          TextSpan(text: _sanitizeLoneMarkdownSymbols(plain), style: baseStyle),
+        );
       }
 
       // 1. Bold Italic: ***text*** (group 2) or ___text___ (group 3)
@@ -633,7 +669,8 @@ class LatexRichViewer extends StatelessWidget {
             style: baseStyle.copyWith(
               fontFamily: 'monospace',
               fontSize: (baseStyle.fontSize ?? 14) * 0.92,
-              backgroundColor: baseStyle.color?.withAlpha(25) ??
+              backgroundColor:
+                  baseStyle.color?.withAlpha(25) ??
                   context.colors.textPrimary.withAlpha(25),
             ),
           ),
@@ -668,7 +705,12 @@ class LatexRichViewer extends StatelessWidget {
 
     if (lastIndex < text.length) {
       final remaining = text.substring(lastIndex);
-      spans.add(TextSpan(text: _sanitizeLoneMarkdownSymbols(remaining), style: baseStyle));
+      spans.add(
+        TextSpan(
+          text: _sanitizeLoneMarkdownSymbols(remaining),
+          style: baseStyle,
+        ),
+      );
     }
 
     return spans;
@@ -704,16 +746,21 @@ class LatexFormulaBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clean = LatexAstCache.instance.getOrCleanFormula(formula);
-    final fallbackReadable =
-        LatexAstCache.instance.formatLatexHumanReadableFallback(formula);
+    final fallbackReadable = LatexAstCache.instance
+        .formatLatexHumanReadableFallback(formula);
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final bg = backgroundColor ??
-        (isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4) : theme.colorScheme.surfaceContainerLowest);
-    final border = borderColor ?? theme.colorScheme.primary.withValues(alpha: 0.25);
-    final style = textStyle ??
+    final bg =
+        backgroundColor ??
+        (isDark
+            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4)
+            : theme.colorScheme.surfaceContainerLowest);
+    final border =
+        borderColor ?? theme.colorScheme.primary.withValues(alpha: 0.25);
+    final style =
+        textStyle ??
         theme.textTheme.bodyLarge?.copyWith(
           color: theme.colorScheme.primary,
           fontWeight: FontWeight.w600,

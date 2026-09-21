@@ -10,10 +10,11 @@ import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatt
 class PastQuestionDeckFactory {
   PastQuestionDeckFactory({
     PastQuestionsLocalDataSource? pastQuestionsLocalDataSource,
-  }) : _pastQuestionsDataSource = pastQuestionsLocalDataSource ??
-            (locator.isRegistered<PastQuestionsLocalDataSource>()
-                ? locator<PastQuestionsLocalDataSource>()
-                : null);
+  }) : _pastQuestionsDataSource =
+           pastQuestionsLocalDataSource ??
+           (locator.isRegistered<PastQuestionsLocalDataSource>()
+               ? locator<PastQuestionsLocalDataSource>()
+               : null);
 
   final PastQuestionsLocalDataSource? _pastQuestionsDataSource;
 
@@ -60,17 +61,21 @@ class PastQuestionDeckFactory {
 
     for (final course in courses) {
       final subjectName = course.title;
-      final cleanCode = course.courseCode.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
+      final cleanCode = course.courseCode.replaceAll(
+        RegExp('[^a-zA-Z0-9]'),
+        '',
+      );
 
       // Query past questions for this course & subject
-      final questions = await (ds?.getPastQuestions(
-            examCategory: category,
-            subject: subjectName,
-            courseId: course.id,
-            courseCode: course.courseCode,
-            limit: 500,
-          ) ??
-          Future.value(<PastQuestionModel>[]));
+      final questions =
+          await (ds?.getPastQuestions(
+                examCategory: category,
+                subject: subjectName,
+                courseId: course.id,
+                courseCode: course.courseCode,
+                limit: 500,
+              ) ??
+              Future.value(<PastQuestionModel>[]));
 
       if (questions.isEmpty) continue;
 
@@ -105,7 +110,9 @@ class PastQuestionDeckFactory {
             dueCards: yearQuestions.length,
             masteryRate: 0,
             lastStudied: DateTime.now(),
-            cards: yearQuestions.map((q) => _questionToFlashcard(deckId, q)).toList(),
+            cards: yearQuestions
+                .map((q) => _questionToFlashcard(deckId, q))
+                .toList(),
           ),
         );
       }
@@ -115,7 +122,9 @@ class PastQuestionDeckFactory {
   }
 
   /// Converts a canonical deck ID back into flashcards by querying past questions.
-  Future<List<FlashcardModel>> generateCardsForCanonicalDeck(String deckId) async {
+  Future<List<FlashcardModel>> generateCardsForCanonicalDeck(
+    String deckId,
+  ) async {
     if (!deckId.startsWith(canonicalPrefix)) return const [];
 
     final parts = deckId.substring(canonicalPrefix.length).split('_');
@@ -132,13 +141,14 @@ class PastQuestionDeckFactory {
       await ds.initialize();
     }
 
-    final questions = await (ds?.getPastQuestions(
-          examCategory: category,
-          courseCode: courseCode,
-          year: year,
-          limit: 200,
-        ) ??
-        Future.value(<PastQuestionModel>[]));
+    final questions =
+        await (ds?.getPastQuestions(
+              examCategory: category,
+              courseCode: courseCode,
+              year: year,
+              limit: 200,
+            ) ??
+            Future.value(<PastQuestionModel>[]));
 
     return questions.map((q) => _questionToFlashcard(deckId, q)).toList();
   }
@@ -166,11 +176,16 @@ class PastQuestionDeckFactory {
       final defaultLetter = i < letters.length ? letters[i] : '${i + 1}';
       final opt = q.options[i].trim();
       // Normalize option label: avoid duplicate like "A. A. option"
-      final match = RegExp(r'^\s*(?:([A-Ea-e])[\.\)]|\(([A-Ea-e])\))\s*(.*)').firstMatch(opt);
+      final match = RegExp(
+        r'^\s*(?:([A-Ea-e])[\.\)]|\(([A-Ea-e])\))\s*(.*)',
+      ).firstMatch(opt);
       if (match != null) {
-        final letter = (match.group(1) ?? match.group(2) ?? defaultLetter).toUpperCase();
+        final letter = (match.group(1) ?? match.group(2) ?? defaultLetter)
+            .toUpperCase();
         final content = match.group(3)?.trim() ?? '';
-        final formattedContent = FormulaAwareTextFormatter.formatFormulaAware(content);
+        final formattedContent = FormulaAwareTextFormatter.formatFormulaAware(
+          content,
+        );
         buffer.writeln('• $letter. $formattedContent');
       } else {
         final formattedOpt = FormulaAwareTextFormatter.formatFormulaAware(opt);
@@ -189,7 +204,8 @@ class PastQuestionDeckFactory {
       var correctLabel = q.correctOptionLabel.trim();
       String? correctText;
 
-      if (q.correctOptionIndex >= 0 && q.correctOptionIndex < q.options.length) {
+      if (q.correctOptionIndex >= 0 &&
+          q.correctOptionIndex < q.options.length) {
         correctText = q.options[q.correctOptionIndex].trim();
         if (correctLabel.isEmpty && q.correctOptionIndex < letters.length) {
           correctLabel = letters[q.correctOptionIndex];
@@ -203,11 +219,19 @@ class PastQuestionDeckFactory {
 
       if (correctLabel.isNotEmpty) {
         if (correctText != null && correctText.isNotEmpty) {
-          final cleanMatch = RegExp(r'^\s*(?:[A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)').firstMatch(correctText);
-          final cleanContent = cleanMatch != null ? cleanMatch.group(1)?.trim() ?? '' : correctText;
-          final formattedContent = FormulaAwareTextFormatter.formatFormulaAware(cleanContent);
+          final cleanMatch = RegExp(
+            r'^\s*(?:[A-Ea-e][\.\)]|\([A-Ea-e]\))\s*(.*)',
+          ).firstMatch(correctText);
+          final cleanContent = cleanMatch != null
+              ? cleanMatch.group(1)?.trim() ?? ''
+              : correctText;
+          final formattedContent = FormulaAwareTextFormatter.formatFormulaAware(
+            cleanContent,
+          );
           if (formattedContent.isNotEmpty) {
-            buffer.writeln('**Correct Answer:** Option $correctLabel — $formattedContent');
+            buffer.writeln(
+              '**Correct Answer:** Option $correctLabel — $formattedContent',
+            );
           } else {
             buffer.writeln('**Correct Answer:** Option $correctLabel');
           }

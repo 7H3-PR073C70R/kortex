@@ -94,7 +94,9 @@ class DeckListTileCard extends StatelessWidget {
             onTap: () {
               unawaited(HapticFeedback.lightImpact());
               unawaited(
-                context.router.push(StudySessionRoute(deckId: effectiveDeck.id)),
+                context.router.push(
+                  StudySessionRoute(deckId: effectiveDeck.id),
+                ),
               );
             },
             onLongPress: () {
@@ -115,28 +117,32 @@ class DeckListTileCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.panel),
                     color: isDark
                         ? (isHovered
-                            ? colors.surfaceSecondary.withAlpha(200)
-                            : colors.surfaceSecondary.withAlpha(160))
+                              ? colors.surfaceSecondary.withAlpha(200)
+                              : colors.surfaceSecondary.withAlpha(160))
                         : (isHovered
-                            ? colors.surfacePrimary.withAlpha(240)
-                            : colors.surfacePrimary.withAlpha(215)),
+                              ? colors.surfacePrimary.withAlpha(240)
+                              : colors.surfacePrimary.withAlpha(215)),
                     border: Border.all(
                       color: effectiveDeck.hasDueCards
                           ? (isHovered
-                              ? colors.primary
-                              : colors.primary.withAlpha(isDark ? 110 : 70))
+                                ? colors.primary
+                                : colors.primary.withAlpha(isDark ? 110 : 70))
                           : (isHovered
-                              ? colors.primary.withAlpha(140)
-                              : (isDark
-                                  ? colors.surfaceBorderHighlight.withAlpha(70)
-                                  : colors.surfaceBorder.withAlpha(130))),
+                                ? colors.primary.withAlpha(140)
+                                : (isDark
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          70,
+                                        )
+                                      : colors.surfaceBorder.withAlpha(130))),
                       width: effectiveDeck.hasDueCards ? 1.4 : 1.0,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: isHovered
-                            ? colors.primary.withAlpha(isDark ? 30 : 15)
-                            : colors.black.withAlpha(isDark ? 40 : 10),
+                        color: colors.black.withAlpha(
+                          isDark
+                              ? (isHovered ? 60 : 40)
+                              : (isHovered ? 25 : 10),
+                        ),
                         blurRadius: isHovered ? 14 : 10,
                         offset: Offset(0, isHovered ? 4 : 3),
                       ),
@@ -158,8 +164,12 @@ class DeckListTileCard extends StatelessWidget {
                                   vertical: 3.5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: colors.primary.withAlpha(isDark ? 50 : 25),
-                                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 50 : 25,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.badge,
+                                  ),
                                 ),
                                 child: Text(
                                   effectiveDeck.subject.toUpperCase(),
@@ -182,9 +192,13 @@ class DeckListTileCard extends StatelessWidget {
                                     color: isDark
                                         ? colors.surfaceSecondary.withAlpha(150)
                                         : colors.surfacePrimary,
-                                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.badge,
+                                    ),
                                     border: Border.all(
-                                      color: colors.surfaceBorder.withAlpha(120),
+                                      color: colors.surfaceBorder.withAlpha(
+                                        120,
+                                      ),
                                     ),
                                   ),
                                   child: Text(
@@ -208,220 +222,235 @@ class DeckListTileCard extends StatelessWidget {
                                     vertical: 3.5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: colors.error.withAlpha(isDark ? 45 : 20),
-                                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                                    color: colors.error.withAlpha(
+                                      isDark ? 45 : 20,
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.badge,
+                                    ),
                                     border: Border.all(
                                       color: colors.error.withAlpha(100),
                                     ),
                                   ),
-                              child: Text(
-                                l10n.decksDueBadge(effectiveDeck.dueCards),
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.error,
-                                  fontSize: 10.5,
+                                  child: Text(
+                                    l10n.decksDueBadge(effectiveDeck.dueCards),
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.error,
+                                      fontSize: 10.5,
+                                    ),
+                                  ),
+                                )
+                              else
+                                Text(
+                                  l10n.decksTotalCards(
+                                    effectiveDeck.totalCards,
+                                  ),
+                                  style: typography.footnote.regular.copyWith(
+                                    color: colors.textMuted,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              const SizedBox(width: 6),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  unawaited(_exportDeck(context));
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.ios_share_rounded,
+                                    size: 16,
+                                    color: colors.textMuted.withAlpha(180),
+                                  ),
                                 ),
                               ),
-                            )
-                          else
-                            Text(
-                              l10n.decksTotalCards(effectiveDeck.totalCards),
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textMuted,
-                                fontSize: 11.5,
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  _confirmDelete(context);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 17,
+                                    color: colors.textMuted.withAlpha(160),
+                                  ),
+                                ),
                               ),
-                            ),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              unawaited(_exportDeck(context));
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.ios_share_rounded,
-                                size: 16,
-                                color: colors.textMuted.withAlpha(180),
-                              ),
-                            ),
+                            ],
                           ),
-                          const SizedBox(width: 4),
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              _confirmDelete(context);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.delete_outline_rounded,
-                                size: 17,
-                                color: colors.textMuted.withAlpha(160),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Title
+                      Text(
+                        effectiveDeck.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.callout.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 15.5,
+                          height: 1.3,
+                        ),
+                      ),
+                      if (effectiveDeck.description != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          effectiveDeck.description!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+
+                      // Mastery Rate & Action Strip
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.auto_graph_rounded,
+                                size: 14,
+                                color: colors.primary,
                               ),
-                            ),
+                              const SizedBox(width: 4),
+                              Text(
+                                l10n.decksMasteryPercent(masteryPercent),
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  unawaited(HapticFeedback.mediumImpact());
+                                  unawaited(
+                                    context.router.push(
+                                      QuizWorkspaceRoute(
+                                        deckId: effectiveDeck.id,
+                                        deckTitle: effectiveDeck.title,
+                                        assessmentMode:
+                                            AssessmentMode.millionaireMode,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colors.warning,
+                                        colors.slateTerracotta,
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.badge,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.black.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.military_tech_rounded,
+                                        size: 13,
+                                        color: colors.white,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        'Millionaire',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.white,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              InkWell(
+                                onTap: () {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  unawaited(
+                                    context.router.push(
+                                      StudySessionRoute(
+                                        deckId: effectiveDeck.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.micro,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 2,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        l10n.decksStartSession,
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 12.5,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 14,
+                                        color: colors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-
-                  // Title
-                  Text(
-                    effectiveDeck.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: typography.callout.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 15.5,
-                      height: 1.3,
-                    ),
-                  ),
-                  if (effectiveDeck.description != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      effectiveDeck.description!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 12,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-
-                  // Mastery Rate & Action Strip
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.auto_graph_rounded,
-                            size: 14,
-                            color: colors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.decksMasteryPercent(masteryPercent),
-                            style: typography.footnote.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          InkWell(
-                            onTap: () {
-                              unawaited(HapticFeedback.mediumImpact());
-                              unawaited(
-                                context.router.push(
-                                  QuizWorkspaceRoute(
-                                    deckId: effectiveDeck.id,
-                                    deckTitle: effectiveDeck.title,
-                                    assessmentMode: AssessmentMode.millionaireMode,
-                                  ),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    colors.warning,
-                                    colors.slateTerracotta,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(AppRadius.badge),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.warning.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.military_tech_rounded,
-                                    size: 13,
-                                    color: colors.white,
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    'Millionaire',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.white,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          InkWell(
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              unawaited(
-                                context.router.push(
-                                  StudySessionRoute(deckId: effectiveDeck.id),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    l10n.decksStartSession,
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.primary,
-                                      fontSize: 12.5,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 14,
-                                    color: colors.primary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      );
-    },
-  ),
-);
+          );
+        },
+      ),
+    );
   }
 }

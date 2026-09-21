@@ -138,7 +138,9 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
   }
 
   void _openAddCustomCourseDialog(BuildContext context) {
-    final codeController = TextEditingController(text: _searchController.text.trim());
+    final codeController = TextEditingController(
+      text: _searchController.text.trim(),
+    );
     final titleController = TextEditingController();
     final deptController = TextEditingController();
 
@@ -237,7 +239,10 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                 Center(
                   child: Container(
                     margin: const EdgeInsets.only(right: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 50 : 30),
                       borderRadius: BorderRadius.circular(AppRadius.badge),
@@ -272,342 +277,370 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                           ),
                           decoration: BoxDecoration(
                             color: colors.primary.withAlpha(isDark ? 35 : 20),
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                             border: Border.all(
                               color: colors.primary.withAlpha(isDark ? 70 : 40),
                             ),
                           ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.track_changes_rounded,
-                            size: 14,
-                            color: colors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Active Academic Track: ${widget.userTrack}',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // 1. Search Bar & Add Custom Course Action
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 6),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: AppTextField(
-                            controller: _searchController,
-                            hintText: 'Search course code or title...',
-                            prefixIcon: Icon(
-                              Icons.search_rounded,
-                              color: colors.textSecondary,
-                              size: 20,
-                            ),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(
-                                      Icons.clear_rounded,
-                                      color: colors.textSecondary,
-                                      size: 18,
-                                    ),
-                                    onPressed: () {
-                                      _searchDebounceTimer?.cancel();
-                                      _searchController.clear();
-                                      context
-                                          .read<CurateCoursesCubit>()
-                                          .setSearchQuery('');
-                                    },
-                                  )
-                                : null,
-                            isDense: true,
-                            borderRadius: AppRadius.card,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            onChanged: (val) {
-                              _searchDebounceTimer?.cancel();
-                              _searchDebounceTimer = Timer(
-                                const Duration(milliseconds: 300),
-                                () {
-                                  if (mounted) {
-                                    context
-                                        .read<CurateCoursesCubit>()
-                                        .setSearchQuery(val);
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Tooltip(
-                          message: 'Add custom subject',
-                          child: ShrinkableButton(
-                            onTap: () => _openAddCustomCourseDialog(context),
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: colors.primary,
-                                borderRadius: BorderRadius.circular(AppRadius.card),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.primary.withAlpha(80),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.add_rounded,
-                                color: colors.white,
-                                size: 24,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 2. Category Filter Chips
-                  SizedBox(
-                    height: 44,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _categories.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = cat == state.selectedCategory;
-                        return ChoiceChip(
-                          label: Text(cat),
-                          selected: isSelected,
-                          selectedColor: colors.primary.withAlpha(isDark ? 60 : 35),
-                          backgroundColor: isDark
-                              ? colors.surfaceSecondary.withAlpha(120)
-                              : colors.surfaceSecondary,
-                          labelStyle: typography.caption.bold.copyWith(
-                            color: isSelected
-                                ? colors.primary
-                                : colors.textSecondary,
-                            fontSize: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? colors.primary
-                                  : colors.surfaceBorder.withAlpha(80),
-                            ),
-                          ),
-                          onSelected: (_) {
-                            unawaited(HapticFeedback.lightImpact());
-                            context
-                                .read<CurateCoursesCubit>()
-                                .selectCategory(cat);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 3. Quick-Add Banner when search has no exact match
-                  if (state.searchQuery.trim().isNotEmpty &&
-                      filteredCourses.isEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      child: ShrinkableButton(
-                        onTap: () => _openAddCustomCourseDialog(context),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                colors.primary.withAlpha(isDark ? 40 : 25),
-                                colors.syllabotAccent.withAlpha(isDark ? 30 : 15),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(AppRadius.panel),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(90),
-                            ),
-                          ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.auto_awesome_rounded,
-                                color: colors.primary,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Add "${state.searchQuery}" to Curriculum',
-                                      style: typography.callout.bold.copyWith(
-                                        color: colors.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Tap to provision and track this subject.',
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 11.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
+                                Icons.track_changes_rounded,
                                 size: 14,
                                 color: colors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Active Academic Track: ${widget.userTrack}',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                  ],
 
-                  // 4. Course Cards List
-                  Expanded(
-                    child: state.isLoading
-                        ? const Center(
-                            child: AppLogoLoader(size: 56),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(18, 6, 18, 140),
-                            itemCount: filteredCourses.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final course = filteredCourses[index];
-                              final isSelected = state.selectedCourseIds
-                                  .contains(course.id);
-
-                              return _CourseSelectTile(
-                                course: course,
-                                isSelected: isSelected,
-                                colors: colors,
-                                typography: typography,
-                                isDark: isDark,
-                                onToggle: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  context
-                                      .read<CurateCoursesCubit>()
-                                      .toggleCourseSelection(course.id);
+                      // 1. Search Bar & Add Custom Course Action
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 4, 18, 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: AppTextField(
+                                controller: _searchController,
+                                hintText: 'Search course code or title...',
+                                prefixIcon: Icon(
+                                  Icons.search_rounded,
+                                  color: colors.textSecondary,
+                                  size: 20,
+                                ),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(
+                                          Icons.clear_rounded,
+                                          color: colors.textSecondary,
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          _searchDebounceTimer?.cancel();
+                                          _searchController.clear();
+                                          context
+                                              .read<CurateCoursesCubit>()
+                                              .setSearchQuery('');
+                                        },
+                                      )
+                                    : null,
+                                isDense: true,
+                                borderRadius: AppRadius.card,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                onChanged: (val) {
+                                  _searchDebounceTimer?.cancel();
+                                  _searchDebounceTimer = Timer(
+                                    const Duration(milliseconds: 300),
+                                    () {
+                                      if (mounted) {
+                                        context
+                                            .read<CurateCoursesCubit>()
+                                            .setSearchQuery(val);
+                                      }
+                                    },
+                                  );
                                 },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-
-              // 5. Floating Bottom Save Bar
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.backgroundPrimary.withAlpha(200)
-                            : colors.surfacePrimary.withAlpha(220),
-                        border: Border(
-                          top: BorderSide(
-                            color: colors.surfaceBorder.withAlpha(100),
-                          ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Tooltip(
+                              message: 'Add custom subject',
+                              child: ShrinkableButton(
+                                onTap: () =>
+                                    _openAddCustomCourseDialog(context),
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.card,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.black.withAlpha(
+                                          isDark ? 50 : 20,
+                                        ),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Icons.add_rounded,
+                                    color: colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: SafeArea(
-                        top: false,
-                        child: ShrinkableButton(
-                          onTap: state.isSubmitting
-                              ? null
-                              : () => context
-                                  .read<CurateCoursesCubit>()
-                                  .saveCuratedCourses(),
-                          child: Container(
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(AppRadius.card),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.primary.withAlpha(90),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
+
+                      // 2. Category Filter Chips
+                      SizedBox(
+                        height: 44,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _categories.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final cat = _categories[index];
+                            final isSelected = cat == state.selectedCategory;
+                            return ChoiceChip(
+                              label: Text(cat),
+                              selected: isSelected,
+                              selectedColor: colors.primary.withAlpha(
+                                isDark ? 60 : 35,
+                              ),
+                              backgroundColor: isDark
+                                  ? colors.surfaceSecondary.withAlpha(120)
+                                  : colors.surfaceSecondary,
+                              labelStyle: typography.caption.bold.copyWith(
+                                color: isSelected
+                                    ? colors.primary
+                                    : colors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
                                 ),
-                              ],
-                            ),
-                            child: Center(
-                              child: state.isSubmitting
-                                  ? AppLogoLoader(
-                                      size: 20,
-                                      color: colors.white,
-                                      showMessage: false,
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? colors.primary
+                                      : colors.surfaceBorder.withAlpha(80),
+                                ),
+                              ),
+                              onSelected: (_) {
+                                unawaited(HapticFeedback.lightImpact());
+                                context
+                                    .read<CurateCoursesCubit>()
+                                    .selectCategory(cat);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // 3. Quick-Add Banner when search has no exact match
+                      if (state.searchQuery.trim().isNotEmpty &&
+                          filteredCourses.isEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          child: ShrinkableButton(
+                            onTap: () => _openAddCustomCourseDialog(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.primary.withAlpha(isDark ? 40 : 25),
+                                    colors.syllabotAccent.withAlpha(
+                                      isDark ? 30 : 15,
+                                    ),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.panel,
+                                ),
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(90),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: colors.primary,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Icon(
-                                          Icons.check_circle_outline_rounded,
-                                          color: colors.white,
-                                          size: 19,
-                                        ),
-                                        const SizedBox(width: 8),
                                         Text(
-                                          selectedCount == 0
-                                              ? 'Save Curriculum'
-                                              : 'Save $selectedCount Course${selectedCount == 1 ? '' : 's'}',
+                                          'Add "${state.searchQuery}" to Curriculum',
                                           style: typography.callout.bold
                                               .copyWith(
-                                            color: colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                                color: colors.textPrimary,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Tap to provision and track this subject.',
+                                          style: typography.caption.regular
+                                              .copyWith(
+                                                color: colors.textSecondary,
+                                                fontSize: 11.5,
+                                              ),
                                         ),
                                       ],
                                     ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 14,
+                                    color: colors.primary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // 4. Course Cards List
+                      Expanded(
+                        child: state.isLoading
+                            ? const Center(
+                                child: AppLogoLoader(size: 56),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(
+                                  18,
+                                  6,
+                                  18,
+                                  140,
+                                ),
+                                itemCount: filteredCourses.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, index) {
+                                  final course = filteredCourses[index];
+                                  final isSelected = state.selectedCourseIds
+                                      .contains(course.id);
+
+                                  return _CourseSelectTile(
+                                    course: course,
+                                    isSelected: isSelected,
+                                    colors: colors,
+                                    typography: typography,
+                                    isDark: isDark,
+                                    onToggle: () {
+                                      unawaited(HapticFeedback.lightImpact());
+                                      context
+                                          .read<CurateCoursesCubit>()
+                                          .toggleCourseSelection(course.id);
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+
+                  // 5. Floating Bottom Save Bar
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: ClipRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.backgroundPrimary.withAlpha(200)
+                                : colors.surfacePrimary.withAlpha(220),
+                            border: Border(
+                              top: BorderSide(
+                                color: colors.surfaceBorder.withAlpha(100),
+                              ),
+                            ),
+                          ),
+                          child: SafeArea(
+                            top: false,
+                            child: ShrinkableButton(
+                              onTap: state.isSubmitting
+                                  ? null
+                                  : () => context
+                                        .read<CurateCoursesCubit>()
+                                        .saveCuratedCourses(),
+                              child: Container(
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: colors.primary,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.card,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.black.withAlpha(
+                                        isDark ? 60 : 25,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: state.isSubmitting
+                                      ? AppLogoLoader(
+                                          size: 20,
+                                          color: colors.white,
+                                          showMessage: false,
+                                        )
+                                      : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons
+                                                  .check_circle_outline_rounded,
+                                              color: colors.white,
+                                              size: 19,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              selectedCount == 0
+                                                  ? 'Save Curriculum'
+                                                  : 'Save $selectedCount Course${selectedCount == 1 ? '' : 's'}',
+                                              style: typography.callout.bold
+                                                  .copyWith(
+                                                    color: colors.white,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
-  },
-);
   }
 }
 
@@ -646,19 +679,19 @@ class _CourseSelectTile extends StatelessWidget {
                 color: isSelected
                     ? colors.primary.withAlpha(isDark ? 40 : 25)
                     : isHovered
-                        ? (isDark
-                            ? colors.surfaceSecondary.withAlpha(180)
-                            : colors.surfaceSecondary)
-                        : (isDark
-                            ? colors.surfaceSecondary.withAlpha(120)
-                            : colors.surfaceSecondary),
+                    ? (isDark
+                          ? colors.surfaceSecondary.withAlpha(180)
+                          : colors.surfaceSecondary)
+                    : (isDark
+                          ? colors.surfaceSecondary.withAlpha(120)
+                          : colors.surfaceSecondary),
                 borderRadius: BorderRadius.circular(AppRadius.panel),
                 border: Border.all(
                   color: isSelected
                       ? colors.primary
                       : isHovered
-                          ? colors.primary.withAlpha(isDark ? 110 : 80)
-                          : colors.surfaceBorder.withAlpha(80),
+                      ? colors.primary.withAlpha(isDark ? 110 : 80)
+                      : colors.surfaceBorder.withAlpha(80),
                   width: isSelected ? 1.5 : 1,
                 ),
               ),
@@ -674,8 +707,8 @@ class _CourseSelectTile extends StatelessWidget {
                       color: isSelected
                           ? colors.primary
                           : (isDark
-                              ? colors.surfacePrimary.withAlpha(200)
-                              : colors.surfacePrimary),
+                                ? colors.surfacePrimary.withAlpha(200)
+                                : colors.surfacePrimary),
                       borderRadius: BorderRadius.circular(AppRadius.badge),
                       border: Border.all(
                         color: isSelected

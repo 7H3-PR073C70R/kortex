@@ -74,7 +74,10 @@ class SpeechTextNormalizer {
     text = text.replaceAllMapped(RegExp('~~(.*?)~~'), (m) => m[1]!);
 
     // 4. Markdown links: retain link title, remove URL
-    text = text.replaceAllMapped(RegExp(r'\[([^\]]+)\]\([^)]+\)'), (m) => m[1]!);
+    text = text.replaceAllMapped(
+      RegExp(r'\[([^\]]+)\]\([^)]+\)'),
+      (m) => m[1]!,
+    );
 
     // 5. Remove standalone raw URLs
     text = text.replaceAll(RegExp(r'https?://\S+'), '');
@@ -138,7 +141,10 @@ class SpeechTextNormalizer {
 
     // 11. Normalise Academic Acronyms & Abbreviations
     for (final entry in _commonAbbreviations.entries) {
-      text = text.replaceAll(RegExp(entry.key, caseSensitive: false), entry.value);
+      text = text.replaceAll(
+        RegExp(entry.key, caseSensitive: false),
+        entry.value,
+      );
     }
     for (final entry in _acronymExpansions.entries) {
       text = text.replaceAll(RegExp('\\b${entry.key}\\b'), entry.value);
@@ -237,13 +243,38 @@ class SpeechTextNormalizer {
 
   static String _numberToSpoken(int n) {
     const units = [
-      'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
-      'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
-      'sixteen', 'seventeen', 'eighteen', 'nineteen'
+      'zero',
+      'one',
+      'two',
+      'three',
+      'four',
+      'five',
+      'six',
+      'seven',
+      'eight',
+      'nine',
+      'ten',
+      'eleven',
+      'twelve',
+      'thirteen',
+      'fourteen',
+      'fifteen',
+      'sixteen',
+      'seventeen',
+      'eighteen',
+      'nineteen',
     ];
     const tens = [
-      '', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy',
-      'eighty', 'ninety'
+      '',
+      '',
+      'twenty',
+      'thirty',
+      'forty',
+      'fifty',
+      'sixty',
+      'seventy',
+      'eighty',
+      'ninety',
     ];
 
     if (n < 20) return units[n];

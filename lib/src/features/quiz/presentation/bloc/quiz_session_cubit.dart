@@ -30,11 +30,13 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     MillionaireTieringEngine? tieringEngine,
   }) : _generateQuizUseCase = generateQuizUseCase,
        _submitQuizUseCase = submitQuizUseCase,
-       _decksRepository = decksRepository ??
+       _decksRepository =
+           decksRepository ??
            (locator.isRegistered<DecksRepository>()
                ? locator<DecksRepository>()
                : null),
-       _cardSyncQueue = cardSyncQueue ??
+       _cardSyncQueue =
+           cardSyncQueue ??
            (locator.isRegistered<CardSyncQueue>()
                ? locator<CardSyncQueue>()
                : null),
@@ -76,7 +78,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     final result = await _generateQuizUseCase(
       deckId: deckId,
       deckTitle: deckTitle,
-      questionCount: assessmentMode == AssessmentMode.millionaireMode ? 15 : questionCount,
+      questionCount: assessmentMode == AssessmentMode.millionaireMode
+          ? 15
+          : questionCount,
     );
 
     result.fold(
@@ -93,7 +97,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
             : sanitized;
         if (assessmentMode == AssessmentMode.millionaireMode) {
           final tieredIds = finalQuestions.map((q) => q.id).toSet();
-          _reserveQuestions = sanitized.where((q) => !tieredIds.contains(q.id)).toList();
+          _reserveQuestions = sanitized
+              .where((q) => !tieredIds.contains(q.id))
+              .toList();
         }
         emit(
           state.copyWith(
@@ -138,9 +144,12 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     final finalQuestions = assessmentMode == AssessmentMode.millionaireMode
         ? sanitized.take(12).toList()
         : sanitized;
-    if (assessmentMode == AssessmentMode.millionaireMode && sanitized.length > finalQuestions.length) {
+    if (assessmentMode == AssessmentMode.millionaireMode &&
+        sanitized.length > finalQuestions.length) {
       final tieredIds = finalQuestions.map((q) => q.id).toSet();
-      _reserveQuestions = sanitized.where((q) => !tieredIds.contains(q.id)).toList();
+      _reserveQuestions = sanitized
+          .where((q) => !tieredIds.contains(q.id))
+          .toList();
     }
     emit(
       state.copyWith(
@@ -149,7 +158,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         questions: finalQuestions,
         currentIndex: 0,
         elapsedSeconds: 0,
-        durationMinutes: assessmentMode == AssessmentMode.millionaireMode ? null : durationMinutes,
+        durationMinutes: assessmentMode == AssessmentMode.millionaireMode
+            ? null
+            : durationMinutes,
         flaggedQuestionIds: const {},
         assessmentMode: assessmentMode,
         millionaireScope: millionaireScope,
@@ -182,7 +193,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     final sanitized = _sanitizeQuestions(questions);
     final tiered = _tieringEngine.tierQuestions(questions: sanitized);
     final tieredIds = tiered.map((q) => q.id).toSet();
-    _reserveQuestions = sanitized.where((q) => !tieredIds.contains(q.id)).toList();
+    _reserveQuestions = sanitized
+        .where((q) => !tieredIds.contains(q.id))
+        .toList();
     startQuizFromPastQuestions(
       title: title,
       questions: tiered,
@@ -222,22 +235,26 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           final card = candidateCards[i];
           final cleanAnswer = QuizContentSanitizer.cleanOptionText(card.back);
           if (cleanAnswer.isEmpty) continue;
-          final explanation = QuizContentSanitizer.extractExplanation(card.back) ??
+          final explanation =
+              QuizContentSanitizer.extractExplanation(card.back) ??
               'Correct answer: $cleanAnswer';
           final cleanPrompt = QuizContentSanitizer.cleanPrompt(card.front);
           final cleanSubTopic = QuizContentSanitizer.cleanSubTopic(
             card.sourceTopic,
           );
 
-          final otherAnswers = candidateCards
-              .where((c) => c.id != card.id && c.back.trim().isNotEmpty)
-              .map((c) => QuizContentSanitizer.cleanOptionText(c.back))
-              .where((ans) =>
-                  ans.isNotEmpty &&
-                  ans.toLowerCase() != cleanAnswer.toLowerCase())
-              .toSet()
-              .toList()
-            ..shuffle();
+          final otherAnswers =
+              candidateCards
+                  .where((c) => c.id != card.id && c.back.trim().isNotEmpty)
+                  .map((c) => QuizContentSanitizer.cleanOptionText(c.back))
+                  .where(
+                    (ans) =>
+                        ans.isNotEmpty &&
+                        ans.toLowerCase() != cleanAnswer.toLowerCase(),
+                  )
+                  .toSet()
+                  .toList()
+                ..shuffle();
 
           final options = <String>[cleanAnswer, ...otherAnswers.take(3)]
             ..shuffle();
@@ -341,7 +358,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     if (!state.isLifelineAvailable(lifeline)) return;
     if (state.currentQuestion == null) return;
 
-    final updatedLifelines = Map<LifelineType, bool>.from(state.availableLifelines);
+    final updatedLifelines = Map<LifelineType, bool>.from(
+      state.availableLifelines,
+    );
     updatedLifelines[lifeline] = false;
 
     AppFeedback.lifeline();
@@ -349,9 +368,13 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     switch (lifeline) {
       case LifelineType.fiftyFifty:
         final current = state.currentQuestion!;
-        final cleanCorrect = QuizContentSanitizer.cleanOptionText(current.correctAnswer).toLowerCase();
+        final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+          current.correctAnswer,
+        ).toLowerCase();
         final correctIndex = current.options.indexWhere(
-          (opt) => QuizContentSanitizer.cleanOptionText(opt).toLowerCase() == cleanCorrect,
+          (opt) =>
+              QuizContentSanitizer.cleanOptionText(opt).toLowerCase() ==
+              cleanCorrect,
         );
 
         final incorrectIndices = <int>[];
@@ -385,9 +408,13 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
 
       case LifelineType.askAudience:
         final current = state.currentQuestion!;
-        final cleanCorrect = QuizContentSanitizer.cleanOptionText(current.correctAnswer).toLowerCase();
+        final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+          current.correctAnswer,
+        ).toLowerCase();
         final correctIndex = current.options.indexWhere(
-          (opt) => QuizContentSanitizer.cleanOptionText(opt).toLowerCase() == cleanCorrect,
+          (opt) =>
+              QuizContentSanitizer.cleanOptionText(opt).toLowerCase() ==
+              cleanCorrect,
         );
 
         final letters = ['A', 'B', 'C', 'D'];
@@ -435,7 +462,10 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         if (_reserveQuestions.isNotEmpty) {
           replacement = _reserveQuestions.removeAt(0);
         } else {
-          replacement = _generateReplacementQuestion(current, state.currentTier);
+          replacement = _generateReplacementQuestion(
+            current,
+            state.currentTier,
+          );
         }
 
         final updatedQuestions = List<QuizQuestionEntity>.from(state.questions);
@@ -457,14 +487,26 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   }
 
   /// Generates a curriculum-aligned replacement question when skipSwap lifeline is invoked.
-  QuizQuestionEntity _generateReplacementQuestion(QuizQuestionEntity current, int tier) {
-    final subTopic = current.subTopic.trim().isNotEmpty ? current.subTopic : 'Core Curriculum';
-    final cleanPrompt = current.prompt.replaceAll('?', '').split('\n').first.trim();
-    final subjectFocus = cleanPrompt.length > 35 ? '${cleanPrompt.substring(0, 32)}...' : cleanPrompt;
+  QuizQuestionEntity _generateReplacementQuestion(
+    QuizQuestionEntity current,
+    int tier,
+  ) {
+    final subTopic = current.subTopic.trim().isNotEmpty
+        ? current.subTopic
+        : 'Core Curriculum';
+    final cleanPrompt = current.prompt
+        .replaceAll('?', '')
+        .split('\n')
+        .first
+        .trim();
+    final subjectFocus = cleanPrompt.length > 35
+        ? '${cleanPrompt.substring(0, 32)}...'
+        : cleanPrompt;
 
     return QuizQuestionEntity(
       id: 'swap_${current.id}_${DateTime.now().millisecondsSinceEpoch}',
-      prompt: 'Alternative Tier $tier Challenge ($subTopic): Which foundational principle governs $subjectFocus?',
+      prompt:
+          'Alternative Tier $tier Challenge ($subTopic): Which foundational principle governs $subjectFocus?',
       type: QuizQuestionType.multipleChoice,
       options: const [
         'Active Recall & Spaced Retrieval',
@@ -473,7 +515,8 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         'Contextual Variable Isolation',
       ],
       correctAnswer: 'Active Recall & Spaced Retrieval',
-      explanation: 'In $subTopic, active recall and spaced retrieval establish durable neural retention.',
+      explanation:
+          'In $subTopic, active recall and spaced retrieval establish durable neural retention.',
       subTopic: subTopic,
     );
   }
@@ -526,7 +569,8 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   /// Jumps directly to any question by index in the CBT question palette.
   void jumpToQuestion(int index) {
     if (index < 0 || index >= state.questions.length) return;
-    if (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed) {
+    if (state.assessmentMode == AssessmentMode.millionaireMode &&
+        state.isSoftFailed) {
       return;
     }
     final targetQuestion = state.questions[index];
@@ -541,12 +585,13 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         clearAudienceDistribution: true,
         eliminatedOptionIndices: const {},
         questionStartTimeSeconds: state.elapsedSeconds,
-        status: state.status == QuizSessionStatus.loading ||
+        status:
+            state.status == QuizSessionStatus.loading ||
                 state.status == QuizSessionStatus.completed
             ? state.status
             : (targetQuestion.isAnswered
-                ? QuizSessionStatus.questionAnswered
-                : QuizSessionStatus.inProgress),
+                  ? QuizSessionStatus.questionAnswered
+                  : QuizSessionStatus.inProgress),
       ),
     );
   }
@@ -564,8 +609,12 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     if (state.currentQuestion!.isAnswered) return;
 
     final current = state.currentQuestion!;
-    final cleanCorrect = QuizContentSanitizer.cleanOptionText(current.correctAnswer).toLowerCase();
-    final cleanSelected = QuizContentSanitizer.cleanOptionText(option).toLowerCase();
+    final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+      current.correctAnswer,
+    ).toLowerCase();
+    final cleanSelected = QuizContentSanitizer.cleanOptionText(
+      option,
+    ).toLowerCase();
     final isCorrect = cleanCorrect == cleanSelected;
 
     final updatedQuestion = current.copyWith(
@@ -582,7 +631,9 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         AppFeedback.celebration();
         final timeTaken = state.elapsedSeconds - state.questionStartTimeSeconds;
         final speedBonus = (timeTaken <= 10 && timeTaken >= 0) ? 50 : 0;
-        final isCheckpoint = QuizSessionState.safeCheckpointTiers.contains(state.currentTier);
+        final isCheckpoint = QuizSessionState.safeCheckpointTiers.contains(
+          state.currentTier,
+        );
         final newBanked = isCheckpoint && state.currentTier > state.bankedTier
             ? state.currentTier
             : state.bankedTier;
@@ -647,7 +698,8 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   /// Advances to the next question.
   void nextQuestion() {
     if (state.isLastQuestion) return;
-    if (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed) {
+    if (state.assessmentMode == AssessmentMode.millionaireMode &&
+        state.isSoftFailed) {
       return;
     }
 
@@ -756,120 +808,198 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     return const [
       QuizQuestionEntity(
         id: 'arcade_fallback_1',
-        prompt: 'What learning technique involves reviewing information at expanding intervals?',
+        prompt:
+            'What learning technique involves reviewing information at expanding intervals?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Spaced Repetition', 'Cramming', 'Passive Reading', 'Highlighting'],
+        options: [
+          'Spaced Repetition',
+          'Cramming',
+          'Passive Reading',
+          'Highlighting',
+        ],
         correctAnswer: 'Spaced Repetition',
-        explanation: 'Spaced repetition exploits the psychological spacing effect to maximize long-term memory retention.',
+        explanation:
+            'Spaced repetition exploits the psychological spacing effect to maximize long-term memory retention.',
         subTopic: 'Learning Science',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_2',
-        prompt: 'Which neurotransmitter plays the central role in motivation, reward prediction, and ADHD focus?',
+        prompt:
+            'Which neurotransmitter plays the central role in motivation, reward prediction, and ADHD focus?',
         type: QuizQuestionType.multipleChoice,
         options: ['Dopamine', 'Serotonin', 'Melatonin', 'GABA'],
         correctAnswer: 'Dopamine',
-        explanation: 'Dopamine pathways regulate executive attention, reward circuits, and goal-directed behavior.',
+        explanation:
+            'Dopamine pathways regulate executive attention, reward circuits, and goal-directed behavior.',
         subTopic: 'Neuroscience',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_3',
-        prompt: 'What cognitive strategy breaks large, intimidating volumes of information into smaller units?',
+        prompt:
+            'What cognitive strategy breaks large, intimidating volumes of information into smaller units?',
         type: QuizQuestionType.multipleChoice,
         options: ['Chunking', 'Shadowing', 'Priming', 'Slicing'],
         correctAnswer: 'Chunking',
-        explanation: 'Chunking reduces working memory overload by grouping individual bits into cohesive semantic units.',
+        explanation:
+            'Chunking reduces working memory overload by grouping individual bits into cohesive semantic units.',
         subTopic: 'Cognitive Psychology',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_4',
-        prompt: 'Which productivity method structures work into 25-minute focused bursts separated by short breaks?',
+        prompt:
+            'Which productivity method structures work into 25-minute focused bursts separated by short breaks?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Pomodoro Technique', 'Feynman Technique', 'Leitner System', 'SQ3R Method'],
+        options: [
+          'Pomodoro Technique',
+          'Feynman Technique',
+          'Leitner System',
+          'SQ3R Method',
+        ],
         correctAnswer: 'Pomodoro Technique',
-        explanation: 'The Pomodoro Technique maintains cognitive alertness while fighting executive burnout and time blindness.',
+        explanation:
+            'The Pomodoro Technique maintains cognitive alertness while fighting executive burnout and time blindness.',
         subTopic: 'Study Habits',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_5',
-        prompt: 'Which memory subsystem temporarily stores and manipulates incoming information for immediate reasoning?',
+        prompt:
+            'Which memory subsystem temporarily stores and manipulates incoming information for immediate reasoning?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Working Memory', 'Sensory Register', 'Implicit Memory', 'Echoic Memory'],
+        options: [
+          'Working Memory',
+          'Sensory Register',
+          'Implicit Memory',
+          'Echoic Memory',
+        ],
         correctAnswer: 'Working Memory',
-        explanation: 'Working memory operates as the mental workspace for active cognitive processing and decision making.',
+        explanation:
+            'Working memory operates as the mental workspace for active cognitive processing and decision making.',
         subTopic: 'Cognitive Psychology',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_6',
-        prompt: 'What is the empirical finding that active self-testing yields superior retention compared to re-reading?',
+        prompt:
+            'What is the empirical finding that active self-testing yields superior retention compared to re-reading?',
         type: QuizQuestionType.multipleChoice,
-        options: ['The Testing Effect', 'The Hawthorne Effect', 'The Pygmalion Effect', 'The Halo Effect'],
+        options: [
+          'The Testing Effect',
+          'The Hawthorne Effect',
+          'The Pygmalion Effect',
+          'The Halo Effect',
+        ],
         correctAnswer: 'The Testing Effect',
-        explanation: 'Retrieval practice actively strengthens neural pathways more reliably than passive review.',
+        explanation:
+            'Retrieval practice actively strengthens neural pathways more reliably than passive review.',
         subTopic: 'Learning Science',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_7',
-        prompt: 'In modern FSRS memory scheduling models, what does the core metric "S" quantify?',
+        prompt:
+            'In modern FSRS memory scheduling models, what does the core metric "S" quantify?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Memory Stability', 'Subject Difficulty', 'Study Speed', 'Session Score'],
+        options: [
+          'Memory Stability',
+          'Subject Difficulty',
+          'Study Speed',
+          'Session Score',
+        ],
         correctAnswer: 'Memory Stability',
-        explanation: 'Memory Stability represents the time interval in days required for recall probability to decline to 90%.',
+        explanation:
+            'Memory Stability represents the time interval in days required for recall probability to decline to 90%.',
         subTopic: 'FSRS Algorithm',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_8',
-        prompt: 'Which limbic structure is vital for converting transient working memory into permanent long-term storage?',
+        prompt:
+            'Which limbic structure is vital for converting transient working memory into permanent long-term storage?',
         type: QuizQuestionType.multipleChoice,
         options: ['Hippocampus', 'Amygdala', 'Cerebellum', 'Thalamus'],
         correctAnswer: 'Hippocampus',
-        explanation: 'The hippocampus coordinates memory consolidation through synaptic plasticity and hippocampal replay during sleep.',
+        explanation:
+            'The hippocampus coordinates memory consolidation through synaptic plasticity and hippocampal replay during sleep.',
         subTopic: 'Neuroscience',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_9',
-        prompt: 'Which cognitive bias causes students to mistake familiar passive text for genuine subject mastery?',
+        prompt:
+            'Which cognitive bias causes students to mistake familiar passive text for genuine subject mastery?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Illusion of Competence', 'Confirmation Bias', 'Availability Heuristic', 'Anchoring Bias'],
+        options: [
+          'Illusion of Competence',
+          'Confirmation Bias',
+          'Availability Heuristic',
+          'Anchoring Bias',
+        ],
         correctAnswer: 'Illusion of Competence',
-        explanation: 'Recognizing text when reading is much easier than active recall, creating a false sense of preparedness.',
+        explanation:
+            'Recognizing text when reading is much easier than active recall, creating a false sense of preparedness.',
         subTopic: 'Metacognition',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_10',
-        prompt: 'Which cerebral lobe contains the dorsolateral prefrontal cortex coordinating executive functions and impulse control?',
+        prompt:
+            'Which cerebral lobe contains the dorsolateral prefrontal cortex coordinating executive functions and impulse control?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Frontal Lobe', 'Temporal Lobe', 'Parietal Lobe', 'Occipital Lobe'],
+        options: [
+          'Frontal Lobe',
+          'Temporal Lobe',
+          'Parietal Lobe',
+          'Occipital Lobe',
+        ],
         correctAnswer: 'Frontal Lobe',
-        explanation: 'The frontal lobe governs goal planning, emotional regulation, working memory, and inhibition.',
+        explanation:
+            'The frontal lobe governs goal planning, emotional regulation, working memory, and inhibition.',
         subTopic: 'Neuroscience',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_11',
-        prompt: 'What biological principle denotes the brain’s lifelong structural and functional adaptability in response to learning?',
+        prompt:
+            'What biological principle denotes the brain’s lifelong structural and functional adaptability in response to learning?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Neuroplasticity', 'Long-term Depression', 'Apoptosis', 'Myelination'],
+        options: [
+          'Neuroplasticity',
+          'Long-term Depression',
+          'Apoptosis',
+          'Myelination',
+        ],
         correctAnswer: 'Neuroplasticity',
-        explanation: 'Neuroplasticity enables the brain to rewire neural connections dynamically through deliberate practice.',
+        explanation:
+            'Neuroplasticity enables the brain to rewire neural connections dynamically through deliberate practice.',
         subTopic: 'Neuroscience',
       ),
       QuizQuestionEntity(
         id: 'arcade_fallback_12',
-        prompt: 'According to Cognitive Load Theory, which load type denotes cognitive effort directly devoted to schema formation?',
+        prompt:
+            'According to Cognitive Load Theory, which load type denotes cognitive effort directly devoted to schema formation?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Germane Load', 'Extraneous Load', 'Intrinsic Load', 'Perceptual Load'],
+        options: [
+          'Germane Load',
+          'Extraneous Load',
+          'Intrinsic Load',
+          'Perceptual Load',
+        ],
         correctAnswer: 'Germane Load',
-        explanation: 'Germane cognitive load is beneficial effort dedicated to processing and integrating new schemas into long-term memory.',
+        explanation:
+            'Germane cognitive load is beneficial effort dedicated to processing and integrating new schemas into long-term memory.',
         subTopic: 'Cognitive Science',
       ),
     ];
   }
 
-  static List<QuizQuestionEntity> _sanitizeQuestions(List<QuizQuestionEntity> questions) {
+  static List<QuizQuestionEntity> _sanitizeQuestions(
+    List<QuizQuestionEntity> questions,
+  ) {
     return questions.map((q) {
-      final cleanCorrect = QuizContentSanitizer.cleanOptionText(q.correctAnswer);
-      final cleanOpts = q.options.map(QuizContentSanitizer.cleanOptionText).toList();
-      if (!cleanOpts.any((opt) => opt.toLowerCase() == cleanCorrect.toLowerCase()) && cleanCorrect.isNotEmpty) {
+      final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+        q.correctAnswer,
+      );
+      final cleanOpts = q.options
+          .map(QuizContentSanitizer.cleanOptionText)
+          .toList();
+      if (!cleanOpts.any(
+            (opt) => opt.toLowerCase() == cleanCorrect.toLowerCase(),
+          ) &&
+          cleanCorrect.isNotEmpty) {
         if (cleanOpts.isNotEmpty) {
           cleanOpts[0] = cleanCorrect;
         } else {

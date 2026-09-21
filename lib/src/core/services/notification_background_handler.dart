@@ -30,8 +30,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // Show local heads-up so the user sees it immediately.
   final plugin = FlutterLocalNotificationsPlugin();
-  const androidSettings =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
   const darwinSettings = DarwinInitializationSettings();
   await plugin.initialize(
     const InitializationSettings(
@@ -41,8 +40,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     ),
   );
 
-  final channelId =
-      _resolveChannelId(message.data['action']?.toString());
+  final channelId = _resolveChannelId(message.data['action']?.toString());
 
   await plugin.show(
     notification.hashCode,
@@ -52,8 +50,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       android: AndroidNotificationDetails(
         channelId,
         NotificationService.channelName(channelId),
-        channelDescription:
-            NotificationService.channelDescription(channelId),
+        channelDescription: NotificationService.channelDescription(channelId),
         importance: Importance.max,
         priority: Priority.high,
       ),

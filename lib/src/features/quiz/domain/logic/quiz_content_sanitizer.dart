@@ -45,13 +45,17 @@ class QuizContentSanitizer {
     text = text.replaceFirst(_correctAnswerPrefixRegex, '').trim();
 
     // 3. Strip "Option B — " or "Option B: "
-    final withoutOptionLabel = text.replaceFirst(_optionLabelWithSepRegex, '').trim();
+    final withoutOptionLabel = text
+        .replaceFirst(_optionLabelWithSepRegex, '')
+        .trim();
     if (withoutOptionLabel.isNotEmpty) {
       text = withoutOptionLabel;
     }
 
     // 4. Strip standard prefix like "A. " or "(A) "
-    final withoutPrefix = text.replaceFirst(_standardOptionPrefixRegex, '').trim();
+    final withoutPrefix = text
+        .replaceFirst(_standardOptionPrefixRegex, '')
+        .trim();
     if (withoutPrefix.isNotEmpty) {
       text = withoutPrefix;
     }

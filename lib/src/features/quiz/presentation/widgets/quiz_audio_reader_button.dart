@@ -8,7 +8,9 @@ import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 /// Audio speaker button that synthesizes quiz questions and MCQ options (QZ-15).
 class QuizAudioReaderButton extends HookWidget {
   const QuizAudioReaderButton({
-    required this.questionText, required this.options, super.key,
+    required this.questionText,
+    required this.options,
+    super.key,
     this.ttsHandler,
     this.size = 36.0,
     this.iconSize = 18.0,
@@ -45,24 +47,24 @@ class QuizAudioReaderButton extends HookWidget {
     }, const []);
 
     return Semantics(
-      label: isSpeaking ? 'Stop reading question' : 'Read question and options aloud',
+      label: isSpeaking
+          ? 'Stop reading question'
+          : 'Read question and options aloud',
       button: true,
       child: PlatformHoverBuilder(
         builder: (context, isHovered, child) {
           return Material(
             color: isSpeaking
                 ? colors.primary.withValues(alpha: 0.2)
-                : (isHovered
-                    ? colors.surfaceSecondary
-                    : colors.surfacePrimary),
+                : (isHovered ? colors.surfaceSecondary : colors.surfacePrimary),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(size / 2),
               side: BorderSide(
                 color: isSpeaking
                     ? colors.primary
                     : (isHovered
-                        ? colors.primary.withValues(alpha: 0.4)
-                        : colors.surfaceBorder.withValues(alpha: 0.5)),
+                          ? colors.primary.withValues(alpha: 0.4)
+                          : colors.surfaceBorder.withValues(alpha: 0.5)),
               ),
             ),
             child: InkWell(

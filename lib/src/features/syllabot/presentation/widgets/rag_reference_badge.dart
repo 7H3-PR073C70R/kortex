@@ -46,7 +46,10 @@ class RagReferenceBadge extends StatelessWidget {
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
                 curve: AppMotion.snappyCurve,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isHovered
                       ? colors.primary.withAlpha(45)

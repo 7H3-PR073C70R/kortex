@@ -85,16 +85,23 @@ class DeckMetadataSection extends StatelessWidget {
                   customYearController.text = yr.toString();
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? colors.primary
-                        : (isDark ? colors.surfaceTertiary.withAlpha(80) : colors.surfaceSecondary),
+                        : (isDark
+                              ? colors.surfaceTertiary.withAlpha(80)
+                              : colors.surfaceSecondary),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected
                           ? colors.primary
-                          : (isDark ? colors.surfaceBorderHighlight.withAlpha(40) : colors.surfaceBorder),
+                          : (isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(40)
+                                : colors.surfaceBorder),
                     ),
                   ),
                   child: Text(
@@ -137,7 +144,8 @@ class DeckMetadataSection extends StatelessWidget {
           AppTextField(
             controller: descController,
             label: 'Description (Optional)',
-            hintText: 'e.g. Verified official questions and step-by-step solutions',
+            hintText:
+                'e.g. Verified official questions and step-by-step solutions',
             maxLines: 2,
           ),
         ],

@@ -54,7 +54,8 @@ class SchedulerFactory {
       }
     }
 
-    final currentState = previousFsrsState ??
+    final currentState =
+        previousFsrsState ??
         FsrsMemoryState(
           stability: previousInterval > 0 ? previousInterval.toDouble() : 0.0,
           difficulty: ((3.0 - previousEaseFactor) * 5.0).clamp(1.0, 10.0),

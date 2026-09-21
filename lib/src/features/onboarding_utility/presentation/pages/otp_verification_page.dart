@@ -229,9 +229,9 @@ class _EnvelopeIcon extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.primary.withAlpha(100),
-            blurRadius: 28,
-            spreadRadius: 4,
+            color: colors.black.withAlpha(context.isDarkMode ? 60 : 25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -467,21 +467,6 @@ class _PinBox extends StatelessWidget {
                   : colors.white.withAlpha(40),
               width: focusNode.hasFocus ? 2 : 1,
             ),
-            boxShadow: focusNode.hasFocus
-                ? [
-                    BoxShadow(
-                      color: colors.primary.withAlpha(60),
-                      blurRadius: 12,
-                    ),
-                  ]
-                : isHovered
-                ? [
-                    BoxShadow(
-                      color: colors.primary.withAlpha(25),
-                      blurRadius: 8,
-                    ),
-                  ]
-                : null,
           ),
           child: TextField(
             controller: controller,

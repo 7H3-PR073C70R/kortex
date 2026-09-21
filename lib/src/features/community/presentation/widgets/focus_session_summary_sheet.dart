@@ -366,8 +366,8 @@ class FocusSessionSummarySheet extends StatelessWidget {
                                 borderRadius: AppRadius.radiusCard,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(
-                                      isHovered ? 100 : 70,
+                                    color: colors.black.withAlpha(
+                                      isHovered ? 50 : 25,
                                     ),
                                     blurRadius: isHovered ? 14 : 10,
                                     offset: Offset(0, isHovered ? 6 : 4),

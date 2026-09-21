@@ -228,8 +228,9 @@ class _ReactionCanvasPainter extends CustomPainter {
       }
 
       // Opacity: fade out smoothly in the last 30% of lifetime
-      final opacity =
-          progress > 0.70 ? ((1.0 - progress) / 0.30).clamp(0.0, 1.0) : 1.0;
+      final opacity = progress > 0.70
+          ? ((1.0 - progress) / 0.30).clamp(0.0, 1.0)
+          : 1.0;
 
       // Subtle rotation along sway
       final rotation =

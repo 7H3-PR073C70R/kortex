@@ -85,7 +85,7 @@ class ModeSwitchButton extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withAlpha(
+                        color: colors.black.withAlpha(
                           isDark
                               ? (isHovered ? 50 : 30)
                               : (isHovered ? 30 : 15),

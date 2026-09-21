@@ -46,7 +46,10 @@ class StudyProgressTopBar extends StatelessWidget {
 
                 // Card index tracker
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? colors.surfaceSecondary.withAlpha(160)
@@ -69,7 +72,10 @@ class StudyProgressTopBar extends StatelessWidget {
 
                 // Timer Pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.primary.withAlpha(isDark ? 45 : 20),
                     borderRadius: BorderRadius.circular(AppRadius.badge),

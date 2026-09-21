@@ -301,12 +301,6 @@ class _DesktopNavRail extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: colors.recallEasy,
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.recallEasy.withAlpha(140),
-                            blurRadius: 6,
-                          ),
-                        ],
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -374,14 +368,12 @@ class _DesktopNavRailItem extends StatelessWidget {
                 color: isSelected
                     ? colors.primary.withAlpha(isDark ? 45 : 25)
                     : (isHovered
-                        ? colors.surfaceBorder.withAlpha(isDark ? 35 : 45)
-                        : colors.transparent),
+                          ? colors.surfaceBorder.withAlpha(isDark ? 35 : 45)
+                          : colors.transparent),
                 border: Border.all(
                   color: isSelected
                       ? colors.primary.withAlpha(isDark ? 100 : 70)
-                      : (isHovered
-                          ? colors.surfaceBorder
-                          : colors.transparent),
+                      : (isHovered ? colors.surfaceBorder : colors.transparent),
                 ),
               ),
               child: Row(
@@ -415,12 +407,6 @@ class _DesktopNavRailItem extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: colors.primary,
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.primary.withAlpha(160),
-                            blurRadius: 6,
-                          ),
-                        ],
                       ),
                     ),
                 ],
@@ -492,7 +478,9 @@ class _IOSLiquidGlassDock extends StatelessWidget {
     final glassSettings = LiquidGlassSettings(
       thickness: 24,
       blur: 24,
-      glassColor: isDark ? colors.surfaceSecondary.withAlpha(53) : colors.white.withAlpha(117),
+      glassColor: isDark
+          ? colors.surfaceSecondary.withAlpha(53)
+          : colors.white.withAlpha(117),
       lightIntensity: isDark ? 0.4 : 0.85,
       refractiveIndex: 1.25,
     );
@@ -500,7 +488,9 @@ class _IOSLiquidGlassDock extends StatelessWidget {
     final indicatorGlassSettings = LiquidGlassSettings(
       thickness: 14,
       blur: 10,
-      glassColor: isDark ? colors.white.withAlpha(64) : colors.white.withAlpha(240),
+      glassColor: isDark
+          ? colors.white.withAlpha(64)
+          : colors.white.withAlpha(240),
       lightIntensity: isDark ? 0.6 : 0.95,
       refractiveIndex: 1.15,
     );

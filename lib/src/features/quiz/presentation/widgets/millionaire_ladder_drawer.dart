@@ -50,7 +50,9 @@ class MillionaireLadderDrawer extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
             border: Border.all(
               color: colors.surfaceBorder,
             ),
@@ -110,7 +112,10 @@ class MillionaireLadderDrawer extends StatelessWidget {
                     ),
                     IconButton(
                       onPressed: onClose,
-                      icon: Icon(Icons.close_rounded, color: colors.textPrimary),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colors.textPrimary,
+                      ),
                     ),
                   ],
                 ),
@@ -157,32 +162,42 @@ class MillionaireLadderDrawer extends StatelessWidget {
               // Ladder Rungs List
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 4,
+                  ),
                   itemCount: tiersReversed.length,
                   itemBuilder: (context, index) {
                     final tier = tiersReversed[index];
                     final xp = QuizSessionState.millionaireTiersXp[tier - 1];
                     final isCurrent = tier == state.currentTier;
                     final isPassed = tier < state.currentTier;
-                    final isSafe = QuizSessionState.safeCheckpointTiers.contains(tier);
+                    final isSafe = QuizSessionState.safeCheckpointTiers
+                        .contains(tier);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 6),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isCurrent
                             ? colors.warning.withValues(alpha: 0.18)
                             : (isSafe
-                                ? colors.success.withValues(alpha: 0.08)
-                                : (isDark ? colors.surfaceSecondary : colors.cardBackground)),
+                                  ? colors.success.withValues(alpha: 0.08)
+                                  : (isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.cardBackground)),
                         borderRadius: BorderRadius.circular(AppRadius.card),
                         border: Border.all(
                           color: isCurrent
                               ? colors.warning
                               : (isSafe
-                                  ? colors.success.withValues(alpha: 0.4)
-                                  : colors.surfaceBorder.withValues(alpha: 0.5)),
+                                    ? colors.success.withValues(alpha: 0.4)
+                                    : colors.surfaceBorder.withValues(
+                                        alpha: 0.5,
+                                      )),
                           width: isCurrent ? 1.5 : 1.0,
                         ),
                       ),
@@ -197,8 +212,8 @@ class MillionaireLadderDrawer extends StatelessWidget {
                               color: isCurrent
                                   ? colors.warning
                                   : (isPassed
-                                      ? colors.success
-                                      : colors.surfaceSecondary),
+                                        ? colors.success
+                                        : colors.surfaceSecondary),
                               shape: BoxShape.circle,
                             ),
                             child: Text(
@@ -216,11 +231,14 @@ class MillionaireLadderDrawer extends StatelessWidget {
                           if (isSafe) ...[
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: colors.success
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(AppRadius.micro),
+                                color: colors.success.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.micro,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -249,7 +267,9 @@ class MillionaireLadderDrawer extends StatelessWidget {
                             style: typography.body.medium.copyWith(
                               color: isCurrent
                                   ? colors.warning
-                                  : (isPassed ? colors.textPrimary : colors.textSecondary),
+                                  : (isPassed
+                                        ? colors.textPrimary
+                                        : colors.textSecondary),
                             ),
                           ),
 
@@ -262,10 +282,10 @@ class MillionaireLadderDrawer extends StatelessWidget {
                               color: isCurrent
                                   ? colors.warning
                                   : (isSafe
-                                      ? colors.success
-                                      : (isPassed
-                                          ? colors.textPrimary
-                                          : colors.textMuted)),
+                                        ? colors.success
+                                        : (isPassed
+                                              ? colors.textPrimary
+                                              : colors.textMuted)),
                             ),
                           ),
                         ],
@@ -290,7 +310,9 @@ class MillionaireLadderDrawer extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.panel),
                       boxShadow: [
                         BoxShadow(
-                          color: colors.warning.withValues(alpha: 0.35),
+                          color: colors.black.withValues(
+                            alpha: isDark ? 0.35 : 0.15,
+                          ),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

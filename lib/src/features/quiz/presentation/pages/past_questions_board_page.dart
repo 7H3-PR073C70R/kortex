@@ -112,11 +112,16 @@ class _PastQuestionsBoardView extends HookWidget {
     final searchController = useTextEditingController();
     final debounceTimer = useRef<Timer?>(null);
 
-    useEffect(() => () => debounceTimer.value?.cancel(), const []);
+    useEffect(
+      () =>
+          () => debounceTimer.value?.cancel(),
+      const [],
+    );
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
@@ -156,8 +161,8 @@ class _PastQuestionsBoardView extends HookWidget {
                       : initialSubject,
                   onAdded: (newQuestions) {
                     context.read<PastQuestionsBloc>().add(
-                          AddPastQuestionsEvent(newQuestions),
-                        );
+                      AddPastQuestionsEvent(newQuestions),
+                    );
                   },
                 ),
               );
@@ -226,8 +231,8 @@ class _PastQuestionsBoardView extends HookWidget {
                               () {
                                 if (context.mounted) {
                                   context.read<PastQuestionsBloc>().add(
-                                        LoadPastQuestionsEvent(searchQuery: query),
-                                      );
+                                    LoadPastQuestionsEvent(searchQuery: query),
+                                  );
                                 }
                               },
                             );
@@ -252,7 +257,8 @@ class _PastQuestionsBoardView extends HookWidget {
                         return ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           itemCount: 4,
-                          separatorBuilder: (_, index) => const SizedBox(height: 12),
+                          separatorBuilder: (_, index) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (_, index) => const ShimmerPlaceholder(
                             height: 108,
                             borderRadius: AppRadius.panel,
@@ -260,84 +266,86 @@ class _PastQuestionsBoardView extends HookWidget {
                         );
                       }
 
-                  final courses = _groupQuestionsByCourse(
-                    state.questions,
-                    state.availableSubjects,
-                    state.selectedSubject,
-                    state.searchQuery,
-                  );
+                      final courses = _groupQuestionsByCourse(
+                        state.questions,
+                        state.availableSubjects,
+                        state.selectedSubject,
+                        state.searchQuery,
+                      );
 
-                  if (courses.isEmpty) {
-                    return Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 32,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color:
-                                    colors.primary.withAlpha(isDark ? 35 : 18),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.auto_stories_outlined,
-                                size: 38,
-                                color: colors.primary,
-                              ),
+                      if (courses.isEmpty) {
+                        return Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 32,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No Courses Found',
-                              textAlign: TextAlign.center,
-                              style: typography.title3.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 16.5,
-                              ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 35 : 18,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.auto_stories_outlined,
+                                    size: 38,
+                                    color: colors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No Courses Found',
+                                  textAlign: TextAlign.center,
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 16.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Try adjusting your search query, filter criteria, or switch the exam year.',
+                                  textAlign: TextAlign.center,
+                                  style: typography.footnote.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 12.5,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Try adjusting your search query, filter criteria, or switch the exam year.',
-                              textAlign: TextAlign.center,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 12.5,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
+                          ),
+                        );
+                      }
 
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: courses.length,
-                    separatorBuilder: (_, index) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final course = courses[index];
-                      return _CourseOverviewCard(
-                        courseSummary: course,
-                        examCategory: state.selectedExam,
-                        selectedYear: state.selectedYear,
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: courses.length,
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final course = courses[index];
+                          return _CourseOverviewCard(
+                            courseSummary: course,
+                            examCategory: state.selectedExam,
+                            selectedYear: state.selectedYear,
+                          );
+                        },
                       );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   List<_CourseSummary> _groupQuestionsByCourse(
@@ -361,28 +369,30 @@ class _PastQuestionsBoardView extends HookWidget {
     }
 
     // Filter by selectedSubject if not 'All'
-    final filteredEntries = map.entries.where((entry) {
-      if (selectedSubject != 'All' &&
-          !entry.key.toLowerCase().contains(selectedSubject.toLowerCase())) {
-        return false;
-      }
-      if (searchQuery.isNotEmpty) {
-        final query = searchQuery.toLowerCase();
-        final matchSubject = entry.key.toLowerCase().contains(query);
-        final matchTopic = entry.value.any(
-          (q) =>
-              q.topic.toLowerCase().contains(query) ||
-              q.prompt.toLowerCase().contains(query),
-        );
-        return matchSubject || matchTopic;
-      }
-      return true;
-    }).toList()
-      ..sort((a, b) {
-        final countCompare = b.value.length.compareTo(a.value.length);
-        if (countCompare != 0) return countCompare;
-        return a.key.compareTo(b.key);
-      });
+    final filteredEntries =
+        map.entries.where((entry) {
+          if (selectedSubject != 'All' &&
+              !entry.key.toLowerCase().contains(
+                selectedSubject.toLowerCase(),
+              )) {
+            return false;
+          }
+          if (searchQuery.isNotEmpty) {
+            final query = searchQuery.toLowerCase();
+            final matchSubject = entry.key.toLowerCase().contains(query);
+            final matchTopic = entry.value.any(
+              (q) =>
+                  q.topic.toLowerCase().contains(query) ||
+                  q.prompt.toLowerCase().contains(query),
+            );
+            return matchSubject || matchTopic;
+          }
+          return true;
+        }).toList()..sort((a, b) {
+          final countCompare = b.value.length.compareTo(a.value.length);
+          if (countCompare != 0) return countCompare;
+          return a.key.compareTo(b.key);
+        });
 
     return filteredEntries.map((e) {
       final qs = e.value;
@@ -390,8 +400,8 @@ class _PastQuestionsBoardView extends HookWidget {
       final yearRange = years.isEmpty
           ? 'All Years'
           : (years.length == 1
-              ? '${years.first}'
-              : '${years.first}–${years.last}');
+                ? '${years.first}'
+                : '${years.first}–${years.last}');
       final answered = qs.where((q) => q.isAnswered).length;
 
       return _CourseSummary(
@@ -470,7 +480,7 @@ class _CourseOverviewCard extends StatelessWidget {
     final hasQuestions = courseSummary.totalQuestions > 0;
     final progress = hasQuestions
         ? (courseSummary.answeredQuestions / courseSummary.totalQuestions)
-            .clamp(0.0, 1.0)
+              .clamp(0.0, 1.0)
         : 0.0;
 
     return PlatformHoverBuilder(
@@ -496,8 +506,8 @@ class _CourseOverviewCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: isHovered
                   ? (isDark
-                      ? colors.surfaceSecondary.withAlpha(245)
-                      : colors.surfacePrimary.withAlpha(245))
+                        ? colors.surfaceSecondary.withAlpha(245)
+                        : colors.surfacePrimary.withAlpha(245))
                   : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
               borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
@@ -507,8 +517,9 @@ class _CourseOverviewCard extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.black
-                      .withAlpha(isHovered ? (isDark ? 80 : 20) : (isDark ? 60 : 12)),
+                  color: colors.black.withAlpha(
+                    isHovered ? (isDark ? 80 : 20) : (isDark ? 60 : 12),
+                  ),
                   blurRadius: isHovered ? 14 : 10,
                   offset: Offset(0, isHovered ? 5 : 3),
                 ),
@@ -567,9 +578,12 @@ class _CourseOverviewCard extends StatelessWidget {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: colors.primary.withAlpha(isDark ? 40 : 20),
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.badge),
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 40 : 20,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.badge,
+                                  ),
                                 ),
                                 child: Text(
                                   examCategory.displayName,
@@ -608,10 +622,10 @@ class _CourseOverviewCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
-                      backgroundColor:
-                          colors.primary.withAlpha(isDark ? 30 : 20),
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(colors.primary),
+                      backgroundColor: colors.primary.withAlpha(
+                        isDark ? 30 : 20,
+                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -680,7 +694,7 @@ class _HeroTrackBanner extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.primary.withAlpha(isDark ? 30 : 15),
+                    color: colors.black.withAlpha(isDark ? 40 : 15),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -757,11 +771,14 @@ class _HeroTrackBanner extends StatelessWidget {
                             height: 42,
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.primary.withAlpha(90),
+                                  color: colors.black.withAlpha(
+                                    isDark ? 50 : 20,
+                                  ),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
                                 ),
@@ -807,11 +824,14 @@ class _HeroTrackBanner extends StatelessWidget {
                               gradient: LinearGradient(
                                 colors: [colors.secondary, colors.primary],
                               ),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.secondary.withAlpha(90),
+                                  color: colors.black.withAlpha(
+                                    isDark ? 50 : 20,
+                                  ),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
                                 ),

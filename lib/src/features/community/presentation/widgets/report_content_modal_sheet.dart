@@ -17,7 +17,8 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 enum ReportReason {
   academicMisinformation(
     label: 'Academic Misinformation',
-    description: 'Incorrect formulas, false solutions, or misleading exam answers.',
+    description:
+        'Incorrect formulas, false solutions, or misleading exam answers.',
     icon: Icons.science_outlined,
   ),
   inappropriateContent(
@@ -39,7 +40,8 @@ enum ReportReason {
     label: 'Other Concern',
     description: 'Other issue violating community learning standards.',
     icon: Icons.flag_outlined,
-  );
+  )
+  ;
 
   const ReportReason({
     required this.label,
@@ -92,7 +94,9 @@ class ReportContentModalSheet extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final selectedReason = useState<ReportReason>(ReportReason.academicMisinformation);
+    final selectedReason = useState<ReportReason>(
+      ReportReason.academicMisinformation,
+    );
     final detailsController = useTextEditingController();
     final isSubmitting = useState<bool>(false);
 
@@ -118,7 +122,8 @@ class ReportContentModalSheet extends HookWidget {
         if (context.mounted) {
           Navigator.of(context).pop(true);
           context.showSnackBar(
-            message: 'Report submitted. Our moderation team will review this discussion within 24 hours.',
+            message:
+                'Report submitted. Our moderation team will review this discussion within 24 hours.',
             type: SnackBarType.success,
           );
         }
@@ -126,7 +131,8 @@ class ReportContentModalSheet extends HookWidget {
         if (context.mounted) {
           Navigator.of(context).pop(true);
           context.showSnackBar(
-            message: 'Report received. Thank you for keeping our learning community safe.',
+            message:
+                'Report received. Thank you for keeping our learning community safe.',
             type: SnackBarType.success,
           );
         }
@@ -182,7 +188,10 @@ class ReportContentModalSheet extends HookWidget {
 
                   // Header
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -227,7 +236,10 @@ class ReportContentModalSheet extends HookWidget {
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: colors.textSecondary,
+                          ),
                           onPressed: () => Navigator.of(context).pop(false),
                         ),
                       ],
@@ -239,7 +251,10 @@ class ReportContentModalSheet extends HookWidget {
                   // Report reasons list
                   Flexible(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -272,18 +287,30 @@ class ReportContentModalSheet extends HookWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? colors.primary.withAlpha(isDark ? 40 : 25)
+                                          ? colors.primary.withAlpha(
+                                              isDark ? 40 : 25,
+                                            )
                                           : isHovered
-                                              ? (isDark ? colors.surfaceElevated : colors.surfacePrimary)
-                                              : colors.surfacePrimary.withAlpha(isDark ? 160 : 220),
+                                          ? (isDark
+                                                ? colors.surfaceElevated
+                                                : colors.surfacePrimary)
+                                          : colors.surfacePrimary.withAlpha(
+                                              isDark ? 160 : 220,
+                                            ),
                                       borderRadius: AppRadius.radiusCard,
                                       border: Border.all(
                                         color: isSelected
                                             ? colors.primary
                                             : isHovered
-                                                ? colors.primary.withAlpha(isDark ? 80 : 50)
-                                                : colors.surfaceBorder.withAlpha(40),
-                                        width: isSelected || isHovered ? 1.5 : 1,
+                                            ? colors.primary.withAlpha(
+                                                isDark ? 80 : 50,
+                                              )
+                                            : colors.surfaceBorder.withAlpha(
+                                                40,
+                                              ),
+                                        width: isSelected || isHovered
+                                            ? 1.5
+                                            : 1,
                                       ),
                                     ),
                                     child: Row(
@@ -292,30 +319,41 @@ class ReportContentModalSheet extends HookWidget {
                                           reason.icon,
                                           color: isSelected
                                               ? colors.primary
-                                              : (isHovered ? colors.primary : colors.textSecondary),
+                                              : (isHovered
+                                                    ? colors.primary
+                                                    : colors.textSecondary),
                                           size: 20,
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 reason.label,
-                                                style: typography.body.bold.copyWith(
-                                                  color: isSelected
-                                                      ? (isDark ? colors.white : colors.primary)
-                                                      : colors.textPrimary,
-                                                  fontSize: 14,
-                                                ),
+                                                style: typography.body.bold
+                                                    .copyWith(
+                                                      color: isSelected
+                                                          ? (isDark
+                                                                ? colors.white
+                                                                : colors
+                                                                      .primary)
+                                                          : colors.textPrimary,
+                                                      fontSize: 14,
+                                                    ),
                                               ),
                                               const SizedBox(height: 2),
                                               Text(
                                                 reason.description,
-                                                style: typography.caption.regular.copyWith(
-                                                  color: colors.textSecondary,
-                                                  fontSize: 12,
-                                                ),
+                                                style: typography
+                                                    .caption
+                                                    .regular
+                                                    .copyWith(
+                                                      color:
+                                                          colors.textSecondary,
+                                                      fontSize: 12,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -323,11 +361,15 @@ class ReportContentModalSheet extends HookWidget {
                                         const SizedBox(width: 8),
                                         Icon(
                                           isSelected
-                                              ? Icons.radio_button_checked_rounded
-                                              : Icons.radio_button_unchecked_rounded,
+                                              ? Icons
+                                                    .radio_button_checked_rounded
+                                              : Icons
+                                                    .radio_button_unchecked_rounded,
                                           color: isSelected
                                               ? colors.primary
-                                              : colors.textSecondary.withAlpha(100),
+                                              : colors.textSecondary.withAlpha(
+                                                  100,
+                                                ),
                                           size: 20,
                                         ),
                                       ],
@@ -352,7 +394,8 @@ class ReportContentModalSheet extends HookWidget {
                           const SizedBox(height: 6),
                           AppTextField(
                             controller: detailsController,
-                            hintText: 'Provide any extra details for the moderator...',
+                            hintText:
+                                'Provide any extra details for the moderator...',
                             maxLines: 3,
                           ),
                           const SizedBox(height: 20),
@@ -373,7 +416,9 @@ class ReportContentModalSheet extends HookWidget {
                                 : () => Navigator.of(context).pop(false),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(color: colors.surfaceBorder.withAlpha(80)),
+                              side: BorderSide(
+                                color: colors.surfaceBorder.withAlpha(80),
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: AppRadius.radiusCard,
                               ),

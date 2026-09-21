@@ -21,13 +21,71 @@ class FormulaAwareTextFormatter {
   );
 
   static const Set<String> _validElements = {
-    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
-    'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
-    'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn',
-    'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr',
-    'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
-    'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pt', 'Au',
-    'Hg', 'Pb', 'Bi', 'Ra', 'U',
+    'H',
+    'He',
+    'Li',
+    'Be',
+    'B',
+    'C',
+    'N',
+    'O',
+    'F',
+    'Ne',
+    'Na',
+    'Mg',
+    'Al',
+    'Si',
+    'P',
+    'S',
+    'Cl',
+    'Ar',
+    'K',
+    'Ca',
+    'Sc',
+    'Ti',
+    'V',
+    'Cr',
+    'Mn',
+    'Fe',
+    'Co',
+    'Ni',
+    'Cu',
+    'Zn',
+    'Ga',
+    'Ge',
+    'As',
+    'Se',
+    'Br',
+    'Kr',
+    'Rb',
+    'Sr',
+    'Y',
+    'Zr',
+    'Nb',
+    'Mo',
+    'Tc',
+    'Ru',
+    'Rh',
+    'Pd',
+    'Ag',
+    'Cd',
+    'In',
+    'Sn',
+    'Sb',
+    'Te',
+    'I',
+    'Xe',
+    'Cs',
+    'Ba',
+    'La',
+    'Ce',
+    'Pt',
+    'Au',
+    'Hg',
+    'Pb',
+    'Bi',
+    'Ra',
+    'U',
   };
 
   static bool _hasChemicalElement(String text) {
@@ -74,7 +132,20 @@ class FormulaAwareTextFormatter {
     for (var i = 0; i < s.length; i++) {
       final c = s.codeUnitAt(i);
       // Math/formula symbols: '$' (36), '\' (92), '^' (94), '_' (95), '/' (47), '+' (43), '=' (61), '>' (62), '<' (60), '(', ')', '[', ']', or non-ascii (e.g. '→', '⇌')
-      if (c == 36 || c == 92 || c == 94 || c == 95 || c == 47 || c == 43 || c == 61 || c == 62 || c == 60 || c == 40 || c == 41 || c == 91 || c == 93 || c > 127) {
+      if (c == 36 ||
+          c == 92 ||
+          c == 94 ||
+          c == 95 ||
+          c == 47 ||
+          c == 43 ||
+          c == 61 ||
+          c == 62 ||
+          c == 60 ||
+          c == 40 ||
+          c == 41 ||
+          c == 91 ||
+          c == 93 ||
+          c > 127) {
         return true;
       }
       // Digits (e.g. "10^8", "H2O", "3/4")
@@ -132,7 +203,8 @@ class FormulaAwareTextFormatter {
     }
 
     // 2. Scientific notation (e.g. "3 x 10^8" -> "$3 \times 10^{8}$")
-    if (_scientificNotationRegex.hasMatch(body.trim()) && !_commonEnglishWordsRegex.hasMatch(body)) {
+    if (_scientificNotationRegex.hasMatch(body.trim()) &&
+        !_commonEnglishWordsRegex.hasMatch(body)) {
       final formatted = body.trim().replaceAllMapped(
         _scientificNotationRegex,
         (m) => '\$${m.group(1)} \\times 10^{${m.group(2)}}\$',
@@ -165,7 +237,10 @@ class FormulaAwareTextFormatter {
 
   /// Normalizes spaced chemical subscripts in already-delimited math (e.g. `\mathrm{Cu(NO 3 ) 2}`)
   static String _normalizeSpacedSubscriptsInDelimitedMath(String text) {
-    return text.replaceAllMapped(_chemicalSubscriptSpacedRegex, (m) => '${m.group(1)}_${m.group(2)}');
+    return text.replaceAllMapped(
+      _chemicalSubscriptSpacedRegex,
+      (m) => '${m.group(1)}_${m.group(2)}',
+    );
   }
 
   /// Determines if the text represents a chemical equation or compound formula
@@ -185,7 +260,8 @@ class FormulaAwareTextFormatter {
     final hasElementToken = _hasChemicalElement(trimmed);
 
     // Look for chemical reactions (e.g. "A + B -> C + D" or contains state symbols "(aq)", "(s)")
-    final hasReactionSigns = _reactionArrowRegex.hasMatch(trimmed) ||
+    final hasReactionSigns =
+        _reactionArrowRegex.hasMatch(trimmed) ||
         _equilibriumArrowRegex.hasMatch(trimmed) ||
         _stateSymbolRegex.hasMatch(trimmed) ||
         (hasElementToken && trimmed.contains('+'));
@@ -222,7 +298,10 @@ class FormulaAwareTextFormatter {
     s = s.replaceAll(RegExp(r'\s+\)'), ')');
 
     // 2. Convert spaced subscripts: "NO 3" -> "NO_3", ") 2" -> ")_2"
-    s = s.replaceAllMapped(_chemicalSubscriptSpacedRegex, (m) => '${m.group(1)}_${m.group(2)}');
+    s = s.replaceAllMapped(
+      _chemicalSubscriptSpacedRegex,
+      (m) => '${m.group(1)}_${m.group(2)}',
+    );
 
     // 3. Convert unspaced subscripts for standard formula notation: "H2O" -> "H_2O"
     s = s.replaceAllMapped(
@@ -231,7 +310,10 @@ class FormulaAwareTextFormatter {
     );
 
     // 4. Remove space between subscript and next element letter: "H_2 O" -> "H_2O", "N_2 O_4" -> "N_2O_4"
-    s = s.replaceAllMapped(RegExp(r'_(\d+)\s+([A-Z]|\))'), (m) => '_${m.group(1)}${m.group(2)}');
+    s = s.replaceAllMapped(
+      RegExp(r'_(\d+)\s+([A-Z]|\))'),
+      (m) => '_${m.group(1)}${m.group(2)}',
+    );
 
     // 5. Convert hydrate dots: "CuSO4 . 5H2O" or "CuSO4*5H2O" -> "CuSO_4 \cdot 5H_2O"
     s = s.replaceAll(RegExp(r'\s*[\.\*]\s*(?=\d*[A-Z])'), r' \cdot ');
@@ -285,7 +367,10 @@ class FormulaAwareTextFormatter {
   static String _formatMathToLatex(String raw) {
     var s = raw.trim();
     // Convert * into \times if between numbers/variables
-    s = s.replaceAllMapped(RegExp(r'(\d)\s*\*\s*(\d)'), (m) => '${m.group(1)} \\times ${m.group(2)}');
+    s = s.replaceAllMapped(
+      RegExp(r'(\d)\s*\*\s*(\d)'),
+      (m) => '${m.group(1)} \\times ${m.group(2)}',
+    );
     // Convert +/- into \pm
     s = s.replaceAll('+/-', r'\pm ');
     // Convert degrees 45° -> 45^\circ

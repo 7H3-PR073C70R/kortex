@@ -84,13 +84,14 @@ class McqOptionCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 5),
         child: PlatformHoverBuilder(
           builder: (context, isHovered, child) {
-            final effectiveBorderColor = (!isAnswered && !isSelected && isHovered)
+            final effectiveBorderColor =
+                (!isAnswered && !isSelected && isHovered)
                 ? colors.primary.withAlpha(isDark ? 140 : 100)
                 : borderColor;
             final effectiveBgColor = (!isAnswered && !isSelected && isHovered)
                 ? (isDark
-                    ? colors.surfaceSecondary.withAlpha(220)
-                    : colors.surfacePrimary)
+                      ? colors.surfaceSecondary.withAlpha(220)
+                      : colors.surfacePrimary)
                 : bgColor;
 
             return InkWell(
@@ -99,7 +100,10 @@ class McqOptionCard extends StatelessWidget {
               child: AnimatedContainer(
                 duration: AppMotion.standard,
                 curve: AppMotion.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
                   color: effectiveBgColor,
                   borderRadius: BorderRadius.circular(AppRadius.card),
@@ -109,9 +113,11 @@ class McqOptionCard extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: isHovered && !isAnswered
-                          ? colors.primary.withAlpha(isDark ? 25 : 12)
-                          : colors.black.withAlpha(isDark ? 25 : 6),
+                      color: colors.black.withAlpha(
+                        isHovered && !isAnswered
+                            ? (isDark ? 45 : 16)
+                            : (isDark ? 25 : 6),
+                      ),
                       blurRadius: isHovered ? 12 : 8,
                       offset: const Offset(0, 2),
                     ),

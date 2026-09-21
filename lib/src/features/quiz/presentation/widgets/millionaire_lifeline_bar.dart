@@ -33,13 +33,16 @@ class MillionaireLifelineBar extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final isFiftyFiftyAvailable =
-        state.isLifelineAvailable(LifelineType.fiftyFifty);
+    final isFiftyFiftyAvailable = state.isLifelineAvailable(
+      LifelineType.fiftyFifty,
+    );
     final isAiClueAvailable = state.isLifelineAvailable(LifelineType.aiClue);
-    final isAskAudienceAvailable =
-        state.isLifelineAvailable(LifelineType.askAudience);
-    final isSkipSwapAvailable =
-        state.isLifelineAvailable(LifelineType.skipSwap);
+    final isAskAudienceAvailable = state.isLifelineAvailable(
+      LifelineType.askAudience,
+    );
+    final isSkipSwapAvailable = state.isLifelineAvailable(
+      LifelineType.skipSwap,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -75,10 +78,7 @@ class MillionaireLifelineBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.badge),
                 boxShadow: [
                   BoxShadow(
-                    color: (state.isCurrentTierSafeCheckpoint
-                            ? colors.success
-                            : colors.warning)
-                        .withValues(alpha: 0.35),
+                    color: colors.black.withValues(alpha: 0.15),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -162,12 +162,17 @@ class MillionaireLifelineBar extends StatelessWidget {
                         child: AnimatedContainer(
                           duration: AppMotion.standard,
                           curve: AppMotion.easeOutCubic,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: colors.error.withValues(
                               alpha: isHovered ? 0.22 : 0.12,
                             ),
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
                             border: Border.all(
                               color: colors.error.withValues(
                                 alpha: isHovered ? 0.55 : 0.3,

@@ -19,7 +19,6 @@ abstract class DashboardRepository {
   /// Fetches the active recall spaced repetition (FSRS-6) queue for today.
   Future<Either<Failure, List<StudyDeckEntity>>> getReviewQueue();
 
-
   /// Initiates an interactive mock exam or test simulator session.
   Future<Either<Failure, String>> quickStartMockExam({
     required String examId,

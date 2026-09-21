@@ -72,18 +72,36 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     }, [isSearching.value]);
 
     // Resolve exam board / standard directly from user's active profile track
-    final authBloc = locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null;
+    final authBloc = locator.isRegistered<AuthBloc>()
+        ? locator<AuthBloc>()
+        : null;
     final userTrack = authBloc?.state.userProfile?.targetTrack;
     final resolvedExamBoard = (userTrack != null && userTrack.isNotEmpty)
         ? userTrack
         : initialExamBoard;
 
     // Resolve subjects strictly from user's registered courses and active study decks
-    final dashboardBloc = locator.isRegistered<DashboardBloc>() ? locator<DashboardBloc>() : null;
-    final curatedCourses = dashboardBloc?.state.feed?.curatedCourses.map((c) => c.title.trim()).where((t) => t.isNotEmpty).toSet().toList() ?? [];
+    final dashboardBloc = locator.isRegistered<DashboardBloc>()
+        ? locator<DashboardBloc>()
+        : null;
+    final curatedCourses =
+        dashboardBloc?.state.feed?.curatedCourses
+            .map((c) => c.title.trim())
+            .where((t) => t.isNotEmpty)
+            .toSet()
+            .toList() ??
+        [];
 
-    final decksBloc = locator.isRegistered<DecksBloc>() ? locator<DecksBloc>() : null;
-    final deckSubjects = decksBloc?.state.allDecks.map((d) => d.subject.trim()).where((s) => s.isNotEmpty).toSet().toList() ?? [];
+    final decksBloc = locator.isRegistered<DecksBloc>()
+        ? locator<DecksBloc>()
+        : null;
+    final deckSubjects =
+        decksBloc?.state.allDecks
+            .map((d) => d.subject.trim())
+            .where((s) => s.isNotEmpty)
+            .toSet()
+            .toList() ??
+        [];
 
     final userRegisteredCourses = {...curatedCourses, ...deckSubjects}.toList();
 
@@ -165,7 +183,9 @@ class QuizDuelMatchmakingSheet extends HookWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppRadius.dialog),
               ),
-              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: colors.surfaceBorder.withValues(alpha: 0.5),
+              ),
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -203,239 +223,275 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '1v1 Real-Time Quiz Duel',
-                          style: typography.title2.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Fastest correct answers earn speed bonus points!',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const AppBadge(
-                    label: 'P2P Live',
-                    variant: AppBadgeVariant.success,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              if (isSearching.value) ...[
-                // Radar Search Animation
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 36),
-                    child: Column(
-                      children: [
-                        AnimatedBuilder(
-                          animation: pulseController,
-                          builder: (context, child) {
-                            return Container(
-                              width: 110 + (pulseController.value * 20),
-                              height: 110 + (pulseController.value * 20),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: colors.primary.withValues(alpha: (0.12 - (pulseController.value * 0.08)).clamp(0.0, 1.0)),
-                                border: Border.all(
-                                  color: colors.primary.withValues(alpha: (0.4 + (pulseController.value * 0.4)).clamp(0.0, 1.0)),
-                                  width: 2.5,
-                                ),
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 70,
-                                  height: 70,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colors.primary,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.primary.withValues(alpha: 0.4),
-                                        blurRadius: 16,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.radar_rounded,
-                                      color: colors.white,
-                                      size: 36,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Finding Real Rival... (${(searchSeconds.value ~/ 60).toString().padLeft(2, '0')}:${(searchSeconds.value % 60).toString().padLeft(2, '0')} / 02:00)',
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Searching live peers in ${selectedSubject.value} ($resolvedExamBoard)\nMatching with AI after 2 minutes if no rival joins',
-                          textAlign: TextAlign.center,
-                          style: typography.body.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                AppButton(
-                  text: 'Practice with AI Now ⚡',
-                  onPressed: () async {
-                    AppFeedback.light();
-                    await context.read<QuizDuelCubit>().matchWithAiImmediately();
-                  },
-                ),
-                const SizedBox(height: 10),
-                AppButton(
-                  text: 'Cancel Matchmaking',
-                  variant: AppButtonVariant.secondary,
-                  onPressed: () async {
-                    isSearching.value = false;
-                    await context.read<QuizDuelCubit>().leaveMatch();
-                  },
-                ),
-              ] else ...[
-                // Subject Selector
-                Text(
-                  'Select Subject',
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: subjects.map((sub) {
-                    final isSelected = selectedSubject.value == sub;
-                    return ChoiceChip(
-                      label: Text(sub),
-                      selected: isSelected,
-                      selectedColor: colors.primary.withValues(alpha: 0.2),
-                      backgroundColor: colors.surfaceSecondary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                        side: BorderSide(
-                          color: isSelected
-                              ? colors.primary.withValues(alpha: 0.4)
-                              : colors.surfaceBorder.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      labelStyle: TextStyle(
-                        color: isSelected ? colors.primary : colors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      onSelected: (val) {
-                        if (val) {
-                          AppFeedback.selection();
-                          selectedSubject.value = sub;
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-
-                // Question Count Selector
-                Text(
-                  'Questions per Duel',
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: questionCounts.map((count) {
-                    final isSelected = selectedQuestionCount.value == count;
-                    return ChoiceChip(
-                      label: Text('$count Questions${count == 10 ? ' (Standard)' : ''}'),
-                      selected: isSelected,
-                      selectedColor: colors.primary.withValues(alpha: 0.2),
-                      backgroundColor: colors.surfaceSecondary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                        side: BorderSide(
-                          color: isSelected
-                              ? colors.primary.withValues(alpha: 0.4)
-                              : colors.surfaceBorder.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      labelStyle: TextStyle(
-                        color: isSelected ? colors.primary : colors.textPrimary,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      onSelected: (val) {
-                        if (val) {
-                          AppFeedback.selection();
-                          selectedQuestionCount.value = count;
-                        }
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 20),
-
-                // Match Rule Highlights
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSecondary.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                    border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline_rounded, size: 20, color: colors.primary),
-                      const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          '${selectedQuestionCount.value} Questions • 15s per Question • Max 150 pts/round with Speed Bonus',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '1v1 Real-Time Quiz Duel',
+                              style: typography.title2.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              'Fastest correct answers earn speed bonus points!',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      const AppBadge(
+                        label: 'P2P Live',
+                        variant: AppBadgeVariant.success,
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                AppButton(
-                  text: 'Find Opponent ⚡',
-                  onPressed: startMatchmaking,
-                ),
-              ],
-            ],
+                  if (isSearching.value) ...[
+                    // Radar Search Animation
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 36),
+                        child: Column(
+                          children: [
+                            AnimatedBuilder(
+                              animation: pulseController,
+                              builder: (context, child) {
+                                return Container(
+                                  width: 110 + (pulseController.value * 20),
+                                  height: 110 + (pulseController.value * 20),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colors.primary.withValues(
+                                      alpha:
+                                          (0.12 -
+                                                  (pulseController.value *
+                                                      0.08))
+                                              .clamp(0.0, 1.0),
+                                    ),
+                                    border: Border.all(
+                                      color: colors.primary.withValues(
+                                        alpha:
+                                            (0.4 +
+                                                    (pulseController.value *
+                                                        0.4))
+                                                .clamp(0.0, 1.0),
+                                      ),
+                                      width: 2.5,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Container(
+                                      width: 70,
+                                      height: 70,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: colors.primary,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: colors.black.withValues(
+                                              alpha: isDark ? 0.4 : 0.15,
+                                            ),
+                                            blurRadius: 16,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.radar_rounded,
+                                          color: colors.white,
+                                          size: 36,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Finding Real Rival... (${(searchSeconds.value ~/ 60).toString().padLeft(2, '0')}:${(searchSeconds.value % 60).toString().padLeft(2, '0')} / 02:00)',
+                              style: typography.title3.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Searching live peers in ${selectedSubject.value} ($resolvedExamBoard)\nMatching with AI after 2 minutes if no rival joins',
+                              textAlign: TextAlign.center,
+                              style: typography.body.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    AppButton(
+                      text: 'Practice with AI Now ⚡',
+                      onPressed: () async {
+                        AppFeedback.light();
+                        await context
+                            .read<QuizDuelCubit>()
+                            .matchWithAiImmediately();
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    AppButton(
+                      text: 'Cancel Matchmaking',
+                      variant: AppButtonVariant.secondary,
+                      onPressed: () async {
+                        isSearching.value = false;
+                        await context.read<QuizDuelCubit>().leaveMatch();
+                      },
+                    ),
+                  ] else ...[
+                    // Subject Selector
+                    Text(
+                      'Select Subject',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: subjects.map((sub) {
+                        final isSelected = selectedSubject.value == sub;
+                        return ChoiceChip(
+                          label: Text(sub),
+                          selected: isSelected,
+                          selectedColor: colors.primary.withValues(alpha: 0.2),
+                          backgroundColor: colors.surfaceSecondary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? colors.primary.withValues(alpha: 0.4)
+                                  : colors.surfaceBorder.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? colors.primary
+                                : colors.textPrimary,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                          onSelected: (val) {
+                            if (val) {
+                              AppFeedback.selection();
+                              selectedSubject.value = sub;
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Question Count Selector
+                    Text(
+                      'Questions per Duel',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: questionCounts.map((count) {
+                        final isSelected = selectedQuestionCount.value == count;
+                        return ChoiceChip(
+                          label: Text(
+                            '$count Questions${count == 10 ? ' (Standard)' : ''}',
+                          ),
+                          selected: isSelected,
+                          selectedColor: colors.primary.withValues(alpha: 0.2),
+                          backgroundColor: colors.surfaceSecondary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? colors.primary.withValues(alpha: 0.4)
+                                  : colors.surfaceBorder.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? colors.primary
+                                : colors.textPrimary,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                          onSelected: (val) {
+                            if (val) {
+                              AppFeedback.selection();
+                              selectedQuestionCount.value = count;
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Match Rule Highlights
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceSecondary.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(
+                          color: colors.surfaceBorder.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 20,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '${selectedQuestionCount.value} Questions • 15s per Question • Max 150 pts/round with Speed Bonus',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    AppButton(
+                      text: 'Find Opponent ⚡',
+                      onPressed: startMatchmaking,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 }

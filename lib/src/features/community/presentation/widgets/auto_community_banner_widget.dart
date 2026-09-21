@@ -131,9 +131,7 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: isDark
-                                    ? colors.primary.withAlpha(30)
-                                    : colors.black.withAlpha(15),
+                                color: colors.black.withAlpha(isDark ? 40 : 15),
                                 blurRadius: 16,
                                 offset: const Offset(0, 4),
                               ),

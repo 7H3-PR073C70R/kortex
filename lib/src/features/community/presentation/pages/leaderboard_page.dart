@@ -19,7 +19,8 @@ class LeaderboardPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<CommunityHubBloc>(
-      create: (_) => locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
+      create: (_) =>
+          locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
       child: const _LeaderboardView(),
     );
   }
@@ -39,12 +40,15 @@ class _LeaderboardView extends HookWidget {
     final liveFreezes = locator.isRegistered<UserActivityService>()
         ? locator<UserActivityService>().getStreakFreezes()
         : 0;
-    final effectiveStreakFreezes = (authState?.userProfile?.streakFreezeCount ?? 0) > liveFreezes
+    final effectiveStreakFreezes =
+        (authState?.userProfile?.streakFreezeCount ?? 0) > liveFreezes
         ? (authState?.userProfile?.streakFreezeCount ?? 0)
         : liveFreezes;
 
     return Scaffold(
-      backgroundColor: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
@@ -59,7 +63,8 @@ class _LeaderboardView extends HookWidget {
       ),
       body: BlocBuilder<CommunityHubBloc, CommunityState>(
         builder: (context, state) {
-          if (state.status == CommunityStatus.loading && state.leaderboardEntries.isEmpty) {
+          if (state.status == CommunityStatus.loading &&
+              state.leaderboardEntries.isEmpty) {
             return Center(
               child: CircularProgressIndicator(
                 color: colors.primary,
@@ -70,7 +75,9 @@ class _LeaderboardView extends HookWidget {
 
           return RefreshIndicator(
             onRefresh: () async {
-              context.read<CommunityHubBloc>().add(const LoadCommunityHubEvent());
+              context.read<CommunityHubBloc>().add(
+                const LoadCommunityHubEvent(),
+              );
             },
             color: colors.primary,
             child: SingleChildScrollView(

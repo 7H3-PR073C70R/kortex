@@ -132,7 +132,10 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     final isDark = context.isDarkMode;
 
     final progress = (_totalDuration.inMilliseconds > 0)
-        ? (_position.inMilliseconds / _totalDuration.inMilliseconds).clamp(0.0, 1.0)
+        ? (_position.inMilliseconds / _totalDuration.inMilliseconds).clamp(
+            0.0,
+            1.0,
+          )
         : 0.0;
 
     return Container(
@@ -161,7 +164,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                 color: colors.primary,
                 boxShadow: [
                   BoxShadow(
-                    color: colors.primary.withAlpha(80),
+                    color: colors.black.withAlpha(30),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

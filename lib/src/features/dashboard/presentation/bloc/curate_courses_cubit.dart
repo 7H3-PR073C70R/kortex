@@ -26,11 +26,12 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
     required this.syncCoursesUseCase,
     DeleteCuratedCourseUseCase? deleteCuratedCourseUseCase,
     this.dashboardBloc,
-  })  : _deleteCuratedCourseUseCase = deleteCuratedCourseUseCase ??
-            (locator.isRegistered<DashboardRepository>()
-                ? DeleteCuratedCourseUseCase(locator<DashboardRepository>())
-                : null),
-        super(const CurateCoursesState());
+  }) : _deleteCuratedCourseUseCase =
+           deleteCuratedCourseUseCase ??
+           (locator.isRegistered<DashboardRepository>()
+               ? DeleteCuratedCourseUseCase(locator<DashboardRepository>())
+               : null),
+       super(const CurateCoursesState());
 
   final GetCuratedCoursesCatalogUseCase getCatalogUseCase;
   final SyncUserCoursesUseCase syncCoursesUseCase;
@@ -95,7 +96,10 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
     String? title,
     String? department,
   }) {
-    final cleanCode = courseCode.trim().toUpperCase().replaceAll(RegExp(r'\s+'), ' ');
+    final cleanCode = courseCode.trim().toUpperCase().replaceAll(
+      RegExp(r'\s+'),
+      ' ',
+    );
     if (cleanCode.isEmpty) return;
 
     final codeKey = cleanCode.replaceAll(RegExp('[^A-Z0-9]'), '');
@@ -123,7 +127,9 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
         : cleanCode;
     final resolvedDept = (department != null && department.trim().isNotEmpty)
         ? department.trim()
-        : (state.activeTrack.isNotEmpty ? '${state.activeTrack} Studies' : 'University Studies');
+        : (state.activeTrack.isNotEmpty
+              ? '${state.activeTrack} Studies'
+              : 'University Studies');
 
     final deterministicId =
         'course_${cleanCode.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}';
@@ -208,9 +214,12 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
                 locator<AuthRepository>().completeOnboarding(
                   track: profile.targetTrack.isNotEmpty
                       ? profile.targetTrack
-                      : (state.activeTrack.isNotEmpty ? state.activeTrack : 'WAEC'),
-                  dailyTarget:
-                      profile.dailyCardTarget > 0 ? profile.dailyCardTarget : 20,
+                      : (state.activeTrack.isNotEmpty
+                            ? state.activeTrack
+                            : 'WAEC'),
+                  dailyTarget: profile.dailyCardTarget > 0
+                      ? profile.dailyCardTarget
+                      : 20,
                 ),
               );
             }
@@ -245,8 +254,9 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
 
     final updatedSelected = Set<String>.from(state.selectedCourseIds)
       ..remove(courseId);
-    final updatedCustom =
-        state.customCourses.where((c) => c.id != courseId).toList();
+    final updatedCustom = state.customCourses
+        .where((c) => c.id != courseId)
+        .toList();
     emit(
       state.copyWith(
         selectedCourseIds: updatedSelected,
@@ -257,7 +267,8 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
     await _deleteCuratedCourseUseCase?.call(courseId);
     dashboardBloc?.add(const DashboardRefreshed());
 
-    if (deleteAssociatedDecks && locator.isRegistered<DecksRemoteDataSource>()) {
+    if (deleteAssociatedDecks &&
+        locator.isRegistered<DecksRemoteDataSource>()) {
       try {
         await locator<DecksRemoteDataSource>().deleteDecksForCourse(
           courseId,

@@ -42,8 +42,8 @@ class MarketplaceDeckCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: isHovered
                   ? (isDark
-                      ? colors.surfaceSecondary.withAlpha(220)
-                      : colors.surfacePrimary)
+                        ? colors.surfaceSecondary.withAlpha(220)
+                        : colors.surfacePrimary)
                   : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
               borderRadius: AppRadius.radiusPanel,
               border: Border.all(
@@ -54,223 +54,227 @@ class MarketplaceDeckCard extends StatelessWidget {
               ),
             ),
             child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top Row: Category tag + Rating
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Top Row: Category tag + Rating
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(30),
-                        borderRadius: AppRadius.radiusBadge,
-                      ),
-                      child: Text(
-                        deck.category.toUpperCase(),
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.recallEasy.withAlpha(isDark ? 40 : 20),
-                        borderRadius: AppRadius.radiusBadge,
-                        border: Border.all(
-                          color: colors.recallEasy.withAlpha(isDark ? 90 : 60),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.verified_rounded,
-                            size: 11,
-                            color: colors.recallEasy,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Verified Vault',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.recallEasy,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.star_rounded,
-                      size: 18,
-                      color: colors.warning,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      deck.rating.toStringAsFixed(1),
-                      style: typography.caption.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Deck Title
-            Text(
-              deck.title,
-              style: typography.title3.bold.copyWith(
-                color: colors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            // Subject & Creator
-            Row(
-              children: [
-                Text(
-                  '${deck.subject} • by ${deck.ownerName}',
-                  style: typography.footnote.regular.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                if (deck.rating >= 4.5 || deck.downloadsCount >= 10) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.warning.withAlpha(25),
-                      borderRadius: AppRadius.radiusMicro,
-                      border: Border.all(
-                        color: colors.warning.withAlpha(80),
-                      ),
-                    ),
-                    child: Row(
+                    Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.workspace_premium_rounded,
-                          size: 11,
-                          color: colors.warning,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(30),
+                            borderRadius: AppRadius.radiusBadge,
+                          ),
+                          child: Text(
+                            deck.category.toUpperCase(),
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Mastery Contributor',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.warning,
-                            fontSize: 9,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.recallEasy.withAlpha(
+                              isDark ? 40 : 20,
+                            ),
+                            borderRadius: AppRadius.radiusBadge,
+                            border: Border.all(
+                              color: colors.recallEasy.withAlpha(
+                                isDark ? 90 : 60,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_rounded,
+                                size: 11,
+                                color: colors.recallEasy,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Verified Vault',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.recallEasy,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Bottom Row: Stats & Clone Action
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.style_outlined,
-                      size: 16,
-                      color: colors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${deck.totalCards} cards',
-                      style: typography.caption.medium.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Icon(
-                      Icons.download_rounded,
-                      size: 16,
-                      color: colors.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${deck.downloadsCount}',
-                      style: typography.caption.medium.copyWith(
-                        color: colors.textSecondary,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.star_rounded,
+                          size: 18,
+                          color: colors.warning,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          deck.rating.toStringAsFixed(1),
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                PlatformHoverBuilder(
-                  builder: (context, isBtnHovered, child) {
-                    return ShrinkableButton(
-                      onTap: onCloneTap,
-                      child: AnimatedContainer(
-                        duration: AppMotion.snappy,
+                const SizedBox(height: 12),
+
+                // Deck Title
+                Text(
+                  deck.title,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // Subject & Creator
+                Row(
+                  children: [
+                    Text(
+                      '${deck.subject} • by ${deck.ownerName}',
+                      style: typography.footnote.regular.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    if (deck.rating >= 4.5 || deck.downloadsCount >= 10) ...[
+                      const SizedBox(width: 6),
+                      Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: isBtnHovered
-                              ? colors.primary.withAlpha(isDark ? 80 : 50)
-                              : colors.primary.withAlpha(isDark ? 50 : 30),
-                          borderRadius: AppRadius.radiusCard,
+                          color: colors.warning.withAlpha(25),
+                          borderRadius: AppRadius.radiusMicro,
                           border: Border.all(
-                            color: isBtnHovered
-                                ? colors.primary
-                                : colors.primary.withAlpha(100),
+                            color: colors.warning.withAlpha(80),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.copy_rounded,
-                              size: 14,
-                              color: colors.primary,
+                              Icons.workspace_premium_rounded,
+                              size: 11,
+                              color: colors.warning,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 3),
                             Text(
-                              l10n.cloneDeckButton,
+                              'Mastery Contributor',
                               style: typography.caption.bold.copyWith(
-                                color: colors.primary,
+                                color: colors.warning,
+                                fontSize: 9,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    );
-                  },
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Bottom Row: Stats & Clone Action
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.style_outlined,
+                          size: 16,
+                          color: colors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${deck.totalCards} cards',
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Icon(
+                          Icons.download_rounded,
+                          size: 16,
+                          color: colors.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${deck.downloadsCount}',
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    PlatformHoverBuilder(
+                      builder: (context, isBtnHovered, child) {
+                        return ShrinkableButton(
+                          onTap: onCloneTap,
+                          child: AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isBtnHovered
+                                  ? colors.primary.withAlpha(isDark ? 80 : 50)
+                                  : colors.primary.withAlpha(isDark ? 50 : 30),
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: isBtnHovered
+                                    ? colors.primary
+                                    : colors.primary.withAlpha(100),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 14,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  l10n.cloneDeckButton,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      );
-    },
-  ),
-);
-}
+          );
+        },
+      ),
+    );
+  }
 }

@@ -173,7 +173,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         context: context,
         backgroundColor: colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
         ),
         builder: (ctx) {
           return SafeArea(
@@ -181,7 +183,10 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,11 +243,15 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                               ),
                               child: Row(
                                 children: [
-                                  Text(icon, style: const TextStyle(fontSize: 20)),
+                                  Text(
+                                    icon,
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           title,
@@ -256,10 +265,11 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                         const SizedBox(height: 2),
                                         Text(
                                           desc,
-                                          style: typography.caption.regular.copyWith(
-                                            color: colors.textSecondary,
-                                            fontSize: 12,
-                                          ),
+                                          style: typography.caption.regular
+                                              .copyWith(
+                                                color: colors.textSecondary,
+                                                fontSize: 12,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -337,7 +347,6 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
@@ -382,7 +391,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                             onTap: () {
                               unawaited(HapticFeedback.lightImpact());
                               context.showSnackBar(
-                                message: 'Document attachment ready for OCR ingestion',
+                                message:
+                                    'Document attachment ready for OCR ingestion',
                               );
                             },
                             child: Container(
@@ -401,7 +411,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                               ),
                               child: Icon(
                                 Icons.add_rounded,
-                                color: isHovered ? colors.primary : colors.textSecondary,
+                                color: isHovered
+                                    ? colors.primary
+                                    : colors.textSecondary,
                                 size: 20,
                               ),
                             ),
@@ -457,8 +469,10 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: colors.primary.withAlpha(isHovered ? 160 : 120),
-                                            blurRadius: isHovered ? 14 : 10,
+                                            color: colors.black.withAlpha(
+                                              isHovered ? 50 : 25,
+                                            ),
+                                            blurRadius: isHovered ? 12 : 8,
                                             offset: const Offset(0, 2),
                                           ),
                                         ],
@@ -489,8 +503,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                     message: isAiSpeaking
                                         ? 'Syllabot is speaking • Tap to interrupt'
                                         : (_isListening
-                                            ? 'Listening...'
-                                            : 'Voice Input'),
+                                              ? 'Listening...'
+                                              : 'Voice Input'),
                                     child: PlatformHoverBuilder(
                                       key: ValueKey(
                                         isAiSpeaking
@@ -510,11 +524,14 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                                   decoration: BoxDecoration(
                                                     shape: BoxShape.circle,
                                                     color: isAiSpeaking
-                                                        ? colors.syllabotAccent.withAlpha(
-                                                            (70 * (1 - pulse)).toInt(),
-                                                          )
+                                                        ? colors.syllabotAccent
+                                                              .withAlpha(
+                                                                (70 * (1 - pulse))
+                                                                    .toInt(),
+                                                              )
                                                         : colors.error.withAlpha(
-                                                            (90 * (1 - pulse)).toInt(),
+                                                            (90 * (1 - pulse))
+                                                                .toInt(),
                                                           ),
                                                   ),
                                                 ),
@@ -523,69 +540,79 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                                 height: 36,
                                                 decoration: BoxDecoration(
                                                   color: isAiSpeaking
-                                                      ? colors.syllabotAccent.withAlpha(45)
+                                                      ? colors.syllabotAccent
+                                                            .withAlpha(45)
                                                       : (_isListening
-                                                          ? colors.error
-                                                          : (isHovered
-                                                              ? colors.primary.withAlpha(20)
-                                                              : colors.surfaceSecondary)),
+                                                            ? colors.error
+                                                            : (isHovered
+                                                                  ? colors
+                                                                        .primary
+                                                                        .withAlpha(
+                                                                          20,
+                                                                        )
+                                                                  : colors
+                                                                        .surfaceSecondary)),
                                                   shape: BoxShape.circle,
-                                                  boxShadow: isAiSpeaking
+                                                  boxShadow:
+                                                      (isAiSpeaking ||
+                                                          _isListening)
                                                       ? [
                                                           BoxShadow(
-                                                            color: colors.syllabotAccent
+                                                            color: colors.black
                                                                 .withAlpha(
-                                                              (130 + (pulse * 90))
-                                                                  .toInt()
-                                                                  .clamp(0, 255),
-                                                            ),
-                                                            blurRadius: 8 + (pulse * 6),
-                                                            spreadRadius:
-                                                                1 + (pulse * 2),
+                                                                  isDark
+                                                                      ? 50
+                                                                      : 20,
+                                                                ),
+                                                            blurRadius: 10,
+                                                            offset:
+                                                                const Offset(
+                                                                  0,
+                                                                  3,
+                                                                ),
                                                           ),
                                                         ]
-                                                      : (_isListening
-                                                          ? [
-                                                              BoxShadow(
-                                                                color: colors.error
-                                                                    .withAlpha(
-                                                                  (140 + (pulse * 100))
-                                                                      .toInt()
-                                                                      .clamp(0, 255),
-                                                                ),
-                                                                blurRadius:
-                                                                    10 + (pulse * 6),
-                                                                spreadRadius:
-                                                                    1 + (pulse * 2),
-                                                              ),
-                                                            ]
-                                                          : null),
+                                                      : null,
                                                   border: Border.all(
                                                     color: isAiSpeaking
                                                         ? colors.syllabotAccent
                                                         : (_isListening
-                                                            ? colors.white
-                                                                .withAlpha(180)
-                                                            : (isHovered
-                                                                ? colors.primary.withAlpha(120)
-                                                                : colors.surfaceBorder
-                                                                    .withAlpha(80))),
-                                                    width: isAiSpeaking ? 1.5 : 1,
+                                                              ? colors.white
+                                                                    .withAlpha(
+                                                                      180,
+                                                                    )
+                                                              : (isHovered
+                                                                    ? colors
+                                                                          .primary
+                                                                          .withAlpha(
+                                                                            120,
+                                                                          )
+                                                                    : colors
+                                                                          .surfaceBorder
+                                                                          .withAlpha(
+                                                                            80,
+                                                                          ))),
+                                                    width: isAiSpeaking
+                                                        ? 1.5
+                                                        : 1,
                                                   ),
                                                 ),
                                                 child: Icon(
                                                   isAiSpeaking
                                                       ? Icons.graphic_eq_rounded
                                                       : (_isListening
-                                                          ? Icons.mic_rounded
-                                                          : Icons.mic_none_rounded),
+                                                            ? Icons.mic_rounded
+                                                            : Icons
+                                                                  .mic_none_rounded),
                                                   color: isAiSpeaking
                                                       ? colors.syllabotAccent
                                                       : (_isListening
-                                                          ? colors.white
-                                                          : (isHovered
-                                                              ? colors.primary
-                                                              : colors.textSecondary)),
+                                                            ? colors.white
+                                                            : (isHovered
+                                                                  ? colors
+                                                                        .primary
+                                                                  : colors
+                                                                        .textSecondary)),
                                                   size: 20,
                                                 ),
                                               ),
@@ -635,15 +662,23 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      _getModeDetails(widget.socraticMode, l10n).$1,
+                                      _getModeDetails(
+                                        widget.socraticMode,
+                                        l10n,
+                                      ).$1,
                                       style: const TextStyle(fontSize: 13),
                                     ),
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        _getModeShortLabel(widget.socraticMode, l10n),
+                                        _getModeShortLabel(
+                                          widget.socraticMode,
+                                          l10n,
+                                        ),
                                         style: typography.caption.bold.copyWith(
-                                          color: isHovered ? colors.primary : colors.textPrimary,
+                                          color: isHovered
+                                              ? colors.primary
+                                              : colors.textPrimary,
                                           fontSize: 11.5,
                                         ),
                                         maxLines: 1,
@@ -653,7 +688,9 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                     const SizedBox(width: 4),
                                     Icon(
                                       Icons.keyboard_arrow_down_rounded,
-                                      color: isHovered ? colors.primary : colors.textSecondary,
+                                      color: isHovered
+                                          ? colors.primary
+                                          : colors.textSecondary,
                                       size: 15,
                                     ),
                                   ],
@@ -672,9 +709,10 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                             onTap: () {
                               unawaited(HapticFeedback.lightImpact());
                               final nextEngine =
-                                  widget.engineType == ExecutionEngineType.cloudRemote
-                                      ? ExecutionEngineType.localOnDevice
-                                      : ExecutionEngineType.cloudRemote;
+                                  widget.engineType ==
+                                      ExecutionEngineType.cloudRemote
+                                  ? ExecutionEngineType.localOnDevice
+                                  : ExecutionEngineType.cloudRemote;
                               widget.onEngineChanged(nextEngine);
                             },
                             child: Container(
@@ -703,18 +741,21 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                       shape: BoxShape.circle,
                                       color:
                                           widget.engineType ==
-                                                  ExecutionEngineType.cloudRemote
-                                              ? colors.success
-                                              : colors.primary,
+                                              ExecutionEngineType.cloudRemote
+                                          ? colors.success
+                                          : colors.primary,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    widget.engineType == ExecutionEngineType.cloudRemote
+                                    widget.engineType ==
+                                            ExecutionEngineType.cloudRemote
                                         ? l10n.engineCloudSupabase
                                         : l10n.engineLocalOnDevice,
                                     style: typography.caption.bold.copyWith(
-                                      color: isHovered ? colors.primary : colors.textPrimary,
+                                      color: isHovered
+                                          ? colors.primary
+                                          : colors.textPrimary,
                                       fontSize: 11.5,
                                     ),
                                     maxLines: 1,

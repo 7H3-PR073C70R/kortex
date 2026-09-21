@@ -29,7 +29,8 @@ String extractAttachmentFileName(
 
         // Check if the baseName is an auto-generated temporary or UUID string:
         final lower = baseName.toLowerCase();
-        final isGeneratedOrWeird = lower.startsWith('image_picker') ||
+        final isGeneratedOrWeird =
+            lower.startsWith('image_picker') ||
             lower.startsWith('scaled_') ||
             lower.startsWith('camera_') ||
             lower.startsWith('temp_') ||
@@ -37,10 +38,17 @@ String extractAttachmentFileName(
             lower.startsWith('picker_') ||
             lower.startsWith('img_') && lower.length > 20 ||
             RegExp(r'^[0-9a-fA-F\-]{16,}$').hasMatch(baseName) ||
-            RegExp('[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}').hasMatch(baseName);
+            RegExp(
+              '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}',
+            ).hasMatch(baseName);
 
         if (isGeneratedOrWeird) {
-          final isImage = ext == '.jpg' || ext == '.jpeg' || ext == '.png' || ext == '.webp' || ext == '.heic';
+          final isImage =
+              ext == '.jpg' ||
+              ext == '.jpeg' ||
+              ext == '.png' ||
+              ext == '.webp' ||
+              ext == '.heic';
           final prefix = isImage ? 'Image_Attachment' : 'Attachment';
           final idx = (index != null && index > 0) ? '_${index + 1}' : '';
           return '$prefix$idx$ext';
@@ -99,7 +107,11 @@ class ForumReplyAttachmentCard extends StatelessWidget {
                         color: colors.black.withAlpha(160),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.close_rounded, color: colors.white, size: 20),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: colors.white,
+                        size: 20,
+                      ),
                     ),
                     onPressed: () => Navigator.of(ctx).pop(),
                   ),
@@ -119,7 +131,9 @@ class ForumReplyAttachmentCard extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     final fileName = customFileName ?? extractAttachmentFileName(imageUrl);
-    final ext = fileName.contains('.') ? fileName.split('.').last.toUpperCase() : 'PNG';
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toUpperCase()
+        : 'PNG';
     final subtitle = customSubtitle ?? '$ext • Image Attachment';
 
     return ShrinkableButton(
@@ -254,7 +268,11 @@ class ForumPostMediaPreview extends StatelessWidget {
                         color: colors.black.withAlpha(160),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.close_rounded, color: colors.white, size: 20),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: colors.white,
+                        size: 20,
+                      ),
                     ),
                     onPressed: () => Navigator.of(ctx).pop(),
                   ),
@@ -280,7 +298,8 @@ class ForumPostMediaPreview extends StatelessWidget {
     final secondUrl = hasMultiple ? mediaUrls[1] : '';
     final remainingCount = mediaUrls.length - 2;
 
-    final displayCaption = caption ??
+    final displayCaption =
+        caption ??
         (hasMultiple
             ? '${extractAttachmentFileName(firstUrl)} • ${mediaUrls.length} images'
             : extractAttachmentFileName(firstUrl));

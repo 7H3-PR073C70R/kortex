@@ -36,20 +36,26 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     LocalStorageService? localStorageService,
   }) : _getDeckCardsUseCase = getDeckCardsUseCase,
        _saveSessionResultsUseCase = saveSessionResultsUseCase,
-       _decksRepository = decksRepository ??
+       _decksRepository =
+           decksRepository ??
            (locator.isRegistered<DecksRepository>()
                ? locator<DecksRepository>()
                : null),
-       _fsrsScheduler = fsrsScheduler ?? _buildScheduler(
-           localStorageService ??
-           (locator.isRegistered<LocalStorageService>()
-               ? locator<LocalStorageService>()
-               : null)),
-       _cardSyncQueue = cardSyncQueue ??
+       _fsrsScheduler =
+           fsrsScheduler ??
+           _buildScheduler(
+             localStorageService ??
+                 (locator.isRegistered<LocalStorageService>()
+                     ? locator<LocalStorageService>()
+                     : null),
+           ),
+       _cardSyncQueue =
+           cardSyncQueue ??
            (locator.isRegistered<CardSyncQueue>()
                ? locator<CardSyncQueue>()
                : CardSyncQueue()),
-       _localStorageService = localStorageService ??
+       _localStorageService =
+           localStorageService ??
            (locator.isRegistered<LocalStorageService>()
                ? locator<LocalStorageService>()
                : null),
@@ -104,7 +110,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
   /// Blends 70% challenging/due cards with 30% easy momentum cards to maintain dopamine
   /// and defeat predictive boredom without triggering failure fatigue.
-  List<FlashcardEntity> adaptiveShuffle(List<FlashcardEntity> cards, int count) {
+  List<FlashcardEntity> adaptiveShuffle(
+    List<FlashcardEntity> cards,
+    int count,
+  ) {
     if (cards.isEmpty) return const [];
     if (cards.length <= count) {
       return List<FlashcardEntity>.from(cards)..shuffle();
@@ -114,7 +123,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     final easy = <FlashcardEntity>[];
 
     for (final card in cards) {
-      final isHard = card.isDueToday ||
+      final isHard =
+          card.isDueToday ||
           card.easeFactor < 2.5 ||
           card.interval <= 1 ||
           card.repetitions == 0;
@@ -148,7 +158,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
     // Backfill from remaining pool if either bucket was underfilled
     if (selected.length < count) {
-      final remaining = cards.where((c) => !selectedIds.contains(c.id)).toList()..shuffle();
+      final remaining = cards.where((c) => !selectedIds.contains(c.id)).toList()
+        ..shuffle();
       for (final card in remaining) {
         if (selected.length >= count) break;
         selected.add(card);
@@ -163,7 +174,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   Future<void> saveSessionCheckpoint({int? index, int? elapsedSeconds}) async {
     if (state.deckId.isEmpty) return;
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);
@@ -184,10 +196,13 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
   /// Clears saved checkpoint when a deck is completed or reset
   Future<void> clearSessionCheckpoint([String? deckId]) async {
-    final targetId = (deckId != null && deckId.isNotEmpty) ? deckId : state.deckId;
+    final targetId = (deckId != null && deckId.isNotEmpty)
+        ? deckId
+        : state.deckId;
     if (targetId.isEmpty) return;
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);
@@ -206,7 +221,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   ({int index, int elapsedSeconds})? getSessionCheckpoint(String deckId) {
     if (deckId.isEmpty) return null;
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);
@@ -374,7 +390,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         final newElapsed = state.elapsedSeconds + 1;
         emit(state.copyWith(elapsedSeconds: newElapsed));
 
-        if (_targetDurationSeconds != null && newElapsed >= _targetDurationSeconds!) {
+        if (_targetDurationSeconds != null &&
+            newElapsed >= _targetDurationSeconds!) {
           _timer?.cancel();
           unawaited(finishEarly());
         }
@@ -488,11 +505,15 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       interval: reviewResult.card.scheduledDays,
       easeFactor: (3.0 - (reviewResult.card.difficulty / 5.0)).clamp(1.3, 2.5),
       lastReviewed: nowUtc,
-      nextDueDate: reviewResult.card.due ??
-          nowUtc.add(Duration(
+      nextDueDate:
+          reviewResult.card.due ??
+          nowUtc.add(
+            Duration(
               days: reviewResult.card.scheduledDays > 0
                   ? reviewResult.card.scheduledDays
-                  : 1)),
+                  : 1,
+            ),
+          ),
       // Native FSRS-6 fields — authoritative write-back
       fsrsStability: reviewResult.card.stability,
       fsrsDifficulty: reviewResult.card.difficulty,
@@ -606,7 +627,12 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     } else {
       final nextIndex = state.currentIndex + 1;
       // Persist checkpoint to allow resumption when taking breaks
-      unawaited(saveSessionCheckpoint(index: nextIndex, elapsedSeconds: state.elapsedSeconds));
+      unawaited(
+        saveSessionCheckpoint(
+          index: nextIndex,
+          elapsedSeconds: state.elapsedSeconds,
+        ),
+      );
 
       emit(
         state.copyWith(
@@ -636,7 +662,9 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     }
 
     final finalRetention =
-        ((state.hardCount * 0.7) + (state.goodCount * 1.0) + (state.easyCount * 1.0)) /
+        ((state.hardCount * 0.7) +
+            (state.goodCount * 1.0) +
+            (state.easyCount * 1.0)) /
         (totalReviewed == 0 ? 1 : totalReviewed);
     final mastered = state.goodCount + state.easyCount;
     final remainingDue = state.cards.where((c) => c.isDueToday).length;
@@ -687,7 +715,12 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     unawaited(_cardSyncQueue.flushPendingLogs());
 
     // Save checkpoint so the user can resume exactly where they left off when taking a break
-    unawaited(saveSessionCheckpoint(index: state.currentIndex, elapsedSeconds: state.elapsedSeconds));
+    unawaited(
+      saveSessionCheckpoint(
+        index: state.currentIndex,
+        elapsedSeconds: state.elapsedSeconds,
+      ),
+    );
 
     emit(
       state.copyWith(
@@ -700,7 +733,12 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   Future<void> close() {
     _timer?.cancel();
     if (state.status == StudySessionStatus.studying) {
-      unawaited(saveSessionCheckpoint(index: state.currentIndex, elapsedSeconds: state.elapsedSeconds));
+      unawaited(
+        saveSessionCheckpoint(
+          index: state.currentIndex,
+          elapsedSeconds: state.elapsedSeconds,
+        ),
+      );
       // Session was interrupted — reschedule the daily reminder so the user
       // is notified at their preferred time the next day.
       _rescheduleReminder();
@@ -715,15 +753,18 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     try {
       if (!locator.isRegistered<NotificationService>()) return;
       final notifs = locator<NotificationService>();
-      final raw = _localStorageService
-          ?.getPreference(key: FsrsUserSettings.storageKey);
+      final raw = _localStorageService?.getPreference(
+        key: FsrsUserSettings.storageKey,
+      );
       final settings = raw != null
           ? FsrsUserSettings.fromJson(StudySessionCubit._decodeSettings(raw))
           : const FsrsUserSettings();
-      unawaited(notifs.scheduleStudyReminder(
-        hour: settings.preferredReminderHour,
-        minute: settings.preferredReminderMinute,
-      ));
+      unawaited(
+        notifs.scheduleStudyReminder(
+          hour: settings.preferredReminderHour,
+          minute: settings.preferredReminderMinute,
+        ),
+      );
     } on Object catch (_) {}
   }
 }

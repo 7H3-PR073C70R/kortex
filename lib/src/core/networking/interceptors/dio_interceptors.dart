@@ -66,14 +66,15 @@ class TokenInterceptor extends QueuedInterceptor {
     required this.storageService,
     required this.sessionExpiredService,
     Dio? refreshDio,
-  }) : _refreshDio = refreshDio ??
-            Dio(
-              BaseOptions(
-                connectTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 15),
-                sendTimeout: const Duration(seconds: 15),
-              ),
-            );
+  }) : _refreshDio =
+           refreshDio ??
+           Dio(
+             BaseOptions(
+               connectTimeout: const Duration(seconds: 15),
+               receiveTimeout: const Duration(seconds: 15),
+               sendTimeout: const Duration(seconds: 15),
+             ),
+           );
 
   final UserStorageService storageService;
   final SessionExpiredService sessionExpiredService;
@@ -150,7 +151,8 @@ class TokenInterceptor extends QueuedInterceptor {
     RequestInterceptorHandler handler,
   ) async {
     final path = options.path;
-    final isAuthEndpoint = path.contains('/auth/v1/token') ||
+    final isAuthEndpoint =
+        path.contains('/auth/v1/token') ||
         path.contains('/auth/v1/signup') ||
         path.contains('/auth/v1/recover') ||
         path.contains('/auth/v1/verify') ||
@@ -170,7 +172,8 @@ class TokenInterceptor extends QueuedInterceptor {
     }
 
     final rawUserToken = storageService.getToken();
-    final userToken = rawUserToken != null &&
+    final userToken =
+        rawUserToken != null &&
             rawUserToken.isNotEmpty &&
             !rawUserToken.contains(' ') &&
             !rawUserToken.contains('\n')
@@ -198,7 +201,8 @@ class TokenInterceptor extends QueuedInterceptor {
   ) async {
     if (_isJwtExpired(err)) {
       final path = err.requestOptions.path;
-      final isAuthEndpoint = path.contains('/auth/v1/token') ||
+      final isAuthEndpoint =
+          path.contains('/auth/v1/token') ||
           path.contains('/auth/v1/signup') ||
           path.contains('/auth/v1/recover') ||
           path.contains('/auth/v1/verify') ||
@@ -407,7 +411,8 @@ class ExponentialBackoffRetryInterceptor extends Interceptor {
     final retryCount = (extra['retry_count'] as int?) ?? 0;
 
     final statusCode = err.response?.statusCode;
-    final isTransient = err.type == DioExceptionType.connectionTimeout ||
+    final isTransient =
+        err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
         err.type == DioExceptionType.connectionError ||

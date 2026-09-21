@@ -106,15 +106,6 @@ class CameraScannerOverlay extends HookWidget {
                                       colors.transparent,
                                     ],
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.syllabotAccent.withAlpha(
-                                        180,
-                                      ),
-                                      blurRadius: 10,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
                                 ),
                               ),
                             );
@@ -247,9 +238,9 @@ class CameraScannerOverlay extends HookWidget {
                                 boxShadow: isHovered
                                     ? [
                                         BoxShadow(
-                                          color: colors.primary.withAlpha(120),
+                                          color: colors.black.withAlpha(80),
                                           blurRadius: 16,
-                                          spreadRadius: 2,
+                                          offset: const Offset(0, 4),
                                         ),
                                       ]
                                     : null,

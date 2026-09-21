@@ -41,8 +41,9 @@ class StudySessionPage extends HookWidget {
         deckId.startsWith('hyperdrive:') || deckId.startsWith('focus:');
     if (isHyperdrive) {
       final parts = deckId.split(':');
-      final targetDeckId =
-          parts.length > 1 ? parts.sublist(1).join(':') : deckId;
+      final targetDeckId = parts.length > 1
+          ? parts.sublist(1).join(':')
+          : deckId;
       return FocusWorkspacePage(
         deckId: targetDeckId,
         deckTitle: 'Hyperdrive Focus',
@@ -58,8 +59,9 @@ class StudySessionPage extends HookWidget {
           final parts = deckId.split(':');
           if (parts.length > 2 && parts[1] == 'speed') {
             final minutes = int.tryParse(parts[2]) ?? 3;
-            final targetDeckId =
-                parts.length > 3 ? parts.sublist(3).join(':') : 'all';
+            final targetDeckId = parts.length > 3
+                ? parts.sublist(3).join(':')
+                : 'all';
             unawaited(
               cubit.startSession(
                 targetDeckId,
@@ -70,8 +72,9 @@ class StudySessionPage extends HookWidget {
             );
           } else {
             final size = int.tryParse(parts.length > 1 ? parts[1] : '10') ?? 10;
-            final targetDeckId =
-                parts.length > 2 ? parts.sublist(2).join(':') : '';
+            final targetDeckId = parts.length > 2
+                ? parts.sublist(2).join(':')
+                : '';
             unawaited(
               cubit.startSession(
                 targetDeckId,
@@ -150,13 +153,19 @@ class _StudySessionView extends HookWidget {
             }
 
             if (state.status == StudySessionStatus.error) {
-              final isNoCards = state.errorMessage?.toLowerCase().contains('no cards') == true ||
-                  state.errorMessage?.toLowerCase().contains('no flashcards') == true;
+              final isNoCards =
+                  state.errorMessage?.toLowerCase().contains('no cards') ==
+                      true ||
+                  state.errorMessage?.toLowerCase().contains('no flashcards') ==
+                      true;
               return Column(
                 children: [
                   // Top Navigation Bar
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -167,10 +176,14 @@ class _StudySessionView extends HookWidget {
                             icon: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: colors.surfaceSecondary.withAlpha(isDark ? 180 : 120),
+                                color: colors.surfaceSecondary.withAlpha(
+                                  isDark ? 180 : 120,
+                                ),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 50 : 25,
+                                  ),
                                 ),
                               ),
                               child: Icon(
@@ -207,14 +220,20 @@ class _StudySessionView extends HookWidget {
                               color: isDark
                                   ? colors.surfaceSecondary.withAlpha(140)
                                   : colors.surfacePrimary,
-                              borderRadius: BorderRadius.circular(AppRadius.dialog),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.dialog,
+                              ),
                               border: Border.all(
-                                color: colors.primary.withAlpha(isDark ? 60 : 30),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 60 : 30,
+                                ),
                                 width: 1.2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.primary.withAlpha(isDark ? 25 : 10),
+                                  color: colors.black.withAlpha(
+                                    isDark ? 40 : 15,
+                                  ),
                                   blurRadius: 24,
                                   offset: const Offset(0, 8),
                                 ),
@@ -231,12 +250,18 @@ class _StudySessionView extends HookWidget {
                                     shape: BoxShape.circle,
                                     gradient: LinearGradient(
                                       colors: [
-                                        colors.primary.withAlpha(isDark ? 70 : 35),
-                                        colors.syllabotAccent.withAlpha(isDark ? 50 : 20),
+                                        colors.primary.withAlpha(
+                                          isDark ? 70 : 35,
+                                        ),
+                                        colors.syllabotAccent.withAlpha(
+                                          isDark ? 50 : 20,
+                                        ),
                                       ],
                                     ),
                                     border: Border.all(
-                                      color: colors.primary.withAlpha(isDark ? 100 : 50),
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 100 : 50,
+                                      ),
                                     ),
                                   ),
                                   child: Icon(
@@ -263,7 +288,8 @@ class _StudySessionView extends HookWidget {
                                 Text(
                                   isNoCards
                                       ? 'This deck does not have any flashcards yet. Generate cards with Syllabot AI or create them manually to start active recall.'
-                                      : (state.errorMessage ?? l10n.dashboardUnableToLoad),
+                                      : (state.errorMessage ??
+                                            l10n.dashboardUnableToLoad),
                                   textAlign: TextAlign.center,
                                   style: typography.footnote.regular.copyWith(
                                     color: colors.textSecondary,
@@ -283,7 +309,9 @@ class _StudySessionView extends HookWidget {
                                     },
                                     child: Container(
                                       width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(vertical: 13),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 13,
+                                      ),
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: [
@@ -291,10 +319,14 @@ class _StudySessionView extends HookWidget {
                                             colors.syllabotAccent,
                                           ],
                                         ),
-                                        borderRadius: BorderRadius.circular(AppRadius.card),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.card,
+                                        ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: colors.primary.withAlpha(60),
+                                            color: colors.black.withAlpha(
+                                              isDark ? 40 : 20,
+                                            ),
                                             blurRadius: 12,
                                             offset: const Offset(0, 4),
                                           ),
@@ -302,7 +334,8 @@ class _StudySessionView extends HookWidget {
                                       ),
                                       alignment: Alignment.center,
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(
                                             Icons.auto_awesome_rounded,
@@ -312,9 +345,10 @@ class _StudySessionView extends HookWidget {
                                           const SizedBox(width: 8),
                                           Text(
                                             'Generate with AI',
-                                            style: typography.subhead.bold.copyWith(
-                                              color: colors.white,
-                                            ),
+                                            style: typography.subhead.bold
+                                                .copyWith(
+                                                  color: colors.white,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -329,12 +363,20 @@ class _StudySessionView extends HookWidget {
                                   },
                                   child: Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: colors.surfaceSecondary.withAlpha(isDark ? 160 : 100),
-                                      borderRadius: BorderRadius.circular(AppRadius.card),
+                                      color: colors.surfaceSecondary.withAlpha(
+                                        isDark ? 160 : 100,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.card,
+                                      ),
                                       border: Border.all(
-                                        color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                        color: colors.primary.withAlpha(
+                                          isDark ? 40 : 20,
+                                        ),
                                       ),
                                     ),
                                     alignment: Alignment.center,
@@ -406,11 +448,18 @@ class _StudySessionView extends HookWidget {
                         StudyProgressTopBar(
                           currentIndex: state.currentIndex,
                           totalCards: state.totalCards,
-                          elapsedTimeFormatted: context.read<StudySessionCubit>().isSpeedRun
-                              ? context.read<StudySessionCubit>().formattedRemainingTime(state.elapsedSeconds)
+                          elapsedTimeFormatted:
+                              context.read<StudySessionCubit>().isSpeedRun
+                              ? context
+                                    .read<StudySessionCubit>()
+                                    .formattedRemainingTime(
+                                      state.elapsedSeconds,
+                                    )
                               : state.formattedElapsedTime,
                           onClose: () async {
-                            await context.read<StudySessionCubit>().saveSessionCheckpoint();
+                            await context
+                                .read<StudySessionCubit>()
+                                .saveSessionCheckpoint();
                             if (context.mounted) {
                               unawaited(context.router.maybePop());
                             }
@@ -423,11 +472,20 @@ class _StudySessionView extends HookWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 30 : 15),
-                                borderRadius: BorderRadius.circular(AppRadius.card),
-                                border: Border.all(color: colors.primary.withAlpha(40)),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 30 : 15,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
+                                ),
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(40),
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -457,12 +515,21 @@ class _StudySessionView extends HookWidget {
                                 isBionicEnabled.value = !isBionicEnabled.value;
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isBionicEnabled.value
-                                      ? colors.primary.withAlpha(isDark ? 60 : 35)
-                                      : colors.surfaceSecondary.withAlpha(isDark ? 90 : 130),
-                                  borderRadius: BorderRadius.circular(AppRadius.card),
+                                      ? colors.primary.withAlpha(
+                                          isDark ? 60 : 35,
+                                        )
+                                      : colors.surfaceSecondary.withAlpha(
+                                          isDark ? 90 : 130,
+                                        ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.card,
+                                  ),
                                   border: Border.all(
                                     color: isBionicEnabled.value
                                         ? colors.primary
@@ -509,30 +576,30 @@ class _StudySessionView extends HookWidget {
                               },
                               onSwipeLeft: () {
                                 unawaited(
-                                  context
-                                      .read<StudySessionCubit>()
-                                      .rateCard(FsrsRating.hard),
+                                  context.read<StudySessionCubit>().rateCard(
+                                    FsrsRating.hard,
+                                  ),
                                 );
                               },
                               onSwipeRight: () {
                                 unawaited(
-                                  context
-                                      .read<StudySessionCubit>()
-                                      .rateCard(FsrsRating.good),
+                                  context.read<StudySessionCubit>().rateCard(
+                                    FsrsRating.good,
+                                  ),
                                 );
                               },
                               onSwipeUp: () {
                                 unawaited(
-                                  context
-                                      .read<StudySessionCubit>()
-                                      .rateCard(FsrsRating.easy),
+                                  context.read<StudySessionCubit>().rateCard(
+                                    FsrsRating.easy,
+                                  ),
                                 );
                               },
                               onSwipeDown: () {
                                 unawaited(
-                                  context
-                                      .read<StudySessionCubit>()
-                                      .rateCard(FsrsRating.again),
+                                  context.read<StudySessionCubit>().rateCard(
+                                    FsrsRating.again,
+                                  ),
                                 );
                               },
                             ),
@@ -563,7 +630,9 @@ class _StudySessionView extends HookWidget {
                                 Text(
                                   '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
                                   style: typography.caption.regular.copyWith(
-                                    color: colors.primary.withAlpha(isDark ? 210 : 170),
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 210 : 170,
+                                    ),
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -577,9 +646,9 @@ class _StudySessionView extends HookWidget {
                               FsrsRatingActionBar(
                                 onRateRating: (rating) {
                                   unawaited(
-                                    context
-                                        .read<StudySessionCubit>()
-                                        .rateCard(rating),
+                                    context.read<StudySessionCubit>().rateCard(
+                                      rating,
+                                    ),
                                   );
                                 },
                               ),
@@ -587,58 +656,79 @@ class _StudySessionView extends HookWidget {
                               ShrinkableButton(
                                 onTap: () {
                                   unawaited(HapticFeedback.lightImpact());
-                                  final firstLinePrompt = currentCard.front.split('\n').first.trim();
-                                  final topicName = currentCard.sourceTopic?.trim().isNotEmpty == true
+                                  final firstLinePrompt = currentCard.front
+                                      .split('\n')
+                                      .first
+                                      .trim();
+                                  final topicName =
+                                      currentCard.sourceTopic
+                                              ?.trim()
+                                              .isNotEmpty ==
+                                          true
                                       ? currentCard.sourceTopic!.trim()
                                       : 'Flashcard';
 
                                   unawaited(
                                     CreatePostBottomSheet.show(
                                       context,
-                                      lockedTrack: (currentCard.sourceTopic?.isNotEmpty ?? false)
+                                      lockedTrack:
+                                          (currentCard
+                                                  .sourceTopic
+                                                  ?.isNotEmpty ??
+                                              false)
                                           ? currentCard.sourceTopic
                                           : null,
-                                      initialTitle: '[$topicName] Question on: $firstLinePrompt',
+                                      initialTitle:
+                                          '[$topicName] Question on: $firstLinePrompt',
                                       initialContent:
                                           '${currentCard.front}\n\n'
                                           '💡 I am reviewing this flashcard and need help understanding the underlying concept. '
                                           'Could someone in the cohort explain the step-by-step reasoning or formula derivation?',
-                                      initialLatex: currentCard.frontLatex ?? currentCard.backLatex,
+                                      initialLatex:
+                                          currentCard.frontLatex ??
+                                          currentCard.backLatex,
                                       initialSyllabusTag: topicName,
                                       initialIsQuestion: true,
-                                      contextBadge: 'Flashcard Bounty • $topicName',
-                                      onSubmit: ({
-                                        required title,
-                                        required content,
-                                        required track,
-                                        latexContent,
-                                        isQuestion = true,
-                                        syllabusTag = 'Flashcards',
-                                        isAnonymous = false,
-                                      }) {
-                                      if (locator.isRegistered<CommunityHubBloc>()) {
-                                        locator<CommunityHubBloc>().add(
-                                          CreateForumPostEvent(
-                                            title: title,
-                                            content: content,
-                                            track: track,
-                                            latexContent: latexContent,
-                                            isQuestion: true,
-                                            syllabusTag: syllabusTag,
-                                            isAnonymous: isAnonymous,
-                                          ),
-                                        );
-                                        context.showSnackBar(
-                                          message:
-                                              'Question bounty posted to class cohort! 🎯',
-                                        );
-                                      }
-                                    },
-                                  ),
-                                );
-                              },
+                                      contextBadge:
+                                          'Flashcard Bounty • $topicName',
+                                      onSubmit:
+                                          ({
+                                            required title,
+                                            required content,
+                                            required track,
+                                            latexContent,
+                                            isQuestion = true,
+                                            syllabusTag = 'Flashcards',
+                                            isAnonymous = false,
+                                          }) {
+                                            if (locator
+                                                .isRegistered<
+                                                  CommunityHubBloc
+                                                >()) {
+                                              locator<CommunityHubBloc>().add(
+                                                CreateForumPostEvent(
+                                                  title: title,
+                                                  content: content,
+                                                  track: track,
+                                                  latexContent: latexContent,
+                                                  isQuestion: true,
+                                                  syllabusTag: syllabusTag,
+                                                  isAnonymous: isAnonymous,
+                                                ),
+                                              );
+                                              context.showSnackBar(
+                                                message:
+                                                    'Question bounty posted to class cohort! 🎯',
+                                              );
+                                            }
+                                          },
+                                    ),
+                                  );
+                                },
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -785,8 +875,12 @@ class _StudySessionView extends HookWidget {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                 decoration: BoxDecoration(
-                  color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+                  color: isDark
+                      ? colors.surfaceSecondary
+                      : colors.surfacePrimary,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
                   border: Border.all(
                     color: isDark
                         ? colors.surfaceBorderHighlight.withAlpha(70)
@@ -848,7 +942,9 @@ class _StudySessionView extends HookWidget {
                             foregroundColor: colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                             ),
                           ),
                           child: Text(
@@ -864,7 +960,11 @@ class _StudySessionView extends HookWidget {
                         width: double.infinity,
                         height: 48,
                         child: OutlinedButton.icon(
-                          icon: Icon(Icons.share_rounded, size: 16, color: colors.syllabotAccent),
+                          icon: Icon(
+                            Icons.share_rounded,
+                            size: 16,
+                            color: colors.syllabotAccent,
+                          ),
                           label: Text(
                             'Share Milestone to Pod (+25 Pod Karma)',
                             style: typography.caption.bold.copyWith(
@@ -875,15 +975,18 @@ class _StudySessionView extends HookWidget {
                             unawaited(HapticFeedback.mediumImpact());
                             Navigator.of(sheetContext).pop();
 
-                            final studyCubit = context.read<StudySessionCubit>();
+                            final studyCubit = context
+                                .read<StudySessionCubit>();
                             final cardsCrushed = studyCubit.state.currentIndex;
                             final deckTitle = studyCubit.state.deckId;
 
                             if (locator.isRegistered<CommunityHubBloc>()) {
                               locator<CommunityHubBloc>().add(
                                 CreateForumPostEvent(
-                                  title: '🔥 Smashed a $cardsCrushed-Card Sprint Milestone!',
-                                  content: 'Crushed $cardsCrushed cards in a focused study sprint ($deckTitle)! Studying with cohort on Kortex. 🚀',
+                                  title:
+                                      '🔥 Smashed a $cardsCrushed-Card Sprint Milestone!',
+                                  content:
+                                      'Crushed $cardsCrushed cards in a focused study sprint ($deckTitle)! Studying with cohort on Kortex. 🚀',
                                   track: 'General',
                                   syllabusTag: 'Sprint Milestone',
                                 ),
@@ -891,11 +994,16 @@ class _StudySessionView extends HookWidget {
                             }
 
                             if (locator.isRegistered<UserActivityService>()) {
-                              unawaited(locator<UserActivityService>().addBonusKarma(25));
+                              unawaited(
+                                locator<UserActivityService>().addBonusKarma(
+                                  25,
+                                ),
+                              );
                             }
 
                             context.showSnackBar(
-                              message: 'Milestone shared with your Study Circle! 🎉 +25 Pod Karma',
+                              message:
+                                  'Milestone shared with your Study Circle! 🎉 +25 Pod Karma',
                               type: SnackBarType.success,
                             );
                           },
@@ -904,7 +1012,9 @@ class _StudySessionView extends HookWidget {
                               color: colors.syllabotAccent.withAlpha(100),
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                             ),
                           ),
                         ),
@@ -916,7 +1026,9 @@ class _StudySessionView extends HookWidget {
                         child: OutlinedButton(
                           onPressed: () {
                             Navigator.of(sheetContext).pop();
-                            unawaited(context.read<StudySessionCubit>().finishEarly());
+                            unawaited(
+                              context.read<StudySessionCubit>().finishEarly(),
+                            );
                           },
                           style: OutlinedButton.styleFrom(
                             foregroundColor: colors.textSecondary,
@@ -924,7 +1036,9 @@ class _StudySessionView extends HookWidget {
                               color: colors.surfaceBorder,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                             ),
                           ),
                           child: Text(

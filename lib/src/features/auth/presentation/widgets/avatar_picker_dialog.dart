@@ -157,11 +157,11 @@ void showAvatarPickerDialog(
                                 borderRadius: AppRadius.radiusCard,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(
-                                      isHovered ? 80 : 50,
+                                    color: colors.black.withAlpha(
+                                      isHovered ? 50 : 25,
                                     ),
-                                    blurRadius: isHovered ? 14 : 10,
-                                    offset: Offset(0, isHovered ? 4 : 3),
+                                    blurRadius: isHovered ? 10 : 6,
+                                    offset: Offset(0, isHovered ? 3 : 2),
                                   ),
                                 ],
                               ),
@@ -297,11 +297,11 @@ void showAvatarPickerDialog(
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: isHovered
-                                            ? colors.primary.withAlpha(50)
-                                            : colors.black.withAlpha(
-                                                context.isDarkMode ? 40 : 15,
-                                              ),
+                                        color: colors.black.withAlpha(
+                                          context.isDarkMode
+                                              ? (isHovered ? 50 : 25)
+                                              : (isHovered ? 20 : 10),
+                                        ),
                                         blurRadius: isHovered ? 10 : 6,
                                         offset: Offset(0, isHovered ? 3 : 2),
                                       ),
@@ -381,10 +381,10 @@ void showAvatarPickerDialog(
                               borderRadius: AppRadius.radiusCard,
                               boxShadow: [
                                 BoxShadow(
-                                  color: colors.primary.withAlpha(
-                                    isHovered ? 70 : 40,
+                                  color: colors.black.withAlpha(
+                                    isHovered ? 50 : 25,
                                   ),
-                                  blurRadius: isHovered ? 12 : 8,
+                                  blurRadius: isHovered ? 10 : 6,
                                   offset: Offset(0, isHovered ? 3 : 2),
                                 ),
                               ],

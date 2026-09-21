@@ -29,33 +29,41 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
     CardSyncQueue? cardSyncQueue,
     LocalStorageService? localStorageService,
     TextToSpeechHandler? ttsHandler,
-  })  : _getDeckCardsUseCase = getDeckCardsUseCase ??
-            (locator.isRegistered<GetDeckCardsUseCase>()
-                ? locator<GetDeckCardsUseCase>()
-                : null),
-        _saveSessionResultsUseCase = saveSessionResultsUseCase ??
-            (locator.isRegistered<SaveSessionResultsUseCase>()
-                ? locator<SaveSessionResultsUseCase>()
-                : null),
-        _decksRepository = decksRepository ??
-            (locator.isRegistered<DecksRepository>()
-                ? locator<DecksRepository>()
-                : null),
-        _fsrsScheduler = fsrsScheduler ?? _buildScheduler(
-            localStorageService ??
-            (locator.isRegistered<LocalStorageService>()
-                ? locator<LocalStorageService>()
-                : null)),
-        _cardSyncQueue = cardSyncQueue ??
-            (locator.isRegistered<CardSyncQueue>()
-                ? locator<CardSyncQueue>()
-                : CardSyncQueue()),
-        _localStorageService = localStorageService ??
-            (locator.isRegistered<LocalStorageService>()
-                ? locator<LocalStorageService>()
-                : null),
-        _ttsHandler = ttsHandler,
-        super(const FocusSessionState()) {
+  }) : _getDeckCardsUseCase =
+           getDeckCardsUseCase ??
+           (locator.isRegistered<GetDeckCardsUseCase>()
+               ? locator<GetDeckCardsUseCase>()
+               : null),
+       _saveSessionResultsUseCase =
+           saveSessionResultsUseCase ??
+           (locator.isRegistered<SaveSessionResultsUseCase>()
+               ? locator<SaveSessionResultsUseCase>()
+               : null),
+       _decksRepository =
+           decksRepository ??
+           (locator.isRegistered<DecksRepository>()
+               ? locator<DecksRepository>()
+               : null),
+       _fsrsScheduler =
+           fsrsScheduler ??
+           _buildScheduler(
+             localStorageService ??
+                 (locator.isRegistered<LocalStorageService>()
+                     ? locator<LocalStorageService>()
+                     : null),
+           ),
+       _cardSyncQueue =
+           cardSyncQueue ??
+           (locator.isRegistered<CardSyncQueue>()
+               ? locator<CardSyncQueue>()
+               : CardSyncQueue()),
+       _localStorageService =
+           localStorageService ??
+           (locator.isRegistered<LocalStorageService>()
+               ? locator<LocalStorageService>()
+               : null),
+       _ttsHandler = ttsHandler,
+       super(const FocusSessionState()) {
     _initTtsListener();
   }
 
@@ -118,7 +126,8 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
     await _loadThoughts();
 
     List<FlashcardEntity> cards;
-    final isCrossDeck = deckId == 'all_decks' || deckId == 'cross_deck' || deckId == 'all';
+    final isCrossDeck =
+        deckId == 'all_decks' || deckId == 'cross_deck' || deckId == 'all';
     if (preloadedCards != null && preloadedCards.isNotEmpty) {
       cards = preloadedCards;
     } else if (isCrossDeck && _decksRepository != null) {
@@ -349,7 +358,8 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
       interval: reviewResult.card.scheduledDays,
       easeFactor: (3.0 - (reviewResult.card.difficulty / 5.0)).clamp(1.3, 2.5),
       lastReviewed: nowUtc,
-      nextDueDate: reviewResult.card.due ??
+      nextDueDate:
+          reviewResult.card.due ??
           nowUtc.add(
             Duration(
               days: reviewResult.card.scheduledDays > 0
@@ -537,7 +547,8 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
 
   Future<void> _loadThoughts() async {
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);
@@ -555,7 +566,8 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
 
   Future<void> _saveThoughts(List<ThoughtEntry> thoughts) async {
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);

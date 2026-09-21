@@ -74,7 +74,9 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
         child: Container(
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(70)
@@ -111,150 +113,154 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
               ),
               const SizedBox(height: 16),
 
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.psychology_rounded,
-                  color: colors.primary,
-                  size: 20,
-                ),
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.psychology_rounded,
+                      color: colors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Thought Parking Lot',
+                          style: typography.headline.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Dump intrusive thoughts in 5s. Clear your working memory.',
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: colors.textMuted),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Thought Parking Lot',
-                      style: typography.headline.bold.copyWith(
+              const SizedBox(height: 16),
+
+              // Input field
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      style: typography.body.medium.copyWith(
                         color: colors.textPrimary,
                       ),
+                      decoration: InputDecoration(
+                        hintText: 'Park an intrusive thought...',
+                        hintStyle: typography.body.regular.copyWith(
+                          color: colors.textMuted,
+                        ),
+                        filled: true,
+                        fillColor: colors.surfaceSecondary,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      onSubmitted: (_) => _submitThought(cubit),
                     ),
-                    Text(
-                      'Dump intrusive thoughts in 5s. Clear your working memory.',
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: () => _submitThought(cubit),
+                    style: IconButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                       ),
                     ),
-                  ],
-                ),
+                    icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: Icon(Icons.close_rounded, color: colors.textMuted),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-          // Input field
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  style: typography.body.medium.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Park an intrusive thought...',
-                    hintStyle: typography.body.regular.copyWith(
-                      color: colors.textMuted,
-                    ),
-                    filled: true,
-                    fillColor: colors.surfaceSecondary,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onSubmitted: (_) => _submitThought(cubit),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                onPressed: () => _submitThought(cubit),
-                style: IconButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  foregroundColor: colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                  ),
-                ),
-                icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Thoughts list
-          Flexible(
-            child: BlocBuilder<FocusSessionCubit, FocusSessionState>(
-              builder: (context, state) {
-                if (state.parkedThoughts.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline_rounded,
-                            size: 40,
-                            color: colors.textMuted.withValues(alpha: 0.4),
+              // Thoughts list
+              Flexible(
+                child: BlocBuilder<FocusSessionCubit, FocusSessionState>(
+                  builder: (context, state) {
+                    if (state.parkedThoughts.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 40,
+                                color: colors.textMuted.withValues(alpha: 0.4),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Your mind is clear!',
+                                style: typography.body.medium.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                'Anything distracting you? Drop it here and resume.',
+                                style: typography.footnote.regular.copyWith(
+                                  color: colors.textMuted,
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: state.parkedThoughts.length,
+                      separatorBuilder: (context, index) =>
                           const SizedBox(height: 8),
-                          Text(
-                            'Your mind is clear!',
-                            style: typography.body.medium.copyWith(
-                              color: colors.textSecondary,
-                            ),
+                      itemBuilder: (context, index) {
+                        final thought = state.parkedThoughts[index];
+                        return _ThoughtListTile(
+                          thought: thought,
+                          onToggle: () => unawaited(
+                            cubit.toggleThoughtResolved(thought.id),
                           ),
-                          Text(
-                            'Anything distracting you? Drop it here and resume.',
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                return ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: state.parkedThoughts.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final thought = state.parkedThoughts[index];
-                    return _ThoughtListTile(
-                      thought: thought,
-                      onToggle: () => unawaited(cubit.toggleThoughtResolved(thought.id)),
-                      onDelete: () => unawaited(cubit.deleteThought(thought.id)),
+                          onDelete: () =>
+                              unawaited(cubit.deleteThought(thought.id)),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 }
 

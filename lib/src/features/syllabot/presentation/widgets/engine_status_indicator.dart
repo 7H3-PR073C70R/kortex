@@ -54,20 +54,20 @@ class EngineStatusIndicator extends StatelessWidget {
             decoration: BoxDecoration(
               color: isCloud
                   ? (isHovered
-                      ? colors.primary.withAlpha(isDark ? 70 : 45)
-                      : colors.primary.withAlpha(isDark ? 40 : 25))
+                        ? colors.primary.withAlpha(isDark ? 70 : 45)
+                        : colors.primary.withAlpha(isDark ? 40 : 25))
                   : (isHovered
-                      ? colors.warning.withAlpha(isDark ? 70 : 45)
-                      : colors.warning.withAlpha(isDark ? 40 : 25)),
+                        ? colors.warning.withAlpha(isDark ? 70 : 45)
+                        : colors.warning.withAlpha(isDark ? 40 : 25)),
               borderRadius: AppRadius.radiusBadge,
               border: Border.all(
                 color: isCloud
                     ? (isHovered
-                        ? colors.primary.withAlpha(isDark ? 160 : 120)
-                        : colors.primary.withAlpha(isDark ? 100 : 80))
+                          ? colors.primary.withAlpha(isDark ? 160 : 120)
+                          : colors.primary.withAlpha(isDark ? 100 : 80))
                     : (isHovered
-                        ? colors.warning.withAlpha(isDark ? 160 : 120)
-                        : colors.warning.withAlpha(isDark ? 100 : 80)),
+                          ? colors.warning.withAlpha(isDark ? 160 : 120)
+                          : colors.warning.withAlpha(isDark ? 100 : 80)),
               ),
             ),
             child: Row(

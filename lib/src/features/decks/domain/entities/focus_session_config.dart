@@ -54,12 +54,12 @@ class FocusSessionConfig extends Equatable {
 
   @override
   List<Object?> get props => [
-        type,
-        targetCardCount,
-        targetDurationMinutes,
-        isSoftCatchUp,
-        ambientSound,
-        ttsAutoRead,
-        hideCardCounter,
-      ];
+    type,
+    targetCardCount,
+    targetDurationMinutes,
+    isSoftCatchUp,
+    ambientSound,
+    ttsAutoRead,
+    hideCardCounter,
+  ];
 }

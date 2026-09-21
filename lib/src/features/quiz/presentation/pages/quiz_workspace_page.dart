@@ -144,14 +144,16 @@ class _QuizWorkspaceView extends HookWidget {
     return BlocConsumer<QuizSessionCubit, QuizSessionState>(
       listenWhen: (previous, current) =>
           previous.status != current.status ||
-          (previous.audienceDistribution == null && current.audienceDistribution != null),
+          (previous.audienceDistribution == null &&
+              current.audienceDistribution != null),
       buildWhen: (previous, current) =>
           previous.status != current.status ||
           previous.currentIndex != current.currentIndex ||
           previous.currentQuestion != current.currentQuestion ||
           previous.totalQuestions != current.totalQuestions ||
           previous.assessmentMode != current.assessmentMode ||
-          previous.isCurrentQuestionFlagged != current.isCurrentQuestionFlagged ||
+          previous.isCurrentQuestionFlagged !=
+              current.isCurrentQuestionFlagged ||
           previous.isHintRevealed != current.isHintRevealed ||
           previous.activeClueText != current.activeClueText ||
           previous.isSecondChanceActive != current.isSecondChanceActive ||
@@ -162,7 +164,8 @@ class _QuizWorkspaceView extends HookWidget {
           previous.eliminatedOptionIndices != current.eliminatedOptionIndices ||
           previous.errorMessage != current.errorMessage,
       listener: (context, state) {
-        if (state.audienceDistribution != null && state.currentQuestion != null) {
+        if (state.audienceDistribution != null &&
+            state.currentQuestion != null) {
           MillionaireAudiencePollDialog.show(
             context,
             distribution: state.audienceDistribution!,
@@ -191,8 +194,9 @@ class _QuizWorkspaceView extends HookWidget {
       builder: (context, state) {
         if (state.status == QuizSessionStatus.loading) {
           return Scaffold(
-            backgroundColor:
-                isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+            backgroundColor: isDark
+                ? colors.backgroundPrimary
+                : colors.surfacePrimary,
             body: const Center(
               child: AppLogoLoader(),
             ),
@@ -201,8 +205,9 @@ class _QuizWorkspaceView extends HookWidget {
 
         if (state.status == QuizSessionStatus.error) {
           return Scaffold(
-            backgroundColor:
-                isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+            backgroundColor: isDark
+                ? colors.backgroundPrimary
+                : colors.surfacePrimary,
             appBar: AppBar(
               backgroundColor: colors.transparent,
               elevation: 0,
@@ -242,7 +247,9 @@ class _QuizWorkspaceView extends HookWidget {
                       ),
                       child: Text(
                         l10n.retryAction,
-                        style: typography.body.bold.copyWith(color: colors.white),
+                        style: typography.body.bold.copyWith(
+                          color: colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -255,8 +262,9 @@ class _QuizWorkspaceView extends HookWidget {
         final current = state.currentQuestion;
         if (current == null) {
           return Scaffold(
-            backgroundColor:
-                isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+            backgroundColor: isDark
+                ? colors.backgroundPrimary
+                : colors.surfacePrimary,
             appBar: AppBar(
               backgroundColor: colors.transparent,
               elevation: 0,
@@ -266,8 +274,9 @@ class _QuizWorkspaceView extends HookWidget {
               ),
               title: Text(
                 state.quizTitle,
-                style:
-                    typography.title3.bold.copyWith(color: colors.textPrimary),
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ),
             body: Center(
@@ -305,8 +314,9 @@ class _QuizWorkspaceView extends HookWidget {
                       ),
                       child: Text(
                         l10n.cancelAction,
-                        style:
-                            typography.body.bold.copyWith(color: colors.white),
+                        style: typography.body.bold.copyWith(
+                          color: colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -321,8 +331,9 @@ class _QuizWorkspaceView extends HookWidget {
             : (state.currentIndex + 1) / state.totalQuestions;
 
         return Scaffold(
-          backgroundColor:
-              isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.backgroundPrimary
+              : colors.surfacePrimary,
           appBar: AppBar(
             backgroundColor: colors.transparent,
             elevation: 0,
@@ -349,8 +360,9 @@ class _QuizWorkspaceView extends HookWidget {
                       : colors.textSecondary,
                 ),
                 tooltip: 'Flag Question for Review',
-                onPressed: () =>
-                    context.read<QuizSessionCubit>().toggleFlagCurrentQuestion(),
+                onPressed: () => context
+                    .read<QuizSessionCubit>()
+                    .toggleFlagCurrentQuestion(),
               ),
               // Question Navigation Palette
               IconButton(
@@ -391,7 +403,8 @@ class _QuizWorkspaceView extends HookWidget {
                             GestureDetector(
                               onTap: () {
                                 unawaited(HapticFeedback.lightImpact());
-                                final newMode = state.assessmentMode ==
+                                final newMode =
+                                    state.assessmentMode ==
                                         AssessmentMode.discoveryMode
                                     ? AssessmentMode.examSimulationMode
                                     : AssessmentMode.discoveryMode;
@@ -406,13 +419,21 @@ class _QuizWorkspaceView extends HookWidget {
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: state.assessmentMode ==
+                                  color:
+                                      state.assessmentMode ==
                                           AssessmentMode.discoveryMode
-                                      ? colors.primary.withAlpha(isDark ? 50 : 25)
-                                      : colors.warning.withAlpha(isDark ? 50 : 25),
-                                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                                      ? colors.primary.withAlpha(
+                                          isDark ? 50 : 25,
+                                        )
+                                      : colors.warning.withAlpha(
+                                          isDark ? 50 : 25,
+                                        ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.badge,
+                                  ),
                                   border: Border.all(
-                                    color: state.assessmentMode ==
+                                    color:
+                                        state.assessmentMode ==
                                             AssessmentMode.discoveryMode
                                         ? colors.primary.withAlpha(90)
                                         : colors.warning.withAlpha(90),
@@ -427,7 +448,8 @@ class _QuizWorkspaceView extends HookWidget {
                                           ? Icons.lightbulb_outline_rounded
                                           : Icons.timer_outlined,
                                       size: 13,
-                                      color: state.assessmentMode ==
+                                      color:
+                                          state.assessmentMode ==
                                               AssessmentMode.discoveryMode
                                           ? colors.primary
                                           : colors.warning,
@@ -439,7 +461,8 @@ class _QuizWorkspaceView extends HookWidget {
                                           ? 'Discovery Mode (Hints Available)'
                                           : 'Exam Simulation (Strict)',
                                       style: typography.caption.bold.copyWith(
-                                        color: state.assessmentMode ==
+                                        color:
+                                            state.assessmentMode ==
                                                 AssessmentMode.discoveryMode
                                             ? colors.primary
                                             : colors.warning,
@@ -477,8 +500,12 @@ class _QuizWorkspaceView extends HookWidget {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: colors.warning.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                                      color: colors.warning.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.micro,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -491,10 +518,11 @@ class _QuizWorkspaceView extends HookWidget {
                                         const SizedBox(width: 3),
                                         Text(
                                           'Flagged',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.warning,
-                                            fontSize: 10,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.warning,
+                                                fontSize: 10,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -513,7 +541,9 @@ class _QuizWorkspaceView extends HookWidget {
                                   color: colors.primary.withValues(
                                     alpha: 0.15,
                                   ),
-                                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.badge,
+                                  ),
                                 ),
                                 child: Text(
                                   current.subTopic,
@@ -530,474 +560,552 @@ class _QuizWorkspaceView extends HookWidget {
 
                         const SizedBox(height: 16),
 
-                    // Millionaire Mode Lifeline Bar
-                    if (state.assessmentMode == AssessmentMode.millionaireMode) ...[
-                      MillionaireLifelineBar(
-                        state: state,
-                        onUseFiftyFifty: () {
-                          context.read<QuizSessionCubit>().useLifeline(LifelineType.fiftyFifty);
-                        },
-                        onUseAiClue: () {
-                          context.read<QuizSessionCubit>().useLifeline(LifelineType.aiClue);
-                        },
-                        onUseAskAudience: () {
-                          context.read<QuizSessionCubit>().useLifeline(LifelineType.askAudience);
-                        },
-                        onUseSkipSwap: () {
-                          context.read<QuizSessionCubit>().useLifeline(LifelineType.skipSwap);
-                        },
-                        onOpenLadder: () {
-                          MillionaireLadderDrawer.show(context, state);
-                        },
-                        onWalkAway: () {
-                          unawaited(context.read<QuizSessionCubit>().walkAwayAndBank());
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-
-                    // Active AI Clue (Millionaire Mode)
-                    if (state.assessmentMode == AssessmentMode.millionaireMode &&
-                        state.activeClueText != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: colors.syllabotAccent.withValues(alpha: isDark ? 0.2 : 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                            color: colors.syllabotAccent.withValues(alpha: 0.4),
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.auto_awesome_rounded,
-                              color: colors.syllabotAccent,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'AI Tutor Clue',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.syllabotAccent,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    state.activeClueText!,
-                                    style: typography.footnote.regular.copyWith(
-                                      color: colors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-
-                    // Second Chance Shield Notice
-                    if (state.assessmentMode == AssessmentMode.millionaireMode &&
-                        state.isSecondChanceActive) ...[
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: colors.success.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                            color: colors.success.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.shield_rounded,
-                              color: colors.success,
-                              size: 22,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Second Chance Shield Active!',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.success,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Review and try another option without losing your banked progress.',
-                                    style: typography.footnote.regular.copyWith(
-                                      color: colors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ShrinkableButton(
-                              onTap: () {
-                                context.read<QuizSessionCubit>().useSecondChance();
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.success,
-                                  borderRadius: BorderRadius.circular(AppRadius.badge),
-                                ),
-                                child: Text(
-                                  'Try Again',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-
-                    // Soft-Fail Banked Checkpoint Notice (Millionaire Mode)
-                    if (state.assessmentMode == AssessmentMode.millionaireMode &&
-                        state.isSoftFailed) ...[
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: colors.warning.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                            color: colors.warning.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.verified_user_rounded,
-                              color: colors.warning,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Safe Checkpoint Secured! 🛡️',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.warning,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Your progress is safely locked at Tier ${state.bankedTier} (+${state.bankedTierPrizeXp} XP). No score reset to zero!',
-                                    style: typography.footnote.regular.copyWith(
-                                      color: colors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ShrinkableButton(
-                              onTap: () {
-                                unawaited(context.read<QuizSessionCubit>().submitQuiz());
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.warning,
-                                  borderRadius: BorderRadius.circular(AppRadius.badge),
-                                ),
-                                child: Text(
-                                  'Collect XP',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-
-                    // Prompt Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(AppRadius.panel),
-                        border: Border.all(
-                          color: colors.surfaceBorder,
-                          width: 1.2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.black.withAlpha(isDark ? 30 : 6),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          LatexRichViewer(
-                            text: current.prompt,
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                              height: 1.4,
-                            ),
-                          ),
-                          if (current.imageUrl != null && current.imageUrl!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            AppMultimodalImage(
-                              imageUrl: current.imageUrl!,
-                              borderRadius: BorderRadius.circular(AppRadius.card),
-                            ),
-                          ],
-                          if (current.latexFormula != null &&
-                              current.latexFormula!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            LatexFormulaBlock(
-                              formula: current.latexFormula!,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    // Socratic Hint Feature (Discovery Mode only)
-                    if (state.assessmentMode == AssessmentMode.discoveryMode &&
-                        !current.isAnswered) ...[
-                      const SizedBox(height: 12),
-                      if (!state.isHintRevealed)
-                        Center(
-                          child: ShrinkableButton(
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              context.read<QuizSessionCubit>().revealHint();
+                        // Millionaire Mode Lifeline Bar
+                        if (state.assessmentMode ==
+                            AssessmentMode.millionaireMode) ...[
+                          MillionaireLifelineBar(
+                            state: state,
+                            onUseFiftyFifty: () {
+                              context.read<QuizSessionCubit>().useLifeline(
+                                LifelineType.fiftyFifty,
+                              );
                             },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
+                            onUseAiClue: () {
+                              context.read<QuizSessionCubit>().useLifeline(
+                                LifelineType.aiClue,
+                              );
+                            },
+                            onUseAskAudience: () {
+                              context.read<QuizSessionCubit>().useLifeline(
+                                LifelineType.askAudience,
+                              );
+                            },
+                            onUseSkipSwap: () {
+                              context.read<QuizSessionCubit>().useLifeline(
+                                LifelineType.skipSwap,
+                              );
+                            },
+                            onOpenLadder: () {
+                              MillionaireLadderDrawer.show(context, state);
+                            },
+                            onWalkAway: () {
+                              unawaited(
+                                context
+                                    .read<QuizSessionCubit>()
+                                    .walkAwayAndBank(),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // Active AI Clue (Millionaire Mode)
+                        if (state.assessmentMode ==
+                                AssessmentMode.millionaireMode &&
+                            state.activeClueText != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: colors.syllabotAccent.withValues(
+                                alpha: isDark ? 0.2 : 0.1,
                               ),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
+                              border: Border.all(
+                                color: colors.syllabotAccent.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: colors.syllabotAccent,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'AI Tutor Clue',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.syllabotAccent,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        state.activeClueText!,
+                                        style: typography.footnote.regular
+                                            .copyWith(
+                                              color: colors.textPrimary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // Second Chance Shield Notice
+                        if (state.assessmentMode ==
+                                AssessmentMode.millionaireMode &&
+                            state.isSecondChanceActive) ...[
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: colors.success.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
+                              border: Border.all(
+                                color: colors.success.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.shield_rounded,
+                                  color: colors.success,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Second Chance Shield Active!',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.success,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Review and try another option without losing your banked progress.',
+                                        style: typography.footnote.regular
+                                            .copyWith(
+                                              color: colors.textPrimary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ShrinkableButton(
+                                  onTap: () {
+                                    context
+                                        .read<QuizSessionCubit>()
+                                        .useSecondChance();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.success,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.badge,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Try Again',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // Soft-Fail Banked Checkpoint Notice (Millionaire Mode)
+                        if (state.assessmentMode ==
+                                AssessmentMode.millionaireMode &&
+                            state.isSoftFailed) ...[
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: colors.warning.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
+                              border: Border.all(
+                                color: colors.warning.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.verified_user_rounded,
+                                  color: colors.warning,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Safe Checkpoint Secured! 🛡️',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.warning,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Your progress is safely locked at Tier ${state.bankedTier} (+${state.bankedTierPrizeXp} XP). No score reset to zero!',
+                                        style: typography.footnote.regular
+                                            .copyWith(
+                                              color: colors.textPrimary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ShrinkableButton(
+                                  onTap: () {
+                                    unawaited(
+                                      context
+                                          .read<QuizSessionCubit>()
+                                          .submitQuiz(),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.warning,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.badge,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Collect XP',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+
+                        // Prompt Card
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.surfaceSecondary
+                                : colors.surfacePrimary,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.panel,
+                            ),
+                            border: Border.all(
+                              color: colors.surfaceBorder,
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(isDark ? 30 : 6),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              LatexRichViewer(
+                                text: current.prompt,
+                                style: typography.title3.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  height: 1.4,
+                                ),
+                              ),
+                              if (current.imageUrl != null &&
+                                  current.imageUrl!.trim().isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                AppMultimodalImage(
+                                  imageUrl: current.imageUrl!,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.card,
+                                  ),
+                                ),
+                              ],
+                              if (current.latexFormula != null &&
+                                  current.latexFormula!.trim().isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                LatexFormulaBlock(
+                                  formula: current.latexFormula!,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        // Socratic Hint Feature (Discovery Mode only)
+                        if (state.assessmentMode ==
+                                AssessmentMode.discoveryMode &&
+                            !current.isAnswered) ...[
+                          const SizedBox(height: 12),
+                          if (!state.isHintRevealed)
+                            Center(
+                              child: ShrinkableButton(
+                                onTap: () {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  context.read<QuizSessionCubit>().revealHint();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 40 : 20,
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.card,
+                                    ),
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(60),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.lightbulb_outline_rounded,
+                                        size: 16,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Need a Socratic Hint? (Discovery Mode)',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 40 : 20),
-                                borderRadius: BorderRadius.circular(AppRadius.card),
+                                color: colors.warning.withAlpha(
+                                  isDark ? 30 : 20,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
+                                ),
                                 border: Border.all(
-                                  color: colors.primary.withAlpha(60),
+                                  color: colors.warning.withAlpha(60),
                                 ),
                               ),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Icon(
-                                    Icons.lightbulb_outline_rounded,
-                                    size: 16,
-                                    color: colors.primary,
+                                    Icons.psychology_rounded,
+                                    color: colors.warning,
+                                    size: 20,
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Socratic Clue',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.warning,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Focus on the relationship between ${current.subTopic.isNotEmpty ? current.subTopic : "the core concepts"} and eliminate options with extreme claims.',
+                                          style: typography.footnote.regular
+                                              .copyWith(
+                                                color: colors.textPrimary,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        const SizedBox(height: 16),
+
+                        // Options List
+                        ...current.options.asMap().entries.map((entry) {
+                          final idx = entry.key;
+                          final opt = entry.value;
+
+                          // 50:50 Lifeline Masking
+                          if (state.assessmentMode ==
+                                  AssessmentMode.millionaireMode &&
+                              state.isOptionEliminated(idx)) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final isSelected = current.userSelectedAnswer == opt;
+                          final isCorrectOption =
+                              opt.trim().toLowerCase() ==
+                              current.correctAnswer.trim().toLowerCase();
+
+                          return McqOptionCard(
+                            optionText: opt,
+                            index: idx,
+                            isSelected: isSelected,
+                            isAnswered: current.isAnswered,
+                            isCorrect: isCorrectOption,
+                            onTap: () {
+                              context.read<QuizSessionCubit>().selectOption(
+                                opt,
+                              );
+                            },
+                          );
+                        }),
+
+                        // Solution Accordion (Appears after answering)
+                        if (current.isAnswered) ...[
+                          ExplanationAccordion(
+                            explanation: current.explanation,
+                            latexFormula: current.latexFormula,
+                          ),
+                          const SizedBox(height: 8),
+                          ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              final topicTag =
+                                  current.subTopic.trim().isNotEmpty
+                                  ? current.subTopic.trim()
+                                  : (effectiveCourseCode ?? 'Quiz Solution');
+
+                              final contentBuf = StringBuffer(
+                                current.prompt.replaceAll('**', ''),
+                              );
+                              if (current.options.isNotEmpty) {
+                                contentBuf.writeln('\n\nOptions:');
+                                for (final opt in current.options) {
+                                  contentBuf.writeln(
+                                    '• ${opt.replaceAll('**', '')}',
+                                  );
+                                }
+                              }
+                              contentBuf.writeln(
+                                '\nCorrect Answer: ${current.correctAnswer}',
+                              );
+                              if (current.explanation.isNotEmpty) {
+                                contentBuf.writeln(
+                                  '\nExplanation:\n${current.explanation.replaceAll('**', '')}',
+                                );
+                              }
+                              contentBuf.writeln(
+                                '\n💡 Seeking additional insights or alternative solution steps from the cohort.',
+                              );
+
+                              unawaited(
+                                CreatePostBottomSheet.show(
+                                  context,
+                                  lockedTrack: effectiveCourseCode ?? deckTitle,
+                                  initialTitle:
+                                      '[$topicTag] Question Discussion',
+                                  initialContent: contentBuf.toString().trim(),
+                                  initialLatex: current.latexFormula,
+                                  initialSyllabusTag: topicTag,
+                                  initialIsQuestion: true,
+                                  contextBadge: 'CBT Solution • $topicTag',
+                                  onSubmit:
+                                      ({
+                                        required title,
+                                        required content,
+                                        required track,
+                                        latexContent,
+                                        isQuestion = true,
+                                        syllabusTag = 'Quiz Solution',
+                                        isAnonymous = false,
+                                      }) {
+                                        if (locator
+                                            .isRegistered<CommunityHubBloc>()) {
+                                          locator<CommunityHubBloc>().add(
+                                            CreateForumPostEvent(
+                                              title: title,
+                                              content: content,
+                                              track: track,
+                                              latexContent: latexContent,
+                                              isQuestion: true,
+                                              syllabusTag: syllabusTag,
+                                              isAnonymous: isAnonymous,
+                                            ),
+                                          );
+                                          context.showSnackBar(
+                                            message:
+                                                'Question bounty posted to class cohort! 🎯',
+                                          );
+                                        }
+                                      },
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.help_outline_rounded,
+                                    size: 13,
+                                    color: colors.warning,
+                                  ),
+                                  const SizedBox(width: 5),
                                   Text(
-                                    'Need a Socratic Hint? (Discovery Mode)',
+                                    'Confused by this solution? Ask Class Cohort',
                                     style: typography.caption.bold.copyWith(
-                                      color: colors.primary,
+                                      color: colors.warning,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: colors.warning.withAlpha(isDark ? 30 : 20),
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                            border: Border.all(
-                              color: colors.warning.withAlpha(60),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.psychology_rounded,
-                                color: colors.warning,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Socratic Clue',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.warning,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Focus on the relationship between ${current.subTopic.isNotEmpty ? current.subTopic : "the core concepts"} and eliminate options with extreme claims.',
-                                      style: typography.footnote.regular.copyWith(
-                                        color: colors.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    // Options List
-                    ...current.options.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final opt = entry.value;
-
-                      // 50:50 Lifeline Masking
-                      if (state.assessmentMode == AssessmentMode.millionaireMode &&
-                          state.isOptionEliminated(idx)) {
-                        return const SizedBox.shrink();
-                      }
-
-                      final isSelected = current.userSelectedAnswer == opt;
-                      final isCorrectOption =
-                          opt.trim().toLowerCase() ==
-                          current.correctAnswer.trim().toLowerCase();
-
-                      return McqOptionCard(
-                        optionText: opt,
-                        index: idx,
-                        isSelected: isSelected,
-                        isAnswered: current.isAnswered,
-                        isCorrect: isCorrectOption,
-                        onTap: () {
-                          context.read<QuizSessionCubit>().selectOption(opt);
-                        },
-                      );
-                    }),
-
-                    // Solution Accordion (Appears after answering)
-                    if (current.isAnswered) ...[
-                      ExplanationAccordion(
-                        explanation: current.explanation,
-                        latexFormula: current.latexFormula,
-                      ),
-                      const SizedBox(height: 8),
-                      ShrinkableButton(
-                        onTap: () {
-                          unawaited(HapticFeedback.lightImpact());
-                          final topicTag = current.subTopic.trim().isNotEmpty
-                              ? current.subTopic.trim()
-                              : (effectiveCourseCode ?? 'Quiz Solution');
-
-                          final contentBuf = StringBuffer(current.prompt.replaceAll('**', ''));
-                          if (current.options.isNotEmpty) {
-                            contentBuf.writeln('\n\nOptions:');
-                            for (final opt in current.options) {
-                              contentBuf.writeln('• ${opt.replaceAll('**', '')}');
-                            }
-                          }
-                          contentBuf.writeln('\nCorrect Answer: ${current.correctAnswer}');
-                          if (current.explanation.isNotEmpty) {
-                            contentBuf.writeln('\nExplanation:\n${current.explanation.replaceAll('**', '')}');
-                          }
-                          contentBuf.writeln('\n💡 Seeking additional insights or alternative solution steps from the cohort.');
-
-                          unawaited(
-                            CreatePostBottomSheet.show(
-                              context,
-                              lockedTrack: effectiveCourseCode ?? deckTitle,
-                              initialTitle: '[$topicTag] Question Discussion',
-                              initialContent: contentBuf.toString().trim(),
-                              initialLatex: current.latexFormula,
-                              initialSyllabusTag: topicTag,
-                              initialIsQuestion: true,
-                              contextBadge: 'CBT Solution • $topicTag',
-                              onSubmit: ({
-                                required title,
-                                required content,
-                                required track,
-                                latexContent,
-                                isQuestion = true,
-                                syllabusTag = 'Quiz Solution',
-                                isAnonymous = false,
-                              }) {
-                                if (locator.isRegistered<CommunityHubBloc>()) {
-                                  locator<CommunityHubBloc>().add(
-                                    CreateForumPostEvent(
-                                      title: title,
-                                      content: content,
-                                      track: track,
-                                      latexContent: latexContent,
-                                      isQuestion: true,
-                                      syllabusTag: syllabusTag,
-                                      isAnonymous: isAnonymous,
-                                    ),
-                                  );
-                                  context.showSnackBar(
-                                    message:
-                                        'Question bounty posted to class cohort! 🎯',
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.help_outline_rounded,
-                                size: 13,
-                                color: colors.warning,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Confused by this solution? Ask Class Cohort',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.warning,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
           bottomNavigationBar: Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -1024,19 +1132,26 @@ class _QuizWorkspaceView extends HookWidget {
                   child: Row(
                     children: [
                       // Previous Question (Disabled in Millionaire mode as ascent is forward-only)
-                      if (state.assessmentMode != AssessmentMode.millionaireMode) ...[
+                      if (state.assessmentMode !=
+                          AssessmentMode.millionaireMode) ...[
                         IconButton.outlined(
                           onPressed: state.canGoPrevious
-                              ? () => context.read<QuizSessionCubit>().previousQuestion()
+                              ? () => context
+                                    .read<QuizSessionCubit>()
+                                    .previousQuestion()
                               : null,
                           icon: Icon(
                             Icons.arrow_back_rounded,
-                            color: state.canGoPrevious ? colors.textPrimary : colors.textMuted,
+                            color: state.canGoPrevious
+                                ? colors.textPrimary
+                                : colors.textMuted,
                           ),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: colors.surfaceBorder),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                             ),
                           ),
                           tooltip: 'Previous Question',
@@ -1045,18 +1160,22 @@ class _QuizWorkspaceView extends HookWidget {
                       ],
                       // Question Palette / Ladder Drawer in Millionaire mode
                       IconButton.outlined(
-                        onPressed: state.assessmentMode == AssessmentMode.millionaireMode
+                        onPressed:
+                            state.assessmentMode ==
+                                AssessmentMode.millionaireMode
                             ? () => MillionaireLadderDrawer.show(context, state)
                             : () => _showQuestionPalette(
-                                  context,
-                                  context.read<QuizSessionCubit>(),
-                                  state,
-                                ),
+                                context,
+                                context.read<QuizSessionCubit>(),
+                                state,
+                              ),
                         icon: Icon(
                           state.assessmentMode == AssessmentMode.millionaireMode
                               ? Icons.military_tech_rounded
                               : Icons.grid_view_rounded,
-                          color: state.assessmentMode == AssessmentMode.millionaireMode
+                          color:
+                              state.assessmentMode ==
+                                  AssessmentMode.millionaireMode
                               ? colors.warning
                               : colors.textPrimary,
                         ),
@@ -1066,9 +1185,11 @@ class _QuizWorkspaceView extends HookWidget {
                             borderRadius: BorderRadius.circular(AppRadius.card),
                           ),
                         ),
-                        tooltip: state.assessmentMode == AssessmentMode.millionaireMode
-                          ? 'Millionaire Ascent Ladder'
-                          : 'Question Palette',
+                        tooltip:
+                            state.assessmentMode ==
+                                AssessmentMode.millionaireMode
+                            ? 'Millionaire Ascent Ladder'
+                            : 'Question Palette',
                       ),
                       const SizedBox(width: 12),
                       // Next / Submit primary action
@@ -1077,9 +1198,12 @@ class _QuizWorkspaceView extends HookWidget {
                           height: 48,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (state.assessmentMode == AssessmentMode.millionaireMode &&
+                              if (state.assessmentMode ==
+                                      AssessmentMode.millionaireMode &&
                                   state.isSoftFailed) {
-                                unawaited(context.read<QuizSessionCubit>().submitQuiz());
+                                unawaited(
+                                  context.read<QuizSessionCubit>().submitQuiz(),
+                                );
                               } else if (state.isLastQuestion) {
                                 _confirmSubmit(context, state);
                               } else {
@@ -1087,22 +1211,33 @@ class _QuizWorkspaceView extends HookWidget {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed)
+                              backgroundColor:
+                                  (state.assessmentMode ==
+                                          AssessmentMode.millionaireMode &&
+                                      state.isSoftFailed)
                                   ? colors.warning
-                                  : (state.isLastQuestion ? colors.success : colors.primary),
+                                  : (state.isLastQuestion
+                                        ? colors.success
+                                        : colors.primary),
                               foregroundColor: colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.card),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
+                                ),
                               ),
                             ),
                             child: Text(
-                              (state.assessmentMode == AssessmentMode.millionaireMode && state.isSoftFailed)
+                              (state.assessmentMode ==
+                                          AssessmentMode.millionaireMode &&
+                                      state.isSoftFailed)
                                   ? 'Bank & View Results'
                                   : (state.isLastQuestion
-                                      ? l10n.submitQuizButton
-                                      : l10n.nextQuestionButton),
-                              style: typography.callout.bold.copyWith(color: colors.white),
+                                        ? l10n.submitQuizButton
+                                        : l10n.nextQuestionButton),
+                              style: typography.callout.bold.copyWith(
+                                color: colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -1169,7 +1304,9 @@ class _QuizWorkspaceView extends HookWidget {
                 'Are you sure you want to finalize and grade your test answers?',
               ),
               const SizedBox(height: 14),
-              Text('• Answered: ${state.answeredCount} / ${state.totalQuestions}'),
+              Text(
+                '• Answered: ${state.answeredCount} / ${state.totalQuestions}',
+              ),
               Text('• Unanswered: ${state.unansweredCount}'),
               if (state.flaggedCount > 0)
                 Text('• Flagged for review: ${state.flaggedCount}'),
@@ -1210,10 +1347,13 @@ class _QuizWorkspaceView extends HookWidget {
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor:
-            isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+        backgroundColor: isDark
+            ? colors.backgroundPrimary
+            : colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
         ),
         builder: (sheetCtx) {
           return Align(
@@ -1232,7 +1372,9 @@ class _QuizWorkspaceView extends HookWidget {
                           height: 4,
                           decoration: BoxDecoration(
                             color: colors.surfaceBorder,
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
                           ),
                         ),
                       ),
@@ -1247,7 +1389,10 @@ class _QuizWorkspaceView extends HookWidget {
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: colors.textSecondary,
+                            ),
                             onPressed: () => Navigator.of(sheetCtx).pop(),
                           ),
                         ],
@@ -1286,11 +1431,11 @@ class _QuizWorkspaceView extends HookWidget {
                           itemCount: state.totalQuestions,
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 5,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            childAspectRatio: 1.15,
-                          ),
+                                crossAxisCount: 5,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                                childAspectRatio: 1.15,
+                              ),
                           itemBuilder: (gridCtx, index) {
                             final q = state.questions[index];
                             final isCurrent = index == state.currentIndex;
@@ -1304,7 +1449,10 @@ class _QuizWorkspaceView extends HookWidget {
                             if (isCurrent) {
                               bgColor = colors.primary.withValues(alpha: 0.2);
                               textColor = colors.primary;
-                              border = Border.all(color: colors.primary, width: 2);
+                              border = Border.all(
+                                color: colors.primary,
+                                width: 2,
+                              );
                             } else if (isFlagged) {
                               bgColor = colors.warning.withValues(alpha: 0.15);
                               textColor = colors.warning;
@@ -1325,11 +1473,15 @@ class _QuizWorkspaceView extends HookWidget {
                                 Navigator.of(sheetCtx).pop();
                                 cubit.jumpToQuestion(index);
                               },
-                              borderRadius: BorderRadius.circular(AppRadius.badge),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: bgColor,
-                                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.badge,
+                                  ),
                                   border: border,
                                 ),
                                 child: Stack(
@@ -1348,7 +1500,9 @@ class _QuizWorkspaceView extends HookWidget {
                                         child: Icon(
                                           Icons.bookmark_rounded,
                                           size: 11,
-                                          color: isCurrent ? colors.warning : textColor,
+                                          color: isCurrent
+                                              ? colors.warning
+                                              : textColor,
                                         ),
                                       ),
                                   ],
@@ -1371,12 +1525,16 @@ class _QuizWorkspaceView extends HookWidget {
                             backgroundColor: colors.primary,
                             foregroundColor: colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                             ),
                           ),
                           child: Text(
                             'Submit Mock Exam (${state.answeredCount}/${state.totalQuestions} Answered)',
-                            style: typography.callout.bold.copyWith(color: colors.white),
+                            style: typography.callout.bold.copyWith(
+                              color: colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -1430,7 +1588,11 @@ class _QuizTimerBadge extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return BlocSelector<QuizSessionCubit, QuizSessionState, ({String timer, bool isLow})>(
+    return BlocSelector<
+      QuizSessionCubit,
+      QuizSessionState,
+      ({String timer, bool isLow})
+    >(
       selector: (state) => (
         timer: state.formattedTimer,
         isLow: state.isTimeRunningLow,
@@ -1459,17 +1621,13 @@ class _QuizTimerBadge extends StatelessWidget {
               Icon(
                 Icons.timer_outlined,
                 size: 16,
-                color: data.isLow
-                    ? colors.error
-                    : colors.success,
+                color: data.isLow ? colors.error : colors.success,
               ),
               const SizedBox(width: 5),
               Text(
                 data.timer,
                 style: typography.caption.bold.copyWith(
-                  color: data.isLow
-                      ? colors.error
-                      : colors.success,
+                  color: data.isLow ? colors.error : colors.success,
                 ),
               ),
             ],

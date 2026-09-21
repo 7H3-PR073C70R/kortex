@@ -84,7 +84,8 @@ class PastQuestionModel {
       latexFormula: json['latex_formula'] as String?,
       imageUrl: json['image_url'] as String? ?? json['imageUrl'] as String?,
       difficulty: json['difficulty'] as String? ?? 'Medium',
-      isUserAdded: json['is_user_added'] as bool? ??
+      isUserAdded:
+          json['is_user_added'] as bool? ??
           json['isUserAdded'] as bool? ??
           false,
       courseId: json['course_id'] as String? ?? json['courseId'] as String?,

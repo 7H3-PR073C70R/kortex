@@ -57,13 +57,27 @@ class QuizDuelArenaPage extends HookWidget {
       },
       builder: (context, state) {
         final match = state.match;
-        final myPlayer = state.myParticipant ?? const QuizDuelParticipant(userId: '', displayName: 'You', avatarUrl: '⚡');
-        final opponent = state.opponentParticipant ?? const QuizDuelParticipant(userId: '', displayName: 'Rival', avatarUrl: '🧠');
+        final myPlayer =
+            state.myParticipant ??
+            const QuizDuelParticipant(
+              userId: '',
+              displayName: 'You',
+              avatarUrl: '⚡',
+            );
+        final opponent =
+            state.opponentParticipant ??
+            const QuizDuelParticipant(
+              userId: '',
+              displayName: 'Rival',
+              avatarUrl: '🧠',
+            );
         final currentQuestion = match?.currentQuestion;
 
         if (state.status == QuizDuelStatus.countdown) {
           return Scaffold(
-            backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            backgroundColor: isDark
+                ? colors.surfaceSecondary
+                : colors.surfacePrimary,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -75,7 +89,10 @@ class QuizDuelArenaPage extends HookWidget {
                       children: [
                         // Arena Battle Badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -83,7 +100,9 @@ class QuizDuelArenaPage extends HookWidget {
                                 colors.secondary.withAlpha(isDark ? 60 : 35),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(AppRadius.dialog),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.dialog,
+                            ),
                             border: Border.all(
                               color: colors.primary.withAlpha(120),
                               width: 1.2,
@@ -92,7 +111,11 @@ class QuizDuelArenaPage extends HookWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.bolt_rounded, color: colors.warning, size: 18),
+                              Icon(
+                                Icons.bolt_rounded,
+                                color: colors.warning,
+                                size: 18,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 'MATCH FOUND • 1v1 DUEL',
@@ -119,19 +142,24 @@ class QuizDuelArenaPage extends HookWidget {
 
                         // VS Battle Ring Cards
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 24,
+                            horizontal: 16,
+                          ),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? colors.surfaceTertiary.withAlpha(180)
                                 : colors.surfaceSecondary.withAlpha(200),
-                            borderRadius: BorderRadius.circular(AppRadius.dialog),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.dialog,
+                            ),
                             border: Border.all(
                               color: colors.primary.withAlpha(isDark ? 80 : 40),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: colors.primary.withAlpha(isDark ? 40 : 15),
+                                color: colors.black.withAlpha(isDark ? 50 : 20),
                                 blurRadius: 24,
                                 offset: const Offset(0, 8),
                               ),
@@ -154,8 +182,11 @@ class QuizDuelArenaPage extends HookWidget {
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: colors.primary.withAlpha(90),
-                                          blurRadius: 14,
+                                          color: colors.black.withAlpha(
+                                            isDark ? 50 : 20,
+                                          ),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
                                         ),
                                       ],
                                     ),
@@ -179,8 +210,9 @@ class QuizDuelArenaPage extends HookWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: colors.primary.withAlpha(35),
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.micro),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.micro,
+                                      ),
                                     ),
                                     child: Text(
                                       '${myPlayer.eloRating} ELO',
@@ -190,146 +222,158 @@ class QuizDuelArenaPage extends HookWidget {
                                       ),
                                     ),
                                   ),
-                              ],
-                            ),
+                                ],
+                              ),
 
-                            // Glowing VS Emblem
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    colors.error,
-                                    colors.warning,
+                              // Glowing VS Emblem
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      colors.error,
+                                      colors.warning,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.black.withAlpha(
+                                        isDark ? 60 : 30,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
                                   ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.error.withAlpha(120),
-                                    blurRadius: 16,
-                                    spreadRadius: 1,
+                                child: Text(
+                                  'VS',
+                                  style: typography.title2.bold.copyWith(
+                                    color: colors.white,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+
+                              // Opponent (Rival)
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: colors.secondary,
+                                        width: 2.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.black.withAlpha(
+                                            isDark ? 50 : 20,
+                                          ),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: AppAvatar(
+                                      name: opponent.displayName,
+                                      customDimension: 68,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    opponent.displayName,
+                                    style: typography.body.bold.copyWith(
+                                      fontSize: 15,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.secondary.withAlpha(35),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.micro,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${opponent.eloRating} ELO',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.secondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: Text(
-                                'VS',
-                                style: typography.title2.bold.copyWith(
-                                  color: colors.white,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-
-                            // Opponent (Rival)
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: colors.secondary,
-                                      width: 2.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.secondary.withAlpha(90),
-                                        blurRadius: 14,
-                                      ),
-                                    ],
-                                  ),
-                                  child: AppAvatar(
-                                    name: opponent.displayName,
-                                    customDimension: 68,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  opponent.displayName,
-                                  style: typography.body.bold.copyWith(
-                                    fontSize: 15,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 3),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.secondary.withAlpha(35),
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.micro),
-                                  ),
-                                  child: Text(
-                                    '${opponent.eloRating} ELO',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.secondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-
-                      // Countdown Indicator Pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 40 : 20),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.dialog),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(80),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    colors.primary),
-                              ),
+                        const SizedBox(height: 40),
+
+                        // Countdown Indicator Pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 40 : 20),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.dialog,
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Battle Starting in 3s...',
-                              style: typography.body.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 14,
-                              ),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(80),
                             ),
-                          ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    colors.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Battle Starting in 3s...',
+                                style: typography.body.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      }
+          );
+        }
 
         if (state.status == QuizDuelStatus.finished) {
           final isWinner = state.isWinner;
           final isDraw = state.isDraw;
 
           return Scaffold(
-            backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            backgroundColor: isDark
+                ? colors.surfaceSecondary
+                : colors.surfacePrimary,
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
@@ -343,14 +387,14 @@ class QuizDuelArenaPage extends HookWidget {
                           isDraw
                               ? '🤝 DRAW MATCH!'
                               : isWinner
-                                  ? '🏆 VICTORY!'
-                                  : '💥 DEFEAT',
+                              ? '🏆 VICTORY!'
+                              : '💥 DEFEAT',
                           style: typography.largeTitle.bold.copyWith(
                             color: isDraw
                                 ? colors.warning
                                 : isWinner
-                                    ? colors.success
-                                    : colors.error,
+                                ? colors.success
+                                : colors.error,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -359,7 +403,9 @@ class QuizDuelArenaPage extends HookWidget {
                               ? 'Outstanding speed and accuracy! +35 XP earned.'
                               : 'Great effort! Practice more to climb the leaderboard.',
                           textAlign: TextAlign.center,
-                          style: typography.body.regular.copyWith(color: colors.textSecondary),
+                          style: typography.body.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
                         ),
                         const SizedBox(height: 36),
 
@@ -368,41 +414,67 @@ class QuizDuelArenaPage extends HookWidget {
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: colors.surfacePrimary,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.panel),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.panel,
+                            ),
                             border: Border.all(
-                                color: colors.surfaceBorder.withValues(alpha: 0.6)),
+                              color: colors.surfaceBorder.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               Column(
                                 children: [
-                                  AppAvatar(name: myPlayer.displayName, customDimension: 52),
+                                  AppAvatar(
+                                    name: myPlayer.displayName,
+                                    customDimension: 52,
+                                  ),
                                   const SizedBox(height: 6),
-                                  Text(myPlayer.displayName, style: typography.body.bold),
+                                  Text(
+                                    myPlayer.displayName,
+                                    style: typography.body.bold,
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
                                     '${myPlayer.score} pts',
-                                    style: typography.title2.bold.copyWith(color: colors.primary),
+                                    style: typography.title2.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
                                   ),
                                   if (isWinner)
-                                    const AppBadge(label: 'Winner', variant: AppBadgeVariant.success),
+                                    const AppBadge(
+                                      label: 'Winner',
+                                      variant: AppBadgeVariant.success,
+                                    ),
                                 ],
                               ),
                               Text('—', style: typography.title1.bold),
                               Column(
                                 children: [
-                                  AppAvatar(name: opponent.displayName, customDimension: 52),
+                                  AppAvatar(
+                                    name: opponent.displayName,
+                                    customDimension: 52,
+                                  ),
                                   const SizedBox(height: 6),
-                                  Text(opponent.displayName, style: typography.body.bold),
+                                  Text(
+                                    opponent.displayName,
+                                    style: typography.body.bold,
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
                                     '${opponent.score} pts',
-                                    style: typography.title2.bold.copyWith(color: colors.secondary),
+                                    style: typography.title2.bold.copyWith(
+                                      color: colors.secondary,
+                                    ),
                                   ),
                                   if (!isWinner && !isDraw)
-                                    const AppBadge(label: 'Winner', variant: AppBadgeVariant.success),
+                                    const AppBadge(
+                                      label: 'Winner',
+                                      variant: AppBadgeVariant.success,
+                                    ),
                                 ],
                               ),
                             ],
@@ -413,13 +485,15 @@ class QuizDuelArenaPage extends HookWidget {
                         AppButton(
                           text: 'Rematch ⚡',
                           onPressed: () async {
-                            await context.read<QuizDuelCubit>().startMatchmaking(
-                              subject: match?.subject ?? 'Physics',
-                              examBoard: match?.examBoard ?? 'WAEC',
-                              userId: state.currentUserId,
-                              displayName: myPlayer.displayName,
-                              avatarUrl: myPlayer.avatarUrl,
-                            );
+                            await context
+                                .read<QuizDuelCubit>()
+                                .startMatchmaking(
+                                  subject: match?.subject ?? 'Physics',
+                                  examBoard: match?.examBoard ?? 'WAEC',
+                                  userId: state.currentUserId,
+                                  displayName: myPlayer.displayName,
+                                  avatarUrl: myPlayer.avatarUrl,
+                                );
                           },
                         ),
                         const SizedBox(height: 12),
@@ -444,11 +518,13 @@ class QuizDuelArenaPage extends HookWidget {
         final timerColor = state.remainingSeconds <= 3
             ? colors.error
             : state.remainingSeconds <= 6
-                ? colors.warning
-                : colors.primary;
+            ? colors.warning
+            : colors.primary;
 
         return Scaffold(
-          backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          backgroundColor: isDark
+              ? colors.surfaceSecondary
+              : colors.surfacePrimary,
           appBar: AppBar(
             backgroundColor: colors.transparent,
             elevation: 0,
@@ -482,14 +558,19 @@ class QuizDuelArenaPage extends HookWidget {
                           // Split Scoreboard Header
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: colors.surfacePrimary,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.panel),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.panel,
+                              ),
                               border: Border.all(
-                                  color: colors.surfaceBorder
-                                      .withValues(alpha: 0.5)),
+                                color: colors.surfaceBorder.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -498,8 +579,9 @@ class QuizDuelArenaPage extends HookWidget {
                                   child: Row(
                                     children: [
                                       AppAvatar(
-                                          name: myPlayer.displayName,
-                                          customDimension: 36),
+                                        name: myPlayer.displayName,
+                                        customDimension: 36,
+                                      ),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
@@ -515,25 +597,30 @@ class QuizDuelArenaPage extends HookWidget {
                                               '${myPlayer.score} pts',
                                               style: typography.body.bold
                                                   .copyWith(
-                                                      color: colors.primary),
+                                                    color: colors.primary,
+                                                  ),
                                             ),
                                           ],
                                         ),
                                       ),
                                       if (myPlayer.comboStreak > 1)
-                                        Text('🔥x${myPlayer.comboStreak}',
-                                            style: typography.caption.bold),
+                                        Text(
+                                          '🔥x${myPlayer.comboStreak}',
+                                          style: typography.caption.bold,
+                                        ),
                                     ],
                                   ),
                                 ),
                                 // VS Center Badge
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   child: Text(
                                     'VS',
-                                    style: typography.caption.bold
-                                        .copyWith(color: colors.textSecondary),
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textSecondary,
+                                    ),
                                   ),
                                 ),
                                 // Opponent info
@@ -542,8 +629,10 @@ class QuizDuelArenaPage extends HookWidget {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       if (opponent.comboStreak > 1)
-                                        Text('🔥x${opponent.comboStreak}',
-                                            style: typography.caption.bold),
+                                        Text(
+                                          '🔥x${opponent.comboStreak}',
+                                          style: typography.caption.bold,
+                                        ),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Column(
@@ -559,15 +648,17 @@ class QuizDuelArenaPage extends HookWidget {
                                               '${opponent.score} pts',
                                               style: typography.body.bold
                                                   .copyWith(
-                                                      color: colors.secondary),
+                                                    color: colors.secondary,
+                                                  ),
                                             ),
                                           ],
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       AppAvatar(
-                                          name: opponent.displayName,
-                                          customDimension: 36),
+                                        name: opponent.displayName,
+                                        customDimension: 36,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -578,14 +669,16 @@ class QuizDuelArenaPage extends HookWidget {
 
                           // Countdown Timer Progress Bar
                           ClipRRect(
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.micro),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
                             child: LinearProgressIndicator(
                               value: progress,
                               minHeight: 6,
                               backgroundColor: colors.surfaceSecondary,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(timerColor),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                timerColor,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -596,11 +689,14 @@ class QuizDuelArenaPage extends HookWidget {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: colors.surfacePrimary,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.panel),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.panel,
+                                ),
                                 border: Border.all(
-                                    color: colors.surfaceBorder
-                                        .withValues(alpha: 0.4)),
+                                  color: colors.surfaceBorder.withValues(
+                                    alpha: 0.4,
+                                  ),
+                                ),
                               ),
                               child: LatexRichViewer(
                                 text: currentQuestion.prompt,
@@ -623,10 +719,11 @@ class QuizDuelArenaPage extends HookWidget {
                                   final option = currentQuestion.options[index];
                                   final isSelected =
                                       state.selectedOptionIndex == index;
-                                  final isRoundSummary = state.status ==
+                                  final isRoundSummary =
+                                      state.status ==
                                       QuizDuelStatus.roundSummary;
-                                  final isCorrect = option ==
-                                      currentQuestion.correctAnswer;
+                                  final isCorrect =
+                                      option == currentQuestion.correctAnswer;
 
                                   Color? cardColor = colors.surfacePrimary;
                                   var borderColor = colors.surfaceBorder
@@ -634,28 +731,34 @@ class QuizDuelArenaPage extends HookWidget {
 
                                   if (isRoundSummary) {
                                     if (isCorrect) {
-                                      cardColor = colors.success
-                                          .withValues(alpha: 0.18);
+                                      cardColor = colors.success.withValues(
+                                        alpha: 0.18,
+                                      );
                                       borderColor = colors.success;
                                     } else if (isSelected) {
-                                      cardColor = colors.error
-                                          .withValues(alpha: 0.18);
+                                      cardColor = colors.error.withValues(
+                                        alpha: 0.18,
+                                      );
                                       borderColor = colors.error;
                                     }
                                   } else if (isSelected) {
-                                    cardColor =
-                                        colors.primary.withValues(alpha: 0.15);
+                                    cardColor = colors.primary.withValues(
+                                      alpha: 0.15,
+                                    );
                                     borderColor = colors.primary;
                                   }
 
                                   return Material(
                                     color: cardColor,
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.card),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.card,
+                                    ),
                                     child: InkWell(
-                                      borderRadius:
-                                          BorderRadius.circular(AppRadius.card),
-                                      onTap: (state.isMyAnswerLocked ||
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.card,
+                                      ),
+                                      onTap:
+                                          (state.isMyAnswerLocked ||
                                               isRoundSummary)
                                           ? null
                                           : () => onSelectOption(index),
@@ -663,10 +766,12 @@ class QuizDuelArenaPage extends HookWidget {
                                         padding: const EdgeInsets.all(14),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(
-                                              AppRadius.card),
+                                            AppRadius.card,
+                                          ),
                                           border: Border.all(
-                                              color: borderColor,
-                                              width: isSelected ? 2 : 1),
+                                            color: borderColor,
+                                            width: isSelected ? 2 : 1,
+                                          ),
                                         ),
                                         child: Row(
                                           children: [
@@ -682,7 +787,8 @@ class QuizDuelArenaPage extends HookWidget {
                                               child: Center(
                                                 child: Text(
                                                   String.fromCharCode(
-                                                      65 + index),
+                                                    65 + index,
+                                                  ),
                                                   style: TextStyle(
                                                     color: isSelected
                                                         ? colors.white
@@ -699,8 +805,8 @@ class QuizDuelArenaPage extends HookWidget {
                                                 text: option,
                                                 style: typography.body.regular
                                                     .copyWith(
-                                                  color: colors.textPrimary,
-                                                ),
+                                                      color: colors.textPrimary,
+                                                    ),
                                               ),
                                             ),
                                           ],
@@ -718,11 +824,13 @@ class QuizDuelArenaPage extends HookWidget {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children:
-                                  ['🔥', '⚡', '🤯', '👏', '🎯'].map((emote) {
+                              children: ['🔥', '⚡', '🤯', '👏', '🎯'].map((
+                                emote,
+                              ) {
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 6),
+                                    horizontal: 6,
+                                  ),
                                   child: InkWell(
                                     borderRadius: BorderRadius.circular(20),
                                     onTap: () => onSendEmote(emote),
@@ -732,8 +840,10 @@ class QuizDuelArenaPage extends HookWidget {
                                         shape: BoxShape.circle,
                                         color: colors.surfaceSecondary,
                                       ),
-                                      child: Text(emote,
-                                          style: const TextStyle(fontSize: 20)),
+                                      child: Text(
+                                        emote,
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
                                     ),
                                   ),
                                 );
@@ -760,7 +870,10 @@ class QuizDuelArenaPage extends HookWidget {
                         offset: Offset(0, -value * 120),
                         child: Opacity(
                           opacity: 1.0 - (value * 0.7),
-                          child: Text(emote, style: const TextStyle(fontSize: 36)),
+                          child: Text(
+                            emote,
+                            style: const TextStyle(fontSize: 36),
+                          ),
                         ),
                       );
                     },

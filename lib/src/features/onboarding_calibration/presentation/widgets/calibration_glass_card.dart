@@ -41,9 +41,9 @@ class CalibrationGlassCard extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: colors.primary.withAlpha(isDark ? 30 : 12),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: colors.black.withAlpha(isDark ? 40 : 10),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
               ),
             ],
           ),

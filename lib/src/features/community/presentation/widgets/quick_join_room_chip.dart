@@ -97,15 +97,6 @@ class _QuickJoinRoomChipState extends State<QuickJoinRoomChip>
                         color: colors.recallEasy.withValues(
                           alpha: _pulseAnimation.value,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.recallEasy.withValues(
-                              alpha: _pulseAnimation.value * 0.6,
-                            ),
-                            blurRadius: 6,
-                            spreadRadius: 1,
-                          ),
-                        ],
                       ),
                     );
                   },

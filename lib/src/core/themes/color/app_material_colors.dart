@@ -127,12 +127,14 @@ class AppMaterialColors {
   // Deep Neutral Charcoal Dark Surfaces (Zero Blue-Cast)
   // ---------------------------------------------------------------------------
   static const Color darkCanvas = Color(0xFF0D0D0F); // Pure neutral carbon dark
-  static const Color darkCard = Color(0xFF141417);     // Warm, tactile dark surface
+  static const Color darkCard = Color(0xFF141417); // Warm, tactile dark surface
   static const Color darkSurfaceElevated1 = Color(0xFF141417);
   static const Color darkSurfaceElevated2 = Color(0xFF1D1D22);
   static const Color darkSurfaceElevated3 = Color(0xFF2B2B33);
-  static const Color darkBorder = Color(0x1AFFFFFF);          // 10% crisp white hairline
-  static const Color darkBorderHighlight = Color(0x33FFFFFF);  // 20% focus hairline
+  static const Color darkBorder = Color(0x1AFFFFFF); // 10% crisp white hairline
+  static const Color darkBorderHighlight = Color(
+    0x33FFFFFF,
+  ); // 20% focus hairline
 
   static const Color textDarkPrimary = Color(0xFFFAFAFA);
   static const Color textDarkSecondary = Color(0xFFA1A1AA);

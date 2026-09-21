@@ -21,7 +21,8 @@ class OcclusionMask {
 /// Touch-enabled Image Occlusion viewer for medical and STEM flashcards (FSR-13).
 class ImageOcclusionCardViewer extends HookWidget {
   const ImageOcclusionCardViewer({
-    required this.masks, super.key,
+    required this.masks,
+    super.key,
     this.imageUrl,
     this.imageBytes,
     this.onMaskRevealed,
@@ -41,7 +42,8 @@ class ImageOcclusionCardViewer extends HookWidget {
     final transformationController = useTransformationController();
     final revealedMaskIds = useState<Set<String>>({});
 
-    final allRevealed = revealedMaskIds.value.length == masks.length && masks.isNotEmpty;
+    final allRevealed =
+        revealedMaskIds.value.length == masks.length && masks.isNotEmpty;
 
     void toggleMask(String id) {
       AppFeedback.selection();
@@ -85,7 +87,9 @@ class ImageOcclusionCardViewer extends HookWidget {
               TextButton.icon(
                 onPressed: masks.isEmpty ? null : toggleAll,
                 icon: Icon(
-                  allRevealed ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                  allRevealed
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
                   size: 16,
                   color: colors.primary,
                 ),
@@ -106,7 +110,9 @@ class ImageOcclusionCardViewer extends HookWidget {
             decoration: BoxDecoration(
               color: colors.surfacePrimary,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
+              border: Border.all(
+                color: colors.surfaceBorder.withValues(alpha: 0.5),
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             child: InteractiveViewer(
@@ -123,7 +129,9 @@ class ImageOcclusionCardViewer extends HookWidget {
                       _buildBaseImage(context),
                       // Occlusion Masks Overlay
                       ...masks.map((mask) {
-                        final isRevealed = revealedMaskIds.value.contains(mask.id);
+                        final isRevealed = revealedMaskIds.value.contains(
+                          mask.id,
+                        );
                         final isActive = mask.id == activeMaskId;
 
                         final left = mask.rect.left * constraints.maxWidth;
@@ -149,8 +157,8 @@ class ImageOcclusionCardViewer extends HookWidget {
                                   color: isRevealed
                                       ? colors.primary.withValues(alpha: 0.2)
                                       : isActive
-                                          ? colors.syllabotAccent
-                                          : colors.primary,
+                                      ? colors.syllabotAccent
+                                      : colors.primary,
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
                                     color: isRevealed
@@ -162,7 +170,9 @@ class ImageOcclusionCardViewer extends HookWidget {
                                       ? null
                                       : [
                                           BoxShadow(
-                                            color: colors.black.withValues(alpha: 0.25),
+                                            color: colors.black.withValues(
+                                              alpha: 0.25,
+                                            ),
                                             blurRadius: 4,
                                             offset: const Offset(0, 2),
                                           ),
@@ -173,18 +183,21 @@ class ImageOcclusionCardViewer extends HookWidget {
                                       ? Text(
                                           mask.answerText,
                                           textAlign: TextAlign.center,
-                                          style: typography.caption.regular.copyWith(
-                                            color: colors.textPrimary,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 11,
-                                          ),
+                                          style: typography.caption.regular
+                                              .copyWith(
+                                                color: colors.textPrimary,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 11,
+                                              ),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         )
                                       : Icon(
                                           Icons.help_outline_rounded,
                                           size: 14,
-                                          color: colors.white.withValues(alpha: 0.9),
+                                          color: colors.white.withValues(
+                                            alpha: 0.9,
+                                          ),
                                         ),
                                 ),
                               ),
@@ -225,7 +238,11 @@ class ImageOcclusionCardViewer extends HookWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.biotech_rounded, size: 56, color: colors.primary.withValues(alpha: 0.4)),
+            Icon(
+              Icons.biotech_rounded,
+              size: 56,
+              color: colors.primary.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 12),
             Text(
               'STEM / Anatomical Diagram Canvas',

@@ -30,7 +30,8 @@ class DeckTreeNode {
 /// Visual tree selector for sub-decks, folders, and hierarchical tags in Kortex.
 class SubdeckHierarchyTree extends HookWidget {
   const SubdeckHierarchyTree({
-    required this.decks, super.key,
+    required this.decks,
+    super.key,
     this.selectedDeckId,
     this.onDeckSelected,
     this.onTagSelected,
@@ -51,8 +52,8 @@ class SubdeckHierarchyTree extends HookWidget {
       final delimiter = deck.title.contains('::')
           ? '::'
           : deck.title.contains('/')
-              ? '/'
-              : null;
+          ? '/'
+          : null;
 
       if (delimiter == null) {
         rootNodes[deck.id] = DeckTreeNode(
@@ -67,7 +68,9 @@ class SubdeckHierarchyTree extends HookWidget {
 
         for (var i = 0; i < segments.length; i++) {
           final seg = segments[i].trim();
-          currentPath = currentPath.isEmpty ? seg : '$currentPath$delimiter$seg';
+          currentPath = currentPath.isEmpty
+              ? seg
+              : '$currentPath$delimiter$seg';
 
           if (i == 0) {
             currentParent = rootNodes.putIfAbsent(
@@ -114,11 +117,17 @@ class SubdeckHierarchyTree extends HookWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.folder_open_rounded, size: 48, color: colors.textSecondary.withValues(alpha: 0.5)),
+              Icon(
+                Icons.folder_open_rounded,
+                size: 48,
+                color: colors.textSecondary.withValues(alpha: 0.5),
+              ),
               const SizedBox(height: 12),
               Text(
                 'No Decks or Sub-Decks Found',
-                style: typography.body.medium.copyWith(color: colors.textSecondary),
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -136,10 +145,17 @@ class SubdeckHierarchyTree extends HookWidget {
             onChanged: (val) => searchQuery.value = val.trim().toLowerCase(),
             decoration: InputDecoration(
               hintText: 'Search hierarchy & sub-decks...',
-              prefixIcon: Icon(Icons.search_rounded, size: 20, color: colors.textSecondary),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: colors.textSecondary,
+              ),
               filled: true,
               fillColor: colors.surfacePrimary,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.card),
                 borderSide: BorderSide(color: colors.surfaceBorder),
@@ -185,7 +201,9 @@ class SubdeckHierarchyTree extends HookWidget {
 
     if (searchFilter.isNotEmpty &&
         !node.path.toLowerCase().contains(searchFilter) &&
-        !node.children.any((c) => c.path.toLowerCase().contains(searchFilter))) {
+        !node.children.any(
+          (c) => c.path.toLowerCase().contains(searchFilter),
+        )) {
       return const SizedBox.shrink();
     }
 
@@ -253,7 +271,9 @@ class SubdeckHierarchyTree extends HookWidget {
                     child: Text(
                       node.name,
                       style: typography.body.medium.copyWith(
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isSelected ? colors.primary : colors.textPrimary,
                       ),
                       maxLines: 1,
@@ -263,7 +283,9 @@ class SubdeckHierarchyTree extends HookWidget {
                   const SizedBox(width: 8),
                   AppBadge(
                     label: '${node.totalCards}',
-                    variant: isSelected ? AppBadgeVariant.primary : AppBadgeVariant.outline,
+                    variant: isSelected
+                        ? AppBadgeVariant.primary
+                        : AppBadgeVariant.outline,
                   ),
                 ],
               ),

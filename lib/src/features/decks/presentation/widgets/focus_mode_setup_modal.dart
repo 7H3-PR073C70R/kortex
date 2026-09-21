@@ -61,7 +61,8 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
   @override
   void initState() {
     super.initState();
-    _selectedDeck = widget.initialDeck ??
+    _selectedDeck =
+        widget.initialDeck ??
         (widget.decks.length > 1
             ? allDecksOption
             : (widget.decks.isNotEmpty ? widget.decks.first : null));
@@ -112,7 +113,9 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
         child: Container(
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(70)
@@ -150,315 +153,342 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                 ),
                 const SizedBox(height: 16),
 
-          // Header
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [colors.deepBronze, colors.primary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                ),
-                child: Icon(
-                  Icons.bolt_rounded,
-                  color: colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Header
+                Row(
                   children: [
-                    Text(
-                      'Hyperdrive Focus Mode',
-                      style: typography.headline.bold.copyWith(
-                        color: colors.textPrimary,
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [colors.deepBronze, colors.primary],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                      ),
+                      child: Icon(
+                        Icons.bolt_rounded,
+                        color: colors.white,
+                        size: 22,
                       ),
                     ),
-                    Text(
-                      'ADHD-calibrated micro-sprints to beat task paralysis.',
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hyperdrive Focus Mode',
+                            style: typography.headline.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'ADHD-calibrated micro-sprints to beat task paralysis.',
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: colors.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
-              ),
-              IconButton(
-                icon: Icon(Icons.close_rounded, color: colors.textMuted),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-          // Deck Selector
-          if (widget.decks.length > 1) ...[
-            Text(
-              'Select Deck',
-              style: typography.caption.bold.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: colors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                border: Border.all(
-                  color: colors.surfaceBorder.withValues(alpha: 0.4),
-                ),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<DeckEntity>(
-                  value: _selectedDeck,
-                  isExpanded: true,
-                  dropdownColor: colors.surfacePrimary,
-                  icon: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: colors.textSecondary,
+                // Deck Selector
+                if (widget.decks.length > 1) ...[
+                  Text(
+                    'Select Deck',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
-                  items: [
-                    if (widget.decks.length > 1)
-                      DropdownMenuItem<DeckEntity>(
-                        value: allDecksOption,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.auto_awesome_rounded,
-                              size: 16,
-                              color: colors.primary,
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceSecondary,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<DeckEntity>(
+                        value: _selectedDeck,
+                        isExpanded: true,
+                        dropdownColor: colors.surfacePrimary,
+                        icon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: colors.textSecondary,
+                        ),
+                        items: [
+                          if (widget.decks.length > 1)
+                            DropdownMenuItem<DeckEntity>(
+                              value: allDecksOption,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 16,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      allDecksOption.title,
+                                      style: typography.body.medium.copyWith(
+                                        color: colors.primary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
+                          ...widget.decks.map((deck) {
+                            return DropdownMenuItem<DeckEntity>(
+                              value: deck,
                               child: Text(
-                                allDecksOption.title,
+                                '${deck.title} (${deck.totalCards} cards)',
                                 style: typography.body.medium.copyWith(
-                                  color: colors.primary,
-                                  fontWeight: FontWeight.w700,
+                                  color: colors.textPrimary,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
-                        ),
+                            );
+                          }),
+                        ],
+                        onChanged: (deck) {
+                          if (deck != null) {
+                            setState(() => _selectedDeck = deck);
+                          }
+                        },
                       ),
-                    ...widget.decks.map((deck) {
-                      return DropdownMenuItem<DeckEntity>(
-                        value: deck,
-                        child: Text(
-                          '${deck.title} (${deck.totalCards} cards)',
-                          style: typography.body.medium.copyWith(
-                            color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Sprint Type Selector (Cards vs Timed)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _OptionChip(
+                        label: 'Card Sprint',
+                        icon: Icons.layers_rounded,
+                        isSelected: _type == FocusSessionType.cardCount,
+                        onTap: () =>
+                            setState(() => _type = FocusSessionType.cardCount),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _OptionChip(
+                        label: 'Timed Focus',
+                        icon: Icons.timer_outlined,
+                        isSelected: _type == FocusSessionType.timed,
+                        onTap: () =>
+                            setState(() => _type = FocusSessionType.timed),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Sizing choices (5 / 10 / 15)
+                if (_type == FocusSessionType.cardCount) ...[
+                  Row(
+                    children: [5, 10, 15].map((count) {
+                      final isSelected = _cardCount == count;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ShrinkableButton(
+                            onTap: () {
+                              AppFeedback.selection();
+                              setState(() => _cardCount = count);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? colors.primary
+                                    : (isDark
+                                          ? colors.white.withValues(alpha: 0.1)
+                                          : colors.black.withValues(
+                                              alpha: 0.05,
+                                            )),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? colors.primary
+                                      : colors.surfaceBorder.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$count Cards',
+                                style: typography.caption.bold.copyWith(
+                                  color: isSelected
+                                      ? colors.white
+                                      : colors.textPrimary,
+                                ),
+                              ),
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       );
-                    }),
-                  ],
-                  onChanged: (deck) {
-                    if (deck != null) setState(() => _selectedDeck = deck);
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Sprint Type Selector (Cards vs Timed)
-          Row(
-            children: [
-              Expanded(
-                child: _OptionChip(
-                  label: 'Card Sprint',
-                  icon: Icons.layers_rounded,
-                  isSelected: _type == FocusSessionType.cardCount,
-                  onTap: () => setState(() => _type = FocusSessionType.cardCount),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _OptionChip(
-                  label: 'Timed Focus',
-                  icon: Icons.timer_outlined,
-                  isSelected: _type == FocusSessionType.timed,
-                  onTap: () => setState(() => _type = FocusSessionType.timed),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Sizing choices (5 / 10 / 15)
-          if (_type == FocusSessionType.cardCount) ...[
-            Row(
-              children: [5, 10, 15].map((count) {
-                final isSelected = _cardCount == count;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ShrinkableButton(
-                      onTap: () {
-                        AppFeedback.selection();
-                        setState(() => _cardCount = count);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colors.primary
-                              : (isDark
-                                  ? colors.white.withValues(alpha: 0.1)
-                                  : colors.black.withValues(alpha: 0.05)),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                          border: Border.all(
-                            color: isSelected
-                                ? colors.primary
-                                : colors.surfaceBorder.withValues(alpha: 0.4),
+                    }).toList(),
+                  ),
+                ] else ...[
+                  Row(
+                    children: [5, 10, 15].map((mins) {
+                      final isSelected = _durationMinutes == mins;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ShrinkableButton(
+                            onTap: () {
+                              AppFeedback.selection();
+                              setState(() => _durationMinutes = mins);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? colors.primary
+                                    : (isDark
+                                          ? colors.white.withValues(alpha: 0.1)
+                                          : colors.black.withValues(
+                                              alpha: 0.05,
+                                            )),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? colors.primary
+                                      : colors.surfaceBorder.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$mins Mins',
+                                style: typography.caption.bold.copyWith(
+                                  color: isSelected
+                                      ? colors.white
+                                      : colors.textPrimary,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$count Cards',
-                          style: typography.caption.bold.copyWith(
-                            color:
-                                isSelected ? colors.white : colors.textPrimary,
-                          ),
-                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+                const SizedBox(height: 20),
+
+                // ADHD Enhancements Toggles
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceSecondary,
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
+                  ),
+                  child: Column(
+                    children: [
+                      _FeatureSwitchTile(
+                        icon: Icons.auto_awesome_rounded,
+                        title: 'Soft Catch-Up Rescuer',
+                        subtitle:
+                            '60% quick dopamine wins + 40% priority cards to eliminate paralysis.',
+                        value: _isSoftCatchUp,
+                        onChanged: (v) => setState(() => _isSoftCatchUp = v),
                       ),
+                      const Divider(height: 16),
+                      _FeatureSwitchTile(
+                        icon: Icons.record_voice_over_rounded,
+                        title: 'Read Aloud (TTS)',
+                        subtitle:
+                            'Engage multi-sensory attention with spoken card prompts.',
+                        value: _ttsAutoRead,
+                        onChanged: (v) => setState(() => _ttsAutoRead = v),
+                      ),
+                      const Divider(height: 16),
+                      _FeatureSwitchTile(
+                        icon: Icons.visibility_off_rounded,
+                        title: 'Hide Clock / Counter',
+                        subtitle:
+                            'Alleviate timer panic and rejection-sensitivity anxiety.',
+                        value: _hideCardCounter,
+                        onChanged: (v) => setState(() => _hideCardCounter = v),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Launch Button
+                ShrinkableButton(
+                  onTap: _selectedDeck != null ? _launchSession : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [colors.deepBronze, colors.primary],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.black.withValues(
+                            alpha: isDark ? 0.35 : 0.15,
+                          ),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.flash_on_rounded,
+                          color: colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Start Hyperdrive Sprint',
+                          style: typography.body.medium.copyWith(
+                            color: colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-          ] else ...[
-            Row(
-              children: [5, 10, 15].map((mins) {
-                final isSelected = _durationMinutes == mins;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ShrinkableButton(
-                      onTap: () {
-                        AppFeedback.selection();
-                        setState(() => _durationMinutes = mins);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colors.primary
-                              : (isDark
-                                  ? colors.white.withValues(alpha: 0.1)
-                                  : colors.black.withValues(alpha: 0.05)),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
-                          border: Border.all(
-                            color: isSelected
-                                ? colors.primary
-                                : colors.surfaceBorder.withValues(alpha: 0.4),
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '$mins Mins',
-                          style: typography.caption.bold.copyWith(
-                            color:
-                                isSelected ? colors.white : colors.textPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-          const SizedBox(height: 20),
-
-          // ADHD Enhancements Toggles
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(AppRadius.panel),
-            ),
-            child: Column(
-              children: [
-                _FeatureSwitchTile(
-                  icon: Icons.auto_awesome_rounded,
-                  title: 'Soft Catch-Up Rescuer',
-                  subtitle: '60% quick dopamine wins + 40% priority cards to eliminate paralysis.',
-                  value: _isSoftCatchUp,
-                  onChanged: (v) => setState(() => _isSoftCatchUp = v),
-                ),
-                const Divider(height: 16),
-                _FeatureSwitchTile(
-                  icon: Icons.record_voice_over_rounded,
-                  title: 'Read Aloud (TTS)',
-                  subtitle: 'Engage multi-sensory attention with spoken card prompts.',
-                  value: _ttsAutoRead,
-                  onChanged: (v) => setState(() => _ttsAutoRead = v),
-                ),
-                const Divider(height: 16),
-                _FeatureSwitchTile(
-                  icon: Icons.visibility_off_rounded,
-                  title: 'Hide Clock / Counter',
-                  subtitle: 'Alleviate timer panic and rejection-sensitivity anxiety.',
-                  value: _hideCardCounter,
-                  onChanged: (v) => setState(() => _hideCardCounter = v),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-
-          // Launch Button
-          ShrinkableButton(
-            onTap: _selectedDeck != null ? _launchSession : null,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [colors.deepBronze, colors.primary],
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.card),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.flash_on_rounded, color: colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Start Hyperdrive Sprint',
-                    style: typography.body.medium.copyWith(
-                      color: colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
-    ),
-  ),
-),
-);
+    );
   }
 }
 

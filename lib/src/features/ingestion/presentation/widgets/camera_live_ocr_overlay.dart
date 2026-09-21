@@ -206,10 +206,9 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                             boxShadow: isHovered && !isProcessing
                                 ? [
                                     BoxShadow(
-                                      color: theme.colorScheme.primary
-                                          .withAlpha(120),
+                                      color: colors.black.withAlpha(80),
                                       blurRadius: 16,
-                                      spreadRadius: 2,
+                                      offset: const Offset(0, 4),
                                     ),
                                   ]
                                 : null,

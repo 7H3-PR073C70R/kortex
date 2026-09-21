@@ -59,29 +59,49 @@ class CurateCoursesState extends Equatable {
 
     final trackFiltered = combined.where((c) {
       // Custom courses added by user are always shown
-      if (c.id.startsWith('custom_')) return true;
+      if (c.id.startsWith('custom_')) {
+        return true;
+      }
 
       final deptUpper = c.department.toUpperCase();
       final idLower = c.id.toLowerCase();
 
       if (isWaec) {
-        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) return false;
-        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) return false;
-        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) return false;
+        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) {
+          return false;
+        }
+        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) {
+          return false;
+        }
+        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) {
+          return false;
+        }
         return deptUpper.contains('WAEC') || idLower.startsWith('waec-');
       }
 
       if (isJamb) {
-        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) return false;
-        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) return false;
-        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) return false;
+        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) {
+          return false;
+        }
+        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) {
+          return false;
+        }
+        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) {
+          return false;
+        }
         return deptUpper.contains('JAMB') || idLower.startsWith('jamb-');
       }
 
       if (isNeco) {
-        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) return false;
-        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) return false;
-        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) return false;
+        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) {
+          return false;
+        }
+        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) {
+          return false;
+        }
+        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) {
+          return false;
+        }
         return deptUpper.contains('NECO') || idLower.startsWith('neco-');
       }
 
@@ -91,7 +111,8 @@ class CurateCoursesState extends Equatable {
 
       // Higher Education / Polytechnic / Vocational / Post-Secondary tracks
       // (BSC, MSC, PhD, OND I/II, HND I/II, Vocational, Professional, etc.)
-      final isHighSchoolExam = deptUpper.contains('WAEC') ||
+      final isHighSchoolExam =
+          deptUpper.contains('WAEC') ||
           deptUpper.contains('JAMB') ||
           deptUpper.contains('NECO') ||
           deptUpper.contains('SAT') ||
@@ -106,7 +127,8 @@ class CurateCoursesState extends Equatable {
     final seenKeys = <String>{};
     final deduplicated = <CuratedCourseEntity>[];
     for (final c in (trackFiltered.isNotEmpty ? trackFiltered : combined)) {
-      final key = '${c.courseCode.trim().toUpperCase()}_${c.title.trim().toLowerCase()}';
+      final key =
+          '${c.courseCode.trim().toUpperCase()}_${c.title.trim().toLowerCase()}';
       if (seenKeys.add(key)) {
         deduplicated.add(c);
       }
@@ -126,7 +148,8 @@ class CurateCoursesState extends Equatable {
       final deptLower = course.department.toLowerCase();
       final titleLower = course.title.toLowerCase();
 
-      final matchesCategory = selectedCategory == 'All' ||
+      final matchesCategory =
+          selectedCategory == 'All' ||
           deptLower.contains(selectedCategory.toLowerCase()) ||
           titleLower.contains(selectedCategory.toLowerCase());
 

@@ -23,10 +23,10 @@ class NotificationService {
     FirebaseMessaging? messaging,
     FlutterLocalNotificationsPlugin? localNotifications,
     Dio? dio,
-  })  : _messaging = messaging,
-        _localNotifications =
-            localNotifications ?? FlutterLocalNotificationsPlugin(),
-        _dio = dio;
+  }) : _messaging = messaging,
+       _localNotifications =
+           localNotifications ?? FlutterLocalNotificationsPlugin(),
+       _dio = dio;
 
   // ── Channel constants ────────────────────────────────────────────────────────
 
@@ -125,15 +125,17 @@ class NotificationService {
     if (!kIsWeb && Platform.isAndroid) {
       final androidPlugin = _localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidPlugin != null) {
         await _createAndroidChannels(androidPlugin);
       }
     }
 
     // 3. Initialize FlutterLocalNotificationsPlugin.
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -242,7 +244,8 @@ class NotificationService {
       const AndroidNotificationChannel(
         channelStudyReminders,
         'Study Reminders',
-        description: 'Daily spaced repetition reminders and scheduled review alerts',
+        description:
+            'Daily spaced repetition reminders and scheduled review alerts',
         importance: Importance.high,
       ),
       const AndroidNotificationChannel(
@@ -319,13 +322,12 @@ class NotificationService {
     final effectiveUserId = (userId != null && userId.isNotEmpty)
         ? userId
         : (locator.isRegistered<UserStorageService>()
-            ? locator<UserStorageService>().getUserId() ?? ''
-            : '');
+              ? locator<UserStorageService>().getUserId() ?? ''
+              : '');
     if (!_isAvailable || effectiveUserId.isEmpty) return;
     unawaited(_tokenRefreshSubscription?.cancel());
     try {
-      _tokenRefreshSubscription =
-          _messaging!.onTokenRefresh.listen((newToken) {
+      _tokenRefreshSubscription = _messaging!.onTokenRefresh.listen((newToken) {
         developer.log('NotificationService: FCM token refreshed');
         unawaited(syncDeviceTokenWithBackend(userId: effectiveUserId));
       });
@@ -347,8 +349,8 @@ class NotificationService {
     final effectiveUserId = (userId != null && userId.isNotEmpty)
         ? userId
         : (locator.isRegistered<UserStorageService>()
-            ? locator<UserStorageService>().getUserId() ?? ''
-            : '');
+              ? locator<UserStorageService>().getUserId() ?? ''
+              : '');
     if (effectiveUserId.isEmpty) return false;
     try {
       // Only prompt for permissions once per app lifecycle.
@@ -368,12 +370,12 @@ class NotificationService {
       final platform = kIsWeb
           ? 'web'
           : Platform.isIOS
-              ? 'ios'
-              : Platform.isAndroid
-                  ? 'android'
-                  : Platform.isMacOS
-                      ? 'macos'
-                      : 'windows';
+          ? 'ios'
+          : Platform.isAndroid
+          ? 'android'
+          : Platform.isMacOS
+          ? 'macos'
+          : 'windows';
 
       final response = await client.post<dynamic>(
         '${AppApiEndpoint.baseUri}${AppApiEndpoint.registerDeviceTokenRpc}',
@@ -541,7 +543,8 @@ class NotificationService {
       if (!kIsWeb && Platform.isIOS) {
         return await _localNotifications
             .resolvePlatformSpecificImplementation<
-                IOSFlutterLocalNotificationsPlugin>()
+              IOSFlutterLocalNotificationsPlugin
+            >()
             ?.requestPermissions(
               alert: true,
               badge: true,
@@ -550,7 +553,8 @@ class NotificationService {
       } else if (!kIsWeb && Platform.isMacOS) {
         return await _localNotifications
             .resolvePlatformSpecificImplementation<
-                MacOSFlutterLocalNotificationsPlugin>()
+              MacOSFlutterLocalNotificationsPlugin
+            >()
             ?.requestPermissions(
               alert: true,
               badge: true,
@@ -559,7 +563,8 @@ class NotificationService {
       } else if (!kIsWeb && Platform.isAndroid) {
         return await _localNotifications
             .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>()
+              AndroidFlutterLocalNotificationsPlugin
+            >()
             ?.requestNotificationsPermission();
       }
     } on Object catch (e) {
@@ -623,8 +628,7 @@ class NotificationService {
   Future<bool> subscribeToTopic(String topic) async {
     if (!_isAvailable) return false;
     try {
-      final sanitizedTopic =
-          topic.replaceAll(RegExp('[^a-zA-Z0-9-_.~%]'), '_');
+      final sanitizedTopic = topic.replaceAll(RegExp('[^a-zA-Z0-9-_.~%]'), '_');
       await _messaging!.subscribeToTopic(sanitizedTopic);
       developer.log(
         'NotificationService: subscribed to topic $sanitizedTopic',
@@ -642,8 +646,7 @@ class NotificationService {
   Future<bool> unsubscribeFromTopic(String topic) async {
     if (!_isAvailable) return false;
     try {
-      final sanitizedTopic =
-          topic.replaceAll(RegExp('[^a-zA-Z0-9-_.~%]'), '_');
+      final sanitizedTopic = topic.replaceAll(RegExp('[^a-zA-Z0-9-_.~%]'), '_');
       await _messaging!.unsubscribeFromTopic(sanitizedTopic);
       developer.log(
         'NotificationService: unsubscribed from topic $sanitizedTopic',

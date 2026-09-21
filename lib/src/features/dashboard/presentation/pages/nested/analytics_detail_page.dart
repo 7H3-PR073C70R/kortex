@@ -102,7 +102,10 @@ class _AnalyticsDetailView extends HookWidget {
           final courses = feed?.curatedCourses ?? const <CuratedCourseEntity>[];
 
           final filterIndex = selectedFilterIndex.value;
-          final analytics = _filterAnalyticsByTimeframe(rawAnalytics, filterIndex);
+          final analytics = _filterAnalyticsByTimeframe(
+            rawAnalytics,
+            filterIndex,
+          );
 
           final hasData =
               analytics.totalCardsMastered > 0 ||
@@ -172,10 +175,12 @@ class _AnalyticsDetailView extends HookWidget {
                     userXp: math.max(analytics.xpPoints, userXpState.value),
                     onPurchaseFreeze: () async {
                       if (activityService == null) return;
-                      final success = await activityService.purchaseStreakFreeze();
+                      final success = await activityService
+                          .purchaseStreakFreeze();
                       if (success) {
                         AppFeedback.celebration();
-                        freezeCountState.value = activityService.getStreakFreezes();
+                        freezeCountState.value = activityService
+                            .getStreakFreezes();
                         userXpState.value = activityService.getXpPoints();
                         if (context.mounted) {
                           context.showSnackBar(
@@ -183,7 +188,9 @@ class _AnalyticsDetailView extends HookWidget {
                             type: SnackBarType.success,
                           );
                           try {
-                            locator<AuthBloc>().add(const AuthStreakIncremented());
+                            locator<AuthBloc>().add(
+                              const AuthStreakIncremented(),
+                            );
                           } on Object catch (_) {}
                         }
                       } else {
@@ -353,13 +360,16 @@ class _AnalyticsDetailView extends HookWidget {
           ? base.heatMapData.sublist(base.heatMapData.length - 7)
           : base.heatMapData;
       final mins = recentDays.fold<int>(0, (sum, d) => sum + d.minutesStudied);
-      final reviewed = recentDays.fold<int>(0, (sum, d) => sum + d.cardsReviewed);
+      final reviewed = recentDays.fold<int>(
+        0,
+        (sum, d) => sum + d.cardsReviewed,
+      );
       final effectiveMins = mins > 0 ? mins : base.weeklyMinutesStudied;
       final effectiveMastered = reviewed > 0
           ? reviewed
           : (base.totalCardsMastered > 0
-              ? math.max(1, (base.totalCardsMastered * 0.35).round())
-              : 0);
+                ? math.max(1, (base.totalCardsMastered * 0.35).round())
+                : 0);
 
       return AnalyticsSummaryEntity(
         currentStreakDays: base.currentStreakDays,
@@ -377,13 +387,16 @@ class _AnalyticsDetailView extends HookWidget {
           ? base.heatMapData.sublist(base.heatMapData.length - 28)
           : base.heatMapData;
       final mins = recentDays.fold<int>(0, (sum, d) => sum + d.minutesStudied);
-      final reviewed = recentDays.fold<int>(0, (sum, d) => sum + d.cardsReviewed);
+      final reviewed = recentDays.fold<int>(
+        0,
+        (sum, d) => sum + d.cardsReviewed,
+      );
       final effectiveMins = mins > 0 ? mins : (base.weeklyMinutesStudied * 4);
       final effectiveMastered = reviewed > 0
           ? reviewed
           : (base.totalCardsMastered > 0
-              ? math.max(1, (base.totalCardsMastered * 0.85).round())
-              : 0);
+                ? math.max(1, (base.totalCardsMastered * 0.85).round())
+                : 0);
       final effectiveRetention = base.overallRetentionRate > 0
           ? (base.overallRetentionRate * 0.98).clamp(0.0, 1.0)
           : 0.0;
@@ -400,7 +413,10 @@ class _AnalyticsDetailView extends HookWidget {
       );
     } else {
       // All Time
-      final mins = base.heatMapData.fold<int>(0, (sum, d) => sum + d.minutesStudied);
+      final mins = base.heatMapData.fold<int>(
+        0,
+        (sum, d) => sum + d.minutesStudied,
+      );
       final effectiveMins = mins > 0 ? mins : (base.weeklyMinutesStudied * 8);
       final effectiveRetention = base.overallRetentionRate > 0
           ? (base.overallRetentionRate * 0.95).clamp(0.0, 1.0)
@@ -519,7 +535,9 @@ class _ExecutiveKpiGrid extends StatelessWidget {
     }
 
     final String studyVelocitySubtitle;
-    final weeklyHours = (analytics.weeklyMinutesStudied / 60).toStringAsFixed(1);
+    final weeklyHours = (analytics.weeklyMinutesStudied / 60).toStringAsFixed(
+      1,
+    );
     if (!hasStudyTime) {
       studyVelocitySubtitle = timeframeIndex == 0
           ? '0.0 hrs this week'
@@ -640,24 +658,24 @@ class _KpiMetricCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark
                     ? (isHovered
-                        ? colors.surfaceSecondary.withAlpha(200)
-                        : colors.surfaceSecondary.withAlpha(160))
+                          ? colors.surfaceSecondary.withAlpha(200)
+                          : colors.surfaceSecondary.withAlpha(160))
                     : (isHovered
-                        ? colors.surfacePrimary
-                        : colors.surfacePrimary.withAlpha(220)),
+                          ? colors.surfacePrimary
+                          : colors.surfacePrimary.withAlpha(220)),
                 borderRadius: BorderRadius.circular(AppRadius.panel),
                 border: Border.all(
                   color: isHovered
                       ? accentColor.withAlpha(isDark ? 140 : 100)
                       : (isDark
-                          ? colors.surfaceBorderHighlight.withAlpha(60)
-                          : colors.surfaceBorder.withAlpha(130)),
+                            ? colors.surfaceBorderHighlight.withAlpha(60)
+                            : colors.surfaceBorder.withAlpha(130)),
                   width: 1.1,
                 ),
                 boxShadow: isHovered
                     ? [
                         BoxShadow(
-                          color: accentColor.withAlpha(isDark ? 40 : 20),
+                          color: colors.black.withAlpha(isDark ? 50 : 15),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
@@ -848,8 +866,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
       final totalMins = analytics.weeklyMinutesStudied;
 
       barItems = List.generate(4, (periodIdx) {
-        final periodMins =
-            (totalMins * (0.6 + (periodIdx * 0.25)) / 4).round();
+        final periodMins = (totalMins * (0.6 + (periodIdx * 0.25)) / 4).round();
         return _VelocityBarItem(
           label: periods[periodIdx],
           minutes: periodMins,
@@ -927,8 +944,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                   children: barItems.map((bar) {
                     final mins = bar.minutes;
                     final isGoalMet = bar.isGoalMet;
-                    final heightFactor =
-                        (mins / maxScale).clamp(0.08, 1.0);
+                    final heightFactor = (mins / maxScale).clamp(0.08, 1.0);
                     final minsLabel = mins >= 120
                         ? '${(mins / 60).toStringAsFixed(1)}h'
                         : '${mins}m';
@@ -974,7 +990,9 @@ class _WeeklyVelocityChart extends StatelessWidget {
                                         )
                                       : colors.surfaceBorder.withAlpha(60))
                                 : null,
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.micro,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -1213,7 +1231,8 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: rowDays.map((day) {
-                              final isSelected = _selectedDay != null &&
+                              final isSelected =
+                                  _selectedDay != null &&
                                   _isSameDay(_selectedDay!.date, day.date);
                               final color = _getIntensityColor(
                                 day.intensityLevel,
@@ -1228,14 +1247,18 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                                     _selectedDay = isSelected ? null : day;
                                   });
                                 },
-                                borderRadius: BorderRadius.circular(AppRadius.micro),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.micro,
+                                ),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 150),
                                   width: cellWidth,
                                   height: cellWidth,
                                   decoration: BoxDecoration(
                                     color: color,
-                                    borderRadius: BorderRadius.circular(AppRadius.micro),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.micro,
+                                    ),
                                     border: Border.all(
                                       color: isSelected
                                           ? colors.textPrimary
@@ -1246,16 +1269,6 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                                                 : colors.transparent),
                                       width: isSelected ? 1.8 : 0.8,
                                     ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: colors.primary.withAlpha(
-                                                100,
-                                              ),
-                                              blurRadius: 6,
-                                            ),
-                                          ]
-                                        : null,
                                   ),
                                 ),
                               );
@@ -1510,7 +1523,9 @@ class _SubjectMasteryCard extends StatelessWidget {
                                       color: colors.primary.withAlpha(
                                         isDark ? 40 : 20,
                                       ),
-                                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.micro,
+                                      ),
                                     ),
                                     child: Text(
                                       course.courseCode,
@@ -1550,7 +1565,9 @@ class _SubjectMasteryCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(AppRadius.micro),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.micro,
+                                ),
                                 child: Container(
                                   height: 6,
                                   color: isDark

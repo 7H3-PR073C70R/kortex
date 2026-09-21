@@ -34,15 +34,17 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
     AppDatabase? appDatabase,
     LocalStorageService? localStorageService,
     List<PastQuestionModel>? initialQuestions,
-  })  : _appDatabase = appDatabase ??
-            (locator.isRegistered<AppDatabase>()
-                ? locator<AppDatabase>()
-                : null),
-        _localStorageService = localStorageService ??
-            (locator.isRegistered<LocalStorageService>()
-                ? locator<LocalStorageService>()
-                : null),
-        _seedQuestions = initialQuestions;
+  }) : _appDatabase =
+           appDatabase ??
+           (locator.isRegistered<AppDatabase>()
+               ? locator<AppDatabase>()
+               : null),
+       _localStorageService =
+           localStorageService ??
+           (locator.isRegistered<LocalStorageService>()
+               ? locator<LocalStorageService>()
+               : null),
+       _seedQuestions = initialQuestions;
 
   final AppDatabase? _appDatabase;
   final LocalStorageService? _localStorageService;
@@ -85,7 +87,8 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
 
     // Load persisted user-added past questions
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);
@@ -159,7 +162,8 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
 
     // Persist to LocalStorageService
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);
@@ -231,7 +235,8 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
 
     // If courseId or courseCode is specified, find matching questions
     final candidates = allList.where((q) {
-      final matchCourse = (courseId != null && q.courseId == courseId) ||
+      final matchCourse =
+          (courseId != null && q.courseId == courseId) ||
           (cleanCode != null &&
               q.courseCode != null &&
               q.courseCode!.trim().toLowerCase() == cleanCode);
@@ -253,7 +258,8 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         normalizedQuery != null && normalizedQuery.isNotEmpty;
 
     final filtered = candidates.where((q) {
-      final isExactCourseMatch = (courseId != null && q.courseId == courseId) ||
+      final isExactCourseMatch =
+          (courseId != null && q.courseId == courseId) ||
           (cleanCode != null &&
               q.courseCode != null &&
               q.courseCode!.trim().toLowerCase() == cleanCode);
@@ -274,8 +280,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
       if (hasQueryFilter) {
         final matchesPrompt = q.prompt.toLowerCase().contains(normalizedQuery);
         final matchesTopic = q.topic.toLowerCase().contains(normalizedQuery);
-        final matchesSubject =
-            q.subject.toLowerCase().contains(normalizedQuery);
+        final matchesSubject = q.subject.toLowerCase().contains(
+          normalizedQuery,
+        );
 
         if (!matchesPrompt && !matchesTopic && !matchesSubject) {
           return false;
@@ -298,8 +305,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
     }
     if (_appDatabase != null) {
       try {
-        final dbSubjects =
-            await _appDatabase.getAvailableSubjectsForExam(category.code);
+        final dbSubjects = await _appDatabase.getAvailableSubjectsForExam(
+          category.code,
+        );
         if (dbSubjects.isNotEmpty) return dbSubjects;
       } on Object catch (_) {
         // AppDatabase query failed; fallback to in-memory index.
@@ -315,8 +323,9 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
     }
     if (_appDatabase != null) {
       try {
-        final dbYears =
-            await _appDatabase.getAvailableYearsForExam(category.code);
+        final dbYears = await _appDatabase.getAvailableYearsForExam(
+          category.code,
+        );
         if (dbYears.isNotEmpty) return dbYears;
       } on Object catch (_) {
         // AppDatabase query failed; fallback to in-memory index.

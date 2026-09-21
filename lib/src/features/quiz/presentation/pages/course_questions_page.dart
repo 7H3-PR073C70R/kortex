@@ -81,11 +81,16 @@ class _CourseQuestionsView extends HookWidget {
     final searchController = useTextEditingController();
     final debounceTimer = useRef<Timer?>(null);
 
-    useEffect(() => () => debounceTimer.value?.cancel(), const []);
+    useEffect(
+      () =>
+          () => debounceTimer.value?.cancel(),
+      const [],
+    );
 
     return Scaffold(
-      backgroundColor:
-          isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+      backgroundColor: isDark
+          ? colors.backgroundPrimary
+          : colors.surfacePrimary,
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
@@ -137,8 +142,8 @@ class _CourseQuestionsView extends HookWidget {
                   defaultSubject: courseTitle,
                   onAdded: (newQuestions) {
                     context.read<PastQuestionsBloc>().add(
-                          AddPastQuestionsEvent(newQuestions),
-                        );
+                      AddPastQuestionsEvent(newQuestions),
+                    );
                   },
                 ),
               );
@@ -205,13 +210,13 @@ class _CourseQuestionsView extends HookWidget {
                               () {
                                 if (context.mounted) {
                                   context.read<PastQuestionsBloc>().add(
-                                        LoadPastQuestionsEvent(
-                                          searchQuery: query,
-                                          subject: courseTitle,
-                                          examCategory: examCategory,
-                                          courseCode: courseCode,
-                                        ),
-                                      );
+                                    LoadPastQuestionsEvent(
+                                      searchQuery: query,
+                                      subject: courseTitle,
+                                      examCategory: examCategory,
+                                      courseCode: courseCode,
+                                    ),
+                                  );
                                 }
                               },
                             );
@@ -226,18 +231,21 @@ class _CourseQuestionsView extends HookWidget {
                             onTap: () {
                               AppFeedback.selection();
                               context.read<PastQuestionsBloc>().add(
-                                    const TogglePracticeModeEvent(),
-                                  );
+                                const TogglePracticeModeEvent(),
+                              );
                             },
                             child: Container(
                               height: 48,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: isInstant
                                     ? colors.primary.withAlpha(isDark ? 45 : 25)
                                     : colors.surfaceSecondary,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.card),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
+                                ),
                                 border: Border.all(
                                   color: isInstant
                                       ? colors.primary.withAlpha(100)
@@ -290,7 +298,8 @@ class _CourseQuestionsView extends HookWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         scrollDirection: Axis.horizontal,
                         itemCount: years.length + 1,
-                        separatorBuilder: (_, index) => const SizedBox(width: 8),
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final isAll = index == 0;
                           final year = isAll ? null : years[index - 1];
@@ -302,8 +311,8 @@ class _CourseQuestionsView extends HookWidget {
                             onTap: () {
                               AppFeedback.selection();
                               context.read<PastQuestionsBloc>().add(
-                                    ChangeYearEvent(year),
-                                  );
+                                ChangeYearEvent(year),
+                              );
                             },
                             child: AnimatedContainer(
                               duration: AppMotion.snappy,
@@ -316,24 +325,16 @@ class _CourseQuestionsView extends HookWidget {
                                 color: isSelected
                                     ? colors.primary
                                     : (isDark
-                                        ? colors.surfaceSecondary
-                                        : colors.surfacePrimary),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.badge),
+                                          ? colors.surfaceSecondary
+                                          : colors.surfacePrimary),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
                                 border: Border.all(
                                   color: isSelected
                                       ? colors.primary
                                       : colors.surfaceBorder,
                                 ),
-                                boxShadow: isSelected
-                                    ? [
-                                        BoxShadow(
-                                          color: colors.primary.withAlpha(60),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ]
-                                    : null,
                               ),
                               child: Center(
                                 child: Text(
@@ -365,271 +366,284 @@ class _CourseQuestionsView extends HookWidget {
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                           children: const [
                             ShimmerPlaceholder(
-                                height: 160, borderRadius: AppRadius.panel),
+                              height: 160,
+                              borderRadius: AppRadius.panel,
+                            ),
                             SizedBox(height: 12),
                             ShimmerPlaceholder(
-                                height: 160, borderRadius: AppRadius.panel),
+                              height: 160,
+                              borderRadius: AppRadius.panel,
+                            ),
                             SizedBox(height: 12),
                             ShimmerPlaceholder(
-                                height: 160, borderRadius: AppRadius.panel),
+                              height: 160,
+                              borderRadius: AppRadius.panel,
+                            ),
                           ],
                         );
                       }
 
-                  if (state.questions.isEmpty) {
-                    final isSpecificYear = state.selectedYear != null;
-                    final syllabotPrompt =
-                        'Please generate 5 official-style ${examCategory.displayName} practice questions for $courseTitle right now'
-                        '${isSpecificYear ? ' following the ${state.selectedYear} syllabus format' : ''}. '
-                        'For each question, provide 4 options labeled A, B, C, and D, clearly indicate the correct answer, and explain the step-by-step solution.';
+                      if (state.questions.isEmpty) {
+                        final isSpecificYear = state.selectedYear != null;
+                        final syllabotPrompt =
+                            'Please generate 5 official-style ${examCategory.displayName} practice questions for $courseTitle right now'
+                            '${isSpecificYear ? ' following the ${state.selectedYear} syllabus format' : ''}. '
+                            'For each question, provide 4 options labeled A, B, C, and D, clearly indicate the correct answer, and explain the step-by-step solution.';
 
-                    return Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 32,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color:
-                                    colors.primary.withAlpha(isDark ? 35 : 18),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.auto_stories_outlined,
-                                size: 38,
-                                color: colors.primary,
-                              ),
+                        return Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 32,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              isSpecificYear
-                                  ? 'No ${state.selectedYear} Questions for $courseTitle'
-                                  : 'No Questions Found for $courseTitle',
-                              textAlign: TextAlign.center,
-                              style: typography.title3.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 16.5,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isSpecificYear
-                                  ? 'Official past papers for ${state.selectedYear} are currently syncing. You can generate instant practice questions with Syllabot AI or switch to all years.'
-                                  : 'Verified exam questions for $courseTitle are being populated. Practice immediately with Syllabot AI or add your own custom questions.',
-                              textAlign: TextAlign.center,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 12.5,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 22),
-                            ShrinkableButton(
-                              onTap: () {
-                                AppFeedback.light();
-                                unawaited(
-                                  context.router.push(
-                                    SyllabotChatRoute(
-                                      initialPrompt: syllabotPrompt,
-                                      initialMode: SocraticMode.examSim,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 35 : 18,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.auto_stories_outlined,
+                                    size: 38,
+                                    color: colors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  isSpecificYear
+                                      ? 'No ${state.selectedYear} Questions for $courseTitle'
+                                      : 'No Questions Found for $courseTitle',
+                                  textAlign: TextAlign.center,
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 16.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  isSpecificYear
+                                      ? 'Official past papers for ${state.selectedYear} are currently syncing. You can generate instant practice questions with Syllabot AI or switch to all years.'
+                                      : 'Verified exam questions for $courseTitle are being populated. Practice immediately with Syllabot AI or add your own custom questions.',
+                                  textAlign: TextAlign.center,
+                                  style: typography.footnote.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 12.5,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 22),
+                                ShrinkableButton(
+                                  onTap: () {
+                                    AppFeedback.light();
+                                    unawaited(
+                                      context.router.push(
+                                        SyllabotChatRoute(
+                                          initialPrompt: syllabotPrompt,
+                                          initialMode: SocraticMode.examSim,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 46,
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.black.withAlpha(
+                                            isDark ? 50 : 20,
+                                          ),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.auto_awesome_rounded,
+                                          size: 16,
+                                          color: colors.white,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Generate AI Practice Questions',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.white,
+                                                fontSize: 13,
+                                              ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                );
-                              },
-                              child: Container(
-                                width: double.infinity,
-                                height: 46,
-                                decoration: BoxDecoration(
-                                  color: colors.primary,
-                                  borderRadius: BorderRadius.circular(14),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.primary.withAlpha(80),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.auto_awesome_rounded,
-                                      size: 16,
-                                      color: colors.white,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Generate AI Practice Questions',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.white,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            if (isSpecificYear) ...[
-                              const SizedBox(height: 12),
-                              TextButton(
-                                onPressed: () {
-                                  AppFeedback.selection();
-                                  context.read<PastQuestionsBloc>().add(
+                                if (isSpecificYear) ...[
+                                  const SizedBox(height: 12),
+                                  TextButton(
+                                    onPressed: () {
+                                      AppFeedback.selection();
+                                      context.read<PastQuestionsBloc>().add(
                                         const ChangeYearEvent(null),
                                       );
-                                },
-                                child: Text(
-                                  'Switch to All Years',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                    fontSize: 12.5,
+                                    },
+                                    child: Text(
+                                      'Switch to All Years',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: state.questions.length,
-                    itemBuilder: (context, index) {
-                      final question = state.questions[index];
-                      return PastQuestionCard(
-                        question: question,
-                        isInstantFeedback: state.isInstantFeedbackMode,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            ],
-          ),
-        ),
-      ),
-    ),
-    bottomNavigationBar: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-      builder: (context, state) {
-        if (state.questions.isEmpty) return const SizedBox.shrink();
-
-        return SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 820),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfacePrimary
-                      : colors.surfacePrimary.withAlpha(240),
-                  border: Border(
-                    top: BorderSide(color: colors.surfaceBorder),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ShrinkableButton(
-                        onTap: () =>
-                            showPastQuestionsTestConfigSheet(context, state),
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.card),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.primary.withAlpha(80),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.play_circle_filled_rounded,
-                                color: colors.white,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Timed CBT Drill',
-                                style: typography.callout.bold.copyWith(
-                                  color: colors.white,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    ShrinkableButton(
-                      onTap: () {
-                        AppFeedback.light();
-                        unawaited(
-                          context.router.push(
-                            SyllabotChatRoute(
-                              initialPrompt:
-                                  'I need Socratic help understanding key concepts in $courseTitle (${examCategory.displayName}). What are the highest-yield topics I should focus on?',
-                              initialMode: SocraticMode.stepByStep,
+                                ],
+                              ],
                             ),
                           ),
                         );
-                      },
-                      child: Container(
-                        height: 44,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 40 : 25),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.card),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: state.questions.length,
+                        itemBuilder: (context, index) {
+                          final question = state.questions[index];
+                          return PastQuestionCard(
+                            question: question,
+                            isInstantFeedback: state.isInstantFeedbackMode,
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+        builder: (context, state) {
+          if (state.questions.isEmpty) return const SizedBox.shrink();
+
+          return SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 820),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfacePrimary
+                        : colors.surfacePrimary.withAlpha(240),
+                    border: Border(
+                      top: BorderSide(color: colors.surfaceBorder),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ShrinkableButton(
+                          onTap: () =>
+                              showPastQuestionsTestConfigSheet(context, state),
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.black.withAlpha(
+                                    isDark ? 50 : 20,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.play_circle_filled_rounded,
+                                  color: colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Timed CBT Drill',
+                                  style: typography.callout.bold.copyWith(
+                                    color: colors.white,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.auto_awesome_rounded,
-                              color: colors.primary,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Syllabot AI',
-                              style: typography.callout.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 12.5,
+                      ),
+                      const SizedBox(width: 10),
+                      ShrinkableButton(
+                        onTap: () {
+                          AppFeedback.light();
+                          unawaited(
+                            context.router.push(
+                              SyllabotChatRoute(
+                                initialPrompt:
+                                    'I need Socratic help understanding key concepts in $courseTitle (${examCategory.displayName}). What are the highest-yield topics I should focus on?',
+                                initialMode: SocraticMode.stepByStep,
                               ),
                             ),
-                          ],
+                          );
+                        },
+                        child: Container(
+                          height: 44,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 40 : 25),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(isDark ? 80 : 50),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.auto_awesome_rounded,
+                                color: colors.primary,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Syllabot AI',
+                                style: typography.callout.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
-    ),
-  );
+          );
+        },
+      ),
+    );
   }
 }

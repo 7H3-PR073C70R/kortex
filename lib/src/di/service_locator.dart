@@ -85,7 +85,8 @@ void _initServices() {
         saveCalibrationProfileUseCase: locator<SaveCalibrationProfileUseCase>(),
         autoCurateExamCoursesUseCase: locator<AutoCurateExamCoursesUseCase>(),
         curriculumRepository: locator<CurriculumRepository>(),
-        getCuratedCoursesCatalogUseCase: locator<GetCuratedCoursesCatalogUseCase>(),
+        getCuratedCoursesCatalogUseCase:
+            locator<GetCuratedCoursesCatalogUseCase>(),
       ),
     )
     ..registerLazySingleton<StudyEngineRouter>(

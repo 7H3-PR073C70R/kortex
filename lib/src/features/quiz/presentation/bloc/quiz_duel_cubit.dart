@@ -9,8 +9,8 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart'
 class QuizDuelCubit extends Cubit<QuizDuelState> {
   QuizDuelCubit({
     required QuizDuelRepository repository,
-  })  : _repository = repository,
-        super(const QuizDuelState());
+  }) : _repository = repository,
+       super(const QuizDuelState());
 
   final QuizDuelRepository _repository;
   StreamSubscription<QuizDuelMatch>? _duelSubscription;
@@ -26,11 +26,13 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     required String avatarUrl,
     int questionCount = 10,
   }) async {
-    emit(state.copyWith(
-      status: QuizDuelStatus.matching,
-      currentUserId: userId,
-      clearSelectedOption: true,
-    ));
+    emit(
+      state.copyWith(
+        status: QuizDuelStatus.matching,
+        currentUserId: userId,
+        clearSelectedOption: true,
+      ),
+    );
 
     final result = await _repository.findOrCreateDuel(
       subject: subject,
@@ -43,16 +45,20 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
 
     result.fold(
       (failure) {
-        emit(state.copyWith(
-          status: QuizDuelStatus.cancelled,
-          errorMessage: failure.message,
-        ));
+        emit(
+          state.copyWith(
+            status: QuizDuelStatus.cancelled,
+            errorMessage: failure.message,
+          ),
+        );
       },
       (match) {
-        emit(state.copyWith(
-          match: match,
-          status: match.status,
-        ));
+        emit(
+          state.copyWith(
+            match: match,
+            status: match.status,
+          ),
+        );
         _subscribeToMatchStream(match.duelId);
       },
     );
@@ -60,40 +66,49 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
 
   void _subscribeToMatchStream(String duelId) {
     unawaited(_duelSubscription?.cancel());
-    _duelSubscription = _repository.streamDuel(duelId).listen(
-      (match) {
-        final previousStatus = state.status;
-        final previousQuestionIdx = state.match?.currentQuestionIndex;
+    _duelSubscription = _repository
+        .streamDuel(duelId)
+        .listen(
+          (match) {
+            final previousStatus = state.status;
+            final previousQuestionIdx = state.match?.currentQuestionIndex;
 
-        final isNewRound = match.status == QuizDuelStatus.inRound &&
-            (previousStatus != QuizDuelStatus.inRound ||
-                previousQuestionIdx != match.currentQuestionIndex);
+            final isNewRound =
+                match.status == QuizDuelStatus.inRound &&
+                (previousStatus != QuizDuelStatus.inRound ||
+                    previousQuestionIdx != match.currentQuestionIndex);
 
-        if (isNewRound) {
-          _startQuestionCountdown(match.durationPerQuestionSeconds);
-        }
+            if (isNewRound) {
+              _startQuestionCountdown(match.durationPerQuestionSeconds);
+            }
 
-        emit(state.copyWith(
-          match: match,
-          status: match.status,
-          clearSelectedOption: isNewRound,
-        ));
-      },
-      onError: (Object error) {
-        emit(state.copyWith(
-          errorMessage: 'Connection interrupted: $error',
-        ));
-      },
-    );
+            emit(
+              state.copyWith(
+                match: match,
+                status: match.status,
+                clearSelectedOption: isNewRound,
+              ),
+            );
+          },
+          onError: (Object error) {
+            emit(
+              state.copyWith(
+                errorMessage: 'Connection interrupted: $error',
+              ),
+            );
+          },
+        );
   }
 
   void _startQuestionCountdown(int durationSeconds) {
     _countdownTimer?.cancel();
     _roundStartTime = DateTime.now();
-    emit(state.copyWith(
-      remainingSeconds: durationSeconds,
-      clearSelectedOption: true,
-    ));
+    emit(
+      state.copyWith(
+        remainingSeconds: durationSeconds,
+        clearSelectedOption: true,
+      ),
+    );
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       final current = state.remainingSeconds;
@@ -118,10 +133,12 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
         ? DateTime.now().difference(_roundStartTime!).inMilliseconds
         : 1000;
 
-    emit(state.copyWith(
-      selectedOptionIndex: optionIndex,
-      isSubmitting: true,
-    ));
+    emit(
+      state.copyWith(
+        selectedOptionIndex: optionIndex,
+        isSubmitting: true,
+      ),
+    );
 
     await _repository.submitDuelAnswer(
       duelId: state.match!.duelId,

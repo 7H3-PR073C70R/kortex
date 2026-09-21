@@ -51,8 +51,8 @@ class DeviceCapabilityService {
 
     try {
       if (locator.isRegistered<DevicePerformanceBenchmark>()) {
-        final profile =
-            await locator<DevicePerformanceBenchmark>().getHardwareProfile();
+        final profile = await locator<DevicePerformanceBenchmark>()
+            .getHardwareProfile();
         totalRamGb = profile.totalRamGb;
       }
     } on Object catch (_) {}
@@ -108,7 +108,8 @@ class DeviceCapabilityService {
       recommendationText =
           'Your device supports On-Device AI. You can run reasoning locally or use Cloud AI.';
     } else {
-      recommendationText = unsupportedReason ??
+      recommendationText =
+          unsupportedReason ??
           'Your device does not meet the hardware capacity requirements for On-Device AI.';
     }
 

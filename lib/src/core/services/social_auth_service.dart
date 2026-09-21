@@ -39,8 +39,8 @@ class SocialAuthService {
   SocialAuthService({
     FirebaseAuth? auth,
     GoogleSignIn? googleSignIn,
-  })  : _auth = auth,
-        _googleSignIn = googleSignIn ?? GoogleSignIn();
+  }) : _auth = auth,
+       _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   FirebaseAuth? _auth;
   final GoogleSignIn _googleSignIn;
@@ -81,7 +81,9 @@ class SocialAuthService {
       try {
         googleUser = await _googleSignIn.signIn();
       } on PlatformException catch (e) {
-        developer.log('Google sign-in platform error: ${e.code} - ${e.message}');
+        developer.log(
+          'Google sign-in platform error: ${e.code} - ${e.message}',
+        );
         // User cancelled or back was pressed
         if (e.code == 'sign_in_canceled' ||
             e.code == '12501' ||
@@ -149,7 +151,9 @@ class SocialAuthService {
     try {
       final isAvailable = await SignInWithApple.isAvailable();
       if (!isAvailable) {
-        developer.log('Sign in with Apple is not supported on this platform/device.');
+        developer.log(
+          'Sign in with Apple is not supported on this platform/device.',
+        );
         throw const SocialAuthException(
           'Sign in with Apple is not supported or unavailable on this device.',
         );

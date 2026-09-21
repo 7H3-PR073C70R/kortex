@@ -195,12 +195,16 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
                               decoration: BoxDecoration(
                                 color: isHovered
                                     ? colors.primary.withAlpha(isDark ? 80 : 45)
-                                    : colors.primary.withAlpha(isDark ? 50 : 25),
+                                    : colors.primary.withAlpha(
+                                        isDark ? 50 : 25,
+                                      ),
                                 borderRadius: AppRadius.radiusBadge,
                                 border: Border.all(
                                   color: isHovered
                                       ? colors.primary.withAlpha(160)
-                                      : colors.primary.withAlpha(isDark ? 90 : 60),
+                                      : colors.primary.withAlpha(
+                                          isDark ? 90 : 60,
+                                        ),
                                 ),
                               ),
                               child: Row(
@@ -365,15 +369,15 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
                     color: isCurrent
                         ? colors.primary.withAlpha(isDark ? 50 : 30)
                         : (isHovered
-                            ? colors.primary.withAlpha(isDark ? 30 : 18)
-                            : colors.surfaceSecondary),
+                              ? colors.primary.withAlpha(isDark ? 30 : 18)
+                              : colors.surfaceSecondary),
                     borderRadius: AppRadius.radiusCard,
                     border: Border.all(
                       color: isCurrent
                           ? colors.primary.withAlpha(isDark ? 120 : 90)
                           : (isHovered
-                              ? colors.primary.withAlpha(100)
-                              : colors.surfaceBorder.withAlpha(90)),
+                                ? colors.primary.withAlpha(100)
+                                : colors.surfaceBorder.withAlpha(90)),
                       width: isCurrent ? 1.4 : 1.0,
                     ),
                   ),

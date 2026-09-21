@@ -267,8 +267,8 @@ class _ActionItem extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.badge),
                 color: isHovered
                     ? (isDark
-                        ? colors.surfaceBorder.withAlpha(40)
-                        : colors.surfaceBorder.withAlpha(25))
+                          ? colors.surfaceBorder.withAlpha(40)
+                          : colors.surfaceBorder.withAlpha(25))
                     : colors.transparent,
               ),
               child: Row(
@@ -322,11 +322,11 @@ class _UploadOptionCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: isDark
                   ? (isHovered
-                      ? colors.surfacePrimary.withAlpha(200)
-                      : colors.surfacePrimary.withAlpha(160))
+                        ? colors.surfacePrimary.withAlpha(200)
+                        : colors.surfacePrimary.withAlpha(160))
                   : (isHovered
-                      ? colors.surfaceSecondary.withAlpha(210)
-                      : colors.surfaceSecondary.withAlpha(160)),
+                        ? colors.surfaceSecondary.withAlpha(210)
+                        : colors.surfaceSecondary.withAlpha(160)),
               borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
                 color: isHovered

@@ -8,8 +8,7 @@ class PrefKeys {
       '__kortex_has_completed_onboarding__';
   static const String hasSeenWelcomeWalkthrough =
       '__kortex_has_seen_welcome_walkthrough__';
-  static const String isNewlyRegistered =
-      '__kortex_is_newly_registered__';
+  static const String isNewlyRegistered = '__kortex_is_newly_registered__';
   static const String userCuratedCourses = '__kortex_user_curated_courses__';
   static const String persistedUserDecks = '__kortex_persisted_user_decks__';
   static const String persistedDeckCardsPrefix =
@@ -33,8 +32,7 @@ class PrefKeys {
       '__kortex_synced_secondary_subjects__';
   static const String persistedUserDocuments =
       '__kortex_persisted_user_documents__';
-  static const String persistedStudyRooms =
-      '__kortex_persisted_study_rooms__';
+  static const String persistedStudyRooms = '__kortex_persisted_study_rooms__';
   static const String persistedStudyCircles =
       '__kortex_persisted_study_circles__';
   static const String persistedSharedDecks =

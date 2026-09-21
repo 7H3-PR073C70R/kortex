@@ -163,8 +163,8 @@ class LiveFocusRoomCard extends StatelessWidget {
                               boxShadow: isBtnHovered
                                   ? [
                                       BoxShadow(
-                                        color: colors.primary.withAlpha(
-                                          isDark ? 80 : 50,
+                                        color: colors.black.withAlpha(
+                                          isDark ? 50 : 20,
                                         ),
                                         blurRadius: 10,
                                         offset: const Offset(0, 3),

@@ -34,7 +34,9 @@ class SpeechToTextHandler {
           if (!res.isGranted) {
             _isAvailable = false;
             _isInitializing = false;
-            onError?.call('Microphone permission required for speech recognition');
+            onError?.call(
+              'Microphone permission required for speech recognition',
+            );
             return false;
           }
         }
@@ -74,7 +76,9 @@ class SpeechToTextHandler {
     if (!_isAvailable) {
       final initialized = await initialize();
       if (!initialized) {
-        onError?.call('Microphone or Speech Recognition unavailable on this device');
+        onError?.call(
+          'Microphone or Speech Recognition unavailable on this device',
+        );
         return;
       }
     }

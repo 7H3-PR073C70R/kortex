@@ -43,7 +43,8 @@ extension BuildContextExtension on BuildContext {
     }
     if (overlayState == null) return;
 
-    final isModelDownload = message.contains('LocalLlmNotDownloadedException') ||
+    final isModelDownload =
+        message.contains('LocalLlmNotDownloadedException') ||
         message.contains('On-device neural engine is not downloaded') ||
         message.contains('248MB model weights') ||
         message.contains('248 MB model weights');
@@ -75,7 +76,8 @@ extension BuildContextExtension on BuildContext {
     OverlayState? overlay,
   }) {
     showSnackBar(
-      message: message ??
+      message:
+          message ??
           'On-device neural engine is not downloaded. Please download the 248MB model weights to enable offline reasoning.',
       type: SnackBarType.error,
       duration: const Duration(minutes: 5),
@@ -248,14 +250,9 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: accentColor.withAlpha(isDark ? 70 : 40),
-                    blurRadius: 20,
+                    color: colors.black.withAlpha(isDark ? 90 : 30),
+                    blurRadius: 18,
                     offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: colors.black.withAlpha(isDark ? 90 : 20),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -263,9 +260,25 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                   ? GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: widget.onTap,
-                      child: _buildContent(accentColor, bgTint, icon, title, colors, typography, isDark),
+                      child: _buildContent(
+                        accentColor,
+                        bgTint,
+                        icon,
+                        title,
+                        colors,
+                        typography,
+                        isDark,
+                      ),
                     )
-                  : _buildContent(accentColor, bgTint, icon, title, colors, typography, isDark),
+                  : _buildContent(
+                      accentColor,
+                      bgTint,
+                      icon,
+                      title,
+                      colors,
+                      typography,
+                      isDark,
+                    ),
             ),
           ),
         ),
@@ -283,7 +296,13 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
     bool isDark,
   ) {
     if (_isModelDownloadMessage) {
-      return _buildModelDownloadContent(accentColor, bgTint, colors, typography, isDark);
+      return _buildModelDownloadContent(
+        accentColor,
+        bgTint,
+        colors,
+        typography,
+        isDark,
+      );
     }
 
     return Row(
@@ -368,8 +387,8 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
               _isDone
                   ? Icons.check_circle_rounded
                   : (_isDownloading
-                      ? Icons.downloading_rounded
-                      : Icons.error_outline_rounded),
+                        ? Icons.downloading_rounded
+                        : Icons.error_outline_rounded),
               color: accentColor,
               size: 20,
             ),
@@ -386,8 +405,8 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                 _isDone
                     ? 'Engine Ready'
                     : (_isDownloading
-                        ? 'Downloading Neural Model'
-                        : 'On-Device AI Required'),
+                          ? 'Downloading Neural Model'
+                          : 'On-Device AI Required'),
                 style: typography.caption.bold.copyWith(
                   color: accentColor,
                   fontSize: 11.5,
@@ -474,7 +493,7 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: colors.primary.withAlpha(70),
+                          color: colors.black.withAlpha(30),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),

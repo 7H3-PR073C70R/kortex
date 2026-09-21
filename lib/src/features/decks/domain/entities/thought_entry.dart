@@ -14,7 +14,8 @@ class ThoughtEntry extends Equatable {
     return ThoughtEntry(
       id: json['id'] as String,
       content: json['content'] as String,
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       sessionId: json['sessionId'] as String?,
       deckId: json['deckId'] as String?,
@@ -60,11 +61,11 @@ class ThoughtEntry extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        content,
-        createdAt,
-        sessionId,
-        deckId,
-        isResolved,
-      ];
+    id,
+    content,
+    createdAt,
+    sessionId,
+    deckId,
+    isResolved,
+  ];
 }

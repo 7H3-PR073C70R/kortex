@@ -55,7 +55,9 @@ class CreateDeckPage extends HookWidget {
         courseTitle ?? mappedSubject ?? courseCode ?? 'General Studies';
     final resolvedCourseCode = courseCode ?? 'GEN';
 
-    final selectedTabIndex = useState<int>(0); // 0: Manual, 1: AI Prompt, 2: Document
+    final selectedTabIndex = useState<int>(
+      0,
+    ); // 0: Manual, 1: AI Prompt, 2: Document
 
     final titleController = useTextEditingController(
       text: courseCode != null && courseCode!.isNotEmpty
@@ -92,7 +94,8 @@ class CreateDeckPage extends HookWidget {
 
       if (front.isEmpty || back.isEmpty) {
         context.showSnackBar(
-          message: 'Please provide both a Front concept and a Back answer/explanation.',
+          message:
+              'Please provide both a Front concept and a Back answer/explanation.',
         );
         return;
       }
@@ -131,10 +134,15 @@ class CreateDeckPage extends HookWidget {
 
         if (result.cards.isNotEmpty) {
           final newCards = result.cards
-              .map((c) => _DraftCard(
-                    front: c.front.replaceAll(RegExp(r'^On-Device:\s*', caseSensitive: false), ''),
-                    back: c.back,
-                  ))
+              .map(
+                (c) => _DraftCard(
+                  front: c.front.replaceAll(
+                    RegExp(r'^On-Device:\s*', caseSensitive: false),
+                    '',
+                  ),
+                  back: c.back,
+                ),
+              )
               .toList();
 
           deckCards.value = [...deckCards.value, ...newCards];
@@ -142,14 +150,16 @@ class CreateDeckPage extends HookWidget {
 
           if (context.mounted) {
             context.showSnackBar(
-              message: 'Generated and added ${newCards.length} cards to your deck!',
+              message:
+                  'Generated and added ${newCards.length} cards to your deck!',
               type: SnackBarType.success,
             );
           }
         } else {
           if (context.mounted) {
             context.showSnackBar(
-              message: 'Could not generate flashcards. Please try adding manually.',
+              message:
+                  'Could not generate flashcards. Please try adding manually.',
             );
           }
         }
@@ -193,7 +203,8 @@ class CreateDeckPage extends HookWidget {
         if (extractedText.trim().isEmpty) {
           if (context.mounted) {
             context.showSnackBar(
-              message: 'No readable text found in document. Please try a different file.',
+              message:
+                  'No readable text found in document. Please try a different file.',
             );
           }
           return;
@@ -213,10 +224,15 @@ class CreateDeckPage extends HookWidget {
 
         if (result.cards.isNotEmpty) {
           final newCards = result.cards
-              .map((c) => _DraftCard(
-                    front: c.front.replaceAll(RegExp(r'^On-Device:\s*', caseSensitive: false), ''),
-                    back: c.back,
-                  ))
+              .map(
+                (c) => _DraftCard(
+                  front: c.front.replaceAll(
+                    RegExp(r'^On-Device:\s*', caseSensitive: false),
+                    '',
+                  ),
+                  back: c.back,
+                ),
+              )
               .toList();
 
           deckCards.value = [...deckCards.value, ...newCards];
@@ -224,7 +240,8 @@ class CreateDeckPage extends HookWidget {
 
           if (context.mounted) {
             context.showSnackBar(
-              message: 'Synthesized ${newCards.length} cards from "${doc.name}"!',
+              message:
+                  'Synthesized ${newCards.length} cards from "${doc.name}"!',
               type: SnackBarType.success,
             );
           }
@@ -251,13 +268,16 @@ class CreateDeckPage extends HookWidget {
     Future<void> saveDeck() async {
       final title = titleController.text.trim();
       if (title.isEmpty) {
-        context.showSnackBar(message: 'Please enter a title for your study deck.');
+        context.showSnackBar(
+          message: 'Please enter a title for your study deck.',
+        );
         return;
       }
 
       if (deckCards.value.isEmpty) {
         context.showSnackBar(
-          message: 'Please add at least 1 flashcard to your deck before saving.',
+          message:
+              'Please add at least 1 flashcard to your deck before saving.',
         );
         return;
       }
@@ -312,7 +332,8 @@ class CreateDeckPage extends HookWidget {
 
         if (context.mounted) {
           context.showSnackBar(
-            message: 'Study Deck "$title" created with ${flashcards.length} card(s)!',
+            message:
+                'Study Deck "$title" created with ${flashcards.length} card(s)!',
             type: SnackBarType.success,
           );
           Navigator.of(context).pop(true);
@@ -396,7 +417,11 @@ class CreateDeckPage extends HookWidget {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.style_rounded, size: 18, color: colors.primary),
+                                  Icon(
+                                    Icons.style_rounded,
+                                    size: 18,
+                                    color: colors.primary,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Deck Details',
@@ -407,9 +432,14 @@ class CreateDeckPage extends HookWidget {
                                   ),
                                   const Spacer(),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 40 : 20,
+                                      ),
                                       borderRadius: AppRadius.radiusBadge,
                                     ),
                                     child: Text(
@@ -432,7 +462,8 @@ class CreateDeckPage extends HookWidget {
                               AppTextField(
                                 controller: descController,
                                 label: 'Description (Optional)',
-                                hintText: 'e.g. Core concepts & formulas for quick recall',
+                                hintText:
+                                    'e.g. Core concepts & formulas for quick recall',
                               ),
                             ],
                           ),
@@ -465,7 +496,9 @@ class CreateDeckPage extends HookWidget {
                               borderRadius: AppRadius.radiusPanel,
                               border: Border.all(
                                 color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(50)
+                                    ? colors.surfaceBorderHighlight.withAlpha(
+                                        50,
+                                      )
                                     : colors.surfaceBorder.withAlpha(120),
                               ),
                             ),
@@ -483,14 +516,16 @@ class CreateDeckPage extends HookWidget {
                                 AppTextField(
                                   controller: manualFrontController,
                                   label: 'Front (Question / Term / Concept)',
-                                  hintText: "e.g. State Le Chatelier's principle",
+                                  hintText:
+                                      "e.g. State Le Chatelier's principle",
                                   maxLines: 2,
                                 ),
                                 const SizedBox(height: 12),
                                 AppTextField(
                                   controller: manualBackController,
                                   label: 'Back (Answer / Definition / Formula)',
-                                  hintText: 'e.g. When a system at equilibrium is subjected to change, it adjusts to counteract the change.',
+                                  hintText:
+                                      'e.g. When a system at equilibrium is subjected to change, it adjusts to counteract the change.',
                                   maxLines: 3,
                                 ),
                                 const SizedBox(height: 14),
@@ -499,7 +534,10 @@ class CreateDeckPage extends HookWidget {
                                   child: AppButton(
                                     text: '+ Add Flashcard',
                                     onPressed: addManualCard,
-                                    prefixIcon: const Icon(Icons.add_rounded, size: 16),
+                                    prefixIcon: const Icon(
+                                      Icons.add_rounded,
+                                      size: 16,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -517,7 +555,9 @@ class CreateDeckPage extends HookWidget {
                               borderRadius: AppRadius.radiusPanel,
                               border: Border.all(
                                 color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(50)
+                                    ? colors.surfaceBorderHighlight.withAlpha(
+                                        50,
+                                      )
                                     : colors.surfaceBorder.withAlpha(120),
                               ),
                             ),
@@ -543,7 +583,8 @@ class CreateDeckPage extends HookWidget {
                                 AppTextField(
                                   controller: aiTopicController,
                                   label: 'Topic or Study Notes',
-                                  hintText: 'e.g. Organic chemistry reaction mechanisms and IUPAC naming',
+                                  hintText:
+                                      'e.g. Organic chemistry reaction mechanisms and IUPAC naming',
                                   maxLines: 3,
                                 ),
                                 const SizedBox(height: 14),
@@ -557,28 +598,42 @@ class CreateDeckPage extends HookWidget {
                                     ),
                                     const SizedBox(width: 10),
                                     ...[5, 10, 15, 20].map((count) {
-                                      final isSelected = aiCardCount.value == count;
+                                      final isSelected =
+                                          aiCardCount.value == count;
                                       return Padding(
-                                        padding: const EdgeInsets.only(right: 8),
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
                                         child: ShrinkableButton(
                                           onTap: () {
                                             AppFeedback.selection();
                                             aiCardCount.value = count;
                                           },
                                           child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 6,
+                                            ),
                                             decoration: BoxDecoration(
                                               color: isSelected
                                                   ? colors.primary
-                                                  : (isDark ? colors.surfaceTertiary.withAlpha(80) : colors.surfaceSecondary),
-                                              borderRadius: AppRadius.radiusBadge,
+                                                  : (isDark
+                                                        ? colors.surfaceTertiary
+                                                              .withAlpha(80)
+                                                        : colors
+                                                              .surfaceSecondary),
+                                              borderRadius:
+                                                  AppRadius.radiusBadge,
                                             ),
                                             child: Text(
                                               '$count',
-                                              style: typography.caption.bold.copyWith(
-                                                color: isSelected ? colors.white : colors.textSecondary,
-                                                fontSize: 12,
-                                              ),
+                                              style: typography.caption.bold
+                                                  .copyWith(
+                                                    color: isSelected
+                                                        ? colors.white
+                                                        : colors.textSecondary,
+                                                    fontSize: 12,
+                                                  ),
                                             ),
                                           ),
                                         ),
@@ -590,9 +645,13 @@ class CreateDeckPage extends HookWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: AppButton(
-                                    text: isAiGenerating.value ? 'Generating...' : '✨ Generate & Add Cards',
+                                    text: isAiGenerating.value
+                                        ? 'Generating...'
+                                        : '✨ Generate & Add Cards',
                                     isLoading: isAiGenerating.value,
-                                    onPressed: isAiGenerating.value ? null : generateCardsWithAi,
+                                    onPressed: isAiGenerating.value
+                                        ? null
+                                        : generateCardsWithAi,
                                   ),
                                 ),
                               ],
@@ -610,7 +669,9 @@ class CreateDeckPage extends HookWidget {
                               borderRadius: AppRadius.radiusPanel,
                               border: Border.all(
                                 color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(50)
+                                    ? colors.surfaceBorderHighlight.withAlpha(
+                                        50,
+                                      )
                                     : colors.surfaceBorder.withAlpha(120),
                               ),
                             ),
@@ -638,23 +699,38 @@ class CreateDeckPage extends HookWidget {
                                       ? null
                                       : () async {
                                           AppFeedback.light();
-                                          final doc = await FilePickerService().pickStudyDocument(
-                                            extensions: const ['pdf', 'png', 'jpg', 'jpeg', 'txt', 'pptx'],
-                                          );
+                                          final doc = await FilePickerService()
+                                              .pickStudyDocument(
+                                                extensions: const [
+                                                  'pdf',
+                                                  'png',
+                                                  'jpg',
+                                                  'jpeg',
+                                                  'txt',
+                                                  'pptx',
+                                                ],
+                                              );
                                           if (doc != null) {
                                             pickedDoc.value = doc;
                                           }
                                         },
                                   child: Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 24,
+                                      horizontal: 16,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: isDark
                                           ? colors.surfaceTertiary.withAlpha(60)
-                                          : colors.surfaceSecondary.withAlpha(60),
+                                          : colors.surfaceSecondary.withAlpha(
+                                              60,
+                                            ),
                                       borderRadius: AppRadius.radiusCard,
                                       border: Border.all(
-                                        color: pickedDoc.value != null ? colors.primary : colors.surfaceBorder,
+                                        color: pickedDoc.value != null
+                                            ? colors.primary
+                                            : colors.surfaceBorder,
                                       ),
                                     ),
                                     child: Column(
@@ -668,10 +744,12 @@ class CreateDeckPage extends HookWidget {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          pickedDoc.value?.name ?? 'Select PDF, PPTX or Text Document',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.textPrimary,
-                                          ),
+                                          pickedDoc.value?.name ??
+                                              'Select PDF, PPTX or Text Document',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.textPrimary,
+                                              ),
                                           textAlign: TextAlign.center,
                                         ),
                                       ],
@@ -682,14 +760,18 @@ class CreateDeckPage extends HookWidget {
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
-                                      AppLogoLoader(size: 14, color: colors.primary),
+                                      AppLogoLoader(
+                                        size: 14,
+                                        color: colors.primary,
+                                      ),
                                       const SizedBox(width: 8),
                                       Text(
                                         docStatus.value,
-                                        style: typography.caption.regular.copyWith(
-                                          color: colors.primary,
-                                          fontSize: 12,
-                                        ),
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.primary,
+                                              fontSize: 12,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -698,9 +780,13 @@ class CreateDeckPage extends HookWidget {
                                 SizedBox(
                                   width: double.infinity,
                                   child: AppButton(
-                                    text: isDocIngesting.value ? 'Processing...' : 'Extract Flashcards',
+                                    text: isDocIngesting.value
+                                        ? 'Processing...'
+                                        : 'Extract Flashcards',
                                     isLoading: isDocIngesting.value,
-                                    onPressed: isDocIngesting.value || pickedDoc.value == null
+                                    onPressed:
+                                        isDocIngesting.value ||
+                                            pickedDoc.value == null
                                         ? null
                                         : ingestDocumentCards,
                                   ),
@@ -743,7 +829,10 @@ class CreateDeckPage extends HookWidget {
                         if (deckCards.value.isEmpty)
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 24,
+                              horizontal: 16,
+                            ),
                             decoration: BoxDecoration(
                               color: isDark
                                   ? colors.surfaceSecondary.withAlpha(60)
@@ -784,7 +873,8 @@ class CreateDeckPage extends HookWidget {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: deckCards.value.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 8),
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 8),
                             itemBuilder: (context, index) {
                               final card = deckCards.value[index];
                               return Container(
@@ -811,32 +901,36 @@ class CreateDeckPage extends HookWidget {
                                       child: Center(
                                         child: Text(
                                           '${index + 1}',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.primary,
-                                            fontSize: 11,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.primary,
+                                                fontSize: 11,
+                                              ),
                                         ),
                                       ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             card.front,
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.textPrimary,
-                                              fontSize: 13,
-                                            ),
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.textPrimary,
+                                                  fontSize: 13,
+                                                ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
                                             card.back,
-                                            style: typography.footnote.regular.copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: 11.5,
-                                            ),
+                                            style: typography.footnote.regular
+                                                .copyWith(
+                                                  color: colors.textSecondary,
+                                                  fontSize: 11.5,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -849,7 +943,9 @@ class CreateDeckPage extends HookWidget {
                                       ),
                                       onPressed: () {
                                         AppFeedback.light();
-                                        final list = List<_DraftCard>.from(deckCards.value)..removeAt(index);
+                                        final list = List<_DraftCard>.from(
+                                          deckCards.value,
+                                        )..removeAt(index);
                                         deckCards.value = list;
                                       },
                                     ),

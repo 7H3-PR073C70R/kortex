@@ -27,13 +27,13 @@ class LoadPastQuestionsEvent extends PastQuestionsEvent {
 
   @override
   List<Object?> get props => [
-        examCategory,
-        subject,
-        year,
-        searchQuery,
-        courseId,
-        courseCode,
-      ];
+    examCategory,
+    subject,
+    year,
+    searchQuery,
+    courseId,
+    courseCode,
+  ];
 }
 
 class AddPastQuestionsEvent extends PastQuestionsEvent {

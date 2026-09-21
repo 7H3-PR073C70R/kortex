@@ -449,20 +449,7 @@ class _InteractiveRocketLaunchOverlayState
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        orb.color.withAlpha(220),
-                        orb.color.withAlpha(80),
-                        colors.transparent,
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: orb.color.withAlpha(140),
-                        blurRadius: 14,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    color: orb.color.withAlpha(200),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -772,9 +759,7 @@ class _CosmicFlightPainter extends CustomPainter {
     // Draw Thruster Particles
     for (final p in particles) {
       final alpha = ((p.life / p.maxLife) * 255).toInt().clamp(0, 255);
-      final pPaint = Paint()
-        ..color = p.color.withAlpha(alpha)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+      final pPaint = Paint()..color = p.color.withAlpha(alpha);
       canvas.drawCircle(Offset(p.x, p.y), p.radius, pPaint);
     }
 
@@ -783,11 +768,10 @@ class _CosmicFlightPainter extends CustomPainter {
       final center = Offset(size.width / 2, size.height / 2);
       final ringPaint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.0
+        ..strokeWidth = 3.0
         ..color = accentColor.withAlpha(
           ((1 - warpProgress) * 220).toInt().clamp(0, 255),
-        )
-        ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 4);
+        );
 
       final radius = warpProgress * size.height * 0.9;
       canvas.drawCircle(center, radius, ringPaint);
@@ -842,8 +826,7 @@ class _RocketShipPainter extends CustomPainter {
             ],
           ).createShader(
             Rect.fromLTWH(cx - 12, size.height * 0.75, 24, flameHeight),
-          )
-      ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 3);
+          );
     canvas.drawPath(flamePath, flamePaint);
 
     // 2. Aerodynamic Wings / Fins

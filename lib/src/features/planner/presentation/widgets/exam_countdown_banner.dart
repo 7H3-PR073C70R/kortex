@@ -68,8 +68,8 @@ class ExamCountdownBanner extends StatelessWidget {
                         boxShadow: isHovered
                             ? [
                                 BoxShadow(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 25 : 12,
+                                  color: colors.black.withAlpha(
+                                    isDark ? 40 : 12,
                                   ),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
@@ -165,8 +165,8 @@ class ExamCountdownBanner extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: badgeColor.withAlpha(
-                            isHovered ? (isDark ? 55 : 30) : (isDark ? 30 : 15),
+                          color: colors.black.withAlpha(
+                            isHovered ? (isDark ? 50 : 25) : (isDark ? 30 : 12),
                           ),
                           blurRadius: isHovered ? 18 : 14,
                           offset: Offset(0, isHovered ? 6 : 4),

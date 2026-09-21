@@ -89,7 +89,9 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.card),
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.35),
+                        color: colors.black.withValues(
+                          alpha: isDark ? 0.35 : 0.12,
+                        ),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -135,7 +137,9 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
 
             // Distribution Bars
             ...List.generate(options.length, (i) {
-              final letter = i < optionLetters.length ? optionLetters[i] : '${i + 1}';
+              final letter = i < optionLetters.length
+                  ? optionLetters[i]
+                  : '${i + 1}';
               final pct = distribution[letter] ?? 0;
               final isMax = letter == maxLetter;
               final label = options[i];
@@ -180,7 +184,9 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                         Text(
                           '$pct%',
                           style: typography.footnote.bold.copyWith(
-                            color: isMax ? colors.success : colors.textSecondary,
+                            color: isMax
+                                ? colors.success
+                                : colors.textSecondary,
                           ),
                         ),
                       ],
@@ -202,8 +208,14 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: isMax
-                                      ? [colors.success, colors.success.withAlpha(200)]
-                                      : [colors.primary, colors.primary.withAlpha(200)],
+                                      ? [
+                                          colors.success,
+                                          colors.success.withAlpha(200),
+                                        ]
+                                      : [
+                                          colors.primary,
+                                          colors.primary.withAlpha(200),
+                                        ],
                                 ),
                               ),
                             ),

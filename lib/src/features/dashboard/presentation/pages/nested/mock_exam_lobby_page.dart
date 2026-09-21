@@ -59,7 +59,8 @@ class MockExamLobbyPage extends HookWidget {
       ),
       (
         title: 'Millionaire Arcade',
-        subtitle: '12-rung gamified dopamine ascent with safe checkpoints & lifelines',
+        subtitle:
+            '12-rung gamified dopamine ascent with safe checkpoints & lifelines',
         icon: Icons.military_tech_rounded,
       ),
     ];
@@ -157,39 +158,47 @@ class MockExamLobbyPage extends HookWidget {
                               selectedModeIndex.value = index;
                             },
                             child: ClipRRect(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.panel),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.panel,
+                              ),
                               child: AnimatedContainer(
                                 duration: AppMotion.snappy,
                                 curve: AppMotion.easeOutCubic,
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.panel),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.panel,
+                                  ),
                                   color: isSelected
-                                      ? colors.primary
-                                          .withAlpha(isDark ? 50 : 25)
+                                      ? colors.primary.withAlpha(
+                                          isDark ? 50 : 25,
+                                        )
                                       : isHovered
-                                          ? (isDark
-                                              ? colors.surfaceSecondary
-                                                  .withAlpha(180)
-                                              : colors.surfaceSecondary)
-                                          : (isDark
-                                              ? colors.surfaceSecondary
-                                                  .withAlpha(140)
-                                              : colors.surfacePrimary
-                                                  .withAlpha(200)),
+                                      ? (isDark
+                                            ? colors.surfaceSecondary.withAlpha(
+                                                180,
+                                              )
+                                            : colors.surfaceSecondary)
+                                      : (isDark
+                                            ? colors.surfaceSecondary.withAlpha(
+                                                140,
+                                              )
+                                            : colors.surfacePrimary.withAlpha(
+                                                200,
+                                              )),
                                   border: Border.all(
                                     color: isSelected
                                         ? colors.primary
                                         : isHovered
-                                            ? colors.primary
-                                                .withAlpha(isDark ? 100 : 70)
-                                            : (isDark
-                                                ? colors.surfaceBorderHighlight
+                                        ? colors.primary.withAlpha(
+                                            isDark ? 100 : 70,
+                                          )
+                                        : (isDark
+                                              ? colors.surfaceBorderHighlight
                                                     .withAlpha(60)
-                                                : colors.surfaceBorder
-                                                    .withAlpha(120)),
+                                              : colors.surfaceBorder.withAlpha(
+                                                  120,
+                                                )),
                                     width: isSelected ? 1.5 : 1,
                                   ),
                                 ),
@@ -212,18 +221,18 @@ class MockExamLobbyPage extends HookWidget {
                                             mode.title,
                                             style: typography.caption.bold
                                                 .copyWith(
-                                              color: colors.textPrimary,
-                                              fontSize: 13.5,
-                                            ),
+                                                  color: colors.textPrimary,
+                                                  fontSize: 13.5,
+                                                ),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             mode.subtitle,
                                             style: typography.footnote.regular
                                                 .copyWith(
-                                              color: colors.textSecondary,
-                                              fontSize: 11.5,
-                                            ),
+                                                  color: colors.textSecondary,
+                                                  fontSize: 11.5,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -244,141 +253,147 @@ class MockExamLobbyPage extends HookWidget {
                     );
                   }),
 
-              const Spacer(),
+                  const Spacer(),
 
-              // Start Simulation Button
-              ShrinkableButton(
-                onTap: isStarting.value
-                    ? null
-                    : () async {
-                        unawaited(HapticFeedback.lightImpact());
-                        isStarting.value = true;
-                        final selectedMode =
-                            simulationModes[selectedModeIndex.value];
-                        final AssessmentMode assessmentMode;
-                        final int? duration;
-                        final int questionCount;
+                  // Start Simulation Button
+                  ShrinkableButton(
+                    onTap: isStarting.value
+                        ? null
+                        : () async {
+                            unawaited(HapticFeedback.lightImpact());
+                            isStarting.value = true;
+                            final selectedMode =
+                                simulationModes[selectedModeIndex.value];
+                            final AssessmentMode assessmentMode;
+                            final int? duration;
+                            final int questionCount;
 
-                        if (selectedModeIndex.value == 0) {
-                          assessmentMode = AssessmentMode.examSimulationMode;
-                          duration = 45;
-                          questionCount = 20;
-                        } else if (selectedModeIndex.value == 1) {
-                          assessmentMode = AssessmentMode.discoveryMode;
-                          duration = 30;
-                          questionCount = 15;
-                        } else if (selectedModeIndex.value == 2) {
-                          assessmentMode = AssessmentMode.discoveryMode;
-                          duration = null;
-                          questionCount = 10;
-                        } else {
-                          assessmentMode = AssessmentMode.millionaireMode;
-                          duration = null;
-                          questionCount = 12;
-                        }
+                            if (selectedModeIndex.value == 0) {
+                              assessmentMode =
+                                  AssessmentMode.examSimulationMode;
+                              duration = 45;
+                              questionCount = 20;
+                            } else if (selectedModeIndex.value == 1) {
+                              assessmentMode = AssessmentMode.discoveryMode;
+                              duration = 30;
+                              questionCount = 15;
+                            } else if (selectedModeIndex.value == 2) {
+                              assessmentMode = AssessmentMode.discoveryMode;
+                              duration = null;
+                              questionCount = 10;
+                            } else {
+                              assessmentMode = AssessmentMode.millionaireMode;
+                              duration = null;
+                              questionCount = 12;
+                            }
 
-                        locator<DashboardBloc>().add(
-                          DashboardExamStarted(
-                            examId: examId,
-                            subject: examName,
-                          ),
-                        );
+                            locator<DashboardBloc>().add(
+                              DashboardExamStarted(
+                                examId: examId,
+                                subject: examName,
+                              ),
+                            );
 
-                        List<QuizQuestionEntity>? initialQuestions;
-                        if (locator.isRegistered<PastQuestionsRepository>()) {
-                          try {
-                            ExamCategory? category;
-                            final query = '$examName $examId'.toLowerCase();
-                            for (final cat in ExamCategory.values) {
-                              if (query.contains(cat.name.toLowerCase()) ||
-                                  query.contains(cat.code.toLowerCase())) {
-                                category = cat;
-                                break;
+                            List<QuizQuestionEntity>? initialQuestions;
+                            if (locator
+                                .isRegistered<PastQuestionsRepository>()) {
+                              try {
+                                ExamCategory? category;
+                                final query = '$examName $examId'.toLowerCase();
+                                for (final cat in ExamCategory.values) {
+                                  if (query.contains(cat.name.toLowerCase()) ||
+                                      query.contains(cat.code.toLowerCase())) {
+                                    category = cat;
+                                    break;
+                                  }
+                                }
+                                final result =
+                                    await locator<PastQuestionsRepository>()
+                                        .getPastQuestions(
+                                          examCategory: category,
+                                          searchQuery: category == null
+                                              ? examName
+                                              : null,
+                                        );
+                                final questions = result.fold(
+                                  (f) => <PastQuestionEntity>[],
+                                  (list) => list,
+                                );
+                                if (questions.isNotEmpty) {
+                                  final shuffled =
+                                      List<PastQuestionEntity>.from(questions)
+                                        ..shuffle();
+                                  initialQuestions = shuffled
+                                      .take(questionCount)
+                                      .map(QuizQuestionEntity.fromPastQuestion)
+                                      .toList();
+                                }
+                              } on Object catch (_) {
+                                // Fallback handled by QuizRepositoryImpl or QuizWorkspace
                               }
                             }
-                            final result = await locator<PastQuestionsRepository>()
-                                .getPastQuestions(
-                              examCategory: category,
-                              searchQuery: category == null ? examName : null,
-                            );
-                            final questions = result.fold(
-                              (f) => <PastQuestionEntity>[],
-                              (list) => list,
-                            );
-                            if (questions.isNotEmpty) {
-                              final shuffled =
-                                  List<PastQuestionEntity>.from(questions)
-                                    ..shuffle();
-                              initialQuestions = shuffled
-                                  .take(questionCount)
-                                  .map(QuizQuestionEntity.fromPastQuestion)
-                                  .toList();
-                            }
-                          } on Object catch (_) {
-                            // Fallback handled by QuizRepositoryImpl or QuizWorkspace
-                          }
-                        }
 
-                        if (!context.mounted) return;
-                        isStarting.value = false;
+                            if (!context.mounted) return;
+                            isStarting.value = false;
 
-                        unawaited(
-                          context.router.push(
-                            QuizWorkspaceRoute(
-                              deckId: examId,
-                              deckTitle: '$examName (${selectedMode.title})',
-                              subject: examName,
-                              durationMinutes: duration,
-                              assessmentMode: assessmentMode,
-                              initialQuestions: initialQuestions,
-                            ),
+                            unawaited(
+                              context.router.push(
+                                QuizWorkspaceRoute(
+                                  deckId: examId,
+                                  deckTitle:
+                                      '$examName (${selectedMode.title})',
+                                  subject: examName,
+                                  durationMinutes: duration,
+                                  assessmentMode: assessmentMode,
+                                  initialQuestions: initialQuestions,
+                                ),
+                              ),
+                            );
+                          },
+                    child: PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          width: double.infinity,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: isHovered
+                                ? colors.primary.withAlpha(235)
+                                : colors.primary,
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(isDark ? 60 : 25),
+                                blurRadius: isHovered ? 12 : 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
+                          alignment: Alignment.center,
+                          child: isStarting.value
+                              ? AppLogoLoader(
+                                  size: 20,
+                                  color: colors.white,
+                                  showMessage: false,
+                                )
+                              : Text(
+                                  l10n.mockExamBeginButton,
+                                  style: typography.callout.bold.copyWith(
+                                    color: colors.white,
+                                  ),
+                                ),
                         );
                       },
-                child: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedContainer(
-                      duration: AppMotion.snappy,
-                      curve: AppMotion.easeOutCubic,
-                      width: double.infinity,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: isHovered
-                            ? colors.primary.withAlpha(235)
-                            : colors.primary,
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.primary.withAlpha(isHovered ? 130 : 90),
-                            blurRadius: isHovered ? 18 : 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: isStarting.value
-                          ? AppLogoLoader(
-                              size: 20,
-                              color: colors.white,
-                              showMessage: false,
-                            )
-                          : Text(
-                              l10n.mockExamBeginButton,
-                              style: typography.callout.bold.copyWith(
-                                color: colors.white,
-                              ),
-                            ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 }

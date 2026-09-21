@@ -30,9 +30,9 @@ class VoiceDialogueModal extends StatefulWidget {
     this.initialMode = SocraticMode.stepByStep,
     super.key,
   }) : assert(
-          onSendPrompt != null || onStreamPrompt != null,
-          'Either onSendPrompt or onStreamPrompt must be provided',
-        );
+         onSendPrompt != null || onStreamPrompt != null,
+         'Either onSendPrompt or onStreamPrompt must be provided',
+       );
 
   final Future<String> Function(String prompt)? onSendPrompt;
   final Stream<String> Function(String prompt)? onStreamPrompt;
@@ -196,7 +196,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
             }
           } else {
             Match? match;
-            while ((match = sentenceDelimiters.firstMatch(accumulated)) != null) {
+            while ((match = sentenceDelimiters.firstMatch(accumulated)) !=
+                null) {
               final sentence = accumulated.substring(0, match!.end).trim();
               accumulated = accumulated.substring(match.end);
               accumulatedBuffer
@@ -211,8 +212,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
           if (mounted) {
             setState(() {
-              _latestResponse =
-                  _latestResponse.isEmpty ? chunk : '$_latestResponse$chunk';
+              _latestResponse = _latestResponse.isEmpty
+                  ? chunk
+                  : '$_latestResponse$chunk';
             });
           }
         }
@@ -279,6 +281,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return Center(
       child: ConstrainedBox(
@@ -371,7 +374,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                           return IconButton(
                             icon: Icon(
                               Icons.close_rounded,
-                              color: isHovered ? colors.primary : colors.textPrimary,
+                              color: isHovered
+                                  ? colors.primary
+                                  : colors.textPrimary,
                             ),
                             onPressed: () {
                               unawaited(widget.ttsHandler.stop());
@@ -454,9 +459,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: orbColor.withAlpha(120),
-                                    blurRadius: 24,
-                                    spreadRadius: 2,
+                                    color: colors.black.withAlpha(
+                                      isDark ? 60 : 25,
+                                    ),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
@@ -569,15 +576,16 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                               color: _state == DialogueState.listening
                                   ? colors.error
                                   : (isHovered
-                                      ? colors.primary.withAlpha(235)
-                                      : colors.primary),
+                                        ? colors.primary.withAlpha(235)
+                                        : colors.primary),
                               borderRadius: AppRadius.radiusPanel,
                               boxShadow: [
                                 BoxShadow(
-                                  color: (_state == DialogueState.listening
-                                          ? colors.error
-                                          : colors.primary)
-                                      .withAlpha(isHovered ? 130 : 90),
+                                  color: colors.black.withAlpha(
+                                    isHovered
+                                        ? (isDark ? 60 : 30)
+                                        : (isDark ? 40 : 20),
+                                  ),
                                   blurRadius: isHovered ? 18 : 14,
                                   offset: const Offset(0, 4),
                                 ),

@@ -14,8 +14,8 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
     this._llmClient, {
     AppDatabase? database,
     LocalStorageService? storageService,
-  })  : _database = database,
-        _storage = storageService;
+  }) : _database = database,
+       _storage = storageService;
 
   final LocalLlmEngineClient _llmClient;
   final AppDatabase? _database;
@@ -221,11 +221,15 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
 
         // Migrate from storage if available
         if (_storage != null) {
-          final raw = _storage.getPreference(key: '$_messageKeyPrefix$sessionId');
+          final raw = _storage.getPreference(
+            key: '$_messageKeyPrefix$sessionId',
+          );
           if (raw != null && raw.isNotEmpty) {
             final list = jsonDecode(raw) as List<dynamic>;
             final parsed = list
-                .map((e) => ChatMessageModel.fromJson(e as Map<String, dynamic>))
+                .map(
+                  (e) => ChatMessageModel.fromJson(e as Map<String, dynamic>),
+                )
                 .toList();
 
             for (final m in parsed) {
@@ -237,7 +241,9 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
                   sender: Value(m.sender),
                   textContent: Value(m.text),
                   latexSnippets: Value(
-                    m.latexSnippets.isNotEmpty ? jsonEncode(m.latexSnippets) : null,
+                    m.latexSnippets.isNotEmpty
+                        ? jsonEncode(m.latexSnippets)
+                        : null,
                   ),
                   engineType: Value(m.engineType),
                   tokensCount: Value(m.tokensCount),
@@ -245,7 +251,9 @@ class SyllabotLocalDataSourceImpl implements SyllabotLocalDataSource {
                 ),
               );
             }
-            await _storage.deletePreference(key: '$_messageKeyPrefix$sessionId');
+            await _storage.deletePreference(
+              key: '$_messageKeyPrefix$sessionId',
+            );
             return parsed;
           }
         }

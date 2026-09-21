@@ -120,7 +120,10 @@ class CreateStudyCircleSheet extends HookWidget {
                       ],
                     ),
                     IconButton(
-                      icon: Icon(Icons.close_rounded, color: colors.textSecondary),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colors.textSecondary,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -231,7 +234,9 @@ class CreateStudyCircleSheet extends HookWidget {
                       borderRadius: AppRadius.radiusCard,
                       boxShadow: [
                         BoxShadow(
-                          color: colors.primary.withAlpha(isDark ? (isHovered ? 80 : 50) : (isHovered ? 60 : 35)),
+                          color: colors.black.withAlpha(
+                            isHovered ? (isDark ? 60 : 30) : (isDark ? 40 : 20),
+                          ),
                           blurRadius: isHovered ? 14 : 8,
                           offset: Offset(0, isHovered ? 5 : 2),
                         ),

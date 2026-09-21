@@ -239,7 +239,9 @@ class _LocalLlmCapacityPromptModalSheetState
                                 : colors.error,
                             title: 'Storage Space',
                             subtitle: _report!.storageStatusText,
-                            statusBadge: _report!.hasSufficientStorage ? 'Ready' : 'Low',
+                            statusBadge: _report!.hasSufficientStorage
+                                ? 'Ready'
+                                : 'Low',
                             statusColor: _report!.hasSufficientStorage
                                 ? colors.success
                                 : colors.error,
@@ -249,7 +251,8 @@ class _LocalLlmCapacityPromptModalSheetState
                             icon: Icons.speed_rounded,
                             iconColor: colors.primary,
                             title: 'Processor & Cores',
-                            subtitle: '${_report!.cpuCores} CPU Cores • ${_report!.performanceTier}',
+                            subtitle:
+                                '${_report!.cpuCores} CPU Cores • ${_report!.performanceTier}',
                             statusBadge: 'Optimized',
                             statusColor: colors.primary,
                           ),
@@ -258,7 +261,8 @@ class _LocalLlmCapacityPromptModalSheetState
                             icon: Icons.psychology_rounded,
                             iconColor: colors.syllabotAccent,
                             title: 'RAM & Battery Guard',
-                            subtitle: '~350MB Peak RAM • Optimized for energy efficiency',
+                            subtitle:
+                                '~350MB Peak RAM • Optimized for energy efficiency',
                             statusBadge: 'Optimal',
                             statusColor: colors.syllabotAccent,
                           ),
@@ -312,7 +316,11 @@ class _LocalLlmCapacityPromptModalSheetState
                           borderRadius: AppRadius.radiusCard,
                           boxShadow: [
                             BoxShadow(
-                              color: colors.primary.withAlpha(isHovered ? 120 : 80),
+                              color: colors.black.withAlpha(
+                                isHovered
+                                    ? (isDark ? 55 : 25)
+                                    : (isDark ? 35 : 15),
+                              ),
                               blurRadius: isHovered ? 14 : 10,
                               offset: const Offset(0, 3),
                             ),

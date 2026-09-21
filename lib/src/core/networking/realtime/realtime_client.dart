@@ -39,7 +39,8 @@ class RealtimeClient {
   Timer? _heartbeatTimer;
 
   final Map<String, StreamController<RealtimeRowEvent>> _tableControllers = {};
-  final Map<String, StreamController<Map<String, dynamic>>> _presenceControllers = {};
+  final Map<String, StreamController<Map<String, dynamic>>>
+  _presenceControllers = {};
 
   int _refCounter = 0;
   bool _connected = false;
@@ -74,7 +75,12 @@ class RealtimeClient {
       );
       _heartbeatTimer?.cancel();
       _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-        _send({'event': 'heartbeat', 'topic': 'phoenix', 'payload': <String, dynamic>{}, 'ref': null});
+        _send({
+          'event': 'heartbeat',
+          'topic': 'phoenix',
+          'payload': <String, dynamic>{},
+          'ref': null,
+        });
       });
       await _rejoinAllChannels();
     } on Object catch (_) {
@@ -87,7 +93,9 @@ class RealtimeClient {
     _heartbeatTimer?.cancel();
     unawaited(_subscription?.cancel() ?? Future<void>.value());
     if (_tableControllers.isNotEmpty || _presenceControllers.isNotEmpty) {
-      unawaited(Future<void>.delayed(const Duration(seconds: 3), _ensureConnected));
+      unawaited(
+        Future<void>.delayed(const Duration(seconds: 3), _ensureConnected),
+      );
     }
   }
 
@@ -119,16 +127,30 @@ class RealtimeClient {
             (data['new'] as Map<String, dynamic>?) ??
             <String, dynamic>{};
         final oldRecord = data['old_record'] as Map<String, dynamic>?;
-        final table = (data['table'] as String?) ?? topic.split(':').lastOrNull ?? 'unknown';
-        final rowEvent = RealtimeRowEvent(table: table, type: type, record: record, oldRecord: oldRecord);
+        final table =
+            (data['table'] as String?) ??
+            topic.split(':').lastOrNull ??
+            'unknown';
+        final rowEvent = RealtimeRowEvent(
+          table: table,
+          type: type,
+          record: record,
+          oldRecord: oldRecord,
+        );
         final ctrl = _tableControllers[topic];
-        if (ctrl != null && !ctrl.isClosed) ctrl.add(rowEvent);
+        if (ctrl != null && !ctrl.isClosed) {
+          ctrl.add(rowEvent);
+        }
       }
 
       // Presence / broadcast events
-      if (event == 'presence_state' || event == 'presence_diff' || event == 'broadcast') {
+      if (event == 'presence_state' ||
+          event == 'presence_diff' ||
+          event == 'broadcast') {
         final ctrl = _presenceControllers[topic];
-        if (ctrl != null && !ctrl.isClosed) ctrl.add({'event': event, 'payload': payload});
+        if (ctrl != null && !ctrl.isClosed) {
+          ctrl.add({'event': event, 'payload': payload});
+        }
       }
     } on Exception catch (_) {}
   }
@@ -148,7 +170,9 @@ class RealtimeClient {
       'payload': {
         'config': {
           'broadcast': {'self': false},
-          'postgres_changes': [{'event': '*', 'schema': 'public'}],
+          'postgres_changes': [
+            {'event': '*', 'schema': 'public'},
+          ],
         },
         'access_token': AppEnv.apiKey,
       },
@@ -161,7 +185,10 @@ class RealtimeClient {
       'event': 'phx_join',
       'topic': channelName,
       'payload': {
-        'config': {'presence': {'key': ''}, 'broadcast': {'self': true}},
+        'config': {
+          'presence': {'key': ''},
+          'broadcast': {'self': true},
+        },
         'access_token': AppEnv.apiKey,
       },
       'ref': _nextRef(),
@@ -177,7 +204,8 @@ class RealtimeClient {
         : 'realtime:public:$table';
     if (!_tableControllers.containsKey(topicKey)) {
       final ctrl = StreamController<RealtimeRowEvent>.broadcast(
-        onListen: () => unawaited(_ensureConnected().then((_) => _joinTopic(topicKey))),
+        onListen: () =>
+            unawaited(_ensureConnected().then((_) => _joinTopic(topicKey))),
       );
       _tableControllers[topicKey] = ctrl;
     }
@@ -200,7 +228,10 @@ class RealtimeClient {
   }
 
   /// Broadcasts a presence payload on [channelName].
-  void broadcastPresence({required String channelName, required Map<String, dynamic> payload}) {
+  void broadcastPresence({
+    required String channelName,
+    required Map<String, dynamic> payload,
+  }) {
     _send({
       'event': 'broadcast',
       'topic': channelName,
@@ -211,9 +242,18 @@ class RealtimeClient {
 
   /// Leaves a topic and closes its stream controller.
   void unsubscribe(String topicKey) {
-    _send({'event': 'phx_leave', 'topic': topicKey, 'payload': <String, dynamic>{}, 'ref': _nextRef()});
-    unawaited(_tableControllers.remove(topicKey)?.close() ?? Future<void>.value());
-    unawaited(_presenceControllers.remove(topicKey)?.close() ?? Future<void>.value());
+    _send({
+      'event': 'phx_leave',
+      'topic': topicKey,
+      'payload': <String, dynamic>{},
+      'ref': _nextRef(),
+    });
+    unawaited(
+      _tableControllers.remove(topicKey)?.close() ?? Future<void>.value(),
+    );
+    unawaited(
+      _presenceControllers.remove(topicKey)?.close() ?? Future<void>.value(),
+    );
   }
 
   /// Disposes the client — closes all channels and the underlying WebSocket.

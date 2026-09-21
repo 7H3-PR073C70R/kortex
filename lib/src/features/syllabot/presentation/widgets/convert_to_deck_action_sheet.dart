@@ -17,13 +17,15 @@ class ConvertToDeckActionSheet extends HookWidget {
     super.key,
   });
 
-  final void Function(String title, String courseCode, {bool createForum}) onGenerateDeck;
+  final void Function(String title, String courseCode, {bool createForum})
+  onGenerateDeck;
   final String? initialTitle;
   final String? initialCourseCode;
 
   static Future<void> show(
     BuildContext context, {
-    required void Function(String title, String courseCode, {bool createForum}) onGenerateDeck,
+    required void Function(String title, String courseCode, {bool createForum})
+    onGenerateDeck,
     String? initialTitle,
     String? initialCourseCode,
   }) {
@@ -158,10 +160,14 @@ class ConvertToDeckActionSheet extends HookWidget {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: colors.surfaceTertiary.withAlpha(isDark ? 50 : 80),
+                        color: colors.surfaceTertiary.withAlpha(
+                          isDark ? 50 : 80,
+                        ),
                         borderRadius: AppRadius.radiusPanel,
                         border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+                          color: colors.surfaceBorder.withAlpha(
+                            isDark ? 80 : 120,
+                          ),
                         ),
                       ),
                       child: Column(
@@ -184,10 +190,11 @@ class ConvertToDeckActionSheet extends HookWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       l10n.deckCreateForumSubtitle,
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 11.5,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 11.5,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -207,10 +214,14 @@ class ConvertToDeckActionSheet extends HookWidget {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: colors.warning.withAlpha(isDark ? 25 : 18),
+                                color: colors.warning.withAlpha(
+                                  isDark ? 25 : 18,
+                                ),
                                 borderRadius: AppRadius.radiusCard,
                                 border: Border.all(
-                                  color: colors.warning.withAlpha(isDark ? 70 : 90),
+                                  color: colors.warning.withAlpha(
+                                    isDark ? 70 : 90,
+                                  ),
                                   width: 0.9,
                                 ),
                               ),
@@ -226,11 +237,12 @@ class ConvertToDeckActionSheet extends HookWidget {
                                   Expanded(
                                     child: Text(
                                       l10n.deckCreateForumWarning,
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 11.5,
-                                        height: 1.35,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 11.5,
+                                            height: 1.35,
+                                          ),
                                     ),
                                   ),
                                 ],

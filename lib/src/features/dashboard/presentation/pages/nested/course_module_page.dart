@@ -50,7 +50,9 @@ class CourseModulePage extends StatelessWidget {
   final String courseTitle;
 
   static String cleanCode(String code) {
-    return code.replaceFirst(RegExp('^[WJN]-', caseSensitive: false), '').trim();
+    return code
+        .replaceFirst(RegExp('^[WJN]-', caseSensitive: false), '')
+        .trim();
   }
 
   ExamCategory _getExamCategory(String? track) {
@@ -60,20 +62,56 @@ class CourseModulePage extends StatelessWidget {
     if (t.contains('SAT')) return ExamCategory.sat;
     if (t.contains('TOEFL')) return ExamCategory.toefl;
     if (t.contains('IELTS')) return ExamCategory.ielts;
-    if (t.contains('MEDICINE') || t.contains('HEALTH') || t.contains('MBBS') || t.contains('NURS')) return ExamCategory.medicine;
-    if (t.contains('LAW') || t.contains('JURIS')) return ExamCategory.law;
-    if (t.contains('ENGINEERING')) return ExamCategory.engineering;
-    if (t.contains('COMPUTER') || t.contains('SOFTWARE')) return ExamCategory.computerScience;
-    if (t.contains('BUSINESS') || t.contains('FINANCE')) return ExamCategory.business;
-    if (t.contains('WAEC') || t.contains('WASSCE')) return ExamCategory.waec;
+    if (t.contains('MEDICINE') ||
+        t.contains('HEALTH') ||
+        t.contains('MBBS') ||
+        t.contains('NURS')) {
+      return ExamCategory.medicine;
+    }
+    if (t.contains('LAW') || t.contains('JURIS')) {
+      return ExamCategory.law;
+    }
+    if (t.contains('ENGINEERING')) {
+      return ExamCategory.engineering;
+    }
+    if (t.contains('COMPUTER') || t.contains('SOFTWARE')) {
+      return ExamCategory.computerScience;
+    }
+    if (t.contains('BUSINESS') || t.contains('FINANCE')) {
+      return ExamCategory.business;
+    }
+    if (t.contains('WAEC') || t.contains('WASSCE')) {
+      return ExamCategory.waec;
+    }
 
     // Check courseTitle and courseCode for curriculum clues if track was generic/unset
     final cTitle = '$courseTitle $courseCode'.toUpperCase();
-    if (cTitle.contains('CSC') || cTitle.contains('COMP') || cTitle.contains('SOFTWARE')) return ExamCategory.computerScience;
-    if (cTitle.contains('ENGR') || cTitle.contains('MECH') || cTitle.contains('ELEC') || cTitle.contains('CIVIL')) return ExamCategory.engineering;
-    if (cTitle.contains('MED') || cTitle.contains('ANAT') || cTitle.contains('PHARM') || cTitle.contains('PATH')) return ExamCategory.medicine;
-    if (cTitle.contains('LAW') || cTitle.contains('JUR')) return ExamCategory.law;
-    if (cTitle.contains('BUS') || cTitle.contains('ACC') || cTitle.contains('FIN') || cTitle.contains('MKT')) return ExamCategory.business;
+    if (cTitle.contains('CSC') ||
+        cTitle.contains('COMP') ||
+        cTitle.contains('SOFTWARE')) {
+      return ExamCategory.computerScience;
+    }
+    if (cTitle.contains('ENGR') ||
+        cTitle.contains('MECH') ||
+        cTitle.contains('ELEC') ||
+        cTitle.contains('CIVIL')) {
+      return ExamCategory.engineering;
+    }
+    if (cTitle.contains('MED') ||
+        cTitle.contains('ANAT') ||
+        cTitle.contains('PHARM') ||
+        cTitle.contains('PATH')) {
+      return ExamCategory.medicine;
+    }
+    if (cTitle.contains('LAW') || cTitle.contains('JUR')) {
+      return ExamCategory.law;
+    }
+    if (cTitle.contains('BUS') ||
+        cTitle.contains('ACC') ||
+        cTitle.contains('FIN') ||
+        cTitle.contains('MKT')) {
+      return ExamCategory.business;
+    }
 
     return ExamCategory.general;
   }
@@ -83,24 +121,63 @@ class CourseModulePage extends StatelessWidget {
     final lower = '$title $code'.toLowerCase();
 
     // Secondary WAEC/JAMB specific subjects
-    if (c == 'LIT' || lower.contains('literature')) return 'Literature in English';
-    if (c == 'FMTH' || lower.contains('further math')) return 'Further Mathematics';
-    if (c == 'MTH' || lower.contains('math')) return 'Mathematics';
-    if ((c == 'ENG' && !code.contains(RegExp(r'\d'))) || lower.contains('english language')) return 'English Language';
-    if (c == 'BIO' || lower.contains('biology')) return 'Biology';
-    if (c == 'CHM' || lower.contains('chemistry')) return 'Chemistry';
-    if (c == 'PHY' || lower.contains('physics')) return 'Physics';
-    if (c == 'ECN' || lower.contains('economics')) return 'Economics';
-    if (c == 'GOV' || lower.contains('government')) return 'Government';
-    if (c == 'ACC' || lower.contains('accounting')) return 'Principles of Accounts';
-    if (c == 'COM' || lower.contains('commerce')) return 'Commerce';
-    if (c == 'GEO' || lower.contains('geography')) return 'Geography';
-    if (c == 'AGR' || lower.contains('agric')) return 'Agricultural Science';
-    if (c == 'CIV' || lower.contains('civic')) return 'Civic Education';
-    if (c == 'DPR' || lower.contains('data processing')) return 'Data Processing';
-    if (c == 'CMP' || lower.contains('computer science') || lower.contains('computer studies')) return 'Computer Science';
-    if (c == 'CRK' || lower.contains('crk') || lower.contains('christian')) return 'Christian Religious Knowledge (CRK)';
-    if (c == 'IRK' || lower.contains('irk') || lower.contains('islamic')) return 'Islamic Religious Knowledge (IRK)';
+    if (c == 'LIT' || lower.contains('literature')) {
+      return 'Literature in English';
+    }
+    if (c == 'FMTH' || lower.contains('further math')) {
+      return 'Further Mathematics';
+    }
+    if (c == 'MTH' || lower.contains('math')) {
+      return 'Mathematics';
+    }
+    if ((c == 'ENG' && !code.contains(RegExp(r'\d'))) ||
+        lower.contains('english language')) {
+      return 'English Language';
+    }
+    if (c == 'BIO' || lower.contains('biology')) {
+      return 'Biology';
+    }
+    if (c == 'CHM' || lower.contains('chemistry')) {
+      return 'Chemistry';
+    }
+    if (c == 'PHY' || lower.contains('physics')) {
+      return 'Physics';
+    }
+    if (c == 'ECN' || lower.contains('economics')) {
+      return 'Economics';
+    }
+    if (c == 'GOV' || lower.contains('government')) {
+      return 'Government';
+    }
+    if (c == 'ACC' || lower.contains('accounting')) {
+      return 'Principles of Accounts';
+    }
+    if (c == 'COM' || lower.contains('commerce')) {
+      return 'Commerce';
+    }
+    if (c == 'GEO' || lower.contains('geography')) {
+      return 'Geography';
+    }
+    if (c == 'AGR' || lower.contains('agric')) {
+      return 'Agricultural Science';
+    }
+    if (c == 'CIV' || lower.contains('civic')) {
+      return 'Civic Education';
+    }
+    if (c == 'DPR' || lower.contains('data processing')) {
+      return 'Data Processing';
+    }
+    if (c == 'CMP' ||
+        lower.contains('computer science') ||
+        lower.contains('computer studies')) {
+      return 'Computer Science';
+    }
+    if (c == 'CRK' || lower.contains('crk') || lower.contains('christian')) {
+      return 'Christian Religious Knowledge (CRK)';
+    }
+    if (c == 'IRK' || lower.contains('irk') || lower.contains('islamic')) {
+      return 'Islamic Religious Knowledge (IRK)';
+    }
 
     return title.split('(').first.trim();
   }
@@ -251,7 +328,8 @@ class _CourseModuleView extends StatelessWidget {
                   size: 22,
                 ),
                 tooltip: 'Delete Course',
-                onPressed: () => _confirmDelete(context, associatedDecks.length),
+                onPressed: () =>
+                    _confirmDelete(context, associatedDecks.length),
               ),
               const SizedBox(width: 8),
             ],
@@ -357,8 +435,9 @@ class _CourseModuleView extends StatelessWidget {
             matchingExam.targetDate.day,
           );
           final daysLeft = target.difference(today).inDays;
-          final formattedDate =
-              DateFormat('MMM d, y').format(matchingExam.targetDate);
+          final formattedDate = DateFormat(
+            'MMM d, y',
+          ).format(matchingExam.targetDate);
 
           return Container(
             padding: const EdgeInsets.all(16),
@@ -424,8 +503,10 @@ class _CourseModuleView extends StatelessWidget {
                 ShrinkableButton(
                   onTap: () => ManageExamModalSheet.show(context),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 50 : 25),
                       borderRadius: BorderRadius.circular(AppRadius.badge),
@@ -906,8 +987,8 @@ class _CourseModuleView extends StatelessWidget {
                         color: deck.hasDueCards
                             ? colors.primary.withAlpha(isDark ? 90 : 60)
                             : (isDark
-                                ? colors.surfaceBorderHighlight.withAlpha(50)
-                                : colors.surfaceBorder.withAlpha(120)),
+                                  ? colors.surfaceBorderHighlight.withAlpha(50)
+                                  : colors.surfaceBorder.withAlpha(120)),
                       ),
                     ),
                     child: Row(
@@ -940,10 +1021,11 @@ class _CourseModuleView extends StatelessWidget {
                                     children: [
                                       Text(
                                         '${deck.totalCards} cards',
-                                        style: typography.footnote.regular.copyWith(
-                                          color: colors.textSecondary,
-                                          fontSize: 11.5,
-                                        ),
+                                        style: typography.footnote.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 11.5,
+                                            ),
                                       ),
                                       if (deck.dueCards > 0) ...[
                                         const SizedBox(width: 8),
@@ -954,14 +1036,17 @@ class _CourseModuleView extends StatelessWidget {
                                           ),
                                           decoration: BoxDecoration(
                                             color: colors.error.withAlpha(30),
-                                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.micro,
+                                            ),
                                           ),
                                           child: Text(
                                             '${deck.dueCards} due',
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.error,
-                                              fontSize: 10,
-                                            ),
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.error,
+                                                  fontSize: 10,
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -988,7 +1073,9 @@ class _CourseModuleView extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1061,14 +1148,17 @@ class _CourseModuleView extends StatelessWidget {
                         defaultSubject: mappedSubject,
                         onAdded: (newQuestions) {
                           context.read<PastQuestionsBloc>().add(
-                                AddPastQuestionsEvent(newQuestions),
-                              );
+                            AddPastQuestionsEvent(newQuestions),
+                          );
                         },
                       ),
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 45 : 25),
                       borderRadius: BorderRadius.circular(AppRadius.badge),
@@ -1079,7 +1169,11 @@ class _CourseModuleView extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_rounded, size: 14, color: colors.primary),
+                        Icon(
+                          Icons.add_rounded,
+                          size: 14,
+                          color: colors.primary,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Add Question',
@@ -1101,7 +1195,10 @@ class _CourseModuleView extends StatelessWidget {
                 runSpacing: 6,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: colors.surfaceSecondary,
                       borderRadius: BorderRadius.circular(AppRadius.micro),
@@ -1116,7 +1213,10 @@ class _CourseModuleView extends StatelessWidget {
                   ),
                   if (pqState.userAddedQuestions.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.primary.withAlpha(isDark ? 45 : 22),
                         borderRadius: BorderRadius.circular(AppRadius.micro),
@@ -1135,9 +1235,14 @@ class _CourseModuleView extends StatelessWidget {
                     ),
                   if (pqState.theoryQuestions.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                        color: colors.syllabotAccent.withAlpha(
+                          isDark ? 40 : 20,
+                        ),
                         borderRadius: BorderRadius.circular(AppRadius.micro),
                         border: Border.all(
                           color: colors.syllabotAccent.withAlpha(60),
@@ -1241,7 +1346,7 @@ class _CourseModuleView extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: colors.primary.withAlpha(isDark ? 25 : 10),
+                      color: colors.black.withAlpha(isDark ? 40 : 15),
                       blurRadius: 14,
                       offset: const Offset(0, 4),
                     ),
@@ -1255,15 +1360,24 @@ class _CourseModuleView extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: colors.primary.withAlpha(isDark ? 50 : 25),
-                              borderRadius: BorderRadius.circular(AppRadius.badge),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.verified_rounded, size: 12, color: colors.primary),
+                                Icon(
+                                  Icons.verified_rounded,
+                                  size: 12,
+                                  color: colors.primary,
+                                ),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
@@ -1324,10 +1438,14 @@ class _CourseModuleView extends StatelessWidget {
                               height: 42,
                               decoration: BoxDecoration(
                                 color: colors.primary,
-                                borderRadius: BorderRadius.circular(AppRadius.card),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(80),
+                                    color: colors.black.withAlpha(
+                                      isDark ? 50 : 25,
+                                    ),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
@@ -1336,7 +1454,11 @@ class _CourseModuleView extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.play_circle_filled_rounded, size: 16, color: colors.white),
+                                  Icon(
+                                    Icons.play_circle_filled_rounded,
+                                    size: 16,
+                                    color: colors.white,
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Launch Q-Bank & CBT',
@@ -1369,16 +1491,26 @@ class _CourseModuleView extends StatelessWidget {
                             height: 42,
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
-                              color: colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
-                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              color: colors.syllabotAccent.withAlpha(
+                                isDark ? 40 : 20,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
                               border: Border.all(
-                                color: colors.syllabotAccent.withAlpha(isDark ? 80 : 50),
+                                color: colors.syllabotAccent.withAlpha(
+                                  isDark ? 80 : 50,
+                                ),
                               ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.auto_awesome_rounded, size: 15, color: colors.syllabotAccent),
+                                Icon(
+                                  Icons.auto_awesome_rounded,
+                                  size: 15,
+                                  color: colors.syllabotAccent,
+                                ),
                                 const SizedBox(width: 5),
                                 Text(
                                   'AI Drill',
@@ -1405,8 +1537,8 @@ class _CourseModuleView extends StatelessWidget {
                             defaultSubject: mappedSubject,
                             onAdded: (newQuestions) {
                               context.read<PastQuestionsBloc>().add(
-                                    AddPastQuestionsEvent(newQuestions),
-                                  );
+                                AddPastQuestionsEvent(newQuestions),
+                              );
                             },
                           ),
                         );
@@ -1423,7 +1555,11 @@ class _CourseModuleView extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.upload_file_rounded, size: 16, color: colors.primary),
+                            Icon(
+                              Icons.upload_file_rounded,
+                              size: 16,
+                              color: colors.primary,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               'Upload or Add Past Questions',
@@ -1487,23 +1623,23 @@ class _CourseModuleView extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDark
                       ? (isHovered
-                          ? colors.surfaceSecondary.withAlpha(180)
-                          : colors.surfaceSecondary.withAlpha(140))
+                            ? colors.surfaceSecondary.withAlpha(180)
+                            : colors.surfaceSecondary.withAlpha(140))
                       : (isHovered
-                          ? colors.surfacePrimary
-                          : colors.surfacePrimary.withAlpha(200)),
+                            ? colors.surfacePrimary
+                            : colors.surfacePrimary.withAlpha(200)),
                   borderRadius: BorderRadius.circular(AppRadius.panel),
                   border: Border.all(
                     color: isHovered
                         ? accentColor.withAlpha(isDark ? 140 : 110)
                         : (isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(60)
-                            : colors.surfaceBorder.withAlpha(120)),
+                              ? colors.surfaceBorderHighlight.withAlpha(60)
+                              : colors.surfaceBorder.withAlpha(120)),
                   ),
                   boxShadow: isHovered
                       ? [
                           BoxShadow(
-                            color: accentColor.withAlpha(isDark ? 40 : 20),
+                            color: colors.black.withAlpha(isDark ? 35 : 15),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -1543,7 +1679,9 @@ class _CourseModuleView extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: accentColor.withAlpha(25),
-                                  borderRadius: BorderRadius.circular(AppRadius.micro),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.micro,
+                                  ),
                                 ),
                                 child: Text(
                                   badgeText,

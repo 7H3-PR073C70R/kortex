@@ -133,10 +133,18 @@ class FlashcardGestureCanvas extends HookWidget {
         final verticalThreshold = screenSize.height * 0.35;
 
         // Velocity & threshold evaluation: must cross 42% screen width or be a strong intentional flick (> 700 px/s)
-        final isFlickLeft = (velocity.dx < -700 && currentDx < -screenSize.width * 0.2) || currentDx < -horizontalThreshold;
-        final isFlickRight = (velocity.dx > 700 && currentDx > screenSize.width * 0.2) || currentDx > horizontalThreshold;
-        final isFlickUp = (velocity.dy < -700 && currentDy < -screenSize.height * 0.15) || currentDy < -verticalThreshold;
-        final isFlickDown = (velocity.dy > 700 && currentDy > screenSize.height * 0.15) || currentDy > verticalThreshold;
+        final isFlickLeft =
+            (velocity.dx < -700 && currentDx < -screenSize.width * 0.2) ||
+            currentDx < -horizontalThreshold;
+        final isFlickRight =
+            (velocity.dx > 700 && currentDx > screenSize.width * 0.2) ||
+            currentDx > horizontalThreshold;
+        final isFlickUp =
+            (velocity.dy < -700 && currentDy < -screenSize.height * 0.15) ||
+            currentDy < -verticalThreshold;
+        final isFlickDown =
+            (velocity.dy > 700 && currentDy > screenSize.height * 0.15) ||
+            currentDy > verticalThreshold;
 
         VoidCallback? swipeCallback;
         var targetOffset = Offset.zero;
@@ -224,8 +232,10 @@ class FlashcardGestureCanvas extends HookWidget {
             ..rotateZ(dragOffset.value.dx * 0.0004)
             ..rotateY(flipAngle);
 
-          final (resolvedFront, resolvedBack) =
-              resolveCardFaces(card.front, card.back);
+          final (resolvedFront, resolvedBack) = resolveCardFaces(
+            card.front,
+            card.back,
+          );
 
           return Stack(
             clipBehavior: Clip.none,
@@ -283,7 +293,7 @@ class FlashcardGestureCanvas extends HookWidget {
                           borderRadius: BorderRadius.circular(AppRadius.dialog),
                           boxShadow: [
                             BoxShadow(
-                              color: routeColor.withAlpha(120),
+                              color: colors.black.withAlpha(isDark ? 60 : 30),
                               blurRadius: 18,
                               offset: const Offset(0, 4),
                             ),
@@ -359,7 +369,8 @@ class FlashcardGestureCanvas extends HookWidget {
       ).firstMatch(cleaned);
 
       if (optMatch != null) {
-        final letter = (optMatch.group(1) ?? optMatch.group(2) ?? '').toUpperCase();
+        final letter = (optMatch.group(1) ?? optMatch.group(2) ?? '')
+            .toUpperCase();
         final content = optMatch.group(5)?.trim() ?? '';
         cleanOptionLines.add('• $letter. $content');
         if (isChecked && content.isNotEmpty) {
@@ -374,11 +385,15 @@ class FlashcardGestureCanvas extends HookWidget {
         ? '${front.trim()}\n\n**Options:**\n${cleanOptionLines.join('\n')}'
         : front;
 
-    var resolvedBack = (back.substring(0, match.start) + back.substring(match.end)).trim();
+    var resolvedBack =
+        (back.substring(0, match.start) + back.substring(match.end)).trim();
 
     if (correctOptionText != null) {
       resolvedBack = resolvedBack.replaceAllMapped(
-        RegExp(r'((?:\*\*)?Correct Answer:(?:\*\*)?\s*Option\s+[A-Ea-e])(?!\s*—)', caseSensitive: false),
+        RegExp(
+          r'((?:\*\*)?Correct Answer:(?:\*\*)?\s*Option\s+[A-Ea-e])(?!\s*—)',
+          caseSensitive: false,
+        ),
         (m) => '${m.group(1)} — ${correctOptionText!.split(' — ').last}',
       );
     }
@@ -451,9 +466,7 @@ class _CardFace extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: isBackFace
-                      ? colors.success.withAlpha(isDark ? 40 : 15)
-                      : colors.primary.withAlpha(isDark ? 50 : 20),
+                  color: colors.black.withAlpha(isDark ? 60 : 25),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),

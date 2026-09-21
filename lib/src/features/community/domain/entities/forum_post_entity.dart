@@ -53,10 +53,9 @@ class ForumPostEntity extends Equatable {
   final List<ForumReplyEntity> replies;
 
   int get netVotes => upvotes - downvotes;
-  int get topLevelRepliesCount =>
-      replies.isNotEmpty
-          ? replies.where((r) => !r.isNested).length
-          : repliesCount;
+  int get topLevelRepliesCount => replies.isNotEmpty
+      ? replies.where((r) => !r.isNested).length
+      : repliesCount;
 
   ForumPostEntity copyWith({
     String? id,

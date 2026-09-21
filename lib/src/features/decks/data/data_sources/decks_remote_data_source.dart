@@ -1,7 +1,6 @@
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 
-
 abstract class DecksRemoteDataSource {
   Future<List<DeckModel>> getUserDecks();
 
@@ -13,7 +12,7 @@ abstract class DecksRemoteDataSource {
   });
 
   Future<void> updateDeckCards(String deckId, List<FlashcardModel> cards);
-  
+
   Future<void> saveSessionResults({
     required String deckId,
     required int cardsReviewed,

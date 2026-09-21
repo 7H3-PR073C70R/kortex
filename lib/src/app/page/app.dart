@@ -37,8 +37,9 @@ class _AppState extends State<App> {
     super.initState();
     _appRouter = locator<AppRouter>();
     _routerConfig = _appRouter.config(
-      reevaluateListenable:
-          ReevaluateListenable.stream(locator<AuthBloc>().stream),
+      reevaluateListenable: ReevaluateListenable.stream(
+        locator<AuthBloc>().stream,
+      ),
     );
 
     _sessionExpiredSubscription = locator<SessionExpiredService>()

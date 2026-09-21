@@ -64,6 +64,7 @@ class SyllabusChecklistWidget extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     final topicList = useState<List<SyllabusTopic>>(topics);
     final subjects = useMemoized(() {
@@ -209,11 +210,9 @@ class SyllabusChecklistWidget extends HookWidget {
                       boxShadow: isHovered
                           ? [
                               BoxShadow(
-                                color:
-                                    (topic.isMastered
-                                            ? colors.success
-                                            : colors.primary)
-                                        .withValues(alpha: 0.08),
+                                color: colors.black.withValues(
+                                  alpha: isDark ? 0.3 : 0.08,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),

@@ -204,33 +204,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            // Ambient Radial Glow Backplate
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: AppRadius.radiusDialog,
-                                gradient: RadialGradient(
-                                  radius: 0.85,
-                                  colors: [
-                                    colors.primary.withAlpha(
-                                      (pulseAnimation.value *
-                                              (isDark ? 45 : 22))
-                                          .round()
-                                          .clamp(0, 255),
-                                    ),
-                                    colors.syllabotAccent.withAlpha(
-                                      (pulseAnimation.value *
-                                              (isDark ? 28 : 14))
-                                          .round()
-                                          .clamp(0, 255),
-                                    ),
-                                    colors.transparent,
-                                  ],
-                                  stops: const [0.0, 0.6, 1.0],
-                                ),
-                              ),
-                            ),
-
-                            // Glowing Glassmorphism Card Wrapper
+                            // Glassmorphism Card Wrapper
                             Transform.translate(
                               offset: Offset(
                                 graphicTranslateX,
@@ -273,11 +247,11 @@ class _OnboardingSlideItem extends StatelessWidget {
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: colors.primary.withAlpha(
-                                          isDark ? 40 : 20,
+                                        color: colors.black.withAlpha(
+                                          isDark ? 50 : 15,
                                         ),
-                                        blurRadius: 28,
-                                        offset: const Offset(0, 12),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
                                       ),
                                     ],
                                   ),

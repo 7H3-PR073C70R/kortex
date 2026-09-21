@@ -80,7 +80,10 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           constraints: BoxConstraints(
-            maxWidth: (MediaQuery.sizeOf(context).width * 0.75).clamp(280.0, 580.0),
+            maxWidth: (MediaQuery.sizeOf(context).width * 0.75).clamp(
+              280.0,
+              580.0,
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -100,7 +103,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
             ),
             boxShadow: [
               BoxShadow(
-                color: colors.primary.withAlpha(isDark ? 80 : 40),
+                color: colors.black.withAlpha(isDark ? 40 : 15),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -123,7 +126,10 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         constraints: BoxConstraints(
-          maxWidth: (MediaQuery.sizeOf(context).width * 0.88).clamp(320.0, 720.0),
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.88).clamp(
+            320.0,
+            720.0,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,8 +238,8 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                             color: _isSpeakingThis
                                                 ? colors.syllabotAccent
                                                 : (isHovered
-                                                    ? colors.primary
-                                                    : colors.textSecondary),
+                                                      ? colors.primary
+                                                      : colors.textSecondary),
                                           ),
                                         ),
                                       ),
@@ -243,7 +249,8 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                               const SizedBox(width: 4),
 
                               // 2. Convert to Card button
-                              if (widget.onConvertToCard != null && !widget.message.isError) ...[
+                              if (widget.onConvertToCard != null &&
+                                  !widget.message.isError) ...[
                                 PlatformHoverBuilder(
                                   builder: (context, isHovered, child) {
                                     return ShrinkableButton(

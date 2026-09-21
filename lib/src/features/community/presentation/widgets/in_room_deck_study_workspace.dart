@@ -969,203 +969,201 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                     ),
                   )
                 : allDecks.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: colors.primary.withAlpha(isDark ? 30 : 15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.auto_stories_outlined,
-                                  size: 36,
-                                  color: colors.primary,
-                                ),
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 30 : 15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.auto_stories_outlined,
+                              size: 36,
+                              color: colors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'No decks available yet',
+                            style: typography.subhead.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Create or import a deck to start, or tap below to fetch your latest decks from the cloud.',
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 18),
+                          ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.mediumImpact());
+                              if (locator.isRegistered<DecksBloc>()) {
+                                locator<DecksBloc>().add(const DecksStarted());
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 10,
                               ),
-                              const SizedBox(height: 14),
-                              Text(
-                                'No decks available yet',
-                                style: typography.subhead.bold.copyWith(
-                                  color: colors.textPrimary,
-                                ),
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Create or import a deck to start, or tap below to fetch your latest decks from the cloud.',
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 12,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 18),
-                              ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.mediumImpact());
-                                  if (locator.isRegistered<DecksBloc>()) {
-                                    locator<DecksBloc>().add(const DecksStarted());
-                                  }
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 10,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.refresh_rounded,
+                                    size: 16,
+                                    color: colors.white,
                                   ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Fetch Decks',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.white,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      if (locator.isRegistered<DecksBloc>()) {
+                        locator<DecksBloc>().add(const DecksRefreshed());
+                      }
+                      await Future<void>.delayed(
+                        const Duration(milliseconds: 500),
+                      );
+                    },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      itemCount: allDecks.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final deck = allDecks[index];
+                        final isDue = deck.dueCards > 0;
+
+                        return ShrinkableButton(
+                          onTap: () {
+                            unawaited(HapticFeedback.mediumImpact());
+                            context.read<LiveRoomCubit>().selectActiveDeck(
+                              deck.id,
+                              deck.title,
+                            );
+                            unawaited(_loadDeckCards(deck.id));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colors.surfacePrimary,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isDue
+                                    ? colors.recallHard.withAlpha(
+                                        isDark ? 100 : 70,
+                                      )
+                                    : colors.surfaceBorder.withAlpha(
+                                        isDark ? 50 : 30,
+                                      ),
+                                width: isDue ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
                                   decoration: BoxDecoration(
-                                    color: colors.primary,
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 40 : 20,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.style_rounded,
+                                      size: 22,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Icon(
-                                        Icons.refresh_rounded,
-                                        size: 16,
-                                        color: colors.white,
-                                      ),
-                                      const SizedBox(width: 8),
                                       Text(
-                                        'Fetch Decks',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.white,
-                                          fontSize: 12.5,
+                                        deck.title,
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
                                         ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${deck.totalCards} cards • ${deck.subject}',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 11.5,
+                                            ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: () async {
-                          if (locator.isRegistered<DecksBloc>()) {
-                            locator<DecksBloc>().add(const DecksRefreshed());
-                          }
-                          await Future<void>.delayed(
-                            const Duration(milliseconds: 500),
-                          );
-                        },
-                        child: ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
-                          ),
-                          itemCount: allDecks.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final deck = allDecks[index];
-                            final isDue = deck.dueCards > 0;
-
-                            return ShrinkableButton(
-                              onTap: () {
-                                unawaited(HapticFeedback.mediumImpact());
-                                context.read<LiveRoomCubit>().selectActiveDeck(
-                                      deck.id,
-                                      deck.title,
-                                    );
-                                unawaited(_loadDeckCards(deck.id));
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: colors.surfacePrimary,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isDue
-                                        ? colors.recallHard.withAlpha(
-                                            isDark ? 100 : 70,
-                                          )
-                                        : colors.surfaceBorder.withAlpha(
-                                            isDark ? 50 : 30,
-                                          ),
-                                    width: isDue ? 1.5 : 1.0,
+                                if (isDue)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.recallHard.withAlpha(
+                                        isDark ? 40 : 25,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '${deck.dueCards} Due',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.recallHard,
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: colors.textSecondary,
+                                  size: 20,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 42,
-                                      height: 42,
-                                      decoration: BoxDecoration(
-                                        color: colors.primary.withAlpha(
-                                          isDark ? 40 : 20,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.style_rounded,
-                                          size: 22,
-                                          color: colors.primary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            deck.title,
-                                            style: typography.body.bold.copyWith(
-                                              color: colors.textPrimary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${deck.totalCards} cards • ${deck.subject}',
-                                            style: typography.caption.regular
-                                                .copyWith(
-                                                  color: colors.textSecondary,
-                                                  fontSize: 11.5,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (isDue)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colors.recallHard.withAlpha(
-                                            isDark ? 40 : 25,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          '${deck.dueCards} Due',
-                                          style:
-                                              typography.caption.bold.copyWith(
-                                            color: colors.recallHard,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ),
-                                    const SizedBox(width: 6),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      color: colors.textSecondary,
-                                      size: 20,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -1325,6 +1323,7 @@ class _FsrsGradeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
+    final colors = context.colors;
 
     return ShrinkableButton(
       onTap: onTap,
@@ -1339,7 +1338,7 @@ class _FsrsGradeButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: color.withAlpha(isDark ? 35 : 15),
+              color: colors.black.withAlpha(isDark ? 30 : 10),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

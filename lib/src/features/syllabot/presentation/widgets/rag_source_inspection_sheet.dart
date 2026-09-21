@@ -173,7 +173,9 @@ class RagSourceInspectionSheet extends StatelessWidget {
                   constraints: const BoxConstraints(maxHeight: 260),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? colors.backgroundSecondary : colors.backgroundPrimary,
+                    color: isDark
+                        ? colors.backgroundSecondary
+                        : colors.backgroundPrimary,
                     borderRadius: AppRadius.radiusCard,
                     border: Border.all(
                       color: colors.surfaceBorder.withAlpha(60),
@@ -202,7 +204,9 @@ class RagSourceInspectionSheet extends StatelessWidget {
                           return ShrinkableButton(
                             onTap: () {
                               unawaited(
-                                Clipboard.setData(ClipboardData(text: chunk.content)),
+                                Clipboard.setData(
+                                  ClipboardData(text: chunk.content),
+                                ),
                               );
                               context.showSnackBar(
                                 message: 'Source citation copied to clipboard.',
@@ -230,13 +234,17 @@ class RagSourceInspectionSheet extends StatelessWidget {
                                   Icon(
                                     Icons.copy_rounded,
                                     size: 16,
-                                    color: isHovered ? colors.primary : colors.textPrimary,
+                                    color: isHovered
+                                        ? colors.primary
+                                        : colors.textPrimary,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Copy Citation',
                                     style: typography.caption.bold.copyWith(
-                                      color: isHovered ? colors.primary : colors.textPrimary,
+                                      color: isHovered
+                                          ? colors.primary
+                                          : colors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -263,7 +271,9 @@ class RagSourceInspectionSheet extends StatelessWidget {
                                 borderRadius: AppRadius.radiusCard,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(isHovered ? 120 : 80),
+                                    color: colors.black.withAlpha(
+                                      isHovered ? 45 : 20,
+                                    ),
                                     blurRadius: isHovered ? 14 : 8,
                                     offset: const Offset(0, 2),
                                   ),

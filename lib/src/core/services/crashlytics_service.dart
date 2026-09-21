@@ -5,7 +5,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 /// Service wrapping Firebase Crashlytics with safe offline/test fallbacks.
 class CrashlyticsService {
   CrashlyticsService({FirebaseCrashlytics? crashlytics})
-      : _crashlytics = crashlytics;
+    : _crashlytics = crashlytics;
 
   FirebaseCrashlytics? _crashlytics;
 

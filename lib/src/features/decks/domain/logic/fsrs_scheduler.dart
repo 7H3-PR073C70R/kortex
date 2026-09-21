@@ -258,11 +258,17 @@ class FsrsScheduler {
 
   /// Default 21 FSRS v6 parameter weights.
   static const List<double> defaultWeights = [
-    0.40255, 1.18385, 3.173, 15.69105, // w0-w3: Initial stability for Again, Hard, Good, Easy
+    0.40255,
+    1.18385,
+    3.173,
+    15.69105, // w0-w3: Initial stability for Again, Hard, Good, Easy
     7.1949, 0.5345, // w4-w5: Initial difficulty
     1.4604, 0.0046, // w6-w7: Difficulty transition & mean reversion
     1.54575, 0.1192, 1.01925, // w8-w10: Stability recall transition
-    1.9395, 0.11, 0.29605, 0.22695, // w11-w14: Stability forgetting/lapse transition
+    1.9395,
+    0.11,
+    0.29605,
+    0.22695, // w11-w14: Stability forgetting/lapse transition
     0.5698, 2.0619, // w15-w16: Hard penalty & Easy bonus
     0.0, // w17: Short-term stability factor
     0.5, // w18: Short-term difficulty adjustment
@@ -373,8 +379,8 @@ class FsrsScheduler {
     final reviewEpoch = reviewTime.millisecondsSinceEpoch;
     final txUuid =
         (transactionUuid != null && UuidUtils.isValidUuid(transactionUuid))
-            ? transactionUuid
-            : UuidUtils.generate();
+        ? transactionUuid
+        : UuidUtils.generate();
 
     final elapsedDays = currentCard.lastReview == null
         ? 0
@@ -503,8 +509,7 @@ class FsrsScheduler {
           : currentTime.difference(lastReview).inDays.toDouble();
       final r = retrievability(elapsed, getStability(card));
       return (card: card, retrievability: r);
-    }).toList()
-      ..sort((a, b) => b.retrievability.compareTo(a.retrievability));
+    }).toList()..sort((a, b) => b.retrievability.compareTo(a.retrievability));
 
     final easyCount = (sprintSize * 0.6).round().clamp(1, sprintSize - 1);
     final hardCount = sprintSize - easyCount;
@@ -518,7 +523,8 @@ class FsrsScheduler {
     var easyIndex = 0;
     var hardIndex = 0;
 
-    while (result.length < sprintSize && (easyIndex < easyPool.length || hardIndex < hardPool.length)) {
+    while (result.length < sprintSize &&
+        (easyIndex < easyPool.length || hardIndex < hardPool.length)) {
       if (easyIndex < easyPool.length) {
         result.add(easyPool[easyIndex++]);
       }

@@ -93,7 +93,9 @@ class StreakShieldIndicator extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: colors.info.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(AppRadius.badge),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
                                 border: Border.all(
                                   color: colors.info.withValues(
                                     alpha: 0.5,

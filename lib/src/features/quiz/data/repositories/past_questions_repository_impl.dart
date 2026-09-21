@@ -17,8 +17,8 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     this._remoteDataSource, {
     PastQuestionsLocalDataSource? localDataSource,
     LocalStorageService? localStorageService,
-  })  : _localDataSource = localDataSource,
-        _localStorageService = localStorageService {
+  }) : _localDataSource = localDataSource,
+       _localStorageService = localStorageService {
     _loadBookmarkedIds();
     unawaited(_effectiveLocalDataSource.initialize());
   }
@@ -139,8 +139,9 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
   ) {
     return Future<List<String>>.sync(() async {
       try {
-        final local =
-            await _effectiveLocalDataSource.getAvailableSubjects(category);
+        final local = await _effectiveLocalDataSource.getAvailableSubjects(
+          category,
+        );
         if (local.isNotEmpty) return local;
       } on Object catch (_) {}
       return _remoteDataSource.getAvailableSubjects(category);
@@ -153,8 +154,9 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
   ) {
     return Future<List<int>>.sync(() async {
       try {
-        final local =
-            await _effectiveLocalDataSource.getAvailableYears(category);
+        final local = await _effectiveLocalDataSource.getAvailableYears(
+          category,
+        );
         if (local.isNotEmpty) return local;
       } on Object catch (_) {}
       return _remoteDataSource.getAvailableYears(category);

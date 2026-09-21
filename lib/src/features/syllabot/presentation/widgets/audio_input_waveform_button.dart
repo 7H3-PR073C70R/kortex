@@ -83,14 +83,14 @@ class AudioInputWaveformButton extends HookWidget {
                     color: isRecording.value
                         ? colors.error.withAlpha(isDark ? 180 : 220)
                         : (isHovered
-                            ? colors.primary.withAlpha(isDark ? 80 : 45)
-                            : colors.primary.withAlpha(isDark ? 50 : 25)),
+                              ? colors.primary.withAlpha(isDark ? 80 : 45)
+                              : colors.primary.withAlpha(isDark ? 50 : 25)),
                     border: Border.all(
                       color: isRecording.value
                           ? colors.error
                           : (isHovered
-                              ? colors.primary.withAlpha(isDark ? 180 : 120)
-                              : colors.primary.withAlpha(isDark ? 100 : 60)),
+                                ? colors.primary.withAlpha(isDark ? 180 : 120)
+                                : colors.primary.withAlpha(isDark ? 100 : 60)),
                     ),
                   ),
                   child: Center(
@@ -107,7 +107,9 @@ class AudioInputWaveformButton extends HookWidget {
                                           8)
                                       .abs();
                               return Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 1.5,
+                                ),
                                 width: 2.5,
                                 height: h,
                                 decoration: BoxDecoration(
@@ -120,7 +122,9 @@ class AudioInputWaveformButton extends HookWidget {
                         : Icon(
                             Icons.mic_none_rounded,
                             size: 18,
-                            color: isHovered ? colors.textPrimary : colors.primary,
+                            color: isHovered
+                                ? colors.textPrimary
+                                : colors.primary,
                           ),
                   ),
                 ),

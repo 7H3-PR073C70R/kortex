@@ -239,7 +239,7 @@ class OcrPreviewPage extends HookWidget {
                         borderRadius: AppRadius.radiusCard,
                         boxShadow: [
                           BoxShadow(
-                            color: colors.primary.withAlpha(isDark ? 90 : 50),
+                            color: colors.black.withAlpha(isDark ? 50 : 20),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),

@@ -28,11 +28,12 @@ class PastQuestionAiExtractorService {
   PastQuestionAiExtractorService({
     LocalIngestionService? ingestionService,
     Dio? dio,
-  })  : _ingestionService = ingestionService ??
-            (locator.isRegistered<LocalIngestionService>()
-                ? locator<LocalIngestionService>()
-                : LocalIngestionService()),
-        _dio = dio ?? Dio();
+  }) : _ingestionService =
+           ingestionService ??
+           (locator.isRegistered<LocalIngestionService>()
+               ? locator<LocalIngestionService>()
+               : LocalIngestionService()),
+       _dio = dio ?? Dio();
 
   final LocalIngestionService _ingestionService;
   final Dio _dio;
@@ -77,7 +78,10 @@ class PastQuestionAiExtractorService {
       debugPrint('[PastQuestionAiExtractor] Image extraction note: $e');
     }
 
-    onProgress?.call(0.55, 'AI calibrating questions, answers & step-by-step reasoning...');
+    onProgress?.call(
+      0.55,
+      'AI calibrating questions, answers & step-by-step reasoning...',
+    );
 
     // 3. AI Calibrate Questions (MCQ and Theory)
     final questions = await _calibrateWithAi(
@@ -118,7 +122,10 @@ class PastQuestionAiExtractorService {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
 
       // Case A: Uploaded file is directly an image
-      if (cleanExt == 'png' || cleanExt == 'jpg' || cleanExt == 'jpeg' || cleanExt == 'webp') {
+      if (cleanExt == 'png' ||
+          cleanExt == 'jpg' ||
+          cleanExt == 'jpeg' ||
+          cleanExt == 'webp') {
         final filePath = '${imagesDir.path}/pq_img_${timestamp}_0.$cleanExt';
         final file = File(filePath);
         await file.writeAsBytes(bytes);
@@ -181,7 +188,8 @@ class PastQuestionAiExtractorService {
       return const [];
     }
 
-    final promptInstruction = '''
+    final promptInstruction =
+        '''
 You are an expert university & exam examiner.
 Analyze the following past paper document text for the course "$courseCode - $courseTitle" ($mappedSubject, Exam Year $year).
 
@@ -252,7 +260,9 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
         }
       }
     } on Object catch (e) {
-      debugPrint('[PastQuestionAiExtractor] Cloud AI unavailable ($e), parsing document text directly.');
+      debugPrint(
+        '[PastQuestionAiExtractor] Cloud AI unavailable ($e), parsing document text directly.',
+      );
     }
 
     // 2. Parse actual extracted text using heuristic NLP document parser
@@ -287,10 +297,22 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
 
       if (front.isEmpty) continue;
 
-      final (prompt, options, correctIdx, correctLabel, parsedExplanation, isTheory) =
-          _parseQuestionBlock('$front\n$back', courseCode, mappedSubject);
+      final (
+        prompt,
+        options,
+        correctIdx,
+        correctLabel,
+        parsedExplanation,
+        isTheory,
+      ) = _parseQuestionBlock(
+        '$front\n$back',
+        courseCode,
+        mappedSubject,
+      );
 
-      final attachedImage = i < extractedImages.length ? extractedImages[i] : null;
+      final attachedImage = i < extractedImages.length
+          ? extractedImages[i]
+          : null;
 
       list.add(
         PastQuestionModel(
@@ -303,9 +325,7 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
           options: isTheory ? const [] : options,
           correctOptionIndex: correctIdx,
           correctOptionLabel: correctLabel,
-          explanation: explanation.isNotEmpty
-              ? explanation
-              : parsedExplanation,
+          explanation: explanation.isNotEmpty ? explanation : parsedExplanation,
           topic: courseTitle,
           imageUrl: attachedImage,
           isUserAdded: true,
@@ -324,7 +344,11 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
     String courseCode,
     String mappedSubject,
   ) {
-    final rawLines = block.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    final rawLines = block
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
     if (rawLines.isEmpty) return ('', const [], 0, '', '', true);
 
     // 1. Strip leading question index prefix from line 0
@@ -338,9 +362,18 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
     }
 
     // 2. Identify Options, Answers, and Explanations
-    final optionRegex = RegExp(r'^\s*(?:([A-Da-d])[\.\)]|\(([A-Da-d])\))\s*(.+)', caseSensitive: false);
-    final answerRegex = RegExp(r'^\s*(?:Ans(?:wer)?|Correct(?:\s*Option)?|Key)\s*[:=\-]\s*([A-Da-d])', caseSensitive: false);
-    final explanationRegex = RegExp(r'^\s*(?:Explanation|Solution|Reasoning|Working|Rubric)\s*[:=\-]\s*(.*)', caseSensitive: false);
+    final optionRegex = RegExp(
+      r'^\s*(?:([A-Da-d])[\.\)]|\(([A-Da-d])\))\s*(.+)',
+      caseSensitive: false,
+    );
+    final answerRegex = RegExp(
+      r'^\s*(?:Ans(?:wer)?|Correct(?:\s*Option)?|Key)\s*[:=\-]\s*([A-Da-d])',
+      caseSensitive: false,
+    );
+    final explanationRegex = RegExp(
+      r'^\s*(?:Explanation|Solution|Reasoning|Working|Rubric)\s*[:=\-]\s*(.*)',
+      caseSensitive: false,
+    );
 
     final promptLines = <String>[if (rawPrompt.isNotEmpty) rawPrompt];
     final options = <String>[];
@@ -377,7 +410,8 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
       final optMatch = optionRegex.firstMatch(line);
       if (optMatch != null) {
         readingOptions = true;
-        final letter = (optMatch.group(1) ?? optMatch.group(2) ?? '').toUpperCase();
+        final letter = (optMatch.group(1) ?? optMatch.group(2) ?? '')
+            .toUpperCase();
         final text = optMatch.group(3)?.trim() ?? '';
         options.add('$letter. $text');
         continue;
@@ -400,8 +434,8 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
     final explanation = explanationLines.isNotEmpty
         ? explanationLines.join('\n').trim()
         : (isTheory
-            ? 'Model solution derived directly from $courseCode $mappedSubject syllabus.'
-            : 'Option $correctLabel is the verified solution for this $mappedSubject question.');
+              ? 'Model solution derived directly from $courseCode $mappedSubject syllabus.'
+              : 'Option $correctLabel is the verified solution for this $mappedSubject question.');
 
     return (prompt, options, correctIdx, correctLabel, explanation, isTheory);
   }
@@ -443,7 +477,8 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
       if (isHeaderFooter) continue;
 
       if (questionHeaderRegex.hasMatch(trimmed)) {
-        if (currentBuffer != null && currentBuffer.toString().trim().isNotEmpty) {
+        if (currentBuffer != null &&
+            currentBuffer.toString().trim().isNotEmpty) {
           questionBuffers.add(currentBuffer);
         }
         currentBuffer = StringBuffer()..writeln(trimmed);
@@ -474,7 +509,9 @@ ${cleanSource.length > 12000 ? cleanSource.substring(0, 12000) : cleanSource}
 
       if (prompt.isEmpty) continue;
 
-      final attachedImage = i < extractedImages.length ? extractedImages[i] : null;
+      final attachedImage = i < extractedImages.length
+          ? extractedImages[i]
+          : null;
 
       list.add(
         PastQuestionModel(

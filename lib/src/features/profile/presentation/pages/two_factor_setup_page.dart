@@ -560,11 +560,11 @@ class TwoFactorSetupPage extends HookWidget {
                                 borderRadius: AppRadius.radiusPanel,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 80 : 40,
+                                    color: colors.black.withAlpha(
+                                      isDark ? 60 : 25,
                                     ),
-                                    blurRadius: 14,
-                                    offset: const Offset(0, 4),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),

@@ -268,8 +268,8 @@ class LatexCardContentViewer extends StatelessWidget {
     bool isDark,
   ) {
     final cleanFormula = LatexAstCache.instance.getOrCleanFormula(formula);
-    final fallbackReadable =
-        LatexAstCache.instance.formatLatexHumanReadableFallback(formula);
+    final fallbackReadable = LatexAstCache.instance
+        .formatLatexHumanReadableFallback(formula);
 
     return Container(
       width: double.infinity,
@@ -285,7 +285,7 @@ class LatexCardContentViewer extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: colors.primary.withAlpha(isDark ? 30 : 10),
+            color: colors.black.withAlpha(isDark ? 30 : 10),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -344,7 +344,7 @@ class LatexCardContentViewer extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: colors.primary.withAlpha(isDark ? 25 : 8),
+                  color: colors.black.withAlpha(isDark ? 30 : 10),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -528,8 +528,8 @@ class LatexCardContentViewer extends StatelessWidget {
     final baseStyle = isBackFace
         ? typography.callout.medium
         : enableBionicReading
-            ? typography.title3.regular
-            : typography.title3.bold;
+        ? typography.title3.regular
+        : typography.title3.bold;
 
     final parsed = isBackFace
         ? ParsedCardFaceContent(prompt: text)

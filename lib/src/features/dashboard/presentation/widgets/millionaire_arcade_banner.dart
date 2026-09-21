@@ -63,163 +63,175 @@ class MillionaireArcadeBanner extends StatelessWidget {
                     : colors.primary.withValues(alpha: isDark ? 0.35 : 0.2),
               ),
             ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top badges
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [colors.warning, colors.slateTerracotta],
-                    ),
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.military_tech_rounded,
-                        color: colors.white,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'DAILY ARCADE',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.white,
-                          fontSize: 10.5,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: (isDark ? colors.white : colors.black).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
-                  ),
-                  child: Text(
-                    '1 Tap • 5 Min • 12 Rungs',
-                    style: typography.caption.medium.copyWith(
-                      color: isDark ? colors.latexHighlight : colors.primary,
-                      fontSize: 10.5,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: colors.success.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.shield_rounded,
-                    color: colors.success,
-                    size: 15,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // Main Title & Subtitle
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Climb the Millionaire Ascent',
-                        style: typography.title3.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 17,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Bypass decision fatigue with a quick cross-subject sprint. Bank checkpoints at Tiers 4 & 8 to protect your XP!',
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Footer / Action row
-            Row(
-              children: [
-                // Lifelines preview
+                // Top badges
                 Row(
                   children: [
-                    _MiniIconBadge(
-                      icon: Icons.filter_2_rounded,
-                      tooltip: '50:50 Lifeline',
-                      isDark: isDark,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [colors.warning, colors.slateTerracotta],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.military_tech_rounded,
+                            color: colors.white,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'DAILY ARCADE',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.white,
+                              fontSize: 10.5,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 6),
-                    _MiniIconBadge(
-                      icon: Icons.auto_awesome_rounded,
-                      tooltip: 'AI Clue',
-                      isDark: isDark,
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark ? colors.white : colors.black)
+                            .withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: Text(
+                        '1 Tap • 5 Min • 12 Rungs',
+                        style: typography.caption.medium.copyWith(
+                          color: isDark
+                              ? colors.latexHighlight
+                              : colors.primary,
+                          fontSize: 10.5,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 6),
-                    _MiniIconBadge(
-                      icon: Icons.groups_rounded,
-                      tooltip: 'Ask the Crowd',
-                      isDark: isDark,
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: colors.success.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.shield_rounded,
+                        color: colors.success,
+                        size: 15,
+                      ),
                     ),
                   ],
                 ),
-                const Spacer(),
+                const SizedBox(height: 14),
 
-                // CTA Button
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [colors.primary, colors.syllabotAccent],
+                // Main Title & Subtitle
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Climb the Millionaire Ascent',
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 17,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Bypass decision fatigue with a quick cross-subject sprint. Bank checkpoints at Tiers 4 & 8 to protect your XP!',
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Play Arcade',
-                        style: typography.footnote.bold.copyWith(
-                          color: colors.white,
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Footer / Action row
+                Row(
+                  children: [
+                    // Lifelines preview
+                    Row(
+                      children: [
+                        _MiniIconBadge(
+                          icon: Icons.filter_2_rounded,
+                          tooltip: '50:50 Lifeline',
+                          isDark: isDark,
                         ),
+                        const SizedBox(width: 6),
+                        _MiniIconBadge(
+                          icon: Icons.auto_awesome_rounded,
+                          tooltip: 'AI Clue',
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: 6),
+                        _MiniIconBadge(
+                          icon: Icons.groups_rounded,
+                          tooltip: 'Ask the Crowd',
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+
+                    // CTA Button
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: colors.white,
-                        size: 15,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [colors.primary, colors.syllabotAccent],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Play Arcade',
+                            style: typography.footnote.bold.copyWith(
+                              color: colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            color: colors.white,
+                            size: 15,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
-        },
-      );
   }
 }
 

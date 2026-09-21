@@ -114,9 +114,9 @@ class AboutSupportPage extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 70 : 35),
-                              blurRadius: 18,
-                              spreadRadius: 2,
+                              color: colors.black.withAlpha(isDark ? 50 : 20),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),

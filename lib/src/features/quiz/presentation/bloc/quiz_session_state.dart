@@ -12,21 +12,21 @@ enum QuizSessionStatus {
 }
 
 enum AssessmentMode {
-  discoveryMode,      // Formative learning: immediate explanations, hint support, low stakes
+  discoveryMode, // Formative learning: immediate explanations, hint support, low stakes
   examSimulationMode, // Summative testing: timed, strict, no hints until results
-  millionaireMode,    // Gamified tiered ladder with safe milestones & lifelines
+  millionaireMode, // Gamified tiered ladder with safe milestones & lifelines
 }
 
 enum MillionaireScope {
-  courseTied,   // Curriculum-aligned mastery milestone for a specific course/deck
+  courseTied, // Curriculum-aligned mastery milestone for a specific course/deck
   globalArcade, // Cross-subject randomized dopamine climb
 }
 
 enum LifelineType {
-  fiftyFifty,  // Eliminates two incorrect options
-  aiClue,      // Socratic hint from Syllabot / AI tutor
+  fiftyFifty, // Eliminates two incorrect options
+  aiClue, // Socratic hint from Syllabot / AI tutor
   askAudience, // Crowd wisdom / simulated confidence distribution
-  skipSwap,    // Skips current question without penalty
+  skipSwap, // Skips current question without penalty
 }
 
 class QuizSessionState extends Equatable {
@@ -93,8 +93,8 @@ class QuizSessionState extends Equatable {
 
   QuizQuestionEntity? get currentQuestion =>
       currentIndex >= 0 && currentIndex < questions.length
-          ? questions[currentIndex]
-          : null;
+      ? questions[currentIndex]
+      : null;
 
   bool get isLastQuestion =>
       questions.isNotEmpty && currentIndex == questions.length - 1;
@@ -126,7 +126,9 @@ class QuizSessionState extends Equatable {
   bool get isTimeExpired => durationMinutes != null && remainingSeconds <= 0;
 
   bool get isTimeRunningLow =>
-      durationMinutes != null && remainingSeconds > 0 && remainingSeconds <= 300;
+      durationMinutes != null &&
+      remainingSeconds > 0 &&
+      remainingSeconds <= 300;
 
   String get formattedTimer {
     final secs = durationMinutes != null
@@ -139,7 +141,18 @@ class QuizSessionState extends Equatable {
 
   // --- Millionaire Ladder Constants & Helpers ---
   static const List<int> millionaireTiersXp = [
-    100, 200, 300, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 125000,
+    100,
+    200,
+    300,
+    500,
+    1000,
+    2000,
+    4000,
+    8000,
+    16000,
+    32000,
+    64000,
+    125000,
   ];
 
   static const Set<int> safeCheckpointTiers = {4, 8};
@@ -158,7 +171,8 @@ class QuizSessionState extends Equatable {
     return millionaireTiersXp[index];
   }
 
-  bool get isCurrentTierSafeCheckpoint => safeCheckpointTiers.contains(currentTier);
+  bool get isCurrentTierSafeCheckpoint =>
+      safeCheckpointTiers.contains(currentTier);
 
   bool isLifelineAvailable(LifelineType type) =>
       availableLifelines[type] ?? false;
@@ -212,11 +226,17 @@ class QuizSessionState extends Equatable {
       bankedTier: bankedTier ?? this.bankedTier,
       millionaireScope: millionaireScope ?? this.millionaireScope,
       availableLifelines: availableLifelines ?? this.availableLifelines,
-      eliminatedOptionIndices: eliminatedOptionIndices ?? this.eliminatedOptionIndices,
-      activeClueText: clearActiveClue ? null : (activeClueText ?? this.activeClueText),
-      audienceDistribution: clearAudienceDistribution ? null : (audienceDistribution ?? this.audienceDistribution),
+      eliminatedOptionIndices:
+          eliminatedOptionIndices ?? this.eliminatedOptionIndices,
+      activeClueText: clearActiveClue
+          ? null
+          : (activeClueText ?? this.activeClueText),
+      audienceDistribution: clearAudienceDistribution
+          ? null
+          : (audienceDistribution ?? this.audienceDistribution),
       speedBonusXp: speedBonusXp ?? this.speedBonusXp,
-      questionStartTimeSeconds: questionStartTimeSeconds ?? this.questionStartTimeSeconds,
+      questionStartTimeSeconds:
+          questionStartTimeSeconds ?? this.questionStartTimeSeconds,
       hasSecondChance: hasSecondChance ?? this.hasSecondChance,
       isSecondChanceActive: isSecondChanceActive ?? this.isSecondChanceActive,
       isWalkedAway: isWalkedAway ?? this.isWalkedAway,

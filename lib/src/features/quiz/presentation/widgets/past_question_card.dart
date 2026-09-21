@@ -116,7 +116,9 @@ class PastQuestionCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.syllabotAccent.withAlpha(isDark ? 45 : 20),
+                          color: colors.syllabotAccent.withAlpha(
+                            isDark ? 45 : 20,
+                          ),
                           borderRadius: BorderRadius.circular(AppRadius.badge),
                           border: Border.all(
                             color: colors.syllabotAccent.withAlpha(70),
@@ -180,8 +182,8 @@ class PastQuestionCard extends StatelessWidget {
                 ),
                 onPressed: () {
                   context.read<PastQuestionsBloc>().add(
-                        ToggleBookmarkEvent(question.id),
-                      );
+                    ToggleBookmarkEvent(question.id),
+                  );
                 },
               ),
             ],
@@ -219,7 +221,8 @@ class PastQuestionCard extends StatelessWidget {
               height: 1.4,
             ),
           ),
-          if (question.imageUrl != null && question.imageUrl!.trim().isNotEmpty) ...[
+          if (question.imageUrl != null &&
+              question.imageUrl!.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.card),
@@ -270,10 +273,12 @@ class PastQuestionCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: PlatformHoverBuilder(
                   builder: (context, isHovered, _) {
-                    final optionBgColor = isHovered && !isSelected && !question.isAnswered
+                    final optionBgColor =
+                        isHovered && !isSelected && !question.isAnswered
                         ? colors.primary.withAlpha(isDark ? 20 : 10)
                         : baseBgColor;
-                    final optionBorderColor = isHovered && !isSelected && !question.isAnswered
+                    final optionBorderColor =
+                        isHovered && !isSelected && !question.isAnswered
                         ? colors.primary.withAlpha(isDark ? 80 : 60)
                         : baseBorderColor;
 
@@ -281,11 +286,11 @@ class PastQuestionCard extends StatelessWidget {
                       onTap: () {
                         unawaited(HapticFeedback.selectionClick());
                         context.read<PastQuestionsBloc>().add(
-                              SelectOptionEvent(
-                                questionId: question.id,
-                                optionIndex: idx,
-                              ),
-                            );
+                          SelectOptionEvent(
+                            questionId: question.id,
+                            optionIndex: idx,
+                          ),
+                        );
                       },
                       child: AnimatedContainer(
                         duration: AppMotion.standard,
@@ -297,7 +302,10 @@ class PastQuestionCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: optionBgColor,
                           borderRadius: BorderRadius.circular(AppRadius.card),
-                          border: Border.all(color: optionBorderColor, width: 1.2),
+                          border: Border.all(
+                            color: optionBorderColor,
+                            width: 1.2,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -428,12 +436,16 @@ class PastQuestionCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: colors.syllabotAccent.withAlpha(
-                          isDark ? (isHovered ? 65 : 45) : (isHovered ? 40 : 25),
+                          isDark
+                              ? (isHovered ? 65 : 45)
+                              : (isHovered ? 40 : 25),
                         ),
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
                           color: colors.syllabotAccent.withAlpha(
-                            isDark ? (isHovered ? 130 : 90) : (isHovered ? 80 : 50),
+                            isDark
+                                ? (isHovered ? 130 : 90)
+                                : (isHovered ? 80 : 50),
                           ),
                         ),
                       ),
@@ -475,7 +487,8 @@ class _TheoryModelAnswerWidget extends StatefulWidget {
   final String? explanation;
 
   @override
-  State<_TheoryModelAnswerWidget> createState() => _TheoryModelAnswerWidgetState();
+  State<_TheoryModelAnswerWidget> createState() =>
+      _TheoryModelAnswerWidgetState();
 }
 
 class _TheoryModelAnswerWidgetState extends State<_TheoryModelAnswerWidget> {

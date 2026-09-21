@@ -157,281 +157,292 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
         backgroundColor: colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Container(
-        constraints: const BoxConstraints(maxWidth: 440),
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(AppRadius.dialog),
-          border: Border.all(
-            color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.primary.withAlpha(isDark ? 40 : 25),
-              blurRadius: 32,
-              spreadRadius: 4,
-              offset: const Offset(0, 12),
+          constraints: const BoxConstraints(maxWidth: 440),
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: BorderRadius.circular(AppRadius.dialog),
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.dialog),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top Header Bar with Welcome & Skip
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                '🎉 ',
-                                style: typography.title2.bold,
-                              ),
-                              Expanded(
-                                child: Text(
-                                  l10n.welcomeWalkthroughTitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: typography.title3.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            l10n.welcomeWalkthroughSubtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colors.textSecondary,
-                        size: 20,
-                      ),
-                      tooltip: l10n.welcomeWalkthroughSkip,
-                      onPressed: _close,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-              Divider(
-                height: 1,
-                color: colors.surfaceBorder.withAlpha(isDark ? 60 : 100),
-              ),
-
-              // Carousel PageView
-              SizedBox(
-                height: 270,
-                child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: _onPageChanged,
-                  itemCount: slides.length,
-                  itemBuilder: (context, index) {
-                    final slide = slides[index];
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(28, 24, 28, 12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Glowing Icon Container
-                          Container(
-                            width: 68,
-                            height: 68,
-                            decoration: BoxDecoration(
-                              color: slide.badgeColor.withAlpha(isDark ? 45 : 30),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: slide.badgeColor.withAlpha(isDark ? 120 : 80),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Icon(
-                              slide.icon,
-                              color: slide.badgeColor,
-                              size: 32,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: slide.badgeColor.withAlpha(25),
-                              borderRadius: BorderRadius.circular(AppRadius.badge),
-                            ),
-                            child: Text(
-                              slide.badge,
-                              style: typography.caption.bold.copyWith(
-                                color: slide.badgeColor,
-                                fontSize: 10.5,
-                                letterSpacing: 1.1,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Slide Title
-                          Text(
-                            slide.title,
-                            textAlign: TextAlign.center,
-                            style: typography.body.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Slide Description
-                          Text(
-                            slide.description,
-                            textAlign: TextAlign.center,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary,
-                              height: 1.4,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // Bottom Indicator & Actions
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Step Dots Indicator
-                    Row(
-                      children: List.generate(slides.length, (idx) {
-                        final isSelected = idx == _currentIndex;
-                        return AnimatedContainer(
-                          duration: AppMotion.standard,
-                          curve: AppMotion.easeOutCubic,
-                          margin: const EdgeInsets.only(right: 4),
-                          width: isSelected ? 16 : 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? colors.primary
-                                : colors.surfaceBorderHighlight,
-                            borderRadius: BorderRadius.circular(AppRadius.micro),
-                          ),
-                        );
-                      }),
-                    ),
-
-                    // Navigation Action Buttons
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_currentIndex > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: TextButton(
-                              onPressed: _handlePrevious,
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 4,
-                                ),
-                                minimumSize: Size.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                l10n.welcomeWalkthroughPrevious,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ShrinkableButton(
-                          onTap: () => _handleNext(slides.length),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(AppRadius.card),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.primary.withAlpha(60),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  isLast
-                                      ? l10n.welcomeWalkthroughGetStarted
-                                      : l10n.welcomeWalkthroughNext,
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  isLast
-                                      ? Icons.check_circle_outline_rounded
-                                      : Icons.arrow_forward_rounded,
-                                  color: colors.white,
-                                  size: 16,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.black.withAlpha(isDark ? 80 : 30),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.dialog),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Header Bar with Welcome & Skip
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '🎉 ',
+                                  style: typography.title2.bold,
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    l10n.welcomeWalkthroughTitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: typography.title3.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              l10n.welcomeWalkthroughSubtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: colors.textSecondary,
+                          size: 20,
+                        ),
+                        tooltip: l10n.welcomeWalkthroughSkip,
+                        onPressed: _close,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+                Divider(
+                  height: 1,
+                  color: colors.surfaceBorder.withAlpha(isDark ? 60 : 100),
+                ),
+
+                // Carousel PageView
+                SizedBox(
+                  height: 270,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    itemCount: slides.length,
+                    itemBuilder: (context, index) {
+                      final slide = slides[index];
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(28, 24, 28, 12),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Glowing Icon Container
+                            Container(
+                              width: 68,
+                              height: 68,
+                              decoration: BoxDecoration(
+                                color: slide.badgeColor.withAlpha(
+                                  isDark ? 45 : 30,
+                                ),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: slide.badgeColor.withAlpha(
+                                    isDark ? 120 : 80,
+                                  ),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Icon(
+                                slide.icon,
+                                color: slide.badgeColor,
+                                size: 32,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: slide.badgeColor.withAlpha(25),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
+                              ),
+                              child: Text(
+                                slide.badge,
+                                style: typography.caption.bold.copyWith(
+                                  color: slide.badgeColor,
+                                  fontSize: 10.5,
+                                  letterSpacing: 1.1,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Slide Title
+                            Text(
+                              slide.title,
+                              textAlign: TextAlign.center,
+                              style: typography.body.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Slide Description
+                            Text(
+                              slide.description,
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                                height: 1.4,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // Bottom Indicator & Actions
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Step Dots Indicator
+                      Row(
+                        children: List.generate(slides.length, (idx) {
+                          final isSelected = idx == _currentIndex;
+                          return AnimatedContainer(
+                            duration: AppMotion.standard,
+                            curve: AppMotion.easeOutCubic,
+                            margin: const EdgeInsets.only(right: 4),
+                            width: isSelected ? 16 : 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.surfaceBorderHighlight,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+
+                      // Navigation Action Buttons
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_currentIndex > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: TextButton(
+                                onPressed: _handlePrevious,
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 4,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  l10n.welcomeWalkthroughPrevious,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ShrinkableButton(
+                            onTap: () => _handleNext(slides.length),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.black.withAlpha(
+                                      isDark ? 40 : 20,
+                                    ),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    isLast
+                                        ? l10n.welcomeWalkthroughGetStarted
+                                        : l10n.welcomeWalkthroughNext,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    isLast
+                                        ? Icons.check_circle_outline_rounded
+                                        : Icons.arrow_forward_rounded,
+                                    color: colors.white,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 }

@@ -39,10 +39,16 @@ class LocalLlmEngineClient {
         final ggufFiles = dir
             .listSync()
             .whereType<File>()
-            .where((f) => f.path.endsWith('.gguf') && f.lengthSync() >= 50 * 1024 * 1024)
+            .where(
+              (f) =>
+                  f.path.endsWith('.gguf') &&
+                  f.lengthSync() >= 50 * 1024 * 1024,
+            )
             .toList();
         if (ggufFiles.isNotEmpty) {
-          ggufFiles.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+          ggufFiles.sort(
+            (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+          );
           return ggufFiles.first.path;
         }
       }
@@ -58,10 +64,16 @@ class LocalLlmEngineClient {
       final storage = locator<LocalStorageService>();
       final isMarked = storage.getPreference(key: _modelStorageKey) == 'true';
       final path = storage.getPreference(key: _modelPathKey);
-      if (isMarked && path != null && path.isNotEmpty && File(path).existsSync()) {
+      if (isMarked &&
+          path != null &&
+          path.isNotEmpty &&
+          File(path).existsSync()) {
         return true;
       }
-      if (path != null && path.isNotEmpty && File(path).existsSync() && File(path).lengthSync() >= 50 * 1024 * 1024) {
+      if (path != null &&
+          path.isNotEmpty &&
+          File(path).existsSync() &&
+          File(path).lengthSync() >= 50 * 1024 * 1024) {
         return true;
       }
       return false;
@@ -195,7 +207,9 @@ class LocalLlmEngineClient {
       final storage = locator<LocalStorageService>();
       var savedPath = storage.getPreference(key: _modelPathKey);
 
-      if (savedPath == null || savedPath.isEmpty || !File(savedPath).existsSync()) {
+      if (savedPath == null ||
+          savedPath.isEmpty ||
+          !File(savedPath).existsSync()) {
         savedPath = await findSharedModelPath();
         if (savedPath != null) {
           await storage.savePreference(key: _modelStorageKey, data: 'true');
@@ -262,7 +276,11 @@ class LocalLlmEngineClient {
             maxTokens: maxTokens > 512 ? 512 : maxTokens,
             temperature: 0.35,
             repeatPenalty: 1.25,
-            stopSequences: const ['<|im_end|>', '<|endoftext|>', '<|im_start|>'],
+            stopSequences: const [
+              '<|im_end|>',
+              '<|endoftext|>',
+              '<|im_start|>',
+            ],
           ),
         );
 
@@ -303,18 +321,22 @@ class LocalLlmEngineClient {
     final buffer = StringBuffer()
       ..writeln('<|im_start|>system')
       ..writeln('You are Syllabot, an expert educational tutor.')
-      ..writeln('Provide direct, accurate, and concise explanations with clear definitions and examples.')
+      ..writeln(
+        'Provide direct, accurate, and concise explanations with clear definitions and examples.',
+      )
       ..writeln('Do not repeat yourself or loop.');
     if (systemInstruction.trim().isNotEmpty) {
       buffer.writeln(systemInstruction);
     }
     buffer.writeln('<|im_end|>');
 
-    final history =
-        contextHistory.where((m) => m.text.trim().isNotEmpty).toList();
+    final history = contextHistory
+        .where((m) => m.text.trim().isNotEmpty)
+        .toList();
     // Take the last 4 most recent turns to keep edge model focused and within context budget
-    final recentHistory =
-        history.length > 4 ? history.sublist(history.length - 4) : history;
+    final recentHistory = history.length > 4
+        ? history.sublist(history.length - 4)
+        : history;
     for (final msg in recentHistory) {
       final role = msg.sender == MessageSender.user ? 'user' : 'assistant';
       final text = msg.text.length > 800

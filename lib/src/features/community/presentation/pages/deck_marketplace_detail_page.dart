@@ -172,8 +172,8 @@ class DeckMarketplaceDetailPage extends HookWidget {
                         borderRadius: AppRadius.radiusPanel,
                         boxShadow: [
                           BoxShadow(
-                            color: colors.primary.withAlpha(
-                              isHovered ? 90 : 60,
+                            color: colors.black.withAlpha(
+                              isHovered ? 50 : 25,
                             ),
                             blurRadius: isHovered ? 16 : 10,
                             offset: Offset(0, isHovered ? 6 : 4),

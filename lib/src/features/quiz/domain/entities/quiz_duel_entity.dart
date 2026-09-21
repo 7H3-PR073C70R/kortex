@@ -113,20 +113,20 @@ class QuizDuelParticipant extends Equatable {
 
   @override
   List<Object?> get props => [
-        userId,
-        displayName,
-        avatarUrl,
-        score,
-        currentQuestionIndex,
-        selectedOptionIndex,
-        answeredInMs,
-        isAnswerCorrect,
-        comboStreak,
-        isReady,
-        isAiOpponent,
-        hasFinished,
-        eloRating,
-      ];
+    userId,
+    displayName,
+    avatarUrl,
+    score,
+    currentQuestionIndex,
+    selectedOptionIndex,
+    answeredInMs,
+    isAnswerCorrect,
+    comboStreak,
+    isReady,
+    isAiOpponent,
+    hasFinished,
+    eloRating,
+  ];
 }
 
 /// Represents a synchronized 1v1 Quiz Duel match.
@@ -136,7 +136,8 @@ class QuizDuelMatch extends Equatable {
     required this.subject,
     required this.examBoard,
     required this.questions,
-    required this.player1, this.currentQuestionIndex = 0,
+    required this.player1,
+    this.currentQuestionIndex = 0,
     this.durationPerQuestionSeconds = 15,
     this.player2,
     this.status = QuizDuelStatus.matching,
@@ -155,7 +156,11 @@ class QuizDuelMatch extends Equatable {
           id: q['id'] as String? ?? 'q_0',
           prompt: q['prompt'] as String? ?? '',
           type: QuizQuestionType.multipleChoice,
-          options: (q['options'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+          options:
+              (q['options'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              [],
           correctAnswer: q['correctAnswer'] as String? ?? '',
           explanation: q['explanation'] as String? ?? '',
           subTopic: q['subTopic'] as String? ?? 'General',
@@ -170,10 +175,15 @@ class QuizDuelMatch extends Equatable {
       examBoard: json['examBoard'] as String? ?? 'WAEC',
       questions: questions,
       currentQuestionIndex: json['currentQuestionIndex'] as int? ?? 0,
-      durationPerQuestionSeconds: json['durationPerQuestionSeconds'] as int? ?? 15,
-      player1: QuizDuelParticipant.fromJson(json['player1'] as Map<String, dynamic>? ?? {}),
+      durationPerQuestionSeconds:
+          json['durationPerQuestionSeconds'] as int? ?? 15,
+      player1: QuizDuelParticipant.fromJson(
+        json['player1'] as Map<String, dynamic>? ?? {},
+      ),
       player2: json['player2'] != null
-          ? QuizDuelParticipant.fromJson(json['player2'] as Map<String, dynamic>)
+          ? QuizDuelParticipant.fromJson(
+              json['player2'] as Map<String, dynamic>,
+            )
           : null,
       status: QuizDuelStatus.values.firstWhere(
         (s) => s.name == (json['status'] as String?),
@@ -206,8 +216,8 @@ class QuizDuelMatch extends Equatable {
 
   QuizQuestionEntity? get currentQuestion =>
       (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length)
-          ? questions[currentQuestionIndex]
-          : null;
+      ? questions[currentQuestionIndex]
+      : null;
 
   int get totalQuestions => questions.length;
 
@@ -219,14 +229,16 @@ class QuizDuelMatch extends Equatable {
       'subject': subject,
       'examBoard': examBoard,
       'questions': questions
-          .map((q) => {
-                'id': q.id,
-                'prompt': q.prompt,
-                'options': q.options,
-                'correctAnswer': q.correctAnswer,
-                'explanation': q.explanation,
-                'subTopic': q.subTopic,
-              })
+          .map(
+            (q) => {
+              'id': q.id,
+              'prompt': q.prompt,
+              'options': q.options,
+              'correctAnswer': q.correctAnswer,
+              'explanation': q.explanation,
+              'subTopic': q.subTopic,
+            },
+          )
           .toList(),
       'currentQuestionIndex': currentQuestionIndex,
       'durationPerQuestionSeconds': durationPerQuestionSeconds,
@@ -237,7 +249,8 @@ class QuizDuelMatch extends Equatable {
       'isDraw': isDraw,
       'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
       if (latestEmote != null) 'latestEmote': latestEmote,
-      if (latestEmoteSenderId != null) 'latestEmoteSenderId': latestEmoteSenderId,
+      if (latestEmoteSenderId != null)
+        'latestEmoteSenderId': latestEmoteSenderId,
     };
   }
 
@@ -278,19 +291,19 @@ class QuizDuelMatch extends Equatable {
 
   @override
   List<Object?> get props => [
-        duelId,
-        subject,
-        examBoard,
-        questions,
-        currentQuestionIndex,
-        durationPerQuestionSeconds,
-        player1,
-        player2,
-        status,
-        winnerUserId,
-        isDraw,
-        createdAt,
-        latestEmote,
-        latestEmoteSenderId,
-      ];
+    duelId,
+    subject,
+    examBoard,
+    questions,
+    currentQuestionIndex,
+    durationPerQuestionSeconds,
+    player1,
+    player2,
+    status,
+    winnerUserId,
+    isDraw,
+    createdAt,
+    latestEmote,
+    latestEmoteSenderId,
+  ];
 }

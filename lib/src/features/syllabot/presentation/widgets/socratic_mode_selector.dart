@@ -89,17 +89,19 @@ class SocraticModeSelector extends StatelessWidget {
                         color: isSelected
                             ? colors.primary.withAlpha(isDark ? 180 : 220)
                             : (isHovered
-                                ? colors.primary.withAlpha(isDark ? 50 : 35)
-                                : (isDark
-                                    ? colors.surfaceSecondary.withAlpha(120)
-                                    : colors.surfacePrimary.withAlpha(160))),
+                                  ? colors.primary.withAlpha(isDark ? 50 : 35)
+                                  : (isDark
+                                        ? colors.surfaceSecondary.withAlpha(120)
+                                        : colors.surfacePrimary.withAlpha(
+                                            160,
+                                          ))),
                         borderRadius: AppRadius.radiusCard,
                         border: Border.all(
                           color: isSelected
                               ? colors.primary
                               : (isHovered
-                                  ? colors.primary.withAlpha(120)
-                                  : colors.surfaceBorder.withAlpha(80)),
+                                    ? colors.primary.withAlpha(120)
+                                    : colors.surfaceBorder.withAlpha(80)),
                           width: isSelected ? 1.5 : 1,
                         ),
                       ),
@@ -112,8 +114,8 @@ class SocraticModeSelector extends StatelessWidget {
                             color: isSelected
                                 ? colors.white
                                 : (isHovered
-                                    ? colors.primary
-                                    : colors.textSecondary),
+                                      ? colors.primary
+                                      : colors.textSecondary),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -122,8 +124,8 @@ class SocraticModeSelector extends StatelessWidget {
                               color: isSelected
                                   ? colors.white
                                   : (isHovered
-                                      ? colors.primary
-                                      : colors.textPrimary),
+                                        ? colors.primary
+                                        : colors.textPrimary),
                               fontSize: 12,
                               fontWeight: isSelected
                                   ? FontWeight.w600

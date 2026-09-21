@@ -29,7 +29,9 @@ class BreakReminderService {
     _timer = Timer.periodic(focusInterval, (_) {
       if (_isActive) {
         _breakPromptController.add(promptMessage);
-        debugPrint('[BreakReminderService] Dispatched 20-20-20 eye rest prompt');
+        debugPrint(
+          '[BreakReminderService] Dispatched 20-20-20 eye rest prompt',
+        );
       }
     });
   }

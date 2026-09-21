@@ -315,7 +315,10 @@ class CreatePostBottomSheet extends HookWidget {
 
                 // Ask Anonymously Toggle
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.surfaceSecondary,
                     borderRadius: AppRadius.radiusCard,
@@ -374,7 +377,9 @@ class CreatePostBottomSheet extends HookWidget {
                       borderRadius: AppRadius.radiusCard,
                       boxShadow: [
                         BoxShadow(
-                          color: colors.primary.withAlpha(isDark ? (isHovered ? 60 : 30) : (isHovered ? 40 : 20)),
+                          color: colors.black.withAlpha(
+                            isHovered ? (isDark ? 50 : 20) : (isDark ? 30 : 10),
+                          ),
                           blurRadius: isHovered ? 12 : 6,
                           offset: Offset(0, isHovered ? 4 : 2),
                         ),
@@ -392,9 +397,11 @@ class CreatePostBottomSheet extends HookWidget {
                           r'(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})',
                         );
                         if (phoneRegex.hasMatch(combinedText) &&
-                            combinedText.replaceAll(RegExp(r'\D'), '').length >= 10) {
+                            combinedText.replaceAll(RegExp(r'\D'), '').length >=
+                                10) {
                           context.showSnackBar(
-                            message: 'For student safety, sharing phone numbers or personal contact info is prohibited.',
+                            message:
+                                'For student safety, sharing phone numbers or personal contact info is prohibited.',
                             type: SnackBarType.error,
                           );
                           return;
@@ -408,7 +415,8 @@ class CreatePostBottomSheet extends HookWidget {
                               ? latexController.text.trim()
                               : null,
                           isQuestion: isQuestion.value,
-                          syllabusTag: syllabusTagController.text.trim().isNotEmpty
+                          syllabusTag:
+                              syllabusTagController.text.trim().isNotEmpty
                               ? syllabusTagController.text.trim()
                               : 'General',
                           isAnonymous: isAnonymous.value,

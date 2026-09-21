@@ -47,7 +47,7 @@ class UserStorageServiceImpl implements UserStorageService {
   UserStorageServiceImpl(
     this._localStorageService, {
     FlutterSecureStorage? secureStorage,
-  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
+  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
     _initCache();
   }
 
@@ -69,7 +69,8 @@ class UserStorageServiceImpl implements UserStorageService {
     try {
       _cachedToken = await _secureStorage.read(key: _tokenKey);
       _cachedRefreshToken = await _secureStorage.read(key: _refreshTokenKey);
-      _cachedEmail = await _secureStorage.read(key: _emailKey) ??
+      _cachedEmail =
+          await _secureStorage.read(key: _emailKey) ??
           _localStorageService.getPreference(key: _emailKey);
     } on Object {
       _cachedToken = null;
@@ -81,10 +82,12 @@ class UserStorageServiceImpl implements UserStorageService {
     unawaited(_safeLocalDelete(_tokenKey));
     unawaited(_safeLocalDelete(_refreshTokenKey));
 
-    _cachedDisplayName =
-        _localStorageService.getPreference(key: PrefKeys.userDisplayName);
-    _cachedAvatarUrl =
-        _localStorageService.getPreference(key: PrefKeys.userAvatarUrl);
+    _cachedDisplayName = _localStorageService.getPreference(
+      key: PrefKeys.userDisplayName,
+    );
+    _cachedAvatarUrl = _localStorageService.getPreference(
+      key: PrefKeys.userAvatarUrl,
+    );
   }
 
   void _initCache() {
@@ -135,7 +138,9 @@ class UserStorageServiceImpl implements UserStorageService {
   @override
   String? getRefreshToken() {
     final sanitized = _sanitizeToken(_cachedRefreshToken);
-    if (_cachedRefreshToken != null && _cachedRefreshToken!.isNotEmpty && sanitized == null) {
+    if (_cachedRefreshToken != null &&
+        _cachedRefreshToken!.isNotEmpty &&
+        sanitized == null) {
       _cachedRefreshToken = null;
       unawaited(_safeSecureDelete(_refreshTokenKey));
     }
@@ -183,8 +188,8 @@ class UserStorageServiceImpl implements UserStorageService {
     );
     // Allow a 15-second grace window to prevent edge-case expirations during routing
     return DateTime.now().toUtc().isAfter(
-          expiryTime.subtract(const Duration(seconds: 15)),
-        );
+      expiryTime.subtract(const Duration(seconds: 15)),
+    );
   }
 
   @override
@@ -198,15 +203,17 @@ class UserStorageServiceImpl implements UserStorageService {
     if (_cachedDisplayName != null && _cachedDisplayName!.trim().isNotEmpty) {
       return _cachedDisplayName!.trim();
     }
-    final fromStorage =
-        _localStorageService.getPreference(key: PrefKeys.userDisplayName);
+    final fromStorage = _localStorageService.getPreference(
+      key: PrefKeys.userDisplayName,
+    );
     if (fromStorage != null && fromStorage.trim().isNotEmpty) {
       return _cachedDisplayName = fromStorage.trim();
     }
     final map = _decodeJwtPayload();
     if (map == null) return null;
     final metadata = map['user_metadata'] as Map<String, dynamic>?;
-    final name = metadata?['display_name'] as String? ??
+    final name =
+        metadata?['display_name'] as String? ??
         metadata?['full_name'] as String? ??
         metadata?['name'] as String? ??
         map['display_name'] as String? ??
@@ -225,8 +232,9 @@ class UserStorageServiceImpl implements UserStorageService {
     if (_cachedAvatarUrl != null && _cachedAvatarUrl!.trim().isNotEmpty) {
       return _cachedAvatarUrl!.trim();
     }
-    final fromStorage =
-        _localStorageService.getPreference(key: PrefKeys.userAvatarUrl);
+    final fromStorage = _localStorageService.getPreference(
+      key: PrefKeys.userAvatarUrl,
+    );
     if (fromStorage != null && fromStorage.trim().isNotEmpty) {
       return _cachedAvatarUrl = fromStorage.trim();
     }

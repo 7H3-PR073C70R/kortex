@@ -61,7 +61,9 @@ class LatexAstCache {
         clean = clean.substring(2, clean.length - 2).trim();
       } else if (clean.startsWith(r'$$') && clean.endsWith(r'$$')) {
         clean = clean.substring(2, clean.length - 2).trim();
-      } else if (clean.startsWith(r'$') && clean.endsWith(r'$') && clean.length >= 2) {
+      } else if (clean.startsWith(r'$') &&
+          clean.endsWith(r'$') &&
+          clean.length >= 2) {
         clean = clean.substring(1, clean.length - 1).trim();
       }
 

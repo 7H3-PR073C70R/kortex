@@ -237,12 +237,12 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
                           boxShadow: isPresetActive || isHovered
                               ? [
                                   BoxShadow(
-                                    color: colors.primary.withAlpha(
-                                      isPresetActive
-                                          ? (isHovered ? 55 : 40)
-                                          : 20,
+                                    color: colors.black.withAlpha(
+                                      isDark
+                                          ? (isPresetActive ? 40 : 25)
+                                          : (isPresetActive ? 15 : 8),
                                     ),
-                                    blurRadius: 10,
+                                    blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
                                 ]
@@ -631,11 +631,13 @@ class _SubjectCard extends StatelessWidget {
                 boxShadow: isSelected || isHovered
                     ? [
                         BoxShadow(
-                          color: colors.primary.withAlpha(
-                            isSelected ? (isHovered ? 50 : 35) : 18,
+                          color: colors.black.withAlpha(
+                            isDark
+                                ? (isSelected ? 50 : 30)
+                                : (isSelected ? 20 : 10),
                           ),
-                          blurRadius: isHovered ? 12 : 10,
-                          offset: const Offset(0, 3),
+                          blurRadius: isHovered ? 10 : 6,
+                          offset: const Offset(0, 2),
                         ),
                       ]
                     : null,
@@ -749,15 +751,6 @@ class _SubjectCard extends StatelessWidget {
                                   : colors.surfaceBorder),
                         width: 1.5,
                       ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: colors.primary.withAlpha(60),
-                                blurRadius: 6,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
                     ),
                     child: isSelected
                         ? Icon(

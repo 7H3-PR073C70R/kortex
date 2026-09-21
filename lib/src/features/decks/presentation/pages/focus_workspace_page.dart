@@ -78,7 +78,9 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
           ),
           content: Text(
             'You can take a quick breath, finish your session early, or jump right back in.',
-            style: typography.body.regular.copyWith(color: colors.textSecondary),
+            style: typography.body.regular.copyWith(
+              color: colors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(
@@ -98,7 +100,9 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
               },
               child: Text(
                 'Finish Early',
-                style: typography.body.medium.copyWith(color: colors.textSecondary),
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             TextButton(
@@ -108,7 +112,9 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
               },
               child: Text(
                 'Exit Without Saving',
-                style: typography.body.medium.copyWith(color: context.colors.error),
+                style: typography.body.medium.copyWith(
+                  color: context.colors.error,
+                ),
               ),
             ),
           ],
@@ -135,7 +141,9 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
             },
             builder: (context, state) {
               if (state.status == FocusSessionStatus.loading) {
-                return const Center(child: CircularProgressIndicator.adaptive());
+                return const Center(
+                  child: CircularProgressIndicator.adaptive(),
+                );
               }
 
               if (state.status == FocusSessionStatus.completed) {
@@ -177,7 +185,8 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                         state: state,
                         onClose: () => _showExitDialog(context),
                         onToggleTts: () => _cubit.toggleTts(),
-                        onOpenParkingLot: () => unawaited(ThoughtParkingLotSheet.show(context)),
+                        onOpenParkingLot: () =>
+                            unawaited(ThoughtParkingLotSheet.show(context)),
                       ),
 
                       // Dopamine Streak Indicator
@@ -190,21 +199,29 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: context.colors.warning.withValues(alpha: 0.15),
+                              color: context.colors.warning.withValues(
+                                alpha: 0.15,
+                              ),
                               borderRadius: AppRadius.radiusDialog,
                               border: Border.all(
-                                color: context.colors.warning.withValues(alpha: 0.4),
+                                color: context.colors.warning.withValues(
+                                  alpha: 0.4,
+                                ),
                               ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('🔥 ', style: TextStyle(fontSize: 13)),
+                                const Text(
+                                  '🔥 ',
+                                  style: TextStyle(fontSize: 13),
+                                ),
                                 Text(
                                   '${state.streak} in a row! Momentum building',
-                                  style: context.typography.caption.bold.copyWith(
-                                    color: context.colors.warning,
-                                  ),
+                                  style: context.typography.caption.bold
+                                      .copyWith(
+                                        color: context.colors.warning,
+                                      ),
                                 ),
                               ],
                             ),
@@ -235,7 +252,8 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                         child: FsrsRatingActionBar(
-                          onRateRating: (rating) => unawaited(_cubit.rateCard(rating)),
+                          onRateRating: (rating) =>
+                              unawaited(_cubit.rateCard(rating)),
                         ),
                       ),
                     ],
@@ -318,7 +336,9 @@ class _FocusZenHeader extends StatelessWidget {
                   state.ttsSpeaking
                       ? Icons.volume_up_rounded
                       : Icons.volume_mute_rounded,
-                  color: state.ttsSpeaking ? colors.primary : colors.textSecondary,
+                  color: state.ttsSpeaking
+                      ? colors.primary
+                      : colors.textSecondary,
                 ),
                 onPressed: onToggleTts,
                 tooltip: 'Read Aloud',
@@ -388,6 +408,7 @@ class _FocusCompletionView extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
     final total = state.cards.length;
     final mastered = state.goodCount + state.easyCount;
 
@@ -413,7 +434,9 @@ class _FocusCompletionView extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.35),
+                        color: colors.black.withValues(
+                          alpha: isDark ? 0.4 : 0.15,
+                        ),
                         blurRadius: 24,
                         offset: const Offset(0, 8),
                       ),
@@ -547,7 +570,9 @@ class _FocusCompletionView extends StatelessWidget {
                     borderRadius: AppRadius.radiusCard,
                     boxShadow: [
                       BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.35),
+                        color: colors.black.withValues(
+                          alpha: isDark ? 0.35 : 0.15,
+                        ),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
@@ -557,7 +582,11 @@ class _FocusCompletionView extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.refresh_rounded, color: colors.white, size: 20),
+                      Icon(
+                        Icons.refresh_rounded,
+                        color: colors.white,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Repeat Another Sprint',

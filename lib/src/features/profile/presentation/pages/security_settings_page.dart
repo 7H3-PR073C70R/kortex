@@ -287,9 +287,9 @@ class SecuritySettingsPage extends HookWidget {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: colors.primary.withAlpha(40),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: colors.black.withAlpha(25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
                     ),
                   ]
                 : null,

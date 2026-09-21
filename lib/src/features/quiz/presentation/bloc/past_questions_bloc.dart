@@ -54,8 +54,10 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
         ),
       ),
       (questions) {
-        final availSubjects =
-            subjectsRes.fold<List<String>>((_) => [], List.from);
+        final availSubjects = subjectsRes.fold<List<String>>(
+          (_) => [],
+          List.from,
+        );
         if (subject != 'All' && !availSubjects.contains(subject)) {
           availSubjects.insert(0, subject);
         }

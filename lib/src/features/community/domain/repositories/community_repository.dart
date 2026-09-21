@@ -52,7 +52,10 @@ abstract class CommunityRepository {
   });
 
   /// Fetches complete hierarchical thread tree in 1 database roundtrip.
-  Future<Either<Failure, ({ForumPostEntity post, List<ForumReplyEntity> replies})>> fetchForumThreadTree({
+  Future<
+    Either<Failure, ({ForumPostEntity post, List<ForumReplyEntity> replies})>
+  >
+  fetchForumThreadTree({
     required String postId,
     int limit = 20,
     int subReplyLimit = 5,

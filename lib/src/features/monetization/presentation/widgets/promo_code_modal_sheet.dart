@@ -186,9 +186,9 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: colors.primary.withAlpha(120),
-                                blurRadius: 20,
-                                spreadRadius: 2,
+                                color: colors.black.withAlpha(isDark ? 50 : 20),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),

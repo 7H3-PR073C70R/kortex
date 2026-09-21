@@ -589,7 +589,7 @@ class FileDropZoneWidget extends HookWidget {
                           borderRadius: AppRadius.radiusCard,
                           boxShadow: [
                             BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 80 : 40),
+                              color: colors.black.withAlpha(isDark ? 50 : 20),
                               blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
