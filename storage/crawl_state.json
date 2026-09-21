@@ -1,0 +1,29 @@
+{
+  "total_synced": 1030,
+  "progress": {
+    "jamb": {
+      "mathematics": 10,
+      "english-language": 10,
+      "chemistry": 10,
+      "physics": 10,
+      "biology": 10,
+      "geography": 10,
+      "literature-in-english": 10,
+      "economics": 10,
+      "commerce": 10,
+      "accounts-principles-of-accounts": 10,
+      "government": 10,
+      "christian-religious-knowledge-crk": 10,
+      "agricultural-science": 10,
+      "islamic-religious-knowledge-irk": 10,
+      "history": 10,
+      "fine-arts": 10,
+      "music": 10,
+      "french": 10,
+      "yoruba": 10,
+      "igbo": 10,
+      "arabic": 6
+    }
+  },
+  "last_updated": "2026-09-21T04:15:48Z"
+}
