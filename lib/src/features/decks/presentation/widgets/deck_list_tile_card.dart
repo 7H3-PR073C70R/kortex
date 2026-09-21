@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/deck_title_resolver.dart';
@@ -17,6 +19,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.da
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class DeckListTileCard extends StatelessWidget {
@@ -85,118 +88,132 @@ class DeckListTileCard extends StatelessWidget {
           '${effectiveDeck.title}. ${effectiveDeck.subject}. '
           '${l10n.decksTotalCards(effectiveDeck.totalCards)}. '
           '${l10n.decksDueBadge(effectiveDeck.dueCards)}.',
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          unawaited(
-            context.router.push(StudySessionRoute(deckId: effectiveDeck.id)),
-          );
-        },
-        onLongPress: () {
-          unawaited(HapticFeedback.mediumImpact());
-          unawaited(
-            context.router.push(DeckDetailRoute(deckId: effectiveDeck.id)),
-          );
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: isDark
-                    ? colors.surfaceSecondary.withAlpha(160)
-                    : colors.surfacePrimary.withAlpha(215),
-                border: Border.all(
-                  color: effectiveDeck.hasDueCards
-                      ? colors.primary.withAlpha(isDark ? 110 : 70)
-                      : (isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(70)
-                            : colors.surfaceBorder.withAlpha(130)),
-                  width: effectiveDeck.hasDueCards ? 1.4 : 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.black.withAlpha(isDark ? 40 : 10),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top Tags Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 50 : 25),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              effectiveDeck.subject.toUpperCase(),
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 10.5,
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ),
-                          if (effectiveDeck.courseCode != null &&
-                              effectiveDeck.courseCode!.isNotEmpty) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 3.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary.withAlpha(150)
-                                    : colors.surfacePrimary,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: colors.surfaceBorder.withAlpha(120),
-                                ),
-                              ),
-                              child: Text(
-                                effectiveDeck.courseCode!,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              unawaited(
+                context.router.push(StudySessionRoute(deckId: effectiveDeck.id)),
+              );
+            },
+            onLongPress: () {
+              unawaited(HapticFeedback.mediumImpact());
+              unawaited(
+                context.router.push(DeckDetailRoute(deckId: effectiveDeck.id)),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.panel),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.snappyCurve,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
+                    color: isDark
+                        ? (isHovered
+                            ? colors.surfaceSecondary.withAlpha(200)
+                            : colors.surfaceSecondary.withAlpha(160))
+                        : (isHovered
+                            ? colors.surfacePrimary.withAlpha(240)
+                            : colors.surfacePrimary.withAlpha(215)),
+                    border: Border.all(
+                      color: effectiveDeck.hasDueCards
+                          ? (isHovered
+                              ? colors.primary
+                              : colors.primary.withAlpha(isDark ? 110 : 70))
+                          : (isHovered
+                              ? colors.primary.withAlpha(140)
+                              : (isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(70)
+                                  : colors.surfaceBorder.withAlpha(130))),
+                      width: effectiveDeck.hasDueCards ? 1.4 : 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isHovered
+                            ? colors.primary.withAlpha(isDark ? 30 : 15)
+                            : colors.black.withAlpha(isDark ? 40 : 10),
+                        blurRadius: isHovered ? 14 : 10,
+                        offset: Offset(0, isHovered ? 4 : 3),
                       ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top Tags Row
                       Row(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (effectiveDeck.hasDueCards)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.error.withAlpha(isDark ? 45 : 20),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: colors.error.withAlpha(100),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                                ),
+                                child: Text(
+                                  effectiveDeck.subject.toUpperCase(),
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 10.5,
+                                    letterSpacing: 0.6,
+                                  ),
                                 ),
                               ),
+                              if (effectiveDeck.courseCode != null &&
+                                  effectiveDeck.courseCode!.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 3.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary.withAlpha(150)
+                                        : colors.surfacePrimary,
+                                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                                    border: Border.all(
+                                      color: colors.surfaceBorder.withAlpha(120),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    effectiveDeck.courseCode!,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (effectiveDeck.hasDueCards)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.error.withAlpha(isDark ? 45 : 20),
+                                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                                    border: Border.all(
+                                      color: colors.error.withAlpha(100),
+                                    ),
+                                  ),
                               child: Text(
                                 l10n.decksDueBadge(effectiveDeck.dueCards),
                                 style: typography.caption.bold.copyWith(
@@ -314,7 +331,7 @@ class DeckListTileCard extends StatelessWidget {
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -327,7 +344,7 @@ class DeckListTileCard extends StatelessWidget {
                                     colors.slateTerracotta,
                                   ],
                                 ),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppRadius.badge),
                                 boxShadow: [
                                   BoxShadow(
                                     color: colors.warning.withValues(
@@ -368,7 +385,7 @@ class DeckListTileCard extends StatelessWidget {
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 4,
@@ -402,7 +419,9 @@ class DeckListTileCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
+    },
+  ),
+);
   }
 }

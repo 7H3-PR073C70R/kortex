@@ -33,7 +33,8 @@ class ProfileApiClient {
       );
     }
 
-    final isDataUri = photoUrl != null &&
+    final isDataUri =
+        photoUrl != null &&
         (photoUrl.startsWith('data:') || photoUrl.length > 500);
     final sanitizedAuthPhotoUrl = isDataUri ? null : photoUrl;
 

@@ -3,8 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class SocraticModeSelector extends StatelessWidget {
@@ -55,6 +58,7 @@ class SocraticModeSelector extends StatelessWidget {
     return SizedBox(
       height: 38,
       child: ListView.separated(
+        physics: const BouncingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: modes.length,
@@ -63,59 +67,76 @@ class SocraticModeSelector extends StatelessWidget {
           final (mode, title, icon) = modes[index];
           final isSelected = mode == selectedMode;
 
-          return ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.selectionClick());
-              onModeSelected(mode);
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.primary.withAlpha(isDark ? 160 : 200)
-                        : (isDark
-                              ? colors.surfaceSecondary.withAlpha(120)
-                              : colors.surfacePrimary.withAlpha(160)),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? colors.primary
-                          : colors.textSecondary.withAlpha(40),
-                      width: isSelected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        icon,
-                        size: 14,
-                        color: isSelected ? colors.white : colors.textSecondary,
+          return PlatformHoverBuilder(
+            builder: (context, isHovered, child) {
+              return ShrinkableButton(
+                onTap: () {
+                  unawaited(HapticFeedback.selectionClick());
+                  onModeSelected(mode);
+                },
+                child: ClipRRect(
+                  borderRadius: AppRadius.radiusCard,
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.snappyCurve,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        title,
-                        style: typography.footnote.medium.copyWith(
-                          color: isSelected ? colors.white : colors.textPrimary,
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colors.primary.withAlpha(isDark ? 180 : 220)
+                            : (isHovered
+                                ? colors.primary.withAlpha(isDark ? 50 : 35)
+                                : (isDark
+                                    ? colors.surfaceSecondary.withAlpha(120)
+                                    : colors.surfacePrimary.withAlpha(160))),
+                        borderRadius: AppRadius.radiusCard,
+                        border: Border.all(
+                          color: isSelected
+                              ? colors.primary
+                              : (isHovered
+                                  ? colors.primary.withAlpha(120)
+                                  : colors.surfaceBorder.withAlpha(80)),
+                          width: isSelected ? 1.5 : 1,
                         ),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            icon,
+                            size: 14,
+                            color: isSelected
+                                ? colors.white
+                                : (isHovered
+                                    ? colors.primary
+                                    : colors.textSecondary),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            title,
+                            style: typography.footnote.medium.copyWith(
+                              color: isSelected
+                                  ? colors.white
+                                  : (isHovered
+                                      ? colors.primary
+                                      : colors.textPrimary),
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),

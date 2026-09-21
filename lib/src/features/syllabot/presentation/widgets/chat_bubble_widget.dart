@@ -5,12 +5,15 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_reference_badge.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_source_inspection_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -77,7 +80,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+            maxWidth: (MediaQuery.sizeOf(context).width * 0.75).clamp(280.0, 580.0),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -90,10 +93,10 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
               end: Alignment.bottomRight,
             ),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(6),
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
+              topLeft: Radius.circular(AppRadius.dialog),
+              topRight: Radius.circular(AppRadius.micro),
+              bottomLeft: Radius.circular(AppRadius.dialog),
+              bottomRight: Radius.circular(AppRadius.dialog),
             ),
             boxShadow: [
               BoxShadow(
@@ -120,7 +123,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
+          maxWidth: (MediaQuery.sizeOf(context).width * 0.88).clamp(320.0, 720.0),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,10 +138,10 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                       ? colors.surfaceSecondary
                       : colors.surfacePrimary,
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(6),
-                    topRight: Radius.circular(20),
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
+                    topLeft: Radius.circular(AppRadius.micro),
+                    topRight: Radius.circular(AppRadius.dialog),
+                    bottomLeft: Radius.circular(AppRadius.dialog),
+                    bottomRight: Radius.circular(AppRadius.dialog),
                   ),
                   border: Border.all(
                     color: widget.message.isError
@@ -154,84 +157,130 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                   ],
                 ),
                 child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Engine badge tag & Actions (Copy & TTS)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Engine badge tag & Actions (Copy & TTS)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.syllabotAccent.withAlpha(30),
+                            borderRadius: AppRadius.radiusBadge,
+                          ),
+                          child: Text(
+                            l10n.engineCloudSupabase,
+                            style: typography.caption.medium.copyWith(
+                              color: colors.syllabotAccent,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        if (widget.isStreaming)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AppLogoLoader(
+                                size: 14,
+                                color: colors.syllabotAccent,
+                                showMessage: false,
                               ),
-                              decoration: BoxDecoration(
-                                color: colors.syllabotAccent.withAlpha(30),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                l10n.engineCloudSupabase,
+                              const SizedBox(width: 5),
+                              Text(
+                                'Typing...',
                                 style: typography.caption.medium.copyWith(
                                   color: colors.syllabotAccent,
                                   fontSize: 10,
                                 ),
                               ),
-                            ),
-                            if (widget.isStreaming)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AppLogoLoader(
-                                    size: 14,
-                                    color: colors.syllabotAccent,
-                                    showMessage: false,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Typing...',
-                                    style: typography.caption.medium.copyWith(
-                                      color: colors.syllabotAccent,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // 1. Read Aloud TTS button
-                                  if (!widget.message.isError)
-                                    IconButton(
-                                      tooltip: _isSpeakingThis
-                                          ? l10n.syllabotStopReading
-                                          : l10n.syllabotReadAloud,
-                                      icon: Icon(
-                                        _isSpeakingThis
-                                            ? Icons.stop_circle_rounded
-                                            : Icons.volume_up_rounded,
-                                        size: 17,
-                                        color: _isSpeakingThis
-                                            ? colors.syllabotAccent
-                                            : colors.textSecondary,
+                            ],
+                          )
+                        else
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // 1. Read Aloud TTS button
+                              if (!widget.message.isError)
+                                PlatformHoverBuilder(
+                                  builder: (context, isHovered, child) {
+                                    return ShrinkableButton(
+                                      onTap: _toggleSpeak,
+                                      child: AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.snappyCurve,
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: isHovered
+                                              ? colors.primary.withAlpha(20)
+                                              : Colors.transparent,
+                                          borderRadius: AppRadius.radiusBadge,
+                                        ),
+                                        child: Tooltip(
+                                          message: _isSpeakingThis
+                                              ? l10n.syllabotStopReading
+                                              : l10n.syllabotReadAloud,
+                                          child: Icon(
+                                            _isSpeakingThis
+                                                ? Icons.stop_circle_rounded
+                                                : Icons.volume_up_rounded,
+                                            size: 16,
+                                            color: _isSpeakingThis
+                                                ? colors.syllabotAccent
+                                                : (isHovered
+                                                    ? colors.primary
+                                                    : colors.textSecondary),
+                                          ),
+                                        ),
                                       ),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                      onPressed: _toggleSpeak,
-                                    ),
-                                  const SizedBox(width: 8),
+                                    );
+                                  },
+                                ),
+                              const SizedBox(width: 4),
 
-                                  // 2. Copy button
-                                  IconButton(
-                                    tooltip: l10n.copiedToClipboard,
-                                    icon: Icon(
-                                      Icons.copy_rounded,
-                                      size: 15,
-                                      color: colors.textSecondary,
-                                    ),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () {
+                              // 2. Convert to Card button
+                              if (widget.onConvertToCard != null && !widget.message.isError) ...[
+                                PlatformHoverBuilder(
+                                  builder: (context, isHovered, child) {
+                                    return ShrinkableButton(
+                                      onTap: widget.onConvertToCard,
+                                      child: AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.snappyCurve,
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: isHovered
+                                              ? colors.primary.withAlpha(20)
+                                              : Colors.transparent,
+                                          borderRadius: AppRadius.radiusBadge,
+                                        ),
+                                        child: Tooltip(
+                                          message: 'Create Flashcards',
+                                          child: Icon(
+                                            Icons.style_outlined,
+                                            size: 15,
+                                            color: isHovered
+                                                ? colors.primary
+                                                : colors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+
+                              // 3. Copy button
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return ShrinkableButton(
+                                    onTap: () {
                                       unawaited(
                                         Clipboard.setData(
                                           ClipboardData(
@@ -243,81 +292,105 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                         message: context.l10n.copiedToClipboard,
                                       );
                                     },
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Formatted body with Markdown & LaTeX rendering
-                        _FormattedMessageBody(
-                          text: widget.message.text,
-                          isDark: isDark,
-                          isStreaming: widget.isStreaming,
-                        ),
-
-                        // RAG Retrieved Context Badges
-                        if (widget.message.ragReferences.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            children: widget.message.ragReferences.map((chunk) {
-                              return RagReferenceBadge(
-                                chunk: chunk,
-                                onTap: () =>
-                                    RagSourceInspectionSheet.show(context, chunk),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-
-                        // Retry Button for error state
-                        if (widget.message.isError) ...[
-                          const SizedBox(height: 12),
-                          ShrinkableButton(
-                            onTap: widget.onRetry ?? widget.message.onRetry,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.error.withAlpha(30),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: colors.error.withAlpha(100),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.refresh_rounded,
-                                    size: 14,
-                                    color: colors.error,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    l10n.retryFailedMessage,
-                                    style: typography.footnote.medium.copyWith(
-                                      color: colors.error,
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.snappyCurve,
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: isHovered
+                                            ? colors.primary.withAlpha(20)
+                                            : Colors.transparent,
+                                        borderRadius: AppRadius.radiusBadge,
+                                      ),
+                                      child: Tooltip(
+                                        message: l10n.copiedToClipboard,
+                                        child: Icon(
+                                          Icons.copy_rounded,
+                                          size: 15,
+                                          color: isHovered
+                                              ? colors.primary
+                                              : colors.textSecondary,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
-                            ),
+                            ],
                           ),
-                        ],
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 8),
+
+                    // Formatted body with Markdown & LaTeX rendering
+                    _FormattedMessageBody(
+                      text: widget.message.text,
+                      isDark: isDark,
+                      isStreaming: widget.isStreaming,
+                    ),
+
+                    // RAG Retrieved Context Badges
+                    if (widget.message.ragReferences.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: widget.message.ragReferences.map((chunk) {
+                          return RagReferenceBadge(
+                            chunk: chunk,
+                            onTap: () =>
+                                RagSourceInspectionSheet.show(context, chunk),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+
+                    // Retry Button for error state
+                    if (widget.message.isError) ...[
+                      const SizedBox(height: 12),
+                      ShrinkableButton(
+                        onTap: widget.onRetry ?? widget.message.onRetry,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.error.withAlpha(30),
+                            borderRadius: AppRadius.radiusBadge,
+                            border: Border.all(
+                              color: colors.error.withAlpha(100),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.refresh_rounded,
+                                size: 14,
+                                color: colors.error,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                l10n.retryFailedMessage,
+                                style: typography.footnote.medium.copyWith(
+                                  color: colors.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -421,7 +494,7 @@ class _FormattedMessageBody extends StatelessWidget {
       ),
       codeblockDecoration: BoxDecoration(
         color: isDark ? colors.black.withAlpha(115) : colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.radiusBadge,
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(80),
         ),
@@ -465,7 +538,7 @@ class _FormattedMessageBody extends StatelessWidget {
               color: isDark
                   ? colors.black.withAlpha(80)
                   : colors.primary.withAlpha(15),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.radiusCard,
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 60 : 30),
               ),

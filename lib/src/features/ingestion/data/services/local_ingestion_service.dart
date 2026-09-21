@@ -105,8 +105,7 @@ class LocalIngestionService {
         case 'webp':
           // On-device ML Kit OCR — runs natively on iOS/Android.
           if (filePath != null && File(filePath).existsSync()) {
-            rawExtractedText =
-                await _imageOcr.extractTextFromPath(filePath);
+            rawExtractedText = await _imageOcr.extractTextFromPath(filePath);
           } else {
             rawExtractedText = await _imageOcr.extractTextFromBytes(
               bytes,

@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CreateStudyRoomSheet extends HookWidget {
@@ -83,233 +86,258 @@ class CreateStudyRoomSheet extends HookWidget {
       (id: 'none', label: 'Mute Sound', icon: Icons.volume_off_rounded),
     ];
 
-    return Container(
-      padding: EdgeInsets.only(
-        top: 24,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(
-          color: colors.primary.withAlpha(isDark ? 60 : 30),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Grabber handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.textSecondary.withAlpha(80),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Container(
+          padding: EdgeInsets.only(
+            top: 24,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
             ),
-            const SizedBox(height: 18),
-
-            // Sheet Title
-            Row(
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 60 : 30),
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(30),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.self_improvement_rounded,
-                    color: colors.primary,
-                    size: 20,
+                // Grabber handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withAlpha(80),
+                      borderRadius: AppRadius.radiusMicro,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(height: 18),
+
+                // Sheet Title
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(30),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.self_improvement_rounded,
+                        color: colors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Launch Silent Focus Cockpit',
+                      style: typography.title2.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Room Title Field
+                AppTextField(
+                  controller: titleController,
+                  hintText: 'Room Title (e.g. 25m Silent Sprint: Organic Chem)',
+                ),
+                const SizedBox(height: 12),
+
+                // Subject Field
+                AppTextField(
+                  controller: subjectController,
+                  hintText: 'Subject / Course (e.g. JAMB Physics, MTH 201)',
+                ),
+                const SizedBox(height: 12),
+
+                // Active Goal Field
+                AppTextField(
+                  controller: goalController,
+                  hintText: 'Your Active Goal (e.g. Review 25 past questions)',
+                ),
+                const SizedBox(height: 16),
+
+                // Ambient Soundscape Selection
                 Text(
-                  'Launch Silent Focus Cockpit',
-                  style: typography.title2.bold.copyWith(
-                    color: colors.textPrimary,
+                  'Ambient Focus Soundscape',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: ambientOptions.map((opt) {
+                    final isSelected = selectedAmbient.value == opt.id;
+                    return ChoiceChip(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusBadge,
+                      ),
+                      avatar: Icon(
+                        opt.icon,
+                        size: 14,
+                        color: isSelected ? colors.white : colors.primary,
+                      ),
+                      label: Text(opt.label),
+                      selected: isSelected,
+                      onSelected: (val) {
+                        if (val) {
+                          unawaited(HapticFeedback.lightImpact());
+                          selectedAmbient.value = opt.id;
+                        }
+                      },
+                      selectedColor: colors.primary,
+                      labelStyle: typography.caption.bold.copyWith(
+                        color: isSelected ? colors.white : colors.textPrimary,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // Duration Selection
+                Text(
+                  'Pomodoro Duration',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: durations.map((dur) {
+                    final isSelected = selectedDuration.value == dur;
+                    return ChoiceChip(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusBadge,
+                      ),
+                      label: Text('${dur}m'),
+                      selected: isSelected,
+                      onSelected: (val) {
+                        if (val) {
+                          unawaited(HapticFeedback.lightImpact());
+                          selectedDuration.value = dur;
+                        }
+                      },
+                      selectedColor: colors.primary.withAlpha(40),
+                      labelStyle: typography.caption.bold.copyWith(
+                        color: isSelected ? colors.primary : colors.textSecondary,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+
+                // Category Selection
+                Text(
+                  'Category / Track',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: categories.map((cat) {
+                    final isSelected = selectedCategory.value == cat;
+                    return ChoiceChip(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusBadge,
+                      ),
+                      label: Text(cat),
+                      selected: isSelected,
+                      onSelected: (val) {
+                        if (val) {
+                          unawaited(HapticFeedback.lightImpact());
+                          selectedCategory.value = cat;
+                        }
+                      },
+                      selectedColor: colors.primary.withAlpha(40),
+                      labelStyle: typography.caption.bold.copyWith(
+                        color: isSelected ? colors.primary : colors.textSecondary,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 22),
+
+                // Submit Button
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) => AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.easeOutCubic,
+                    decoration: BoxDecoration(
+                      borderRadius: AppRadius.radiusCard,
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary.withAlpha(isDark ? (isHovered ? 110 : 80) : (isHovered ? 70 : 50)),
+                          blurRadius: isHovered ? 16 : 12,
+                          offset: Offset(0, isHovered ? 6 : 4),
+                        ),
+                      ],
+                    ),
+                    child: ShrinkableButton(
+                      onTap: () {
+                        final title = titleController.text.trim();
+                        final subject = subjectController.text.trim();
+                        if (title.isEmpty || subject.isEmpty) return;
+
+                        unawaited(HapticFeedback.mediumImpact());
+                        onSubmit(
+                          title: title,
+                          subject: subject,
+                          category: selectedCategory.value,
+                          pomodoroMinutes: selectedDuration.value,
+                          ambientSoundTrack: selectedAmbient.value,
+                          activeGoal: goalController.text.trim().isNotEmpty
+                              ? goalController.text.trim()
+                              : null,
+                          isSilentFocus: true,
+                        );
+                        Navigator.of(context).pop();
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colors.primary,
+                              colors.primary.withAlpha(isHovered ? 245 : 220),
+                            ],
+                          ),
+                          borderRadius: AppRadius.radiusCard,
+                        ),
+                        child: Center(
+                          child: Text(
+                            l10n.launchFocusRoom,
+                            style: typography.body.bold.copyWith(
+                              color: colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Room Title Field
-            AppTextField(
-              controller: titleController,
-              hintText: 'Room Title (e.g. 25m Silent Sprint: Organic Chem)',
-            ),
-            const SizedBox(height: 12),
-
-            // Subject Field
-            AppTextField(
-              controller: subjectController,
-              hintText: 'Subject / Course (e.g. JAMB Physics, MTH 201)',
-            ),
-            const SizedBox(height: 12),
-
-            // Active Goal Field
-            AppTextField(
-              controller: goalController,
-              hintText: 'Your Active Goal (e.g. Review 25 past questions)',
-            ),
-            const SizedBox(height: 16),
-
-            // Ambient Soundscape Selection
-            Text(
-              'Ambient Focus Soundscape',
-              style: typography.caption.bold.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: ambientOptions.map((opt) {
-                final isSelected = selectedAmbient.value == opt.id;
-                return ChoiceChip(
-                  avatar: Icon(
-                    opt.icon,
-                    size: 14,
-                    color: isSelected ? colors.white : colors.primary,
-                  ),
-                  label: Text(opt.label),
-                  selected: isSelected,
-                  onSelected: (val) {
-                    if (val) {
-                      unawaited(HapticFeedback.lightImpact());
-                      selectedAmbient.value = opt.id;
-                    }
-                  },
-                  selectedColor: colors.primary,
-                  labelStyle: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.white : colors.textPrimary,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // Duration Selection
-            Text(
-              'Pomodoro Duration',
-              style: typography.caption.bold.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: durations.map((dur) {
-                final isSelected = selectedDuration.value == dur;
-                return ChoiceChip(
-                  label: Text('${dur}m'),
-                  selected: isSelected,
-                  onSelected: (val) {
-                    if (val) {
-                      unawaited(HapticFeedback.lightImpact());
-                      selectedDuration.value = dur;
-                    }
-                  },
-                  selectedColor: colors.primary.withAlpha(40),
-                  labelStyle: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.primary : colors.textSecondary,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // Category Selection
-            Text(
-              'Category / Track',
-              style: typography.caption.bold.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: categories.map((cat) {
-                final isSelected = selectedCategory.value == cat;
-                return ChoiceChip(
-                  label: Text(cat),
-                  selected: isSelected,
-                  onSelected: (val) {
-                    if (val) {
-                      unawaited(HapticFeedback.lightImpact());
-                      selectedCategory.value = cat;
-                    }
-                  },
-                  selectedColor: colors.primary.withAlpha(40),
-                  labelStyle: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.primary : colors.textSecondary,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 22),
-
-            // Submit Button
-            ShrinkableButton(
-              onTap: () {
-                final title = titleController.text.trim();
-                final subject = subjectController.text.trim();
-                if (title.isEmpty || subject.isEmpty) return;
-
-                unawaited(HapticFeedback.mediumImpact());
-                onSubmit(
-                  title: title,
-                  subject: subject,
-                  category: selectedCategory.value,
-                  pomodoroMinutes: selectedDuration.value,
-                  ambientSoundTrack: selectedAmbient.value,
-                  activeGoal: goalController.text.trim().isNotEmpty
-                      ? goalController.text.trim()
-                      : null,
-                  isSilentFocus: true,
-                );
-                Navigator.of(context).pop();
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colors.primary,
-                      colors.primary.withAlpha(220),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.primary.withAlpha(isDark ? 80 : 50),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    l10n.launchFocusRoom,
-                    style: typography.body.bold.copyWith(
-                      color: colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

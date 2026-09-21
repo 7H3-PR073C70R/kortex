@@ -7,6 +7,8 @@ import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -22,6 +24,7 @@ import 'package:kortex/src/features/ingestion/presentation/widgets/generated_car
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -125,13 +128,23 @@ class _GeneratedCardsReviewView extends HookWidget {
         appBar: AppBar(
           backgroundColor: colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: colors.textPrimary,
-              size: 20,
+          leading: PlatformHoverBuilder(
+            builder: (context, isHovered, child) {
+              return AnimatedScale(
+                scale: isHovered ? 1.08 : 1.0,
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                child: child,
+              );
+            },
+            child: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: colors.textPrimary,
+                size: 20,
+              ),
+              onPressed: () => unawaited(Navigator.of(context).maybePop()),
             ),
-            onPressed: () => unawaited(Navigator.of(context).maybePop()),
           ),
           title: Text(
             l10n.reviewCardsTitle,
@@ -184,108 +197,129 @@ class _GeneratedCardsReviewView extends HookWidget {
             }
           },
           builder: (context, state) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Deck Metadata Inputs Card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfaceSecondary
-                          : colors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 60 : 30),
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Deck Metadata Inputs Card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfacePrimary,
+                          borderRadius: AppRadius.radiusPanel,
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 60 : 30),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppTextField(
+                              controller: titleController,
+                              label: l10n.deckNameLabel,
+                            ),
+                            const SizedBox(height: 12),
+                            AppTextField(
+                              controller: subjectController,
+                              label: l10n.subjectOrCourseLabel,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppTextField(
-                          controller: titleController,
-                          label: l10n.deckNameLabel,
-                        ),
-                        const SizedBox(height: 12),
-                        AppTextField(
-                          controller: subjectController,
-                          label: l10n.subjectOrCourseLabel,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                  Text(
-                    l10n.previewAndEditCardsTitle(cards.value.length),
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                      Text(
+                        l10n.previewAndEditCardsTitle(cards.value.length),
+                        style: typography.title3.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
 
-                  // Cards List
-                  ...List.generate(cards.value.length, (index) {
-                    final card = cards.value[index];
-                    return GeneratedCardPreviewTile(
-                      index: index,
-                      card: card,
-                      onChanged: (updated) {
-                        final updatedList = List<GeneratedCardPreviewItem>.from(
-                          cards.value,
+                      // Cards List
+                      ...List.generate(cards.value.length, (index) {
+                        final card = cards.value[index];
+                        return GeneratedCardPreviewTile(
+                          index: index,
+                          card: card,
+                          onChanged: (updated) {
+                            final updatedList =
+                                List<GeneratedCardPreviewItem>.from(
+                                  cards.value,
+                                );
+                            updatedList[index] = updated;
+                            cards.value = updatedList;
+                          },
                         );
-                        updatedList[index] = updated;
-                        cards.value = updatedList;
-                      },
-                    );
-                  }),
-                ],
+                      }),
+                    ],
+                  ),
+                ),
               ),
             );
           },
         ),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: ShrinkableButton(
-              onTap: handleConfirmAndStudy,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colors.primary,
-                      colors.primary.withAlpha(220),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.primary.withAlpha(isDark ? 90 : 50),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.play_arrow_rounded,
-                      color: colors.white,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.confirmAndStudyAction,
-                      style: typography.body.bold.copyWith(
-                        color: colors.white,
+        bottomNavigationBar: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedScale(
+                      scale: isHovered ? 1.02 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      child: child,
+                    );
+                  },
+                  child: ShrinkableButton(
+                    onTap: handleConfirmAndStudy,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            colors.primary,
+                            colors.primary.withAlpha(220),
+                          ],
+                        ),
+                        borderRadius: AppRadius.radiusCard,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primary.withAlpha(isDark ? 90 : 50),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.play_arrow_rounded,
+                            color: colors.white,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.confirmAndStudyAction,
+                            style: typography.body.bold.copyWith(
+                              color: colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

@@ -1105,6 +1105,81 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get navTabStudyHub => 'Study Hub';
+
+  @override
+  String get neuralEngineActive => 'Neural Engine Active';
+
+  @override
+  String get fifteenMinSprint => '15-MIN SPRINT';
+
+  @override
+  String get nextBestActionTitle => 'NEXT BEST ACTION';
+
+  @override
+  String get startAction => 'Start';
+
+  @override
+  String get podPulseTitle => 'POD PULSE';
+
+  @override
+  String get activeToday => 'Active Today';
+
+  @override
+  String get groupFocus => 'Group Focus';
+
+  @override
+  String get podKarma => 'Pod Karma';
+
+  @override
+  String podSuffix(String track) {
+    return '$track Pod';
+  }
+
+  @override
+  String get studyCirclePod => 'Study Circle Pod';
+
+  @override
+  String get backlogTriageTitle => 'BACKLOG TRIAGE';
+
+  @override
+  String get backlogTriageSubtitle => 'Feeling overwhelmed? No guilt.';
+
+  @override
+  String backlogTriageBody(String title) {
+    return 'Syllabot can prioritize your 10 highest-decay cards in \"$title\".';
+  }
+
+  @override
+  String get triageTenAction => 'Triage 10';
+
+  @override
+  String get allCaughtUpTitle => 'All caught up!';
+
+  @override
+  String get allCaughtUpSubtitle =>
+      'No active-recall cards due for review today. Keep it up!';
+
+  @override
+  String get curateCoursesTitle => 'Curate Your Courses';
+
+  @override
+  String get curateCoursesSubtitle =>
+      'Tap to set up your subjects and track your syllabus progress.';
+
+  @override
+  String get dashboardHeatmapSubtitle => 'Activity • Past 28 Days';
+
+  @override
+  String get dashboardHeatmapTapHint => 'Tap any day to inspect study volume';
+
+  @override
+  String get dashboardHeatmapLess => 'Less';
+
+  @override
+  String get dashboardHeatmapMore => 'More';
+
+  @override
   String get deckDetailTitle => 'Active Recall Session';
 
   @override
@@ -2264,6 +2339,11 @@ class AppLocalizationsEn extends AppLocalizations {
       zero: 'No reviews',
     );
     return '$_temp0 on $date';
+  }
+
+  @override
+  String reviewsThisYearCount(int count) {
+    return '$count Reviews this Year';
   }
 
   @override

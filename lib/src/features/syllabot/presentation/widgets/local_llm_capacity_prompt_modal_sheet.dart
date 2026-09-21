@@ -4,8 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/device_capability_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Modal bottom sheet that audits device capabilities (storage, CPU, RAM)
@@ -118,227 +121,242 @@ class _LocalLlmCapacityPromptModalSheetState
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return Container(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? colors.surfacePrimary : colors.backgroundPrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(
-          color: isDark
-              ? colors.surfaceBorderHighlight.withAlpha(50)
-              : colors.surfaceBorder.withAlpha(120),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag Handle
-          Center(
-            child: Container(
-              width: 38,
-              height: 4.5,
-              decoration: BoxDecoration(
-                color: colors.textSecondary.withAlpha(80),
-                borderRadius: BorderRadius.circular(3),
-              ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Container(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfacePrimary : colors.backgroundPrimary,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
+            border: Border.all(
+              color: isDark
+                  ? colors.surfaceBorderHighlight.withAlpha(50)
+                  : colors.surfaceBorder.withAlpha(120),
             ),
           ),
-          const SizedBox(height: 18),
-
-          // Header
-          Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 50 : 25),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  Icons.memory_rounded,
-                  size: 24,
-                  color: colors.primary,
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withAlpha(80),
+                    borderRadius: AppRadius.radiusMicro,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'On-Device AI Engine',
-                      style: typography.title2.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 17,
-                      ),
+              const SizedBox(height: 18),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(isDark ? 50 : 25),
+                      borderRadius: AppRadius.radiusCard,
                     ),
-                    Text(
-                      'Quantized 4-bit Neural Model (248 MB)',
+                    child: Icon(
+                      Icons.memory_rounded,
+                      size: 24,
+                      color: colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'On-Device AI Engine',
+                          style: typography.title2.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 17,
+                          ),
+                        ),
+                        Text(
+                          'Quantized 4-bit Neural Model (248 MB)',
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Overview description
+              Text(
+                'Run Syllabot reasoning locally on your device with complete offline privacy, zero data usage, and low latency.',
+                style: typography.footnote.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 12.5,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Device Capability Audit Box
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.surfaceSecondary.withAlpha(140)
+                      : colors.surfaceSecondary.withAlpha(90),
+                  borderRadius: AppRadius.radiusPanel,
+                  border: Border.all(
+                    color: colors.surfaceBorder.withAlpha(isDark ? 50 : 100),
+                  ),
+                ),
+                child: _isLoadingReport
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator.adaptive(),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          _AuditRow(
+                            icon: Icons.storage_rounded,
+                            iconColor: _report!.hasSufficientStorage
+                                ? colors.success
+                                : colors.error,
+                            title: 'Storage Space',
+                            subtitle: _report!.storageStatusText,
+                            statusBadge: _report!.hasSufficientStorage ? 'Ready' : 'Low',
+                            statusColor: _report!.hasSufficientStorage
+                                ? colors.success
+                                : colors.error,
+                          ),
+                          const SizedBox(height: 10),
+                          _AuditRow(
+                            icon: Icons.speed_rounded,
+                            iconColor: colors.primary,
+                            title: 'Processor & Cores',
+                            subtitle: '${_report!.cpuCores} CPU Cores • ${_report!.performanceTier}',
+                            statusBadge: 'Optimized',
+                            statusColor: colors.primary,
+                          ),
+                          const SizedBox(height: 10),
+                          _AuditRow(
+                            icon: Icons.psychology_rounded,
+                            iconColor: colors.syllabotAccent,
+                            title: 'RAM & Battery Guard',
+                            subtitle: '~350MB Peak RAM • Optimized for energy efficiency',
+                            statusBadge: 'Optimal',
+                            statusColor: colors.syllabotAccent,
+                          ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 20),
+
+              // Download Progress bar if downloading
+              if (_isDownloading) ...[
+                ClipRRect(
+                  borderRadius: AppRadius.radiusMicro,
+                  child: LinearProgressIndicator(
+                    value: _downloadProgress,
+                    backgroundColor: colors.surfaceBorder.withAlpha(80),
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                    minHeight: 8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    'Downloading model weights (${(_downloadProgress * 100).toInt()}%)...',
+                    style: typography.caption.medium.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Actions
+              if (!_isDownloading) ...[
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.mediumImpact());
+                        _startDownload();
+                      },
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.snappyCurve,
+                        width: double.infinity,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isHovered
+                              ? colors.primary.withAlpha(235)
+                              : colors.primary,
+                          borderRadius: AppRadius.radiusCard,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(isHovered ? 120 : 80),
+                              blurRadius: isHovered ? 14 : 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.download_rounded,
+                              size: 18,
+                              color: colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Download & Activate Model (248 MB)',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.white,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(
+                      'Continue with Cloud AI Engine (No Storage Needed)',
                       style: typography.caption.medium.copyWith(
                         color: colors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Overview description
-          Text(
-            'Run Syllabot reasoning locally on your device with complete offline privacy, zero data usage, and low latency.',
-            style: typography.footnote.regular.copyWith(
-              color: colors.textSecondary,
-              fontSize: 12.5,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Device Capability Audit Box
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colors.surfaceSecondary.withAlpha(140)
-                  : colors.surfaceSecondary.withAlpha(90),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: colors.surfaceBorder.withAlpha(isDark ? 50 : 100),
-              ),
-            ),
-            child: _isLoadingReport
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator.adaptive(),
-                    ),
-                  )
-                : Column(
-                    children: [
-                      _AuditRow(
-                        icon: Icons.storage_rounded,
-                        iconColor: _report!.hasSufficientStorage
-                            ? colors.success
-                            : colors.error,
-                        title: 'Storage Space',
-                        subtitle: _report!.storageStatusText,
-                        statusBadge: _report!.hasSufficientStorage ? 'Ready' : 'Low',
-                        statusColor: _report!.hasSufficientStorage
-                            ? colors.success
-                            : colors.error,
-                      ),
-                      const SizedBox(height: 10),
-                      _AuditRow(
-                        icon: Icons.speed_rounded,
-                        iconColor: colors.primary,
-                        title: 'Processor & Cores',
-                        subtitle: '${_report!.cpuCores} CPU Cores • ${_report!.performanceTier}',
-                        statusBadge: 'Optimized',
-                        statusColor: colors.primary,
-                      ),
-                      const SizedBox(height: 10),
-                      _AuditRow(
-                        icon: Icons.psychology_rounded,
-                        iconColor: colors.syllabotAccent,
-                        title: 'RAM & Battery Guard',
-                        subtitle: '~350MB Peak RAM • Optimized for energy efficiency',
-                        statusBadge: 'Optimal',
-                        statusColor: colors.syllabotAccent,
-                      ),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 20),
-
-          // Download Progress bar if downloading
-          if (_isDownloading) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: _downloadProgress,
-                backgroundColor: colors.surfaceBorder.withAlpha(80),
-                valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
-                minHeight: 8,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                'Downloading model weights (${(_downloadProgress * 100).toInt()}%)...',
-                style: typography.caption.medium.copyWith(
-                  color: colors.textSecondary,
-                  fontSize: 11.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Actions
-          if (!_isDownloading) ...[
-            ShrinkableButton(
-              onTap: () {
-                unawaited(HapticFeedback.mediumImpact());
-                _startDownload();
-              },
-              child: Container(
-                width: double.infinity,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.primary.withAlpha(80),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.download_rounded,
-                      size: 18,
-                      color: colors.white,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Download & Activate Model (248 MB)',
-                      style: typography.callout.bold.copyWith(
-                        color: colors.white,
-                        fontSize: 13.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Center(
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  'Continue with Cloud AI Engine (No Storage Needed)',
-                  style: typography.caption.medium.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -373,7 +391,7 @@ class _AuditRow extends StatelessWidget {
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: iconColor.withAlpha(isDark ? 40 : 20),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.radiusBadge,
           ),
           child: Icon(icon, size: 16, color: iconColor),
         ),
@@ -405,7 +423,7 @@ class _AuditRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
           decoration: BoxDecoration(
             color: statusColor.withAlpha(isDark ? 40 : 20),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: AppRadius.radiusMicro,
             border: Border.all(
               color: statusColor.withAlpha(isDark ? 70 : 40),
               width: 0.8,

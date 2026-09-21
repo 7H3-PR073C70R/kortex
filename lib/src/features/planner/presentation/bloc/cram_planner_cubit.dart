@@ -185,10 +185,11 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         ),
       ),
       (updatedExam) {
-        final updatedList = state.activeExams
-            .map((e) => e.id == examId ? updatedExam : e)
-            .toList()
-          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+        final updatedList =
+            state.activeExams
+                .map((e) => e.id == examId ? updatedExam : e)
+                .toList()
+              ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
         final primary = (state.selectedExam?.id == examId)
             ? updatedExam
@@ -232,10 +233,9 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         ),
       ),
       (_) {
-        final updatedList = state.activeExams
-            .where((e) => e.id != examId)
-            .toList()
-          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+        final updatedList =
+            state.activeExams.where((e) => e.id != examId).toList()
+              ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
         final primary = updatedList.isNotEmpty ? updatedList.first : null;
         var pace = 20;

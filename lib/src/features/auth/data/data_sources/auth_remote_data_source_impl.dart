@@ -57,7 +57,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await _authClient.resetPassword(request);
   }
 
-
   @override
   Future<UserModel> verifyOtp({
     required String email,

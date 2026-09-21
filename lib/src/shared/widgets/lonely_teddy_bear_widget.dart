@@ -53,48 +53,28 @@ class _LonelyTeddyBearWidgetState extends State<LonelyTeddyBearWidget>
       animation: _controller,
       builder: (context, child) {
         final breath = _controller.value;
-        final floatY = math.sin(breath * math.pi) * (widget.isHappy ? 6.0 : 4.0);
-        final earMotion = math.sin(breath * math.pi) * (widget.isHappy ? -0.04 : 0.05);
+        final floatY =
+            math.sin(breath * math.pi) * (widget.isHappy ? 6.0 : 4.0);
+        final earMotion =
+            math.sin(breath * math.pi) * (widget.isHappy ? -0.04 : 0.05);
 
         return SizedBox(
           width: widget.size,
           height: widget.size,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. Ambient atmospheric aura
-              Container(
-                width: widget.size * 0.95,
-                height: widget.size * 0.95,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      (widget.isHappy
-                              ? colors.warning
-                              : (isDark ? colors.syllabotAccent : colors.primary))
-                          .withAlpha(widget.isHappy ? (isDark ? 45 : 30) : (isDark ? 35 : 20)),
-                      colors.transparent,
-                    ],
-                  ),
+          child: Center(
+            child: Transform.translate(
+              offset: Offset(0, floatY),
+              child: CustomPaint(
+                size: Size(widget.size * 0.85, widget.size * 0.85),
+                painter: _TeddyBearPainter(
+                  breath: breath,
+                  earMotion: earMotion,
+                  isHappy: widget.isHappy,
+                  isDark: isDark,
+                  themeColors: colors,
                 ),
               ),
-
-              // 2. Animated Mascot Custom Painter
-              Transform.translate(
-                offset: Offset(0, floatY),
-                child: CustomPaint(
-                  size: Size(widget.size * 0.85, widget.size * 0.85),
-                  painter: _TeddyBearPainter(
-                    breath: breath,
-                    earMotion: earMotion,
-                    isHappy: widget.isHappy,
-                    isDark: isDark,
-                    themeColors: colors,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -304,18 +284,45 @@ class _TeddyBearPainter extends CustomPainter {
     }
 
     // G. Soft Rosy Blush Cheeks
-    final blushColor = isHappy ? themeColors.slateTerracotta : themeColors.recallAgain;
+    final blushColor = isHappy
+        ? themeColors.slateTerracotta
+        : themeColors.recallAgain;
     final blushPaint = Paint()
-      ..color = blushColor.withAlpha(isDark ? (isHappy ? 80 : 60) : (isHappy ? 95 : 75));
+      ..color = blushColor.withAlpha(
+        isDark ? (isHappy ? 80 : 60) : (isHappy ? 95 : 75),
+      );
     canvas
-      ..drawCircle(Offset(w * 0.28, h * 0.48), w * (isHappy ? 0.062 : 0.055), blushPaint)
-      ..drawCircle(Offset(w * 0.72, h * 0.48), w * (isHappy ? 0.062 : 0.055), blushPaint);
+      ..drawCircle(
+        Offset(w * 0.28, h * 0.48),
+        w * (isHappy ? 0.062 : 0.055),
+        blushPaint,
+      )
+      ..drawCircle(
+        Offset(w * 0.72, h * 0.48),
+        w * (isHappy ? 0.062 : 0.055),
+        blushPaint,
+      );
 
     if (isHappy) {
       // H. Floating Celebratory Stars ✨
-      _drawSparkle(canvas, Offset(w * 0.12, h * 0.25 - breath * 4), w * 0.035, themeColors.warning);
-      _drawSparkle(canvas, Offset(w * 0.88, h * 0.28 + breath * 3), w * 0.04, themeColors.warning);
-      _drawSparkle(canvas, Offset(w * 0.82, h * 0.62 - breath * 2), w * 0.028, themeColors.primary);
+      _drawSparkle(
+        canvas,
+        Offset(w * 0.12, h * 0.25 - breath * 4),
+        w * 0.035,
+        themeColors.warning,
+      );
+      _drawSparkle(
+        canvas,
+        Offset(w * 0.88, h * 0.28 + breath * 3),
+        w * 0.04,
+        themeColors.warning,
+      );
+      _drawSparkle(
+        canvas,
+        Offset(w * 0.82, h * 0.62 - breath * 2),
+        w * 0.028,
+        themeColors.primary,
+      );
     } else {
       // Single Sad Tear
       final tearY = h * 0.45 + (breath * h * 0.03);

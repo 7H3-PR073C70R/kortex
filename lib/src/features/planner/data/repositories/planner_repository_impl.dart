@@ -24,11 +24,11 @@ class PlannerRepositoryImpl implements PlannerRepository {
     LocalStorageService? storageService,
     UserStorageService? userStorageService,
     Dio? dio,
-  })  : _calculator = calculator ?? const CramWorkloadCalculator(),
-        _database = database,
-        _storageService = storageService,
-        _userStorageService = userStorageService,
-        _dio = dio;
+  }) : _calculator = calculator ?? const CramWorkloadCalculator(),
+       _database = database,
+       _storageService = storageService,
+       _userStorageService = userStorageService,
+       _dio = dio;
 
   final CramWorkloadCalculator _calculator;
   final AppDatabase? _database;
@@ -137,7 +137,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
       // Check migration from SharedPreferences
       if (!_migrationAttempted && _storage != null) {
         _migrationAttempted = true;
-        final raw = _storage?.getPreference(key: PrefKeys.persistedExamCountdowns);
+        final raw = _storage?.getPreference(
+          key: PrefKeys.persistedExamCountdowns,
+        );
         if (raw != null && raw.isNotEmpty) {
           final list = jsonDecode(raw) as List<dynamic>;
           final parsed = list
@@ -163,7 +165,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
               .toList();
 
           await db.batchUpsertExamEvents(companions);
-          await _storage?.deletePreference(key: PrefKeys.persistedExamCountdowns);
+          await _storage?.deletePreference(
+            key: PrefKeys.persistedExamCountdowns,
+          );
 
           _cachedExams
             ..clear()
@@ -234,10 +238,13 @@ class PlannerRepositoryImpl implements PlannerRepository {
               : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?order=target_date.asc';
           final response = await client.get<dynamic>(uri);
           if (response.statusCode == 200 && response.data is List) {
-            final remoteList = (response.data as List<dynamic>)
-                .map((e) => ExamEventModel.fromJson(e as Map<String, dynamic>))
-                .toList()
-              ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+            final remoteList =
+                (response.data as List<dynamic>)
+                    .map(
+                      (e) => ExamEventModel.fromJson(e as Map<String, dynamic>),
+                    )
+                    .toList()
+                  ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
             _cachedExams
               ..clear()
@@ -265,7 +272,11 @@ class PlannerRepositoryImpl implements PlannerRepository {
     return Future<ExamEventEntity>.sync(() async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final target = DateTime(targetDate.year, targetDate.month, targetDate.day);
+      final target = DateTime(
+        targetDate.year,
+        targetDate.month,
+        targetDate.day,
+      );
       final daysRemaining = target.difference(today).inDays;
       final dailyTarget = _calculator.calculateDailyTarget(
         remainingCards: totalCardsCount,
@@ -297,11 +308,13 @@ class PlannerRepositoryImpl implements PlannerRepository {
           );
           if (response.statusCode == 201 || response.statusCode == 200) {
             if (response.data is List && (response.data as List).isNotEmpty) {
-              final first = (response.data as List).first as Map<String, dynamic>;
+              final first =
+                  (response.data as List).first as Map<String, dynamic>;
               if (first['id'] != null) {
                 examId = first['id'].toString();
               }
-            } else if (response.data is Map && (response.data as Map)['id'] != null) {
+            } else if (response.data is Map &&
+                (response.data as Map)['id'] != null) {
               examId = (response.data as Map)['id'].toString();
             }
           }
@@ -345,7 +358,11 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final target = DateTime(targetDate.year, targetDate.month, targetDate.day);
+      final target = DateTime(
+        targetDate.year,
+        targetDate.month,
+        targetDate.day,
+      );
       final daysRemaining = target.difference(today).inDays;
       final cards = totalCardsCount ?? existing?.totalCardsCount ?? 0;
       final dailyTarget = _calculator.calculateDailyTarget(
@@ -382,7 +399,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
       final updated = ExamEventModel(
         id: examId,
-        userId: existing?.userId ?? (userId.isNotEmpty ? userId : 'current-user'),
+        userId:
+            existing?.userId ?? (userId.isNotEmpty ? userId : 'current-user'),
         examName: examName,
         targetDate: targetDate,
         subjectTrack: subjectTrack,

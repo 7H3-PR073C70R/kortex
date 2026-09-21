@@ -174,7 +174,6 @@ class AuthRepositoryImpl implements AuthRepository {
         .makeRequest();
   }
 
-
   @override
   Future<Either<Failure, UserEntity>> verifyOtp({
     required String email,

@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Dashboard active recall deck card powered by FSRS-6 memory scheduling.
@@ -28,50 +31,54 @@ class FsrsReviewDeckCard extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     final retentionPercent = (deck.retentionRate * 100).toInt();
+    final effectiveRadius = isHero ? AppRadius.panel : AppRadius.card;
 
     return Semantics(
       button: true,
       label:
           '${deck.title}. ${l10n.dashboardDueCount(deck.dueCards)}. '
           '${l10n.dashboardMemoryRetention}: $retentionPercent%.',
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          unawaited(context.router.push(StudySessionRoute(deckId: deck.id)));
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: isHero
-                    ? (isDark
-                          ? colors.surfaceSecondary.withAlpha(190)
-                          : colors.surfacePrimary.withAlpha(230))
-                    : (isDark
-                          ? colors.surfaceSecondary.withAlpha(150)
-                          : colors.surfacePrimary.withAlpha(200)),
-                border: Border.all(
-                  color: isHero
-                      ? colors.primary.withAlpha(isDark ? 130 : 90)
-                      : (isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(70)
-                            : colors.surfaceBorder.withAlpha(140)),
-                  width: isHero ? 1.5 : 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, _) {
+          return ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              unawaited(context.router.push(StudySessionRoute(deckId: deck.id)));
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(effectiveRadius),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.easeOutCubic,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(effectiveRadius),
                     color: isHero
-                        ? colors.primary.withAlpha(isDark ? 50 : 25)
-                        : colors.black.withAlpha(isDark ? 40 : 10),
-                    blurRadius: isHero ? 16 : 8,
-                    offset: const Offset(0, 4),
+                        ? (isDark
+                              ? colors.surfaceSecondary.withAlpha(isHovered ? 220 : 190)
+                              : colors.surfacePrimary.withAlpha(isHovered ? 250 : 230))
+                        : (isDark
+                              ? colors.surfaceSecondary.withAlpha(isHovered ? 180 : 150)
+                              : colors.surfacePrimary.withAlpha(isHovered ? 225 : 200)),
+                    border: Border.all(
+                      color: isHero
+                          ? (isHovered
+                              ? colors.primary.withAlpha(isDark ? 160 : 120)
+                              : colors.primary.withAlpha(isDark ? 110 : 80))
+                          : (isHovered
+                              ? colors.surfaceBorderHighlight
+                              : colors.surfaceBorder),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? (isHovered ? 50 : 35) : (isHovered ? 20 : 10)),
+                        blurRadius: isHovered ? 14 : 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                ],
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -295,7 +302,9 @@ class FsrsReviewDeckCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
+    },
+  ),
+);
   }
 }

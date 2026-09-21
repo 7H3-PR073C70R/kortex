@@ -13,8 +13,8 @@ class PromoCodeRepositoryImpl implements PromoCodeRepository {
   const PromoCodeRepositoryImpl({
     required PromoCodeRemoteDataSource remoteDataSource,
     required UserStorageService userStorageService,
-  })  : _remoteDataSource = remoteDataSource,
-        _userStorageService = userStorageService;
+  }) : _remoteDataSource = remoteDataSource,
+       _userStorageService = userStorageService;
 
   final PromoCodeRemoteDataSource _remoteDataSource;
   final UserStorageService _userStorageService;

@@ -7,6 +7,8 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -20,6 +22,7 @@ import 'package:kortex/src/features/profile/domain/use_cases/update_display_name
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -77,117 +80,59 @@ class _ProfileView extends HookWidget {
             ),
             actions: [
               // Pro Upgrade / Status Pill
-              ShrinkableButton(
-                onTap: () {
-                  AppFeedback.selection();
-                  unawaited(
-                    context.router.push(PaywallRoute()),
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(right: 16),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: profile?.isPro == true
-                          ? [
-                              colors.warning,
-                              colors.warning.withAlpha(200),
-                            ]
-                          : [
-                              colors.primary,
-                              colors.syllabotAccent,
-                            ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        profile?.isPro == true
-                            ? Icons.verified_rounded
-                            : Icons.auto_awesome_rounded,
-                        color: colors.white,
-                        size: 13,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        profile?.isPro == true ? 'Pro Active' : 'Go Pro',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(18, 4, 18, 136),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Unified Scholar Hub Card (Identity + Quick Metrics)
-                ScholarHubCard(
-                  state: state,
-                  profile: profile,
-                  onEditName: () => _showEditProfileDialog(
-                    context,
-                    profile?.displayName ?? state.user?.displayName ?? 'Kortexify Scholar',
-                  ),
-                ),
-                const SizedBox(height: 20),
-          
-                // 2. Settings & Feature Management Menu
-                Text(
-                  'Settings & Preferences',
-                  style: typography.body.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 14.5,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ProfileNavigationMenu(
-                  targetTrack: targetTrack,
-                  dailyTarget: dailyTarget,
-                ),
-                const SizedBox(height: 24),
-          
-                // 3. Sign Out Button
-                Center(
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedScale(
+                      scale: isHovered ? 1.03 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutCubic,
+                      child: child,
+                    );
+                  },
                   child: ShrinkableButton(
-                    onTap: () => _confirmSignOut(context, colors, typography),
+                    onTap: () {
+                      AppFeedback.selection();
+                      unawaited(
+                        context.router.push(PaywallRoute()),
+                      );
+                    },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 11,
+                        horizontal: 12,
+                        vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: colors.error.withAlpha(isDark ? 30 : 15),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: colors.error.withAlpha(isDark ? 80 : 50),
+                        gradient: LinearGradient(
+                          colors: profile?.isPro == true
+                              ? [
+                                  colors.warning,
+                                  colors.warning.withAlpha(200),
+                                ]
+                              : [
+                                  colors.primary,
+                                  colors.syllabotAccent,
+                                ],
                         ),
+                        borderRadius: AppRadius.radiusCard,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.logout_rounded,
-                            color: colors.error,
-                            size: 17,
+                            profile?.isPro == true
+                                ? Icons.verified_rounded
+                                : Icons.auto_awesome_rounded,
+                            color: colors.white,
+                            size: 13,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
                           Text(
-                            l10n.signOutButton,
-                            style: typography.footnote.bold.copyWith(
-                              color: colors.error,
+                            profile?.isPro == true ? 'Pro Active' : 'Go Pro',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.white,
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -195,19 +140,109 @@ class _ProfileView extends HookWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
-          
-                // 4. App Version Footer
-                Center(
-                  child: Text(
-                    'Kortexify v1.2.0 • Neural Study AI',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary.withAlpha(120),
-                      fontSize: 11,
+              ),
+            ],
+          ),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 4, 18, 136),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Unified Scholar Hub Card (Identity + Quick Metrics)
+                    ScholarHubCard(
+                      state: state,
+                      profile: profile,
+                      onEditName: () => _showEditProfileDialog(
+                        context,
+                        profile?.displayName ??
+                            state.user?.displayName ??
+                            'Kortexify Scholar',
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+
+                    // 2. Settings & Feature Management Menu
+                    Text(
+                      'Settings & Preferences',
+                      style: typography.body.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ProfileNavigationMenu(
+                      targetTrack: targetTrack,
+                      dailyTarget: dailyTarget,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 3. Sign Out Button
+                    Center(
+                      child: PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            curve: Curves.easeOutCubic,
+                            transform: isHovered
+                                ? Matrix4.translationValues(0, -2, 0)
+                                : Matrix4.identity(),
+                            child: child,
+                          );
+                        },
+                        child: ShrinkableButton(
+                          onTap: () =>
+                              _confirmSignOut(context, colors, typography),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 11,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.error.withAlpha(isDark ? 30 : 15),
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: colors.error.withAlpha(isDark ? 80 : 50),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.logout_rounded,
+                                  color: colors.error,
+                                  size: 17,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  l10n.signOutButton,
+                                  style: typography.footnote.bold.copyWith(
+                                    color: colors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 4. App Version Footer
+                    Center(
+                      child: Text(
+                        'Kortexify v1.2.0 • Neural Study AI',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary.withAlpha(120),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -277,7 +312,7 @@ class _ProfileView extends HookWidget {
         builder: (ctx) => AlertDialog(
           backgroundColor: colors.surfaceSecondary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.radiusDialog,
           ),
           title: Text(
             'Sign Out of Kortexify?',

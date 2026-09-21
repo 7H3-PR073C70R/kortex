@@ -47,8 +47,8 @@ class PermissionsState extends Equatable {
 /// Cubit managing runtime permission requests.
 class PermissionsCubit extends Cubit<PermissionsState> {
   PermissionsCubit({LocalStorageService? localStorageService})
-      : _localStorageService = localStorageService,
-        super(const PermissionsState());
+    : _localStorageService = localStorageService,
+      super(const PermissionsState());
 
   final LocalStorageService? _localStorageService;
 
@@ -101,7 +101,8 @@ class PermissionsCubit extends Cubit<PermissionsState> {
 
   void _markOnboardingCompleted() {
     try {
-      final storage = _localStorageService ??
+      final storage =
+          _localStorageService ??
           (locator.isRegistered<LocalStorageService>()
               ? locator<LocalStorageService>()
               : null);

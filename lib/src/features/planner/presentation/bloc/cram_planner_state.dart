@@ -38,7 +38,9 @@ class CramPlannerState extends Equatable {
     return CramPlannerState(
       status: status ?? this.status,
       activeExams: activeExams ?? this.activeExams,
-      selectedExam: clearSelectedExam ? null : (selectedExam ?? this.selectedExam),
+      selectedExam: clearSelectedExam
+          ? null
+          : (selectedExam ?? this.selectedExam),
       dynamicDailyTarget: dynamicDailyTarget ?? this.dynamicDailyTarget,
       urgencyLevel: urgencyLevel ?? this.urgencyLevel,
       errorMessage: errorMessage,

@@ -5,6 +5,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -85,8 +86,9 @@ class _GratificationCelebrationOverlayState
   @override
   void initState() {
     super.initState();
-    _confettiController =
-        ConfettiController(duration: const Duration(seconds: 3));
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -158,207 +160,205 @@ class _GratificationCelebrationOverlayState
               child: Dialog(
                 backgroundColor: colors.transparent,
                 insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary
-                        : colors.surfacePrimary,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 100 : 60),
-                      width: 1.5,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? colors.surfaceSecondary
+                          : colors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(AppRadius.dialog),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(isDark ? 100 : 60),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 80 : 25),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withAlpha(isDark ? 70 : 30),
-                        blurRadius: 28,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Floating Animated Badge
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              colors.primary,
-                              colors.syllabotAccent,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(100),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            widget.emoji,
-                            style: const TextStyle(fontSize: 40),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Title
-                      Text(
-                        widget.title,
-                        textAlign: TextAlign.center,
-                        style: typography.title2.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 20,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Subtitle
-                      Text(
-                        widget.subtitle,
-                        textAlign: TextAlign.center,
-                        style: typography.body.medium.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-
-                      // XP Earned Pill
-                      if (widget.xpEarned != null && widget.xpEarned! > 0) ...[
-                        const SizedBox(height: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Floating Animated Badge
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
-                            color: colors.warning.withAlpha(isDark ? 40 : 25),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: colors.warning.withAlpha(isDark ? 90 : 60),
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                colors.primary,
+                                colors.syllabotAccent,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.bolt_rounded,
-                                color: colors.warning,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '+${widget.xpEarned} Scholar XP Earned',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.warning,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      // Stats Row
-                      if (widget.primaryStatValue != null ||
-                          widget.secondaryStatValue != null) ...[
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceTertiary,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(
-                                isDark ? 60 : 40,
-                              ),
+                          child: Center(
+                            child: Text(
+                              widget.emoji,
+                              style: const TextStyle(fontSize: 40),
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              if (widget.primaryStatValue != null)
-                                _StatPill(
-                                  label: widget.primaryStatLabel ?? 'Score',
-                                  value: widget.primaryStatValue!,
-                                  color: colors.primary,
-                                  colors: colors,
-                                  typography: typography,
-                                ),
-                              if (widget.primaryStatValue != null &&
-                                  widget.secondaryStatValue != null)
-                                Container(
-                                  width: 1,
-                                  height: 28,
-                                  color: colors.surfaceBorder,
-                                ),
-                              if (widget.secondaryStatValue != null)
-                                _StatPill(
-                                  label: widget.secondaryStatLabel ?? 'Cards',
-                                  value: widget.secondaryStatValue!,
-                                  color: colors.recallEasy,
-                                  colors: colors,
-                                  typography: typography,
-                                ),
-                            ],
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Title
+                        Text(
+                          widget.title,
+                          textAlign: TextAlign.center,
+                          style: typography.title2.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 20,
                           ),
                         ),
-                      ],
+                        const SizedBox(height: 8),
 
-                      const SizedBox(height: 22),
+                        // Subtitle
+                        Text(
+                          widget.subtitle,
+                          textAlign: TextAlign.center,
+                          style: typography.body.medium.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
 
-                      // Dismiss CTA Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ShrinkableButton(
-                          onTap: () {
-                            unawaited(HapticFeedback.mediumImpact());
-                            Navigator.of(context).pop();
-                            widget.onDismiss?.call();
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 13),
+                        // XP Earned Pill
+                        if (widget.xpEarned != null &&
+                            widget.xpEarned! > 0) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colors.primary,
-                                  colors.primary.withAlpha(220),
-                                ],
+                              color: colors.warning.withAlpha(isDark ? 40 : 25),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
                               ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.primary.withAlpha(isDark ? 70 : 40),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
+                              border: Border.all(
+                                color: colors.warning.withAlpha(
+                                  isDark ? 90 : 60,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.bolt_rounded,
+                                  color: colors.warning,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '+${widget.xpEarned} Scholar XP Earned',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.warning,
+                                    fontSize: 12.5,
+                                  ),
                                 ),
                               ],
                             ),
-                            child: Center(
-                              child: Text(
-                                widget.buttonText,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.white,
-                                  fontSize: 14.5,
+                          ),
+                        ],
+
+                        // Stats Row
+                        if (widget.primaryStatValue != null ||
+                            widget.secondaryStatValue != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceTertiary,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.panel,
+                              ),
+                              border: Border.all(
+                                color: colors.surfaceBorder.withAlpha(
+                                  isDark ? 60 : 40,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                if (widget.primaryStatValue != null)
+                                  _StatPill(
+                                    label: widget.primaryStatLabel ?? 'Score',
+                                    value: widget.primaryStatValue!,
+                                    color: colors.primary,
+                                    colors: colors,
+                                    typography: typography,
+                                  ),
+                                if (widget.primaryStatValue != null &&
+                                    widget.secondaryStatValue != null)
+                                  Container(
+                                    width: 1,
+                                    height: 28,
+                                    color: colors.surfaceBorder,
+                                  ),
+                                if (widget.secondaryStatValue != null)
+                                  _StatPill(
+                                    label: widget.secondaryStatLabel ?? 'Cards',
+                                    value: widget.secondaryStatValue!,
+                                    color: colors.recallEasy,
+                                    colors: colors,
+                                    typography: typography,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 22),
+
+                        // Dismiss CTA Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ShrinkableButton(
+                            onTap: () {
+                              unawaited(HapticFeedback.mediumImpact());
+                              Navigator.of(context).pop();
+                              widget.onDismiss?.call();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.primary,
+                                    colors.primary.withAlpha(220),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.panel,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  widget.buttonText,
+                                  style: typography.body.bold.copyWith(
+                                    color: colors.white,
+                                    fontSize: 14.5,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

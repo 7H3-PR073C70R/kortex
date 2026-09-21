@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -157,104 +158,107 @@ class CreateCourseDeckModalSheet extends HookWidget {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.88,
-        ),
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(
-            color: isDark
-                ? colors.surfaceBorderHighlight.withAlpha(70)
-                : colors.surfaceBorder,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 640,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.88,
           ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.surfaceBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+              border: Border.all(
+                color: isDark
+                    ? colors.surfaceBorderHighlight.withAlpha(70)
+                    : colors.surfaceBorder,
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'New Study Deck',
-                          style: typography.title2.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 19,
-                          ),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.surfaceBorder,
+                          borderRadius: BorderRadius.circular(AppRadius.micro),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$courseCode • $courseTitle',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.primary,
-                            fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'New Study Deck',
+                              style: typography.title2.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 19,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$courseCode • $courseTitle',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.primary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: colors.textSecondary,
+                            size: 20,
                           ),
+                          onPressed: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colors.textSecondary,
-                        size: 20,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
+                    const SizedBox(height: 18),
 
-                // Deck Title
-                Text(
-                  'Deck Title',
-                  style: typography.footnote.bold.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: titleController,
-                  style: typography.body.medium.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 14,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. $courseCode Key Formulas',
-                    filled: true,
-                    fillColor: isDark
-                        ? colors.surfaceSecondary.withAlpha(140)
-                        : colors.surfaceSecondary.withAlpha(60),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colors.surfaceBorder),
+                    // Deck Title
+                    Text(
+                      'Deck Title',
+                      style: typography.footnote.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: titleController,
+                      style: typography.body.medium.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 14,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. $courseCode Key Formulas',
+                        filled: true,
+                        fillColor: isDark
+                            ? colors.surfaceSecondary.withAlpha(140)
+                            : colors.surfaceSecondary.withAlpha(60),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          borderSide: BorderSide(color: colors.surfaceBorder),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
                 const SizedBox(height: 14),
 
                 // Deck Description
@@ -278,7 +282,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
                         ? colors.surfaceSecondary.withAlpha(140)
                         : colors.surfaceSecondary.withAlpha(60),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       borderSide: BorderSide(color: colors.surfaceBorder),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
@@ -329,7 +333,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
                             color: isDark
                                 ? colors.surfaceSecondary.withAlpha(150)
                                 : colors.surfaceSecondary.withAlpha(80),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
                             border: Border.all(
                               color: colors.surfaceBorder.withAlpha(100),
                             ),
@@ -404,7 +408,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
                     color: isDark
                         ? colors.surfaceSecondary.withAlpha(80)
                         : colors.surfaceSecondary.withAlpha(40),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
                     border: Border.all(
                       color: colors.primary.withAlpha(isDark ? 60 : 35),
                     ),
@@ -431,7 +435,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
                           filled: true,
                           fillColor: colors.surfacePrimary,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
                             borderSide: BorderSide(color: colors.surfaceBorder),
                           ),
                         ),
@@ -456,7 +460,7 @@ class CreateCourseDeckModalSheet extends HookWidget {
                           filled: true,
                           fillColor: colors.surfacePrimary,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
                             borderSide: BorderSide(color: colors.surfaceBorder),
                           ),
                         ),
@@ -490,6 +494,8 @@ class CreateCourseDeckModalSheet extends HookWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }

@@ -2,12 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/chat_bubble_widget.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 enum DialogueState {
@@ -277,311 +280,339 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     final typography = context.typography;
     final l10n = context.l10n;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.backgroundPrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Column(
-            children: [
-              // 1. Header Drag Handle & Controls
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.backgroundPrimary,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Column(
                 children: [
-                  // Voice Gender Selector Pill
-                  ShrinkableButton(
-                    onTap: _toggleGender,
-                    child: Container(
+                  // 1. Header Drag Handle & Controls
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Voice Gender Selector Pill
+                      PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return ShrinkableButton(
+                            onTap: _toggleGender,
+                            child: AnimatedContainer(
+                              duration: AppMotion.snappy,
+                              curve: AppMotion.snappyCurve,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isHovered
+                                    ? colors.primary.withAlpha(25)
+                                    : colors.surfaceSecondary,
+                                borderRadius: AppRadius.radiusCard,
+                                border: Border.all(
+                                  color: isHovered
+                                      ? colors.primary.withAlpha(120)
+                                      : colors.surfaceBorder.withAlpha(100),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _selectedGender == VoiceGender.female
+                                        ? Icons.face_3_rounded
+                                        : Icons.face_6_rounded,
+                                    color: colors.primary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _selectedGender == VoiceGender.female
+                                        ? l10n.voiceGenderFemale
+                                        : l10n.voiceGenderMale,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.swap_horiz_rounded,
+                                    color: colors.textSecondary,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Drag indicator
+                      Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.textSecondary.withAlpha(60),
+                          borderRadius: AppRadius.radiusMicro,
+                        ),
+                      ),
+
+                      // Close Button
+                      PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return IconButton(
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: isHovered ? colors.primary : colors.textPrimary,
+                            ),
+                            onPressed: () {
+                              unawaited(widget.ttsHandler.stop());
+                              Navigator.of(context).pop();
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  // 2. Central Interactive Voice Pulse Orb
+                  GestureDetector(
+                    onTap: () {
+                      if (_state == DialogueState.listening) {
+                        unawaited(_sttHandler.stopListening());
+                      } else if (_state == DialogueState.speaking) {
+                        unawaited(widget.ttsHandler.stop());
+                        setState(() {
+                          _state = DialogueState.idle;
+                        });
+                      } else {
+                        unawaited(_startListening());
+                      }
+                    },
+                    child: AnimatedBuilder(
+                      animation: _pulseController,
+                      builder: (context, child) {
+                        final pulse = _pulseController.value;
+                        final isListening = _state == DialogueState.listening;
+                        final isSpeaking = _state == DialogueState.speaking;
+                        final isThinking = _state == DialogueState.thinking;
+
+                        final orbColor = isListening
+                            ? colors.error
+                            : isSpeaking
+                            ? colors.syllabotAccent
+                            : isThinking
+                            ? colors.warning
+                            : colors.primary;
+
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Outer Glow Ring
+                            Container(
+                              width: 140 + (pulse * 24),
+                              height: 140 + (pulse * 24),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: orbColor.withAlpha(
+                                  (30 * (1 - pulse)).toInt(),
+                                ),
+                              ),
+                            ),
+                            // Middle Ring
+                            Container(
+                              width: 110 + (pulse * 12),
+                              height: 110 + (pulse * 12),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: orbColor.withAlpha(
+                                  (60 * (1 - pulse)).toInt(),
+                                ),
+                              ),
+                            ),
+                            // Inner Orb
+                            Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    orbColor.withAlpha(240),
+                                    orbColor,
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: orbColor.withAlpha(120),
+                                    blurRadius: 24,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                isListening
+                                    ? Icons.mic_rounded
+                                    : isSpeaking
+                                    ? Icons.volume_up_rounded
+                                    : isThinking
+                                    ? Icons.auto_awesome_rounded
+                                    : Icons.mic_none_rounded,
+                                color: colors.white,
+                                size: 38,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // 3. Status Label
+                  Text(
+                    _state == DialogueState.listening
+                        ? l10n.voiceDialogueListening
+                        : _state == DialogueState.thinking
+                        ? l10n.voiceDialogueThinking
+                        : _state == DialogueState.speaking
+                        ? l10n.voiceDialogueSpeaking
+                        : l10n.voiceDialogueTapToSpeak,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 18,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // 4. Live Captions / Transcript Card
+                  if (_liveTranscript.isNotEmpty)
+                    Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
                         color: colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppRadius.radiusCard,
                         border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(100),
+                          color: colors.primary.withAlpha(60),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _selectedGender == VoiceGender.female
-                                ? Icons.face_3_rounded
-                                : Icons.face_6_rounded,
-                            color: colors.primary,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _selectedGender == VoiceGender.female
-                                ? l10n.voiceGenderFemale
-                                : l10n.voiceGenderMale,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.swap_horiz_rounded,
-                            color: colors.textSecondary,
-                            size: 16,
-                          ),
-                        ],
+                      child: Text(
+                        '"$_liveTranscript"',
+                        textAlign: TextAlign.center,
+                        style: typography.body.medium.copyWith(
+                          color: colors.primary,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
-                  ),
 
-                  // Drag indicator
-                  Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.textSecondary.withAlpha(60),
-                      borderRadius: BorderRadius.circular(2),
+                  // 5. Spoken Response Markdown / Formula Viewer
+                  if (_latestResponse.isNotEmpty)
+                    Expanded(
+                      flex: 3,
+                      child: SingleChildScrollView(
+                        child: ChatBubbleWidget(
+                          message: ChatMessageEntity(
+                            id: 'dialogue_response',
+                            sessionId: 'dialogue_session',
+                            text: _latestResponse,
+                            sender: MessageSender.syllabot,
+                            timestamp: DateTime.now(),
+                          ),
+                          ttsHandler: widget.ttsHandler,
+                        ),
+                      ),
                     ),
-                  ),
 
-                  // Close Button
-                  IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: colors.textPrimary,
+                  const Spacer(),
+
+                  // 6. Push to Talk Button
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return ShrinkableButton(
+                          onTap: () {
+                            if (_state == DialogueState.listening) {
+                              unawaited(_sttHandler.stopListening());
+                            } else if (_state == DialogueState.speaking) {
+                              unawaited(widget.ttsHandler.stop());
+                              setState(() {
+                                _state = DialogueState.idle;
+                              });
+                            } else {
+                              unawaited(_startListening());
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            curve: AppMotion.snappyCurve,
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: _state == DialogueState.listening
+                                  ? colors.error
+                                  : (isHovered
+                                      ? colors.primary.withAlpha(235)
+                                      : colors.primary),
+                              borderRadius: AppRadius.radiusPanel,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (_state == DialogueState.listening
+                                          ? colors.error
+                                          : colors.primary)
+                                      .withAlpha(isHovered ? 130 : 90),
+                                  blurRadius: isHovered ? 18 : 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _state == DialogueState.listening
+                                      ? Icons.stop_rounded
+                                      : Icons.mic_rounded,
+                                  color: colors.white,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _state == DialogueState.listening
+                                      ? l10n.voiceDialogueDoneSpeaking
+                                      : l10n.voiceDialogueTapToSpeak,
+                                  style: typography.body.bold.copyWith(
+                                    color: colors.white,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    onPressed: () {
-                      unawaited(widget.ttsHandler.stop());
-                      Navigator.of(context).pop();
-                    },
                   ),
                 ],
               ),
-
-              const Spacer(),
-
-              // 2. Central Interactive Voice Pulse Orb
-              GestureDetector(
-                onTap: () {
-                  if (_state == DialogueState.listening) {
-                    unawaited(_sttHandler.stopListening());
-                  } else if (_state == DialogueState.speaking) {
-                    unawaited(widget.ttsHandler.stop());
-                    setState(() {
-                      _state = DialogueState.idle;
-                    });
-                  } else {
-                    unawaited(_startListening());
-                  }
-                },
-                child: AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    final pulse = _pulseController.value;
-                    final isListening = _state == DialogueState.listening;
-                    final isSpeaking = _state == DialogueState.speaking;
-                    final isThinking = _state == DialogueState.thinking;
-
-                    final orbColor = isListening
-                        ? colors.error
-                        : isSpeaking
-                        ? colors.syllabotAccent
-                        : isThinking
-                        ? colors.warning
-                        : colors.primary;
-
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Outer Glow Ring
-                        Container(
-                          width: 140 + (pulse * 24),
-                          height: 140 + (pulse * 24),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: orbColor.withAlpha(
-                              (30 * (1 - pulse)).toInt(),
-                            ),
-                          ),
-                        ),
-                        // Middle Ring
-                        Container(
-                          width: 110 + (pulse * 12),
-                          height: 110 + (pulse * 12),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: orbColor.withAlpha(
-                              (60 * (1 - pulse)).toInt(),
-                            ),
-                          ),
-                        ),
-                        // Inner Orb
-                        Container(
-                          width: 88,
-                          height: 88,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                orbColor.withAlpha(240),
-                                orbColor,
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: orbColor.withAlpha(120),
-                                blurRadius: 24,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isListening
-                                ? Icons.mic_rounded
-                                : isSpeaking
-                                ? Icons.volume_up_rounded
-                                : isThinking
-                                ? Icons.auto_awesome_rounded
-                                : Icons.mic_none_rounded,
-                            color: colors.white,
-                            size: 38,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // 3. Status Label
-              Text(
-                _state == DialogueState.listening
-                    ? l10n.voiceDialogueListening
-                    : _state == DialogueState.thinking
-                    ? l10n.voiceDialogueThinking
-                    : _state == DialogueState.speaking
-                    ? l10n.voiceDialogueSpeaking
-                    : l10n.voiceDialogueTapToSpeak,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 18,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // 4. Live Captions / Transcript Card
-              if (_liveTranscript.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(60),
-                    ),
-                  ),
-                  child: Text(
-                    '"$_liveTranscript"',
-                    textAlign: TextAlign.center,
-                    style: typography.body.medium.copyWith(
-                      color: colors.primary,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-
-              // 5. Spoken Response Markdown / Formula Viewer
-              if (_latestResponse.isNotEmpty)
-                Expanded(
-                  flex: 3,
-                  child: SingleChildScrollView(
-                    child: ChatBubbleWidget(
-                      message: ChatMessageEntity(
-                        id: 'dialogue_response',
-                        sessionId: 'dialogue_session',
-                        text: _latestResponse,
-                        sender: MessageSender.syllabot,
-                        timestamp: DateTime.now(),
-                      ),
-                      ttsHandler: widget.ttsHandler,
-                    ),
-                  ),
-                ),
-
-              const Spacer(),
-
-              // 6. Push to Talk Button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ShrinkableButton(
-                  onTap: () {
-                    if (_state == DialogueState.listening) {
-                      unawaited(_sttHandler.stopListening());
-                    } else if (_state == DialogueState.speaking) {
-                      unawaited(widget.ttsHandler.stop());
-                      setState(() {
-                        _state = DialogueState.idle;
-                      });
-                    } else {
-                      unawaited(_startListening());
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: _state == DialogueState.listening
-                          ? colors.error
-                          : colors.primary,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              (_state == DialogueState.listening
-                                      ? colors.error
-                                      : colors.primary)
-                                  .withAlpha(90),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _state == DialogueState.listening
-                              ? Icons.stop_rounded
-                              : Icons.mic_rounded,
-                          color: colors.white,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _state == DialogueState.listening
-                              ? l10n.voiceDialogueDoneSpeaking
-                              : l10n.voiceDialogueTapToSpeak,
-                          style: typography.body.bold.copyWith(
-                            color: colors.white,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

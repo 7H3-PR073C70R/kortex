@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -65,9 +67,9 @@ class SyllabotQuickPromptBar extends HookWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: colors.primary.withAlpha(isDark ? 40 : 20),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(
-                color: colors.primary.withAlpha(isDark ? 90 : 60),
+                color: colors.primary.withAlpha(isDark ? 80 : 50),
               ),
             ),
             child: Row(
@@ -100,29 +102,19 @@ class SyllabotQuickPromptBar extends HookWidget {
           container: true,
           label: l10n.dashboardAskSyllabotSemantics,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(AppRadius.dialog),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Container(
                 padding: const EdgeInsets.fromLTRB(10, 6, 8, 6),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(AppRadius.dialog),
                   color: isDark
                       ? colors.surfaceSecondary.withAlpha(190)
                       : colors.surfacePrimary.withAlpha(225),
                   border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(80)
-                        : colors.surfaceBorder.withAlpha(140),
-                    width: 1.2,
+                    color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.black.withAlpha(isDark ? 40 : 10),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Row(
                   children: [
@@ -160,7 +152,8 @@ class SyllabotQuickPromptBar extends HookWidget {
                       child: ShrinkableButton(
                         onTap: handleSubmit,
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
@@ -168,12 +161,8 @@ class SyllabotQuickPromptBar extends HookWidget {
                             color: hasText.value
                                 ? colors.primary
                                 : (isDark
-                                      ? colors.surfaceBorderHighlight.withAlpha(
-                                          60,
-                                        )
-                                      : colors.surfaceBorderHighlight.withAlpha(
-                                          90,
-                                        )),
+                                      ? colors.surfaceBorder.withAlpha(40)
+                                      : colors.surfaceBorder.withAlpha(30)),
                           ),
                           alignment: Alignment.center,
                           child: Icon(

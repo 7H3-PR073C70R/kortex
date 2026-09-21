@@ -7,6 +7,8 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
@@ -14,6 +16,7 @@ import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class ManageExamModalSheet extends StatelessWidget {
   const ManageExamModalSheet({super.key});
@@ -25,7 +28,12 @@ class ManageExamModalSheet extends StatelessWidget {
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
         value: context.read<CramPlannerCubit>(),
-        child: const ManageExamModalSheet(),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: const ManageExamModalSheet(),
+          ),
+        ),
       ),
     );
   }
@@ -82,8 +90,9 @@ class ManageExamModalSheet extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.dialog),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -119,8 +128,9 @@ class ManageExamModalSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(22, 20, 22, 34),
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.dialog),
+              ),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 60 : 30),
               ),
@@ -158,7 +168,7 @@ class ManageExamModalSheet extends StatelessWidget {
                     color: isDark
                         ? colors.surfacePrimary.withAlpha(180)
                         : colors.surfaceSecondary.withAlpha(120),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: AppRadius.radiusPanel,
                     border: Border.all(
                       color: colors.primary.withAlpha(isDark ? 90 : 50),
                       width: 1.2,
@@ -177,7 +187,7 @@ class ManageExamModalSheet extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary.withAlpha(isDark ? 40 : 25),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: AppRadius.radiusBadge,
                             ),
                             child: Text(
                               '${exam.subjectTrack} Track',
@@ -255,62 +265,83 @@ class ManageExamModalSheet extends StatelessWidget {
                     final isSelected = e.id == exam.id;
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
-                      child: InkWell(
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          cubit.selectExam(e.id);
-                        },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: isSelected
-                                ? colors.primary.withAlpha(isDark ? 40 : 20)
-                                : (isDark
-                                      ? colors.surfacePrimary.withAlpha(100)
-                                      : colors.surfaceSecondary.withAlpha(80)),
-                            border: Border.all(
+                      child: PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            curve: Curves.easeOutCubic,
+                            decoration: BoxDecoration(
+                              borderRadius: AppRadius.radiusCard,
                               color: isSelected
-                                  ? colors.primary
-                                  : colors.surfaceBorder.withAlpha(80),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isSelected
-                                    ? Icons.radio_button_checked_rounded
-                                    : Icons.radio_button_off_rounded,
-                                size: 18,
+                                  ? colors.primary.withAlpha(isDark ? 40 : 20)
+                                  : (isHovered
+                                        ? (isDark
+                                              ? colors.surfacePrimary.withAlpha(
+                                                  150,
+                                                )
+                                              : colors.surfaceSecondary
+                                                    .withAlpha(130))
+                                        : (isDark
+                                              ? colors.surfacePrimary.withAlpha(
+                                                  100,
+                                                )
+                                              : colors.surfaceSecondary
+                                                    .withAlpha(80))),
+                              border: Border.all(
                                 color: isSelected
                                     ? colors.primary
-                                    : colors.textSecondary,
+                                    : (isHovered
+                                          ? colors.primary.withAlpha(120)
+                                          : colors.surfaceBorder.withAlpha(80)),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  e.examName,
-                                  style: typography.body.semiBold.copyWith(
-                                    color: isSelected
-                                        ? colors.primary
-                                        : colors.textPrimary,
-                                    fontSize: 14,
-                                  ),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                unawaited(HapticFeedback.selectionClick());
+                                cubit.selectExam(e.id);
+                              },
+                              borderRadius: AppRadius.radiusCard,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                child: child,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            Icon(
+                              isSelected
+                                  ? Icons.radio_button_checked_rounded
+                                  : Icons.radio_button_off_rounded,
+                              size: 18,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.textSecondary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                e.examName,
+                                style: typography.body.semiBold.copyWith(
+                                  color: isSelected
+                                      ? colors.primary
+                                      : colors.textPrimary,
+                                  fontSize: 14,
                                 ),
                               ),
-                              Text(
-                                '${e.daysRemaining}d left',
-                                style: typography.caption.medium.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 12,
-                                ),
+                            ),
+                            Text(
+                              '${e.daysRemaining}d left',
+                              style: typography.caption.medium.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 12,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -319,38 +350,56 @@ class ManageExamModalSheet extends StatelessWidget {
                 ],
 
                 // Open Full Timetable Action
-                InkWell(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    unawaited(context.router.push(const ExamTimetableRoute()));
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(100),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.calendar_month_rounded,
-                          size: 18,
-                          color: colors.primary,
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutCubic,
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(
+                          isHovered ? (isDark ? 80 : 45) : (isDark ? 50 : 25),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'View Full Timetable & Pacing',
-                          style: typography.callout.bold.copyWith(
-                            color: colors.primary,
+                        borderRadius: AppRadius.radiusCard,
+                        border: Border.all(
+                          color: colors.primary.withAlpha(
+                            isHovered ? 160 : 100,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          unawaited(
+                            context.router.push(const ExamTimetableRoute()),
+                          );
+                        },
+                        borderRadius: AppRadius.radiusCard,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
+                          child: child,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.calendar_month_rounded,
+                        size: 18,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'View Full Timetable & Pacing',
+                        style: typography.callout.bold.copyWith(
+                          color: colors.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -374,9 +423,11 @@ class ManageExamModalSheet extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           foregroundColor: colors.primary,
-                          side: BorderSide(color: colors.primary.withAlpha(120)),
+                          side: BorderSide(
+                            color: colors.primary.withAlpha(120),
+                          ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: AppRadius.radiusCard,
                           ),
                         ),
                       ),
@@ -395,7 +446,7 @@ class ManageExamModalSheet extends StatelessWidget {
                           foregroundColor: colors.textPrimary,
                           side: BorderSide(color: colors.surfaceBorder),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: AppRadius.radiusCard,
                           ),
                         ),
                       ),
@@ -422,7 +473,7 @@ class ManageExamModalSheet extends StatelessWidget {
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppRadius.radiusCard,
                     ),
                   ),
                 ),

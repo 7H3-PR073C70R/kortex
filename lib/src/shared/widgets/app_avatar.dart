@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Sizing presets for [AppAvatar].
 enum AppAvatarSize {
@@ -229,16 +231,26 @@ class AppAvatar extends StatelessWidget {
       return Semantics(
         button: true,
         label: semanticLabel ?? defaultButtonLabel,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minWidth: 48,
-            minHeight: 48,
-          ),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onTap,
-            child: Center(child: avatarWidget),
-          ),
+        child: PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return AnimatedScale(
+              scale: isHovered ? 1.04 : 1.0,
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 48,
+                  minHeight: 48,
+                ),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onTap,
+                  child: Center(child: child),
+                ),
+              ),
+            );
+          },
+          child: avatarWidget,
         ),
       );
     }

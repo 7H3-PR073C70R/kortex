@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class AudioInputWaveformButton extends HookWidget {
@@ -61,64 +63,72 @@ class AudioInputWaveformButton extends HookWidget {
       }
     }
 
-    return ShrinkableButton(
-      onTap: toggleRecording,
-      child: AnimatedBuilder(
-        animation: pulseController,
-        builder: (context, child) {
-          final scale = isRecording.value
-              ? 1.0 + (pulseController.value * 0.15)
-              : 1.0;
-          return Transform.scale(
-            scale: scale,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isRecording.value
-                    ? colors.error.withAlpha(isDark ? 180 : 220)
-                    : colors.primary.withAlpha(isDark ? 50 : 25),
-                border: Border.all(
-                  color: isRecording.value
-                      ? colors.error
-                      : colors.primary.withAlpha(isDark ? 100 : 60),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return ShrinkableButton(
+          onTap: toggleRecording,
+          child: AnimatedBuilder(
+            animation: pulseController,
+            builder: (context, child) {
+              final scale = isRecording.value
+                  ? 1.0 + (pulseController.value * 0.15)
+                  : 1.0;
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isRecording.value
+                        ? colors.error.withAlpha(isDark ? 180 : 220)
+                        : (isHovered
+                            ? colors.primary.withAlpha(isDark ? 80 : 45)
+                            : colors.primary.withAlpha(isDark ? 50 : 25)),
+                    border: Border.all(
+                      color: isRecording.value
+                          ? colors.error
+                          : (isHovered
+                              ? colors.primary.withAlpha(isDark ? 180 : 120)
+                              : colors.primary.withAlpha(isDark ? 100 : 60)),
+                    ),
+                  ),
+                  child: Center(
+                    child: isRecording.value
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(3, (i) {
+                              final h =
+                                  6.0 +
+                                  (math.sin(
+                                            pulseController.value * math.pi +
+                                                (i * 1.2),
+                                          ) *
+                                          8)
+                                      .abs();
+                              return Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                width: 2.5,
+                                height: h,
+                                decoration: BoxDecoration(
+                                  color: colors.white,
+                                  borderRadius: AppRadius.radiusMicro,
+                                ),
+                              );
+                            }),
+                          )
+                        : Icon(
+                            Icons.mic_none_rounded,
+                            size: 18,
+                            color: isHovered ? colors.textPrimary : colors.primary,
+                          ),
+                  ),
                 ),
-              ),
-              child: Center(
-                child: isRecording.value
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (i) {
-                          final h =
-                              6.0 +
-                              (math.sin(
-                                        pulseController.value * math.pi +
-                                            (i * 1.2),
-                                      ) *
-                                      8)
-                                  .abs();
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                            width: 2.5,
-                            height: h,
-                            decoration: BoxDecoration(
-                              color: colors.white,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          );
-                        }),
-                      )
-                    : Icon(
-                        Icons.mic_none_rounded,
-                        size: 18,
-                        color: colors.primary,
-                      ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

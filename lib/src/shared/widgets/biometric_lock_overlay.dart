@@ -65,7 +65,8 @@ class _BiometricLockOverlayState extends State<BiometricLockOverlay>
     } else if (state == AppLifecycleState.resumed) {
       final token = _userStorage.getToken();
       final isAuthenticated = token != null && token.isNotEmpty;
-      final shouldLock = isAuthenticated &&
+      final shouldLock =
+          isAuthenticated &&
           _biometricService.isBiometricLockEnabled() &&
           _biometricService.shouldReArmLock(
             threshold: widget.backgroundTimeout,

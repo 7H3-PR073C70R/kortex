@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -46,7 +47,7 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
           'Adaptive Memory Retention Chart rendering 7-day predicted and '
           'actual recall curves',
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
@@ -55,20 +56,10 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(160)
                   : colors.surfacePrimary.withAlpha(220),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
-                color: isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(70)
-                    : colors.surfaceBorder.withAlpha(140),
-                width: 1.2,
+                color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 40 : 10),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,7 +122,7 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                     ),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 35 : 18),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
                       border: Border.all(
                         color: colors.primary.withAlpha(isDark ? 70 : 35),
                         width: 0.8,
@@ -214,7 +205,7 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                                 _selectedDayIndex = index;
                               });
                             },
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
                             child: Container(
                               width: itemWidth,
                               margin: isCompact
@@ -229,7 +220,7 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                                         isDark ? 60 : 30,
                                       )
                                     : colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppRadius.badge),
                                 border: Border.all(
                                   color: _selectedDayIndex == index
                                       ? colors.primary.withAlpha(

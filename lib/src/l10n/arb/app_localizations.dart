@@ -2006,6 +2006,144 @@ abstract class AppLocalizations {
   /// **'Launch {examName} Mock Simulator'**
   String dashboardLaunchMockSimulatorSemantics(String examName);
 
+  /// Label for Study Hub navigation tab
+  ///
+  /// In en, this message translates to:
+  /// **'Study Hub'**
+  String get navTabStudyHub;
+
+  /// Status text for active neural engine in desktop navigation rail
+  ///
+  /// In en, this message translates to:
+  /// **'Neural Engine Active'**
+  String get neuralEngineActive;
+
+  /// Badge label for 15-minute quick study sprint
+  ///
+  /// In en, this message translates to:
+  /// **'15-MIN SPRINT'**
+  String get fifteenMinSprint;
+
+  /// Header title for Next Best Action recommendation card
+  ///
+  /// In en, this message translates to:
+  /// **'NEXT BEST ACTION'**
+  String get nextBestActionTitle;
+
+  /// Generic start action button label
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get startAction;
+
+  /// Header title for study circle pod live pulse
+  ///
+  /// In en, this message translates to:
+  /// **'POD PULSE'**
+  String get podPulseTitle;
+
+  /// Label for active members today in study pod
+  ///
+  /// In en, this message translates to:
+  /// **'Active Today'**
+  String get activeToday;
+
+  /// Label for cumulative group focus minutes in study pod
+  ///
+  /// In en, this message translates to:
+  /// **'Group Focus'**
+  String get groupFocus;
+
+  /// Label for pod karma points earned by group
+  ///
+  /// In en, this message translates to:
+  /// **'Pod Karma'**
+  String get podKarma;
+
+  /// Target track pod name with track prefix
+  ///
+  /// In en, this message translates to:
+  /// **'{track} Pod'**
+  String podSuffix(String track);
+
+  /// Fallback name for study circle pod
+  ///
+  /// In en, this message translates to:
+  /// **'Study Circle Pod'**
+  String get studyCirclePod;
+
+  /// Header title for backlog study debt triage card
+  ///
+  /// In en, this message translates to:
+  /// **'BACKLOG TRIAGE'**
+  String get backlogTriageTitle;
+
+  /// Encouraging subtitle for backlog triage
+  ///
+  /// In en, this message translates to:
+  /// **'Feeling overwhelmed? No guilt.'**
+  String get backlogTriageSubtitle;
+
+  /// Explanation of how Syllabot will triage overdue cards
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabot can prioritize your 10 highest-decay cards in \"{title}\".'**
+  String backlogTriageBody(String title);
+
+  /// Button label to triage 10 overdue cards
+  ///
+  /// In en, this message translates to:
+  /// **'Triage 10'**
+  String get triageTenAction;
+
+  /// Celebratory title when user has 0 cards due for review
+  ///
+  /// In en, this message translates to:
+  /// **'All caught up!'**
+  String get allCaughtUpTitle;
+
+  /// Subtitle explaining no active recall cards are currently due
+  ///
+  /// In en, this message translates to:
+  /// **'No active-recall cards due for review today. Keep it up!'**
+  String get allCaughtUpSubtitle;
+
+  /// Title prompting user to curate subject courses
+  ///
+  /// In en, this message translates to:
+  /// **'Curate Your Courses'**
+  String get curateCoursesTitle;
+
+  /// Subtitle prompting user to curate subject courses
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to set up your subjects and track your syllabus progress.'**
+  String get curateCoursesSubtitle;
+
+  /// Subtitle for dashboard retention heat map
+  ///
+  /// In en, this message translates to:
+  /// **'Activity • Past 28 Days'**
+  String get dashboardHeatmapSubtitle;
+
+  /// Hint text when no day is selected in heat map
+  ///
+  /// In en, this message translates to:
+  /// **'Tap any day to inspect study volume'**
+  String get dashboardHeatmapTapHint;
+
+  /// Label for lower intensity in heat map scale
+  ///
+  /// In en, this message translates to:
+  /// **'Less'**
+  String get dashboardHeatmapLess;
+
+  /// Label for higher intensity in heat map scale
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get dashboardHeatmapMore;
+
   /// Title for active recall flashcard session
   ///
   /// In en, this message translates to:
@@ -3973,6 +4111,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No reviews} =1{1 card reviewed} other{{count} cards reviewed}} on {date}'**
   String heatmapCardReviewsCount(int count, String date);
+
+  /// Annual study activity review count badge
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Reviews this Year'**
+  String reviewsThisYearCount(int count);
 
   /// Badge showing streak freeze active status
   ///

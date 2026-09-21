@@ -178,7 +178,9 @@ class _IngestionLivePainter extends CustomPainter {
     // 2. Glowing pulse aura around center cortex core
     final corePulse = math.sin(progress * 2 * math.pi) * 0.5 + 0.5;
     final coreGlowPaint = Paint()
-      ..color = themeColors.primary.withAlpha((corePulse * 70).toInt().clamp(0, 255))
+      ..color = themeColors.primary.withAlpha(
+        (corePulse * 70).toInt().clamp(0, 255),
+      )
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
     canvas.drawCircle(
       Offset(w * 0.49, h * 0.49),
@@ -191,7 +193,9 @@ class _IngestionLivePainter extends CustomPainter {
     final p1X = (w * 0.55) + (particle1T * (w * 0.22));
     final p1Y = (h * 0.48) - (math.sin(particle1T * math.pi) * (h * 0.18));
     final particlePaint = Paint()
-      ..color = themeColors.syllabotAccent.withAlpha(((1.0 - particle1T) * 220).toInt())
+      ..color = themeColors.syllabotAccent.withAlpha(
+        ((1.0 - particle1T) * 220).toInt(),
+      )
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
     canvas.drawCircle(Offset(p1X, p1Y), 3.5, particlePaint);
 

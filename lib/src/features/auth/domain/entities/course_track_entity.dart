@@ -64,8 +64,7 @@ class CourseTrackEntity extends Equatable {
     CourseTrackEntity(
       id: 'PhD',
       name: 'Ph.D (Doctorate Degree)',
-      description:
-          'Doctoral research, thesis defense & advanced scholarship',
+      description: 'Doctoral research, thesis defense & advanced scholarship',
       iconName: 'psychology',
       defaultDailyTarget: 30,
       examCountdownDays: 120,
@@ -73,8 +72,7 @@ class CourseTrackEntity extends Equatable {
     CourseTrackEntity(
       id: 'OND_I',
       name: 'OND I (National Diploma Year 1)',
-      description:
-          'First year foundational polytechnic & diploma coursework',
+      description: 'First year foundational polytechnic & diploma coursework',
       iconName: 'menu_book',
       examCountdownDays: 90,
     ),
@@ -105,8 +103,7 @@ class CourseTrackEntity extends Equatable {
     CourseTrackEntity(
       id: 'Vocational',
       name: 'Vocational & Technical Studies',
-      description:
-          'Technical colleges, trades, craftsmanship & TVET programs',
+      description: 'Technical colleges, trades, craftsmanship & TVET programs',
       iconName: 'handyman',
     ),
     CourseTrackEntity(

@@ -11,6 +11,8 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -25,6 +27,7 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_rete
 import 'package:kortex/src/features/dashboard/presentation/widgets/streak_shield_indicator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -138,99 +141,104 @@ class _AnalyticsDetailView extends HookWidget {
             );
           }
 
-          return ListView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
-            children: [
-              // 1. Reusable Liquid Glass Tab Bar
-              AppLiquidGlassTabBar(
-                tabs: filterOptions,
-                selectedIndex: selectedFilterIndex.value,
-                onTabSelected: (index) {
-                  selectedFilterIndex.value = index;
-                },
-              ),
-              const SizedBox(height: 18),
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1040),
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
+                children: [
+                  // 1. Reusable Liquid Glass Tab Bar
+                  AppLiquidGlassTabBar(
+                    tabs: filterOptions,
+                    selectedIndex: selectedFilterIndex.value,
+                    onTabSelected: (index) {
+                      selectedFilterIndex.value = index;
+                    },
+                  ),
+                  const SizedBox(height: 18),
 
-              // 2. Executive Performance Overview (4-Grid KPI Cards)
-              _ExecutiveKpiGrid(
-                analytics: analytics,
-                timeframeIndex: filterIndex,
-              ),
-              const SizedBox(height: 20),
+                  // 2. Executive Performance Overview (4-Grid KPI Cards)
+                  _ExecutiveKpiGrid(
+                    analytics: analytics,
+                    timeframeIndex: filterIndex,
+                  ),
+                  const SizedBox(height: 20),
 
-              // Streak Shield Protection Indicator
-              StreakShieldIndicator(
-                streakDays: analytics.currentStreakDays,
-                hasStreakFreeze: freezeCountState.value > 0,
-                userXp: math.max(analytics.xpPoints, userXpState.value),
-                onPurchaseFreeze: () async {
-                  if (activityService == null) return;
-                  final success = await activityService.purchaseStreakFreeze();
-                  if (success) {
-                    AppFeedback.celebration();
-                    freezeCountState.value = activityService.getStreakFreezes();
-                    userXpState.value = activityService.getXpPoints();
-                    if (context.mounted) {
-                      context.showSnackBar(
-                        message: l10n.streakFreezeSuccess,
-                        type: SnackBarType.success,
-                      );
-                      try {
-                        locator<AuthBloc>().add(const AuthStreakIncremented());
-                      } on Object catch (_) {}
-                    }
-                  } else {
-                    AppFeedback.incorrect();
-                    if (context.mounted) {
-                      context.showSnackBar(
-                        message:
-                            'Insufficient XP. Complete study sessions to earn at least 200 XP!',
-                      );
-                    }
-                  }
-                },
-              ),
-              const SizedBox(height: 20),
+                  // Streak Shield Protection Indicator
+                  StreakShieldIndicator(
+                    streakDays: analytics.currentStreakDays,
+                    hasStreakFreeze: freezeCountState.value > 0,
+                    userXp: math.max(analytics.xpPoints, userXpState.value),
+                    onPurchaseFreeze: () async {
+                      if (activityService == null) return;
+                      final success = await activityService.purchaseStreakFreeze();
+                      if (success) {
+                        AppFeedback.celebration();
+                        freezeCountState.value = activityService.getStreakFreezes();
+                        userXpState.value = activityService.getXpPoints();
+                        if (context.mounted) {
+                          context.showSnackBar(
+                            message: l10n.streakFreezeSuccess,
+                            type: SnackBarType.success,
+                          );
+                          try {
+                            locator<AuthBloc>().add(const AuthStreakIncremented());
+                          } on Object catch (_) {}
+                        }
+                      } else {
+                        AppFeedback.incorrect();
+                        if (context.mounted) {
+                          context.showSnackBar(
+                            message:
+                                'Insufficient XP. Complete study sessions to earn at least 200 XP!',
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
 
-              // 3. Ebbinghaus Memory Decay & Retention Curve
-              AdaptiveRetentionChart(points: retentionPoints),
-              const SizedBox(height: 20),
+                  // 3. Ebbinghaus Memory Decay & Retention Curve
+                  AdaptiveRetentionChart(points: retentionPoints),
+                  const SizedBox(height: 20),
 
-              // 4. Weekly Study Volume & Velocity Bar Chart
-              _WeeklyVelocityChart(
-                analytics: analytics,
-                colors: colors,
-                isDark: isDark,
-                timeframeIndex: filterIndex,
-              ),
-              const SizedBox(height: 20),
+                  // 4. Weekly Study Volume & Velocity Bar Chart
+                  _WeeklyVelocityChart(
+                    analytics: analytics,
+                    timeframeIndex: filterIndex,
+                    colors: colors,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 20),
 
-              // 5. Active 28-Day Consistency Matrix
-              _DetailedHeatMapCard(
-                analytics: analytics,
-                colors: colors,
-                isDark: isDark,
-                timeframeIndex: filterIndex,
-              ),
-              const SizedBox(height: 20),
+                  // 5. Activity Heatmap & Consistency Grid
+                  _DetailedHeatMapCard(
+                    analytics: analytics,
+                    timeframeIndex: filterIndex,
+                    colors: colors,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 20),
 
-              // 6. Subject-by-Subject Syllabus Mastery Breakdown
-              _SubjectMasteryCard(
-                courses: courses,
-                colors: colors,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 20),
+                  // 6. Course & Subject Mastery Breakdown
+                  _SubjectMasteryCard(
+                    courses: courses,
+                    colors: colors,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 20),
 
-              // 7. Syllabot Cognitive Diagnostics & Smart Recommendations
-              _SyllabotCognitiveInsightsCard(
-                insightText: feed?.syllabotDailyInsight,
-                hasData: hasData,
-                colors: colors,
-                isDark: isDark,
+                  // 7. Syllabot Cognitive Diagnostics & Smart Recommendations
+                  _SyllabotCognitiveInsightsCard(
+                    insightText: feed?.syllabotDailyInsight,
+                    hasData: hasData,
+                    colors: colors,
+                    isDark: isDark,
+                  ),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),
@@ -619,98 +627,118 @@ class _KpiMetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = context.typography;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isDark
-                ? colors.surfaceSecondary.withAlpha(160)
-                : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isDark
-                  ? colors.surfaceBorderHighlight.withAlpha(60)
-                  : colors.surfaceBorder.withAlpha(130),
-              width: 1.1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.black.withAlpha(isDark ? 30 : 8),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.panel),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? (isHovered
+                        ? colors.surfaceSecondary.withAlpha(200)
+                        : colors.surfaceSecondary.withAlpha(160))
+                    : (isHovered
+                        ? colors.surfacePrimary
+                        : colors.surfacePrimary.withAlpha(220)),
+                borderRadius: BorderRadius.circular(AppRadius.panel),
+                border: Border.all(
+                  color: isHovered
+                      ? accentColor.withAlpha(isDark ? 140 : 100)
+                      : (isDark
+                          ? colors.surfaceBorderHighlight.withAlpha(60)
+                          : colors.surfaceBorder.withAlpha(130)),
+                  width: 1.1,
+                ),
+                boxShadow: isHovered
+                    ? [
+                        BoxShadow(
+                          color: accentColor.withAlpha(isDark ? 40 : 20),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 30 : 8),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: accentColor.withAlpha(isDark ? 45 : 25),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, size: 15, color: accentColor),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: accentColor.withAlpha(isDark ? 45 : 25),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                        ),
+                        child: Icon(icon, size: 15, color: accentColor),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accentColor.withAlpha(isDark ? 35 : 18),
+                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                          border: Border.all(
+                            color: accentColor.withAlpha(isDark ? 70 : 35),
+                            width: 0.6,
+                          ),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: typography.footnote.bold.copyWith(
+                            color: accentColor,
+                            fontSize: 9.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2.5,
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: typography.footnote.medium.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11.5,
                     ),
-                    decoration: BoxDecoration(
-                      color: accentColor.withAlpha(isDark ? 35 : 18),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: accentColor.withAlpha(isDark ? 70 : 35),
-                        width: 0.6,
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 19,
                     ),
-                    child: Text(
-                      badgeText,
-                      style: typography.footnote.bold.copyWith(
-                        color: accentColor,
-                        fontSize: 9.5,
-                      ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.textSecondary.withAlpha(180),
+                      fontSize: 10.5,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: typography.footnote.medium.copyWith(
-                  color: colors.textSecondary,
-                  fontSize: 11.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 19,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: typography.footnote.regular.copyWith(
-                  color: colors.textSecondary.withAlpha(180),
-                  fontSize: 10.5,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -840,7 +868,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(AppRadius.panel),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
@@ -849,7 +877,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
             color: isDark
                 ? colors.surfaceSecondary.withAlpha(160)
                 : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(70)
@@ -946,7 +974,7 @@ class _WeeklyVelocityChart extends StatelessWidget {
                                         )
                                       : colors.surfaceBorder.withAlpha(60))
                                 : null,
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -1090,7 +1118,7 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
     final rowCount = (normalizedDays.length / 7).ceil();
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(AppRadius.panel),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
@@ -1099,7 +1127,7 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
             color: isDark
                 ? colors.surfaceSecondary.withAlpha(160)
                 : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(70)
@@ -1200,14 +1228,14 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                                     _selectedDay = isSelected ? null : day;
                                   });
                                 },
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(AppRadius.micro),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 150),
                                   width: cellWidth,
                                   height: cellWidth,
                                   decoration: BoxDecoration(
                                     color: color,
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(AppRadius.micro),
                                     border: Border.all(
                                       color: isSelected
                                           ? colors.textPrimary
@@ -1253,7 +1281,7 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                       : (isDark
                             ? colors.surfacePrimary.withAlpha(80)
                             : colors.surfaceSecondary.withAlpha(90)),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.badge),
                   border: Border.all(
                     color: _selectedDay != null
                         ? colors.primary.withAlpha(isDark ? 80 : 40)
@@ -1380,7 +1408,7 @@ class _SubjectMasteryCard extends StatelessWidget {
     final typography = context.typography;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(AppRadius.panel),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
@@ -1389,7 +1417,7 @@ class _SubjectMasteryCard extends StatelessWidget {
             color: isDark
                 ? colors.surfaceSecondary.withAlpha(160)
                 : colors.surfacePrimary.withAlpha(220),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
             border: Border.all(
               color: isDark
                   ? colors.surfaceBorderHighlight.withAlpha(70)
@@ -1482,7 +1510,7 @@ class _SubjectMasteryCard extends StatelessWidget {
                                       color: colors.primary.withAlpha(
                                         isDark ? 40 : 20,
                                       ),
-                                      borderRadius: BorderRadius.circular(4),
+                                      borderRadius: BorderRadius.circular(AppRadius.micro),
                                     ),
                                     child: Text(
                                       course.courseCode,
@@ -1522,7 +1550,7 @@ class _SubjectMasteryCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(AppRadius.micro),
                                 child: Container(
                                   height: 6,
                                   color: isDark
@@ -1582,7 +1610,7 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
     final typography = context.typography;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(AppRadius.panel),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
@@ -1597,7 +1625,7 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                     .withAlpha(isDark ? 160 : 220),
               ],
             ),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
             border: Border.all(
               color: colors.primary.withAlpha(isDark ? 80 : 50),
               width: 1.2,

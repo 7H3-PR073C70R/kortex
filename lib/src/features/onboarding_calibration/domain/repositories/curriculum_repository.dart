@@ -10,5 +10,5 @@ abstract class CurriculumRepository {
 
   /// Fetches all active curriculum metadata items grouped by category.
   Future<Either<Failure, Map<String, List<CurriculumMetadataEntity>>>>
-      getAllMetadata();
+  getAllMetadata();
 }

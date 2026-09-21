@@ -7,6 +7,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
@@ -125,95 +126,100 @@ class _OfflineFlashcardGenerationPageState
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
         ),
         builder: (sheetContext) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-            ),
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40.w,
-                      height: 4.h,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceBorder,
-                        borderRadius: BorderRadius.circular(2.r),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 18.h),
-                  Text(
-                    'Save to Study Decks',
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 6.h),
-                  Text(
-                    'Save ${_cards.length} generated flashcards to your active recall study deck.',
-                    style: typography.footnote.regular.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  SizedBox(height: 20.h),
-                  AppTextField(
-                    controller: titleController,
-                    hintText: 'Deck Title (e.g. $defaultTitle)',
-                  ),
-                  SizedBox(height: 14.h),
-                  AppTextField(
-                    controller: subjectController,
-                    hintText: 'Subject / Category (e.g. Physics, Mathematics)',
-                  ),
-                  SizedBox(height: 24.h),
-                  Row(
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+                ),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(sheetContext).pop(),
-                          style: OutlinedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 14.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14.r),
-                            ),
-                            side: BorderSide(color: colors.surfaceBorder),
-                          ),
-                          child: Text(
-                            'Cancel',
-                            style: typography.body.semiBold.copyWith(
-                              color: colors.textSecondary,
-                            ),
+                      Center(
+                        child: Container(
+                          width: 40.w,
+                          height: 4.h,
+                          decoration: BoxDecoration(
+                            color: colors.surfaceBorder,
+                            borderRadius: AppRadius.radiusMicro,
                           ),
                         ),
                       ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: AppButton(
-                          text: 'Confirm & Save',
-                          onPressed: () {
-                            final title = titleController.text.trim().isNotEmpty
-                                ? titleController.text.trim()
-                                : defaultTitle;
-                            final subject = subjectController.text.trim().isNotEmpty
-                                ? subjectController.text.trim()
-                                : 'General Studies';
-                            Navigator.of(sheetContext).pop();
-                            unawaited(_persistDeck(title: title, subject: subject));
-                          },
+                      SizedBox(height: 18.h),
+                      Text(
+                        'Save to Study Decks',
+                        style: typography.title3.bold.copyWith(
+                          color: colors.textPrimary,
                         ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Text(
+                        'Save ${_cards.length} generated flashcards to your active recall study deck.',
+                        style: typography.footnote.regular.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      SizedBox(height: 20.h),
+                      AppTextField(
+                        controller: titleController,
+                        hintText: 'Deck Title (e.g. $defaultTitle)',
+                      ),
+                      SizedBox(height: 14.h),
+                      AppTextField(
+                        controller: subjectController,
+                        hintText: 'Subject / Category (e.g. Physics, Mathematics)',
+                      ),
+                      SizedBox(height: 24.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(sheetContext).pop(),
+                              style: OutlinedButton.styleFrom(
+                                padding: EdgeInsets.symmetric(vertical: 14.h),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppRadius.radiusCard,
+                                ),
+                                side: BorderSide(color: colors.surfaceBorder),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: typography.body.semiBold.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: AppButton(
+                              text: 'Confirm & Save',
+                              onPressed: () {
+                                final title = titleController.text.trim().isNotEmpty
+                                    ? titleController.text.trim()
+                                    : defaultTitle;
+                                final subject = subjectController.text.trim().isNotEmpty
+                                    ? subjectController.text.trim()
+                                    : 'General Studies';
+                                Navigator.of(sheetContext).pop();
+                                unawaited(_persistDeck(title: title, subject: subject));
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           );
@@ -286,7 +292,7 @@ class _OfflineFlashcardGenerationPageState
           builder: (dialogContext) => AlertDialog(
             backgroundColor: context.colors.surfacePrimary,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.r),
+              borderRadius: AppRadius.radiusDialog,
             ),
             title: Text(
               'Deck Saved!',
@@ -317,7 +323,7 @@ class _OfflineFlashcardGenerationPageState
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.colors.primary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
+                    borderRadius: AppRadius.radiusCard,
                   ),
                 ),
                 onPressed: () {
@@ -407,7 +413,7 @@ class _OfflineFlashcardGenerationPageState
                   padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: colors.primary,
-                    borderRadius: BorderRadius.circular(12.r),
+                    borderRadius: AppRadius.radiusCard,
                     boxShadow: [
                       BoxShadow(
                         color: colors.primary.withAlpha(isDark ? 80 : 40),
@@ -441,7 +447,6 @@ class _OfflineFlashcardGenerationPageState
       ),
       bottomNavigationBar: _cards.isNotEmpty
           ? Container(
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
               decoration: BoxDecoration(
                 color: isDark
                     ? colors.surfaceSecondary.withAlpha(240)
@@ -463,73 +468,86 @@ class _OfflineFlashcardGenerationPageState
               ),
               child: SafeArea(
                 top: false,
-                child: AppButton(
-                  text: 'Save ${_cards.length} Cards as Study Deck',
-                  prefixIcon: Icon(
-                    Icons.bookmark_add_rounded,
-                    color: colors.white,
-                    size: 18.sp,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 28.h),
+                      child: AppButton(
+                        text: 'Save ${_cards.length} Cards as Study Deck',
+                        prefixIcon: Icon(
+                          Icons.bookmark_add_rounded,
+                          color: colors.white,
+                          size: 18.sp,
+                        ),
+                        isLoading: _isSaving,
+                        onPressed: _showSaveDeckDialog,
+                      ),
+                    ),
                   ),
-                  isLoading: _isSaving,
-                  onPressed: _showSaveDeckDialog,
                 ),
               ),
             )
           : null,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildModelStatusCard(colors, typography, isDark),
-              SizedBox(height: 20.h),
-              _buildTopicInputCard(colors, typography, isDark),
-              SizedBox(height: 24.h),
-              if (_isGenerating)
-                _buildGeneratingIndicator(colors, typography, isDark),
-              if (_cards.isNotEmpty) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Generated Cards (${_cards.length})',
-                      style: typography.headline.semiBold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: _showSaveDeckDialog,
-                      icon: Icon(
-                        Icons.bookmark_add_rounded,
-                        size: 16.sp,
-                        color: colors.primary,
-                      ),
-                      label: Text(
-                        'Save Deck',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildModelStatusCard(colors, typography, isDark),
+                  SizedBox(height: 20.h),
+                  _buildTopicInputCard(colors, typography, isDark),
+                  SizedBox(height: 24.h),
+                  if (_isGenerating)
+                    _buildGeneratingIndicator(colors, typography, isDark),
+                  if (_cards.isNotEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Generated Cards (${_cards.length})',
+                          style: typography.headline.semiBold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 16.sp,
+                          ),
                         ),
+                        TextButton.icon(
+                          onPressed: _showSaveDeckDialog,
+                          icon: Icon(
+                            Icons.bookmark_add_rounded,
+                            size: 16.sp,
+                            color: colors.primary,
+                          ),
+                          label: Text(
+                            'Save Deck',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12.h),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _cards.length,
+                      separatorBuilder: (_, index) => SizedBox(height: 12.h),
+                      itemBuilder: (context, index) => _buildFlashcardItem(
+                        _cards[index],
+                        colors,
+                        typography,
+                        isDark,
                       ),
                     ),
                   ],
-                ),
-                SizedBox(height: 12.h),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _cards.length,
-                  separatorBuilder: (_, index) => SizedBox(height: 12.h),
-                  itemBuilder: (context, index) => _buildFlashcardItem(
-                    _cards[index],
-                    colors,
-                    typography,
-                    isDark,
-                  ),
-                ),
-              ],
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -547,7 +565,7 @@ class _OfflineFlashcardGenerationPageState
         color: isDark
             ? colors.surfaceSecondary
             : colors.surfaceSecondary.withAlpha(120),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: AppRadius.radiusPanel,
         border: Border.all(
           color: colors.success.withAlpha(90),
         ),
@@ -586,7 +604,7 @@ class _OfflineFlashcardGenerationPageState
             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
             decoration: BoxDecoration(
               color: colors.success.withAlpha(20),
-              borderRadius: BorderRadius.circular(8.r),
+              borderRadius: AppRadius.radiusBadge,
               border: Border.all(color: colors.success.withAlpha(50)),
             ),
             child: Text(
@@ -613,7 +631,7 @@ class _OfflineFlashcardGenerationPageState
         color: isDark
             ? colors.surfaceSecondary
             : colors.surfaceSecondary.withAlpha(120),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: AppRadius.radiusPanel,
         border: Border.all(color: colors.surfaceBorder),
       ),
       child: Column(
@@ -656,7 +674,7 @@ class _OfflineFlashcardGenerationPageState
         color: isDark
             ? colors.surfaceSecondary
             : colors.surfaceSecondary.withAlpha(120),
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: AppRadius.radiusCard,
         border: Border.all(color: colors.surfaceBorder),
       ),
       child: Row(
@@ -692,7 +710,7 @@ class _OfflineFlashcardGenerationPageState
         color: isDark
             ? colors.surfaceSecondary
             : colors.surfaceSecondary.withAlpha(120),
-        borderRadius: BorderRadius.circular(14.r),
+        borderRadius: AppRadius.radiusCard,
         border: Border.all(
           color: card.isLocalInference
               ? colors.primary.withAlpha(80)
@@ -718,7 +736,7 @@ class _OfflineFlashcardGenerationPageState
                   padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                   decoration: BoxDecoration(
                     color: colors.primary.withAlpha(50),
-                    borderRadius: BorderRadius.circular(6.r),
+                    borderRadius: AppRadius.radiusBadge,
                   ),
                   child: Text(
                     'Local Engine',

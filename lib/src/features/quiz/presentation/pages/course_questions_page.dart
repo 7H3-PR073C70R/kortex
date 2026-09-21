@@ -6,6 +6,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
@@ -154,7 +156,7 @@ class _CourseQuestionsView extends HookWidget {
                     ),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
                       border: Border.all(
                         color: colors.primary.withAlpha(isDark ? 80 : 50),
                       ),
@@ -177,193 +179,202 @@ class _CourseQuestionsView extends HookWidget {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // 1. Search Bar & Instant Feedback Switcher
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: searchController,
-                      hintText: 'Search within $courseTitle...',
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: colors.textSecondary,
-                        size: 19,
-                      ),
-                      onChanged: (query) {
-                        debounceTimer.value?.cancel();
-                        debounceTimer.value = Timer(
-                          const Duration(milliseconds: 300),
-                          () {
-                            if (context.mounted) {
-                              context.read<PastQuestionsBloc>().add(
-                                    LoadPastQuestionsEvent(
-                                      searchQuery: query,
-                                      subject: courseTitle,
-                                      examCategory: examCategory,
-                                      courseCode: courseCode,
-                                    ),
-                                  );
-                            }
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-                    builder: (context, state) {
-                      final isInstant = state.isInstantFeedbackMode;
-                      return ShrinkableButton(
-                        onTap: () {
-                          AppFeedback.selection();
-                          context.read<PastQuestionsBloc>().add(
-                                const TogglePracticeModeEvent(),
-                              );
-                        },
-                        child: Container(
-                          height: 48,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: isInstant
-                                ? colors.primary.withAlpha(isDark ? 45 : 25)
-                                : colors.surfaceSecondary,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: isInstant
-                                  ? colors.primary.withAlpha(100)
-                                  : colors.surfaceBorder,
-                            ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: Column(
+              children: [
+                // 1. Search Bar & Instant Feedback Switcher
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: searchController,
+                          hintText: 'Search within $courseTitle...',
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: colors.textSecondary,
+                            size: 19,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isInstant
-                                    ? Icons.bolt_rounded
-                                    : Icons.timer_outlined,
-                                size: 18,
+                          onChanged: (query) {
+                            debounceTimer.value?.cancel();
+                            debounceTimer.value = Timer(
+                              const Duration(milliseconds: 300),
+                              () {
+                                if (context.mounted) {
+                                  context.read<PastQuestionsBloc>().add(
+                                        LoadPastQuestionsEvent(
+                                          searchQuery: query,
+                                          subject: courseTitle,
+                                          examCategory: examCategory,
+                                          courseCode: courseCode,
+                                        ),
+                                      );
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+                        builder: (context, state) {
+                          final isInstant = state.isInstantFeedbackMode;
+                          return ShrinkableButton(
+                            onTap: () {
+                              AppFeedback.selection();
+                              context.read<PastQuestionsBloc>().add(
+                                    const TogglePracticeModeEvent(),
+                                  );
+                            },
+                            child: Container(
+                              height: 48,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
                                 color: isInstant
-                                    ? colors.primary
-                                    : colors.textSecondary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isInstant ? 'Instant' : 'Practice',
-                                style: typography.caption.bold.copyWith(
+                                    ? colors.primary.withAlpha(isDark ? 45 : 25)
+                                    : colors.surfaceSecondary,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.card),
+                                border: Border.all(
                                   color: isInstant
-                                      ? colors.primary
-                                      : colors.textSecondary,
-                                  fontSize: 11.5,
+                                      ? colors.primary.withAlpha(100)
+                                      : colors.surfaceBorder,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // 2. Year Filter Chips Horizontal Scroll
-            BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-              builder: (context, state) {
-                final years = state.availableYears.isNotEmpty
-                    ? state.availableYears
-                    : [2024, 2023, 2022, 2021, 2020, 2019, 2018];
-                final selectedYear = state.selectedYear;
-
-                return SizedBox(
-                  height: 38,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: years.length + 1,
-                    separatorBuilder: (_, index) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final isAll = index == 0;
-                      final year = isAll ? null : years[index - 1];
-                      final isSelected = isAll
-                          ? selectedYear == null
-                          : selectedYear == year;
-
-                      return ShrinkableButton(
-                        onTap: () {
-                          AppFeedback.selection();
-                          context.read<PastQuestionsBloc>().add(
-                                ChangeYearEvent(year),
-                              );
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? colors.primary
-                                : (isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfacePrimary),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? colors.primary
-                                  : colors.surfaceBorder,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: colors.primary.withAlpha(60),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isInstant
+                                        ? Icons.bolt_rounded
+                                        : Icons.timer_outlined,
+                                    size: 18,
+                                    color: isInstant
+                                        ? colors.primary
+                                        : colors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isInstant ? 'Instant' : 'Practice',
+                                    style: typography.caption.bold.copyWith(
+                                      color: isInstant
+                                          ? colors.primary
+                                          : colors.textSecondary,
+                                      fontSize: 11.5,
                                     ),
-                                  ]
-                                : null,
-                          ),
-                          child: Center(
-                            child: Text(
-                              isAll ? 'All Years' : '$year',
-                              style: typography.caption.bold.copyWith(
-                                color: isSelected
-                                    ? colors.white
-                                    : colors.textSecondary,
-                                fontSize: 12,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
 
-            const SizedBox(height: 10),
+                // 2. Year Filter Chips Horizontal Scroll
+                BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+                  builder: (context, state) {
+                    final years = state.availableYears.isNotEmpty
+                        ? state.availableYears
+                        : [2024, 2023, 2022, 2021, 2020, 2019, 2018];
+                    final selectedYear = state.selectedYear;
 
-            // 3. Question Feed
-            Expanded(
-              child: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-                builder: (context, state) {
-                  if (state.status == PastQuestionsStatus.loading) {
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      children: const [
-                        ShimmerPlaceholder(height: 160, borderRadius: 18),
-                        SizedBox(height: 12),
-                        ShimmerPlaceholder(height: 160, borderRadius: 18),
-                        SizedBox(height: 12),
-                        ShimmerPlaceholder(height: 160, borderRadius: 18),
-                      ],
+                    return SizedBox(
+                      height: 38,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: years.length + 1,
+                        separatorBuilder: (_, index) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final isAll = index == 0;
+                          final year = isAll ? null : years[index - 1];
+                          final isSelected = isAll
+                              ? selectedYear == null
+                              : selectedYear == year;
+
+                          return ShrinkableButton(
+                            onTap: () {
+                              AppFeedback.selection();
+                              context.read<PastQuestionsBloc>().add(
+                                    ChangeYearEvent(year),
+                                  );
+                            },
+                            child: AnimatedContainer(
+                              duration: AppMotion.snappy,
+                              curve: AppMotion.snappyCurve,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? colors.primary
+                                    : (isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.surfacePrimary),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.badge),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? colors.primary
+                                      : colors.surfaceBorder,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: colors.primary.withAlpha(60),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  isAll ? 'All Years' : '$year',
+                                  style: typography.caption.bold.copyWith(
+                                    color: isSelected
+                                        ? colors.white
+                                        : colors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     );
-                  }
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // 3. Question Feed
+                Expanded(
+                  child: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+                    builder: (context, state) {
+                      if (state.status == PastQuestionsStatus.loading) {
+                        return ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          children: const [
+                            ShimmerPlaceholder(
+                                height: 160, borderRadius: AppRadius.panel),
+                            SizedBox(height: 12),
+                            ShimmerPlaceholder(
+                                height: 160, borderRadius: AppRadius.panel),
+                            SizedBox(height: 12),
+                            ShimmerPlaceholder(
+                                height: 160, borderRadius: AppRadius.panel),
+                          ],
+                        );
+                      }
 
                   if (state.questions.isEmpty) {
                     final isSpecificYear = state.selectedYear != null;
@@ -503,111 +514,122 @@ class _CourseQuestionsView extends HookWidget {
                 },
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-        builder: (context, state) {
-          if (state.questions.isEmpty) return const SizedBox.shrink();
+    ),
+    bottomNavigationBar: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+      builder: (context, state) {
+        if (state.questions.isEmpty) return const SizedBox.shrink();
 
-          return Container(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colors.surfacePrimary
-                  : colors.surfacePrimary.withAlpha(240),
-              border: Border(
-                top: BorderSide(color: colors.surfaceBorder),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ShrinkableButton(
-                    onTap: () =>
-                        showPastQuestionsTestConfigSheet(context, state),
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: colors.primary,
-                        borderRadius: BorderRadius.circular(13),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.primary.withAlpha(80),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+        return SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.surfacePrimary
+                      : colors.surfacePrimary.withAlpha(240),
+                  border: Border(
+                    top: BorderSide(color: colors.surfaceBorder),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ShrinkableButton(
+                        onTap: () =>
+                            showPastQuestionsTestConfigSheet(context, state),
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: colors.primary,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.card),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.primary.withAlpha(80),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.play_circle_filled_rounded,
+                                color: colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Timed CBT Drill',
+                                style: typography.callout.bold.copyWith(
+                                  color: colors.white,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.play_circle_filled_rounded,
-                            color: colors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Timed CBT Drill',
-                            style: typography.callout.bold.copyWith(
-                              color: colors.white,
-                              fontSize: 13,
+                    ),
+                    const SizedBox(width: 10),
+                    ShrinkableButton(
+                      onTap: () {
+                        AppFeedback.light();
+                        unawaited(
+                          context.router.push(
+                            SyllabotChatRoute(
+                              initialPrompt:
+                                  'I need Socratic help understanding key concepts in $courseTitle (${examCategory.displayName}). What are the highest-yield topics I should focus on?',
+                              initialMode: SocraticMode.stepByStep,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ShrinkableButton(
-                  onTap: () {
-                    AppFeedback.light();
-                    unawaited(
-                      context.router.push(
-                        SyllabotChatRoute(
-                          initialPrompt:
-                              'I need Socratic help understanding key concepts in $courseTitle (${examCategory.displayName}). What are the highest-yield topics I should focus on?',
-                          initialMode: SocraticMode.stepByStep,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 40 : 25),
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 80 : 50),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          color: colors.primary,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Syllabot AI',
-                          style: typography.callout.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 12.5,
+                        );
+                      },
+                      child: Container(
+                        height: 44,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 40 : 25),
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 80 : 50),
                           ),
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              color: colors.primary,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Syllabot AI',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          );
-        },
-      ),
-    );
+          ),
+        );
+      },
+    ),
+  );
   }
 }

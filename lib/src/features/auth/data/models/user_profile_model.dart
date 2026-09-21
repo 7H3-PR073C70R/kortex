@@ -31,11 +31,11 @@ class UserProfileModel extends Equatable {
           (json['retention_benchmark'] as num?)?.toDouble() ?? 0.85,
       level: (json['level'] as num?)?.toInt() ?? 1,
       streakDays: (json['streak_days'] as num?)?.toInt() ?? 0,
-      streakFreezeCount:
-          (json['streak_freeze_count'] as num?)?.toInt() ?? 1,
+      streakFreezeCount: (json['streak_freeze_count'] as num?)?.toInt() ?? 1,
       timezone: json['timezone'] as String? ?? 'UTC',
       xpPoints: (json['xp_points'] as num?)?.toInt() ?? 0,
-      subscriptionTier: ((json['is_pro'] as bool? ?? false) ||
+      subscriptionTier:
+          ((json['is_pro'] as bool? ?? false) ||
               (json['subscription_tier'] as String?)?.toLowerCase() == 'pro')
           ? 'pro'
           : ((json['subscription_tier'] as String?)?.toLowerCase() ?? 'free'),

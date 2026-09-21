@@ -35,13 +35,6 @@ class SyllabotAvatar extends StatelessWidget {
           color: colors.syllabotAccent.withAlpha(isDark ? 220 : 180),
           width: 1.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colors.syllabotAccent.withAlpha(isDark ? 110 : 70),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
       ),
       child: ClipOval(
         child: Image(
@@ -140,16 +133,6 @@ class _UnhappySyllabot extends HookWidget {
                 color: colors.error,
                 width: 1.6,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.error.withAlpha(
-                    (100 + (beaconGlow * 80)).toInt(),
-                  ),
-                  blurRadius: 12 + (beaconGlow * 4),
-                  spreadRadius: 1,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Stack(
               clipBehavior: Clip.none,
@@ -162,17 +145,10 @@ class _UnhappySyllabot extends HookWidget {
                     width: size * 0.20,
                     height: size * 0.14,
                     decoration: BoxDecoration(
-                      color: colors.error,
+                      color: colors.error.withAlpha(
+                        (140 + (beaconGlow * 115)).toInt(),
+                      ),
                       borderRadius: BorderRadius.circular(4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.error.withAlpha(
-                            (140 + (beaconGlow * 115)).toInt(),
-                          ),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ],
                     ),
                   ),
                 ),

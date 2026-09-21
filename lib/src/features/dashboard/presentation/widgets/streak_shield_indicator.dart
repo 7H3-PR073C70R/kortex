@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 class StreakShieldIndicator extends StatelessWidget {
@@ -45,7 +46,7 @@ class StreakShieldIndicator extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppRadius.panel),
           border: Border.all(
             color: hasStreakFreeze
                 ? colors.info.withValues(alpha: 0.4)
@@ -61,7 +62,7 @@ class StreakShieldIndicator extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: colors.warning.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                   child: Icon(
                     Icons.local_fire_department_rounded,
@@ -92,7 +93,7 @@ class StreakShieldIndicator extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: colors.info.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppRadius.badge),
                                 border: Border.all(
                                   color: colors.info.withValues(
                                     alpha: 0.5,
@@ -147,7 +148,7 @@ class StreakShieldIndicator extends StatelessWidget {
                       color: colors.info.withValues(alpha: 0.5),
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),

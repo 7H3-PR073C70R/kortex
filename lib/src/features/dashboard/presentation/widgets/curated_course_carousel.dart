@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
@@ -15,6 +17,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CuratedCourseCarousel extends StatelessWidget {
@@ -59,16 +62,16 @@ class CuratedCourseCarousel extends StatelessWidget {
                 }
               },
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.panel),
                 child: Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: isDark
                         ? colors.surfaceSecondary.withAlpha(140)
                         : colors.surfacePrimary.withAlpha(210),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
                     border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                      color: colors.surfaceBorder.withAlpha(isDark ? 60 : 40),
                     ),
                   ),
                   child: Row(
@@ -78,7 +81,7 @@ class CuratedCourseCarousel extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: colors.primary.withAlpha(isDark ? 40 : 20),
+                          color: colors.primary.withAlpha(isDark ? 35 : 18),
                         ),
                         child: Icon(
                           Icons.school_outlined,
@@ -92,14 +95,14 @@ class CuratedCourseCarousel extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Curate Your Courses',
+                              l10n.curateCoursesTitle,
                               style: typography.callout.bold.copyWith(
                                 color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Select degree modules or exam subjects to tailor your deck generation.',
+                              l10n.curateCoursesSubtitle,
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 12,
@@ -150,10 +153,10 @@ class CuratedCourseCarousel extends StatelessWidget {
                       unawaited(context.router.push(const AllCuratedCoursesRoute()));
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: colors.primary.withAlpha(20),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
                           color: colors.primary.withAlpha(35),
                         ),
@@ -193,14 +196,14 @@ class CuratedCourseCarousel extends StatelessWidget {
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: isDark
                             ? colors.surfaceSecondary.withAlpha(140)
                             : colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(120),
+                          color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                         ),
                       ),
                       child: Row(
@@ -309,162 +312,162 @@ class _CourseCard extends StatelessWidget {
       button: true,
       label:
           '${course.courseCode} ${course.title}. $deckCountText.',
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          unawaited(
-            context.router.push(
-              CourseModuleRoute(
-                courseId: course.id,
-                courseCode: course.courseCode,
-                courseTitle: course.title,
-              ),
-            ),
-          );
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
-              width: isFullWidth ? double.infinity : 220,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: isDark
-                    ? colors.surfaceSecondary.withAlpha(160)
-                    : colors.surfacePrimary.withAlpha(210),
-                border: Border.all(
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(70)
-                      : colors.surfaceBorder.withAlpha(140),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.black.withAlpha(isDark ? 40 : 10),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              unawaited(
+                context.router.push(
+                  CourseModuleRoute(
+                    courseId: course.id,
+                    courseCode: course.courseCode,
+                    courseTitle: course.title,
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top Code Pill & Past paper indicator
-                  Row(
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.panel),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.easeOutCubic,
+                  width: isFullWidth ? double.infinity : 220,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
+                    color: isDark
+                        ? (isHovered
+                            ? colors.surfaceSecondary.withAlpha(190)
+                            : colors.surfaceSecondary.withAlpha(150))
+                        : (isHovered
+                            ? colors.surfacePrimary
+                            : colors.surfacePrimary.withAlpha(210)),
+                    border: Border.all(
+                      color: isHovered
+                          ? colors.primary.withAlpha(isDark ? 120 : 90)
+                          : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 50 : 25),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          course.courseCode,
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 11,
+                      // Top Code Pill & Past paper indicator
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 50 : 25),
+                              borderRadius: BorderRadius.circular(AppRadius.micro),
+                            ),
+                            child: Text(
+                              course.courseCode,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 11,
+                              ),
+                            ),
                           ),
+                          if (course.hasActivePastPapers)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                              decoration: BoxDecoration(
+                                color: colors.success.withAlpha(isDark ? 35 : 20),
+                                borderRadius: BorderRadius.circular(AppRadius.micro),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.verified_rounded,
+                                    size: 12,
+                                    color: colors.success,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Q-Bank',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.success,
+                                      fontSize: 9.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      // Title
+                      Text(
+                        course.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 13.5,
+                          height: 1.25,
                         ),
                       ),
-                      if (course.hasActivePastPapers)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: colors.success.withAlpha(isDark ? 35 : 20),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+
+                      // Bottom Coverage & Deck/Card Count
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Icon(
-                                Icons.verified_rounded,
-                                size: 12,
-                                color: colors.success,
-                              ),
-                              const SizedBox(width: 3),
                               Text(
-                                'Q-Bank',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.success,
-                                  fontSize: 9.5,
+                                deckCountText,
+                                style: typography.footnote.medium.copyWith(
+                                  color: isDark
+                                      ? colors.textSecondary
+                                      : colors.textPrimary.withAlpha(180),
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                              Text(
+                                '$coveragePercent%',
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                    ],
-                  ),
-
-                  // Title
-                  Text(
-                    course.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: typography.caption.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 13.5,
-                      height: 1.25,
-                    ),
-                  ),
-
-                  // Bottom Coverage & Deck/Card Count
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            deckCountText,
-                            style: typography.footnote.medium.copyWith(
-                              color: isDark
-                                  ? colors.textSecondary
-                                  : colors.textPrimary.withAlpha(180),
-                              fontSize: 10.5,
-                            ),
-                          ),
-                          Text(
-                            '$coveragePercent%',
-                            style: typography.footnote.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 11,
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            child: Container(
+                              height: 4,
+                              color: colors.surfaceBorder.withAlpha(isDark ? 50 : 80),
+                              child: FractionallySizedBox(
+                                widthFactor: realCoverage.clamp(
+                                  0.0,
+                                  1.0,
+                                ),
+                                child: Container(
+                                  color: colors.primary,
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Container(
-                          height: 4,
-                          color: isDark
-                              ? colors.surfaceBorderHighlight.withAlpha(50)
-                              : colors.surfaceBorder.withAlpha(100),
-                          child: FractionallySizedBox(
-                            widthFactor: realCoverage.clamp(
-                              0.0,
-                              1.0,
-                            ),
-                            child: Container(
-                              color: colors.primary,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

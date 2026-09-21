@@ -181,8 +181,12 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   }
 
   static String generateUuid() {
-    final rand = DateTime.now().microsecondsSinceEpoch.toRadixString(16).padLeft(16, '0');
-    final rand2 = DateTime.now().millisecondsSinceEpoch.toRadixString(16).padLeft(16, '0');
+    final rand = DateTime.now().microsecondsSinceEpoch
+        .toRadixString(16)
+        .padLeft(16, '0');
+    final rand2 = DateTime.now().millisecondsSinceEpoch
+        .toRadixString(16)
+        .padLeft(16, '0');
     final hex = '$rand$rand2'.substring(0, 32);
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-4${hex.substring(13, 16)}-a${hex.substring(17, 20)}-${hex.substring(20, 32)}';
   }
@@ -447,7 +451,8 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     }
 
     String? extractedText;
-    final isPdf = fileType.toLowerCase().contains('pdf') ||
+    final isPdf =
+        fileType.toLowerCase().contains('pdf') ||
         storagePath.toLowerCase().endsWith('.pdf') ||
         filename.toLowerCase().endsWith('.pdf');
 
@@ -492,22 +497,25 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             : <String, dynamic>{};
         final rawList = result['snippets'] as List<dynamic>? ?? [];
 
-      // Detect if server returned the 1-card dummy fallback rather than real content
-      final isDummyFallback = rawList.length == 1 &&
-          () {
-            final first = rawList.first;
-            if (first is! Map) return false;
-            final rawText = first['raw_text']?.toString() ?? '';
-            final topic = first['topic']?.toString() ?? '';
-            return rawText.contains('Study content extracted') ||
-                topic.contains('What are the core concepts covered in') ||
-                topic.contains('What are the core principles and rules of') ||
-                topic.contains('What is the key takeaway of');
-          }();
+        // Detect if server returned the 1-card dummy fallback rather than real content
+        final isDummyFallback =
+            rawList.length == 1 &&
+            () {
+              final first = rawList.first;
+              if (first is! Map) return false;
+              final rawText = first['raw_text']?.toString() ?? '';
+              final topic = first['topic']?.toString() ?? '';
+              return rawText.contains('Study content extracted') ||
+                  topic.contains('What are the core concepts covered in') ||
+                  topic.contains('What are the core principles and rules of') ||
+                  topic.contains('What is the key takeaway of');
+            }();
 
         if (rawList.isNotEmpty && !isDummyFallback) {
           return rawList
-              .map((e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>))
+              .map(
+                (e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>),
+              )
               .toList();
         }
       }
@@ -528,11 +536,16 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     // 2. Try fetch from DB directly if available
     try {
       final snippets = await fetchExtractedSnippets(documentId);
-      final isDbDummy = snippets.length == 1 &&
+      final isDbDummy =
+          snippets.length == 1 &&
           (snippets.first.rawText.contains('Study content extracted') ||
-           snippets.first.topic.contains('What are the core concepts covered in') ||
-           snippets.first.topic.contains('What are the core principles and rules of') ||
-           snippets.first.topic.contains('What is the key takeaway of'));
+              snippets.first.topic.contains(
+                'What are the core concepts covered in',
+              ) ||
+              snippets.first.topic.contains(
+                'What are the core principles and rules of',
+              ) ||
+              snippets.first.topic.contains('What is the key takeaway of'));
       if (snippets.isNotEmpty && !isDbDummy) return snippets;
     } on Object catch (e, stack) {
       final crashlytics = _crashlyticsService;
@@ -553,8 +566,15 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       final text = (extractedText != null && extractedText.trim().isNotEmpty)
           ? extractedText
           : (isPdf
-              ? await _pdfParserService.extractText(fileBytes, filename: filename)
-              : _parserService.extractTextFromBytes(fileBytes, fileType: fileType, filename: filename));
+                ? await _pdfParserService.extractText(
+                    fileBytes,
+                    filename: filename,
+                  )
+                : _parserService.extractTextFromBytes(
+                    fileBytes,
+                    fileType: fileType,
+                    filename: filename,
+                  ));
 
       final token = _userStorage?.getToken();
       final extractedImages = _parserService.extractImagesFromPdfBytes(
@@ -659,9 +679,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       if (storage != null) {
         final existingDocs = _getLocalPersistedDocuments();
         final targetDoc = existingDocs.cast<DocumentUploadModel?>().firstWhere(
-              (d) => d?.id == documentId,
-              orElse: () => null,
-            );
+          (d) => d?.id == documentId,
+          orElse: () => null,
+        );
         final updated = existingDocs.where((d) => d.id != documentId).toList();
         await storage.savePreference(
           key: PrefKeys.persistedUserDocuments,
@@ -673,7 +693,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
               .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
               .toLowerCase()
               .trim();
-          await storage.deletePreference(key: 'extracted_doc_${targetDoc.contentHash}');
+          await storage.deletePreference(
+            key: 'extracted_doc_${targetDoc.contentHash}',
+          );
           await storage.deletePreference(key: 'extracted_doc_${targetDoc.id}');
           await storage.deletePreference(key: 'extracted_doc_$baseName');
         }

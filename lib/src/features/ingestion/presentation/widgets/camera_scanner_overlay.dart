@@ -6,8 +6,11 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CameraScannerOverlay extends HookWidget {
@@ -62,86 +65,140 @@ class CameraScannerOverlay extends HookWidget {
         children: [
           // Simulated Camera Preview Area
           Center(
-            child: AspectRatio(
-              aspectRatio: 3 / 4,
-              child: Container(
-                margin: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: colors.primary.withAlpha(200),
-                    width: 2,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 580),
+              child: AspectRatio(
+                aspectRatio: 3 / 4,
+                child: Container(
+                  margin: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(200),
+                      width: 2,
+                    ),
                   ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Stack(
-                    children: [
-                      // Viewfinder Dark background
-                      Container(color: colors.black.withAlpha(150)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.panel - 2),
+                    child: Stack(
+                      children: [
+                        // Viewfinder Dark background
+                        Container(color: colors.black.withAlpha(150)),
 
-                      // Animated Laser Scan Line
-                      AnimatedBuilder(
-                        animation: laserController,
-                        builder: (context, child) {
-                          return Align(
-                            alignment: Alignment(
-                              0,
-                              (laserController.value * 2.0) - 1.0,
-                            ),
-                            child: Container(
-                              height: 3,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    colors.transparent,
-                                    colors.syllabotAccent,
-                                    colors.white,
-                                    colors.syllabotAccent,
-                                    colors.transparent,
+                        // Animated Laser Scan Line
+                        AnimatedBuilder(
+                          animation: laserController,
+                          builder: (context, child) {
+                            return Align(
+                              alignment: Alignment(
+                                0,
+                                (laserController.value * 2.0) - 1.0,
+                              ),
+                              child: Container(
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      colors.transparent,
+                                      colors.syllabotAccent,
+                                      colors.white,
+                                      colors.syllabotAccent,
+                                      colors.transparent,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.syllabotAccent.withAlpha(
+                                        180,
+                                      ),
+                                      blurRadius: 10,
+                                      spreadRadius: 2,
+                                    ),
                                   ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.syllabotAccent.withAlpha(180),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
                               ),
+                            );
+                          },
+                        ),
+
+                        // Corner markers
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          child: _CornerBracket(color: colors.primary),
+                        ),
+                        Positioned(
+                          top: 16,
+                          right: 16,
+                          child: Transform.rotate(
+                            angle: 1.5708,
+                            child: _CornerBracket(color: colors.primary),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 16,
+                          left: 16,
+                          child: Transform.rotate(
+                            angle: -1.5708,
+                            child: _CornerBracket(color: colors.primary),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 16,
+                          right: 16,
+                          child: Transform.rotate(
+                            angle: 3.14159,
+                            child: _CornerBracket(color: colors.primary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Top Header: Close Button + Title
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            curve: AppMotion.easeOutCubic,
+                            decoration: BoxDecoration(
+                              color: isHovered
+                                  ? colors.white.withAlpha(30)
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: colors.white,
+                                size: 26,
+                              ),
+                              onPressed: onClose,
                             ),
                           );
                         },
                       ),
-
-                      // Corner markers
-                      Positioned(
-                        top: 16,
-                        left: 16,
-                        child: _CornerBracket(color: colors.primary),
-                      ),
-                      Positioned(
-                        top: 16,
-                        right: 16,
-                        child: Transform.rotate(
-                          angle: 1.5708,
-                          child: _CornerBracket(color: colors.primary),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        child: Transform.rotate(
-                          angle: -1.5708,
-                          child: _CornerBracket(color: colors.primary),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 16,
-                        right: 16,
-                        child: Transform.rotate(
-                          angle: 3.14159,
-                          child: _CornerBracket(color: colors.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.cameraScanTitle,
+                        style: typography.title3.bold.copyWith(
+                          color: colors.white,
                         ),
                       ),
                     ],
@@ -151,76 +208,73 @@ class CameraScannerOverlay extends HookWidget {
             ),
           ),
 
-          // Top Header: Close Button + Title
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: colors.white,
-                      size: 26,
-                    ),
-                    onPressed: onClose,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.cameraScanTitle,
-                    style: typography.title3.bold.copyWith(
-                      color: colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           // Bottom Controls: Instruction + Shutter Button
           Positioned(
             bottom: 40,
             left: 0,
             right: 0,
-            child: Column(
-              children: [
-                Text(
-                  l10n.cameraCaptureHint,
-                  textAlign: TextAlign.center,
-                  style: typography.footnote.medium.copyWith(
-                    color: colors.white.withAlpha(200),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ShrinkableButton(
-                  onTap: handleCapture,
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: colors.white,
-                        width: 4,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 580),
+                child: Column(
+                  children: [
+                    Text(
+                      l10n.cameraCaptureHint,
+                      textAlign: TextAlign.center,
+                      style: typography.footnote.medium.copyWith(
+                        color: colors.white.withAlpha(200),
                       ),
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colors.primary,
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.camera_alt_rounded,
-                          color: colors.white,
-                          size: 30,
-                        ),
-                      ),
+                    const SizedBox(height: 24),
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.06 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          child: ShrinkableButton(
+                            onTap: handleCapture,
+                            child: Container(
+                              width: 72,
+                              height: 72,
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colors.white,
+                                  width: 4,
+                                ),
+                                boxShadow: isHovered
+                                    ? [
+                                        BoxShadow(
+                                          color: colors.primary.withAlpha(120),
+                                          blurRadius: 16,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.primary,
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.camera_alt_rounded,
+                                    color: colors.white,
+                                    size: 30,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],

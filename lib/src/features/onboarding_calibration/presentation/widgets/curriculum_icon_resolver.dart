@@ -8,7 +8,11 @@ IconData resolveCurriculumIcon(
 ]) {
   if (iconName == null || iconName.isEmpty) return fallback;
 
-  final key = iconName.toLowerCase().replaceAll('_rounded', '').replaceAll('_outlined', '').trim();
+  final key = iconName
+      .toLowerCase()
+      .replaceAll('_rounded', '')
+      .replaceAll('_outlined', '')
+      .trim();
 
   switch (key) {
     case 'calculate':

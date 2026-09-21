@@ -10,6 +10,8 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/device_capability_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
@@ -41,6 +43,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_histo
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/voice_dialogue_modal.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -443,23 +446,37 @@ class _SyllabotChatView extends HookWidget {
           backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: Icon(
-              onCollapse != null
-                  ? Icons.keyboard_arrow_down_rounded
-                  : Icons.arrow_back_ios_new_rounded,
-              color: colors.textPrimary,
-              size: onCollapse != null ? 28 : 20,
-            ),
-            tooltip: onCollapse != null
-                ? l10n.minimizeChatTooltip
-                : l10n.backButton,
-            onPressed: () {
-              if (onCollapse != null) {
-                onCollapse!();
-              } else {
-                unawaited(context.router.maybePop());
-              }
+          leading: PlatformHoverBuilder(
+            builder: (context, isHovered, child) {
+              return AnimatedContainer(
+                duration: AppMotion.snappy,
+                margin: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: isHovered
+                      ? colors.surfaceSecondary
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    onCollapse != null
+                        ? Icons.keyboard_arrow_down_rounded
+                        : Icons.arrow_back_ios_new_rounded,
+                    color: colors.textPrimary,
+                    size: onCollapse != null ? 28 : 20,
+                  ),
+                  tooltip: onCollapse != null
+                      ? l10n.minimizeChatTooltip
+                      : l10n.backButton,
+                  onPressed: () {
+                    if (onCollapse != null) {
+                      onCollapse!();
+                    } else {
+                      unawaited(context.router.maybePop());
+                    }
+                  },
+                ),
+              );
             },
           ),
           titleSpacing: 0,
@@ -481,14 +498,27 @@ class _SyllabotChatView extends HookWidget {
             // 1. Interactive Voice Dialogue Mode Action
             BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
               builder: (context, state) {
-                return IconButton(
-                  tooltip: l10n.voiceDialogueModeTooltip,
-                  icon: Icon(
-                    Icons.graphic_eq_rounded,
-                    color: colors.syllabotAccent,
-                    size: 22,
-                  ),
-                  onPressed: () => openVoiceDialogue(context, state),
+                return PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.syllabotAccent.withAlpha(25)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: IconButton(
+                        tooltip: l10n.voiceDialogueModeTooltip,
+                        icon: Icon(
+                          Icons.graphic_eq_rounded,
+                          color: colors.syllabotAccent,
+                          size: 22,
+                        ),
+                        onPressed: () => openVoiceDialogue(context, state),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -501,14 +531,27 @@ class _SyllabotChatView extends HookWidget {
                     state.generatedDeck != null) {
                   return const SizedBox.shrink();
                 }
-                return IconButton(
-                  tooltip: l10n.convertToDeckTitle,
-                  icon: Icon(
-                    Icons.style_rounded,
-                    color: colors.primary,
-                    size: 22,
-                  ),
-                  onPressed: () => openConvertToDeck(context, state),
+                return PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.primary.withAlpha(25)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: IconButton(
+                        tooltip: l10n.convertToDeckTitle,
+                        icon: Icon(
+                          Icons.style_rounded,
+                          color: colors.primary,
+                          size: 22,
+                        ),
+                        onPressed: () => openConvertToDeck(context, state),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -516,46 +559,64 @@ class _SyllabotChatView extends HookWidget {
             // Share Insight to Study Circle / Forum Action
             BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
               builder: (context, state) {
-                final aiMessages = state.messages.where((m) => m.sender == MessageSender.syllabot).toList();
+                final aiMessages = state.messages
+                    .where((m) => m.sender == MessageSender.syllabot)
+                    .toList();
                 if (aiMessages.isEmpty) return const SizedBox.shrink();
-                return IconButton(
-                  tooltip: 'Share Insight to Study Circle',
-                  icon: Icon(
-                    Icons.share_outlined,
-                    color: colors.syllabotAccent,
-                    size: 21,
-                  ),
-                  onPressed: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    final lastAiText = aiMessages.last.text;
-                    unawaited(
-                      CreatePostBottomSheet.show(
-                        context,
-                        onSubmit: ({
-                          required title,
-                          required content,
-                          required track,
-                          latexContent,
-                          isQuestion = false,
-                          syllabusTag = 'AI Insights',
-                          isAnonymous = false,
-                        }) {
-                          if (locator.isRegistered<CommunityHubBloc>()) {
-                            locator<CommunityHubBloc>().add(
-                              CreateForumPostEvent(
-                                title: title,
-                                content: content.isNotEmpty ? content : lastAiText,
-                                track: track,
-                                latexContent: latexContent,
-                                isQuestion: isQuestion,
-                                syllabusTag: syllabusTag,
-                                isAnonymous: isAnonymous,
-                              ),
-                            );
-                          }
-                          context.showSnackBar(
-                            message: 'Shared insight with your cohort! 💡',
-                            type: SnackBarType.success,
+                return PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.syllabotAccent.withAlpha(25)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: IconButton(
+                        tooltip: 'Share Insight to Study Circle',
+                        icon: Icon(
+                          Icons.share_outlined,
+                          color: colors.syllabotAccent,
+                          size: 21,
+                        ),
+                        onPressed: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          final lastAiText = aiMessages.last.text;
+                          unawaited(
+                            CreatePostBottomSheet.show(
+                              context,
+                              onSubmit: ({
+                                required title,
+                                required content,
+                                required track,
+                                latexContent,
+                                isQuestion = false,
+                                syllabusTag = 'AI Insights',
+                                isAnonymous = false,
+                              }) {
+                                if (locator.isRegistered<CommunityHubBloc>()) {
+                                  locator<CommunityHubBloc>().add(
+                                    CreateForumPostEvent(
+                                      title: title,
+                                      content: content.isNotEmpty
+                                          ? content
+                                          : lastAiText,
+                                      track: track,
+                                      latexContent: latexContent,
+                                      isQuestion: isQuestion,
+                                      syllabusTag: syllabusTag,
+                                      isAnonymous: isAnonymous,
+                                    ),
+                                  );
+                                }
+                                context.showSnackBar(
+                                  message:
+                                      'Shared insight with your cohort! 💡',
+                                  type: SnackBarType.success,
+                                );
+                              },
+                            ),
                           );
                         },
                       ),
@@ -568,18 +629,31 @@ class _SyllabotChatView extends HookWidget {
             // 3. Conversation History Browser Action
             BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
               builder: (context, state) {
-                return IconButton(
-                  tooltip: 'Chat History',
-                  icon: Icon(
-                    Icons.history_rounded,
-                    color: colors.textPrimary,
-                    size: 23,
-                  ),
-                  onPressed: () {
-                    unawaited(
-                      SyllabotHistorySheet.show(
-                        context,
-                        currentSessionId: state.sessionId,
+                return PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.surfaceSecondary
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: IconButton(
+                        tooltip: 'Chat History',
+                        icon: Icon(
+                          Icons.history_rounded,
+                          color: colors.textPrimary,
+                          size: 23,
+                        ),
+                        onPressed: () {
+                          unawaited(
+                            SyllabotHistorySheet.show(
+                              context,
+                              currentSessionId: state.sessionId,
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
@@ -588,17 +662,30 @@ class _SyllabotChatView extends HookWidget {
             ),
 
             // 4. New Chat Session Action
-            IconButton(
-              tooltip: l10n.newConversationTooltip,
-              icon: Icon(
-                Icons.add_comment_outlined,
-                color: colors.textSecondary,
-                size: 21,
-              ),
-              onPressed: () {
-                unawaited(HapticFeedback.lightImpact());
-                context.read<SyllabotChatBloc>().add(
-                  const StartNewSessionEvent(),
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                return AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  decoration: BoxDecoration(
+                    color: isHovered
+                        ? colors.surfaceSecondary
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                  ),
+                  child: IconButton(
+                    tooltip: l10n.newConversationTooltip,
+                    icon: Icon(
+                      Icons.add_comment_outlined,
+                      color: colors.textSecondary,
+                      size: 21,
+                    ),
+                    onPressed: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      context.read<SyllabotChatBloc>().add(
+                        const StartNewSessionEvent(),
+                      );
+                    },
+                  ),
                 );
               },
             ),
@@ -606,7 +693,10 @@ class _SyllabotChatView extends HookWidget {
           ],
         ),
         body: SafeArea(
-          child: Column(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 860),
+              child: Column(
             children: [
               // 1. Main Chat Area (Empty Syllabot Greeting or Message Stream)
               Expanded(
@@ -663,7 +753,7 @@ class _SyllabotChatView extends HookWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: colors.error.withAlpha(isDark ? 35 : 20),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.panel),
                       border: Border.all(
                         color: colors.error.withAlpha(isDark ? 90 : 70),
                       ),
@@ -704,83 +794,97 @@ class _SyllabotChatView extends HookWidget {
                             // 1-Tap Switch to On-Device AI
                             if (state.engineType ==
                                 ExecutionEngineType.cloudRemote)
-                              ShrinkableButton(
-                                onTap: () => handleEngineSwitch(
-                                  context,
-                                  ExecutionEngineType.localOnDevice,
-                                ),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    color: colors.surfaceSecondary,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: colors.surfaceBorder.withAlpha(
-                                        120,
-                                      ),
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return ShrinkableButton(
+                                    onTap: () => handleEngineSwitch(
+                                      context,
+                                      ExecutionEngineType.localOnDevice,
                                     ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text(
-                                        '⚡',
-                                        style: TextStyle(fontSize: 10),
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
                                       ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Use On-Device AI',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.textPrimary,
-                                          fontSize: 11.5,
+                                      margin: const EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        color: isHovered
+                                            ? colors.surfaceSecondary.withAlpha(220)
+                                            : colors.surfaceSecondary,
+                                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                                        border: Border.all(
+                                          color: isHovered
+                                              ? colors.primary.withAlpha(160)
+                                              : colors.surfaceBorder.withAlpha(120),
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            '⚡',
+                                            style: TextStyle(fontSize: 10),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            'Use On-Device AI',
+                                            style: typography.caption.bold.copyWith(
+                                              color: colors.textPrimary,
+                                              fontSize: 11.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
 
                             // 1-Tap Retry Button
                             if (state.lastPrompt != null)
-                              ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.mediumImpact());
-                                  context.read<SyllabotChatBloc>().add(
-                                    const RetryLastMessageEvent(),
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return ShrinkableButton(
+                                    onTap: () {
+                                      unawaited(HapticFeedback.mediumImpact());
+                                      context.read<SyllabotChatBloc>().add(
+                                        const RetryLastMessageEvent(),
+                                      );
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isHovered
+                                            ? colors.error.withAlpha(220)
+                                            : colors.error,
+                                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.refresh_rounded,
+                                            color: colors.white,
+                                            size: 13,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            l10n.retryAction,
+                                            style: typography.caption.bold.copyWith(
+                                              color: colors.white,
+                                              fontSize: 11.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   );
                                 },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.error,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.refresh_rounded,
-                                        color: colors.white,
-                                        size: 13,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        l10n.retryAction,
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.white,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ),
                           ],
                         ),
@@ -841,8 +945,10 @@ class _SyllabotChatView extends HookWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   /// Empty Syllabot Greeting & Tailored Academic Suggestions
   Widget _buildEmptySyllabotGreeting(
@@ -856,94 +962,108 @@ class _SyllabotChatView extends HookWidget {
     final suggestions = PromptSuggestionModel.forProfile(profile);
 
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SyllabotAvatar(size: 64),
-            const SizedBox(height: 16),
-            Text(
-              l10n.syllabotTitle,
-              style: typography.headline.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 22,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SyllabotAvatar(size: 64),
+              const SizedBox(height: 16),
+              Text(
+                l10n.syllabotTitle,
+                style: typography.headline.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 22,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.syllabotEmptySubtitle,
-              textAlign: TextAlign.center,
-              style: typography.body.regular.copyWith(
-                color: colors.textSecondary,
-                fontSize: 13.5,
+              const SizedBox(height: 6),
+              Text(
+                l10n.syllabotEmptySubtitle,
+                textAlign: TextAlign.center,
+                style: typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 13.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Tailored Suggestion Cards
-            ...suggestions.map((s) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: ShrinkableButton(
-                  onTap: () {
-                    textController
-                      ..text = s.text
-                      ..selection = TextSelection.fromPosition(
-                        TextPosition(offset: s.text.length),
-                      );
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colors.surfaceBorder.withAlpha(90),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(s.icon, style: const TextStyle(fontSize: 18)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+              // Tailored Suggestion Cards
+              ...suggestions.map((s) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: PlatformHoverBuilder(
+                    builder: (context, isHovered, child) {
+                      return ShrinkableButton(
+                        onTap: () {
+                          textController
+                            ..text = s.text
+                            ..selection = TextSelection.fromPosition(
+                              TextPosition(offset: s.text.length),
+                            );
+                        },
+                        child: AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isHovered
+                                ? colors.surfaceSecondary.withAlpha(200)
+                                : colors.surfaceSecondary,
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            border: Border.all(
+                              color: isHovered
+                                  ? colors.primary.withAlpha(140)
+                                  : colors.surfaceBorder.withAlpha(90),
+                            ),
+                          ),
+                          child: Row(
                             children: [
-                              Text(
-                                s.text,
-                                style: typography.body.medium.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 13,
+                              Text(s.icon, style: const TextStyle(fontSize: 18)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      s.text,
+                                      style: typography.body.medium.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      s.category,
+                                      style: typography.caption.medium.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                s.category,
-                                style: typography.caption.medium.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 10.5,
-                                ),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: isHovered
+                                    ? colors.primary
+                                    : colors.textSecondary.withAlpha(120),
+                                size: 13,
                               ),
                             ],
                           ),
                         ),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: colors.textSecondary.withAlpha(120),
-                          size: 13,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                ),
-              );
-            }),
-          ],
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );

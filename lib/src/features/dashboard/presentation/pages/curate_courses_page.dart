@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -16,6 +18,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_s
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -237,7 +240,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 50 : 30),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
                       border: Border.all(color: colors.primary.withAlpha(100)),
                     ),
                     child: Text(
@@ -251,26 +254,29 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                 ),
             ],
           ),
-          body: Stack(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 860),
+              child: Stack(
                 children: [
-                  // Track Indicator Badge
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(isDark ? 35 : 20),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: colors.primary.withAlpha(isDark ? 70 : 40),
-                        ),
-                      ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Track Indicator Badge
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 35 : 20),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(isDark ? 70 : 40),
+                            ),
+                          ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -322,7 +328,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                                   )
                                 : null,
                             isDense: true,
-                            borderRadius: 14,
+                            borderRadius: AppRadius.card,
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 14,
                               vertical: 12,
@@ -352,7 +358,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                               height: 44,
                               decoration: BoxDecoration(
                                 color: colors.primary,
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(AppRadius.card),
                                 boxShadow: [
                                   BoxShadow(
                                     color: colors.primary.withAlpha(80),
@@ -398,7 +404,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                             fontSize: 12,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
                             side: BorderSide(
                               color: isSelected
                                   ? colors.primary
@@ -436,7 +442,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                                 colors.syllabotAccent.withAlpha(isDark ? 30 : 15),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(AppRadius.panel),
                             border: Border.all(
                               color: colors.primary.withAlpha(90),
                             ),
@@ -549,7 +555,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
                             height: 52,
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(AppRadius.card),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.primary.withAlpha(90),
@@ -597,9 +603,11 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
+  },
+);
   }
 }
 
@@ -624,108 +632,124 @@ class _CourseSelectTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '${course.courseCode} ${course.title}. ${isSelected ? "Selected" : "Not selected"}',
-      child: ShrinkableButton(
-        onTap: onToggle,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colors.primary.withAlpha(isDark ? 40 : 25)
-                : (isDark
-                    ? colors.surfaceSecondary.withAlpha(120)
-                    : colors.surfaceSecondary),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? colors.primary
-                  : colors.surfaceBorder.withAlpha(80),
-              width: isSelected ? 1.5 : 1.0,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Course Code Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
+      label:
+          '${course.courseCode} ${course.title}. ${isSelected ? "Selected" : "Not selected"}',
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: onToggle,
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? colors.primary.withAlpha(isDark ? 40 : 25)
+                    : isHovered
+                        ? (isDark
+                            ? colors.surfaceSecondary.withAlpha(180)
+                            : colors.surfaceSecondary)
+                        : (isDark
+                            ? colors.surfaceSecondary.withAlpha(120)
+                            : colors.surfaceSecondary),
+                borderRadius: BorderRadius.circular(AppRadius.panel),
+                border: Border.all(
                   color: isSelected
                       ? colors.primary
-                      : (isDark
-                          ? colors.surfacePrimary.withAlpha(200)
-                          : colors.surfacePrimary),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.surfaceBorder.withAlpha(100),
-                  ),
-                ),
-                child: Text(
-                  course.courseCode,
-                  style: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.white : colors.primary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
+                      : isHovered
+                          ? colors.primary.withAlpha(isDark ? 110 : 80)
+                          : colors.surfaceBorder.withAlpha(80),
+                  width: isSelected ? 1.5 : 1,
                 ),
               ),
-              const SizedBox(width: 14),
-
-              // Title & Department
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.title,
-                      style: typography.callout.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 13.5,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  // Course Code Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      course.department,
-                      style: typography.footnote.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11.5,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colors.primary
+                          : (isDark
+                              ? colors.surfacePrimary.withAlpha(200)
+                              : colors.surfacePrimary),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
+                      border: Border.all(
+                        color: isSelected
+                            ? colors.primary
+                            : colors.surfaceBorder.withAlpha(100),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Selection Checkmark Circle
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected ? colors.primary : colors.transparent,
-                  border: Border.all(
-                    color: isSelected
-                        ? colors.primary
-                        : colors.surfaceBorderHighlight,
-                    width: 1.5,
+                    child: Text(
+                      course.courseCode,
+                      style: typography.caption.bold.copyWith(
+                        color: isSelected ? colors.white : colors.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                ),
-                child: isSelected
-                    ? Icon(
-                        Icons.check_rounded,
-                        color: colors.white,
-                        size: 16,
-                      )
-                    : null,
+                  const SizedBox(width: 14),
+
+                  // Title & Department
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          course.title,
+                          style: typography.callout.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 13.5,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          course.department,
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Selection Checkmark Circle
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected ? colors.primary : colors.transparent,
+                      border: Border.all(
+                        color: isSelected
+                            ? colors.primary
+                            : colors.surfaceBorderHighlight,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: isSelected
+                        ? Icon(
+                            Icons.check_rounded,
+                            color: colors.white,
+                            size: 16,
+                          )
+                        : null,
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

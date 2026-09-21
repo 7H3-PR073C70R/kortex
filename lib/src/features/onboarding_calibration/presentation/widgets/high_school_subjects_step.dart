@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/domain/constants/subject_catalog.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/curriculum_icon_resolver.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Question B3: Universal subject selection powered directly by Kortex's
@@ -96,7 +99,8 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
 
     // Filter courses by selected stream and search query
     final filteredCourses = allCourses.where((course) {
-      final matchesStream = _selectedStream == 'All' ||
+      final matchesStream =
+          _selectedStream == 'All' ||
           _cleanStream(course.department).toLowerCase() ==
               _selectedStream.toLowerCase();
       if (!matchesStream) return false;
@@ -149,7 +153,7 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: AppRadius.radiusBadge,
                 ),
                 child: Text(
                   '1-Tap',
@@ -174,80 +178,105 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
                   selectedSubjects.contains,
                 );
 
-                return ShrinkableButton(
-                  onTap: () {
-                    unawaited(HapticFeedback.mediumImpact());
-                    if (isPresetActive) {
-                      // Deselect subjects in this preset
-                      final updated = selectedSubjects
-                          .where((s) => !preset.subjectTitles.contains(s))
-                          .toList();
-                      cubit.setHighSchoolSubjects(updated);
-                    } else {
-                      // Merge all subjects in this preset into selection
-                      final updated = <String>{
-                        ...selectedSubjects,
-                        ...preset.subjectTitles,
-                      }.toList();
-                      cubit.setHighSchoolSubjects(updated);
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isPresetActive
-                          ? colors.primary.withAlpha(isDark ? 65 : 35)
-                          : (isDark
-                              ? colors.surfaceSecondary.withAlpha(100)
-                              : colors.surfacePrimary.withAlpha(190)),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isPresetActive
-                            ? colors.primary
-                            : (isDark
-                                ? colors.surfaceBorderHighlight.withAlpha(70)
-                                : colors.surfaceBorder),
-                        width: isPresetActive ? 1.4 : 1,
-                      ),
-                      boxShadow: isPresetActive
-                          ? [
-                              BoxShadow(
-                                color: colors.primary.withAlpha(40),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isPresetActive
-                              ? Icons.check_circle_rounded
-                              : preset.icon,
-                          size: 15,
-                          color: isPresetActive
-                              ? colors.primary
-                              : colors.textSecondary,
+                return PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.mediumImpact());
+                        if (isPresetActive) {
+                          // Deselect subjects in this preset
+                          final updated = selectedSubjects
+                              .where((s) => !preset.subjectTitles.contains(s))
+                              .toList();
+                          cubit.setHighSchoolSubjects(updated);
+                        } else {
+                          // Merge all subjects in this preset into selection
+                          final updated = <String>{
+                            ...selectedSubjects,
+                            ...preset.subjectTitles,
+                          }.toList();
+                          cubit.setHighSchoolSubjects(updated);
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          preset.title,
-                          style: typography.caption.bold.copyWith(
+                        decoration: BoxDecoration(
+                          color: isPresetActive
+                              ? colors.primary.withAlpha(
+                                  isDark
+                                      ? (isHovered ? 80 : 65)
+                                      : (isHovered ? 50 : 35),
+                                )
+                              : isHovered
+                              ? (isDark
+                                    ? colors.surfaceSecondary.withAlpha(140)
+                                    : colors.surfacePrimary)
+                              : (isDark
+                                    ? colors.surfaceSecondary.withAlpha(100)
+                                    : colors.surfacePrimary.withAlpha(190)),
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
                             color: isPresetActive
                                 ? colors.primary
-                                : colors.textPrimary,
-                            fontSize: 12,
+                                : isHovered
+                                ? (isDark
+                                      ? colors.surfaceBorderHighlight
+                                      : colors.primary.withAlpha(90))
+                                : (isDark
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          70,
+                                        )
+                                      : colors.surfaceBorder),
+                            width: isPresetActive ? 1.4 : 1,
                           ),
+                          boxShadow: isPresetActive || isHovered
+                              ? [
+                                  BoxShadow(
+                                    color: colors.primary.withAlpha(
+                                      isPresetActive
+                                          ? (isHovered ? 55 : 40)
+                                          : 20,
+                                    ),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
-                      ],
-                    ),
-                  ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isPresetActive
+                                  ? Icons.check_circle_rounded
+                                  : preset.icon,
+                              size: 15,
+                              color: isPresetActive
+                                  ? colors.primary
+                                  : (isHovered
+                                        ? colors.textPrimary
+                                        : colors.textSecondary),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              preset.title,
+                              style: typography.caption.bold.copyWith(
+                                color: isPresetActive
+                                    ? colors.primary
+                                    : colors.textPrimary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -298,7 +327,7 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
                 color: selectedSubjects.isNotEmpty
                     ? colors.primary.withAlpha(25)
                     : colors.surfaceSecondary.withAlpha(80),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.radiusBadge,
                 border: Border.all(
                   color: selectedSubjects.isNotEmpty
                       ? colors.primary.withAlpha(80)
@@ -331,24 +360,38 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
               ),
             ),
             if (selectedSubjects.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  unawaited(HapticFeedback.lightImpact());
-                  cubit.clearHighSchoolSubjects();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    'Clear all',
-                    style: typography.caption.semiBold.copyWith(
-                      color: colors.error,
-                      fontSize: 12,
+              PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return GestureDetector(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      cubit.clearHighSchoolSubjects();
+                    },
+                    child: AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.error.withAlpha(20)
+                            : colors.transparent,
+                        borderRadius: AppRadius.radiusBadge,
+                      ),
+                      child: Text(
+                        'Clear all',
+                        style: typography.caption.semiBold.copyWith(
+                          color: isHovered
+                              ? colors.error
+                              : colors.error.withAlpha(220),
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
           ],
         ),
@@ -369,50 +412,69 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
                 final count = stream == 'All'
                     ? allCourses.length
                     : allCourses
-                        .where((c) =>
-                            _cleanStream(c.department).toLowerCase() ==
-                            stream.toLowerCase())
-                        .length;
+                          .where(
+                            (c) =>
+                                _cleanStream(c.department).toLowerCase() ==
+                                stream.toLowerCase(),
+                          )
+                          .length;
 
-                return ShrinkableButton(
-                  shrinkScale: 0.95,
-                  onTap: () {
-                    unawaited(HapticFeedback.selectionClick());
-                    setState(() {
-                      _selectedStream = stream;
-                    });
+                return PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return ShrinkableButton(
+                      shrinkScale: 0.95,
+                      onTap: () {
+                        unawaited(HapticFeedback.selectionClick());
+                        setState(() {
+                          _selectedStream = stream;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colors.primary
+                              : isHovered
+                              ? (isDark
+                                    ? colors.surfaceSecondary.withAlpha(130)
+                                    : colors.surfacePrimary)
+                              : (isDark
+                                    ? colors.surfaceSecondary.withAlpha(90)
+                                    : colors.surfacePrimary.withAlpha(180)),
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: isSelected
+                                ? colors.primary
+                                : isHovered
+                                ? (isDark
+                                      ? colors.surfaceBorderHighlight
+                                      : colors.primary.withAlpha(90))
+                                : (isDark
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          60,
+                                        )
+                                      : colors.surfaceBorder),
+                          ),
+                        ),
+                        child: Text(
+                          '$stream ($count)',
+                          style: typography.caption.bold.copyWith(
+                            color: isSelected
+                                ? colors.white
+                                : (isHovered
+                                      ? colors.textPrimary
+                                      : colors.textSecondary),
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ),
+                    );
                   },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colors.primary
-                          : (isDark
-                              ? colors.surfaceSecondary.withAlpha(90)
-                              : colors.surfacePrimary.withAlpha(180)),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected
-                            ? colors.primary
-                            : (isDark
-                                ? colors.surfaceBorderHighlight.withAlpha(60)
-                                : colors.surfaceBorder),
-                      ),
-                    ),
-                    child: Text(
-                      '$stream ($count)',
-                      style: typography.caption.bold.copyWith(
-                        color: isSelected
-                            ? colors.white
-                            : colors.textSecondary,
-                        fontSize: 11.5,
-                      ),
-                    ),
-                  ),
                 );
               },
             ),
@@ -429,7 +491,7 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(60)
                   : colors.surfacePrimary.withAlpha(150),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadius.radiusPanel,
               border: Border.all(
                 color: isDark
                     ? colors.surfaceBorderHighlight.withAlpha(40)
@@ -480,7 +542,10 @@ class _HighSchoolSubjectsStepState extends State<HighSchoolSubjectsStep> {
               final course = filteredCourses[index];
               final isSelected = selectedSubjects.contains(course.title);
               final streamName = _cleanStream(course.department);
-              final accentColor = _parseHexColor(course.colorHex, colors.primary);
+              final accentColor = _parseHexColor(
+                course.colorHex,
+                colors.primary,
+              );
 
               return _SubjectCard(
                 course: course,
@@ -527,167 +592,186 @@ class _SubjectCard extends StatelessWidget {
       button: true,
       selected: isSelected,
       label: '${course.title}, ${course.courseCode}, $streamName',
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: isSelected
-                ? colors.primary.withAlpha(isDark ? 55 : 28)
-                : (isDark
-                    ? colors.surfaceSecondary.withAlpha(90)
-                    : colors.surfacePrimary.withAlpha(190)),
-            border: Border.all(
-              color: isSelected
-                  ? colors.primary
-                  : (isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(60)
-                      : colors.surfaceBorder),
-              width: isSelected ? 1.5 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: colors.primary.withAlpha(35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            children: [
-              // Subject Icon Container
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: accentColor.withAlpha(isDark ? 45 : 30),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: accentColor.withAlpha(80),
-                  ),
-                ),
-                child: Icon(
-                  resolvedIcon,
-                  size: 19,
-                  color: accentColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Title and Code Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            course.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.subhead.bold.copyWith(
-                              color: isSelected
-                                  ? colors.primary
-                                  : colors.textPrimary,
-                              fontSize: 14,
-                              height: 1.2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? colors.surfaceBorderHighlight.withAlpha(50)
-                                : colors.surfaceBorder.withAlpha(100),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            course.courseCode,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 10,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Text(
-                          streamName,
-                          style: typography.caption.semiBold.copyWith(
-                            color: accentColor,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                        Text(
-                          ' • ${course.totalMaterials} materials',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-
-              // Animated Checkbox
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: isSelected ? colors.primary : colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                  border: Border.all(
-                    color: isSelected
-                        ? colors.primary
-                        : (isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(120)
-                            : colors.surfaceBorder),
-                    width: 1.5,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: colors.primary.withAlpha(60),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: isSelected
-                    ? Icon(
-                        Icons.check_rounded,
-                        size: 14,
-                        color: colors.white,
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              onTap();
+            },
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: AppRadius.radiusPanel,
+                color: isSelected
+                    ? colors.primary.withAlpha(
+                        isDark ? (isHovered ? 72 : 55) : (isHovered ? 40 : 28),
                       )
+                    : isHovered
+                    ? (isDark
+                          ? colors.surfaceSecondary.withAlpha(130)
+                          : colors.surfacePrimary)
+                    : (isDark
+                          ? colors.surfaceSecondary.withAlpha(90)
+                          : colors.surfacePrimary.withAlpha(190)),
+                border: Border.all(
+                  color: isSelected
+                      ? colors.primary
+                      : isHovered
+                      ? (isDark
+                            ? colors.surfaceBorderHighlight
+                            : colors.primary.withAlpha(90))
+                      : (isDark
+                            ? colors.surfaceBorderHighlight.withAlpha(60)
+                            : colors.surfaceBorder),
+                  width: isSelected ? 1.5 : 1,
+                ),
+                boxShadow: isSelected || isHovered
+                    ? [
+                        BoxShadow(
+                          color: colors.primary.withAlpha(
+                            isSelected ? (isHovered ? 50 : 35) : 18,
+                          ),
+                          blurRadius: isHovered ? 12 : 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
                     : null,
               ),
-            ],
-          ),
-        ),
+              child: Row(
+                children: [
+                  // Subject Icon Container
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: accentColor.withAlpha(isDark ? 45 : 30),
+                      borderRadius: AppRadius.radiusCard,
+                      border: Border.all(
+                        color: accentColor.withAlpha(80),
+                      ),
+                    ),
+                    child: Icon(
+                      resolvedIcon,
+                      size: 19,
+                      color: accentColor,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Title and Code Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                course.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.subhead.bold.copyWith(
+                                  color: isSelected
+                                      ? colors.primary
+                                      : colors.textPrimary,
+                                  fontSize: 14,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceBorderHighlight.withAlpha(
+                                        50,
+                                      )
+                                    : colors.surfaceBorder.withAlpha(100),
+                                borderRadius: AppRadius.radiusMicro,
+                              ),
+                              child: Text(
+                                course.courseCode,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 10,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Text(
+                              streamName,
+                              style: typography.caption.semiBold.copyWith(
+                                color: accentColor,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                            Text(
+                              ' • ${course.totalMaterials} materials',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Animated Checkbox
+                  AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.easeOutCubic,
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: isSelected ? colors.primary : colors.transparent,
+                      borderRadius: AppRadius.radiusMicro,
+                      border: Border.all(
+                        color: isSelected
+                            ? colors.primary
+                            : (isDark
+                                  ? colors.surfaceBorderHighlight.withAlpha(120)
+                                  : colors.surfaceBorder),
+                        width: 1.5,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: colors.primary.withAlpha(60),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: isSelected
+                        ? Icon(
+                            Icons.check_rounded,
+                            size: 14,
+                            color: colors.white,
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

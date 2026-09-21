@@ -103,15 +103,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           return;
         }
 
-        final isCachedPro = locator.isRegistered<UserStorageService>() &&
+        final isCachedPro =
+            locator.isRegistered<UserStorageService>() &&
             locator<UserStorageService>().isProSubscriber();
         var isOnboarded = _computeIsOnboarded(profile);
         if (!isOnboarded && locator.isRegistered<DashboardRepository>()) {
           try {
             final dashRepo = locator<DashboardRepository>();
             final coursesRes = await dashRepo.getUserCuratedCourses();
-            final hasRemoteCourses =
-                coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+            final hasRemoteCourses = coursesRes.fold(
+              (_) => false,
+              (courses) => courses.isNotEmpty,
+            );
             if (hasRemoteCourses) {
               isOnboarded = true;
             }
@@ -120,15 +123,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         var effectiveProfile = isOnboarded && !profile.isOnboarded
             ? profile.copyWith(isOnboarded: true)
             : profile;
-        if (isCachedPro && effectiveProfile.subscriptionTier.toLowerCase() != 'pro') {
+        if (isCachedPro &&
+            effectiveProfile.subscriptionTier.toLowerCase() != 'pro') {
           effectiveProfile = effectiveProfile.copyWith(subscriptionTier: 'pro');
         }
         if (isOnboarded && !profile.isOnboarded) {
           try {
             unawaited(
               _authRepository.completeOnboarding(
-                track: profile.targetTrack.isNotEmpty ? profile.targetTrack : 'WAEC',
-                dailyTarget: profile.dailyCardTarget > 0 ? profile.dailyCardTarget : 20,
+                track: profile.targetTrack.isNotEmpty
+                    ? profile.targetTrack
+                    : 'WAEC',
+                dailyTarget: profile.dailyCardTarget > 0
+                    ? profile.dailyCardTarget
+                    : 20,
               ),
             );
           } on Object catch (_) {}
@@ -150,7 +158,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           try {
             unawaited(
               RevenueCatService.instance.init(profile.id).then((_) {
-                unawaited(RevenueCatService.instance.syncCustomerEntitlements());
+                unawaited(
+                  RevenueCatService.instance.syncCustomerEntitlements(),
+                );
               }),
             );
           } on Object catch (_) {}
@@ -180,8 +190,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (locator.isRegistered<NotificationService>()) {
       try {
         unawaited(
-          locator<NotificationService>()
-              .syncDeviceTokenWithBackend(userId: userId),
+          locator<NotificationService>().syncDeviceTokenWithBackend(
+            userId: userId,
+          ),
         );
       } on Object catch (_) {}
     }
@@ -306,8 +317,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             }
             add(const AuthProfileFetchRequested());
           } else {
-            if (event.promoCode != null &&
-                event.promoCode!.trim().isNotEmpty) {
+            if (event.promoCode != null && event.promoCode!.trim().isNotEmpty) {
               try {
                 unawaited(
                   locator<LocalStorageService>().savePreference(
@@ -375,8 +385,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           );
 
           try {
-            final pendingPromo = locator<LocalStorageService>()
-                .getPreference(key: PrefKeys.pendingPromoCode);
+            final pendingPromo = locator<LocalStorageService>().getPreference(
+              key: PrefKeys.pendingPromoCode,
+            );
             if (pendingPromo != null && pendingPromo.trim().isNotEmpty) {
               unawaited(
                 locator<LocalStorageService>().deletePreference(
@@ -499,7 +510,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (profile.isOnboarded) return true;
     try {
       final storage = locator<LocalStorageService>();
-      if (storage.getPreference(key: PrefKeys.hasCompletedOnboarding) == 'true') {
+      if (storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
+          'true') {
         return true;
       }
       final rawCalib = storage.getPreference(key: '__calibration_profile');
@@ -507,7 +519,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final map = jsonDecode(rawCalib) as Map<String, dynamic>;
         if (map['isCalibrated'] == true) return true;
       }
-      final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+      final rawCourses = storage.getPreference(
+        key: PrefKeys.userCuratedCourses,
+      );
       if (rawCourses != null && rawCourses.isNotEmpty) {
         final list = jsonDecode(rawCourses) as List<dynamic>;
         if (list.isNotEmpty) return true;
@@ -532,11 +546,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           }
         } on Object catch (_) {}
 
-        final isCachedPro = locator.isRegistered<UserStorageService>() &&
+        final isCachedPro =
+            locator.isRegistered<UserStorageService>() &&
             locator<UserStorageService>().isProSubscriber();
-        if (isCachedPro && mergedProfile.subscriptionTier.toLowerCase() != 'pro') {
+        if (isCachedPro &&
+            mergedProfile.subscriptionTier.toLowerCase() != 'pro') {
           mergedProfile = mergedProfile.copyWith(subscriptionTier: 'pro');
-        } else if (mergedProfile.isPro && locator.isRegistered<UserStorageService>()) {
+        } else if (mergedProfile.isPro &&
+            locator.isRegistered<UserStorageService>()) {
           unawaited(locator<UserStorageService>().saveProStatus(isPro: true));
         }
 
@@ -545,8 +562,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           try {
             final dashRepo = locator<DashboardRepository>();
             final coursesRes = await dashRepo.getUserCuratedCourses();
-            final hasRemoteCourses =
-                coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+            final hasRemoteCourses = coursesRes.fold(
+              (_) => false,
+              (courses) => courses.isNotEmpty,
+            );
             if (hasRemoteCourses) {
               isOnboarded = true;
             }
@@ -558,8 +577,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           try {
             unawaited(
               _authRepository.completeOnboarding(
-                track: mergedProfile.targetTrack.isNotEmpty ? mergedProfile.targetTrack : 'WAEC',
-                dailyTarget: mergedProfile.dailyCardTarget > 0 ? mergedProfile.dailyCardTarget : 20,
+                track: mergedProfile.targetTrack.isNotEmpty
+                    ? mergedProfile.targetTrack
+                    : 'WAEC',
+                dailyTarget: mergedProfile.dailyCardTarget > 0
+                    ? mergedProfile.dailyCardTarget
+                    : 20,
               ),
             );
           } on Object catch (_) {}
@@ -601,7 +624,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           try {
             unawaited(
               RevenueCatService.instance.init(profile.id).then((_) {
-                unawaited(RevenueCatService.instance.syncCustomerEntitlements());
+                unawaited(
+                  RevenueCatService.instance.syncCustomerEntitlements(),
+                );
               }),
             );
           } on Object catch (_) {}
@@ -648,7 +673,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(
           state.copyWith(
             status: AuthStatus.authenticated,
-            userProfile: profile.id.isNotEmpty ? mergedProfile : state.userProfile,
+            userProfile: profile.id.isNotEmpty
+                ? mergedProfile
+                : state.userProfile,
           ),
         );
       },
@@ -699,8 +726,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final updatedStreak = liveStreak > 0
           ? liveStreak
           : (state.userProfile!.streakDays <= 0
-              ? 1
-              : state.userProfile!.streakDays + 1);
+                ? 1
+                : state.userProfile!.streakDays + 1);
 
       emit(
         state.copyWith(

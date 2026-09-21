@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class RagReferenceBadge extends StatelessWidget {
   const RagReferenceBadge({
@@ -17,6 +20,7 @@ class RagReferenceBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.theme;
     final l10n = context.l10n;
+    final colors = context.colors;
     final scorePercent = (chunk.similarityScore * 100).toInt();
     final badgeText = l10n.retrievedContextBadge(scorePercent);
     final title = chunk.documentTitle ?? 'Course Material';
@@ -28,64 +32,73 @@ class RagReferenceBadge extends StatelessWidget {
         ? ' (${citationParts.join(', ')})'
         : '';
 
-    final colors = context.colors;
     return Semantics(
       button: true,
       label: '$badgeText: $title$pageInfo',
       hint: 'Tap to inspect source reference snippet',
-      child: Material(
-        color: colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.4),
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return Material(
+            color: colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: AppRadius.radiusCard,
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.snappyCurve,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isHovered
+                      ? colors.primary.withAlpha(45)
+                      : colors.primary.withAlpha(25),
+                  borderRadius: AppRadius.radiusCard,
+                  border: Border.all(
+                    color: isHovered
+                        ? colors.primary.withAlpha(160)
+                        : colors.primary.withAlpha(80),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.menu_book_rounded,
+                      size: 14,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$title$pageInfo',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.success.withAlpha(40),
+                        borderRadius: AppRadius.radiusMicro,
+                      ),
+                      child: Text(
+                        '$scorePercent%',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.success,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.menu_book_rounded,
-                  size: 14,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '$title$pageInfo',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.success.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$scorePercent%',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colors.success,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

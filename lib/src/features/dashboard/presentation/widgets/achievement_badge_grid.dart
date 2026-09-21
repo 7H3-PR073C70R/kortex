@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 class AchievementBadgeItem {
@@ -94,9 +95,9 @@ class AchievementBadgeGrid extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+          color: colors.surfaceBorder.withAlpha(context.isDarkMode ? 60 : 35),
         ),
       ),
       child: Column(
@@ -159,11 +160,11 @@ class _BadgeCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
             color: badge.isUnlocked
                 ? badge.accentColor.withValues(alpha: 0.4)
-                : colors.surfaceBorder,
+                : colors.surfaceBorder.withAlpha(context.isDarkMode ? 50 : 30),
           ),
         ),
         child: Column(
@@ -177,7 +178,7 @@ class _BadgeCard extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                   ),
                   child: Icon(badge.icon, color: badgeColor, size: 22),
                 ),
@@ -222,7 +223,7 @@ class _BadgeCard extends StatelessWidget {
             const SizedBox(height: 6),
             if (!badge.isUnlocked) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.micro),
                 child: LinearProgressIndicator(
                   value: badge.progressRatio,
                   backgroundColor: colors.surfaceBorder,

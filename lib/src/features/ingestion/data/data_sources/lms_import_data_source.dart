@@ -211,7 +211,9 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
       final rawList = response.data ?? [];
       return rawList
           .cast<Map<String, dynamic>>()
-          .where((c) => c['name'] != null && (c['name'] as String).trim().isNotEmpty)
+          .where(
+            (c) => c['name'] != null && (c['name'] as String).trim().isNotEmpty,
+          )
           .map(LmsCourse.fromCanvasJson)
           .toList();
     } on DioException {
@@ -266,7 +268,8 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
         section: 'Section A - Fall Term',
         platform: 'google_classroom',
         enrollmentCode: 'cs101fall',
-        description: 'Foundational computer architecture, memory hierarchies, complexity, and data structures.',
+        description:
+            'Foundational computer architecture, memory hierarchies, complexity, and data structures.',
       ),
       LmsCourse(
         id: 'gc_bio201',
@@ -274,7 +277,8 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
         section: 'Lecture Hall B',
         platform: 'google_classroom',
         enrollmentCode: 'bio201cell',
-        description: 'Comprehensive study of genetic replication, cellular respiration, and enzymology.',
+        description:
+            'Comprehensive study of genetic replication, cellular respiration, and enzymology.',
       ),
       LmsCourse(
         id: 'gc_math301',
@@ -282,7 +286,8 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
         section: 'Section 03',
         platform: 'google_classroom',
         enrollmentCode: 'math301ode',
-        description: 'Eigenvalues, vector spaces, matrix factorizations, and linear ODE systems.',
+        description:
+            'Eigenvalues, vector spaces, matrix factorizations, and linear ODE systems.',
       ),
     ];
   }
@@ -294,21 +299,24 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
         name: 'MED501: Clinical Pharmacology & Therapeutics',
         section: 'PHARM-501',
         platform: 'canvas',
-        description: 'Pharmacokinetics, receptor dynamics, drug interactions, and clinical dosage calculation.',
+        description:
+            'Pharmacokinetics, receptor dynamics, drug interactions, and clinical dosage calculation.',
       ),
       LmsCourse(
         id: 'cv_phys202',
         name: 'PHYS202: Classical Mechanics & Electromagnetism',
         section: 'PHYS-202-01',
         platform: 'canvas',
-        description: "Newtonian mechanics, Maxwell's equations, electrostatic potentials, and wave dynamics.",
+        description:
+            "Newtonian mechanics, Maxwell's equations, electrostatic potentials, and wave dynamics.",
       ),
       LmsCourse(
         id: 'cv_chem102',
         name: 'CHEM102: Organic Chemistry Principles',
         section: 'CHEM-102-L2',
         platform: 'canvas',
-        description: 'Reaction mechanisms, stereochemistry, electrophilic addition, and aromatic resonance.',
+        description:
+            'Reaction mechanisms, stereochemistry, electrophilic addition, and aromatic resonance.',
       ),
     ];
   }
@@ -329,18 +337,21 @@ class LmsImportDataSourceImpl implements LmsImportDataSource {
         title: '${course.name} - Midterm Review Problem Set',
         dueDate: DateTime.now().add(const Duration(days: 4)),
         maxPoints: 100,
-        description: 'Review core concepts, definitions, and problem-solving methodologies from Chapters 1-5.',
+        description:
+            'Review core concepts, definitions, and problem-solving methodologies from Chapters 1-5.',
       ),
       LmsAssignment(
         id: '${course.id}_assign2',
         title: '${course.name} - Case Study & Research Summary',
         dueDate: DateTime.now().add(const Duration(days: 10)),
         maxPoints: 50,
-        description: 'Synthesize academic literature findings and practical applications for term paper presentation.',
+        description:
+            'Synthesize academic literature findings and practical applications for term paper presentation.',
       ),
     ];
 
-    final syllabus = '''
+    final syllabus =
+        '''
 # ${course.name}
 Section: ${course.section}
 
@@ -423,18 +434,23 @@ ${course.description ?? "Comprehensive academic coursework syllabus imported fro
     // Assemble dynamic syllabus
     final syllabusBuffer = StringBuffer();
     if (course.description != null && course.description!.trim().isNotEmpty) {
-      syllabusBuffer.writeln('## Course Overview\n${course.description!.trim()}\n');
+      syllabusBuffer.writeln(
+        '## Course Overview\n${course.description!.trim()}\n',
+      );
     }
 
     if (announcementsText.isNotEmpty) {
-      syllabusBuffer.writeln('## Announcements & Course Materials\n$announcementsText\n');
+      syllabusBuffer.writeln(
+        '## Announcements & Course Materials\n$announcementsText\n',
+      );
     }
 
     if (assignments.isNotEmpty) {
       syllabusBuffer.writeln('## Coursework & Assignments');
       for (final assign in assignments) {
         syllabusBuffer.writeln('### ${assign.title}');
-        if (assign.description != null && assign.description!.trim().isNotEmpty) {
+        if (assign.description != null &&
+            assign.description!.trim().isNotEmpty) {
           syllabusBuffer.writeln(assign.description!.trim());
         }
         syllabusBuffer.writeln(
@@ -489,16 +505,13 @@ ${course.description ?? "Comprehensive academic coursework syllabus imported fro
         options: Options(headers: headers),
       );
       final rawAssigns = assignResp.data ?? [];
-      assignments = rawAssigns
-          .cast<Map<String, dynamic>>()
-          .map((json) {
-            final cleaned = Map<String, dynamic>.from(json);
-            if (cleaned['description'] is String) {
-              cleaned['description'] = stripHtml(cleaned['description'] as String);
-            }
-            return LmsAssignment.fromCanvasJson(cleaned);
-          })
-          .toList();
+      assignments = rawAssigns.cast<Map<String, dynamic>>().map((json) {
+        final cleaned = Map<String, dynamic>.from(json);
+        if (cleaned['description'] is String) {
+          cleaned['description'] = stripHtml(cleaned['description'] as String);
+        }
+        return LmsAssignment.fromCanvasJson(cleaned);
+      }).toList();
     } on Object catch (_) {
       // Assignments might be empty or restricted
     }
@@ -545,12 +558,16 @@ ${course.description ?? "Comprehensive academic coursework syllabus imported fro
     if (assignments.isNotEmpty) {
       syllabusBuffer.writeln('## Assignments & Problem Sets');
       for (final assign in assignments) {
-        syllabusBuffer.writeln('### ${assign.title} (Points: ${assign.maxPoints.toInt()})');
+        syllabusBuffer.writeln(
+          '### ${assign.title} (Points: ${assign.maxPoints.toInt()})',
+        );
         final desc = assign.description;
         if (desc != null && desc.isNotEmpty) {
           syllabusBuffer.writeln(desc);
         }
-        syllabusBuffer.writeln('Due: ${assign.dueDate.toIso8601String().split('T').first}\n');
+        syllabusBuffer.writeln(
+          'Due: ${assign.dueDate.toIso8601String().split('T').first}\n',
+        );
       }
     }
 
@@ -566,5 +583,4 @@ ${course.description ?? "Comprehensive academic coursework syllabus imported fro
       syllabusContent: syllabusBuffer.toString().trim(),
     );
   }
-
 }

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -65,8 +67,8 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
     if (_currentIndex < totalSlides - 1) {
       unawaited(
         _pageController.nextPage(
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.expressive,
+          curve: AppMotion.easeOutCubic,
         ),
       );
     } else {
@@ -79,8 +81,8 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
     if (_currentIndex > 0) {
       unawaited(
         _pageController.previousPage(
-          duration: const Duration(milliseconds: 320),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.expressive,
+          curve: AppMotion.easeOutCubic,
         ),
       );
     }
@@ -158,10 +160,9 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
         constraints: const BoxConstraints(maxWidth: 440),
         decoration: BoxDecoration(
           color: colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppRadius.dialog),
           border: Border.all(
-            color: colors.surfaceBorderHighlight.withAlpha(isDark ? 80 : 120),
-            width: 1.5,
+            color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
           ),
           boxShadow: [
             BoxShadow(
@@ -173,7 +174,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(AppRadius.dialog),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -280,7 +281,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                             ),
                             decoration: BoxDecoration(
                               color: slide.badgeColor.withAlpha(25),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.badge),
                             ),
                             child: Text(
                               slide.badge,
@@ -336,7 +337,8 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                       children: List.generate(slides.length, (idx) {
                         final isSelected = idx == _currentIndex;
                         return AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
+                          duration: AppMotion.standard,
+                          curve: AppMotion.easeOutCubic,
                           margin: const EdgeInsets.only(right: 4),
                           width: isSelected ? 16 : 5,
                           height: 5,
@@ -344,7 +346,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                             color: isSelected
                                 ? colors.primary
                                 : colors.surfaceBorderHighlight,
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
                           ),
                         );
                       }),
@@ -387,7 +389,7 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.card),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.primary.withAlpha(60),

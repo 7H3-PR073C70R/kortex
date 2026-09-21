@@ -122,7 +122,9 @@ class CalibrationCubit extends Cubit<CalibrationState> {
   void setHighSchoolSubjects(List<String> subjects) {
     emit(
       state.copyWith(
-        profile: state.profile.copyWith(highSchoolSubjects: List.unmodifiable(subjects)),
+        profile: state.profile.copyWith(
+          highSchoolSubjects: List.unmodifiable(subjects),
+        ),
       ),
     );
   }
@@ -154,7 +156,10 @@ class CalibrationCubit extends Cubit<CalibrationState> {
         focus: AcademicFocus.professionalCertification,
         higherEdLevel: HigherEdLevel.msc,
         higherEdField: 'Professional Board & Licensing',
-        higherEdGoals: ['High-Yield Practice', 'Spaced Repetition (FSRS-6) Mastery'],
+        higherEdGoals: [
+          'High-Yield Practice',
+          'Spaced Repetition (FSRS-6) Mastery',
+        ],
         isCalibrated: true,
       );
     } else if (state.profile.focus == AcademicFocus.selfDirected) {
@@ -162,7 +167,10 @@ class CalibrationCubit extends Cubit<CalibrationState> {
         focus: AcademicFocus.selfDirected,
         higherEdLevel: HigherEdLevel.bsc,
         higherEdField: 'Independent Studies',
-        higherEdGoals: ['Concept Mastery', 'Spaced Repetition (FSRS-6) Mastery'],
+        higherEdGoals: [
+          'Concept Mastery',
+          'Spaced Repetition (FSRS-6) Mastery',
+        ],
         isCalibrated: true,
       );
     } else if (state.profile.focus == AcademicFocus.higherEducation) {

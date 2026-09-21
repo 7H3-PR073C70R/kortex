@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 class ActivityDayData {
@@ -24,19 +25,21 @@ class StudyActivityHeatmap extends StatelessWidget {
   final String? title;
 
   Color _getCellColor(BuildContext context, int count) {
-    final primary = context.theme.colorScheme.primary;
-    if (count == 0) return context.colors.surfaceBorder;
-    if (count < 5) return primary.withValues(alpha: 0.3);
-    if (count < 10) return primary.withValues(alpha: 0.55);
-    if (count < 20) return primary.withValues(alpha: 0.8);
-    return primary;
+    final colors = context.colors;
+    final isDark = context.isDarkMode;
+    if (count == 0) return colors.surfaceBorder.withAlpha(isDark ? 60 : 70);
+    if (count < 5) return colors.primary.withAlpha(isDark ? 75 : 65);
+    if (count < 10) return colors.primary.withAlpha(isDark ? 140 : 130);
+    if (count < 20) return colors.primary.withAlpha(isDark ? 200 : 190);
+    return colors.primary;
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
     final colors = context.colors;
+    final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     // Generate 52 weeks (364 days) ending today
     final now = DateTime.now();
@@ -60,10 +63,12 @@ class StudyActivityHeatmap extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
+        color: isDark
+            ? colors.surfaceSecondary.withAlpha(160)
+            : colors.surfacePrimary.withAlpha(220),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+          color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
         ),
       ),
       child: Column(
@@ -73,28 +78,34 @@ class StudyActivityHeatmap extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title ?? l10n.studyActivityHeatmapTitle,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.textPrimary,
+              Expanded(
+                child: Text(
+                  title ?? l10n.studyActivityHeatmapTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  color: colors.primary.withAlpha(isDark ? 40 : 25),
+                  borderRadius: BorderRadius.circular(AppRadius.badge),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 90 : 50),
+                  ),
                 ),
                 child: Text(
-                  '$totalReviews Reviews this Year',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
+                  l10n.reviewsThisYearCount(totalReviews),
+                  style: typography.caption.bold.copyWith(
+                    fontSize: 11,
+                    color: colors.primary,
                   ),
                 ),
               ),
@@ -130,7 +141,7 @@ class StudyActivityHeatmap extends StatelessWidget {
                           margin: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             color: cellColor,
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
                           ),
                         ),
                       ),
@@ -147,8 +158,8 @@ class StudyActivityHeatmap extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Text(
-                'Less',
-                style: theme.textTheme.bodySmall?.copyWith(
+                l10n.dashboardHeatmapLess,
+                style: typography.caption.regular.copyWith(
                   color: colors.textSecondary,
                   fontSize: 11,
                 ),
@@ -161,14 +172,14 @@ class StudyActivityHeatmap extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 2),
                   decoration: BoxDecoration(
                     color: _getCellColor(context, level),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppRadius.micro),
                   ),
                 );
               }),
               const SizedBox(width: 6),
               Text(
-                'More',
-                style: theme.textTheme.bodySmall?.copyWith(
+                l10n.dashboardHeatmapMore,
+                style: typography.caption.regular.copyWith(
                   color: colors.textSecondary,
                   fontSize: 11,
                 ),

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Represents an active authenticated device session.
 class DeviceSession {
@@ -28,7 +31,8 @@ class DeviceSession {
 /// Active logged-in device sessions manager widget (SEC-08).
 class ActiveSessionsListWidget extends HookWidget {
   const ActiveSessionsListWidget({
-    required this.sessions, super.key,
+    required this.sessions,
+    super.key,
     this.onRevokeSession,
     this.onRevokeAllOthers,
   });
@@ -65,13 +69,17 @@ class ActiveSessionsListWidget extends HookWidget {
 
     void revokeSession(String sessionId) {
       AppFeedback.light();
-      sessionList.value = sessionList.value.where((s) => s.id != sessionId).toList();
+      sessionList.value = sessionList.value
+          .where((s) => s.id != sessionId)
+          .toList();
       onRevokeSession?.call(sessionId);
     }
 
     void revokeAllOthers() {
       AppFeedback.correct();
-      sessionList.value = sessionList.value.where((s) => s.isCurrentDevice).toList();
+      sessionList.value = sessionList.value
+          .where((s) => s.isCurrentDevice)
+          .toList();
       onRevokeAllOthers?.call();
     }
 
@@ -113,74 +121,92 @@ class ActiveSessionsListWidget extends HookWidget {
             itemCount: sessionList.value.length,
             itemBuilder: (context, index) {
               final session = sessionList.value[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: session.isCurrentDevice
-                        ? colors.primary.withValues(alpha: 0.4)
-                        : colors.surfaceBorder.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutCubic,
+                      transform: isHovered
+                          ? Matrix4.translationValues(0, -2, 0)
+                          : Matrix4.identity(),
+                      child: child,
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.surfacePrimary,
+                      borderRadius: AppRadius.radiusPanel,
+                      border: Border.all(
                         color: session.isCurrentDevice
-                            ? colors.primary.withValues(alpha: 0.12)
-                            : colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        _getDeviceIcon(session.osType),
-                        size: 24,
-                        color: session.isCurrentDevice ? colors.primary : colors.textSecondary,
+                            ? colors.primary.withValues(alpha: 0.4)
+                            : colors.surfaceBorder.withValues(alpha: 0.5),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: session.isCurrentDevice
+                                ? colors.primary.withValues(alpha: 0.12)
+                                : colors.surfaceSecondary,
+                            borderRadius: AppRadius.radiusCard,
+                          ),
+                          child: Icon(
+                            _getDeviceIcon(session.osType),
+                            size: 24,
+                            color: session.isCurrentDevice
+                                ? colors.primary
+                                : colors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Flexible(
-                                child: Text(
-                                  session.deviceName,
-                                  style: typography.body.bold.copyWith(
-                                    color: colors.textPrimary,
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      session.deviceName,
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                  overflow: TextOverflow.ellipsis,
+                                  if (session.isCurrentDevice) ...[
+                                    const SizedBox(width: 6),
+                                    const AppBadge(
+                                      label: 'This Device',
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${session.location} • ${session.ipAddress}',
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
                                 ),
                               ),
-                              if (session.isCurrentDevice) ...[
-                                const SizedBox(width: 6),
-                                const AppBadge(
-                                  label: 'This Device',
-                                ),
-                              ],
                             ],
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${session.location} • ${session.ipAddress}',
-                            style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                        ),
+                        if (!session.isCurrentDevice)
+                          IconButton(
+                            icon: const Icon(Icons.logout_rounded, size: 20),
+                            color: colors.error,
+                            tooltip: 'Revoke session',
+                            onPressed: () => revokeSession(session.id),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
-                    if (!session.isCurrentDevice)
-                      IconButton(
-                        icon: const Icon(Icons.logout_rounded, size: 20),
-                        color: colors.error,
-                        tooltip: 'Revoke session',
-                        onPressed: () => revokeSession(session.id),
-                      ),
-                  ],
+                  ),
                 ),
               );
             },

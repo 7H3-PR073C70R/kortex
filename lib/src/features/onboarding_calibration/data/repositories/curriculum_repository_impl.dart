@@ -24,7 +24,7 @@ class CurriculumRepositoryImpl implements CurriculumRepository {
 
   @override
   Future<Either<Failure, Map<String, List<CurriculumMetadataEntity>>>>
-      getAllMetadata() async {
+  getAllMetadata() async {
     try {
       final models = await _remoteDataSource.fetchAllMetadata();
       final map = <String, List<CurriculumMetadataEntity>>{};

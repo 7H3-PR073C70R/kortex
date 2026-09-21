@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Topic item within the curriculum syllabus.
 class SyllabusTopic {
@@ -48,12 +51,14 @@ class SyllabusTopic {
 /// Interactive checklist tracking curriculum syllabus topics mapped to exam papers (PLN-07).
 class SyllabusChecklistWidget extends HookWidget {
   const SyllabusChecklistWidget({
-    required this.topics, super.key,
+    required this.topics,
+    super.key,
     this.onTopicToggled,
   });
 
   final List<SyllabusTopic> topics;
-  final void Function(SyllabusTopic topic, {required bool isMastered})? onTopicToggled;
+  final void Function(SyllabusTopic topic, {required bool isMastered})?
+  onTopicToggled;
 
   @override
   Widget build(BuildContext context) {
@@ -86,8 +91,10 @@ class SyllabusChecklistWidget extends HookWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colors.surfacePrimary,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
+            borderRadius: AppRadius.radiusPanel,
+            border: Border.all(
+              color: colors.surfaceBorder.withValues(alpha: 0.5),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +128,7 @@ class SyllabusChecklistWidget extends HookWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(
                   overallProgress == 1.0 ? colors.success : colors.primary,
                 ),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: AppRadius.radiusMicro,
                 minHeight: 8,
               ),
             ],
@@ -151,9 +158,11 @@ class SyllabusChecklistWidget extends HookWidget {
                     color: isSelected ? colors.primary : colors.textPrimary,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadius.radiusBadge,
                     side: BorderSide(
-                      color: isSelected ? colors.primary : colors.surfaceBorder.withValues(alpha: 0.5),
+                      color: isSelected
+                          ? colors.primary
+                          : colors.surfaceBorder.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
@@ -168,17 +177,52 @@ class SyllabusChecklistWidget extends HookWidget {
             itemCount: filteredTopics.length,
             itemBuilder: (context, index) {
               final topic = filteredTopics[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: topic.isMastered
-                        ? colors.success.withValues(alpha: 0.3)
-                        : colors.surfaceBorder.withValues(alpha: 0.5),
-                  ),
-                ),
+              return PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: Curves.easeOutCubic,
+                    transform: Matrix4.translationValues(
+                      0,
+                      isHovered ? -1.5 : 0,
+                      0,
+                    ),
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isHovered
+                          ? (topic.isMastered
+                                ? colors.success.withValues(alpha: 0.08)
+                                : colors.primary.withValues(alpha: 0.06))
+                          : colors.surfacePrimary,
+                      borderRadius: AppRadius.radiusCard,
+                      border: Border.all(
+                        color: topic.isMastered
+                            ? colors.success.withValues(
+                                alpha: isHovered ? 0.6 : 0.3,
+                              )
+                            : (isHovered
+                                  ? colors.primary.withValues(alpha: 0.4)
+                                  : colors.surfaceBorder.withValues(
+                                      alpha: 0.5,
+                                    )),
+                      ),
+                      boxShadow: isHovered
+                          ? [
+                              BoxShadow(
+                                color:
+                                    (topic.isMastered
+                                            ? colors.success
+                                            : colors.primary)
+                                        .withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: child,
+                  );
+                },
                 child: CheckboxListTile(
                   value: topic.isMastered,
                   activeColor: colors.success,
@@ -199,17 +243,25 @@ class SyllabusChecklistWidget extends HookWidget {
                     topic.title,
                     style: typography.body.medium.copyWith(
                       fontWeight: FontWeight.w600,
-                      decoration: topic.isMastered ? TextDecoration.lineThrough : null,
-                      color: topic.isMastered ? colors.textSecondary : colors.textPrimary,
+                      decoration: topic.isMastered
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: topic.isMastered
+                          ? colors.textSecondary
+                          : colors.textPrimary,
                     ),
                   ),
                   subtitle: Text(
                     '${topic.subject} • ${topic.weightPercent}% exam weight',
-                    style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                   secondary: AppBadge(
                     label: '${topic.weightPercent}%',
-                    variant: topic.isMastered ? AppBadgeVariant.success : AppBadgeVariant.outline,
+                    variant: topic.isMastered
+                        ? AppBadgeVariant.success
+                        : AppBadgeVariant.outline,
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
                 ),

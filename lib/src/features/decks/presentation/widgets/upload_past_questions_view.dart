@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -68,7 +69,7 @@ class UploadPastQuestionsView extends StatelessWidget {
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(120)
                   : colors.surfacePrimary,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.dialog),
               border: Border.all(
                 color: pickedFile.value != null
                     ? colors.primary
@@ -157,7 +158,7 @@ class UploadPastQuestionsView extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: colors.primary.withAlpha(isDark ? 30 : 15),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(color: colors.primary.withAlpha(50)),
             ),
             child: Column(
@@ -174,7 +175,7 @@ class UploadPastQuestionsView extends StatelessWidget {
                       child: Text(
                         statusText,
                         style: typography.caption.bold.copyWith(
-                          color: colors.primary,
+                           color: colors.primary,
                           fontSize: 12.5,
                         ),
                       ),
@@ -186,7 +187,7 @@ class UploadPastQuestionsView extends StatelessWidget {
                   value: progress,
                   backgroundColor: colors.primary.withAlpha(30),
                   valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.micro),
                 ),
               ],
             ),

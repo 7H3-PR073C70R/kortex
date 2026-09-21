@@ -112,8 +112,11 @@ class LocalPdfParserService {
         final lower = pageText.toLowerCase().trim();
 
         // Skip standard front-matter pages (Table of Contents, Dedication, Copyright)
-        if ((lower.contains('table of contents') || lower.contains('contents')) &&
-            (lower.contains('...') || lower.contains('. . .') || lower.contains('preface'))) {
+        if ((lower.contains('table of contents') ||
+                lower.contains('contents')) &&
+            (lower.contains('...') ||
+                lower.contains('. . .') ||
+                lower.contains('preface'))) {
           continue;
         }
         if (lower.startsWith('preface') ||
@@ -180,8 +183,13 @@ class LocalPdfParserService {
 
       for (final line in lines) {
         final normalized = _normalizeLineForFrequency(line);
-        final wordCount = normalized.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
-        if (normalized.length >= 8 && wordCount >= 2 && !seenOnThisPage.contains(normalized)) {
+        final wordCount = normalized
+            .split(RegExp(r'\s+'))
+            .where((w) => w.isNotEmpty)
+            .length;
+        if (normalized.length >= 8 &&
+            wordCount >= 2 &&
+            !seenOnThisPage.contains(normalized)) {
           seenOnThisPage.add(normalized);
           linePageCounts[normalized] = (linePageCounts[normalized] ?? 0) + 1;
         }
@@ -231,7 +239,13 @@ class LocalPdfParserService {
 
         // Strip standalone URLs, web addresses, and domain watermarks
         final clean = trimmed
-            .replaceAll(RegExp(r'https?://\S+|www\.\S+|\b[A-Za-z0-9_\-\.]+\.(?:com|net|org|io|edu|gov|co|ai)\b', caseSensitive: false), '')
+            .replaceAll(
+              RegExp(
+                r'https?://\S+|www\.\S+|\b[A-Za-z0-9_\-\.]+\.(?:com|net|org|io|edu|gov|co|ai)\b',
+                caseSensitive: false,
+              ),
+              '',
+            )
             .trim();
 
         if (clean.isNotEmpty) {

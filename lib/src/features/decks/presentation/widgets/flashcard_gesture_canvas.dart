@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -40,9 +42,9 @@ class FlashcardGestureCanvas extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    // Flip Animation Controller
+    // Flip Animation Controller with expressive Kowalski curve
     final flipController = useAnimationController(
-      duration: const Duration(milliseconds: 520),
+      duration: AppMotion.expressive,
     );
 
     // Synchronize flip state
@@ -60,7 +62,7 @@ class FlashcardGestureCanvas extends HookWidget {
 
     // Motion Animation Controller for fluid snap-back and swipe fly-off
     final motionController = useAnimationController(
-      duration: const Duration(milliseconds: 260),
+      duration: AppMotion.standard,
     );
     final snapStartOffset = useRef<Offset>(Offset.zero);
     final snapTargetOffset = useRef<Offset>(Offset.zero);
@@ -278,7 +280,7 @@ class FlashcardGestureCanvas extends HookWidget {
                         ),
                         decoration: BoxDecoration(
                           color: routeColor.withAlpha(isDark ? 230 : 255),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(AppRadius.dialog),
                           boxShadow: [
                             BoxShadow(
                               color: routeColor.withAlpha(120),
@@ -419,14 +421,14 @@ class _CardFace extends StatelessWidget {
           ? 'Back of card: $mainText. Rate recall or tap to flip.'
           : 'Front of card: $mainText. Tap or spacebar to reveal answer.',
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(AppRadius.dialog),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             constraints: const BoxConstraints(minHeight: 340, maxWidth: 640),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(AppRadius.dialog),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -471,7 +473,7 @@ class _CardFace extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: badgeColor.withAlpha(isDark ? 45 : 20),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
                           color: badgeColor.withAlpha(100),
                         ),

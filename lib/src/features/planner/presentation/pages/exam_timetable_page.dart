@@ -7,6 +7,8 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
@@ -15,6 +17,7 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 @RoutePage()
 class ExamTimetablePage extends StatefulWidget {
@@ -45,7 +48,8 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
         final milestonePref = storage.getPreference(key: _milestoneAlertsKey);
         setState(() {
           _dailyReminderEnabled = dailyPref == null || dailyPref == 'true';
-          _milestoneAlertsEnabled = milestonePref == null || milestonePref == 'true';
+          _milestoneAlertsEnabled =
+              milestonePref == null || milestonePref == 'true';
         });
       }
     } on Object catch (_) {}
@@ -61,7 +65,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           data: enabled.toString(),
         );
       }
-      if (!enabled && !_milestoneAlertsEnabled && locator.isRegistered<NotificationService>()) {
+      if (!enabled &&
+          !_milestoneAlertsEnabled &&
+          locator.isRegistered<NotificationService>()) {
         unawaited(locator<NotificationService>().cancelAllNotifications());
       }
     } on Object catch (_) {}
@@ -77,13 +83,18 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           data: enabled.toString(),
         );
       }
-      if (!enabled && !_dailyReminderEnabled && locator.isRegistered<NotificationService>()) {
+      if (!enabled &&
+          !_dailyReminderEnabled &&
+          locator.isRegistered<NotificationService>()) {
         unawaited(locator<NotificationService>().cancelAllNotifications());
       }
     } on Object catch (_) {}
   }
 
-  Future<void> _confirmDelete(BuildContext context, ExamEventEntity exam) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    ExamEventEntity exam,
+  ) async {
     final colors = context.colors;
     final typography = context.typography;
 
@@ -93,7 +104,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
         backgroundColor: context.isDarkMode
             ? colors.surfaceSecondary
             : colors.surfacePrimary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusDialog),
         title: Text(
           'Delete Exam Countdown?',
           style: typography.headline.bold.copyWith(color: colors.textPrimary),
@@ -114,7 +125,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             style: FilledButton.styleFrom(
               backgroundColor: colors.error,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.radiusCard,
               ),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -147,90 +158,111 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               backgroundColor: colors.backgroundPrimary,
               elevation: 0,
               leading: IconButton(
-                icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary),
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: colors.textPrimary,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               title: Text(
                 'Exam Timetable',
-                style: typography.headline.bold.copyWith(color: colors.textPrimary),
+                style: typography.headline.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
               actions: [
                 IconButton(
-                  icon: Icon(Icons.add_circle_outline_rounded, color: colors.primary),
+                  icon: Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: colors.primary,
+                  ),
                   tooltip: 'Add Exam',
                   onPressed: () => AddExamModalSheet.show(context),
                 ),
                 const SizedBox(width: 8),
               ],
             ),
-            body: BlocBuilder<CramPlannerCubit, CramPlannerState>(
-              builder: (context, state) {
-                final exams = state.activeExams;
-                final primaryExam = state.selectedExam ??
-                    (exams.isNotEmpty ? exams.first : null);
+            body: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: BlocBuilder<CramPlannerCubit, CramPlannerState>(
+                  builder: (context, state) {
+                    final exams = state.activeExams;
+                    final primaryExam =
+                        state.selectedExam ??
+                        (exams.isNotEmpty ? exams.first : null);
 
-                if (exams.isEmpty) {
-                  return _buildEmptyState(context);
-                }
+                    if (exams.isEmpty) {
+                      return _buildEmptyState(context);
+                    }
 
-                return ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  children: [
-                    // Hero Active Countdown Display
-                    if (primaryExam != null) ...[
-                      _buildHeroCountdownCard(context, primaryExam),
-                      const SizedBox(height: 24),
-                      StudyCalibrationGraphWidget(
-                        exam: primaryExam,
-                        onStartStudySession: () {
-                          Navigator.of(context).pop();
-                        },
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
                       ),
-                      const SizedBox(height: 28),
-                    ],
-
-                    // Section Heading: All Tracked Exams
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Tracked Exams (${exams.length})',
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
+                        // Hero Active Countdown Display
+                        if (primaryExam != null) ...[
+                          _buildHeroCountdownCard(context, primaryExam),
+                          const SizedBox(height: 24),
+                          StudyCalibrationGraphWidget(
+                            exam: primaryExam,
+                            onStartStudySession: () {
+                              Navigator.of(context).pop();
+                            },
                           ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () => AddExamModalSheet.show(context),
-                          icon: Icon(Icons.add, size: 18, color: colors.primary),
-                          label: Text(
-                            'Add Exam',
-                            style: typography.callout.bold.copyWith(
-                              color: colors.primary,
+                          const SizedBox(height: 28),
+                        ],
+
+                        // Section Heading: All Tracked Exams
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Tracked Exams (${exams.length})',
+                              style: typography.title3.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
                             ),
+                            TextButton.icon(
+                              onPressed: () => AddExamModalSheet.show(context),
+                              icon: Icon(
+                                Icons.add,
+                                size: 18,
+                                color: colors.primary,
+                              ),
+                              label: Text(
+                                'Add Exam',
+                                style: typography.callout.bold.copyWith(
+                                  color: colors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Chronological Exam Cards
+                        ...exams.map(
+                          (exam) => _buildExamRowCard(
+                            context,
+                            exam: exam,
+                            isSelected: exam.id == primaryExam?.id,
                           ),
                         ),
+
+                        const SizedBox(height: 28),
+
+                        // Notification Preferences Section
+                        _buildNotificationPreferencesCard(context, primaryExam),
+
+                        const SizedBox(height: 40),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Chronological Exam Cards
-                    ...exams.map(
-                      (exam) => _buildExamRowCard(
-                        context,
-                        exam: exam,
-                        isSelected: exam.id == primaryExam?.id,
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Notification Preferences Section
-                    _buildNotificationPreferencesCard(context, primaryExam),
-
-                    const SizedBox(height: 40),
-                  ],
-                );
-              },
+                    );
+                  },
+                ),
+              ),
             ),
           );
         },
@@ -257,7 +289,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             colors.primary.withValues(alpha: 0.85),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadius.radiusDialog,
         boxShadow: [
           BoxShadow(
             color: colors.primary.withValues(alpha: 0.3),
@@ -273,10 +305,13 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.radiusBadge,
                 ),
                 child: Text(
                   exam.subjectTrack.toUpperCase(),
@@ -319,14 +354,22 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   color: colors.white.withValues(alpha: 0.7),
                 ),
               ),
-              _buildTimeDigit(hours.toString().padLeft(2, '0'), 'HOURS', colors),
+              _buildTimeDigit(
+                hours.toString().padLeft(2, '0'),
+                'HOURS',
+                colors,
+              ),
               Text(
                 ':',
                 style: typography.title1.bold.copyWith(
                   color: colors.white.withValues(alpha: 0.7),
                 ),
               ),
-              _buildTimeDigit(minutes.toString().padLeft(2, '0'), 'MINUTES', colors),
+              _buildTimeDigit(
+                minutes.toString().padLeft(2, '0'),
+                'MINUTES',
+                colors,
+              ),
             ],
           ),
         ],
@@ -345,7 +388,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.radiusCard,
           ),
           child: Text(
             value,
@@ -379,22 +422,42 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final formattedDate =
-        DateFormat('EEE, d MMM y • hh:mm a').format(exam.targetDate);
+    final formattedDate = DateFormat(
+      'EEE, d MMM y • hh:mm a',
+    ).format(exam.targetDate);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected
-              ? colors.primary
-              : colors.surfaceBorder.withValues(alpha: 0.6),
-          width: isSelected ? 2 : 1,
-        ),
-      ),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(0, isHovered ? -2 : 0, 0),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: AppRadius.radiusPanel,
+            border: Border.all(
+              color: isSelected
+                  ? colors.primary
+                  : (isHovered
+                        ? colors.primary.withValues(alpha: 0.5)
+                        : colors.surfaceBorder.withValues(alpha: 0.6)),
+              width: isSelected ? 2 : 1,
+            ),
+            boxShadow: isHovered
+                ? [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: child,
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -405,7 +468,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                 onTap: () {
                   context.read<CramPlannerCubit>().selectExam(exam.id);
                 },
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.radiusMicro,
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -451,7 +514,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                           ),
                           decoration: BoxDecoration(
                             color: colors.primary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: AppRadius.radiusBadge,
                           ),
                           child: Text(
                             exam.subjectTrack,
@@ -474,15 +537,34 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               ),
 
               // Edit & Delete Actions
-              IconButton(
-                icon: Icon(Icons.edit_outlined, size: 20, color: colors.textSecondary),
-                tooltip: 'Edit Exam',
-                onPressed: () => AddExamModalSheet.show(context, initialExam: exam),
+              PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return IconButton(
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: isHovered ? colors.primary : colors.textSecondary,
+                    ),
+                    tooltip: 'Edit Exam',
+                    onPressed: () =>
+                        AddExamModalSheet.show(context, initialExam: exam),
+                  );
+                },
               ),
-              IconButton(
-                icon: Icon(Icons.delete_outline_rounded, size: 20, color: colors.error),
-                tooltip: 'Delete Exam',
-                onPressed: () => _confirmDelete(context, exam),
+              PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return IconButton(
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: isHovered
+                          ? colors.error
+                          : colors.error.withValues(alpha: 0.7),
+                    ),
+                    tooltip: 'Delete Exam',
+                    onPressed: () => _confirmDelete(context, exam),
+                  );
+                },
               ),
             ],
           ),
@@ -509,12 +591,14 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           ),
           const SizedBox(height: 6),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppRadius.radiusMicro,
             child: LinearProgressIndicator(
               value: exam.completionProgress,
               backgroundColor: colors.surfaceBorder.withValues(alpha: 0.4),
               valueColor: AlwaysStoppedAnimation<Color>(
-                isSelected ? colors.primary : colors.primary.withValues(alpha: 0.7),
+                isSelected
+                    ? colors.primary
+                    : colors.primary.withValues(alpha: 0.7),
               ),
               minHeight: 5,
             ),
@@ -536,7 +620,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadius.radiusDialog,
         border: Border.all(
           color: colors.surfaceBorder.withValues(alpha: 0.6),
         ),
@@ -546,7 +630,11 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
         children: [
           Row(
             children: [
-              Icon(Icons.notifications_active_rounded, color: colors.primary, size: 20),
+              Icon(
+                Icons.notifications_active_rounded,
+                color: colors.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Timetable & Study Alerts',
@@ -617,42 +705,47 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     final typography = context.typography;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.event_note_rounded,
+                  size: 64,
+                  color: colors.primary,
+                ),
               ),
-              child: Icon(
-                Icons.event_note_rounded,
-                size: 64,
-                color: colors.primary,
+              const SizedBox(height: 24),
+              Text(
+                'No Exams Scheduled Yet',
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'No Exams Scheduled Yet',
-              style: typography.title3.bold.copyWith(color: colors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add your upcoming exams to build a personalized study timetable with calibrated daily flashcard targets.',
-              textAlign: TextAlign.center,
-              style: typography.body.regular.copyWith(
-                color: colors.textSecondary,
+              const SizedBox(height: 8),
+              Text(
+                'Add your upcoming exams to build a personalized study timetable with calibrated daily flashcard targets.',
+                textAlign: TextAlign.center,
+                style: typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            AppButton(
-              text: 'Add First Exam',
-              onPressed: () => AddExamModalSheet.show(context),
-            ),
-          ],
+              const SizedBox(height: 24),
+              AppButton(
+                text: 'Add First Exam',
+                onPressed: () => AddExamModalSheet.show(context),
+              ),
+            ],
+          ),
         ),
       ),
     );

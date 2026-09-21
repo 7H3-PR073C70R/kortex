@@ -1,9 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Interactive bottom sheet for uploading and transcribing audio lectures (ING-10).
 class AudioLectureIngestionSheet extends HookWidget {
@@ -39,7 +43,9 @@ class AudioLectureIngestionSheet extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final selectedFileName = useState<String?>('Physics_Lecture_14_Thermodynamics.mp3');
+    final selectedFileName = useState<String?>(
+      'Physics_Lecture_14_Thermodynamics.mp3',
+    );
     final fileDuration = useState<String>('42:18 min');
     final fileSize = useState<String>('38.4 MB');
 
@@ -77,193 +83,242 @@ class AudioLectureIngestionSheet extends HookWidget {
       });
     }
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-      ),
-      padding: EdgeInsets.only(
-        top: 20,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag Handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 600,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+        ),
+        child: Container(
+          padding: EdgeInsets.only(
+            top: 20,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
           ),
-          const SizedBox(height: 16),
-          // Header
-          Row(
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
+            border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(AppRadius.micro),
+                  ),
                 ),
-                child: Icon(Icons.mic_none_rounded, color: colors.primary, size: 24),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 16),
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                    ),
+                    child: Icon(
+                      Icons.mic_none_rounded,
+                      color: colors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Audio Lecture Ingestion',
+                          style: typography.title2.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Upload recorded lectures & voice memos to auto-generate flashcards',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // File Details Card
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.surfaceTertiary
+                      : colors.surfacePrimary,
+                  borderRadius: BorderRadius.circular(AppRadius.panel),
+                  border: Border.all(
+                    color: colors.surfaceBorder.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      'Audio Lecture Ingestion',
-                      style: typography.title2.bold.copyWith(
-                        color: colors.textPrimary,
+                    Icon(
+                      Icons.audio_file_rounded,
+                      color: colors.primary,
+                      size: 32,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            selectedFileName.value ?? 'No file selected',
+                            style: typography.body.medium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${fileDuration.value} • ${fileSize.value}',
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      'Upload recorded lectures & voice memos to auto-generate flashcards',
-                      style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          decoration: BoxDecoration(
+                            color: isHovered
+                                ? colors.primary.withAlpha(25)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.folder_open_rounded),
+                            color: colors.primary,
+                            onPressed: AppFeedback.selection,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // File Details Card
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: colors.surfacePrimary,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.audio_file_rounded, color: colors.primary, size: 32),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        selectedFileName.value ?? 'No file selected',
-                        style: typography.body.medium.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 16),
+              // Upload & Chunk Progress
+              if (isUploading.value || uploadProgress.value > 0) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isUploading.value
+                          ? 'Chunked processing (${currentChunk.value}/${totalChunks.value})...'
+                          : 'Transcription Ready (100%)',
+                      style: typography.caption.regular.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isUploading.value
+                            ? colors.primary
+                            : colors.success,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${fileDuration.value} • ${fileSize.value}',
-                        style: typography.caption.regular.copyWith(color: colors.textSecondary),
+                    ),
+                    Text(
+                      '${(uploadProgress.value * 100).toInt()}%',
+                      style: typography.caption.regular.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colors.textSecondary,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: uploadProgress.value,
+                  backgroundColor: colors.surfaceSecondary,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    uploadProgress.value == 1.0
+                        ? colors.success
+                        : colors.primary,
                   ),
+                  borderRadius: BorderRadius.circular(AppRadius.micro),
+                  minHeight: 6,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.folder_open_rounded),
-                  color: colors.primary,
-                  onPressed: AppFeedback.selection,
-                ),
+                const SizedBox(height: 16),
               ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Upload & Chunk Progress
-          if (isUploading.value || uploadProgress.value > 0) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              // Transcribed Text Preview
+              if (transcriptionResult.value.isNotEmpty) ...[
                 Text(
-                  isUploading.value
-                      ? 'Chunked processing (${currentChunk.value}/${totalChunks.value})...'
-                      : 'Transcription Ready (100%)',
-                  style: typography.caption.regular.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: isUploading.value ? colors.primary : colors.success,
-                  ),
-                ),
-                Text(
-                  '${(uploadProgress.value * 100).toInt()}%',
+                  'Transcription Preview:',
                   style: typography.caption.regular.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colors.textSecondary,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: uploadProgress.value,
-              backgroundColor: colors.surfaceSecondary,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                uploadProgress.value == 1.0 ? colors.success : colors.primary,
-              ),
-              borderRadius: BorderRadius.circular(6),
-              minHeight: 6,
-            ),
-            const SizedBox(height: 16),
-          ],
-          // Transcribed Text Preview
-          if (transcriptionResult.value.isNotEmpty) ...[
-            Text(
-              'Transcription Preview:',
-              style: typography.caption.regular.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 120),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  transcriptionResult.value,
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textPrimary,
-                    height: 1.4,
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 120),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceSecondary,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      transcriptionResult.value,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textPrimary,
+                        height: 1.4,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          // Action Buttons
-          if (transcriptionResult.value.isEmpty)
-            AppButton(
-              text: isUploading.value ? 'Transcribing Audio...' : 'Start Transcription',
-              isLoading: isUploading.value,
-              onPressed: isUploading.value ? null : startChunkedProcessing,
-            )
-          else
-            AppButton(
-              text: 'Generate Flashcards from Lecture',
-              prefixIcon: Icon(Icons.auto_awesome_rounded, size: 18, color: colors.white),
-              onPressed: () {
-                AppFeedback.correct();
-                onGenerateCards?.call(transcriptionResult.value);
-                Navigator.of(context).pop();
-              },
-            ),
-        ],
+                const SizedBox(height: 16),
+              ],
+              // Action Buttons
+              if (transcriptionResult.value.isEmpty)
+                AppButton(
+                  text: isUploading.value
+                      ? 'Transcribing Audio...'
+                      : 'Start Transcription',
+                  isLoading: isUploading.value,
+                  onPressed: isUploading.value ? null : startChunkedProcessing,
+                )
+              else
+                AppButton(
+                  text: 'Generate Flashcards from Lecture',
+                  prefixIcon: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 18,
+                    color: colors.white,
+                  ),
+                  onPressed: () {
+                    AppFeedback.correct();
+                    onGenerateCards?.call(transcriptionResult.value);
+                    Navigator.of(context).pop();
+                  },
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

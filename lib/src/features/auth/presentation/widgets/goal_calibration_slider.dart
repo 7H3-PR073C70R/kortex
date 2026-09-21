@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class GoalCalibrationSlider extends StatelessWidget {
   const GoalCalibrationSlider({
@@ -29,7 +32,7 @@ class GoalCalibrationSlider extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadius.radiusDialog,
         border: Border.all(
           color: colors.primary.withAlpha(isDark ? 40 : 25),
         ),
@@ -54,26 +57,39 @@ class GoalCalibrationSlider extends StatelessWidget {
                   color: colors.textPrimary,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colors.primary,
-                      colors.primary.withAlpha(200),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  l10n.cardsPerDay(dailyTarget),
-                  style: typography.footnote.bold.copyWith(
-                    color: colors.white,
-                  ),
-                ),
+              PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.primary,
+                          colors.primary.withAlpha(isHovered ? 230 : 200),
+                        ],
+                      ),
+                      borderRadius: AppRadius.radiusCard,
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary.withAlpha(isHovered ? 60 : 30),
+                          blurRadius: isHovered ? 10 : 6,
+                          offset: Offset(0, isHovered ? 3 : 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      l10n.cardsPerDay(dailyTarget),
+                      style: typography.footnote.bold.copyWith(
+                        color: colors.white,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -112,37 +128,77 @@ class GoalCalibrationSlider extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    size: 16,
-                    color: colors.textSecondary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '~$estimatedMinutes mins / day',
-                    style: typography.caption.medium.copyWith(
-                      color: colors.textSecondary,
+              PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                  ),
-                ],
+                    decoration: BoxDecoration(
+                      color: isHovered
+                          ? colors.surfaceBorder.withAlpha(30)
+                          : colors.transparent,
+                      borderRadius: AppRadius.radiusBadge,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 16,
+                          color: isHovered
+                              ? colors.primary
+                              : colors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '~$estimatedMinutes mins / day',
+                          style: typography.caption.medium.copyWith(
+                            color: isHovered
+                                ? colors.textPrimary
+                                : colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-              Row(
-                children: [
-                  Icon(
-                    Icons.auto_graph_rounded,
-                    size: 16,
-                    color: colors.syllabotAccent,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    l10n.retentionTarget((retentionBenchmark * 100).round()),
-                    style: typography.caption.bold.copyWith(
-                      color: colors.syllabotAccent,
+              PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                  ),
-                ],
+                    decoration: BoxDecoration(
+                      color: isHovered
+                          ? colors.syllabotAccent.withAlpha(25)
+                          : colors.transparent,
+                      borderRadius: AppRadius.radiusBadge,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.auto_graph_rounded,
+                          size: 16,
+                          color: colors.syllabotAccent,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.retentionTarget(
+                            (retentionBenchmark * 100).round(),
+                          ),
+                          style: typography.caption.bold.copyWith(
+                            color: colors.syllabotAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),

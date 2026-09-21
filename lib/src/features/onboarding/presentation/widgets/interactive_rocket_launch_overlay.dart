@@ -3,7 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Interactive Cosmic Knowledge Orb collected during flight
@@ -138,7 +141,10 @@ class _InteractiveRocketLaunchOverlayState
     }
 
     // Schedule warp transition after 1.7 seconds for a punchy, snappy launch
-    _warpTimer = Timer(const Duration(milliseconds: 1700), _triggerWarpSequence);
+    _warpTimer = Timer(
+      const Duration(milliseconds: 1700),
+      _triggerWarpSequence,
+    );
 
     // Initial blast haptic
     unawaited(HapticFeedback.heavyImpact());
@@ -403,10 +409,14 @@ class _InteractiveRocketLaunchOverlayState
         onPanUpdate: (details) {
           if (_isWarping) return;
           setState(() {
-            _targetRocketX =
-                (_targetRocketX + details.delta.dx).clamp(40, size.width - 40);
-            _targetRocketY =
-                (_targetRocketY + details.delta.dy).clamp(80, size.height - 80);
+            _targetRocketX = (_targetRocketX + details.delta.dx).clamp(
+              40,
+              size.width - 40,
+            );
+            _targetRocketY = (_targetRocketY + details.delta.dy).clamp(
+              80,
+              size.height - 80,
+            );
           });
         },
         onTap: _onTapTurboBoost,
@@ -521,129 +531,158 @@ class _InteractiveRocketLaunchOverlayState
             // 5. Futuristic HUD & Telemetry Bar
             SafeArea(
               child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
+                duration: AppMotion.snappy,
                 opacity: _isWarping ? 0.0 : 1.0,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 680),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      child: Column(
                         children: [
-                          // Mach Speed & Orbit Telemetry
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceSecondary.withAlpha(200),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: colors.primary.withAlpha(90),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.speed_rounded,
-                                  size: 18,
-                                  color: colors.syllabotAccent,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Mach Speed & Orbit Telemetry
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _isWarping
-                                      ? l10n.warpDriveEngaged
-                                      : l10n.launchMachSpeed(
-                                          _machSpeed.toStringAsFixed(1),
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceSecondary.withAlpha(200),
+                                  borderRadius: AppRadius.radiusPanel,
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(90),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.speed_rounded,
+                                      size: 18,
+                                      color: colors.syllabotAccent,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _isWarping
+                                          ? l10n.warpDriveEngaged
+                                          : l10n.launchMachSpeed(
+                                              _machSpeed.toStringAsFixed(1),
+                                            ),
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Score / Synapse Mastery Counter
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceSecondary.withAlpha(200),
+                                  borderRadius: AppRadius.radiusPanel,
+                                  border: Border.all(
+                                    color: colors.warning.withAlpha(90),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.bolt_rounded,
+                                      size: 18,
+                                      color: colors.warning,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '$_score XP',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.warning,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Skip Button
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return ShrinkableButton(
+                                    onTap: _onSkip,
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isHovered
+                                            ? colors.surfaceSecondary.withAlpha(
+                                                220,
+                                              )
+                                            : colors.surfaceSecondary.withAlpha(
+                                                150,
+                                              ),
+                                        borderRadius: AppRadius.radiusPanel,
+                                        border: Border.all(
+                                          color: isHovered
+                                              ? colors.surfaceBorderHighlight
+                                              : colors.transparent,
+                                          width: 0.8,
                                         ),
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.white,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Score / Synapse Mastery Counter
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceSecondary.withAlpha(200),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: colors.warning.withAlpha(90),
+                                      ),
+                                      child: Text(
+                                        'Skip',
+                                        style: typography.caption.medium
+                                            .copyWith(
+                                              color: isHovered
+                                                  ? colors.textPrimary
+                                                  : colors.textSecondary,
+                                            ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.bolt_rounded,
-                                  size: 18,
-                                  color: colors.warning,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '$_score XP',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.warning,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
 
-                          // Skip Button
-                          ShrinkableButton(
-                            onTap: _onSkip,
-                            child: Container(
+                          const SizedBox(height: 12),
+
+                          // Interactive Steering & Tap Hint
+                          if (!_isWarping)
+                            Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                                horizontal: 16,
+                                vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: colors.surfaceSecondary.withAlpha(150),
-                                borderRadius: BorderRadius.circular(14),
+                                color: colors.primary.withAlpha(35),
+                                borderRadius: AppRadius.radiusDialog,
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(80),
+                                ),
                               ),
                               child: Text(
-                                'Skip',
+                                l10n.launchSteerHint,
                                 style: typography.caption.medium.copyWith(
-                                  color: colors.textSecondary,
+                                  color: colors.syllabotAccent,
                                 ),
                               ),
                             ),
-                          ),
                         ],
                       ),
-
-                      const SizedBox(height: 12),
-
-                      // Interactive Steering & Tap Hint
-                      if (!_isWarping)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(35),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(80),
-                            ),
-                          ),
-                          child: Text(
-                            l10n.launchSteerHint,
-                            style: typography.caption.medium.copyWith(
-                              color: colors.syllabotAccent,
-                            ),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -701,7 +740,9 @@ class _CosmicFlightPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    final streakLength = isWarping ? 80.0 + (warpProgress * 200) : machSpeed * 3.5;
+    final streakLength = isWarping
+        ? 80.0 + (warpProgress * 200)
+        : machSpeed * 3.5;
 
     // Draw Starfield & Warp Streaks
     for (final star in stars) {
@@ -720,7 +761,11 @@ class _CosmicFlightPainter extends CustomPainter {
           streakPaint,
         );
       } else {
-        canvas.drawCircle(Offset(sx, sy), 1.2, starPaint..color = whiteColor.withAlpha(160));
+        canvas.drawCircle(
+          Offset(sx, sy),
+          1.2,
+          starPaint..color = whiteColor.withAlpha(160),
+        );
       }
     }
 
@@ -739,7 +784,9 @@ class _CosmicFlightPainter extends CustomPainter {
       final ringPaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4.0
-        ..color = accentColor.withAlpha(((1 - warpProgress) * 220).toInt().clamp(0, 255))
+        ..color = accentColor.withAlpha(
+          ((1 - warpProgress) * 220).toInt().clamp(0, 255),
+        )
         ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 4);
 
       final radius = warpProgress * size.height * 0.9;
@@ -784,17 +831,18 @@ class _RocketShipPainter extends CustomPainter {
       ..close();
 
     final flamePaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          warningColor,
-          accentColor,
-          accentColor.withAlpha(0),
-        ],
-      ).createShader(
-        Rect.fromLTWH(cx - 12, size.height * 0.75, 24, flameHeight),
-      )
+      ..shader =
+          LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              warningColor,
+              accentColor,
+              accentColor.withAlpha(0),
+            ],
+          ).createShader(
+            Rect.fromLTWH(cx - 12, size.height * 0.75, 24, flameHeight),
+          )
       ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 3);
     canvas.drawPath(flamePath, flamePaint);
 

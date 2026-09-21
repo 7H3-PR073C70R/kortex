@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 
@@ -140,11 +141,11 @@ class SubdeckHierarchyTree extends HookWidget {
               fillColor: colors.surfacePrimary,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 borderSide: BorderSide(color: colors.surfaceBorder),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 borderSide: BorderSide(color: colors.surfaceBorder),
               ),
             ),
@@ -213,7 +214,7 @@ class SubdeckHierarchyTree extends HookWidget {
                 onTagSelected?.call(node.path);
               }
             },
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.badge),
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 2),
               padding: EdgeInsets.only(
@@ -226,7 +227,7 @@ class SubdeckHierarchyTree extends HookWidget {
                 color: isSelected
                     ? colors.primary.withValues(alpha: 0.12)
                     : colors.transparent,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.badge),
                 border: isSelected
                     ? Border.all(color: colors.primary.withValues(alpha: 0.4))
                     : null,

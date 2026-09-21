@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Production-ready accessible text input field matching WCAG 2.1 AA.
 class AppTextField extends StatefulWidget {
@@ -148,7 +151,7 @@ class _AppTextFieldState extends State<AppTextField> {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
-    final effectiveRadius = widget.borderRadius ?? 12.0;
+    final effectiveRadius = widget.borderRadius ?? AppRadius.card;
 
     final inputBorder =
         widget.customBorder ??
@@ -200,20 +203,30 @@ class _AppTextFieldState extends State<AppTextField> {
       effectiveSuffix = Semantics(
         button: true,
         label: buttonLabel,
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: IconButton(
-            icon: Icon(
-              _obscureText
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
-              color: _isFocused ? colors.primary : colors.textMuted,
-              size: 20,
+        child: PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return AnimatedScale(
+              scale: isHovered ? 1.08 : 1.0,
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              child: child,
+            );
+          },
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: IconButton(
+              icon: Icon(
+                _obscureText
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: _isFocused ? colors.primary : colors.textMuted,
+                size: 20,
+              ),
+              onPressed: _toggleObscureText,
+              splashRadius: 20,
+              tooltip: buttonLabel,
             ),
-            onPressed: _toggleObscureText,
-            splashRadius: 20,
-            tooltip: buttonLabel,
           ),
         ),
       );

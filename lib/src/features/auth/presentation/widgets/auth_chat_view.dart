@@ -13,6 +13,8 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -26,6 +28,7 @@ import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.da
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 import 'package:kortex/src/shared/widgets/typewriter_text.dart';
@@ -616,8 +619,9 @@ class AuthChatView extends HookWidget {
           final name = state.user?.displayName ?? 'Scholar';
           final isNewlyRegistered =
               locator.isRegistered<LocalStorageService>() &&
-              locator<LocalStorageService>()
-                      .getPreference(key: PrefKeys.isNewlyRegistered) ==
+              locator<LocalStorageService>().getPreference(
+                    key: PrefKeys.isNewlyRegistered,
+                  ) ==
                   'true';
           if (isNewlyRegistered) {
             addBotMessage(
@@ -646,7 +650,8 @@ class AuthChatView extends HookWidget {
           try {
             final storage = locator<LocalStorageService>();
             localSaysOnboarded =
-                storage.getPreference(key: PrefKeys.hasCompletedOnboarding) == 'true';
+                storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
+                'true';
           } on Object catch (_) {}
 
           var calibSaysOnboarded = false;
@@ -661,27 +666,35 @@ class AuthChatView extends HookWidget {
 
           // Remote/local curated courses check for new device logins
           var coursesSayOnboarded = false;
-          if (!serverSaysOnboarded && !localSaysOnboarded && !calibSaysOnboarded) {
+          if (!serverSaysOnboarded &&
+              !localSaysOnboarded &&
+              !calibSaysOnboarded) {
             try {
               final storage = locator<LocalStorageService>();
-              final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+              final rawCourses = storage.getPreference(
+                key: PrefKeys.userCuratedCourses,
+              );
               if (rawCourses != null && rawCourses.isNotEmpty) {
                 final list = jsonDecode(rawCourses) as List<dynamic>;
                 if (list.isNotEmpty) coursesSayOnboarded = true;
               }
             } on Object catch (_) {}
 
-            if (!coursesSayOnboarded && locator.isRegistered<DashboardRepository>()) {
+            if (!coursesSayOnboarded &&
+                locator.isRegistered<DashboardRepository>()) {
               try {
                 final dashRepo = locator<DashboardRepository>();
                 final coursesRes = await dashRepo.getUserCuratedCourses();
-                coursesSayOnboarded =
-                    coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+                coursesSayOnboarded = coursesRes.fold(
+                  (_) => false,
+                  (courses) => courses.isNotEmpty,
+                );
               } on Object catch (_) {}
             }
           }
 
-          final isCalibrated = serverSaysOnboarded ||
+          final isCalibrated =
+              serverSaysOnboarded ||
               localSaysOnboarded ||
               calibSaysOnboarded ||
               coursesSayOnboarded;
@@ -926,19 +939,21 @@ class AuthChatView extends HookWidget {
                             SocialAuthBar(
                               isLoading: authState.isLoading,
                               onGooglePressed: onGooglePressed,
-                              onApplePressed: onApplePressed ??
+                              onApplePressed:
+                                  onApplePressed ??
                                   () async {
                                     try {
-                                      final result = await locator<
-                                          SocialAuthService>().signInWithApple();
+                                      final result =
+                                          await locator<SocialAuthService>()
+                                              .signInWithApple();
                                       if (result != null && context.mounted) {
                                         context.read<AuthBloc>().add(
-                                              AuthSocialLoginRequested(
-                                                provider: result.provider,
-                                                idToken: result.idToken,
-                                                rawNonce: result.rawNonce,
-                                              ),
-                                            );
+                                          AuthSocialLoginRequested(
+                                            provider: result.provider,
+                                            idToken: result.idToken,
+                                            rawNonce: result.rawNonce,
+                                          ),
+                                        );
                                       }
                                     } on Object catch (_) {}
                                   },
@@ -1358,9 +1373,7 @@ class _BotMessageBubble extends StatelessWidget {
                           onTick: onStreamingTick,
                           onComplete: onStreamingComplete,
                           style: typography.callout.regular.copyWith(
-                            color: isError
-                                ? colors.error
-                                : colors.textPrimary,
+                            color: isError ? colors.error : colors.textPrimary,
                             fontWeight: isError
                                 ? FontWeight.w600
                                 : FontWeight.w400,
@@ -1686,70 +1699,94 @@ class _ActionChipButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Action: $label',
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          onTap();
-        },
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-            child: Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: isPrimary
-                    ? colors.primary.withAlpha(isDark ? 220 : 240)
-                    : (isDark
-                          ? colors.surfaceSecondary.withAlpha(170)
-                          : colors.surfacePrimary.withAlpha(220)),
-                border: Border.all(
-                  color: isPrimary
-                      ? colors.primary
-                      : (isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(80)
-                            : colors.surfaceBorder.withAlpha(140)),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              onTap();
+            },
+            child: ClipRRect(
+              borderRadius: AppRadius.radiusPanel,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.easeOutCubic,
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: AppRadius.radiusPanel,
                     color: isPrimary
-                        ? colors.primary.withAlpha(40)
-                        : colors.black.withAlpha(isDark ? 50 : 10),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (icon != null) ...[
-                    Icon(
-                      icon,
-                      size: 16,
-                      color: isPrimary ? colors.white : colors.primary,
+                        ? (isHovered
+                              ? colors.primary
+                              : colors.primary.withAlpha(isDark ? 220 : 240))
+                        : (isHovered
+                              ? (isDark
+                                    ? colors.surfaceSecondary.withAlpha(220)
+                                    : colors.surfacePrimary)
+                              : (isDark
+                                    ? colors.surfaceSecondary.withAlpha(170)
+                                    : colors.surfacePrimary.withAlpha(220))),
+                    border: Border.all(
+                      color: isPrimary
+                          ? (isHovered
+                                ? colors.white.withAlpha(80)
+                                : colors.primary)
+                          : (isHovered
+                                ? colors.primary.withAlpha(150)
+                                : (isDark
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          80,
+                                        )
+                                      : colors.surfaceBorder.withAlpha(140))),
+                      width: isHovered && !isPrimary ? 1.4 : 1.2,
                     ),
-                    const SizedBox(width: 8),
-                  ],
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: typography.caption.semiBold.copyWith(
-                        color: isPrimary ? colors.white : colors.textPrimary,
-                        fontSize: 13.5,
+                    boxShadow: [
+                      BoxShadow(
+                        color: isPrimary
+                            ? colors.primary.withAlpha(isHovered ? 70 : 40)
+                            : colors.black.withAlpha(
+                                isDark
+                                    ? (isHovered ? 80 : 50)
+                                    : (isHovered ? 25 : 10),
+                              ),
+                        blurRadius: isHovered ? 14 : 10,
+                        offset: Offset(0, isHovered ? 4 : 3),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(
+                          icon,
+                          size: 16,
+                          color: isPrimary ? colors.white : colors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.caption.semiBold.copyWith(
+                            color: isPrimary
+                                ? colors.white
+                                : colors.textPrimary,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

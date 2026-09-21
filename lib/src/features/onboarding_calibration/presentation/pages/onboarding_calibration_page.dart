@@ -7,6 +7,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -31,6 +33,7 @@ import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 @RoutePage()
 class OnboardingCalibrationPage extends StatelessWidget {
@@ -134,81 +137,113 @@ class _CalibrationView extends StatelessWidget {
                                 totalSteps: state.totalSteps,
                               ),
                               const SizedBox(width: 8),
-                              Semantics(
-                                button: true,
-                                label: 'Redeem Promo Code',
-                                child: GestureDetector(
-                                  onTap: () => unawaited(
-                                    PromoCodeModalSheet.show(context),
-                                  ),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 9,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.primary.withAlpha(context.isDarkMode ? 35 : 25),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: colors.primary.withAlpha(context.isDarkMode ? 90 : 70),
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return Semantics(
+                                    button: true,
+                                    label: 'Redeem Promo Code',
+                                    child: GestureDetector(
+                                      onTap: () => unawaited(
+                                        PromoCodeModalSheet.show(context),
                                       ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.card_giftcard_rounded,
-                                          size: 13,
-                                          color: colors.primary,
+                                      behavior: HitTestBehavior.opaque,
+                                      child: AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.easeOutCubic,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 9,
+                                          vertical: 5,
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Promo',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.primary,
-                                            fontSize: 12,
+                                        decoration: BoxDecoration(
+                                          color: colors.primary.withAlpha(
+                                            context.isDarkMode
+                                                ? (isHovered ? 60 : 35)
+                                                : (isHovered ? 45 : 25),
+                                          ),
+                                          borderRadius: AppRadius.radiusBadge,
+                                          border: Border.all(
+                                            color: colors.primary.withAlpha(
+                                              context.isDarkMode
+                                                  ? (isHovered ? 130 : 90)
+                                                  : (isHovered ? 100 : 70),
+                                            ),
                                           ),
                                         ),
-                                      ],
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.card_giftcard_rounded,
+                                              size: 13,
+                                              color: colors.primary,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Promo',
+                                              style: typography.caption.bold
+                                                  .copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 12,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                               const SizedBox(width: 8),
-                              Semantics(
-                                button: true,
-                                label: l10n.calibrationSkipSemantics,
-                                child: GestureDetector(
-                                  onTap: () => unawaited(
-                                    ctx
-                                        .read<CalibrationCubit>()
-                                        .skipCalibration(),
-                                  ),
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.surfaceSecondary.withAlpha(context.isDarkMode ? 100 : 180),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: context.isDarkMode
-                                            ? colors.surfaceBorderHighlight.withAlpha(60)
-                                            : colors.surfaceBorder,
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return Semantics(
+                                    button: true,
+                                    label: l10n.calibrationSkipSemantics,
+                                    child: GestureDetector(
+                                      onTap: () => unawaited(
+                                        ctx
+                                            .read<CalibrationCubit>()
+                                            .skipCalibration(),
+                                      ),
+                                      behavior: HitTestBehavior.opaque,
+                                      child: AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.easeOutCubic,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: colors.surfaceSecondary
+                                              .withAlpha(
+                                                context.isDarkMode
+                                                    ? (isHovered ? 160 : 100)
+                                                    : (isHovered ? 230 : 180),
+                                              ),
+                                          borderRadius: AppRadius.radiusBadge,
+                                          border: Border.all(
+                                            color: context.isDarkMode
+                                                ? colors.surfaceBorderHighlight
+                                                      .withAlpha(
+                                                        isHovered ? 100 : 60,
+                                                      )
+                                                : colors.surfaceBorder,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          l10n.calibrationSkip,
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: isHovered
+                                                    ? colors.textPrimary
+                                                    : colors.textSecondary,
+                                                fontSize: 12,
+                                              ),
+                                        ),
                                       ),
                                     ),
-                                    child: Text(
-                                      l10n.calibrationSkip,
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                             ],
                           );
@@ -286,7 +321,7 @@ class _MobileCalibrationLayout extends StatelessWidget {
               physics: const ClampingScrollPhysics(),
               child: CalibrationGlassCard(
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
+                  duration: AppMotion.standard,
                   layoutBuilder: (currentChild, previousChildren) {
                     return Stack(
                       alignment: Alignment.topCenter,
@@ -368,22 +403,39 @@ class _MobileCalibrationLayout extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Center(
-            child: TextButton(
-              onPressed: () => unawaited(
-                context.read<CalibrationCubit>().skipCalibration(),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Skip calibration setup',
-                style: typography.caption.semiBold.copyWith(
-                  color: colors.textSecondary.withAlpha(190),
-                  fontSize: 12,
-                ),
-              ),
+            child: PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                return TextButton(
+                  onPressed: () => unawaited(
+                    context.read<CalibrationCubit>().skipCalibration(),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    backgroundColor: isHovered
+                        ? colors.surfaceSecondary.withAlpha(
+                            context.isDarkMode ? 100 : 140,
+                          )
+                        : Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.radiusBadge,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Skip calibration setup',
+                    style: typography.caption.semiBold.copyWith(
+                      color: isHovered
+                          ? colors.textPrimary
+                          : colors.textSecondary.withAlpha(190),
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -526,7 +578,7 @@ class _DesktopCalibrationSplitLayout extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.radiusPanel,
         color: isDark
             ? colors.surfaceSecondary.withAlpha(120)
             : colors.surfacePrimary.withAlpha(190),

@@ -9,7 +9,7 @@ import 'package:kortex/src/features/onboarding_calibration/data/models/curriculu
 
 class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
   CurriculumRemoteDataSourceImpl(this._dio, {CrashlyticsService? crashlytics})
-      : _crashlyticsOverride = crashlytics;
+    : _crashlyticsOverride = crashlytics;
 
   final Dio _dio;
   final CrashlyticsService? _crashlyticsOverride;
@@ -163,8 +163,7 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       key: 'neco',
       displayName: 'NECO / SSCE',
       metadata: {
-        'subtitle':
-            'National Examination Council Senior School Certificate',
+        'subtitle': 'National Examination Council Senior School Certificate',
         'icon': 'assignment_turned_in_rounded',
       },
     ),
@@ -217,8 +216,7 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       key: 'medicine',
       displayName: 'Medicine & Health Sciences',
       metadata: {
-        'subtitle':
-            'Anatomy, Biochemistry, Pharmacology, Pathology, Surgery',
+        'subtitle': 'Anatomy, Biochemistry, Pharmacology, Pathology, Surgery',
         'icon': 'medical_services_rounded',
       },
     ),
@@ -239,8 +237,7 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       key: 'business',
       displayName: 'Business & Economics',
       metadata: {
-        'subtitle':
-            'Finance, Accounting, Economics, Management, Marketing',
+        'subtitle': 'Finance, Accounting, Economics, Management, Marketing',
         'icon': 'business_center_rounded',
       },
     ),
@@ -271,8 +268,7 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       key: 'math',
       displayName: 'Mathematics & Statistics',
       metadata: {
-        'subtitle':
-            'Calculus, Linear Algebra, Statistics, Probability Theory',
+        'subtitle': 'Calculus, Linear Algebra, Statistics, Probability Theory',
         'icon': 'functions_rounded',
       },
     ),
@@ -292,8 +288,7 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       key: 'chemical_eng',
       displayName: 'Chemical & Bio Engineering',
       metadata: {
-        'subtitle':
-            'Organic Synthesis, Fluid Mechanics, Reaction Kinetics',
+        'subtitle': 'Organic Synthesis, Fluid Mechanics, Reaction Kinetics',
         'icon': 'science_rounded',
       },
     ),
@@ -385,8 +380,7 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       key: 'case_law',
       displayName: 'Legal Case Briefs & Jurisprudence',
       metadata: {
-        'subtitle':
-            'Case briefs, statute analysis, essay argument structure',
+        'subtitle': 'Case briefs, statute analysis, essay argument structure',
         'icon': 'gavel_rounded',
       },
     ),
@@ -396,8 +390,7 @@ class CurriculumRemoteDataSourceImpl implements CurriculumRemoteDataSource {
       key: 'socratic',
       displayName: 'Socratic Problem Solving & Logic',
       metadata: {
-        'subtitle':
-            'Interactive step-by-step problem solving without spoilers',
+        'subtitle': 'Interactive step-by-step problem solving without spoilers',
         'icon': 'psychology_rounded',
       },
     ),

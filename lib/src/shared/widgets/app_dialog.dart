@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
@@ -72,7 +74,7 @@ class AppDialog extends StatefulWidget {
         );
       },
       transitionBuilder: (context, anim1, anim2, child) {
-        final curvedValue = Curves.easeOutCubic.transform(anim1.value);
+        final curvedValue = AppMotion.easeOutCubic.transform(anim1.value);
         return Transform.scale(
           scale: 0.95 + (0.05 * curvedValue),
           child: Opacity(
@@ -138,98 +140,109 @@ class _AppDialogState extends State<AppDialog> {
           vertical: 24,
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.dialog),
           side: BorderSide(color: colors.surfaceBorder),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (widget.icon != null) ...[
-                Center(
-                  child: ExcludeSemantics(
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color:
-                            widget.iconBackgroundColor ??
-                            (widget.isDestructive
-                                ? colors.error.withAlpha(30)
-                                : colors.primary.withAlpha(30)),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: IconTheme(
-                        data: IconThemeData(
-                          color: widget.isDestructive ? colors.error : colors.primary,
-                          size: 26,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.icon != null) ...[
+                  Center(
+                    child: ExcludeSemantics(
+                      child: Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color:
+                              widget.iconBackgroundColor ??
+                              (widget.isDestructive
+                                  ? colors.error.withAlpha(30)
+                                  : colors.primary.withAlpha(30)),
+                          shape: BoxShape.circle,
                         ),
-                        child: widget.icon!,
+                        alignment: Alignment.center,
+                        child: IconTheme(
+                          data: IconThemeData(
+                            color: widget.isDestructive
+                                ? colors.error
+                                : colors.primary,
+                            size: 26,
+                          ),
+                          child: widget.icon!,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (widget.title != null) ...[
-                Text(
-                  widget.title!,
-                  style: typography.title3.bold.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                  textAlign: widget.icon != null ? TextAlign.center : TextAlign.start,
-                ),
-                const SizedBox(height: 8),
-              ],
-              if (widget.description != null) ...[
-                Text(
-                  widget.description!,
-                  style: typography.callout.regular.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                  textAlign: widget.icon != null ? TextAlign.center : TextAlign.start,
-                ),
-              ],
-              if (widget.content != null) ...[
-                if (widget.title != null || widget.description != null)
                   const SizedBox(height: 16),
-                widget.content!,
-              ],
-              if (widget.primaryActionText != null || widget.secondaryActionText != null) ...[
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    if (widget.secondaryActionText != null) ...[
-                      Expanded(
-                        child: AppButton.secondary(
-                          text: widget.secondaryActionText!,
-                          onPressed: _isLoading
-                              ? null
-                              : (widget.onSecondaryAction ??
-                                  () => Navigator.of(context).pop(false)),
+                ],
+                if (widget.title != null) ...[
+                  Text(
+                    widget.title!,
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                    textAlign: widget.icon != null
+                        ? TextAlign.center
+                        : TextAlign.start,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (widget.description != null) ...[
+                  Text(
+                    widget.description!,
+                    style: typography.callout.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                    textAlign: widget.icon != null
+                        ? TextAlign.center
+                        : TextAlign.start,
+                  ),
+                ],
+                if (widget.content != null) ...[
+                  if (widget.title != null || widget.description != null)
+                    const SizedBox(height: 16),
+                  widget.content!,
+                ],
+                if (widget.primaryActionText != null ||
+                    widget.secondaryActionText != null) ...[
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      if (widget.secondaryActionText != null) ...[
+                        Expanded(
+                          child: AppButton.secondary(
+                            text: widget.secondaryActionText!,
+                            onPressed: _isLoading
+                                ? null
+                                : (widget.onSecondaryAction ??
+                                      () => Navigator.of(context).pop(false)),
+                          ),
                         ),
-                      ),
-                      if (widget.primaryActionText != null) const SizedBox(width: 12),
-                    ],
-                    if (widget.primaryActionText != null) ...[
-                      Expanded(
-                        child: AppButton(
-                          text: widget.primaryActionText!,
-                          variant: widget.isDestructive
-                              ? AppButtonVariant.destructive
-                              : AppButtonVariant.primary,
-                          isLoading: _isLoading,
-                          onPressed: _isLoading ? null : _handlePrimaryAction,
+                        if (widget.primaryActionText != null)
+                          const SizedBox(width: 12),
+                      ],
+                      if (widget.primaryActionText != null) ...[
+                        Expanded(
+                          child: AppButton(
+                            text: widget.primaryActionText!,
+                            variant: widget.isDestructive
+                                ? AppButtonVariant.destructive
+                                : AppButtonVariant.primary,
+                            isLoading: _isLoading,
+                            onPressed: _isLoading ? null : _handlePrimaryAction,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
-                ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

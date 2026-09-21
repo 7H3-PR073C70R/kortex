@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
@@ -30,7 +31,7 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
       margin: const EdgeInsets.only(top: 20, bottom: 12),
       decoration: BoxDecoration(
         color: colors.surfacePrimary.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
           color: theme.colorScheme.primary.withValues(alpha: 0.2),
         ),
@@ -40,7 +41,7 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
         children: [
           InkWell(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(

@@ -49,7 +49,9 @@ class RevenueCatService {
       // Log in the user if the ID changed
       try {
         final info = await Purchases.logIn(userId);
-        final isPro = info.customerInfo.entitlements.all[proEntitlementId]?.isActive ?? false;
+        final isPro =
+            info.customerInfo.entitlements.all[proEntitlementId]?.isActive ??
+            false;
         _handleEntitlementUpdate(isPro);
         debugPrint(
           '[RevenueCatService] Logged in existing user: '
@@ -139,7 +141,8 @@ class RevenueCatService {
     try {
       if (locator.isRegistered<AuthBloc>()) {
         final authState = locator<AuthBloc>().state;
-        final isBackendPro = authState.userProfile?.isPro == true ||
+        final isBackendPro =
+            authState.userProfile?.isPro == true ||
             (authState.userProfile?.subscriptionTier.toLowerCase() == 'pro');
         if (!isPro && isBackendPro) {
           debugPrint(

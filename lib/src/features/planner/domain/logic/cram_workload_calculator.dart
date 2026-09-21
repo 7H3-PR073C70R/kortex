@@ -17,8 +17,7 @@ class CramWorkloadCalculator {
   final double decayExponent;
   final double targetRetention;
 
-  double get _factor =>
-      math.pow(0.9, -1.0 / decayExponent).toDouble() - 1.0;
+  double get _factor => math.pow(0.9, -1.0 / decayExponent).toDouble() - 1.0;
 
   /// Calculates the dynamic daily flashcard target:
   /// $\text{Daily Target} = \lceil (\text{Remaining Cards} + (\text{Lapses} \times 1.5)) / \text{Days Remaining} \rceil$
@@ -69,7 +68,8 @@ class CramWorkloadCalculator {
     required int totalCards,
     required int masteredCards,
     required double averageStability,
-    required int daysRemaining, double averageDifficulty = 5.0,
+    required int daysRemaining,
+    double averageDifficulty = 5.0,
     int totalLapses = 0,
   }) {
     if (totalCards <= 0) return 0;
@@ -96,7 +96,9 @@ class CramWorkloadCalculator {
 
     // Weighted combination: 45% coverage, 55% projected retrievability
     final compositeScore =
-        (0.45 * coverage + 0.55 * projectedR) * difficultyModifier * lapsePenalty;
+        (0.45 * coverage + 0.55 * projectedR) *
+        difficultyModifier *
+        lapsePenalty;
 
     return (compositeScore * 100.0).clamp(0.0, 100.0);
   }

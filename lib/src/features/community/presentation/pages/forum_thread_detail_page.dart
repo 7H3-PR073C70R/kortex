@@ -11,6 +11,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -27,6 +29,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -207,7 +210,9 @@ class ForumThreadDetailPage extends HookWidget {
             currentPost.value = treeData.post;
             localReplies.value = treeData.replies;
             isInitialLoadingReplies.value = false;
-            topLevelOffset.value = treeData.replies.where((r) => !r.isNested).length;
+            topLevelOffset.value = treeData.replies
+                .where((r) => !r.isNested)
+                .length;
           },
         );
       }
@@ -754,7 +759,8 @@ class ForumThreadDetailPage extends HookWidget {
       isGeneratingAiHint.value = true;
       unawaited(HapticFeedback.mediumImpact());
       try {
-        final streamUseCase = locator.isRegistered<StreamSyllabotResponseUseCase>()
+        final streamUseCase =
+            locator.isRegistered<StreamSyllabotResponseUseCase>()
             ? locator<StreamSyllabotResponseUseCase>()
             : null;
         final localLlmClient = locator.isRegistered<LocalLlmEngineClient>()
@@ -765,7 +771,8 @@ class ForumThreadDetailPage extends HookWidget {
           post: currentPost.value,
           streamUseCase: streamUseCase,
           localLlmClient: localLlmClient,
-          onHintGenerated: (hint) => repo.saveForumSocraticHint(postId: post.id, hint: hint),
+          onHintGenerated: (hint) =>
+              repo.saveForumSocraticHint(postId: post.id, hint: hint),
         );
 
         final res = await repo.replyToForumPost(
@@ -918,704 +925,1310 @@ class ForumThreadDetailPage extends HookWidget {
         child: Column(
           children: [
             Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  // Breadcrumb Return Bar & Original Post Card
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Original Post Card
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 860),
+                  child: CustomScrollView(
+                    slivers: [
+                      // Breadcrumb Return Bar & Original Post Card
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Original Post Card
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfacePrimary,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: colors.surfaceBorder.withAlpha(
+                                      isDark ? 50 : 30,
+                                    ),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.black.withAlpha(
+                                        isDark ? 30 : 10,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Channel Pill & Meta Bar
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 9,
+                                            vertical: 3.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? colors.surfacePrimary
+                                                      .withAlpha(
+                                                        180,
+                                                      )
+                                                : colors.primary.withAlpha(
+                                                    isDark ? 50 : 25,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.widgets_outlined,
+                                                size: 12,
+                                                color: colors.primary,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'c/${currentPost.value.track}',
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color: colors.primary,
+                                                      fontSize: 11,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          width: 3.5,
+                                          height: 3.5,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: colors.textSecondary
+                                                .withAlpha(
+                                                  120,
+                                                ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Posted ${_formatTime(currentPost.value.createdAt, l10n)}',
+                                          style: typography.caption.regular
+                                              .copyWith(
+                                                color: colors.textSecondary,
+                                                fontSize: 11.5,
+                                              ),
+                                        ),
+                                        const Spacer(),
+                                        ShrinkableButton(
+                                          onTap: showPostOptionsMenu,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(4),
+                                            child: Icon(
+                                              Icons.more_horiz_rounded,
+                                              size: 20,
+                                              color: colors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    // Author Profile Row
+                                    Row(
+                                      children: [
+                                        Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 20,
+                                              backgroundColor: colors.primary
+                                                  .withAlpha(isDark ? 50 : 35),
+                                              child: Text(
+                                                currentPost
+                                                        .value
+                                                        .authorName
+                                                        .isNotEmpty
+                                                    ? currentPost
+                                                          .value
+                                                          .authorName[0]
+                                                          .toUpperCase()
+                                                    : '?',
+                                                style: typography.footnote.bold
+                                                    .copyWith(
+                                                      color: colors.primary,
+                                                    ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              bottom: -1,
+                                              right: -1,
+                                              child: Container(
+                                                width: 14,
+                                                height: 14,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: colors.success,
+                                                  border: Border.all(
+                                                    color: isDark
+                                                        ? colors
+                                                              .surfaceSecondary
+                                                        : colors.surfacePrimary,
+                                                    width: 1.5,
+                                                  ),
+                                                ),
+                                                child: Icon(
+                                                  Icons.check,
+                                                  size: 8,
+                                                  color: colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Flexible(
+                                                    child: Text(
+                                                      '@${currentPost.value.authorName}',
+                                                      style: typography
+                                                          .subhead
+                                                          .bold
+                                                          .copyWith(
+                                                            color: colors
+                                                                .textPrimary,
+                                                            fontSize: 14.5,
+                                                          ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 5,
+                                                          vertical: 1,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: colors.primary,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            4,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      'OP',
+                                                      style: TextStyle(
+                                                        color: colors.white,
+                                                        fontSize: 9.5,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                currentPost
+                                                        .value
+                                                        .syllabusTag
+                                                        .isNotEmpty
+                                                    ? 'Staff Level Scholar • ${currentPost.value.syllabusTag}'
+                                                    : 'Staff Level Scholar',
+                                                style: typography
+                                                    .caption
+                                                    .regular
+                                                    .copyWith(
+                                                      color:
+                                                          colors.textSecondary,
+                                                      fontSize: 11.5,
+                                                    ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 14),
+
+                                    // Title
+                                    Text(
+                                      _cleanTitle(
+                                        currentPost.value.title,
+                                        currentPost.value.syllabusTag,
+                                        currentPost.value.track,
+                                      ),
+                                      style: typography.title2.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 18,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    // Structured Content Body Card
+                                    _ForumThreadStructuredBody(
+                                      post: currentPost.value,
+                                    ),
+
+                                    // LaTeX Formula block
+                                    if (currentPost.value.latexContent !=
+                                            null &&
+                                        currentPost
+                                            .value
+                                            .latexContent!
+                                            .isNotEmpty) ...[
+                                      const SizedBox(height: 14),
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? colors.surfacePrimary
+                                              : colors.surfaceSecondary
+                                                    .withAlpha(
+                                                      140,
+                                                    ),
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                          border: Border.all(
+                                            color: colors.primary.withAlpha(40),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              l10n.formulaEquation,
+                                              style: typography.caption.bold
+                                                  .copyWith(
+                                                    color: colors.primary,
+                                                    letterSpacing: 1.1,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              currentPost.value.latexContent!,
+                                              style: typography.body.bold
+                                                  .copyWith(
+                                                    color: colors.primary,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+
+                                    // Voice note player preview if present
+                                    if (currentPost.value.voiceNoteUrl !=
+                                            null &&
+                                        currentPost.value.voiceNoteUrl!
+                                            .trim()
+                                            .isNotEmpty) ...[
+                                      const SizedBox(height: 14),
+                                      VoiceNotePlayerWidget(
+                                        audioUrl:
+                                            currentPost.value.voiceNoteUrl!,
+                                        durationSeconds: currentPost
+                                            .value
+                                            .voiceNoteDurationSeconds,
+                                      ),
+                                    ],
+
+                                    // Media Images preview if present
+                                    if (currentPost
+                                        .value
+                                        .mediaUrls
+                                        .isNotEmpty) ...[
+                                      const SizedBox(height: 14),
+                                      ForumPostMediaPreview(
+                                        mediaUrls: currentPost.value.mediaUrls,
+                                        heroHeight: 165,
+                                      ),
+                                    ],
+
+                                    // Semantic Tags Wrap
+                                    if (currentPost.value.tags.isNotEmpty) ...[
+                                      const SizedBox(height: 14),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: currentPost.value.tags.map((
+                                          tag,
+                                        ) {
+                                          final displayTag = tag.startsWith('#')
+                                              ? tag
+                                              : '#$tag';
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? colors.surfacePrimary
+                                                        .withAlpha(
+                                                          160,
+                                                        )
+                                                  : colors.primary.withAlpha(
+                                                      isDark ? 40 : 20,
+                                                    ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    12,
+                                                  ),
+                                            ),
+                                            child: Text(
+                                              displayTag,
+                                              style: typography.caption.bold
+                                                  .copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 11,
+                                                  ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+
+                                    const SizedBox(height: 16),
+
+                                    // OP Interactive Action Bar (Vote Group Pill, Replies Count, Bookmark, Share)
+                                    Row(
+                                      children: [
+                                        // Vote Group Pill
+                                        _ForumPostVotePill(
+                                          netVotes: currentPost.value.netVotes,
+                                          userVote: currentPost.value.userVote,
+                                          onUpvote: () => votePost(1),
+                                          onDownvote: () => votePost(-1),
+                                        ),
+                                        const SizedBox(width: 8),
+
+                                        // Replies Count Indicator
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? colors.surfacePrimary
+                                                      .withAlpha(
+                                                        160,
+                                                      )
+                                                : colors.surfaceSecondary
+                                                      .withAlpha(
+                                                        120,
+                                                      ),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons
+                                                    .chat_bubble_outline_rounded,
+                                                size: 15,
+                                                color: colors.textSecondary,
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                '${localReplies.value.length}',
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color:
+                                                          colors.textSecondary,
+                                                      fontSize: 12,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Spacer(),
+
+                                        // Bookmark Button
+                                        ShrinkableButton(
+                                          onTap: () =>
+                                              unawaited(toggleBookmark()),
+                                          child: Container(
+                                            width: 34,
+                                            height: 34,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: isBookmarked.value
+                                                  ? colors.primary.withAlpha(
+                                                      isDark ? 35 : 20,
+                                                    )
+                                                  : colors.transparent,
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              isBookmarked.value
+                                                  ? Icons.bookmark_rounded
+                                                  : Icons
+                                                        .bookmark_border_rounded,
+                                              size: 19,
+                                              color: isBookmarked.value
+                                                  ? colors.primary
+                                                  : colors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+
+                                        // Share Button
+                                        ShrinkableButton(
+                                          onTap: shareThread,
+                                          child: Container(
+                                            width: 34,
+                                            height: 34,
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              Icons.share_outlined,
+                                              size: 19,
+                                              color: colors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Discussion River Section Header (Replies + Count + Sort Filter Pill)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Replies',
+                                style: typography.title3.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 17,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfaceTertiary,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${localReplies.value.length}',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+
+                              // Sort Filter Dropdown Pill
+                              PopupMenuButton<ForumSortFilter>(
+                                initialValue: sortFilter.value,
+                                tooltip: 'Sort Replies',
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: BorderSide(
+                                    color: colors.surfaceBorder.withAlpha(
+                                      isDark ? 60 : 30,
+                                    ),
+                                  ),
+                                ),
+                                color: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfacePrimary,
+                                onSelected: (filter) {
+                                  unawaited(HapticFeedback.selectionClick());
+                                  sortFilter.value = filter;
+                                },
+                                itemBuilder: (context) =>
+                                    ForumSortFilter.values.map((f) {
+                                      final isSelected = f == sortFilter.value;
+                                      return PopupMenuItem<ForumSortFilter>(
+                                        value: f,
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              f.icon,
+                                              size: 16,
+                                              color: isSelected
+                                                  ? colors.primary
+                                                  : colors.textSecondary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              f.label,
+                                              style: typography.footnote.medium
+                                                  .copyWith(
+                                                    color: isSelected
+                                                        ? colors.primary
+                                                        : colors.textPrimary,
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary.withAlpha(160)
+                                        : colors.surfaceSecondary.withAlpha(
+                                            110,
+                                          ),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        sortFilter.value.icon,
+                                        size: 14,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        sortFilter.value.label,
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Icon(
+                                        Icons.expand_more_rounded,
+                                        size: 15,
+                                        color: colors.textSecondary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Replies List
+                      Builder(
+                        builder: (context) {
+                          final allReplies = localReplies.value;
+
+                          // Filter & sort top-level replies
+                          final topLevelReplies =
+                              (allReplies
+                                    .where(
+                                      (r) =>
+                                          r.parentReplyId == null ||
+                                          r.parentReplyId!.isEmpty,
+                                    )
+                                    .toList())
+                                ..sort((a, b) {
+                                  if (a.isVerifiedSolution !=
+                                      b.isVerifiedSolution) {
+                                    return a.isVerifiedSolution ? -1 : 1;
+                                  }
+
+                                  switch (sortFilter.value) {
+                                    case ForumSortFilter.mostRecent:
+                                      return b.createdAt.compareTo(a.createdAt);
+                                    case ForumSortFilter.topVoted:
+                                      final voteComp = b.netVotes.compareTo(
+                                        a.netVotes,
+                                      );
+                                      if (voteComp != 0) return voteComp;
+                                      return b.createdAt.compareTo(a.createdAt);
+                                    case ForumSortFilter.aiFirst:
+                                      final aIsAi =
+                                          a.authorName.toLowerCase().contains(
+                                            'syllabot',
+                                          ) ||
+                                          a.content.contains('🤖');
+                                      final bIsAi =
+                                          b.authorName.toLowerCase().contains(
+                                            'syllabot',
+                                          ) ||
+                                          b.content.contains('🤖');
+                                      if (aIsAi != bIsAi) return aIsAi ? -1 : 1;
+                                      return b.netVotes.compareTo(a.netVotes);
+                                    case ForumSortFilter.unanswered:
+                                      final aHasChildren = allReplies.any(
+                                        (r) => r.parentReplyId == a.id,
+                                      );
+                                      final bHasChildren = allReplies.any(
+                                        (r) => r.parentReplyId == b.id,
+                                      );
+                                      if (aHasChildren != bHasChildren) {
+                                        return aHasChildren ? 1 : -1;
+                                      }
+                                      return b.createdAt.compareTo(a.createdAt);
+                                  }
+                                });
+
+                          // Group nested replies
+                          final nestedRepliesMap =
+                              <String, List<ForumReplyEntity>>{};
+                          for (final reply in allReplies) {
+                            if (reply.parentReplyId != null &&
+                                reply.parentReplyId!.isNotEmpty) {
+                              nestedRepliesMap
+                                  .putIfAbsent(reply.parentReplyId!, () => [])
+                                  .add(reply);
+                            }
+                          }
+                          for (final list in nestedRepliesMap.values) {
+                            list.sort(
+                              (a, b) => a.createdAt.compareTo(b.createdAt),
+                            );
+                          }
+
+                          final hasAiHintInEmpty = allReplies.any(
+                            (r) =>
+                                r.authorName.toLowerCase().contains(
+                                  'syllabot',
+                                ) ||
+                                r.content.contains('Syllabot') ||
+                                r.content.contains('🤖') ||
+                                r.content.contains('Socratic Hint'),
+                          );
+
+                          if (isInitialLoadingReplies.value &&
+                              topLevelReplies.isEmpty) {
+                            return SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 36,
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                colors.primary,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Loading replies...',
+                                        style: typography.caption.medium
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          if (topLevelReplies.isEmpty) {
+                            return SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 36,
+                                ),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: colors.primary.withAlpha(
+                                          isDark ? 25 : 15,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.chat_bubble_outline_rounded,
+                                        size: 36,
+                                        color: colors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      l10n.noRepliesYet,
+                                      style: typography.subhead.bold.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Be the first to share an answer or solution.',
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                          ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    if (!hasAiHintInEmpty) ...[
+                                      const SizedBox(height: 18),
+                                      ShrinkableButton(
+                                        onTap: isGeneratingAiHint.value
+                                            ? null
+                                            : generateSyllabotHint,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 18,
+                                            vertical: 11,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.syllabotAccent,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (isGeneratingAiHint.value)
+                                                SizedBox(
+                                                  width: 15,
+                                                  height: 15,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(
+                                                          colors.white,
+                                                        ),
+                                                  ),
+                                                )
+                                              else
+                                                Icon(
+                                                  Icons.auto_awesome_rounded,
+                                                  size: 16,
+                                                  color: colors.white,
+                                                ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                isGeneratingAiHint.value
+                                                    ? 'Consulting Syllabot...'
+                                                    : 'Ask Syllabot for Socratic Hint 🤖',
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color: colors.white,
+                                                      letterSpacing: 0.2,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
+                          return SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final reply = topLevelReplies[index];
+                                final children =
+                                    nestedRepliesMap[reply.id] ?? const [];
+                                final hasVerifiedSolution = allReplies.any(
+                                  (r) => r.isVerifiedSolution,
+                                );
+                                final userStorage =
+                                    locator<UserStorageService>();
+                                final currentUserId = userStorage.getUserId();
+                                final isAuthor =
+                                    currentUserId == null ||
+                                    currentUserId == currentPost.value.authorId;
+
+                                return Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    12,
+                                  ),
+                                  child: _DiscussionThreadGroupCard(
+                                    parentReply: reply,
+                                    children: children,
+                                    opAuthorName: currentPost.value.authorName,
+                                    isQuestion: currentPost.value.isQuestion,
+                                    isAuthor: isAuthor,
+                                    hasVerifiedSolution: hasVerifiedSolution,
+                                    isExpanded: expandedParentReplyIds.value
+                                        .contains(reply.id),
+                                    isLoadingChildren: loadingParentReplyIds
+                                        .value
+                                        .contains(reply.id),
+                                    hasMoreChildren:
+                                        hasMoreSubRepliesMap.value[reply.id] ??
+                                        false,
+                                    onToggleExpand: () =>
+                                        toggleSubRepliesExpansion(reply.id),
+                                    onLoadMoreChildren: () =>
+                                        loadSubRepliesForParent(
+                                          reply.id,
+                                          isLoadMore: true,
+                                        ),
+                                    onVote: (direction) =>
+                                        voteReply(reply, direction),
+                                    onChildVote: voteReply,
+                                    onReplyTap: () {
+                                      replyingToReply.value = reply;
+                                      focusNode.requestFocus();
+                                    },
+                                    onChildReplyTap: (target) {
+                                      replyingToReply.value = target;
+                                      focusNode.requestFocus();
+                                    },
+                                    onVerifySolution: () async {
+                                      final res = await repo.verifyForumReply(
+                                        postId: currentPost.value.id,
+                                        replyId: reply.id,
+                                      );
+                                      res.fold(
+                                        (failure) {
+                                          if (context.mounted) {
+                                            context.showSnackBar(
+                                              message:
+                                                  failure.message ??
+                                                  'Failed to verify solution',
+                                              type: SnackBarType.error,
+                                            );
+                                          }
+                                        },
+                                        (_) {
+                                          localReplies.value = localReplies
+                                              .value
+                                              .map(
+                                                (r) => r.id == reply.id
+                                                    ? r.copyWith(
+                                                        isVerifiedSolution:
+                                                            true,
+                                                      )
+                                                    : r,
+                                              )
+                                              .toList();
+                                          if (context.mounted) {
+                                            context.showSnackBar(
+                                              message:
+                                                  'Marked as verified solution! 100 XP bounty awarded to ${reply.authorName}.',
+                                            );
+                                          }
+                                        },
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                              childCount: topLevelReplies.length,
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Top-Level Pagination trigger
+                      if (hasMoreTopLevel.value) ...[
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                            child: Center(
+                              child: ShrinkableButton(
+                                onTap: isLoadingMoreTopLevel.value
+                                    ? null
+                                    : () => fetchTopLevelReplies(
+                                        isLoadMore: true,
+                                      ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.surfacePrimary,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? colors.surfaceBorder.withAlpha(40)
+                                          : colors.surfaceBorder,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.black.withAlpha(
+                                          isDark ? 20 : 6,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isLoadingMoreTopLevel.value) ...[
+                                        SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  colors.primary,
+                                                ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Loading more discussions...',
+                                          style: typography.footnote.bold
+                                              .copyWith(
+                                                color: colors.primary,
+                                              ),
+                                        ),
+                                      ] else ...[
+                                        Icon(
+                                          Icons.expand_circle_down_outlined,
+                                          size: 16,
+                                          color: colors.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Load more discussions',
+                                          style: typography.footnote.bold
+                                              .copyWith(
+                                                color: colors.primary,
+                                              ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Sticky Bottom Quick Reply Bar (Transparent container, compact styling tools, mic button)
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 860),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: colors.transparent,
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Active Target Context Banner (Replying to @username)
+                        if (replyingToReply.value != null)
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: isDark
                                   ? colors.surfaceSecondary
                                   : colors.surfacePrimary,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: colors.surfaceBorder.withAlpha(
-                                  isDark ? 50 : 30,
-                                ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.black.withAlpha(
-                                    isDark ? 30 : 10,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Channel Pill & Meta Bar
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 9,
-                                        vertical: 3.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? colors.surfacePrimary.withAlpha(
-                                                180,
-                                              )
-                                            : colors.primary.withAlpha(
-                                                isDark ? 50 : 25,
-                                              ),
-                                        borderRadius: BorderRadius.circular(
-                                          10,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.widgets_outlined,
-                                            size: 12,
-                                            color: colors.primary,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'c/${currentPost.value.track}',
-                                            style: typography.caption.bold
-                                                .copyWith(
-                                                  color: colors.primary,
-                                                  fontSize: 11,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      width: 3.5,
-                                      height: 3.5,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: colors.textSecondary.withAlpha(
-                                          120,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Posted ${_formatTime(currentPost.value.createdAt, l10n)}',
-                                      style: typography.caption.regular
-                                          .copyWith(
-                                            color: colors.textSecondary,
-                                            fontSize: 11.5,
-                                          ),
-                                    ),
-                                    const Spacer(),
-                                    ShrinkableButton(
-                                      onTap: showPostOptionsMenu,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(4),
-                                        child: Icon(
-                                          Icons.more_horiz_rounded,
-                                          size: 20,
-                                          color: colors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Author Profile Row
-                                Row(
-                                  children: [
-                                    Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 20,
-                                          backgroundColor: colors.primary
-                                              .withAlpha(isDark ? 50 : 35),
-                                          child: Text(
-                                            currentPost
-                                                    .value
-                                                    .authorName
-                                                    .isNotEmpty
-                                                ? currentPost
-                                                      .value
-                                                      .authorName[0]
-                                                      .toUpperCase()
-                                                : '?',
-                                            style: typography.footnote.bold
-                                                .copyWith(
-                                                  color: colors.primary,
-                                                ),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          bottom: -1,
-                                          right: -1,
-                                          child: Container(
-                                            width: 14,
-                                            height: 14,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: colors.success,
-                                              border: Border.all(
-                                                color: isDark
-                                                    ? colors.surfaceSecondary
-                                                    : colors.surfacePrimary,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              Icons.check,
-                                              size: 8,
-                                              color: colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Flexible(
-                                                child: Text(
-                                                  '@${currentPost.value.authorName}',
-                                                  style: typography.subhead.bold
-                                                      .copyWith(
-                                                        color:
-                                                            colors.textPrimary,
-                                                        fontSize: 14.5,
-                                                      ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 5,
-                                                      vertical: 1,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: colors.primary,
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  'OP',
-                                                  style: TextStyle(
-                                                    color: colors.white,
-                                                    fontSize: 9.5,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            currentPost
-                                                    .value
-                                                    .syllabusTag
-                                                    .isNotEmpty
-                                                ? 'Staff Level Scholar • ${currentPost.value.syllabusTag}'
-                                                : 'Staff Level Scholar',
-                                            style: typography.caption.regular
-                                                .copyWith(
-                                                  color: colors.textSecondary,
-                                                  fontSize: 11.5,
-                                                ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-
-                                // Title
-                                Text(
-                                  _cleanTitle(
-                                    currentPost.value.title,
-                                    currentPost.value.syllabusTag,
-                                    currentPost.value.track,
-                                  ),
-                                  style: typography.title2.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 18,
-                                    height: 1.3,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Structured Content Body Card
-                                _ForumThreadStructuredBody(
-                                  post: currentPost.value,
-                                ),
-
-                                // LaTeX Formula block
-                                if (currentPost.value.latexContent != null &&
-                                    currentPost
-                                        .value
-                                        .latexContent!
-                                        .isNotEmpty) ...[
-                                  const SizedBox(height: 14),
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? colors.surfacePrimary
-                                          : colors.surfaceSecondary.withAlpha(
-                                              140,
-                                            ),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: colors.primary.withAlpha(40),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          l10n.formulaEquation,
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.primary,
-                                                letterSpacing: 1.1,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          currentPost.value.latexContent!,
-                                          style: typography.body.bold.copyWith(
-                                            color: colors.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-
-                                // Voice note player preview if present
-                                if (currentPost.value.voiceNoteUrl != null &&
-                                    currentPost.value.voiceNoteUrl!
-                                        .trim()
-                                        .isNotEmpty) ...[
-                                  const SizedBox(height: 14),
-                                  VoiceNotePlayerWidget(
-                                    audioUrl: currentPost.value.voiceNoteUrl!,
-                                    durationSeconds: currentPost
-                                        .value
-                                        .voiceNoteDurationSeconds,
-                                  ),
-                                ],
-
-                                // Media Images preview if present
-                                if (currentPost.value.mediaUrls.isNotEmpty) ...[
-                                  const SizedBox(height: 14),
-                                  ForumPostMediaPreview(
-                                    mediaUrls: currentPost.value.mediaUrls,
-                                    heroHeight: 165,
-                                  ),
-                                ],
-
-                                // Semantic Tags Wrap
-                                if (currentPost.value.tags.isNotEmpty) ...[
-                                  const SizedBox(height: 14),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: currentPost.value.tags.map((tag) {
-                                      final displayTag = tag.startsWith('#')
-                                          ? tag
-                                          : '#$tag';
-                                      return Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? colors.surfacePrimary.withAlpha(
-                                                  160,
-                                                )
-                                              : colors.primary.withAlpha(
-                                                  isDark ? 40 : 20,
-                                                ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          displayTag,
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.primary,
-                                                fontSize: 11,
-                                              ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ],
-
-                                const SizedBox(height: 16),
-
-                                // OP Interactive Action Bar (Vote Group Pill, Replies Count, Bookmark, Share)
-                                Row(
-                                  children: [
-                                    // Vote Group Pill
-                                    _ForumPostVotePill(
-                                      netVotes: currentPost.value.netVotes,
-                                      userVote: currentPost.value.userVote,
-                                      onUpvote: () => votePost(1),
-                                      onDownvote: () => votePost(-1),
-                                    ),
-                                    const SizedBox(width: 8),
-
-                                    // Replies Count Indicator
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? colors.surfacePrimary.withAlpha(
-                                                160,
-                                              )
-                                            : colors.surfaceSecondary.withAlpha(
-                                                120,
-                                              ),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.chat_bubble_outline_rounded,
-                                            size: 15,
-                                            color: colors.textSecondary,
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Text(
-                                            '${localReplies.value.length}',
-                                            style: typography.caption.bold
-                                                .copyWith(
-                                                  color: colors.textSecondary,
-                                                  fontSize: 12,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Spacer(),
-
-                                    // Bookmark Button
-                                    ShrinkableButton(
-                                      onTap: () => unawaited(toggleBookmark()),
-                                      child: Container(
-                                        width: 34,
-                                        height: 34,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isBookmarked.value
-                                              ? colors.primary.withAlpha(
-                                                  isDark ? 35 : 20,
-                                                )
-                                              : colors.transparent,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Icon(
-                                          isBookmarked.value
-                                              ? Icons.bookmark_rounded
-                                              : Icons.bookmark_border_rounded,
-                                          size: 19,
-                                          color: isBookmarked.value
-                                              ? colors.primary
-                                              : colors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-
-                                    // Share Button
-                                    ShrinkableButton(
-                                      onTap: shareThread,
-                                      child: Container(
-                                        width: 34,
-                                        height: 34,
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Icon(
-                                          Icons.share_outlined,
-                                          size: 19,
-                                          color: colors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Discussion River Section Header (Replies + Count + Sort Filter Pill)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 22, 16, 10),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Replies',
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 17,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary
-                                  : colors.surfaceTertiary,
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(50),
+                              ),
                             ),
-                            child: Text(
-                              '${localReplies.value.length}',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11.5,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.subdirectory_arrow_right_rounded,
+                                  size: 15,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Replying to @${replyingToReply.value!.authorName}',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                ShrinkableButton(
+                                  onTap: () => replyingToReply.value = null,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2),
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 16,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // Quick Formatting Tools Strip (Compact: only shows when toggled on)
+                        AnimatedCrossFade(
+                          crossFadeState: showFormattingTools.value
+                              ? CrossFadeState.showFirst
+                              : CrossFadeState.showSecond,
+                          duration: const Duration(milliseconds: 200),
+                          secondChild: const SizedBox.shrink(),
+                          firstChild: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  // 1. Math / Formula Tool Chip (Σ √x Math)
+                                  _QuickToolChip(
+                                    label: 'Math',
+                                    prefix: 'Σ √x',
+                                    isHighlighted: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      _showLatexSnippetDialog(
+                                        context,
+                                        insertIntoComposer,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 2. Syllabot AI Hint Tool Chip (✨ AI Hint)
+                                  _QuickToolChip(
+                                    label: 'AI Hint',
+                                    icon: Icons.auto_awesome_rounded,
+                                    isHighlighted: true,
+                                    onTap: isGeneratingAiHint.value
+                                        ? null
+                                        : generateSyllabotHint,
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 3. Code Chip (</> Code)
+                                  _QuickToolChip(
+                                    label: 'Code',
+                                    prefix: '</>',
+                                    isHighlighted: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      applyFormat('`', '`', 'code');
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 4. Symbols Tool Chip (π / θ Symbols)
+                                  _QuickToolChip(
+                                    label: 'Symbols',
+                                    prefix: 'π / θ',
+                                    isHighlighted: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      _showMathSymbolDialog(
+                                        context,
+                                        insertIntoComposer,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 5. Bold Formatting Chip
+                                  _QuickToolChip(
+                                    label: 'Bold',
+                                    prefix: 'B',
+                                    isCodeStyle: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      applyFormat('**', '**', 'bold text');
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 6. Italic Formatting Chip
+                                  _QuickToolChip(
+                                    label: 'Italic',
+                                    prefix: 'I',
+                                    isCodeStyle: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      applyFormat('*', '*', 'italic text');
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 7. Strikethrough Chip
+                                  _QuickToolChip(
+                                    label: 'Strike',
+                                    prefix: '~S~',
+                                    isCodeStyle: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      applyFormat('~~', '~~', 'strikethrough');
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 8. Quote Tool Chip
+                                  _QuickToolChip(
+                                    label: 'Quote',
+                                    prefix: '”',
+                                    isCodeStyle: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      applyFormat('\n> ', '\n', 'quoted text');
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 9. Bullet List Chip
+                                  _QuickToolChip(
+                                    label: 'List',
+                                    prefix: '•',
+                                    isCodeStyle: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      insertIntoComposer('\n- ');
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+
+                                  // 10. Code Block Tool Chip
+                                  _QuickToolChip(
+                                    label: 'Block',
+                                    prefix: '</>',
+                                    isCodeStyle: true,
+                                    onTap: () {
+                                      unawaited(
+                                        HapticFeedback.selectionClick(),
+                                      );
+                                      insertIntoComposer(
+                                        '\n```\n// Code or equation here\n```\n',
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          const Spacer(),
+                        ),
 
-                          // Sort Filter Dropdown Pill
-                          PopupMenuButton<ForumSortFilter>(
-                            initialValue: sortFilter.value,
-                            tooltip: 'Sort Replies',
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              side: BorderSide(
-                                color: colors.surfaceBorder.withAlpha(
-                                  isDark ? 60 : 30,
-                                ),
-                              ),
+                        // Recording indicator banner
+                        if (isRecordingReplyVoice.value) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
                             ),
-                            color: isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfacePrimary,
-                            onSelected: (filter) {
-                              unawaited(HapticFeedback.selectionClick());
-                              sortFilter.value = filter;
-                            },
-                            itemBuilder: (context) =>
-                                ForumSortFilter.values.map((f) {
-                                  final isSelected = f == sortFilter.value;
-                                  return PopupMenuItem<ForumSortFilter>(
-                                    value: f,
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          f.icon,
-                                          size: 16,
-                                          color: isSelected
-                                              ? colors.primary
-                                              : colors.textSecondary,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          f.label,
-                                          style: typography.footnote.medium
-                                              .copyWith(
-                                                color: isSelected
-                                                    ? colors.primary
-                                                    : colors.textPrimary,
-                                                fontWeight: isSelected
-                                                    ? FontWeight.bold
-                                                    : FontWeight.normal,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
+                                horizontal: 12,
+                                vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary.withAlpha(160)
-                                    : colors.surfaceSecondary.withAlpha(110),
-                                borderRadius: BorderRadius.circular(20),
+                                color: colors.error.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: colors.error.withAlpha(60),
+                                ),
                               ),
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    sortFilter.value.icon,
-                                    size: 14,
-                                    color: colors.primary,
+                                    Icons.mic_rounded,
+                                    size: 16,
+                                    color: colors.error,
                                   ),
-                                  const SizedBox(width: 4),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    sortFilter.value.label,
+                                    'Recording voice (${replyVoiceNoteDuration.value}s)... Tap mic to finish',
                                     style: typography.caption.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 11.5,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Icon(
-                                    Icons.expand_more_rounded,
-                                    size: 15,
-                                    color: colors.textSecondary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Replies List
-                  Builder(
-                    builder: (context) {
-                      final allReplies = localReplies.value;
-
-                      // Filter & sort top-level replies
-                      final topLevelReplies =
-                          (allReplies
-                                .where(
-                                  (r) =>
-                                      r.parentReplyId == null ||
-                                      r.parentReplyId!.isEmpty,
-                                )
-                                .toList())
-                            ..sort((a, b) {
-                              if (a.isVerifiedSolution !=
-                                  b.isVerifiedSolution) {
-                                return a.isVerifiedSolution ? -1 : 1;
-                              }
-
-                              switch (sortFilter.value) {
-                                case ForumSortFilter.mostRecent:
-                                  return b.createdAt.compareTo(a.createdAt);
-                                case ForumSortFilter.topVoted:
-                                  final voteComp = b.netVotes.compareTo(
-                                    a.netVotes,
-                                  );
-                                  if (voteComp != 0) return voteComp;
-                                  return b.createdAt.compareTo(a.createdAt);
-                                case ForumSortFilter.aiFirst:
-                                  final aIsAi =
-                                      a.authorName.toLowerCase().contains(
-                                        'syllabot',
-                                      ) ||
-                                      a.content.contains('🤖');
-                                  final bIsAi =
-                                      b.authorName.toLowerCase().contains(
-                                        'syllabot',
-                                      ) ||
-                                      b.content.contains('🤖');
-                                  if (aIsAi != bIsAi) return aIsAi ? -1 : 1;
-                                  return b.netVotes.compareTo(a.netVotes);
-                                case ForumSortFilter.unanswered:
-                                  final aHasChildren = allReplies.any(
-                                    (r) => r.parentReplyId == a.id,
-                                  );
-                                  final bHasChildren = allReplies.any(
-                                    (r) => r.parentReplyId == b.id,
-                                  );
-                                  if (aHasChildren != bHasChildren) {
-                                    return aHasChildren ? 1 : -1;
-                                  }
-                                  return b.createdAt.compareTo(a.createdAt);
-                              }
-                            });
-
-                      // Group nested replies
-                      final nestedRepliesMap =
-                          <String, List<ForumReplyEntity>>{};
-                      for (final reply in allReplies) {
-                        if (reply.parentReplyId != null &&
-                            reply.parentReplyId!.isNotEmpty) {
-                          nestedRepliesMap
-                              .putIfAbsent(reply.parentReplyId!, () => [])
-                              .add(reply);
-                        }
-                      }
-                      for (final list in nestedRepliesMap.values) {
-                        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-                      }
-
-                      final hasAiHintInEmpty = allReplies.any(
-                        (r) =>
-                            r.authorName.toLowerCase().contains('syllabot') ||
-                            r.content.contains('Syllabot') ||
-                            r.content.contains('🤖') ||
-                            r.content.contains('Socratic Hint'),
-                      );
-
-                      if (isInitialLoadingReplies.value &&
-                          topLevelReplies.isEmpty) {
-                        return SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 36,
-                            ),
-                            child: Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        colors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Loading replies...',
-                                    style: typography.caption.medium.copyWith(
-                                      color: colors.textSecondary,
+                                      color: colors.error,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -1623,867 +2236,373 @@ class ForumThreadDetailPage extends HookWidget {
                               ),
                             ),
                           ),
-                        );
-                      }
+                        ],
 
-                      if (topLevelReplies.isEmpty) {
-                        return SliverToBoxAdapter(
-                          child: Padding(
+                        // Reply Voice Note Preview if attached
+                        if (replyVoiceNoteUrl.value != null) ...[
+                          Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 36,
+                              horizontal: 16,
+                              vertical: 4,
                             ),
-                            child: Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 25 : 15,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.chat_bubble_outline_rounded,
-                                    size: 36,
-                                    color: colors.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  l10n.noRepliesYet,
-                                  style: typography.subhead.bold.copyWith(
-                                    color: colors.textPrimary,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Be the first to share an answer or solution.',
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                if (!hasAiHintInEmpty) ...[
-                                  const SizedBox(height: 18),
-                                  ShrinkableButton(
-                                    onTap: isGeneratingAiHint.value
-                                        ? null
-                                        : generateSyllabotHint,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 18,
-                                        vertical: 11,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colors.syllabotAccent,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (isGeneratingAiHint.value)
-                                            SizedBox(
-                                              width: 15,
-                                              height: 15,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                      Color
-                                                    >(
-                                                      colors.white,
-                                                    ),
-                                              ),
-                                            )
-                                          else
-                                            Icon(
-                                              Icons.auto_awesome_rounded,
-                                              size: 16,
-                                              color: colors.white,
-                                            ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            isGeneratingAiHint.value
-                                                ? 'Consulting Syllabot...'
-                                                : 'Ask Syllabot for Socratic Hint 🤖',
-                                            style: typography.caption.bold
-                                                .copyWith(
-                                                  color: colors.white,
-                                                  letterSpacing: 0.2,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      return SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final reply = topLevelReplies[index];
-                            final children =
-                                nestedRepliesMap[reply.id] ?? const [];
-                            final hasVerifiedSolution = allReplies.any(
-                              (r) => r.isVerifiedSolution,
-                            );
-                            final userStorage = locator<UserStorageService>();
-                            final currentUserId = userStorage.getUserId();
-                            final isAuthor =
-                                currentUserId == null ||
-                                currentUserId == currentPost.value.authorId;
-
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                              child: _DiscussionThreadGroupCard(
-                                parentReply: reply,
-                                children: children,
-                                opAuthorName: currentPost.value.authorName,
-                                isQuestion: currentPost.value.isQuestion,
-                                isAuthor: isAuthor,
-                                hasVerifiedSolution: hasVerifiedSolution,
-                                isExpanded: expandedParentReplyIds.value
-                                    .contains(reply.id),
-                                isLoadingChildren: loadingParentReplyIds.value
-                                    .contains(reply.id),
-                                hasMoreChildren:
-                                    hasMoreSubRepliesMap.value[reply.id] ??
-                                    false,
-                                onToggleExpand: () =>
-                                    toggleSubRepliesExpansion(reply.id),
-                                onLoadMoreChildren: () =>
-                                    loadSubRepliesForParent(
-                                      reply.id,
-                                      isLoadMore: true,
-                                    ),
-                                onVote: (direction) =>
-                                    voteReply(reply, direction),
-                                onChildVote: voteReply,
-                                onReplyTap: () {
-                                  replyingToReply.value = reply;
-                                  focusNode.requestFocus();
-                                },
-                                onChildReplyTap: (target) {
-                                  replyingToReply.value = target;
-                                  focusNode.requestFocus();
-                                },
-                                onVerifySolution: () async {
-                                  final res = await repo.verifyForumReply(
-                                    postId: currentPost.value.id,
-                                    replyId: reply.id,
-                                  );
-                                  res.fold(
-                                    (failure) {
-                                      if (context.mounted) {
-                                        context.showSnackBar(
-                                          message:
-                                              failure.message ??
-                                              'Failed to verify solution',
-                                          type: SnackBarType.error,
-                                        );
-                                      }
-                                    },
-                                    (_) {
-                                      localReplies.value = localReplies.value
-                                          .map(
-                                            (r) => r.id == reply.id
-                                                ? r.copyWith(
-                                                    isVerifiedSolution: true,
-                                                  )
-                                                : r,
-                                          )
-                                          .toList();
-                                      if (context.mounted) {
-                                        context.showSnackBar(
-                                          message:
-                                              'Marked as verified solution! 100 XP bounty awarded to ${reply.authorName}.',
-                                        );
-                                      }
-                                    },
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                          childCount: topLevelReplies.length,
-                        ),
-                      );
-                    },
-                  ),
-
-                  // Top-Level Pagination trigger
-                  if (hasMoreTopLevel.value) ...[
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                        child: Center(
-                          child: ShrinkableButton(
-                            onTap: isLoadingMoreTopLevel.value
-                                ? null
-                                : () => fetchTopLevelReplies(isLoadMore: true),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfacePrimary,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: isDark
-                                      ? colors.surfaceBorder.withAlpha(40)
-                                      : colors.surfaceBorder,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.black.withAlpha(
-                                      isDark ? 20 : 6,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (isLoadingMoreTopLevel.value) ...[
-                                    SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              colors.primary,
-                                            ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Loading more discussions...',
-                                      style: typography.footnote.bold.copyWith(
-                                        color: colors.primary,
-                                      ),
-                                    ),
-                                  ] else ...[
-                                    Icon(
-                                      Icons.expand_circle_down_outlined,
-                                      size: 16,
-                                      color: colors.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Load more discussions',
-                                      style: typography.footnote.bold.copyWith(
-                                        color: colors.primary,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                ],
-              ),
-            ),
-
-            // Sticky Bottom Quick Reply Bar (Transparent container, compact styling tools, mic button)
-            Container(
-              decoration: BoxDecoration(
-                color: colors.transparent,
-              ),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Active Target Context Banner (Replying to @username)
-                    if (replyingToReply.value != null)
-                      Container(
-                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(50),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.subdirectory_arrow_right_rounded,
-                              size: 15,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Replying to @${replyingToReply.value!.authorName}',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 12,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            ShrinkableButton(
-                              onTap: () => replyingToReply.value = null,
-                              child: Padding(
-                                padding: const EdgeInsets.all(2),
-                                child: Icon(
-                                  Icons.close_rounded,
-                                  size: 16,
-                                  color: colors.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // Quick Formatting Tools Strip (Compact: only shows when toggled on)
-                    AnimatedCrossFade(
-                      crossFadeState: showFormattingTools.value
-                          ? CrossFadeState.showFirst
-                          : CrossFadeState.showSecond,
-                      duration: const Duration(milliseconds: 200),
-                      secondChild: const SizedBox.shrink(),
-                      firstChild: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              // 1. Math / Formula Tool Chip (Σ √x Math)
-                              _QuickToolChip(
-                                label: 'Math',
-                                prefix: 'Σ √x',
-                                isHighlighted: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  _showLatexSnippetDialog(
-                                    context,
-                                    insertIntoComposer,
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 2. Syllabot AI Hint Tool Chip (✨ AI Hint)
-                              _QuickToolChip(
-                                label: 'AI Hint',
-                                icon: Icons.auto_awesome_rounded,
-                                isHighlighted: true,
-                                onTap: isGeneratingAiHint.value
-                                    ? null
-                                    : generateSyllabotHint,
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 3. Code Chip (</> Code)
-                              _QuickToolChip(
-                                label: 'Code',
-                                prefix: '</>',
-                                isHighlighted: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  applyFormat('`', '`', 'code');
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 4. Symbols Tool Chip (π / θ Symbols)
-                              _QuickToolChip(
-                                label: 'Symbols',
-                                prefix: 'π / θ',
-                                isHighlighted: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  _showMathSymbolDialog(
-                                    context,
-                                    insertIntoComposer,
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 5. Bold Formatting Chip
-                              _QuickToolChip(
-                                label: 'Bold',
-                                prefix: 'B',
-                                isCodeStyle: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  applyFormat('**', '**', 'bold text');
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 6. Italic Formatting Chip
-                              _QuickToolChip(
-                                label: 'Italic',
-                                prefix: 'I',
-                                isCodeStyle: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  applyFormat('*', '*', 'italic text');
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 7. Strikethrough Chip
-                              _QuickToolChip(
-                                label: 'Strike',
-                                prefix: '~S~',
-                                isCodeStyle: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  applyFormat('~~', '~~', 'strikethrough');
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 8. Quote Tool Chip
-                              _QuickToolChip(
-                                label: 'Quote',
-                                prefix: '”',
-                                isCodeStyle: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  applyFormat('\n> ', '\n', 'quoted text');
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 9. Bullet List Chip
-                              _QuickToolChip(
-                                label: 'List',
-                                prefix: '•',
-                                isCodeStyle: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  insertIntoComposer('\n- ');
-                                },
-                              ),
-                              const SizedBox(width: 6),
-
-                              // 10. Code Block Tool Chip
-                              _QuickToolChip(
-                                label: 'Block',
-                                prefix: '</>',
-                                isCodeStyle: true,
-                                onTap: () {
-                                  unawaited(HapticFeedback.selectionClick());
-                                  insertIntoComposer(
-                                    '\n```\n// Code or equation here\n```\n',
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Recording indicator banner
-                    if (isRecordingReplyVoice.value) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.error.withAlpha(25),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: colors.error.withAlpha(60),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.mic_rounded,
-                                size: 16,
-                                color: colors.error,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Recording voice (${replyVoiceNoteDuration.value}s)... Tap mic to finish',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.error,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    // Reply Voice Note Preview if attached
-                    if (replyVoiceNoteUrl.value != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: VoiceNotePlayerWidget(
-                          audioUrl: replyVoiceNoteUrl.value!,
-                          durationSeconds: replyVoiceNoteDuration.value > 0
-                              ? replyVoiceNoteDuration.value
-                              : null,
-                          compact: true,
-                          onDelete: () {
-                            replyVoiceNoteUrl.value = null;
-                            replyVoiceNoteDuration.value = 0;
-                          },
-                        ),
-                      ),
-                    ],
-
-                    // Reply Image Thumbnails Preview if attached
-                    if (replyImages.value.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        child: SizedBox(
-                          height: 52,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: replyImages.value.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(width: 8),
-                            itemBuilder: (ctx, idx) {
-                              final path = replyImages.value[idx];
-                              return Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(
-                                      File(path),
-                                      width: 52,
-                                      height: 52,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 2,
-                                    right: 2,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        replyImages.value = replyImages.value
-                                            .where((p) => p != path)
-                                            .toList();
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: colors.black.withAlpha(160),
-                                        ),
-                                        child: Icon(
-                                          Icons.close_rounded,
-                                          size: 10,
-                                          color: colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    // Input Row & Send Button
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 4, 12, 10),
-                      child: Row(
-                        children: [
-                          // 1. Attach Button -> opens image attachment directly
-                          IconButton(
-                            icon: Icon(
-                              Icons.attach_file_rounded,
-                              size: 21,
-                              color: replyImages.value.isNotEmpty
-                                  ? colors.primary
-                                  : colors.textSecondary,
-                            ),
-                            tooltip: 'Attach Image',
-                            onPressed: () async {
-                              unawaited(HapticFeedback.lightImpact());
-                              try {
-                                final photo = await ImagePicker().pickImage(
-                                  source: ImageSource.gallery,
-                                  maxWidth: 1920,
-                                  maxHeight: 1920,
-                                  imageQuality: 85,
-                                );
-                                if (photo != null && photo.path.isNotEmpty) {
-                                  replyImages.value = [
-                                    ...replyImages.value,
-                                    photo.path,
-                                  ];
-                                }
-                              } on Object catch (_) {}
-                            },
-                          ),
-
-                          // 2. Mic Button (Replaces code button in row)
-                          IconButton(
-                            icon: Icon(
-                              isRecordingReplyVoice.value
-                                  ? Icons.stop_circle_rounded
-                                  : Icons.mic_rounded,
-                              size: 21,
-                              color: isRecordingReplyVoice.value
-                                  ? colors.error
-                                  : (replyVoiceNoteUrl.value != null
-                                        ? colors.primary
-                                        : colors.textSecondary),
-                            ),
-                            tooltip: isRecordingReplyVoice.value
-                                ? 'Stop Recording'
-                                : 'Voice Reply',
-                            onPressed: () async {
-                              unawaited(HapticFeedback.mediumImpact());
-                              try {
-                                if (isRecordingReplyVoice.value) {
-                                  await replySttHandler.stopListening();
-                                  replyRecordingTimer.value?.cancel();
-                                  if (replyVoiceNoteDuration.value == 0) {
-                                    replyVoiceNoteDuration.value = 5;
-                                  }
-                                  replyVoiceNoteUrl.value ??=
-                                      'audio/voice_note.wav';
-                                } else {
-                                  await replySttHandler.startListening();
-                                }
-                              } on Object catch (e) {
-                                isRecordingReplyVoice.value = false;
-                                replyRecordingTimer.value?.cancel();
-                                if (context.mounted) {
-                                  context.showSnackBar(
-                                    message:
-                                        'Speech recognition unavailable: $e',
-                                  );
-                                }
-                              }
-                            },
-                          ),
-
-                          // 3. Compact Styling Tools Toggle Button
-                          IconButton(
-                            icon: Icon(
-                              showFormattingTools.value
-                                  ? Icons.text_format_rounded
-                                  : Icons.text_fields_rounded,
-                              size: 20,
-                              color: showFormattingTools.value
-                                  ? colors.primary
-                                  : colors.textSecondary,
-                            ),
-                            tooltip: showFormattingTools.value
-                                ? 'Hide tools'
-                                : 'Writing & Math Tools',
-                            onPressed: () {
-                              unawaited(HapticFeedback.selectionClick());
-                              showFormattingTools.value =
-                                  !showFormattingTools.value;
-                            },
-                          ),
-
-                          // 4. Text Field
-                          Expanded(
-                            child: TextField(
-                              controller: replyController,
-                              focusNode: focusNode,
-                              maxLines: 4,
-                              minLines: 1,
-                              textCapitalization: TextCapitalization.sentences,
-                              decoration: InputDecoration(
-                                hintText: replyingToReply.value != null
-                                    ? 'Write a reply to @${replyingToReply.value!.authorName}...'
-                                    : 'Add a thoughtful reply...',
-                                hintStyle: typography.body.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 14,
-                                ),
-                                filled: true,
-                                fillColor: isDark
-                                    ? colors.surfaceSecondary.withAlpha(160)
-                                    : colors.surfaceSecondary.withAlpha(130),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(22),
-                                  borderSide: BorderSide(
-                                    color: colors.surfaceBorder.withAlpha(
-                                      isDark ? 60 : 35,
-                                    ),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(22),
-                                  borderSide: BorderSide(
-                                    color: colors.surfaceBorder.withAlpha(
-                                      isDark ? 60 : 35,
-                                    ),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(22),
-                                  borderSide: BorderSide(
-                                    color: colors.primary.withAlpha(160),
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 9,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-
-                          // 5. Send Button
-                          ShrinkableButton(
-                            onTap: isSubmitting.value
-                                ? null
-                                : () async {
-                                    final text = replyController.text.trim();
-                                    if (text.isEmpty &&
-                                        replyImages.value.isEmpty &&
-                                        replyVoiceNoteUrl.value == null) {
-                                      return;
-                                    }
-                                    final targetParentId =
-                                        replyingToReply.value?.id;
-                                    isSubmitting.value = true;
-                                    final res = await repo.replyToForumPost(
-                                      postId: currentPost.value.id,
-                                      content: text.isNotEmpty
-                                          ? text
-                                          : 'Shared media attachment',
-                                      parentReplyId: targetParentId,
-                                      mediaUrls: replyImages.value,
-                                      voiceNoteUrl: replyVoiceNoteUrl.value,
-                                      voiceNoteDurationSeconds:
-                                          replyVoiceNoteDuration.value > 0
-                                          ? replyVoiceNoteDuration.value
-                                          : null,
-                                    );
-                                    isSubmitting.value = false;
-                                    res.fold(
-                                      (failure) {
-                                        if (context.mounted) {
-                                          context.showSnackBar(
-                                            message:
-                                                failure.message ??
-                                                failure.toString(),
-                                            type: SnackBarType.error,
-                                          );
-                                        }
-                                      },
-                                      (createdReply) {
-                                        replyController.clear();
-                                        replyImages.value = [];
-                                        replyVoiceNoteUrl.value = null;
-                                        replyVoiceNoteDuration.value = 0;
-                                        replyingToReply.value = null;
-                                        if (!localReplies.value.any(
-                                          (r) => r.id == createdReply.id,
-                                        )) {
-                                          localReplies.value = [
-                                            ...localReplies.value,
-                                            createdReply,
-                                          ];
-                                        }
-                                        if (targetParentId != null) {
-                                          localReplies.value = localReplies
-                                              .value
-                                              .map((r) {
-                                                if (r.id == targetParentId) {
-                                                  return r.copyWith(
-                                                    repliesCount:
-                                                        r.repliesCount + 1,
-                                                  );
-                                                }
-                                                return r;
-                                              })
-                                              .toList();
-                                          expandedParentReplyIds.value = {
-                                            ...expandedParentReplyIds.value,
-                                            targetParentId,
-                                          };
-                                        }
-                                        if (locator
-                                            .isRegistered<CommunityHubBloc>()) {
-                                          locator<CommunityHubBloc>().add(
-                                            ForumPostRepliesIncrementedEvent(
-                                              postId: currentPost.value.id,
-                                              reply: createdReply,
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    );
-                                  },
-                            child: Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: colors.primary,
-                              ),
-                              alignment: Alignment.center,
-                              child: isSubmitting.value
-                                  ? AppLogoLoader(
-                                      size: 16,
-                                      color: colors.white,
-                                      showMessage: false,
-                                    )
-                                  : Icon(
-                                      Icons.send_rounded,
-                                      color: colors.white,
-                                      size: 18,
-                                    ),
+                            child: VoiceNotePlayerWidget(
+                              audioUrl: replyVoiceNoteUrl.value!,
+                              durationSeconds: replyVoiceNoteDuration.value > 0
+                                  ? replyVoiceNoteDuration.value
+                                  : null,
+                              compact: true,
+                              onDelete: () {
+                                replyVoiceNoteUrl.value = null;
+                                replyVoiceNoteDuration.value = 0;
+                              },
                             ),
                           ),
                         ],
-                      ),
+
+                        // Reply Image Thumbnails Preview if attached
+                        if (replyImages.value.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 4,
+                            ),
+                            child: SizedBox(
+                              height: 52,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: replyImages.value.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (ctx, idx) {
+                                  final path = replyImages.value[idx];
+                                  return Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.file(
+                                          File(path),
+                                          width: 52,
+                                          height: 52,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 2,
+                                        right: 2,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            replyImages.value = replyImages
+                                                .value
+                                                .where((p) => p != path)
+                                                .toList();
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: colors.black.withAlpha(
+                                                160,
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.close_rounded,
+                                              size: 10,
+                                              color: colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        // Input Row & Send Button
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 4, 12, 10),
+                          child: Row(
+                            children: [
+                              // 1. Attach Button -> opens image attachment directly
+                              IconButton(
+                                icon: Icon(
+                                  Icons.attach_file_rounded,
+                                  size: 21,
+                                  color: replyImages.value.isNotEmpty
+                                      ? colors.primary
+                                      : colors.textSecondary,
+                                ),
+                                tooltip: 'Attach Image',
+                                onPressed: () async {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  try {
+                                    final photo = await ImagePicker().pickImage(
+                                      source: ImageSource.gallery,
+                                      maxWidth: 1920,
+                                      maxHeight: 1920,
+                                      imageQuality: 85,
+                                    );
+                                    if (photo != null &&
+                                        photo.path.isNotEmpty) {
+                                      replyImages.value = [
+                                        ...replyImages.value,
+                                        photo.path,
+                                      ];
+                                    }
+                                  } on Object catch (_) {}
+                                },
+                              ),
+
+                              // 2. Mic Button (Replaces code button in row)
+                              IconButton(
+                                icon: Icon(
+                                  isRecordingReplyVoice.value
+                                      ? Icons.stop_circle_rounded
+                                      : Icons.mic_rounded,
+                                  size: 21,
+                                  color: isRecordingReplyVoice.value
+                                      ? colors.error
+                                      : (replyVoiceNoteUrl.value != null
+                                            ? colors.primary
+                                            : colors.textSecondary),
+                                ),
+                                tooltip: isRecordingReplyVoice.value
+                                    ? 'Stop Recording'
+                                    : 'Voice Reply',
+                                onPressed: () async {
+                                  unawaited(HapticFeedback.mediumImpact());
+                                  try {
+                                    if (isRecordingReplyVoice.value) {
+                                      await replySttHandler.stopListening();
+                                      replyRecordingTimer.value?.cancel();
+                                      if (replyVoiceNoteDuration.value == 0) {
+                                        replyVoiceNoteDuration.value = 5;
+                                      }
+                                      replyVoiceNoteUrl.value ??=
+                                          'audio/voice_note.wav';
+                                    } else {
+                                      await replySttHandler.startListening();
+                                    }
+                                  } on Object catch (e) {
+                                    isRecordingReplyVoice.value = false;
+                                    replyRecordingTimer.value?.cancel();
+                                    if (context.mounted) {
+                                      context.showSnackBar(
+                                        message:
+                                            'Speech recognition unavailable: $e',
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+
+                              // 3. Compact Styling Tools Toggle Button
+                              IconButton(
+                                icon: Icon(
+                                  showFormattingTools.value
+                                      ? Icons.text_format_rounded
+                                      : Icons.text_fields_rounded,
+                                  size: 20,
+                                  color: showFormattingTools.value
+                                      ? colors.primary
+                                      : colors.textSecondary,
+                                ),
+                                tooltip: showFormattingTools.value
+                                    ? 'Hide tools'
+                                    : 'Writing & Math Tools',
+                                onPressed: () {
+                                  unawaited(HapticFeedback.selectionClick());
+                                  showFormattingTools.value =
+                                      !showFormattingTools.value;
+                                },
+                              ),
+
+                              // 4. Text Field
+                              Expanded(
+                                child: TextField(
+                                  controller: replyController,
+                                  focusNode: focusNode,
+                                  maxLines: 4,
+                                  minLines: 1,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  decoration: InputDecoration(
+                                    hintText: replyingToReply.value != null
+                                        ? 'Write a reply to @${replyingToReply.value!.authorName}...'
+                                        : 'Add a thoughtful reply...',
+                                    hintStyle: typography.body.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                    filled: true,
+                                    fillColor: isDark
+                                        ? colors.surfaceSecondary.withAlpha(160)
+                                        : colors.surfaceSecondary.withAlpha(
+                                            130,
+                                          ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                      borderSide: BorderSide(
+                                        color: colors.surfaceBorder.withAlpha(
+                                          isDark ? 60 : 35,
+                                        ),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                      borderSide: BorderSide(
+                                        color: colors.surfaceBorder.withAlpha(
+                                          isDark ? 60 : 35,
+                                        ),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                      borderSide: BorderSide(
+                                        color: colors.primary.withAlpha(160),
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 9,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // 5. Send Button
+                              PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return AnimatedScale(
+                                    scale: isHovered ? 1.06 : 1.0,
+                                    duration: AppMotion.snappy,
+                                    curve: AppMotion.easeOutCubic,
+                                    child: child,
+                                  );
+                                },
+                                child: ShrinkableButton(
+                                  onTap: isSubmitting.value
+                                      ? null
+                                      : () async {
+                                          final text = replyController.text
+                                              .trim();
+                                          if (text.isEmpty &&
+                                              replyImages.value.isEmpty &&
+                                              replyVoiceNoteUrl.value == null) {
+                                            return;
+                                          }
+                                          final targetParentId =
+                                              replyingToReply.value?.id;
+                                          isSubmitting.value = true;
+                                          final res = await repo
+                                              .replyToForumPost(
+                                                postId: currentPost.value.id,
+                                                content: text.isNotEmpty
+                                                    ? text
+                                                    : 'Shared media attachment',
+                                                parentReplyId: targetParentId,
+                                                mediaUrls: replyImages.value,
+                                                voiceNoteUrl:
+                                                    replyVoiceNoteUrl.value,
+                                                voiceNoteDurationSeconds:
+                                                    replyVoiceNoteDuration
+                                                            .value >
+                                                        0
+                                                    ? replyVoiceNoteDuration
+                                                          .value
+                                                    : null,
+                                              );
+                                          isSubmitting.value = false;
+                                          res.fold(
+                                            (failure) {
+                                              if (context.mounted) {
+                                                context.showSnackBar(
+                                                  message:
+                                                      failure.message ??
+                                                      failure.toString(),
+                                                  type: SnackBarType.error,
+                                                );
+                                              }
+                                            },
+                                            (createdReply) {
+                                              replyController.clear();
+                                              replyImages.value = [];
+                                              replyVoiceNoteUrl.value = null;
+                                              replyVoiceNoteDuration.value = 0;
+                                              replyingToReply.value = null;
+                                              if (!localReplies.value.any(
+                                                (r) => r.id == createdReply.id,
+                                              )) {
+                                                localReplies.value = [
+                                                  ...localReplies.value,
+                                                  createdReply,
+                                                ];
+                                              }
+                                              if (targetParentId != null) {
+                                                localReplies.value =
+                                                    localReplies.value.map((r) {
+                                                      if (r.id ==
+                                                          targetParentId) {
+                                                        return r.copyWith(
+                                                          repliesCount:
+                                                              r.repliesCount +
+                                                              1,
+                                                        );
+                                                      }
+                                                      return r;
+                                                    }).toList();
+                                                expandedParentReplyIds.value = {
+                                                  ...expandedParentReplyIds
+                                                      .value,
+                                                  targetParentId,
+                                                };
+                                              }
+                                              if (locator
+                                                  .isRegistered<
+                                                    CommunityHubBloc
+                                                  >()) {
+                                                locator<CommunityHubBloc>().add(
+                                                  ForumPostRepliesIncrementedEvent(
+                                                    postId:
+                                                        currentPost.value.id,
+                                                    reply: createdReply,
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          );
+                                        },
+                                  child: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: colors.primary,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: isSubmitting.value
+                                        ? AppLogoLoader(
+                                            size: 16,
+                                            color: colors.white,
+                                            showMessage: false,
+                                          )
+                                        : Icon(
+                                            Icons.send_rounded,
+                                            color: colors.white,
+                                            size: 18,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -2824,63 +2943,69 @@ class _QuickToolChip extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final tint = isHighlighted
-        ? colors.primary
-        : colors.textSecondary;
+    final tint = isHighlighted ? colors.primary : colors.textSecondary;
 
-    return ShrinkableButton(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: isHighlighted
-              ? colors.primary.withAlpha(isDark ? 40 : 25)
-              : (isDark
-                    ? colors.surfacePrimary.withAlpha(180)
-                    : colors.surfaceSecondary.withAlpha(120)),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedScale(
+          scale: isHovered ? 1.04 : 1.0,
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
+          child: child,
+        );
+      },
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
             color: isHighlighted
-                ? colors.primary.withAlpha(80)
-                : colors.surfaceBorder.withAlpha(isDark ? 40 : 25),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (prefix != null) ...[
-              Text(
-                prefix!,
-                style: isCodeStyle
-                    ? typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        fontFamily: 'monospace',
-                        fontSize: 11,
-                      )
-                    : typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        fontSize: 11,
-                      ),
-              ),
-              const SizedBox(width: 4),
-            ] else if (icon != null) ...[
-              Icon(
-                icon,
-                size: 13,
-                color: tint,
-              ),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              label,
-              style: typography.caption.bold.copyWith(
-                color: isHighlighted
-                    ? colors.primary
-                    : colors.textPrimary,
-                fontSize: 11.5,
-              ),
+                ? colors.primary.withAlpha(isDark ? 40 : 25)
+                : (isDark
+                      ? colors.surfacePrimary.withAlpha(180)
+                      : colors.surfaceSecondary.withAlpha(120)),
+            borderRadius: AppRadius.radiusBadge,
+            border: Border.all(
+              color: isHighlighted
+                  ? colors.primary.withAlpha(80)
+                  : colors.surfaceBorder.withAlpha(isDark ? 40 : 25),
             ),
-          ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (prefix != null) ...[
+                Text(
+                  prefix!,
+                  style: isCodeStyle
+                      ? typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        )
+                      : typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 11,
+                        ),
+                ),
+                const SizedBox(width: 4),
+              ] else if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 13,
+                  color: tint,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: typography.caption.bold.copyWith(
+                  color: isHighlighted ? colors.primary : colors.textPrimary,
+                  fontSize: 11.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

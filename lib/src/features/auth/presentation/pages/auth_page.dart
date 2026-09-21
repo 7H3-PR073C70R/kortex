@@ -11,6 +11,8 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
@@ -26,6 +28,7 @@ import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repo
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 @RoutePage()
 class AuthPage extends HookWidget {
@@ -116,8 +119,9 @@ class _AuthView extends HookWidget {
       listener: (context, state) async {
         final isNewlyRegistered =
             locator.isRegistered<LocalStorageService>() &&
-            locator<LocalStorageService>()
-                    .getPreference(key: PrefKeys.isNewlyRegistered) ==
+            locator<LocalStorageService>().getPreference(
+                  key: PrefKeys.isNewlyRegistered,
+                ) ==
                 'true';
 
         if (state.status == AuthStatus.needsOnboarding && state.user != null) {
@@ -160,27 +164,35 @@ class _AuthView extends HookWidget {
 
             // 4. Remote/local curated courses check for new device logins
             var coursesSayOnboarded = false;
-            if (!serverSaysOnboarded && !localSaysOnboarded && !calibSaysOnboarded) {
+            if (!serverSaysOnboarded &&
+                !localSaysOnboarded &&
+                !calibSaysOnboarded) {
               try {
                 final storage = locator<LocalStorageService>();
-                final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+                final rawCourses = storage.getPreference(
+                  key: PrefKeys.userCuratedCourses,
+                );
                 if (rawCourses != null && rawCourses.isNotEmpty) {
                   final list = jsonDecode(rawCourses) as List<dynamic>;
                   if (list.isNotEmpty) coursesSayOnboarded = true;
                 }
               } on Object catch (_) {}
 
-              if (!coursesSayOnboarded && locator.isRegistered<DashboardRepository>()) {
+              if (!coursesSayOnboarded &&
+                  locator.isRegistered<DashboardRepository>()) {
                 try {
                   final dashRepo = locator<DashboardRepository>();
                   final coursesRes = await dashRepo.getUserCuratedCourses();
-                  coursesSayOnboarded =
-                      coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+                  coursesSayOnboarded = coursesRes.fold(
+                    (_) => false,
+                    (courses) => courses.isNotEmpty,
+                  );
                 } on Object catch (_) {}
               }
             }
 
-            final shouldGoToMain = serverSaysOnboarded ||
+            final shouldGoToMain =
+                serverSaysOnboarded ||
                 localSaysOnboarded ||
                 calibSaysOnboarded ||
                 coursesSayOnboarded;
@@ -258,7 +270,7 @@ class _AuthView extends HookWidget {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxWidth: isTablet ? 560 : double.infinity,
+                        maxWidth: isTablet ? 560 : 480,
                       ),
                       child: Column(
                         children: [
@@ -582,26 +594,44 @@ class _FeatureBullet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: colors.white.withAlpha(35),
-            borderRadius: BorderRadius.circular(10),
+            color: isHovered ? colors.white.withAlpha(25) : colors.transparent,
+            borderRadius: AppRadius.radiusCard,
           ),
-          child: Icon(icon, size: 18, color: colors.white),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Text(
-            text,
-            style: context.typography.callout.medium.copyWith(
-              color: colors.white,
-            ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isHovered
+                      ? colors.white.withAlpha(55)
+                      : colors.white.withAlpha(35),
+                  borderRadius: AppRadius.concentricBorderRadius(
+                    AppRadius.card,
+                    4,
+                  ),
+                ),
+                child: Icon(icon, size: 18, color: colors.white),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  text,
+                  style: context.typography.callout.medium.copyWith(
+                    color: colors.white,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

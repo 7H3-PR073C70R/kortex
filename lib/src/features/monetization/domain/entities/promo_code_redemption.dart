@@ -20,11 +20,11 @@ class PromoRedemptionResult extends Equatable {
 
   @override
   List<Object?> get props => [
-        success,
-        code,
-        durationDays,
-        proUntil,
-        errorCode,
-        message,
-      ];
+    success,
+    code,
+    durationDays,
+    proUntil,
+    errorCode,
+    message,
+  ];
 }

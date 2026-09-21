@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/focus_session_config.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
@@ -70,7 +71,7 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: colors.surfacePrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusDialog),
           title: Text(
             'Pause Focus Sprint?',
             style: typography.title3.bold.copyWith(color: colors.textPrimary),
@@ -166,75 +167,80 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                 );
               }
 
-              return Column(
-                children: [
-                  // Zen Distraction-Free Header
-                  _FocusZenHeader(
-                    state: state,
-                    onClose: () => _showExitDialog(context),
-                    onToggleTts: () => _cubit.toggleTts(),
-                    onOpenParkingLot: () => unawaited(ThoughtParkingLotSheet.show(context)),
-                  ),
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 680),
+                  child: Column(
+                    children: [
+                      // Zen Distraction-Free Header
+                      _FocusZenHeader(
+                        state: state,
+                        onClose: () => _showExitDialog(context),
+                        onToggleTts: () => _cubit.toggleTts(),
+                        onOpenParkingLot: () => unawaited(ThoughtParkingLotSheet.show(context)),
+                      ),
 
-                  // Dopamine Streak Indicator
-                  if (state.streak >= 2) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4, bottom: 2),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.colors.warning.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: context.colors.warning.withValues(alpha: 0.4),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🔥 ', style: TextStyle(fontSize: 13)),
-                            Text(
-                              '${state.streak} in a row! Momentum building',
-                              style: context.typography.caption.bold.copyWith(
-                                color: context.colors.warning,
+                      // Dopamine Streak Indicator
+                      if (state.streak >= 2) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, bottom: 2),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.colors.warning.withValues(alpha: 0.15),
+                              borderRadius: AppRadius.radiusDialog,
+                              border: Border.all(
+                                color: context.colors.warning.withValues(alpha: 0.4),
                               ),
                             ),
-                          ],
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('🔥 ', style: TextStyle(fontSize: 13)),
+                                Text(
+                                  '${state.streak} in a row! Momentum building',
+                                  style: context.typography.caption.bold.copyWith(
+                                    color: context.colors.warning,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // Flashcard Gesture Canvas
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: FlashcardGestureCanvas(
+                            card: currentCard,
+                            isFlipped: state.isFlipped,
+                            onTapFlip: () => _cubit.toggleFlip(),
+                            onSwipeLeft: () => unawaited(_cubit.rateCard(1)),
+                            onSwipeRight: () => unawaited(_cubit.rateCard(3)),
+                            onSwipeUp: () => unawaited(_cubit.rateCard(4)),
+                            onSwipeDown: () => unawaited(_cubit.rateCard(2)),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
 
-                  // Flashcard Gesture Canvas
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                      // FSRS Rating Bar
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: FsrsRatingActionBar(
+                          onRateRating: (rating) => unawaited(_cubit.rateCard(rating)),
+                        ),
                       ),
-                      child: FlashcardGestureCanvas(
-                        card: currentCard,
-                        isFlipped: state.isFlipped,
-                        onTapFlip: () => _cubit.toggleFlip(),
-                        onSwipeLeft: () => unawaited(_cubit.rateCard(1)),
-                        onSwipeRight: () => unawaited(_cubit.rateCard(3)),
-                        onSwipeUp: () => unawaited(_cubit.rateCard(4)),
-                        onSwipeDown: () => unawaited(_cubit.rateCard(2)),
-                      ),
-                    ),
+                    ],
                   ),
-
-                  // FSRS Rating Bar
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: FsrsRatingActionBar(
-                      onRateRating: (rating) => unawaited(_cubit.rateCard(rating)),
-                    ),
-                  ),
-                ],
+                ),
               );
             },
           ),
@@ -291,7 +297,7 @@ class _FocusZenHeader extends StatelessWidget {
                     ],
                     // Smooth visual Time-Timer progress bar
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppRadius.radiusMicro,
                       child: LinearProgressIndicator(
                         value: state.progress,
                         minHeight: 6,
@@ -385,210 +391,215 @@ class _FocusCompletionView extends StatelessWidget {
     final total = state.cards.length;
     final mastered = state.goodCount + state.easyCount;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 20),
-          // Celebratory Icon
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [colors.deepBronze, colors.primary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withValues(alpha: 0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Icon(
-                Icons.emoji_events_rounded,
-                color: colors.white,
-                size: 56,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Title & Subtitle
-          Text(
-            'Hyperdrive Sprint Complete!',
-            textAlign: TextAlign.center,
-            style: typography.largeTitle.bold.copyWith(
-              color: colors.textPrimary,
-              fontSize: 24,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'You conquered task paralysis with focused micro-momentum.',
-            textAlign: TextAlign.center,
-            style: typography.body.regular.copyWith(
-              color: colors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // Stats Grid
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: colors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _StatColumn(
-                  label: 'Cards Crushed',
-                  value: '$total',
-                  icon: Icons.layers_rounded,
-                  color: colors.primary,
-                ),
-                _StatColumn(
-                  label: 'Mastered',
-                  value: '$mastered',
-                  icon: Icons.check_circle_rounded,
-                  color: colors.success,
-                ),
-                _StatColumn(
-                  label: 'Time Spent',
-                  value: state.timeElapsedFormatted,
-                  icon: Icons.timer_outlined,
-                  color: colors.warning,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Parked Thoughts Review (if any)
-          if (state.parkedThoughts.isNotEmpty) ...[
-            Text(
-              'Thoughts Parked During Session',
-              style: typography.headline.bold.copyWith(
-                color: colors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your working memory dumped these thoughts so you could focus:',
-              style: typography.footnote.regular.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: state.parkedThoughts.map((thought) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: colors.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            thought.content,
-                            style: typography.body.regular.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 580),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              // Celebratory Icon
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colors.deepBronze, colors.primary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 28),
-          ],
-
-          // Repeat Sprint Button
-          ShrinkableButton(
-            onTap: () {
-              AppFeedback.selection();
-              onRepeat();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [colors.deepBronze, colors.primary],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withValues(alpha: 0.35),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.refresh_rounded, color: colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Repeat Another Sprint',
-                    style: typography.body.medium.copyWith(
-                      color: colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    color: colors.white,
+                    size: 56,
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Done Button
-          ShrinkableButton(
-            onTap: () {
-              AppFeedback.selection();
-              onDone();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: colors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colors.surfaceBorder.withValues(alpha: 0.6),
                 ),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                'Return to Decks',
-                style: typography.body.medium.copyWith(
+              const SizedBox(height: 24),
+
+              // Title & Subtitle
+              Text(
+                'Hyperdrive Sprint Complete!',
+                textAlign: TextAlign.center,
+                style: typography.largeTitle.bold.copyWith(
                   color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 24,
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                'You conquered task paralysis with focused micro-momentum.',
+                textAlign: TextAlign.center,
+                style: typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Stats Grid
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSecondary,
+                  borderRadius: AppRadius.radiusDialog,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _StatColumn(
+                      label: 'Cards Crushed',
+                      value: '$total',
+                      icon: Icons.layers_rounded,
+                      color: colors.primary,
+                    ),
+                    _StatColumn(
+                      label: 'Mastered',
+                      value: '$mastered',
+                      icon: Icons.check_circle_rounded,
+                      color: colors.success,
+                    ),
+                    _StatColumn(
+                      label: 'Time Spent',
+                      value: state.timeElapsedFormatted,
+                      icon: Icons.timer_outlined,
+                      color: colors.warning,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Parked Thoughts Review (if any)
+              if (state.parkedThoughts.isNotEmpty) ...[
+                Text(
+                  'Thoughts Parked During Session',
+                  style: typography.headline.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your working memory dumped these thoughts so you could focus:',
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceSecondary,
+                    borderRadius: AppRadius.radiusPanel,
+                  ),
+                  child: Column(
+                    children: state.parkedThoughts.map((thought) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.lightbulb_outline_rounded,
+                              color: colors.primary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                thought.content,
+                                style: typography.body.regular.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 28),
+              ],
+
+              // Repeat Sprint Button
+              ShrinkableButton(
+                onTap: () {
+                  AppFeedback.selection();
+                  onRepeat();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colors.deepBronze, colors.primary],
+                    ),
+                    borderRadius: AppRadius.radiusCard,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withValues(alpha: 0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.refresh_rounded, color: colors.white, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Repeat Another Sprint',
+                        style: typography.body.medium.copyWith(
+                          color: colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Done Button
+              ShrinkableButton(
+                onTap: () {
+                  AppFeedback.selection();
+                  onDone();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceSecondary,
+                    borderRadius: AppRadius.radiusCard,
+                    border: Border.all(
+                      color: colors.surfaceBorder.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Return to Decks',
+                    style: typography.body.medium.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

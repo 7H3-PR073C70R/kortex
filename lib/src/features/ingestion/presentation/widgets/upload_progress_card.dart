@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class UploadProgressCard extends HookWidget {
@@ -65,7 +68,7 @@ class UploadProgressCard extends HookWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.radiusPanel,
         border: Border.all(
           color: isFailed
               ? colors.error.withAlpha(120)
@@ -88,7 +91,7 @@ class UploadProgressCard extends HookWidget {
                       : (isCompleted
                             ? colors.success.withAlpha(30)
                             : colors.primary.withAlpha(30)),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.radiusCard,
                 ),
                 child: Icon(
                   isFailed
@@ -130,18 +133,28 @@ class UploadProgressCard extends HookWidget {
                 ),
               ),
               if (isFailed && onRetry != null)
-                ShrinkableButton(
-                  onTap: onRetry,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.error.withAlpha(25),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.refresh_rounded,
-                      color: colors.error,
-                      size: 18,
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedScale(
+                      scale: isHovered ? 1.08 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      child: child,
+                    );
+                  },
+                  child: ShrinkableButton(
+                    onTap: onRetry,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colors.error.withAlpha(25),
+                        borderRadius: AppRadius.radiusBadge,
+                      ),
+                      child: Icon(
+                        Icons.refresh_rounded,
+                        color: colors.error,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),
@@ -152,7 +165,7 @@ class UploadProgressCard extends HookWidget {
             const SizedBox(height: 16),
             // Progress Bar
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: AppRadius.radiusMicro,
               child: LinearProgressIndicator(
                 value: status == ProcessingStatus.parsingOcr ? null : progress,
                 backgroundColor: colors.primary.withAlpha(isDark ? 40 : 20),

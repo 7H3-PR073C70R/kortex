@@ -40,15 +40,16 @@ class IngestionRepositoryImpl implements IngestionRepository {
 
       // 2. Multi-tenant Preflight Check with Transaction Advisory Locking
       try {
-        final preflight = await _remoteDataSource.claimOrCreateDocumentPreflight(
-          contentHash: hash,
-          filename: filename,
-          fileType: fileType,
-          fileSizeBytes: fileBytes.lengthInBytes,
-          courseId: courseId,
-          courseCode: courseCode,
-          deckTitle: deckTitle,
-        );
+        final preflight = await _remoteDataSource
+            .claimOrCreateDocumentPreflight(
+              contentHash: hash,
+              filename: filename,
+              fileType: fileType,
+              fileSizeBytes: fileBytes.lengthInBytes,
+              courseId: courseId,
+              courseCode: courseCode,
+              deckTitle: deckTitle,
+            );
 
         final status = preflight['status'] as String?;
         final userDocId = preflight['user_doc_id'] as String?;
@@ -177,9 +178,7 @@ class IngestionRepositoryImpl implements IngestionRepository {
 
   @override
   Future<Either<Failure, void>> deleteDocument(String documentId) {
-    return _remoteDataSource
-        .deleteDocument(documentId)
-        .makeRequest();
+    return _remoteDataSource.deleteDocument(documentId).makeRequest();
   }
 
   @override

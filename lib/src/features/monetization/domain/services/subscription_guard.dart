@@ -81,13 +81,15 @@ class SubscriptionGuard {
   int getTodayUploadCount() {
     try {
       final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-      final lastDate =
-          _effectiveLocalStorage.getPreference(key: PrefKeys.lastUploadDate);
+      final lastDate = _effectiveLocalStorage.getPreference(
+        key: PrefKeys.lastUploadDate,
+      );
       if (lastDate != todayStr) {
         return 0;
       }
-      final countStr =
-          _effectiveLocalStorage.getPreference(key: PrefKeys.dailyUploadCount);
+      final countStr = _effectiveLocalStorage.getPreference(
+        key: PrefKeys.dailyUploadCount,
+      );
       return int.tryParse(countStr ?? '0') ?? 0;
     } on Object {
       return 0;
@@ -121,13 +123,15 @@ class SubscriptionGuard {
   int getTodaySyllabotQueryCount() {
     try {
       final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-      final lastDate =
-          _effectiveLocalStorage.getPreference(key: PrefKeys.lastSyllabotDate);
+      final lastDate = _effectiveLocalStorage.getPreference(
+        key: PrefKeys.lastSyllabotDate,
+      );
       if (lastDate != todayStr) {
         return 0;
       }
-      final countStr =
-          _effectiveLocalStorage.getPreference(key: PrefKeys.dailySyllabotCount);
+      final countStr = _effectiveLocalStorage.getPreference(
+        key: PrefKeys.dailySyllabotCount,
+      );
       return int.tryParse(countStr ?? '0') ?? 0;
     } on Object {
       return 0;

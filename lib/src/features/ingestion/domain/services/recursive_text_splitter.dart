@@ -143,7 +143,8 @@ class RecursiveTextSplitter {
         baseMetadata: {
           ...?baseMetadata,
           'topic': snippet.topic,
-          'has_latex': snippet.latexContent != null && snippet.latexContent!.isNotEmpty,
+          'has_latex':
+              snippet.latexContent != null && snippet.latexContent!.isNotEmpty,
         },
       );
 
@@ -215,7 +216,10 @@ class RecursiveTextSplitter {
         merged.add(currentChunk.toString());
 
         // Retain overlap window from previous chunk
-        final overlapText = _extractOverlap(currentChunk.toString(), chunkOverlap);
+        final overlapText = _extractOverlap(
+          currentChunk.toString(),
+          chunkOverlap,
+        );
         currentChunk = StringBuffer();
         if (overlapText.isNotEmpty) {
           currentChunk.write('$overlapText ');
@@ -225,7 +229,9 @@ class RecursiveTextSplitter {
         }
       }
 
-      if (currentChunk.isNotEmpty && !currentChunk.toString().endsWith('\n') && !currentChunk.toString().endsWith(' ')) {
+      if (currentChunk.isNotEmpty &&
+          !currentChunk.toString().endsWith('\n') &&
+          !currentChunk.toString().endsWith(' ')) {
         currentChunk.write(' ');
       }
       currentChunk.write(piece);

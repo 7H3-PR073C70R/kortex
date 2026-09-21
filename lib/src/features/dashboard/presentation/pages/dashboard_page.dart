@@ -10,6 +10,8 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
@@ -27,6 +29,7 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -431,17 +434,24 @@ class _CompactDashboardLayout extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // 2. Exam Countdown Banner (Target Urgency & Stakes)
-        if (feed.curatedCourses.isNotEmpty) ...[
-          const ExamCountdownBanner(),
-          const SizedBox(height: 20),
-        ],
-
-        // 3. Backlog Debt Triage (Emergency catch-up when >= 30 cards overdue)
-        if (heavyDebtDeck != null) ...[
-          _StudyDebtTriageBanner(deck: heavyDebtDeck),
-          const SizedBox(height: 20),
-        ],
+        // 2 & 3. Exam Countdown & Backlog Debt Triage (AnimatedSize for stability)
+        AnimatedSize(
+          alignment: Alignment.topCenter,
+          duration: AppMotion.standard,
+          curve: AppMotion.easeOutCubic,
+          child: Column(
+            children: [
+              if (feed.curatedCourses.isNotEmpty) ...[
+                const ExamCountdownBanner(),
+                const SizedBox(height: 20),
+              ],
+              if (heavyDebtDeck != null) ...[
+                _StudyDebtTriageBanner(deck: heavyDebtDeck),
+                const SizedBox(height: 20),
+              ],
+            ],
+          ),
+        ),
 
         // 4. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
         if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
@@ -543,16 +553,16 @@ class _EmptyStudyDecksCard extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: AppRadius.radiusPanel,
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: isDark
               ? colors.surfaceSecondary.withAlpha(140)
               : colors.surfacePrimary.withAlpha(210),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.radiusPanel,
           border: Border.all(
-            color: colors.success.withAlpha(isDark ? 80 : 50),
+            color: colors.surfaceBorder,
           ),
         ),
         child: Row(
@@ -576,14 +586,14 @@ class _EmptyStudyDecksCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'All caught up!',
+                    l10n.allCaughtUpTitle,
                     style: typography.callout.bold.copyWith(
                       color: colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'No active-recall cards due for review today. Keep it up!',
+                    l10n.allCaughtUpSubtitle,
                     style: typography.caption.medium.copyWith(
                       color: colors.textSecondary,
                     ),
@@ -616,16 +626,16 @@ class _EmptyCoursesCard extends StatelessWidget {
         }
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.radiusPanel,
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: isDark
-              ? colors.surfaceSecondary.withAlpha(140)
-              : colors.surfacePrimary.withAlpha(210),
-            borderRadius: BorderRadius.circular(20),
+                ? colors.surfaceSecondary.withAlpha(140)
+                : colors.surfacePrimary.withAlpha(210),
+            borderRadius: AppRadius.radiusPanel,
             border: Border.all(
-              color: colors.primary.withAlpha(isDark ? 80 : 50),
+              color: colors.surfaceBorder,
             ),
           ),
           child: Row(
@@ -649,15 +659,14 @@ class _EmptyCoursesCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Curate Your Courses',
+                      l10n.curateCoursesTitle,
                       style: typography.callout.bold.copyWith(
                         color: colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Tap to set up your subjects and track '
-                      'your syllabus progress.',
+                      l10n.curateCoursesSubtitle,
                       style: typography.caption.medium.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -678,7 +687,7 @@ class _EmptyCoursesCard extends StatelessWidget {
   }
 }
 
-/// Medium Viewport (600dp - 1024dp - Tablet) Two-Column Layout
+/// Medium Viewport (600dp - 1024dp - Tablet) Two-Column Bento Layout
 class _MediumDashboardLayout extends StatelessWidget {
   const _MediumDashboardLayout({
     required this.feed,
@@ -711,14 +720,23 @@ class _MediumDashboardLayout extends StatelessWidget {
           userPhotoUrl: userPhotoUrl,
         ),
         const SizedBox(height: 20),
-        if (feed.curatedCourses.isNotEmpty) ...[
-          const ExamCountdownBanner(),
-          const SizedBox(height: 20),
-        ],
-        if (heavyDebtDeck != null) ...[
-          _StudyDebtTriageBanner(deck: heavyDebtDeck),
-          const SizedBox(height: 20),
-        ],
+        AnimatedSize(
+          alignment: Alignment.topCenter,
+          duration: AppMotion.standard,
+          curve: AppMotion.easeOutCubic,
+          child: Column(
+            children: [
+              if (feed.curatedCourses.isNotEmpty) ...[
+                const ExamCountdownBanner(),
+                const SizedBox(height: 20),
+              ],
+              if (heavyDebtDeck != null) ...[
+                _StudyDebtTriageBanner(deck: heavyDebtDeck),
+                const SizedBox(height: 20),
+              ],
+            ],
+          ),
+        ),
         if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
           _NextBestActionCard(
             topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
@@ -728,7 +746,7 @@ class _MediumDashboardLayout extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left Column (Core Learning & Curriculum)
+            // Left Column (Core Learning & Curriculum - flex 6)
             Expanded(
               flex: 6,
               child: Column(
@@ -774,7 +792,7 @@ class _MediumDashboardLayout extends StatelessWidget {
             ),
             const SizedBox(width: 20),
 
-            // Right Column (Social Cohort & Analytics)
+            // Right Column (Social Cohort & Analytics - flex 4)
             Expanded(
               flex: 4,
               child: Column(
@@ -792,7 +810,7 @@ class _MediumDashboardLayout extends StatelessWidget {
   }
 }
 
-/// Expanded Viewport (>= 1024dp - Desktop/Web) Responsive Dashboard
+/// Expanded Viewport (>= 1024dp - Desktop/Web) Asymmetric Bento Grid Workstation
 class _ExpandedDashboardLayout extends StatelessWidget {
   const _ExpandedDashboardLayout({
     required this.feed,
@@ -814,26 +832,29 @@ class _ExpandedDashboardLayout extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        constraints: const BoxConstraints(maxWidth: 1320),
+        child: ListView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          padding: const EdgeInsets.fromLTRB(32, 28, 32, 100),
           children: [
-            // Center Primary Workspace (720dp)
-            Expanded(
-              flex: 6,
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                padding: const EdgeInsets.fromLTRB(32, 24, 20, 100),
+            // 1. Identity & Retention Anchor Header
+            HeaderProfileBar(
+              analytics: feed.analyticsSummary,
+              isProfileUncalibrated: feed.isProfileUncalibrated,
+              userName: userName,
+              userPhotoUrl: userPhotoUrl,
+            ),
+            const SizedBox(height: 24),
+
+            // 2. Urgent Callouts (with AnimatedSize for layout stability)
+            AnimatedSize(
+              alignment: Alignment.topCenter,
+              duration: AppMotion.standard,
+              curve: AppMotion.easeOutCubic,
+              child: Column(
                 children: [
-                  HeaderProfileBar(
-                    analytics: feed.analyticsSummary,
-                    isProfileUncalibrated: feed.isProfileUncalibrated,
-                    userName: userName,
-                    userPhotoUrl: userPhotoUrl,
-                  ),
-                  const SizedBox(height: 20),
                   if (feed.curatedCourses.isNotEmpty) ...[
                     const ExamCountdownBanner(),
                     const SizedBox(height: 20),
@@ -842,57 +863,136 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     _StudyDebtTriageBanner(deck: heavyDebtDeck),
                     const SizedBox(height: 20),
                   ],
-                  if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
-                    _NextBestActionCard(
-                      topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                  if (feed.dueStudyDecks.isNotEmpty)
-                    FsrsReviewDeckCard(
-                      deck: feed.dueStudyDecks.first,
-                      isHero: true,
-                    )
-                  else
-                    _EmptyStudyDecksCard(l10n: context.l10n),
-                  const SizedBox(height: 20),
-                  if (feed.curatedCourses.isNotEmpty)
-                    CuratedCourseCarousel(courses: feed.curatedCourses)
-                  else
-                    _EmptyCoursesCard(l10n: context.l10n),
-                  const SizedBox(height: 20),
-                  const QuickActionSpeedDial(),
                 ],
               ),
             ),
 
-            // Right Utility Panel (Stats & Remaining Due Decks)
-            Expanded(
-              flex: 4,
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
+            // 3. Asymmetric Bento Grid Workstation
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Primary Focus Workstation Column (flex: 7)
+                Expanded(
+                  flex: 7,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 1-Tap Sprint Tile
+                      if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
+                        _NextBestActionCard(
+                          topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Hero FSRS Active Recall Card
+                      if (feed.dueStudyDecks.isNotEmpty) ...[
+                        FsrsReviewDeckCard(
+                          deck: feed.dueStudyDecks.first,
+                          isHero: true,
+                        ),
+                        if (feed.dueStudyDecks.length > 1) ...[
+                          const SizedBox(height: 20),
+                          _DesktopSpacedRepetitionGrid(
+                            decks: feed.dueStudyDecks.skip(1).toList(),
+                          ),
+                        ],
+                      ] else ...[
+                        _EmptyStudyDecksCard(l10n: context.l10n),
+                      ],
+                      const SizedBox(height: 24),
+
+                      // Curated Courses Repository
+                      if (feed.curatedCourses.isNotEmpty)
+                        CuratedCourseCarousel(courses: feed.curatedCourses)
+                      else
+                        _EmptyCoursesCard(l10n: context.l10n),
+                    ],
+                  ),
                 ),
-                padding: const EdgeInsets.fromLTRB(20, 24, 32, 100),
-                children: [
-                  if (feed.dueStudyDecks.length > 1) ...[
-                    ...feed.dueStudyDecks.skip(1).map((deck) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: FsrsReviewDeckCard(deck: deck),
-                      );
-                    }),
-                    const SizedBox(height: 12),
-                  ],
-                  _StudyCirclePodPulseCard(targetTrack: targetTrack),
-                  const SizedBox(height: 20),
-                  RetentionHeatMapWidget(analytics: feed.analyticsSummary),
-                ],
-              ),
+                const SizedBox(width: 24),
+
+                // Workstation Telemetry & Toolbox Column (flex: 5)
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Real-time Cohort Presence
+                      _StudyCirclePodPulseCard(targetTrack: targetTrack),
+                      const SizedBox(height: 20),
+
+                      // Retention Heatmap & Mastery Matrix
+                      RetentionHeatMapWidget(analytics: feed.analyticsSummary),
+                      const SizedBox(height: 20),
+
+                      // Speed Dial / Action Toolbox
+                      const QuickActionSpeedDial(),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Responsive Grid for remaining queued decks on Desktop Workstation
+class _DesktopSpacedRepetitionGrid extends StatelessWidget {
+  const _DesktopSpacedRepetitionGrid({required this.decks});
+
+  final List<StudyDeckEntity> decks;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                l10n.dashboardSpacedRepetitionQueue,
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 15.5,
+                ),
+              ),
+              Text(
+                l10n.dashboardDecksCount(decks.length),
+                style: typography.caption.bold.copyWith(
+                  color: colors.primary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 360,
+            mainAxisExtent: 185,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+          ),
+          itemCount: decks.length,
+          itemBuilder: (context, index) {
+            return FsrsReviewDeckCard(deck: decks[index]);
+          },
+        ),
+      ],
     );
   }
 }
@@ -909,124 +1009,132 @@ class _NextBestActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    const badgeLabel = '15-MIN SPRINT';
-    final actionTitle = 'Review ${topDeck.title}';
+    final badgeLabel = l10n.fifteenMinSprint;
+    final actionTitle = l10n.dashboardReviewDeck;
 
-    return ShrinkableButton(
-      onTap: () {
-        AppFeedback.selection();
-        unawaited(
-          context.router.push(
-            StudySessionRoute(deckId: 'sprint:10:${topDeck.id}'),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              colors.primary.withAlpha(isDark ? 60 : 30),
-              colors.syllabotAccent.withAlpha(isDark ? 45 : 20),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colors.primary.withAlpha(isDark ? 100 : 70),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.primary.withAlpha(isDark ? 30 : 15),
-              blurRadius: 12,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [colors.primary, colors.syllabotAccent],
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, _) {
+        return ShrinkableButton(
+          onTap: () {
+            AppFeedback.selection();
+            unawaited(
+              context.router.push(
+                StudySessionRoute(deckId: 'sprint:10:${topDeck.id}'),
+              ),
+            );
+          },
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colors.primary.withAlpha(isDark ? (isHovered ? 75 : 55) : (isHovered ? 35 : 25)),
+                  colors.syllabotAccent.withAlpha(isDark ? (isHovered ? 55 : 40) : (isHovered ? 25 : 18)),
+                ],
+              ),
+              borderRadius: AppRadius.radiusPanel,
+              border: Border.all(
+                color: isHovered
+                    ? colors.primary.withAlpha(isDark ? 140 : 100)
+                    : colors.primary.withAlpha(isDark ? 90 : 60),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withAlpha(isDark ? (isHovered ? 40 : 25) : (isHovered ? 20 : 10)),
+                  blurRadius: isHovered ? 14 : 10,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              child: Icon(
-                Icons.bolt_rounded,
-                color: colors.white,
-                size: 22,
-              ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [colors.primary, colors.syllabotAccent],
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.bolt_rounded,
+                    color: colors.white,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'NEXT BEST ACTION',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 10,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(30),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          badgeLabel,
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 8.5,
+                      Row(
+                        children: [
+                          Text(
+                            l10n.nextBestActionTitle,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 10,
+                              letterSpacing: 0.8,
+                            ),
                           ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(30),
+                              borderRadius: AppRadius.radiusBadge,
+                            ),
+                            child: Text(
+                              badgeLabel,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 8.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$actionTitle: ${topDeck.title}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.subhead.bold.copyWith(
+                          color: colors.textPrimary,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    actionTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: typography.subhead.bold.copyWith(
-                      color: colors.textPrimary,
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: AppRadius.radiusBadge,
+                  ),
+                  child: Text(
+                    l10n.startAction,
+                    style: typography.caption.bold.copyWith(
+                      color: colors.white,
+                      fontSize: 12,
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: colors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'Start',
-                style: typography.caption.bold.copyWith(
-                  color: colors.white,
-                  fontSize: 12,
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1041,113 +1149,121 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     final trackLabel = (targetTrack != null && targetTrack!.trim().isNotEmpty)
-        ? '$targetTrack Pod'
-        : 'Study Circle Pod';
+        ? l10n.podSuffix(targetTrack!)
+        : l10n.studyCirclePod;
 
-    return ShrinkableButton(
-      onTap: () {
-        unawaited(HapticFeedback.lightImpact());
-        unawaited(context.navigateTo(const CommunityHubRoute()));
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isDark
-              ? colors.surfaceSecondary.withAlpha(150)
-              : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: colors.syllabotAccent.withAlpha(isDark ? 80 : 50),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.syllabotAccent.withAlpha(isDark ? 20 : 10),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, _) {
+        return ShrinkableButton(
+          onTap: () {
+            unawaited(HapticFeedback.lightImpact());
+            unawaited(context.navigateTo(const CommunityHubRoute()));
+          },
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? colors.surfaceSecondary.withAlpha(isHovered ? 180 : 150)
+                  : colors.surfacePrimary,
+              borderRadius: AppRadius.radiusPanel,
+              border: Border.all(
+                color: isHovered
+                    ? colors.syllabotAccent.withAlpha(isDark ? 120 : 80)
+                    : colors.surfaceBorder,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.syllabotAccent.withAlpha(isDark ? 20 : 10),
+                  blurRadius: isHovered ? 12 : 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Live pulsing dot indicator
-                Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(
-                    color: colors.success,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.success.withAlpha(140),
-                        blurRadius: 6,
-                        spreadRadius: 1.5,
+                Row(
+                  children: [
+                    // Live pulsing dot indicator
+                    Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: colors.success,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.success.withAlpha(140),
+                            blurRadius: 6,
+                            spreadRadius: 1.5,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.podPulseTitle,
+                      style: typography.caption.bold.copyWith(
+                        color: colors.syllabotAccent,
+                        fontSize: 10.5,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      trackLabel,
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 11,
+                      color: colors.textSecondary,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'POD PULSE',
-                  style: typography.caption.bold.copyWith(
-                    color: colors.syllabotAccent,
-                    fontSize: 10.5,
-                    letterSpacing: 0.9,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  trackLabel,
-                  style: typography.caption.medium.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 11,
-                  color: colors.textSecondary,
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _PodMetricChip(
+                        icon: Icons.group_rounded,
+                        value: '4/6',
+                        label: l10n.activeToday,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _PodMetricChip(
+                        icon: Icons.timer_outlined,
+                        value: '185m',
+                        label: l10n.groupFocus,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _PodMetricChip(
+                        icon: Icons.bolt_rounded,
+                        value: '+250',
+                        label: l10n.podKarma,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            const Row(
-              children: [
-                Expanded(
-                  child: _PodMetricChip(
-                    icon: Icons.group_rounded,
-                    value: '4/6',
-                    label: 'Active Today',
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: _PodMetricChip(
-                    icon: Icons.timer_outlined,
-                    value: '185m',
-                    label: 'Group Focus',
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: _PodMetricChip(
-                    icon: Icons.bolt_rounded,
-                    value: '+250',
-                    label: 'Pod Karma',
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1175,7 +1291,8 @@ class _PodMetricChip extends StatelessWidget {
         color: isDark
             ? colors.surfacePrimary.withAlpha(180)
             : colors.surfaceSecondary.withAlpha(130),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.radiusCard,
+        border: Border.all(color: colors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1219,6 +1336,7 @@ class _StudyDebtTriageBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
     return Container(
@@ -1232,10 +1350,9 @@ class _StudyDebtTriageBanner extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.radiusPanel,
         border: Border.all(
-          color: colors.warning.withAlpha(isDark ? 110 : 80),
-          width: 1.2,
+          color: colors.warning.withAlpha(isDark ? 90 : 60),
         ),
       ),
       child: Row(
@@ -1261,7 +1378,7 @@ class _StudyDebtTriageBanner extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'BACKLOG TRIAGE',
+                      l10n.backlogTriageTitle,
                       style: typography.caption.bold.copyWith(
                         color: colors.warning,
                         fontSize: 10,
@@ -1271,15 +1388,15 @@ class _StudyDebtTriageBanner extends StatelessWidget {
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
+                        horizontal: 6,
+                        vertical: 2,
                       ),
                       decoration: BoxDecoration(
                         color: colors.warning.withAlpha(30),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: AppRadius.radiusBadge,
                       ),
                       child: Text(
-                        '${deck.dueCards} DUE',
+                        l10n.dashboardDueCount(deck.dueCards),
                         style: typography.caption.bold.copyWith(
                           color: colors.warning,
                           fontSize: 9,
@@ -1290,7 +1407,7 @@ class _StudyDebtTriageBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Feeling overwhelmed? No guilt.',
+                  l10n.backlogTriageSubtitle,
                   style: typography.subhead.bold.copyWith(
                     color: colors.textPrimary,
                     fontSize: 13,
@@ -1298,7 +1415,7 @@ class _StudyDebtTriageBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Syllabot can prioritize your 10 highest-decay cards in "${deck.title}".',
+                  l10n.backlogTriageBody(deck.title),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: typography.caption.regular.copyWith(
@@ -1320,13 +1437,13 @@ class _StudyDebtTriageBanner extends StatelessWidget {
               );
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: colors.warning,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppRadius.radiusCard,
               ),
               child: Text(
-                'Triage 10',
+                l10n.triageTenAction,
                 style: typography.caption.bold.copyWith(
                   color: colors.white,
                   fontSize: 11,

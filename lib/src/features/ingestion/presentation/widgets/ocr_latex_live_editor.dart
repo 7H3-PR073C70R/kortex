@@ -1,11 +1,15 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class OcrLatexLiveEditor extends HookWidget {
@@ -30,176 +34,249 @@ class OcrLatexLiveEditor extends HookWidget {
         context: context,
         backgroundColor: colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
         ),
         builder: (ctx) {
           final customUrlController = TextEditingController();
 
           return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.photo_library_outlined,
-                            size: 20,
-                            color: colors.primary,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.photo_library_outlined,
+                                size: 20,
+                                color: colors.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Attach Diagram to Card',
+                                style: typography.title3.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Attach Diagram to Card',
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
+                          PlatformHoverBuilder(
+                            builder: (context, isHovered, child) {
+                              return AnimatedContainer(
+                                duration: AppMotion.snappy,
+                                curve: AppMotion.easeOutCubic,
+                                decoration: BoxDecoration(
+                                  color: isHovered
+                                      ? colors.surfaceSecondary
+                                      : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    color: isHovered
+                                        ? colors.textPrimary
+                                        : colors.textSecondary,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: colors.textSecondary,
-                          size: 20,
+                      const SizedBox(height: 12),
+                      if (availableImageUrls.isNotEmpty) ...[
+                        Text(
+                          'Extracted from document (${availableImageUrls.length} available):',
+                          style: typography.caption.medium.copyWith(
+                            color: colors.textSecondary,
+                          ),
                         ),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (availableImageUrls.isNotEmpty) ...[
-                    Text(
-                      'Extracted from document (${availableImageUrls.length} available):',
-                      style: typography.caption.medium.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 150,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: availableImageUrls.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 12),
-                        itemBuilder: (context, i) {
-                          final imgUrl = availableImageUrls[i];
-                          final isSelected = snippet.imageUrl == imgUrl;
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 150,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: availableImageUrls.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, i) {
+                              final imgUrl = availableImageUrls[i];
+                              final isSelected = snippet.imageUrl == imgUrl;
 
-                          return GestureDetector(
-                            onTap: () {
-                              onChanged(snippet.copyWith(imageUrl: imgUrl));
-                              Navigator.of(ctx).pop();
+                              return PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return AnimatedScale(
+                                    scale: isHovered ? 1.02 : 1.0,
+                                    duration: AppMotion.snappy,
+                                    curve: AppMotion.easeOutCubic,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        onChanged(
+                                          snippet.copyWith(imageUrl: imgUrl),
+                                        );
+                                        Navigator.of(ctx).pop();
+                                      },
+                                      child: AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.easeOutCubic,
+                                        width: 170,
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? colors.surfaceSecondary
+                                              : colors.surfacePrimary,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.card,
+                                          ),
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? colors.primary
+                                                : (isHovered
+                                                      ? colors.primary
+                                                            .withAlpha(120)
+                                                      : colors.surfaceBorder),
+                                            width: isSelected ? 2.5 : 1.2,
+                                          ),
+                                          boxShadow: isHovered
+                                              ? [
+                                                  BoxShadow(
+                                                    color: colors.primary
+                                                        .withAlpha(25),
+                                                    blurRadius: 10,
+                                                    offset: const Offset(0, 4),
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Stack(
+                                          children: [
+                                            Positioned.fill(
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      AppRadius.card - 2,
+                                                    ),
+                                                child: AppMultimodalImage(
+                                                  imageUrl: imgUrl,
+                                                  enableZoomOnTap: false,
+                                                ),
+                                              ),
+                                            ),
+                                            if (isSelected)
+                                              Positioned(
+                                                top: 8,
+                                                right: 8,
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(
+                                                    4,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: colors.primary,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.check_rounded,
+                                                    size: 14,
+                                                    color: colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
                             },
-                            child: Container(
-                              width: 170,
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfacePrimary,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? colors.primary
-                                      : colors.surfaceBorder,
-                                  width: isSelected ? 2.5 : 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      // Custom Image URL option
+                      Text(
+                        'Or paste image / diagram URL:',
+                        style: typography.caption.medium.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: customUrlController,
+                              decoration: InputDecoration(
+                                hintText: 'https://... or storage path',
+                                isDense: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.card,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
                                 ),
                               ),
-                              child: Stack(
-                                children: [
-                                  Positioned.fill(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: AppMultimodalImage(
-                                        imageUrl: imgUrl,
-                                        enableZoomOnTap: false,
+                              style: typography.body.regular.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          PlatformHoverBuilder(
+                            builder: (context, isHovered, child) {
+                              return AnimatedScale(
+                                scale: isHovered ? 1.02 : 1.0,
+                                duration: AppMotion.snappy,
+                                curve: AppMotion.easeOutCubic,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    final text = customUrlController.text
+                                        .trim();
+                                    if (text.isNotEmpty) {
+                                      onChanged(
+                                        snippet.copyWith(imageUrl: text),
+                                      );
+                                      Navigator.of(ctx).pop();
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: colors.primary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.card,
                                       ),
                                     ),
                                   ),
-                                  if (isSelected)
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: colors.primary,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.check_rounded,
-                                          size: 14,
-                                          color: colors.white,
-                                        ),
-                                      ),
+                                  child: Text(
+                                    'Apply',
+                                    style: typography.body.bold.copyWith(
+                                      color: colors.white,
                                     ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  // Custom Image URL option
-                  Text(
-                    'Or paste image / diagram URL:',
-                    style: typography.caption.medium.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: customUrlController,
-                          decoration: InputDecoration(
-                            hintText: 'https://... or storage path',
-                            isDense: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          style: typography.body.regular.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          final text = customUrlController.text.trim();
-                          if (text.isNotEmpty) {
-                            onChanged(snippet.copyWith(imageUrl: text));
-                            Navigator.of(ctx).pop();
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Text(
-                          'Apply',
-                          style: typography.body.bold.copyWith(
-                            color: colors.white,
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           );
@@ -242,7 +319,7 @@ class OcrLatexLiveEditor extends HookWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
           color: hasImage
               ? colors.primary.withAlpha(isDark ? 90 : 50)
@@ -260,7 +337,7 @@ class OcrLatexLiveEditor extends HookWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.badge),
                   border: Border.all(
                     color: colors.primary.withAlpha(isDark ? 80 : 40),
                   ),
@@ -277,11 +354,13 @@ class OcrLatexLiveEditor extends HookWidget {
               if (hasImage) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 3.5,
+                  ),
                   decoration: BoxDecoration(
                     color: colors.success.withAlpha(isDark ? 45 : 25),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
                       color: colors.success.withAlpha(isDark ? 100 : 60),
                     ),
@@ -336,7 +415,7 @@ class OcrLatexLiveEditor extends HookWidget {
                 color: isDark
                     ? colors.backgroundSecondary.withAlpha(120)
                     : colors.backgroundPrimary,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(
                   color: colors.primary.withAlpha(isDark ? 60 : 35),
                   width: 1.2,
@@ -366,34 +445,68 @@ class OcrLatexLiveEditor extends HookWidget {
                           ),
                         ),
                         if (availableImageUrls.length > 1)
-                          IconButton(
-                            icon: Icon(
-                              Icons.swap_horiz_rounded,
-                              size: 18,
-                              color: colors.primary,
-                            ),
-                            tooltip: 'Swap diagram',
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 30,
-                              minHeight: 30,
-                            ),
-                            onPressed: () => _showDiagramPicker(context),
+                          PlatformHoverBuilder(
+                            builder: (context, isHovered, child) {
+                              return AnimatedContainer(
+                                duration: AppMotion.snappy,
+                                curve: AppMotion.easeOutCubic,
+                                decoration: BoxDecoration(
+                                  color: isHovered
+                                      ? colors.primary.withAlpha(25)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.badge,
+                                  ),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.swap_horiz_rounded,
+                                    size: 18,
+                                    color: colors.primary,
+                                  ),
+                                  tooltip: 'Swap diagram',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 30,
+                                    minHeight: 30,
+                                  ),
+                                  onPressed: () => _showDiagramPicker(context),
+                                ),
+                              );
+                            },
                           ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.delete_outline_rounded,
-                            size: 18,
-                            color: colors.error.withAlpha(200),
-                          ),
-                          tooltip: 'Remove diagram',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 30,
-                            minHeight: 30,
-                          ),
-                          onPressed: () {
-                            onChanged(snippet.copyWith(clearImageUrl: true));
+                        PlatformHoverBuilder(
+                          builder: (context, isHovered, child) {
+                            return AnimatedContainer(
+                              duration: AppMotion.snappy,
+                              curve: AppMotion.easeOutCubic,
+                              decoration: BoxDecoration(
+                                color: isHovered
+                                    ? colors.error.withAlpha(25)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 18,
+                                  color: colors.error.withAlpha(200),
+                                ),
+                                tooltip: 'Remove diagram',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 30,
+                                  minHeight: 30,
+                                ),
+                                onPressed: () {
+                                  onChanged(
+                                    snippet.copyWith(clearImageUrl: true),
+                                  );
+                                },
+                              ),
+                            );
                           },
                         ),
                       ],
@@ -403,7 +516,7 @@ class OcrLatexLiveEditor extends HookWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.card - 4),
                       child: Container(
                         constraints: const BoxConstraints(
                           minHeight: 100,
@@ -427,7 +540,9 @@ class OcrLatexLiveEditor extends HookWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: colors.black.withAlpha(180),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.badge,
+                                ),
                                 border: Border.all(
                                   color: colors.white.withAlpha(40),
                                 ),
@@ -464,37 +579,49 @@ class OcrLatexLiveEditor extends HookWidget {
               padding: const EdgeInsets.only(top: 8),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: ShrinkableButton(
-                  onTap: () => _showDiagramPicker(context),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 25 : 15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 65 : 40),
-                        width: 1.1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.add_photo_alternate_outlined,
-                          size: 14,
-                          color: colors.primary,
+                child: PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return ShrinkableButton(
+                      onTap: () => _showDiagramPicker(context),
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Attach Diagram',
-                          style: typography.caption.medium.copyWith(
-                            color: colors.primary,
+                        decoration: BoxDecoration(
+                          color: isHovered
+                              ? colors.primary.withAlpha(isDark ? 40 : 30)
+                              : colors.primary.withAlpha(isDark ? 25 : 15),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          border: Border.all(
+                            color: isHovered
+                                ? colors.primary
+                                : colors.primary.withAlpha(isDark ? 65 : 40),
+                            width: 1.1,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 14,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Attach Diagram',
+                              style: typography.caption.medium.copyWith(
+                                color: colors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -529,7 +656,7 @@ class OcrLatexLiveEditor extends HookWidget {
                 color: colors.textMuted,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 borderSide: BorderSide(
                   color: colors.primary.withAlpha(isDark ? 40 : 20),
                 ),
@@ -567,7 +694,7 @@ class OcrLatexLiveEditor extends HookWidget {
                 fontSize: 12,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 borderSide: BorderSide(
                   color: colors.primary.withAlpha(isDark ? 40 : 20),
                 ),
@@ -593,7 +720,7 @@ class OcrLatexLiveEditor extends HookWidget {
                 color: isDark
                     ? colors.black.withAlpha(80)
                     : colors.primary.withAlpha(15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(
                   color: colors.primary.withAlpha(isDark ? 60 : 30),
                 ),

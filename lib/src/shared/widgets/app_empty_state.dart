@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/lonely_teddy_bear_widget.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// A standardized, reusable empty state presentation component.
@@ -37,7 +40,6 @@ class AppEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
 
     return Center(
       child: Padding(
@@ -67,7 +69,7 @@ class AppEmptyState extends StatelessWidget {
 
             // 3. Subtitle Description
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
+              constraints: const BoxConstraints(maxWidth: 420),
               child: Text(
                 subtitle,
                 textAlign: TextAlign.center,
@@ -94,22 +96,13 @@ class AppEmptyState extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: colors.primary,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withAlpha(isDark ? 80 : 50),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isHappy
-                            ? Icons.explore_rounded
-                            : Icons.add_rounded,
+                        isHappy ? Icons.explore_rounded : Icons.add_rounded,
                         color: colors.white,
                         size: 18,
                       ),
@@ -127,23 +120,32 @@ class AppEmptyState extends StatelessWidget {
             ],
 
             // 5. Secondary Action Link
-            if (secondaryActionLabel != null &&
-                onSecondaryAction != null) ...[
+            if (secondaryActionLabel != null && onSecondaryAction != null) ...[
               const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () {
-                  unawaited(HapticFeedback.selectionClick());
-                  onSecondaryAction!();
+              PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return AnimatedScale(
+                    scale: isHovered ? 1.04 : 1.0,
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.easeOutCubic,
+                    child: child,
+                  );
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 16,
-                  ),
-                  child: Text(
-                    secondaryActionLabel!,
-                    style: typography.callout.medium.copyWith(
-                      color: colors.primary,
+                child: GestureDetector(
+                  onTap: () {
+                    unawaited(HapticFeedback.selectionClick());
+                    onSecondaryAction!();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
+                    child: Text(
+                      secondaryActionLabel!,
+                      style: typography.callout.medium.copyWith(
+                        color: colors.primary,
+                      ),
                     ),
                   ),
                 ),

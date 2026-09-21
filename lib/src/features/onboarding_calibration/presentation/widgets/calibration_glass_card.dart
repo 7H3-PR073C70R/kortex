@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 
 /// Elevated glassmorphic container with 28px backdrop blur
 /// and gradient borders.
@@ -8,7 +9,7 @@ class CalibrationGlassCard extends StatelessWidget {
   const CalibrationGlassCard({
     required this.child,
     this.padding = const EdgeInsets.all(24),
-    this.borderRadius = 24,
+    this.borderRadius = AppRadius.dialog,
     super.key,
   });
 

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
@@ -134,360 +135,365 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
           ),
         ),
       ),
-      body: ListView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-        children: [
-          // 1. Grade Card or Millionaire Victory Card
-          if (isMillionaire) ...[
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    if (isDark) colors.surfaceSecondary else colors.cardBackground,
-                    if (isDark) colors.backgroundSecondary else colors.surfaceSecondary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isWalkedAway || currentTier >= 12
-                      ? colors.warning.withValues(alpha: 0.6)
-                      : colors.success.withValues(alpha: 0.6),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.syllabotAccent.withValues(alpha: 0.25),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 820),
+          child: ListView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+            children: [
+              // 1. Grade Card or Millionaire Victory Card
+              if (isMillionaire) ...[
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        if (isDark) colors.surfaceSecondary else colors.surfacePrimary,
+                        if (isDark) colors.backgroundSecondary else colors.surfaceSecondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
+                    border: Border.all(
+                      color: isWalkedAway || currentTier >= 12
+                          ? colors.warning.withValues(alpha: 0.6)
+                          : colors.success.withValues(alpha: 0.6),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.syllabotAccent.withValues(alpha: 0.25),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Icon badge
-                  Container(
-                    width: 68,
-                    height: 68,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: currentTier >= 12
-                            ? [colors.warning, colors.warning.withAlpha(200)]
+                  child: Column(
+                    children: [
+                      // Icon badge
+                      Container(
+                        width: 68,
+                        height: 68,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: currentTier >= 12
+                                ? [colors.warning, colors.warning.withAlpha(200)]
+                                : isWalkedAway
+                                    ? [colors.success, colors.success.withAlpha(200)]
+                                    : [colors.syllabotAccent, colors.primary],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (currentTier >= 12
+                                      ? colors.warning
+                                      : colors.success)
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          currentTier >= 12
+                              ? Icons.emoji_events_rounded
+                              : isWalkedAway
+                                  ? Icons.savings_rounded
+                                  : Icons.military_tech_rounded,
+                          size: 36,
+                          color: colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        currentTier >= 12
+                            ? 'MILLIONAIRE CHAMPION! 🏆'
                             : isWalkedAway
-                                ? [colors.success, colors.success.withAlpha(200)]
-                                : [colors.syllabotAccent, colors.primary],
+                                ? 'STRATEGIC CASH-OUT! 💰'
+                                : 'TIER $currentTier ASCENT REACHED! ⚡',
+                        textAlign: TextAlign.center,
+                        style: typography.title3.bold.copyWith(
+                          color: colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        currentTier >= 12
+                            ? 'You conquered all 12 rungs of the ladder with flawless cognitive retrieval.'
+                            : isWalkedAway
+                                ? 'You exercised executive self-regulation and safely banked Tier $currentTier XP!'
+                                : 'You climbed through Tier $currentTier with banked checkpoint safety net.',
+                        textAlign: TextAlign.center,
+                        style: typography.footnote.regular.copyWith(
+                          color: colors.white.withAlpha(200),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      // XP Reward Matrix
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                            color: colors.white.withValues(alpha: 0.15),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _StatColumn(
+                              title: 'ASCENT TIER',
+                              value: '$currentTier / 12',
+                              color: colors.warning,
+                            ),
+                            Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
+                            _StatColumn(
+                              title: 'SPEED BONUS',
+                              value: '+$speedBonusXp XP',
+                              color: colors.success,
+                            ),
+                            Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
+                            _StatColumn(
+                              title: 'BANKED XP',
+                              value: '${(currentTier * 100) + speedBonusXp}',
+                              color: colors.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        gradeColor.withValues(alpha: isDark ? 0.25 : 0.12),
+                        (isDark ? colors.surfaceSecondary : colors.surfacePrimary).withValues(alpha: 0.95),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
+                    border: Border.all(
+                      color: gradeColor.withValues(alpha: 0.4),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 25 : 6),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        isPassed
+                            ? Icons.emoji_events_rounded
+                            : Icons.insights_rounded,
+                        size: 54,
+                        color: gradeColor,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.quizScoreLabel(score),
+                        style: typography.largeTitle.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${result.correctAnswers} of ${result.totalQuestions} '
+                        'questions correct',
+                        style: typography.body.regular.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 24),
+
+              // 2. Weakness Breakdown Section Header
+              Text(
+                l10n.quizTopicWeakness,
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // 3. Topic Weakness Tiles
+              if (result.weaknesses.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Comprehensive mastery across all topics!',
+                    style: typography.body.regular.copyWith(
+                      color: colors.success,
+                    ),
+                  ),
+                )
+              else
+                ...result.weaknesses.map((weakness) {
+                  final acc = (weakness.accuracy * 100).toInt();
+                  final isWeak = weakness.isWeak;
+                  final badgeColor = isWeak ? colors.error : colors.success;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: isWeak
+                            ? colors.error.withValues(alpha: 0.3)
+                            : colors.surfaceBorder,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: (currentTier >= 12
-                                  ? colors.warning
-                                  : colors.success)
-                              .withValues(alpha: 0.4),
-                          blurRadius: 18,
-                          offset: const Offset(0, 4),
+                          color: colors.black.withAlpha(isDark ? 20 : 4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
                       ],
-                    ),
-                    child: Icon(
-                      currentTier >= 12
-                          ? Icons.emoji_events_rounded
-                          : isWalkedAway
-                              ? Icons.savings_rounded
-                              : Icons.military_tech_rounded,
-                      size: 36,
-                      color: colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    currentTier >= 12
-                        ? 'MILLIONAIRE CHAMPION! 🏆'
-                        : isWalkedAway
-                            ? 'STRATEGIC CASH-OUT! 💰'
-                            : 'TIER $currentTier ASCENT REACHED! ⚡',
-                    textAlign: TextAlign.center,
-                    style: typography.title3.bold.copyWith(
-                      color: colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    currentTier >= 12
-                        ? 'You conquered all 12 rungs of the ladder with flawless cognitive retrieval.'
-                        : isWalkedAway
-                            ? 'You exercised executive self-regulation and safely banked Tier $currentTier XP!'
-                            : 'You climbed through Tier $currentTier with banked checkpoint safety net.',
-                    textAlign: TextAlign.center,
-                    style: typography.footnote.regular.copyWith(
-                      color: colors.white.withAlpha(200),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  // XP Reward Matrix
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: colors.white.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colors.white.withValues(alpha: 0.15),
-                      ),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _StatColumn(
-                          title: 'ASCENT TIER',
-                          value: '$currentTier / 12',
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                weakness.subTopic,
+                                style: typography.body.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${weakness.correctCount} / ${weakness.totalQuestions} Correct',
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            border: Border.all(
+                              color: badgeColor.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Text(
+                            '$acc%',
+                            style: typography.caption.bold.copyWith(
+                              color: badgeColor,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+
+              // 4. Diagnostic Mistake Autopsy (Cognitive Learning Science)
+              if (!isPassed && result.totalQuestions > result.correctAnswers) ...[
+                const SizedBox(height: 24),
+                Text(
+                  'Diagnostic Mistake Autopsy',
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Cognitive breakdown to target root causes behind missed answers:',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: colors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(
+                      color: colors.warning.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: colors.warning.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.psychology_alt_rounded,
                           color: colors.warning,
+                          size: 20,
                         ),
-                        Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
-                        _StatColumn(
-                          title: 'SPEED BONUS',
-                          value: '+$speedBonusXp XP',
-                          color: colors.success,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Conceptual Reinforcement Needed',
+                              style: typography.subhead.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${result.totalQuestions - result.correctAnswers} missed questions converted into targeted flashcards below.',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
-                        Container(width: 1, height: 28, color: colors.white.withAlpha(50)),
-                        _StatColumn(
-                          title: 'BANKED XP',
-                          value: '${(currentTier * 100) + speedBonusXp}',
-                          color: colors.primary,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ] else ...[
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    gradeColor.withValues(alpha: isDark ? 0.25 : 0.12),
-                    (isDark ? colors.surfaceSecondary : colors.cardBackground).withValues(alpha: 0.95),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: gradeColor.withValues(alpha: 0.4),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.black.withAlpha(isDark ? 25 : 6),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    isPassed
-                        ? Icons.emoji_events_rounded
-                        : Icons.insights_rounded,
-                    size: 54,
-                    color: gradeColor,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.quizScoreLabel(score),
-                    style: typography.largeTitle.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${result.correctAnswers} of ${result.totalQuestions} '
-                    'questions correct',
-                    style: typography.body.regular.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // 2. Weakness Breakdown Section Header
-          Text(
-            l10n.quizTopicWeakness,
-            style: typography.title3.bold.copyWith(
-              color: colors.textPrimary,
-            ),
+              ],
+            ],
           ),
-          const SizedBox(height: 12),
-
-          // 3. Topic Weakness Tiles
-          if (result.weaknesses.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'Comprehensive mastery across all topics!',
-                style: typography.body.regular.copyWith(
-                  color: colors.success,
-                ),
-              ),
-            )
-          else
-            ...result.weaknesses.map((weakness) {
-              final acc = (weakness.accuracy * 100).toInt();
-              final isWeak = weakness.isWeak;
-              final badgeColor = isWeak ? colors.error : colors.success;
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark ? colors.surfaceSecondary : colors.cardBackground,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isWeak
-                        ? colors.error.withValues(alpha: 0.3)
-                        : colors.surfaceBorder,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.black.withAlpha(isDark ? 20 : 4),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            weakness.subTopic,
-                            style: typography.body.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${weakness.correctCount} / ${weakness.totalQuestions} Correct',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: badgeColor.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: Text(
-                        '$acc%',
-                        style: typography.caption.bold.copyWith(
-                          color: badgeColor,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-
-          // 4. Diagnostic Mistake Autopsy (Cognitive Learning Science)
-          if (!isPassed && result.totalQuestions > result.correctAnswers) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Diagnostic Mistake Autopsy',
-              style: typography.title3.bold.copyWith(
-                color: colors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Cognitive breakdown to target root causes behind missed answers:',
-              style: typography.caption.regular.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colors.warning.withValues(alpha: 0.35),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: colors.warning.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.psychology_alt_rounded,
-                      color: colors.warning,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Conceptual Reinforcement Needed',
-                          style: typography.subhead.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${result.totalQuestions - result.correctAnswers} missed questions converted into targeted flashcards below.',
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
       bottomNavigationBar: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         decoration: BoxDecoration(
-          color: isDark ? colors.surfacePrimary : colors.cardBackground,
+          color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
           border: Border(
             top: BorderSide(
               color: colors.surfaceBorder,
@@ -503,49 +509,54 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
         ),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
-                  label: Text(
-                    l10n.practiceWeakCards,
-                    style: typography.callout.bold.copyWith(color: colors.white),
-                  ),
-                  onPressed: () => _handlePracticeWeakFlashcards(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.primary,
-                    foregroundColor: colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      icon: Icon(Icons.style_rounded, size: 20, color: colors.white),
+                      label: Text(
+                        l10n.practiceWeakCards,
+                        style: typography.callout.bold.copyWith(color: colors.white),
+                      ),
+                      onPressed: () => _handlePracticeWeakFlashcards(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: OutlinedButton.icon(
-                  icon: Icon(Icons.help_outline_rounded, size: 18, color: colors.warning),
-                  label: Text(
-                    'Ask Pod for Help (+100 XP Bounty)',
-                    style: typography.caption.bold.copyWith(color: colors.warning),
-                  ),
-                  onPressed: () => _handleAskPodForHelp(context),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: colors.warning.withAlpha(isDark ? 100 : 70)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      icon: Icon(Icons.help_outline_rounded, size: 18, color: colors.warning),
+                      label: Text(
+                        'Ask Pod for Help (+100 XP Bounty)',
+                        style: typography.caption.bold.copyWith(color: colors.warning),
+                      ),
+                      onPressed: () => _handleAskPodForHelp(context),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: colors.warning.withAlpha(isDark ? 100 : 70)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Tactile, morphing pill page indicator with spring physics and depth glow.
 class AnimatedPageIndicator extends StatelessWidget {
@@ -48,8 +50,6 @@ class AnimatedPageIndicator extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: List.generate(count, (index) {
           final isSelected = index == currentIndex;
-          final targetWidth = isSelected ? activeWidth : inactiveWidth;
-          final targetColor = isSelected ? resolvedActive : resolvedInactive;
           final shadowColor = isSelected
               ? resolvedActive.withAlpha(isDark ? 100 : 70)
               : context.colors.transparent;
@@ -62,32 +62,50 @@ class AnimatedPageIndicator extends StatelessWidget {
             button: onTap != null,
             label: label,
             selected: isSelected,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTap != null ? () => onTap!(index) : null,
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: spacing / 2,
-                  vertical: 14,
-                ),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  width: targetWidth,
-                  height: height,
-                  decoration: BoxDecoration(
-                    color: targetColor,
-                    borderRadius: BorderRadius.circular(borderRadius),
-                    boxShadow: [
-                      BoxShadow(
-                        color: shadowColor,
-                        blurRadius: 6,
-                        offset: const Offset(0, 1),
+            child: PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                final effectiveWidth = isSelected
+                    ? (isHovered ? activeWidth + 4 : activeWidth)
+                    : (isHovered ? inactiveWidth + 4 : inactiveWidth);
+                final effectiveColor = isSelected
+                    ? resolvedActive
+                    : (isHovered
+                          ? (isDark
+                                ? colors.textSecondary
+                                : colors.textPrimary.withAlpha(160))
+                          : resolvedInactive);
+
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onTap != null ? () => onTap!(index) : null,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: spacing / 2,
+                      vertical: 14,
+                    ),
+                    child: AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      width: effectiveWidth,
+                      height: height,
+                      decoration: BoxDecoration(
+                        color: effectiveColor,
+                        borderRadius: BorderRadius.circular(borderRadius),
+                        boxShadow: [
+                          if (isSelected || isHovered)
+                            BoxShadow(
+                              color: isSelected
+                                  ? shadowColor
+                                  : resolvedActive.withAlpha(isDark ? 50 : 30),
+                              blurRadius: isHovered ? 8 : 6,
+                              offset: const Offset(0, 1),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           );
         }),

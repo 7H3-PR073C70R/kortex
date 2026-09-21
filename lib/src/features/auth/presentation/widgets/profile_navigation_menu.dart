@@ -1,13 +1,17 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class ProfileNavigationMenu extends StatelessWidget {
@@ -28,7 +32,7 @@ class ProfileNavigationMenu extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.radiusDialog,
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(50),
         ),
@@ -203,55 +207,80 @@ class ProfileNavigationMenu extends StatelessWidget {
   }) {
     return Column(
       children: [
-        ShrinkableButton(
-          onTap: () {
-            AppFeedback.light();
-            onTap();
+        PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return ShrinkableButton(
+              onTap: () {
+                AppFeedback.light();
+                onTap();
+              },
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                decoration: BoxDecoration(
+                  color: isHovered
+                      ? colors.surfaceBorder.withAlpha(25)
+                      : colors.transparent,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 13,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? iconColor.withAlpha(40)
+                            : iconColor.withAlpha(25),
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                      child: Icon(icon, color: iconColor, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: typography.body.bold.copyWith(
+                              color: isHovered
+                                  ? colors.primary
+                                  : colors.textPrimary,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            subtitle,
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedSlide(
+                      offset: isHovered ? const Offset(0.2, 0) : Offset.zero,
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      child: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: isHovered
+                            ? colors.primary
+                            : colors.textSecondary.withAlpha(150),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: iconColor.withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 20),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: typography.body.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        subtitle,
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: colors.textSecondary.withAlpha(150),
-                ),
-              ],
-            ),
-          ),
         ),
         if (showDivider)
           Divider(

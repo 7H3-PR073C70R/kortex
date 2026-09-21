@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Modal dialog displaying simulated peer crowd polling distribution for Millionaire Mode.
@@ -59,7 +61,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppRadius.dialog),
           border: Border.all(
             color: colors.surfaceBorder,
           ),
@@ -84,7 +86,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [colors.primary, colors.primary.withAlpha(200)],
                     ),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     boxShadow: [
                       BoxShadow(
                         color: colors.primary.withValues(alpha: 0.35),
@@ -185,7 +187,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
                       child: Stack(
                         children: [
                           Container(
@@ -219,7 +221,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: colors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.badge),
                 border: Border.all(
                   color: colors.warning.withValues(alpha: 0.3),
                 ),
@@ -253,7 +255,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: colors.primary,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
                 child: Text(
                   'Resume Ascent',

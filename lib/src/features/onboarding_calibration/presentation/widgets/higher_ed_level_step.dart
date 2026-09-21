@@ -40,25 +40,45 @@ class HigherEdLevelStep extends StatelessWidget {
 
     final levelItems = backendLevels.isNotEmpty
         ? backendLevels
-            .map((e) {
-              final level = _parseHigherEdLevel(
-                (e.metadata['code'] as String?) ?? e.key,
-              );
-              if (level == null) return null;
-              return (
-                e.displayName,
-                resolveCurriculumIcon(e.iconName, Icons.history_edu_rounded),
-                level,
-              );
-            })
-            .whereType<(String, IconData, HigherEdLevel)>()
-            .toList()
+              .map((e) {
+                final level = _parseHigherEdLevel(
+                  (e.metadata['code'] as String?) ?? e.key,
+                );
+                if (level == null) return null;
+                return (
+                  e.displayName,
+                  resolveCurriculumIcon(e.iconName, Icons.history_edu_rounded),
+                  level,
+                );
+              })
+              .whereType<(String, IconData, HigherEdLevel)>()
+              .toList()
         : [
-            (l10n.calibrationOptionBSc, Icons.history_edu_rounded, HigherEdLevel.bsc),
-            (l10n.calibrationOptionMSc, Icons.workspace_premium_rounded, HigherEdLevel.msc),
-            (l10n.calibrationOptionPhD, Icons.psychology_alt_rounded, HigherEdLevel.phd),
-            (l10n.calibrationOptionOND, Icons.menu_book_rounded, HigherEdLevel.ond),
-            (l10n.calibrationOptionHND, Icons.auto_stories_rounded, HigherEdLevel.hnd),
+            (
+              l10n.calibrationOptionBSc,
+              Icons.history_edu_rounded,
+              HigherEdLevel.bsc,
+            ),
+            (
+              l10n.calibrationOptionMSc,
+              Icons.workspace_premium_rounded,
+              HigherEdLevel.msc,
+            ),
+            (
+              l10n.calibrationOptionPhD,
+              Icons.psychology_alt_rounded,
+              HigherEdLevel.phd,
+            ),
+            (
+              l10n.calibrationOptionOND,
+              Icons.menu_book_rounded,
+              HigherEdLevel.ond,
+            ),
+            (
+              l10n.calibrationOptionHND,
+              Icons.auto_stories_rounded,
+              HigherEdLevel.hnd,
+            ),
           ];
 
     return Column(

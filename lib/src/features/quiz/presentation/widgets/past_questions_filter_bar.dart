@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
@@ -53,7 +54,7 @@ class SubjectFilterBar extends StatelessWidget {
                         : colors.surfaceBorder.withAlpha(80),
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                   ),
                 ),
               );
@@ -84,7 +85,7 @@ class YearFilterButton extends StatelessWidget {
         return PopupMenuButton<int?>(
           color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
             side: BorderSide(
               color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
             ),
@@ -145,7 +146,7 @@ class YearFilterButton extends StatelessWidget {
                   : (isDark
                       ? colors.surfaceSecondary.withAlpha(120)
                       : colors.surfacePrimary),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(
                 color: isSpecific
                     ? colors.primary

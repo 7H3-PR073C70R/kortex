@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
@@ -311,165 +312,170 @@ class AddPastQuestionModalSheet extends HookWidget {
       }
     }
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.90,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            // Sheet Drag Handle & Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: Column(
-                children: [
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 4.5,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceBorder,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 720,
+          maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? colors.backgroundPrimary : colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                // Sheet Drag Handle & Header
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(25),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.post_add_rounded, size: 20, color: colors.primary),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Add Course Past Question',
-                              style: typography.title3.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 16.5,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$courseCode • $courseTitle',
-                              style: typography.caption.medium.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 12,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4.5,
+                          decoration: BoxDecoration(
+                            color: colors.surfaceBorder,
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                          ),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.close_rounded, color: colors.textSecondary, size: 20),
-                        onPressed: () => Navigator.of(context).pop(false),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(25),
+                              borderRadius: BorderRadius.circular(AppRadius.badge),
+                            ),
+                            child: Icon(Icons.post_add_rounded, size: 20, color: colors.primary),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Add Course Past Question',
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 16.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$courseCode • $courseTitle',
+                                  style: typography.caption.medium.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.close_rounded, color: colors.textSecondary, size: 20),
+                            onPressed: () => Navigator.of(context).pop(false),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
 
-            // Tab Selector
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: AppLiquidGlassTabBar(
-                tabs: const [
-                  'AI Document Upload',
-                  'Manual Form Entry',
-                ],
-                selectedIndex: selectedTab.value,
-                onTabSelected: (idx) {
-                  AppFeedback.light();
-                  selectedTab.value = idx;
-                },
-                height: 40,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Main Scrollable Body
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
-                children: [
-                  // Common Examination Year Picker
-                  _buildYearSection(
-                    context: context,
-                    selectedYear: selectedYear,
-                    isCustomYear: isCustomYear,
-                    customYearController: customYearController,
-                    colors: colors,
-                    typography: typography,
-                    isDark: isDark,
+                // Tab Selector
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: AppLiquidGlassTabBar(
+                    tabs: const [
+                      'AI Document Upload',
+                      'Manual Form Entry',
+                    ],
+                    selectedIndex: selectedTab.value,
+                    onTabSelected: (idx) {
+                      AppFeedback.light();
+                      selectedTab.value = idx;
+                    },
+                    height: 40,
                   ),
-                  const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 16),
 
-                  if (selectedTab.value == 0) ...[
-                    // --- AI Document Upload View ---
-                    _buildAiUploadView(
-                      context: context,
-                      pickedFile: pickedFile,
-                      isCalibrating: isCalibrating.value,
-                      calibrationProgress: calibrationProgress.value,
-                      calibrationStatus: calibrationStatus.value,
-                      calibratedQuestions: calibratedQuestions.value,
-                      onPickFile: () async {
-                        AppFeedback.light();
-                        final doc = await FilePickerService().pickStudyDocument(
-                          extensions: const ['pdf', 'png', 'jpg', 'jpeg', 'txt', 'pptx'],
-                        );
-                        if (doc != null) {
-                          pickedFile.value = doc;
-                          calibratedQuestions.value = [];
-                        }
-                      },
-                      onExecuteCalibration: handleAiExtraction,
-                      onSaveCalibrated: saveCalibratedQuestions,
-                      isSubmitting: isSubmitting.value,
-                      colors: colors,
-                      typography: typography,
-                      isDark: isDark,
-                    ),
-                  ] else ...[
-                    // --- Manual Form Entry View ---
-                    _buildManualFormView(
-                      context: context,
-                      isTheoryMode: isTheoryMode,
-                      promptController: promptController,
-                      optionAController: optionAController,
-                      optionBController: optionBController,
-                      optionCController: optionCController,
-                      optionDController: optionDController,
-                      correctOptionLabel: correctOptionLabel,
-                      explanationController: explanationController,
-                      topicController: topicController,
-                      attachedImagePath: attachedImagePath,
-                      onSave: saveManualQuestion,
-                      isSubmitting: isSubmitting.value,
-                      colors: colors,
-                      typography: typography,
-                      isDark: isDark,
-                    ),
-                  ],
-                ],
-              ),
+                // Main Scrollable Body
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+                    children: [
+                      // Common Examination Year Picker
+                      _buildYearSection(
+                        context: context,
+                        selectedYear: selectedYear,
+                        isCustomYear: isCustomYear,
+                        customYearController: customYearController,
+                        colors: colors,
+                        typography: typography,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 20),
+
+                      if (selectedTab.value == 0) ...[
+                        // --- AI Document Upload View ---
+                        _buildAiUploadView(
+                          context: context,
+                          pickedFile: pickedFile,
+                          isCalibrating: isCalibrating.value,
+                          calibrationProgress: calibrationProgress.value,
+                          calibrationStatus: calibrationStatus.value,
+                          calibratedQuestions: calibratedQuestions.value,
+                          onPickFile: () async {
+                            AppFeedback.light();
+                            final doc = await FilePickerService().pickStudyDocument(
+                              extensions: const ['pdf', 'png', 'jpg', 'jpeg', 'txt', 'pptx'],
+                            );
+                            if (doc != null) {
+                              pickedFile.value = doc;
+                              calibratedQuestions.value = [];
+                            }
+                          },
+                          onExecuteCalibration: handleAiExtraction,
+                          onSaveCalibrated: saveCalibratedQuestions,
+                          isSubmitting: isSubmitting.value,
+                          colors: colors,
+                          typography: typography,
+                          isDark: isDark,
+                        ),
+                      ] else ...[
+                        // --- Manual Form Entry View ---
+                        _buildManualFormView(
+                          context: context,
+                          isTheoryMode: isTheoryMode,
+                          promptController: promptController,
+                          optionAController: optionAController,
+                          optionBController: optionBController,
+                          optionCController: optionCController,
+                          optionDController: optionDController,
+                          correctOptionLabel: correctOptionLabel,
+                          explanationController: explanationController,
+                          topicController: topicController,
+                          attachedImagePath: attachedImagePath,
+                          onSave: saveManualQuestion,
+                          isSubmitting: isSubmitting.value,
+                          colors: colors,
+                          typography: typography,
+                          isDark: isDark,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -524,7 +530,7 @@ class AddPastQuestionModalSheet extends HookWidget {
                         color: isSelected
                             ? colors.primary
                             : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
                         border: Border.all(
                           color: isSelected ? colors.primary : colors.surfaceBorder,
                         ),
@@ -551,7 +557,7 @@ class AddPastQuestionModalSheet extends HookWidget {
                     color: isCustomYear.value
                         ? colors.primary
                         : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
                       color: isCustomYear.value ? colors.primary : colors.surfaceBorder,
                     ),
@@ -620,7 +626,7 @@ class AddPastQuestionModalSheet extends HookWidget {
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary.withAlpha(120) : colors.surfacePrimary,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
                 color: file != null ? colors.primary : colors.surfaceBorder,
                 width: file != null ? 1.5 : 1.0,
@@ -678,7 +684,7 @@ class AddPastQuestionModalSheet extends HookWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: colors.primary.withAlpha(isDark ? 30 : 15),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(color: colors.primary.withAlpha(60)),
             ),
             child: Column(
@@ -704,7 +710,7 @@ class AddPastQuestionModalSheet extends HookWidget {
                   value: calibrationProgress,
                   backgroundColor: colors.primary.withAlpha(30),
                   valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.micro),
                 ),
               ],
             ),
@@ -725,7 +731,7 @@ class AddPastQuestionModalSheet extends HookWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: colors.success.withAlpha(isDark ? 30 : 15),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               border: Border.all(color: colors.success.withAlpha(60)),
             ),
             child: Row(
@@ -751,7 +757,7 @@ class AddPastQuestionModalSheet extends HookWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(color: colors.surfaceBorder),
               ),
               child: Column(
@@ -766,7 +772,7 @@ class AddPastQuestionModalSheet extends HookWidget {
                           color: isTheory
                               ? colors.syllabotAccent.withAlpha(30)
                               : colors.primary.withAlpha(30),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
                         ),
                         child: Text(
                           isTheory ? 'THEORY / ESSAY' : 'MULTIPLE CHOICE',
@@ -853,7 +859,7 @@ class AddPastQuestionModalSheet extends HookWidget {
                     color: !isTheory
                         ? colors.primary.withAlpha(25)
                         : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
                       color: !isTheory ? colors.primary : colors.surfaceBorder,
                       width: !isTheory ? 1.5 : 1.0,
@@ -884,7 +890,7 @@ class AddPastQuestionModalSheet extends HookWidget {
                     color: isTheory
                         ? colors.syllabotAccent.withAlpha(25)
                         : (isDark ? colors.surfaceSecondary : colors.surfaceBorder.withAlpha(50)),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
                       color: isTheory ? colors.syllabotAccent : colors.surfaceBorder,
                       width: isTheory ? 1.5 : 1.0,

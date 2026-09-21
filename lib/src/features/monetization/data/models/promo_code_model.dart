@@ -20,7 +20,8 @@ class PromoRedemptionResultModel extends Equatable {
     return PromoRedemptionResultModel(
       success: json['success'] as bool? ?? false,
       code: json['code'] as String?,
-      durationDays: json['duration_days'] as int? ??
+      durationDays:
+          json['duration_days'] as int? ??
           (json['duration_days'] != null
               ? int.tryParse(json['duration_days'].toString())
               : null),
@@ -38,21 +39,21 @@ class PromoRedemptionResultModel extends Equatable {
   final String? message;
 
   Map<String, dynamic> toJson() => {
-        'success': success,
-        'code': code,
-        'duration_days': durationDays,
-        'pro_until': proUntil?.toIso8601String(),
-        'error_code': errorCode,
-        'message': message,
-      };
+    'success': success,
+    'code': code,
+    'duration_days': durationDays,
+    'pro_until': proUntil?.toIso8601String(),
+    'error_code': errorCode,
+    'message': message,
+  };
 
   @override
   List<Object?> get props => [
-        success,
-        code,
-        durationDays,
-        proUntil,
-        errorCode,
-        message,
-      ];
+    success,
+    code,
+    durationDays,
+    proUntil,
+    errorCode,
+    message,
+  ];
 }

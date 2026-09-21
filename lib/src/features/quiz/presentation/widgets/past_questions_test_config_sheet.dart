@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
@@ -31,29 +32,34 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
       backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
       ),
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 38,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: colors.surfaceBorder,
-                            borderRadius: BorderRadius.circular(2),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 38,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceBorder,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.micro),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
                       const SizedBox(height: 14),
                       Text(
                         'Configure ${state.selectedExam.displayName} Test',
@@ -280,7 +286,8 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                           height: 50,
                           decoration: BoxDecoration(
                             color: colors.primary,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.panel),
                             boxShadow: [
                               BoxShadow(
                                 color: colors.primary.withAlpha(90),
@@ -307,12 +314,14 @@ void showPastQuestionsTestConfigSheet(BuildContext context, PastQuestionsState s
                   ),
                 ),
               ),
-            );
-          },
+            ),
+          ),
         );
       },
-    ),
-  );
+    );
+  },
+),
+);
 }
 
 class ModeOptionCard extends StatelessWidget {
@@ -345,7 +354,7 @@ class ModeOptionCard extends StatelessWidget {
           color: isSelected
               ? colors.primary.withAlpha(isDark ? 40 : 20)
               : colors.surfaceSecondary.withAlpha(80),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
             color: isSelected
                 ? colors.primary

@@ -1,14 +1,18 @@
 import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/avatar_picker_dialog.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class ScholarHubCard extends StatelessWidget {
@@ -62,7 +66,7 @@ class ScholarHubCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: AppRadius.radiusDialog,
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(isDark ? 100 : 70),
         ),
@@ -75,64 +79,77 @@ class ScholarHubCard extends StatelessWidget {
             child: Row(
               children: [
                 // Interactive Avatar with gradient glow and edit badge
-                ShrinkableButton(
-                  onTap: () => showAvatarPickerDialog(
-                    context,
-                    colors,
-                    typography,
-                  ),
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              colors.primary,
-                              colors.syllabotAccent,
-                            ],
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 80 : 40),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return ShrinkableButton(
+                      onTap: () => showAvatarPickerDialog(
+                        context,
+                        colors,
+                        typography,
+                      ),
+                      child: AnimatedScale(
+                        scale: isHovered ? 1.05 : 1.0,
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 54,
+                              height: 54,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.primary,
+                                    colors.syllabotAccent,
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withAlpha(
+                                      isDark
+                                          ? (isHovered ? 110 : 80)
+                                          : (isHovered ? 65 : 40),
+                                    ),
+                                    blurRadius: isHovered ? 14 : 10,
+                                    offset: Offset(0, isHovered ? 4 : 3),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: _buildAvatarContent(
+                                  photoUrl: photoUrl,
+                                  displayName: displayName,
+                                  colors: colors,
+                                  typography: typography,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: colors.surfacePrimary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: colors.surfaceBorder,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.camera_alt_rounded,
+                                  size: 11,
+                                  color: colors.primary,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        child: Center(
-                          child: _buildAvatarContent(
-                            photoUrl: photoUrl,
-                            displayName: displayName,
-                            colors: colors,
-                            typography: typography,
-                          ),
-                        ),
                       ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: colors.surfaceBorder,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.camera_alt_rounded,
-                            size: 11,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -162,7 +179,7 @@ class ScholarHubCard extends StatelessWidget {
                               color: profile?.isPro == true
                                   ? colors.warning.withAlpha(35)
                                   : colors.primary.withAlpha(25),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: AppRadius.radiusBadge,
                             ),
                             child: Text(
                               profile?.isPro == true ? 'PRO' : 'Free Tier',
@@ -189,14 +206,31 @@ class ScholarHubCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    color: colors.textSecondary,
-                    size: 20,
-                  ),
-                  tooltip: 'Edit Profile Name',
-                  onPressed: onEditName,
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return IconButton(
+                      icon: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isHovered
+                              ? colors.surfaceBorder.withAlpha(40)
+                              : colors.transparent,
+                          borderRadius: AppRadius.radiusMicro,
+                        ),
+                        child: Icon(
+                          Icons.edit_outlined,
+                          color: isHovered
+                              ? colors.primary
+                              : colors.textSecondary,
+                          size: 20,
+                        ),
+                      ),
+                      tooltip: 'Edit Profile Name',
+                      onPressed: onEditName,
+                    );
+                  },
                 ),
               ],
             ),
@@ -258,7 +292,7 @@ class ScholarHubCard extends StatelessWidget {
               color: (streakFreezes > 0 ? colors.info : colors.warning)
                   .withAlpha(isDark ? 30 : 18),
               borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(22),
+                bottom: Radius.circular(AppRadius.dialog),
               ),
               border: Border(
                 top: BorderSide(
@@ -308,24 +342,39 @@ class ScholarHubCard extends StatelessWidget {
     required AppThemeColorsExtension colors,
     required TypographyThemeExtension typography,
   }) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: typography.caption.bold.copyWith(
-            color: colors.textPrimary,
-            fontSize: 13,
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isHovered
+                ? colors.surfaceBorder.withAlpha(30)
+                : colors.transparent,
+            borderRadius: AppRadius.radiusBadge,
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: typography.caption.regular.copyWith(
-            color: colors.textSecondary,
-            fontSize: 11,
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: typography.caption.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: typography.caption.regular.copyWith(
+                  color: isHovered ? colors.primary : colors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

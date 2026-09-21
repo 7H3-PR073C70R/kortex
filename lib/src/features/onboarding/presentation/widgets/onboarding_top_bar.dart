@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Translucent top bar with Kortex SVG logo and accessible Skip CTA.
 class OnboardingTopBar extends StatelessWidget {
@@ -65,23 +67,37 @@ class OnboardingTopBar extends StatelessWidget {
                 Semantics(
                   button: true,
                   label: l10n.onboardingSkipSemantics,
-                  child: TextButton(
-                    onPressed: onSkip,
-                    style: TextButton.styleFrom(
-                      foregroundColor: colors.textMuted,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      minimumSize: const Size(48, 36),
-                    ),
-                    child: Text(
-                      l10n.onboardingSkip,
-                      style: typography.subhead.semiBold.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 13.5,
-                      ),
-                    ),
+                  child: PlatformHoverBuilder(
+                    builder: (context, isHovered, child) {
+                      return TextButton(
+                        onPressed: onSkip,
+                        style: TextButton.styleFrom(
+                          foregroundColor: colors.textMuted,
+                          backgroundColor: isHovered
+                              ? colors.surfaceSecondary.withAlpha(
+                                  isDark ? 140 : 180,
+                                )
+                              : Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadius.radiusBadge,
+                          ),
+                          minimumSize: const Size(48, 36),
+                        ),
+                        child: Text(
+                          l10n.onboardingSkip,
+                          style: typography.subhead.semiBold.copyWith(
+                            color: isHovered
+                                ? colors.textPrimary
+                                : colors.textSecondary,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 )
               else

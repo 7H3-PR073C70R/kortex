@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 
 /// Data model representing a single localized onboarding slide.
@@ -206,7 +207,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                             // Ambient Radial Glow Backplate
                             Container(
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(28),
+                                borderRadius: AppRadius.radiusDialog,
                                 gradient: RadialGradient(
                                   radius: 0.85,
                                   colors: [
@@ -241,7 +242,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                                   width: double.infinity,
                                   height: double.infinity,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(24),
+                                    borderRadius: AppRadius.radiusDialog,
                                     gradient: LinearGradient(
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
@@ -281,7 +282,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                                     ],
                                   ),
                                   child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(22),
+                                    borderRadius: AppRadius.radiusDialog,
                                     child: FittedBox(
                                       child: SizedBox(
                                         width: 360,
@@ -326,7 +327,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
+                                        borderRadius: AppRadius.radiusPanel,
                                         child: BackdropFilter(
                                           filter: ImageFilter.blur(
                                             sigmaX: 8,
@@ -364,7 +365,7 @@ class _OnboardingSlideItem extends StatelessWidget {
                                   opacity: bodyOpacity,
                                   child: ConstrainedBox(
                                     constraints: const BoxConstraints(
-                                      maxWidth: 340,
+                                      maxWidth: 480,
                                     ),
                                     child: Text(
                                       data.description,

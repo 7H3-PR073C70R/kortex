@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class CameraLiveOcrOverlay extends StatelessWidget {
   const CameraLiveOcrOverlay({
@@ -46,120 +49,130 @@ class CameraLiveOcrOverlay extends StatelessWidget {
             top: 24,
             left: 20,
             right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Semantics(
-                  liveRegion: true,
-                  label: l10n.alignCameraTextHint,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.black.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: colors.white.withValues(alpha: 0.15),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.center_focus_strong_rounded,
-                          color: theme.colorScheme.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            l10n.alignCameraTextHint,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Auto-crop & Contrast Normalization Pills
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 8,
-                  runSpacing: 6,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.black.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colors.white.withValues(alpha: 0.12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.crop_free_rounded,
-                            color: colors.primary,
-                            size: 13,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Smart Page Auto-Crop',
-                            style: TextStyle(
-                              color: colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (contrastNormalized)
-                      Container(
+                    Semantics(
+                      liveRegion: true,
+                      label: l10n.alignCameraTextHint,
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                          horizontal: 16,
+                          vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.black.withValues(alpha: 0.65),
-                          borderRadius: BorderRadius.circular(12),
+                          color: colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(AppRadius.panel),
                           border: Border.all(
-                            color: colors.success.withValues(alpha: 0.4),
+                            color: colors.white.withValues(alpha: 0.15),
                           ),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.tonality_rounded,
-                              color: colors.success,
-                              size: 13,
+                              Icons.center_focus_strong_rounded,
+                              color: theme.colorScheme.primary,
+                              size: 20,
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              'Contrast Normalization Active',
-                              style: TextStyle(
-                                color: colors.success,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                l10n.alignCameraTextHint,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Auto-crop & Contrast Normalization Pills
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
+                            border: Border.all(
+                              color: colors.white.withValues(alpha: 0.12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.crop_free_rounded,
+                                color: colors.primary,
+                                size: 13,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Smart Page Auto-Crop',
+                                style: TextStyle(
+                                  color: colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (contrastNormalized)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.black.withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
+                              border: Border.all(
+                                color: colors.success.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.tonality_rounded,
+                                  color: colors.success,
+                                  size: 13,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'Contrast Normalization Active',
+                                  style: TextStyle(
+                                    color: colors.success,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
 
@@ -172,40 +185,59 @@ class CameraLiveOcrOverlay extends StatelessWidget {
               child: Semantics(
                 button: true,
                 label: 'Capture Camera Frame for Document Extraction',
-                child: GestureDetector(
-                  onTap: isProcessing ? null : onCapture,
-                  child: Container(
-                    width: 76,
-                    height: 76,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: colors.white,
-                        width: 4,
-                      ),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isProcessing
-                            ? colors.gray
-                            : theme.colorScheme.primary,
-                      ),
-                      child: isProcessing
-                          ? Center(
-                              child: AppLogoLoader(
-                                size: 24,
-                                color: colors.white,
-                              ),
-                            )
-                          : Icon(
-                              Icons.camera_alt_rounded,
+                child: PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedScale(
+                      scale: isHovered && !isProcessing ? 1.06 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      child: GestureDetector(
+                        onTap: isProcessing ? null : onCapture,
+                        child: Container(
+                          width: 76,
+                          height: 76,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
                               color: colors.white,
-                              size: 32,
+                              width: 4,
                             ),
-                    ),
-                  ),
+                            boxShadow: isHovered && !isProcessing
+                                ? [
+                                    BoxShadow(
+                                      color: theme.colorScheme.primary
+                                          .withAlpha(120),
+                                      blurRadius: 16,
+                                      spreadRadius: 2,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isProcessing
+                                  ? colors.gray
+                                  : theme.colorScheme.primary,
+                            ),
+                            child: isProcessing
+                                ? Center(
+                                    child: AppLogoLoader(
+                                      size: 24,
+                                      color: colors.white,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.camera_alt_rounded,
+                                    color: colors.white,
+                                    size: 32,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -256,14 +288,46 @@ class _BoundingBoxPainter extends CustomPainter {
     // Corner brackets for auto-crop alignment
     canvas
       ..drawRRect(rrect, cropGuidePaint)
-      ..drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(cornerLength, 0), cornerPaint)
-      ..drawLine(cropRect.topLeft, cropRect.topLeft + const Offset(0, cornerLength), cornerPaint)
-      ..drawLine(cropRect.topRight, cropRect.topRight + const Offset(-cornerLength, 0), cornerPaint)
-      ..drawLine(cropRect.topRight, cropRect.topRight + const Offset(0, cornerLength), cornerPaint)
-      ..drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(cornerLength, 0), cornerPaint)
-      ..drawLine(cropRect.bottomLeft, cropRect.bottomLeft + const Offset(0, -cornerLength), cornerPaint)
-      ..drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(-cornerLength, 0), cornerPaint)
-      ..drawLine(cropRect.bottomRight, cropRect.bottomRight + const Offset(0, -cornerLength), cornerPaint);
+      ..drawLine(
+        cropRect.topLeft,
+        cropRect.topLeft + const Offset(cornerLength, 0),
+        cornerPaint,
+      )
+      ..drawLine(
+        cropRect.topLeft,
+        cropRect.topLeft + const Offset(0, cornerLength),
+        cornerPaint,
+      )
+      ..drawLine(
+        cropRect.topRight,
+        cropRect.topRight + const Offset(-cornerLength, 0),
+        cornerPaint,
+      )
+      ..drawLine(
+        cropRect.topRight,
+        cropRect.topRight + const Offset(0, cornerLength),
+        cornerPaint,
+      )
+      ..drawLine(
+        cropRect.bottomLeft,
+        cropRect.bottomLeft + const Offset(cornerLength, 0),
+        cornerPaint,
+      )
+      ..drawLine(
+        cropRect.bottomLeft,
+        cropRect.bottomLeft + const Offset(0, -cornerLength),
+        cornerPaint,
+      )
+      ..drawLine(
+        cropRect.bottomRight,
+        cropRect.bottomRight + const Offset(-cornerLength, 0),
+        cornerPaint,
+      )
+      ..drawLine(
+        cropRect.bottomRight,
+        cropRect.bottomRight + const Offset(0, -cornerLength),
+        cornerPaint,
+      );
 
     // 2. Draw detected OCR text blocks
     final boxPaint = Paint()
@@ -282,7 +346,10 @@ class _BoundingBoxPainter extends CustomPainter {
         block.width,
         block.height,
       );
-      final blockRRect = RRect.fromRectAndRadius(rect, const Radius.circular(6));
+      final blockRRect = RRect.fromRectAndRadius(
+        rect,
+        const Radius.circular(6),
+      );
       canvas
         ..drawRRect(blockRRect, fillPaint)
         ..drawRRect(blockRRect, boxPaint);

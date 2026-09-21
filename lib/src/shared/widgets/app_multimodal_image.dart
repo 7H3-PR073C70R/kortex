@@ -4,7 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Resilient multimodal image widget that reliably displays images from any source:
 /// - Full network URLs (HTTP / HTTPS)
@@ -73,16 +76,30 @@ class AppMultimodalImage extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: colors.black.withAlpha(160),
-                        shape: BoxShape.circle,
+                  child: PlatformHoverBuilder(
+                    builder: (context, isHovered, child) {
+                      return AnimatedScale(
+                        scale: isHovered ? 1.08 : 1.0,
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        child: child,
+                      );
+                    },
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: colors.black.withAlpha(160),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: colors.white,
+                          size: 20,
+                        ),
                       ),
-                      child: Icon(Icons.close_rounded, color: colors.white, size: 20),
+                      onPressed: () => Navigator.of(ctx).pop(),
                     ),
-                    onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ),
               ],
@@ -99,44 +116,48 @@ class AppMultimodalImage extends StatelessWidget {
     final url = _resolvedUrl;
 
     Widget errorPlaceholder([String? errorMsg]) => Container(
-          width: width,
-          height: height ?? 140,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: colors.surfaceSecondary.withAlpha(120),
-            borderRadius: borderRadius ?? BorderRadius.circular(12),
-            border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
-          ),
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.broken_image_rounded, color: colors.textSecondary, size: 20),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    errorMsg ?? 'Image unavailable',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: typography.caption.medium.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
+      width: width,
+      height: height ?? 140,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.surfaceSecondary.withAlpha(120),
+        borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
+      ),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.broken_image_rounded,
+              color: colors.textSecondary,
+              size: 20,
             ),
-          ),
-        );
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                errorMsg ?? 'Image unavailable',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.caption.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     Widget loadingPlaceholder() => Container(
-          width: width,
-          height: height ?? 140,
-          decoration: BoxDecoration(
-            color: colors.surfaceSecondary.withAlpha(80),
-            borderRadius: borderRadius ?? BorderRadius.circular(12),
-          ),
-          child: const Center(child: AppLogoLoader(size: 28)),
-        );
+      width: width,
+      height: height ?? 140,
+      decoration: BoxDecoration(
+        color: colors.surfaceSecondary.withAlpha(80),
+        borderRadius: borderRadius ?? BorderRadius.circular(AppRadius.card),
+      ),
+      child: const Center(child: AppLogoLoader(size: 28)),
+    );
 
     // 1. Data URI (Base64)
     if (url.startsWith('data:image')) {
@@ -149,7 +170,8 @@ class AppMultimodalImage extends StatelessWidget {
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (context, error, stackTrace) => errorPlaceholder('Invalid image data'),
+          errorBuilder: (context, error, stackTrace) =>
+              errorPlaceholder('Invalid image data'),
         );
       } on Object catch (_) {
         return errorPlaceholder('Failed to decode image');
@@ -163,7 +185,8 @@ class AppMultimodalImage extends StatelessWidget {
         fit: fit,
         width: width,
         height: height,
-        errorBuilder: (context, error, stackTrace) => errorPlaceholder('Asset missing'),
+        errorBuilder: (context, error, stackTrace) =>
+            errorPlaceholder('Asset missing'),
       );
     }
 
@@ -177,7 +200,8 @@ class AppMultimodalImage extends StatelessWidget {
           fit: fit,
           width: width,
           height: height,
-          errorBuilder: (context, error, stackTrace) => errorPlaceholder('File unreadable'),
+          errorBuilder: (context, error, stackTrace) =>
+              errorPlaceholder('File unreadable'),
         );
       }
       // If absolute path doesn't exist locally, check fallback before failing
@@ -194,7 +218,8 @@ class AppMultimodalImage extends StatelessWidget {
         if (progress == null) return child;
         return loadingPlaceholder();
       },
-      errorBuilder: (context, error, stackTrace) => errorPlaceholder('Failed to load image'),
+      errorBuilder: (context, error, stackTrace) =>
+          errorPlaceholder('Failed to load image'),
     );
   }
 

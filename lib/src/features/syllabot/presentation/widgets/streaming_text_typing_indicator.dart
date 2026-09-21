@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 class StreamingTextTypingIndicator extends HookWidget {
@@ -31,7 +32,7 @@ class StreamingTextTypingIndicator extends HookWidget {
             const SyllabotAvatar(size: 28),
             const SizedBox(width: 8),
             ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadius.radiusPanel,
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: Container(
@@ -43,7 +44,7 @@ class StreamingTextTypingIndicator extends HookWidget {
                     color: isDark
                         ? colors.surfaceSecondary.withAlpha(200)
                         : colors.surfacePrimary.withAlpha(220),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppRadius.radiusPanel,
                     border: Border.all(
                       color: colors.primary.withAlpha(isDark ? 50 : 30),
                     ),

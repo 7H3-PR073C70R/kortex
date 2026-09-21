@@ -50,23 +50,25 @@ class DocumentFingerprint {
 
   final String contentHash;
   final int pageCount;
+
   /// Map of pageIndex -> normalized text content sample
   final Map<int, String> sampledPages;
   final int totalBytes;
+
   /// Map of pageIndex -> "width_height"
   final Map<int, String> pageDimensions;
 
   Map<String, dynamic> toJson() => {
-        'contentHash': contentHash,
-        'pageCount': pageCount,
-        'sampledPages': sampledPages.map(
-          (k, v) => MapEntry(k.toString(), v),
-        ),
-        'totalBytes': totalBytes,
-        'pageDimensions': pageDimensions.map(
-          (k, v) => MapEntry(k.toString(), v),
-        ),
-      };
+    'contentHash': contentHash,
+    'pageCount': pageCount,
+    'sampledPages': sampledPages.map(
+      (k, v) => MapEntry(k.toString(), v),
+    ),
+    'totalBytes': totalBytes,
+    'pageDimensions': pageDimensions.map(
+      (k, v) => MapEntry(k.toString(), v),
+    ),
+  };
 }
 
 /// Service that performs deep document comparison beyond just filenames and hashes.
@@ -74,10 +76,11 @@ class DocumentFingerprint {
 /// guarantee document equivalence.
 class DeepDocumentDedupService {
   DeepDocumentDedupService({LocalStorageService? storage})
-      : _storage = storage ??
-            (locator.isRegistered<LocalStorageService>()
-                ? locator<LocalStorageService>()
-                : null);
+    : _storage =
+          storage ??
+          (locator.isRegistered<LocalStorageService>()
+              ? locator<LocalStorageService>()
+              : null);
 
   final LocalStorageService? _storage;
   final math.Random _random = math.Random();
@@ -184,8 +187,13 @@ class DeepDocumentDedupService {
       textContent = utf8.decode(bytes, allowMalformed: true);
     } on Object catch (_) {}
 
-    final lines = textContent.split('\n').where((l) => l.trim().isNotEmpty).toList();
-    final pageCount = lines.isEmpty ? 1 : math.max(1, (lines.length / 30).ceil());
+    final lines = textContent
+        .split('\n')
+        .where((l) => l.trim().isNotEmpty)
+        .toList();
+    final pageCount = lines.isEmpty
+        ? 1
+        : math.max(1, (lines.length / 30).ceil());
 
     final sampledPages = <int, String>{};
     if (lines.isNotEmpty) {
@@ -298,7 +306,8 @@ class DeepDocumentDedupService {
     if (existingFingerprint == null) {
       // No cached fingerprint yet: check file size difference
       // If file size differs by more than 10%, they are distinct
-      final sizeDelta = (incomingBytes.length - existingDoc.fileSizeBytes).abs();
+      final sizeDelta = (incomingBytes.length - existingDoc.fileSizeBytes)
+          .abs();
       if (sizeDelta > (incomingBytes.length * 0.10)) {
         return false;
       }
@@ -366,7 +375,8 @@ class DeepDocumentDedupService {
       }
       if (matchingDimensions == commonDimensionIndices.length) {
         // Dimensions and page counts are identical
-        final sizeDelta = (incomingBytes.length - existingDoc.fileSizeBytes).abs();
+        final sizeDelta = (incomingBytes.length - existingDoc.fileSizeBytes)
+            .abs();
         if (sizeDelta < (incomingBytes.length * 0.05)) {
           return true;
         }
@@ -384,14 +394,8 @@ class DeepDocumentDedupService {
     if (normA == normB) return 1;
     if (normA.isEmpty || normB.isEmpty) return 0;
 
-    final wordsA = normA
-        .split(' ')
-        .where((w) => w.length > 2)
-        .toSet();
-    final wordsB = normB
-        .split(' ')
-        .where((w) => w.length > 2)
-        .toSet();
+    final wordsA = normA.split(' ').where((w) => w.length > 2).toSet();
+    final wordsB = normB.split(' ').where((w) => w.length > 2).toSet();
 
     if (wordsA.isEmpty || wordsB.isEmpty) {
       return normA.contains(normB) || normB.contains(normA) ? 0.9 : 0;

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Single drawing stroke on the scratchpad.
 class ScratchpadStroke {
@@ -97,143 +99,158 @@ class ChatLatexScratchpadWidget extends HookWidget {
       }
     }
 
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-      ),
-      padding: EdgeInsets.only(
-        top: 20,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      decoration: BoxDecoration(
-        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.textSecondary.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
-          const SizedBox(height: 16),
-          // Header & Tools
-          Row(
+          padding: EdgeInsets.only(
+            top: 20,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
+            border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.draw_rounded, color: colors.primary, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Math Formula Scratchpad',
-                  style: typography.title2.bold.copyWith(
-                    color: colors.textPrimary,
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withValues(alpha: 0.3),
+                    borderRadius: AppRadius.radiusMicro,
                   ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.undo_rounded, size: 20),
-                color: colors.textSecondary,
-                tooltip: 'Undo last stroke',
-                onPressed: strokes.value.isEmpty ? null : undoStroke,
+              const SizedBox(height: 16),
+              // Header & Tools
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      borderRadius: AppRadius.radiusCard,
+                    ),
+                    child: Icon(Icons.draw_rounded, color: colors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Math Formula Scratchpad',
+                      style: typography.title2.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  PlatformHoverBuilder(
+                    builder: (context, isHovered, child) {
+                      return IconButton(
+                        icon: const Icon(Icons.undo_rounded, size: 20),
+                        color: isHovered ? colors.primary : colors.textSecondary,
+                        tooltip: 'Undo last stroke',
+                        onPressed: strokes.value.isEmpty ? null : undoStroke,
+                      );
+                    },
+                  ),
+                  PlatformHoverBuilder(
+                    builder: (context, isHovered, child) {
+                      return IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                        color: colors.error,
+                        tooltip: 'Clear canvas',
+                        onPressed: strokes.value.isEmpty ? null : clearAll,
+                      );
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, size: 20),
-                color: colors.error,
-                tooltip: 'Clear canvas',
-                onPressed: strokes.value.isEmpty ? null : clearAll,
+              const SizedBox(height: 12),
+              // Drawing Canvas
+              Container(
+                height: 220,
+                decoration: BoxDecoration(
+                  color: colors.surfacePrimary,
+                  borderRadius: AppRadius.radiusPanel,
+                  border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: GestureDetector(
+                  onPanStart: (details) {
+                    currentStroke.value = [details.localPosition];
+                  },
+                  onPanUpdate: (details) {
+                    currentStroke.value = List.of(currentStroke.value)..add(details.localPosition);
+                  },
+                  onPanEnd: (_) {
+                    if (currentStroke.value.isNotEmpty) {
+                      strokes.value = List.of(strokes.value)
+                        ..add(ScratchpadStroke(currentStroke.value));
+                      currentStroke.value = [];
+                      AppFeedback.light();
+                    }
+                  },
+                  child: CustomPaint(
+                    painter: ScratchpadPainter(
+                      strokes: strokes.value,
+                      currentStroke: currentStroke.value,
+                      strokeColor: colors.textPrimary,
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              // OCR LaTeX Preview
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colors.surfaceSecondary,
+                  borderRadius: AppRadius.radiusCard,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.functions_rounded, color: colors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        recognizedLatex.value,
+                        style: typography.caption.regular.copyWith(
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Insert CTA Button
+              AppButton(
+                text: 'Insert Formula into Chat',
+                prefixIcon: Icon(Icons.add_rounded, size: 18, color: colors.white),
+                onPressed: () {
+                  AppFeedback.correct();
+                  onInsertLatex(recognizedLatex.value);
+                  Navigator.of(context).pop();
+                },
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Drawing Canvas
-          Container(
-            height: 220,
-            decoration: BoxDecoration(
-              color: colors.surfacePrimary,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: GestureDetector(
-              onPanStart: (details) {
-                currentStroke.value = [details.localPosition];
-              },
-              onPanUpdate: (details) {
-                currentStroke.value = List.of(currentStroke.value)..add(details.localPosition);
-              },
-              onPanEnd: (_) {
-                if (currentStroke.value.isNotEmpty) {
-                  strokes.value = List.of(strokes.value)
-                    ..add(ScratchpadStroke(currentStroke.value));
-                  currentStroke.value = [];
-                  AppFeedback.light();
-                }
-              },
-              child: CustomPaint(
-                painter: ScratchpadPainter(
-                  strokes: strokes.value,
-                  currentStroke: currentStroke.value,
-                  strokeColor: colors.textPrimary,
-                ),
-                child: const SizedBox.expand(),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          // OCR LaTeX Preview
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: colors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.functions_rounded, color: colors.primary, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    recognizedLatex.value,
-                    style: typography.caption.regular.copyWith(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w600,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Insert CTA Button
-          AppButton(
-            text: 'Insert Formula into Chat',
-            prefixIcon: Icon(Icons.add_rounded, size: 18, color: colors.white),
-            onPressed: () {
-              AppFeedback.correct();
-              onInsertLatex(recognizedLatex.value);
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
+        ),
       ),
     );
   }

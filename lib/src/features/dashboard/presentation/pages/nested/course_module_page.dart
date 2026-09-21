@@ -8,6 +8,8 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -31,6 +33,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_confi
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -254,60 +257,65 @@ class _CourseModuleView extends StatelessWidget {
             ],
           ),
           body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. Hero Course Header Banner
-                  _buildHeaderBanner(
-                    context,
-                    colors,
-                    typography,
-                    isDark,
-                    associatedDecks.length,
-                    totalCards,
-                    totalDue,
-                  ),
-                  const SizedBox(height: 16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 860),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Hero Course Header Banner
+                      _buildHeaderBanner(
+                        context,
+                        colors,
+                        typography,
+                        isDark,
+                        associatedDecks.length,
+                        totalCards,
+                        totalDue,
+                      ),
+                      const SizedBox(height: 16),
 
-                  // 1.5. Course Exam Countdown
-                  _buildCourseExamCountdown(
-                    context,
-                    colors,
-                    typography,
-                    isDark,
-                  ),
-                  const SizedBox(height: 20),
+                      // 1.5. Course Exam Countdown
+                      _buildCourseExamCountdown(
+                        context,
+                        colors,
+                        typography,
+                        isDark,
+                      ),
+                      const SizedBox(height: 20),
 
-                  // 2. Document Ingestion Section (Accurate copy)
-                  _buildDocumentIngestionCard(
-                    context,
-                    colors,
-                    typography,
-                    isDark,
-                  ),
-                  const SizedBox(height: 28),
+                      // 2. Document Ingestion Section (Accurate copy)
+                      _buildDocumentIngestionCard(
+                        context,
+                        colors,
+                        typography,
+                        isDark,
+                      ),
+                      const SizedBox(height: 28),
 
-                  // 3. Associated Study Decks Section
-                  _buildDecksSection(
-                    context,
-                    associatedDecks,
-                    colors,
-                    typography,
-                    isDark,
-                  ),
-                  const SizedBox(height: 28),
+                      // 3. Associated Study Decks Section
+                      _buildDecksSection(
+                        context,
+                        associatedDecks,
+                        colors,
+                        typography,
+                        isDark,
+                      ),
+                      const SizedBox(height: 28),
 
-                  // 4. Official Past Papers & CBT Questions Section
-                  _buildPastQuestionsSection(
-                    context,
-                    colors,
-                    typography,
-                    isDark,
+                      // 4. Official Past Papers & CBT Questions Section
+                      _buildPastQuestionsSection(
+                        context,
+                        colors,
+                        typography,
+                        isDark,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -366,7 +374,7 @@ class _CourseModuleView extends StatelessWidget {
                         colors.surfacePrimary,
                       ],
               ),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 90 : 50),
               ),
@@ -378,7 +386,7 @@ class _CourseModuleView extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: colors.primary,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                   child: Center(
                     child: Text(
@@ -420,7 +428,7 @@ class _CourseModuleView extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
                       border: Border.all(
                         color: colors.primary.withAlpha(isDark ? 80 : 50),
                       ),
@@ -445,12 +453,12 @@ class _CourseModuleView extends StatelessWidget {
             preselectedCourseCode: courseCode,
             preselectedCourseTitle: courseTitle,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.panel),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: colors.surfaceSecondary.withAlpha(isDark ? 100 : 70),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
                 color: colors.surfaceBorder.withAlpha(100),
               ),
@@ -507,13 +515,13 @@ class _CourseModuleView extends StatelessWidget {
     int dueCount,
   ) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(AppRadius.panel),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
             color: isDark
                 ? colors.surfaceSecondary.withAlpha(160)
                 : colors.surfacePrimary.withAlpha(210),
@@ -544,7 +552,7 @@ class _CourseModuleView extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
                     ),
                     child: Text(
                       courseCode,
@@ -564,7 +572,7 @@ class _CourseModuleView extends StatelessWidget {
                       color: isDark
                           ? colors.surfaceSecondary.withAlpha(140)
                           : colors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
                       border: Border.all(
                         color: colors.surfaceBorder.withAlpha(100),
                       ),
@@ -712,7 +720,7 @@ class _CourseModuleView extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: colors.primary.withAlpha(isDark ? 28 : 16),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
                 color: colors.primary.withAlpha(isDark ? 70 : 45),
               ),
@@ -810,7 +818,7 @@ class _CourseModuleView extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.badge),
                   border: Border.all(
                     color: colors.primary.withAlpha(40),
                   ),
@@ -847,7 +855,7 @@ class _CourseModuleView extends StatelessWidget {
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(100)
                   : colors.surfacePrimary.withAlpha(180),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(
                 color: colors.surfaceBorder.withAlpha(100),
               ),
@@ -884,7 +892,7 @@ class _CourseModuleView extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.panel),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(
@@ -893,7 +901,7 @@ class _CourseModuleView extends StatelessWidget {
                       color: isDark
                           ? colors.surfaceSecondary.withAlpha(130)
                           : colors.surfacePrimary.withAlpha(200),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.panel),
                       border: Border.all(
                         color: deck.hasDueCards
                             ? colors.primary.withAlpha(isDark ? 90 : 60)
@@ -914,7 +922,7 @@ class _CourseModuleView extends StatelessWidget {
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Column(
@@ -946,7 +954,7 @@ class _CourseModuleView extends StatelessWidget {
                                           ),
                                           decoration: BoxDecoration(
                                             color: colors.error.withAlpha(30),
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(AppRadius.micro),
                                           ),
                                           child: Text(
                                             '${deck.dueCards} due',
@@ -980,7 +988,7 @@ class _CourseModuleView extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(AppRadius.card),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1063,7 +1071,7 @@ class _CourseModuleView extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 45 : 25),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
                       border: Border.all(
                         color: colors.primary.withAlpha(isDark ? 80 : 50),
                       ),
@@ -1096,7 +1104,7 @@ class _CourseModuleView extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: colors.surfaceSecondary,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
                     ),
                     child: Text(
                       '${pqState.officialQuestions.length} Official',
@@ -1111,7 +1119,7 @@ class _CourseModuleView extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
                         color: colors.primary.withAlpha(isDark ? 45 : 22),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
                         border: Border.all(
                           color: colors.primary.withAlpha(60),
                           width: 0.8,
@@ -1130,7 +1138,7 @@ class _CourseModuleView extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
                         color: colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
                         border: Border.all(
                           color: colors.syllabotAccent.withAlpha(60),
                           width: 0.8,
@@ -1156,7 +1164,7 @@ class _CourseModuleView extends StatelessWidget {
                   color: isDark
                       ? colors.surfaceSecondary.withAlpha(100)
                       : colors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.panel),
                 ),
                 child: const Center(
                   child: AppLogoLoader(size: 36, showMessage: false),
@@ -1227,7 +1235,7 @@ class _CourseModuleView extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadius.dialog),
                   border: Border.all(
                     color: colors.primary.withAlpha(isDark ? 70 : 40),
                   ),
@@ -1250,7 +1258,7 @@ class _CourseModuleView extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                             decoration: BoxDecoration(
                               color: colors.primary.withAlpha(isDark ? 50 : 25),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppRadius.badge),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -1316,7 +1324,7 @@ class _CourseModuleView extends StatelessWidget {
                               height: 42,
                               decoration: BoxDecoration(
                                 color: colors.primary,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(AppRadius.card),
                                 boxShadow: [
                                   BoxShadow(
                                     color: colors.primary.withAlpha(80),
@@ -1362,7 +1370,7 @@ class _CourseModuleView extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
                               color: colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.card),
                               border: Border.all(
                                 color: colors.syllabotAccent.withAlpha(isDark ? 80 : 50),
                               ),
@@ -1407,7 +1415,7 @@ class _CourseModuleView extends StatelessWidget {
                         height: 40,
                         decoration: BoxDecoration(
                           color: colors.primary.withAlpha(isDark ? 40 : 20),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
                           border: Border.all(
                             color: colors.primary.withAlpha(isDark ? 75 : 45),
                           ),
@@ -1466,89 +1474,110 @@ class _CourseModuleView extends StatelessWidget {
           ),
         );
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colors.surfaceSecondary.withAlpha(140)
-                  : colors.surfacePrimary.withAlpha(200),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(60)
-                    : colors.surfaceBorder.withAlpha(120),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: accentColor.withAlpha(isDark ? 40 : 25),
-                    borderRadius: BorderRadius.circular(12),
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.panel),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? (isHovered
+                          ? colors.surfaceSecondary.withAlpha(180)
+                          : colors.surfaceSecondary.withAlpha(140))
+                      : (isHovered
+                          ? colors.surfacePrimary
+                          : colors.surfacePrimary.withAlpha(200)),
+                  borderRadius: BorderRadius.circular(AppRadius.panel),
+                  border: Border.all(
+                    color: isHovered
+                        ? accentColor.withAlpha(isDark ? 140 : 110)
+                        : (isDark
+                            ? colors.surfaceBorderHighlight.withAlpha(60)
+                            : colors.surfaceBorder.withAlpha(120)),
                   ),
-                  child: Icon(icon, size: 20, color: accentColor),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13.5,
-                              ),
-                            ),
+                  boxShadow: isHovered
+                      ? [
+                          BoxShadow(
+                            color: accentColor.withAlpha(isDark ? 40 : 20),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: accentColor.withAlpha(25),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              badgeText,
-                              style: typography.caption.bold.copyWith(
-                                color: accentColor,
-                                fontSize: 9.5,
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: accentColor.withAlpha(isDark ? 40 : 25),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                      ),
+                      child: Icon(icon, size: 20, color: accentColor),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
                               ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withAlpha(25),
+                                  borderRadius: BorderRadius.circular(AppRadius.micro),
+                                ),
+                                child: Text(
+                                  badgeText,
+                                  style: typography.caption.bold.copyWith(
+                                    color: accentColor,
+                                    fontSize: 9.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            subtitle,
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 11.5,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.play_circle_outline_rounded,
+                      size: 22,
+                      color: accentColor,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.play_circle_outline_rounded,
-                  size: 22,
-                  color: accentColor,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

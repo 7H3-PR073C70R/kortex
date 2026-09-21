@@ -47,7 +47,10 @@ class OcrLocalDataSourceImpl implements OcrLocalDataSource {
     if (performance != null) {
       return performance.traceAction('ocr_process_frame', (trace) async {
         try {
-          return await _client.processImageBytes(frameBytes, imagePath: imagePath);
+          return await _client.processImageBytes(
+            frameBytes,
+            imagePath: imagePath,
+          );
         } catch (e, stack) {
           final crashlytics = _crashlyticsService;
           if (crashlytics != null) {

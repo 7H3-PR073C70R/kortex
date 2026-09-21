@@ -12,7 +12,7 @@ import 'package:kortex/src/features/ingestion/data/client/local_mlkit_ocr_client
 /// **Platform support**: iOS and Android only.
 class LocalImageOcrService {
   LocalImageOcrService({LocalMlkitOcrClient? ocrClient})
-      : _ocrClient = ocrClient ?? const LocalMlkitOcrClient();
+    : _ocrClient = ocrClient ?? const LocalMlkitOcrClient();
 
   final LocalMlkitOcrClient _ocrClient;
 

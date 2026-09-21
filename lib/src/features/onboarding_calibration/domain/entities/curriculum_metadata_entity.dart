@@ -25,11 +25,11 @@ class CurriculumMetadataEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        category,
-        key,
-        displayName,
-        metadata,
-        isActive,
-      ];
+    id,
+    category,
+    key,
+    displayName,
+    metadata,
+    isActive,
+  ];
 }

@@ -89,7 +89,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     String? deckId,
   }) {
     try {
-      final service = _notificationService ??
+      final service =
+          _notificationService ??
           (locator.isRegistered<NotificationService>()
               ? locator<NotificationService>()
               : null);
@@ -112,7 +113,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     String? reason,
   }) {
     try {
-      final service = _notificationService ??
+      final service =
+          _notificationService ??
           (locator.isRegistered<NotificationService>()
               ? locator<NotificationService>()
               : null);
@@ -140,8 +142,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     Emitter<IngestionState> emit,
   ) async {
     // 1. Deep document deduplication (page count check + random/representative page sampling)
-    final incomingHash =
-        DeepDocumentDedupService.computeSha256(event.fileBytes);
+    final incomingHash = DeepDocumentDedupService.computeSha256(
+      event.fileBytes,
+    );
     final incomingFingerprint = _dedupService.extractFingerprint(
       bytes: event.fileBytes,
       fileType: event.fileType,
@@ -328,18 +331,18 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       progressSub = RealtimeClient.instance
           .watchPresence('document_ingestion:${event.documentId}')
           .listen((msg) {
-        final payload = msg['payload'] as Map<String, dynamic>? ?? {};
-        final progress = (payload['progress'] as num?)?.toDouble();
-        final stageMessage = payload['stageMessage'] as String?;
-        if (progress != null && stageMessage != null && !isClosed) {
-          add(
-            IngestionServerProgressEvent(
-              progress: progress,
-              stageMessage: stageMessage,
-            ),
-          );
-        }
-      }, onError: (_) {});
+            final payload = msg['payload'] as Map<String, dynamic>? ?? {};
+            final progress = (payload['progress'] as num?)?.toDouble();
+            final stageMessage = payload['stageMessage'] as String?;
+            if (progress != null && stageMessage != null && !isClosed) {
+              add(
+                IngestionServerProgressEvent(
+                  progress: progress,
+                  stageMessage: stageMessage,
+                ),
+              );
+            }
+          }, onError: (_) {});
     } on Object catch (_) {}
 
     try {
@@ -419,7 +422,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     String? documentId,
     String? contentHash,
   }) async {
-    final decksDataSource = _decksRemoteDataSource ??
+    final decksDataSource =
+        _decksRemoteDataSource ??
         (locator.isRegistered<DecksRemoteDataSource>()
             ? locator<DecksRemoteDataSource>()
             : null);
@@ -562,7 +566,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       if (documentId != null) updatedAttached.add(documentId);
       if (courseCode != null) {
         updatedAttached.add('${assignedDeck.id}_$courseCode');
-        if (documentId != null) updatedAttached.add('${documentId}_$courseCode');
+        if (documentId != null) {
+          updatedAttached.add('${documentId}_$courseCode');
+        }
       }
       updatedAttached.add('${assignedDeck.id}_$courseId');
       if (documentId != null) updatedAttached.add('${documentId}_$courseId');
@@ -725,7 +731,10 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
                 .toLowerCase()
                 .trim();
             unawaited(
-              storage.savePreference(key: 'extracted_doc_$baseName', data: info),
+              storage.savePreference(
+                key: 'extracted_doc_$baseName',
+                data: info,
+              ),
             );
 
             // Record by documentId
@@ -861,7 +870,9 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
             .toLowerCase()
             .trim();
-        await storage.deletePreference(key: 'extracted_doc_${targetDoc.contentHash}');
+        await storage.deletePreference(
+          key: 'extracted_doc_${targetDoc.contentHash}',
+        );
         await storage.deletePreference(key: 'extracted_doc_${targetDoc.id}');
         await storage.deletePreference(key: 'extracted_doc_$baseName');
       }
@@ -891,7 +902,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       ),
     );
 
-    final useCase = _processCameraOcr ??
+    final useCase =
+        _processCameraOcr ??
         (locator.isRegistered<ProcessLocalCameraOcrUseCase>()
             ? locator<ProcessLocalCameraOcrUseCase>()
             : null);
@@ -923,7 +935,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       (snippets) => emit(
         state.copyWith(
           status: ProcessingStatus.completed,
-          stageMessage: 'Extracted ${snippets.length} cards from camera capture',
+          stageMessage:
+              'Extracted ${snippets.length} cards from camera capture',
           snippets: snippets,
         ),
       ),
@@ -934,7 +947,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     FetchLmsCoursesEvent event,
     Emitter<IngestionState> emit,
   ) async {
-    final useCase = _fetchLmsCourses ??
+    final useCase =
+        _fetchLmsCourses ??
         (locator.isRegistered<FetchLmsCoursesUseCase>()
             ? locator<FetchLmsCoursesUseCase>()
             : null);
@@ -984,7 +998,8 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     ImportLmsCourseEvent event,
     Emitter<IngestionState> emit,
   ) async {
-    final useCase = _importLmsCourse ??
+    final useCase =
+        _importLmsCourse ??
         (locator.isRegistered<ImportLmsCourseUseCase>()
             ? locator<ImportLmsCourseUseCase>()
             : null);

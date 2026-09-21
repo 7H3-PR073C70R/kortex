@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -19,6 +22,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_tes
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -171,7 +175,7 @@ class _PastQuestionsBoardView extends HookWidget {
                     ),
                     decoration: BoxDecoration(
                       color: colors.primary.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.badge),
                       border: Border.all(
                         color: colors.primary.withAlpha(isDark ? 80 : 50),
                       ),
@@ -193,65 +197,68 @@ class _PastQuestionsBoardView extends HookWidget {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // 1. Hero Practice Banner (CBT Test & 1v1 Duel Quick Actions)
-            _HeroTrackBanner(userTrack: userTrack),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 960),
+            child: Column(
+              children: [
+                // 1. Hero Practice Banner (CBT Test & 1v1 Duel Quick Actions)
+                _HeroTrackBanner(userTrack: userTrack),
 
-            // 2. Search Field with Year Filter Button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: searchController,
-                      hintText: 'Search courses, subjects, topics...',
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: colors.textSecondary,
-                        size: 19,
-                      ),
-                      onChanged: (query) {
-                        debounceTimer.value?.cancel();
-                        debounceTimer.value = Timer(
-                          const Duration(milliseconds: 300),
-                          () {
-                            if (context.mounted) {
-                              context.read<PastQuestionsBloc>().add(
-                                    LoadPastQuestionsEvent(searchQuery: query),
-                                  );
-                            }
+                // 2. Search Field with Year Filter Button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: searchController,
+                          hintText: 'Search courses, subjects, topics...',
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: colors.textSecondary,
+                            size: 19,
+                          ),
+                          onChanged: (query) {
+                            debounceTimer.value?.cancel();
+                            debounceTimer.value = Timer(
+                              const Duration(milliseconds: 300),
+                              () {
+                                if (context.mounted) {
+                                  context.read<PastQuestionsBloc>().add(
+                                        LoadPastQuestionsEvent(searchQuery: query),
+                                      );
+                                }
+                              },
+                            );
                           },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const YearFilterButton(),
-                ],
-              ),
-            ),
-
-            // 3. Subject Filter Chips (All, Mathematics, English, etc.)
-            const SubjectFilterBar(),
-            const SizedBox(height: 8),
-
-            // 4. Course Cards Grid/List
-            Expanded(
-              child: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
-                builder: (context, state) {
-                  if (state.status == PastQuestionsStatus.loading) {
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: 4,
-                      separatorBuilder: (_, index) => const SizedBox(height: 12),
-                      itemBuilder: (_, index) => const ShimmerPlaceholder(
-                        height: 108,
-                        borderRadius: 18,
+                        ),
                       ),
-                    );
-                  }
+                      const SizedBox(width: 8),
+                      const YearFilterButton(),
+                    ],
+                  ),
+                ),
+
+                // 3. Subject Filter Chips (All, Mathematics, English, etc.)
+                const SubjectFilterBar(),
+                const SizedBox(height: 8),
+
+                // 4. Course Cards Grid/List
+                Expanded(
+                  child: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+                    builder: (context, state) {
+                      if (state.status == PastQuestionsStatus.loading) {
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          itemCount: 4,
+                          separatorBuilder: (_, index) => const SizedBox(height: 12),
+                          itemBuilder: (_, index) => const ShimmerPlaceholder(
+                            height: 108,
+                            borderRadius: AppRadius.panel,
+                          ),
+                        );
+                      }
 
                   final courses = _groupQuestionsByCourse(
                     state.questions,
@@ -328,7 +335,9 @@ class _PastQuestionsBoardView extends HookWidget {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   List<_CourseSummary> _groupQuestionsByCourse(
@@ -464,157 +473,173 @@ class _CourseOverviewCard extends StatelessWidget {
             .clamp(0.0, 1.0)
         : 0.0;
 
-    return ShrinkableButton(
-      onTap: () {
-        AppFeedback.light();
-        unawaited(
-          context.router.push(
-            CourseQuestionsRoute(
-              courseTitle: courseSummary.title,
-              courseCode: courseSummary.courseCode,
-              examCategory: examCategory,
-              initialYear: selectedYear,
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return ShrinkableButton(
+          onTap: () {
+            AppFeedback.light();
+            unawaited(
+              context.router.push(
+                CourseQuestionsRoute(
+                  courseTitle: courseSummary.title,
+                  courseCode: courseSummary.courseCode,
+                  examCategory: examCategory,
+                  initialYear: selectedYear,
+                ),
+              ),
+            );
+          },
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.snappyCurve,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isHovered
+                  ? (isDark
+                      ? colors.surfaceSecondary.withAlpha(245)
+                      : colors.surfacePrimary.withAlpha(245))
+                  : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
+              border: Border.all(
+                color: isHovered
+                    ? colors.primary.withAlpha(isDark ? 110 : 70)
+                    : colors.primary.withAlpha(isDark ? 50 : 25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.black
+                      .withAlpha(isHovered ? (isDark ? 80 : 20) : (isDark ? 60 : 12)),
+                  blurRadius: isHovered ? 14 : 10,
+                  offset: Offset(0, isHovered ? 5 : 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Subject Icon Container
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            colors.primary.withAlpha(isDark ? 60 : 35),
+                            colors.primary.withAlpha(isDark ? 30 : 15),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(isDark ? 80 : 45),
+                        ),
+                      ),
+                      child: Icon(
+                        courseSummary.iconData,
+                        color: colors.primary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    // Title and details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            courseSummary.title,
+                            style: typography.callout.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 15.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.badge),
+                                ),
+                                child: Text(
+                                  examCategory.displayName,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                hasQuestions
+                                    ? '${courseSummary.totalQuestions} Questions • ${courseSummary.yearRange}'
+                                    : 'Available for AI Practice',
+                                style: typography.caption.medium.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: colors.textSecondary,
+                    ),
+                  ],
+                ),
+                if (hasQuestions) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.micro),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      backgroundColor:
+                          colors.primary.withAlpha(isDark ? 30 : 20),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(colors.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${courseSummary.answeredQuestions} of ${courseSummary.totalQuestions} practiced',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                      Text(
+                        '${(progress * 100).toInt()}%',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: colors.primary.withAlpha(isDark ? 50 : 25),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.black.withAlpha(isDark ? 60 : 12),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                // Subject Icon Container
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colors.primary.withAlpha(isDark ? 60 : 35),
-                        colors.primary.withAlpha(isDark ? 30 : 15),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 80 : 45),
-                    ),
-                  ),
-                  child: Icon(
-                    courseSummary.iconData,
-                    color: colors.primary,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                // Title and details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        courseSummary.title,
-                        style: typography.callout.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 15.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 40 : 20),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              examCategory.displayName,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            hasQuestions
-                                ? '${courseSummary.totalQuestions} Questions • ${courseSummary.yearRange}'
-                                : 'Available for AI Practice',
-                            style: typography.caption.medium.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: colors.textSecondary,
-                ),
-              ],
-            ),
-            if (hasQuestions) ...[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 4,
-                  backgroundColor: colors.primary.withAlpha(isDark ? 30 : 20),
-                  valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${courseSummary.answeredQuestions} of ${courseSummary.totalQuestions} practiced',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 10.5,
-                    ),
-                  ),
-                  Text(
-                    '${(progress * 100).toInt()}%',
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 10.5,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }
@@ -637,7 +662,7 @@ class _HeroTrackBanner extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadius.dialog),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -649,7 +674,7 @@ class _HeroTrackBanner extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.dialog),
                 border: Border.all(
                   color: colors.primary.withAlpha(isDark ? 80 : 45),
                 ),
@@ -674,7 +699,7 @@ class _HeroTrackBanner extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: colors.primary.withAlpha(isDark ? 60 : 30),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -732,7 +757,8 @@ class _HeroTrackBanner extends StatelessWidget {
                             height: 42,
                             decoration: BoxDecoration(
                               color: colors.primary,
-                              borderRadius: BorderRadius.circular(13),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.card),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.primary.withAlpha(90),
@@ -781,7 +807,8 @@ class _HeroTrackBanner extends StatelessWidget {
                               gradient: LinearGradient(
                                 colors: [colors.secondary, colors.primary],
                               ),
-                              borderRadius: BorderRadius.circular(13),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.card),
                               boxShadow: [
                                 BoxShadow(
                                   color: colors.secondary.withAlpha(90),

@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
@@ -204,7 +205,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     }
 
     // 1. Fast check: server-verified auth bloc user profile
-    final serverSaysOnboarded = authBloc.state.userProfile?.isOnboarded ?? false;
+    final serverSaysOnboarded =
+        authBloc.state.userProfile?.isOnboarded ?? false;
 
     // 2. Local pref key (persisted by CalibrationLocalDataSourceImpl.saveCalibrationProfile)
     var localSaysOnboarded = false;
@@ -230,7 +232,9 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     if (!serverSaysOnboarded && !localSaysOnboarded && !calibSaysOnboarded) {
       try {
         final storage = locator<LocalStorageService>();
-        final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+        final rawCourses = storage.getPreference(
+          key: PrefKeys.userCuratedCourses,
+        );
         if (rawCourses != null && rawCourses.isNotEmpty) {
           final list = jsonDecode(rawCourses) as List<dynamic>;
           if (list.isNotEmpty) coursesSayOnboarded = true;
@@ -241,13 +245,16 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         try {
           final dashRepo = locator<DashboardRepository>();
           final coursesRes = await dashRepo.getUserCuratedCourses();
-          coursesSayOnboarded =
-              coursesRes.fold((_) => false, (courses) => courses.isNotEmpty);
+          coursesSayOnboarded = coursesRes.fold(
+            (_) => false,
+            (courses) => courses.isNotEmpty,
+          );
         } on Object catch (_) {}
       }
     }
 
-    final isCalibrated = serverSaysOnboarded ||
+    final isCalibrated =
+        serverSaysOnboarded ||
         localSaysOnboarded ||
         calibSaysOnboarded ||
         coursesSayOnboarded;
@@ -410,7 +417,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     ),
                     decoration: BoxDecoration(
                       color: colors.syllabotAccent.withAlpha(25),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.radiusCard,
                       border: Border.all(
                         color: colors.syllabotAccent.withAlpha(50),
                         width: 0.8,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/thought_entry.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
@@ -62,44 +63,53 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
     final typography = context.typography;
     final cubit = context.read<FocusSessionCubit>();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isDark = context.isDarkMode;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: 20 + bottomInset,
-      ),
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.8,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.textMuted.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 580,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+            border: Border.all(
+              color: isDark
+                  ? colors.surfaceBorderHighlight.withAlpha(70)
+                  : colors.surfaceBorder,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: 20 + bottomInset,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textMuted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(AppRadius.micro),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
 
           // Header
           Row(
@@ -166,7 +176,7 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
                       vertical: 12,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -180,7 +190,7 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
                   backgroundColor: colors.primary,
                   foregroundColor: colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                 ),
                 icon: const Icon(Icons.arrow_upward_rounded, size: 20),
@@ -242,7 +252,9 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
@@ -265,14 +277,14 @@ class _ThoughtListTile extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           InkWell(
             onTap: onToggle,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppRadius.micro),
             child: Padding(
               padding: const EdgeInsets.all(4),
               child: Icon(

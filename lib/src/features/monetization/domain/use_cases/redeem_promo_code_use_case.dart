@@ -13,7 +13,8 @@ class RedeemPromoCodeParams extends Equatable {
   List<Object?> get props => [code];
 }
 
-class RedeemPromoCodeUseCase with UseCase<PromoRedemptionResult, RedeemPromoCodeParams> {
+class RedeemPromoCodeUseCase
+    with UseCase<PromoRedemptionResult, RedeemPromoCodeParams> {
   const RedeemPromoCodeUseCase(this._repository);
 
   final PromoCodeRepository _repository;

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -282,7 +284,7 @@ class _AppButtonState extends State<AppButton> {
         widget.backgroundColor ?? _resolveBackgroundColor(colors);
     final resolvedFg = widget.textColor ?? _resolveForegroundColor(colors);
     final resolvedBorder = widget.borderColor ?? _resolveBorderColor(colors);
-    final effectiveRadius = widget.borderRadius ?? 12.0;
+    final effectiveRadius = widget.borderRadius ?? AppRadius.card;
 
     final effectiveTextStyle =
         widget.textStyle ??
@@ -292,7 +294,9 @@ class _AppButtonState extends State<AppButton> {
         );
 
     final content = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.snappy,
+      switchInCurve: AppMotion.easeOutCubic,
+      switchOutCurve: AppMotion.easeOutCubic,
       child: widget.isLoading
           ? AppLogoLoader(
               key: const ValueKey('button_loading'),
@@ -354,7 +358,8 @@ class _AppButtonState extends State<AppButton> {
         autofocus: widget.autofocus,
         onTap: _isClickable ? widget.onPressed : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
           width: widget.width,
           height: widget.size.height,
           constraints: const BoxConstraints(

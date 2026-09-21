@@ -322,7 +322,11 @@ class DocumentParserService {
     for (var y = 0; y < height; y++) {
       scanlines[dest++] = 0; // Filter: None
       final src = y * rowBytes;
-      scanlines.setRange(dest, dest + rowBytes, rawPixels.sublist(src, src + rowBytes));
+      scanlines.setRange(
+        dest,
+        dest + rowBytes,
+        rawPixels.sublist(src, src + rowBytes),
+      );
       dest += rowBytes;
     }
 
@@ -399,8 +403,9 @@ class DocumentParserService {
 
       final width = wMatch != null ? int.tryParse(wMatch.group(1)!) ?? 0 : 0;
       final height = hMatch != null ? int.tryParse(hMatch.group(1)!) ?? 0 : 0;
-      final declaredLength =
-          lMatch != null ? int.tryParse(lMatch.group(1)!) ?? 0 : 0;
+      final declaredLength = lMatch != null
+          ? int.tryParse(lMatch.group(1)!) ?? 0
+          : 0;
 
       if (width < 50 || height < 50) continue;
 
@@ -561,8 +566,9 @@ class DocumentParserService {
         (sections.length == 1 &&
             lines.length >= 5 &&
             sections.first.title == 'Key Concepts')) {
-      final paragraphSections =
-          _extractSemanticParagraphSections(cleanFullText);
+      final paragraphSections = _extractSemanticParagraphSections(
+        cleanFullText,
+      );
       if (paragraphSections.length > sections.length) {
         sections = paragraphSections;
       }
@@ -591,15 +597,18 @@ class DocumentParserService {
         continue;
       }
 
-      final normalizedTopic =
-          directQuestion!.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '');
+      final normalizedTopic = directQuestion!.toLowerCase().replaceAll(
+        RegExp('[^a-z0-9]'),
+        '',
+      );
       if (seenTopics.contains(normalizedTopic)) {
         continue;
       }
       seenTopics.add(normalizedTopic);
 
       // Extract LaTeX if formula or mathematical expression is present
-      final latex = _extractOrGenerateFormula(section.title, section.content) ??
+      final latex =
+          _extractOrGenerateFormula(section.title, section.content) ??
           _extractOrGenerateFormula(section.title, cleanBody);
 
       snippets.add(
@@ -646,7 +655,12 @@ class DocumentParserService {
     final rawBlocks = fullText
         .split(RegExp(r'(?:\r?\n){2,}'))
         .map((b) => b.trim())
-        .where((b) => b.length >= 20 && isMeaningfulEducationalText(b) && !_isNoiseOrFooter(b))
+        .where(
+          (b) =>
+              b.length >= 20 &&
+              isMeaningfulEducationalText(b) &&
+              !_isNoiseOrFooter(b),
+        )
         .toList();
 
     final chunks = <String>[];
@@ -671,7 +685,12 @@ class DocumentParserService {
         final lines = fullText
             .split('\n')
             .map((l) => l.trim())
-            .where((l) => l.isNotEmpty && isMeaningfulEducationalText(l) && !_isNoiseOrFooter(l))
+            .where(
+              (l) =>
+                  l.isNotEmpty &&
+                  isMeaningfulEducationalText(l) &&
+                  !_isNoiseOrFooter(l),
+            )
             .toList();
         for (var i = 0; i < lines.length; i += 3) {
           final group = lines.skip(i).take(3).join(' ');
@@ -700,11 +719,13 @@ class DocumentParserService {
           firstLine.length <= 60 &&
           !firstLine.contains('.') &&
           !_isNoiseOrMetaHeader(firstLine)) {
-        question = _synthesizeContextualQuestion(firstLine, cleanBody) ??
+        question =
+            _synthesizeContextualQuestion(firstLine, cleanBody) ??
             'What are the key concepts of $firstLine?';
       } else {
         final words = cleanBody.split(RegExp(r'\s+')).take(6).join(' ');
-        question = 'What are the main principles explained in "$cleanDocName" regarding $words...?';
+        question =
+            'What are the main principles explained in "$cleanDocName" regarding $words...?';
       }
 
       if (!question.endsWith('?')) {
@@ -770,9 +791,13 @@ class DocumentParserService {
         )
         .trim();
 
-    if (stripped.length >= 3 && !_isCorruptedBinaryString(stripped) && !_isNoiseOrMetaHeader(stripped)) {
+    if (stripped.length >= 3 &&
+        !_isCorruptedBinaryString(stripped) &&
+        !_isNoiseOrMetaHeader(stripped)) {
       clean = stripped;
-    } else if (clean.length >= 3 && !_isCorruptedBinaryString(clean) && !_isNoiseOrMetaHeader(clean)) {
+    } else if (clean.length >= 3 &&
+        !_isCorruptedBinaryString(clean) &&
+        !_isNoiseOrMetaHeader(clean)) {
       // Retain structural label
     } else {
       return null;
@@ -783,7 +808,10 @@ class DocumentParserService {
       caseSensitive: false,
     ).firstMatch(rawTitle);
 
-    if (RegExp(r'^(?:Step|Rule|Procedure|Part|Phase|Action|Section|Chapter)\s+[A-Za-z0-9\.]+$', caseSensitive: false).hasMatch(clean)) {
+    if (RegExp(
+      r'^(?:Step|Rule|Procedure|Part|Phase|Action|Section|Chapter)\s+[A-Za-z0-9\.]+$',
+      caseSensitive: false,
+    ).hasMatch(clean)) {
       final firstWords = cleanBody
           .split(RegExp(r'\s+'))
           .take(6)
@@ -796,7 +824,10 @@ class DocumentParserService {
 
     // 2. Visual Diagram / Chart Framing (Item 8)
     if (hasImage) {
-      final subject = clean.replaceAll(RegExp(r'^(?:the|a|an)\s+', caseSensitive: false), '');
+      final subject = clean.replaceAll(
+        RegExp(r'^(?:the|a|an)\s+', caseSensitive: false),
+        '',
+      );
       return 'Based on the illustrated diagram and chart for $subject, what key structure or setup is shown?';
     }
 
@@ -948,10 +979,11 @@ class DocumentParserService {
 
     // 12. Short Concept / Subject Noun: "Mitosis", "Timeframes", "Cellular Respiration"
     if (_isValidSubjectNoun(clean)) {
-      final prefix = structuralPrefixMatch != null &&
+      final prefix =
+          structuralPrefixMatch != null &&
               !clean.toLowerCase().contains(
-                    structuralPrefixMatch.group(0)!.toLowerCase(),
-                  )
+                structuralPrefixMatch.group(0)!.toLowerCase(),
+              )
           ? ' in ${structuralPrefixMatch.group(0)}'
           : '';
       if (lower.endsWith('s') &&
@@ -1239,7 +1271,9 @@ class DocumentParserService {
     }
 
     // Watermark / signature patterns starting with em dash or bullet (e.g. author handle or domain)
-    if (clean.startsWith('—') || clean.startsWith('-') || clean.startsWith('–')) {
+    if (clean.startsWith('—') ||
+        clean.startsWith('-') ||
+        clean.startsWith('–')) {
       final withoutDash = clean.replaceAll(RegExp(r'^[—–\-•*#\s]+'), '').trim();
       if (withoutDash.split(RegExp(r'\s+')).length <= 3 &&
           RegExp(r'\.[a-zA-Z]{2,4}\.?$').hasMatch(withoutDash)) {
@@ -1341,7 +1375,9 @@ class DocumentParserService {
     final lowerA = cleanA.toLowerCase();
     if (lowerA.startsWith('testwidgets(') ||
         lowerA.startsWith('widgettester ') ||
-        (lowerA.startsWith('class ') && lowerA.contains('extends statelesswidget') && !cleanA.contains('.'))) {
+        (lowerA.startsWith('class ') &&
+            lowerA.contains('extends statelesswidget') &&
+            !cleanA.contains('.'))) {
       return false;
     }
 
@@ -1396,7 +1432,10 @@ class DocumentParserService {
         if (joined.length >= 20 &&
             !_isNoiseOrMetaHeader(currentTitle!) &&
             !_isNoiseOrFooter(joined) &&
-            !RegExp(r'\b(?:\d+%\s+off|discount|\$\d+\s*(?:value|worth|price))\b', caseSensitive: false).hasMatch(lower)) {
+            !RegExp(
+              r'\b(?:\d+%\s+off|discount|\$\d+\s*(?:value|worth|price))\b',
+              caseSensitive: false,
+            ).hasMatch(lower)) {
           sections.add(
             _DocumentSection(
               title: currentTitle!,
@@ -1469,22 +1508,28 @@ class DocumentParserService {
 
       // 3. Section Headers & Structural Markers
       final isStructuralHeader = structuralHeaderRegex.hasMatch(line);
-      final words = line.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-      final isColonHeader = line.length <= 40 &&
+      final words = line
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .toList();
+      final isColonHeader =
+          line.length <= 40 &&
           line.endsWith(':') &&
           !line.contains('http') &&
           !line.contains('.') &&
           words.length >= 2 &&
           words.length <= 5 &&
           RegExp('^[A-Z0-9]').hasMatch(line);
-      final isAllCapsHeader = line.length >= 6 &&
+      final isAllCapsHeader =
+          line.length >= 6 &&
           line.length <= 50 &&
           line == line.toUpperCase() &&
           words.length >= 2 &&
           words.length <= 7 &&
           RegExp('[A-Z]').hasMatch(line);
       final isBullet = RegExp(r'^[•●○\-–—*]').hasMatch(line);
-      final isTitleCase = !isBullet &&
+      final isTitleCase =
+          !isBullet &&
           words.length >= 2 &&
           words.length <= 6 &&
           line.length <= 50 &&
@@ -1494,11 +1539,12 @@ class DocumentParserService {
           !line.endsWith(';') &&
           !line.endsWith('?') &&
           !line.endsWith('!') &&
-          words.every((w) =>
-              w.length <= 3 ||
-              RegExp('^[A-Z0-9]').hasMatch(w));
+          words.every((w) => w.length <= 3 || RegExp('^[A-Z0-9]').hasMatch(w));
 
-      if (isStructuralHeader || isColonHeader || isAllCapsHeader || isTitleCase) {
+      if (isStructuralHeader ||
+          isColonHeader ||
+          isAllCapsHeader ||
+          isTitleCase) {
         final cleanHeader = line.replaceAll(':', '').trim();
         if (_isNoiseOrMetaHeader(cleanHeader)) {
           commitCurrentSection();
@@ -1545,12 +1591,15 @@ class DocumentParserService {
       }
 
       // 5. Bullet Points and Numbered Items
-      final bulletMatch =
-          RegExp(r'^[•●○\-–—*]\s*(.+)$|^\d+\.\s*(.+)$').firstMatch(line);
+      final bulletMatch = RegExp(
+        r'^[•●○\-–—*]\s*(.+)$|^\d+\.\s*(.+)$',
+      ).firstMatch(line);
       if (bulletMatch != null) {
-        final itemContent =
-            (bulletMatch.group(1) ?? bulletMatch.group(2) ?? '').trim();
-        if (itemContent.length >= 8 && isMeaningfulEducationalText(itemContent) && !_isNoiseOrFooter(itemContent)) {
+        final itemContent = (bulletMatch.group(1) ?? bulletMatch.group(2) ?? '')
+            .trim();
+        if (itemContent.length >= 8 &&
+            isMeaningfulEducationalText(itemContent) &&
+            !_isNoiseOrFooter(itemContent)) {
           if (currentTitle != null) {
             // Keep bullet attached to current topic
             currentLines.add('• $itemContent');
@@ -1575,7 +1624,8 @@ class DocumentParserService {
       // 6. Sentence line-wrapping continuation
       if (currentLines.isNotEmpty) {
         final prev = currentLines.last;
-        final prevEndsPunct = prev.endsWith('.') ||
+        final prevEndsPunct =
+            prev.endsWith('.') ||
             prev.endsWith('!') ||
             prev.endsWith('?') ||
             prev.endsWith(':') ||
@@ -1583,7 +1633,9 @@ class DocumentParserService {
             prev.endsWith('—') ||
             prev.endsWith('–');
 
-        if (!prevEndsPunct && isMeaningfulEducationalText(line) && !_isNoiseOrFooter(line)) {
+        if (!prevEndsPunct &&
+            isMeaningfulEducationalText(line) &&
+            !_isNoiseOrFooter(line)) {
           currentLines[currentLines.length - 1] = '$prev $line';
           continue;
         }
@@ -1609,7 +1661,12 @@ class DocumentParserService {
         .map(
           (p) => p.replaceAll(RegExp(r'\s+'), ' ').trim(),
         )
-        .where((p) => p.length >= 25 && isMeaningfulEducationalText(p) && !_isNoiseOrFooter(p))
+        .where(
+          (p) =>
+              p.length >= 25 &&
+              isMeaningfulEducationalText(p) &&
+              !_isNoiseOrFooter(p),
+        )
         .toList();
 
     for (final para in paragraphs) {
@@ -1626,7 +1683,8 @@ class DocumentParserService {
 
         if (defMatch != null) {
           final candidate = defMatch.group(1)!.trim();
-          if (_isValidSubjectNoun(candidate) && !_isNoiseOrMetaHeader(candidate)) {
+          if (_isValidSubjectNoun(candidate) &&
+              !_isNoiseOrMetaHeader(candidate)) {
             conceptTitle = candidate;
             break;
           }
@@ -1644,7 +1702,8 @@ class DocumentParserService {
         ).firstMatch(first);
         if (verbMatch != null) {
           final candidate = verbMatch.group(1)!.trim();
-          if (_isValidSubjectNoun(candidate) && !_isNoiseOrMetaHeader(candidate)) {
+          if (_isValidSubjectNoun(candidate) &&
+              !_isNoiseOrMetaHeader(candidate)) {
             results.add(_DocumentSection(title: candidate, content: para));
           }
         }
@@ -1708,7 +1767,9 @@ class DocumentParserService {
           ),
         ) ||
         clean.contains(RegExp(r'\$\$.+\$\$|\$.+\$')) ||
-        RegExp(r'^[a-zA-Z0-9_()^]{1,15}\s*=\s*[a-zA-Z0-9_()^+\-*/\\ \t]+$').hasMatch(clean)) {
+        RegExp(
+          r'^[a-zA-Z0-9_()^]{1,15}\s*=\s*[a-zA-Z0-9_()^+\-*/\\ \t]+$',
+        ).hasMatch(clean)) {
       return true;
     }
 
@@ -1793,7 +1854,9 @@ class DocumentParserService {
     ).firstMatch(combined);
     if (mathCommandMatch != null) {
       final matchStr = mathCommandMatch.group(0)!.trim();
-      if (!matchStr.startsWith(r'\(') && !matchStr.startsWith(r'$$') && !matchStr.startsWith(r'$')) {
+      if (!matchStr.startsWith(r'\(') &&
+          !matchStr.startsWith(r'$$') &&
+          !matchStr.startsWith(r'$')) {
         return r'\(' + matchStr + r'\)';
       }
       return matchStr;
@@ -1807,7 +1870,8 @@ class DocumentParserService {
     if (equationMatch != null) {
       var eq = equationMatch.group(1)!.trim();
       eq = eq.replaceAll(RegExp(r'^[.,;: ]+|[.,;: ]+$'), '').trim();
-      final hasMathOperator = eq.contains('^') ||
+      final hasMathOperator =
+          eq.contains('^') ||
           eq.contains('+') ||
           eq.contains('-') ||
           eq.contains('*') ||

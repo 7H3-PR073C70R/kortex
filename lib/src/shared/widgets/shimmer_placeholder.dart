@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 /// Animated skeleton loading placeholder signaling loading to screen readers.
@@ -108,7 +109,9 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
             decoration: BoxDecoration(
               shape: widget.shape,
               borderRadius: widget.shape == BoxShape.rectangle
-                  ? BorderRadius.circular(widget.borderRadius ?? 8.0)
+                  ? BorderRadius.circular(
+                      widget.borderRadius ?? AppRadius.badge,
+                    )
                   : null,
               gradient: LinearGradient(
                 begin: Alignment.topLeft,

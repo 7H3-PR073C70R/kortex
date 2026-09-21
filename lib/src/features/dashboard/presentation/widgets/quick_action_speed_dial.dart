@@ -6,10 +6,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class QuickActionSpeedDial extends StatelessWidget {
@@ -25,29 +28,19 @@ class QuickActionSpeedDial extends StatelessWidget {
       container: true,
       label: l10n.dashboardQuickActionsSemantics,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.dialog),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(AppRadius.dialog),
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(190)
                   : colors.surfacePrimary.withAlpha(225),
               border: Border.all(
-                color: isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(80)
-                    : colors.surfaceBorder.withAlpha(140),
-                width: 1.2,
+                color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 50 : 12),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -126,10 +119,8 @@ class QuickActionSpeedDial extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       width: 1,
-      height: 24,
-      color: isDark
-          ? colors.surfaceBorderHighlight.withAlpha(60)
-          : colors.surfaceBorder.withAlpha(120),
+      height: 20,
+      color: colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
     );
   }
 
@@ -146,7 +137,9 @@ class QuickActionSpeedDial extends StatelessWidget {
         isScrollControlled: true,
         builder: (context) {
           return ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
               child: Container(
@@ -156,12 +149,10 @@ class QuickActionSpeedDial extends StatelessWidget {
                       ? colors.surfaceSecondary.withAlpha(240)
                       : colors.surfacePrimary.withAlpha(245),
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
+                    top: Radius.circular(AppRadius.dialog),
                   ),
                   border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(80)
-                        : colors.surfaceBorder.withAlpha(140),
+                    color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                   ),
                 ),
                 child: Column(
@@ -173,7 +164,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                       height: 4,
                       decoration: BoxDecoration(
                         color: colors.textMuted.withAlpha(100),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -259,28 +250,43 @@ class _ActionItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     return Semantics(
       button: true,
       label: label,
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            children: [
-              Icon(icon, size: 17, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: typography.caption.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 12.5,
-                ),
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.badge),
+                color: isHovered
+                    ? (isDark
+                        ? colors.surfaceBorder.withAlpha(40)
+                        : colors.surfaceBorder.withAlpha(25))
+                    : colors.transparent,
               ),
-            ],
-          ),
-        ),
+              child: Row(
+                children: [
+                  Icon(icon, size: 17, color: color),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: typography.caption.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -305,41 +311,53 @@ class _UploadOptionCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return ShrinkableButton(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark
-              ? colors.surfacePrimary.withAlpha(160)
-              : colors.surfaceSecondary.withAlpha(160),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colors.primary.withAlpha(isDark ? 80 : 50),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return ShrinkableButton(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? (isHovered
+                      ? colors.surfacePrimary.withAlpha(200)
+                      : colors.surfacePrimary.withAlpha(160))
+                  : (isHovered
+                      ? colors.surfaceSecondary.withAlpha(210)
+                      : colors.surfaceSecondary.withAlpha(160)),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
+              border: Border.all(
+                color: isHovered
+                    ? colors.primary.withAlpha(isDark ? 110 : 80)
+                    : colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(icon, size: 28, color: colors.primary),
+                const SizedBox(height: 8),
+                Text(
+                  title,
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: typography.footnote.regular.copyWith(
+                    color: colors.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: colors.primary),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: typography.caption.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: typography.footnote.regular.copyWith(
-                color: colors.textMuted,
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

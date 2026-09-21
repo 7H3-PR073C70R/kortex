@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
@@ -13,6 +15,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.da
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -163,193 +166,130 @@ class HeaderProfileBar extends StatelessWidget {
                     effectiveStreak,
                   ),
                   button: true,
-                  child: ShrinkableButton(
-                    onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
-                      unawaited(
-                        context.router.push(const AnalyticsDetailRoute()),
-                      );
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            color: isDark
-                                ? colors.surfaceSecondary.withAlpha(160)
-                                : colors.surfacePrimary.withAlpha(210),
-                            border: Border.all(
-                              color: isDark
-                                  ? colors.surfaceBorderHighlight.withAlpha(80)
-                                  : colors.surfaceBorder.withAlpha(140),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.local_fire_department_rounded,
-                                size: 18,
-                                color: colors.warning,
+                  child: PlatformHoverBuilder(
+                    builder: (context, isHovered, child) {
+                      return ShrinkableButton(
+                        onTap: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          unawaited(
+                            context.router.push(const AnalyticsDetailRoute()),
+                          );
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadius.panel),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: AnimatedContainer(
+                              duration: AppMotion.snappy,
+                              curve: AppMotion.easeOutCubic,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$effectiveStreak',
-                                style: typography.callout.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 13.5,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(AppRadius.panel),
+                                color: isDark
+                                    ? (isHovered
+                                        ? colors.surfaceSecondary.withAlpha(200)
+                                        : colors.surfaceSecondary.withAlpha(150))
+                                    : (isHovered
+                                        ? colors.surfacePrimary
+                                        : colors.surfacePrimary.withAlpha(210)),
+                                border: Border.all(
+                                  color: isHovered
+                                      ? colors.warning.withAlpha(isDark ? 120 : 90)
+                                      : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                                 ),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.local_fire_department_rounded,
+                                    size: 18,
+                                    color: colors.warning,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$effectiveStreak',
+                                    style: typography.callout.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
 
                 // Millionaire Ascent Arcade Shortcut
-                Semantics(
-                  button: true,
-                  label: 'Millionaire Ascent Arcade',
-                  child: Tooltip(
-                    message: 'Millionaire Ascent Arcade',
-                    child: ShrinkableButton(
-                      onTap: () {
-                        unawaited(HapticFeedback.mediumImpact());
-                        unawaited(
-                          context.router.push(
-                            QuizWorkspaceRoute(
-                              deckId: 'arcade_global',
-                              deckTitle: 'Daily Dopamine Arcade',
-                              assessmentMode: AssessmentMode.millionaireMode,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfacePrimary,
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 140 : 120),
-                            width: 1.2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 80 : 35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.military_tech_rounded,
-                          size: 20,
-                          color: colors.warning,
+                _HeaderIconButton(
+                  icon: Icons.military_tech_rounded,
+                  color: colors.warning,
+                  tooltip: 'Millionaire Ascent Arcade',
+                  borderHighlightColor: colors.warning,
+                  onTap: () {
+                    unawaited(HapticFeedback.mediumImpact());
+                    unawaited(
+                      context.router.push(
+                        QuizWorkspaceRoute(
+                          deckId: 'arcade_global',
+                          deckTitle: 'Daily Dopamine Arcade',
+                          assessmentMode: AssessmentMode.millionaireMode,
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 8),
 
                 // Walkthrough Tour Shortcut
-                Semantics(
-                  button: true,
-                  label: 'Feature Walkthrough',
-                  child: Tooltip(
-                    message: 'Feature Walkthrough',
-                    child: ShrinkableButton(
-                      onTap: () {
-                        unawaited(HapticFeedback.lightImpact());
-                        unawaited(
-                          showDialog<void>(
-                            context: context,
-                            builder: (_) => WelcomeWalkthroughDialog(
-                              onEnterWorkspace: () {
-                                if (context.mounted) {
-                                  unawaited(
-                                    AppGuidedTourOverlay.start(
-                                      context,
-                                      force: true,
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark
-                              ? colors.surfaceSecondary.withAlpha(160)
-                              : colors.surfacePrimary.withAlpha(210),
-                          border: Border.all(
-                            color: isDark
-                                ? colors.surfaceBorderHighlight.withAlpha(70)
-                                : colors.surfaceBorder.withAlpha(130),
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.explore_rounded,
-                          size: 18,
-                          color: colors.syllabotAccent,
+                _HeaderIconButton(
+                  icon: Icons.explore_rounded,
+                  color: colors.syllabotAccent,
+                  tooltip: 'Feature Walkthrough',
+                  borderHighlightColor: colors.syllabotAccent,
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    unawaited(
+                      showDialog<void>(
+                        context: context,
+                        builder: (_) => WelcomeWalkthroughDialog(
+                          onEnterWorkspace: () {
+                            if (context.mounted) {
+                              unawaited(
+                                AppGuidedTourOverlay.start(
+                                  context,
+                                  force: true,
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 8),
 
                 // Analytics Shortcut
-                Semantics(
-                  button: true,
-                  label: l10n.dashboardViewAnalyticsSemantics,
-                  child: ShrinkableButton(
-                    onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
-                      unawaited(
-                        context.router.push(const AnalyticsDetailRoute()),
-                      );
-                    },
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isDark
-                            ? colors.surfaceSecondary.withAlpha(160)
-                            : colors.surfacePrimary.withAlpha(210),
-                        border: Border.all(
-                          color: isDark
-                              ? colors.surfaceBorderHighlight.withAlpha(70)
-                              : colors.surfaceBorder.withAlpha(130),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.insights_rounded,
-                        size: 18,
-                        color: colors.primary,
-                      ),
-                    ),
-                  ),
+                _HeaderIconButton(
+                  icon: Icons.insights_rounded,
+                  color: colors.primary,
+                  tooltip: l10n.dashboardViewAnalyticsSemantics,
+                  borderHighlightColor: colors.primary,
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    unawaited(
+                      context.router.push(const AnalyticsDetailRoute()),
+                    );
+                  },
                 ),
               ],
             ),
@@ -363,22 +303,21 @@ class HeaderProfileBar extends StatelessWidget {
             container: true,
             label: l10n.dashboardUncalibratedSemantics,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.panel),
                     gradient: LinearGradient(
                       colors: [
-                        colors.primary.withAlpha(isDark ? 60 : 35),
-                        colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                        colors.primary.withAlpha(isDark ? 55 : 30),
+                        colors.syllabotAccent.withAlpha(isDark ? 35 : 18),
                       ],
                     ),
                     border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 120 : 90),
-                      width: 1.2,
+                      color: colors.primary.withAlpha(isDark ? 100 : 70),
                     ),
                   ),
                   child: Row(
@@ -425,14 +364,7 @@ class HeaderProfileBar extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: colors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.primary.withAlpha(80),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
                           ),
                           child: Text(
                             l10n.dashboardCalibrateButton,
@@ -451,6 +383,69 @@ class HeaderProfileBar extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+    this.borderHighlightColor,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+  final Color? borderHighlightColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isDark = context.isDarkMode;
+
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return ShrinkableButton(
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark
+                      ? (isHovered
+                          ? colors.surfaceSecondary.withAlpha(220)
+                          : colors.surfaceSecondary.withAlpha(150))
+                      : (isHovered
+                          ? colors.surfacePrimary
+                          : colors.surfacePrimary.withAlpha(210)),
+                  border: Border.all(
+                    color: isHovered
+                        ? (borderHighlightColor ?? colors.primary).withAlpha(isDark ? 140 : 100)
+                        : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: color,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 
 /// Glassmorphic progress indicator showing active calibration step.
 class CalibrationStepTracker extends StatelessWidget {
@@ -24,13 +26,13 @@ class CalibrationStepTracker extends StatelessWidget {
         final isCurrent = index == currentStep;
 
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.standard,
+          curve: AppMotion.easeOutCubic,
           margin: const EdgeInsets.symmetric(horizontal: 2.5),
           height: 4,
           width: isCurrent ? 20 : 6,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: AppRadius.radiusMicro,
             color: isActive
                 ? colors.primary
                 : (isDark

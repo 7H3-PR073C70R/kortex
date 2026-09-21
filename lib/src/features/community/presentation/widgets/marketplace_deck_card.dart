@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class MarketplaceDeckCard extends StatelessWidget {
@@ -30,24 +33,27 @@ class MarketplaceDeckCard extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       button: true,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: colors.primary.withAlpha(isDark ? 40 : 25),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.black.withAlpha(isDark ? 50 : 15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return AnimatedContainer(
+            duration: AppMotion.snappy,
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: isHovered
+                  ? (isDark
+                      ? colors.surfaceSecondary.withAlpha(220)
+                      : colors.surfacePrimary)
+                  : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+              borderRadius: AppRadius.radiusPanel,
+              border: Border.all(
+                color: isHovered
+                    ? colors.primary.withAlpha(isDark ? 140 : 100)
+                    : colors.primary.withAlpha(isDark ? 40 : 25),
+                width: isHovered ? 1.5 : 1.0,
+              ),
             ),
-          ],
-        ),
-        child: Column(
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top Row: Category tag + Rating
@@ -64,7 +70,7 @@ class MarketplaceDeckCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: colors.primary.withAlpha(30),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.radiusBadge,
                       ),
                       child: Text(
                         deck.category.toUpperCase(),
@@ -81,7 +87,7 @@ class MarketplaceDeckCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: colors.recallEasy.withAlpha(isDark ? 40 : 20),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.radiusBadge,
                         border: Border.all(
                           color: colors.recallEasy.withAlpha(isDark ? 90 : 60),
                         ),
@@ -154,7 +160,7 @@ class MarketplaceDeckCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: colors.warning.withAlpha(25),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppRadius.radiusMicro,
                       border: Border.all(
                         color: colors.warning.withAlpha(80),
                       ),
@@ -216,44 +222,55 @@ class MarketplaceDeckCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                ShrinkableButton(
-                  onTap: onCloneTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 50 : 30),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(100),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.copy_rounded,
-                          size: 14,
-                          color: colors.primary,
+                PlatformHoverBuilder(
+                  builder: (context, isBtnHovered, child) {
+                    return ShrinkableButton(
+                      onTap: onCloneTap,
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          l10n.cloneDeckButton,
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
+                        decoration: BoxDecoration(
+                          color: isBtnHovered
+                              ? colors.primary.withAlpha(isDark ? 80 : 50)
+                              : colors.primary.withAlpha(isDark ? 50 : 30),
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: isBtnHovered
+                                ? colors.primary
+                                : colors.primary.withAlpha(100),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.copy_rounded,
+                              size: 14,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              l10n.cloneDeckButton,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    },
+  ),
+);
+}
 }

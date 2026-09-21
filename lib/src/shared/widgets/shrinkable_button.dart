@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Tactile interactive wrapper scaling children down (0.96x) on press down.
 ///
@@ -8,6 +10,7 @@ import 'package:flutter/services.dart';
 /// - Enforces minimum 48x48 dp touch target.
 /// - Respects `prefersReducedMotion` / `disableAnimations` from OS settings.
 /// - Supports keyboard focus traversal and assistive technology semantics.
+/// - Features platform-aware hover feedback for Desktop & Web.
 class ShrinkableButton extends StatefulWidget {
   const ShrinkableButton({
     required this.child,
@@ -59,7 +62,7 @@ class _ShrinkableButtonState extends State<ShrinkableButton>
           begin: 1,
           end: widget.shrinkScale,
         ).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+          CurvedAnimation(parent: _controller, curve: AppMotion.easeOutCubic),
         );
   }
 
@@ -120,41 +123,58 @@ class _ShrinkableButtonState extends State<ShrinkableButton>
       enabled: isEnabled,
       label: widget.semanticLabel,
       hint: widget.semanticHint,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: 48,
-          minHeight: 48,
-        ),
-        child: Focus(
-          focusNode: _effectiveFocusNode,
-          autofocus: widget.autofocus,
-          onKeyEvent: (node, event) {
-            if (isEnabled &&
-                event is KeyDownEvent &&
-                (event.logicalKey == LogicalKeyboardKey.enter ||
-                    event.logicalKey == LogicalKeyboardKey.space)) {
-              if (widget.enableHaptics) {
-                unawaited(HapticFeedback.lightImpact());
-              }
-              widget.onTap?.call();
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          },
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: _onTapDown,
-            onTapUp: _onTapUp,
-            onTapCancel: _onTapCancel,
-            onTap: widget.onTap,
-            onLongPress: widget.onLongPress,
-            child: Center(
-              widthFactor: 1,
-              heightFactor: 1,
-              child: result,
+      child: PlatformHoverBuilder(
+        isEnabled: isEnabled,
+        cursor: isEnabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        builder: (context, isHovered, _) {
+          return AnimatedScale(
+            scale:
+                (!disableAnimations &&
+                    isHovered &&
+                    !_controller.isAnimating &&
+                    _controller.value == 0)
+                ? 1.012
+                : 1.0,
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: 48,
+                minHeight: 48,
+              ),
+              child: Focus(
+                focusNode: _effectiveFocusNode,
+                autofocus: widget.autofocus,
+                onKeyEvent: (node, event) {
+                  if (isEnabled &&
+                      event is KeyDownEvent &&
+                      (event.logicalKey == LogicalKeyboardKey.enter ||
+                          event.logicalKey == LogicalKeyboardKey.space)) {
+                    if (widget.enableHaptics) {
+                      unawaited(HapticFeedback.lightImpact());
+                    }
+                    widget.onTap?.call();
+                    return KeyEventResult.handled;
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: _onTapDown,
+                  onTapUp: _onTapUp,
+                  onTapCancel: _onTapCancel,
+                  onTap: widget.onTap,
+                  onLongPress: widget.onLongPress,
+                  child: Center(
+                    widthFactor: 1,
+                    heightFactor: 1,
+                    child: result,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

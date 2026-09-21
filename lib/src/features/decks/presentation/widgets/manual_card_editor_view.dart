@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -95,7 +96,7 @@ class ManualCardEditorView extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isDark ? colors.surfaceSecondary.withAlpha(100) : colors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
             ),
             child: Column(
@@ -183,7 +184,7 @@ class ManualCardEditorView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
               decoration: BoxDecoration(
                 color: colors.primary.withAlpha(25),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(color: colors.primary.withAlpha(60)),
               ),
               child: Row(
@@ -231,7 +232,7 @@ class ManualCardEditorView extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isDark ? colors.surfaceSecondary.withAlpha(100) : colors.surfacePrimary,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.panel),
                   border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
                 ),
                 child: Row(

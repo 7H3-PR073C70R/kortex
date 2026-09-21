@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Glassmorphic toggle button allowing users to switch between
@@ -46,67 +50,84 @@ class ModeSwitchButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: semanticLabel,
-      hint: isChatMode
-          ? l10n.authSwitchToFormHint
-          : l10n.authSwitchToChatHint,
-      child: ShrinkableButton(
-        onTap: handleToggle,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 7,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: isDark
-                    ? colors.surfaceSecondary.withAlpha(140)
-                    : colors.surfacePrimary.withAlpha(210),
-                border: Border.all(
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(100)
-                      : colors.surfaceBorder,
+      hint: isChatMode ? l10n.authSwitchToFormHint : l10n.authSwitchToChatHint,
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: handleToggle,
+            child: ClipRRect(
+              borderRadius: AppRadius.radiusPanel,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: AppRadius.radiusPanel,
+                    color: isHovered
+                        ? (isDark
+                              ? colors.surfaceSecondary.withAlpha(200)
+                              : colors.surfacePrimary)
+                        : (isDark
+                              ? colors.surfaceSecondary.withAlpha(140)
+                              : colors.surfacePrimary.withAlpha(210)),
+                    border: Border.all(
+                      color: isHovered
+                          ? colors.primary.withAlpha(140)
+                          : (isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(100)
+                                : colors.surfaceBorder),
+                      width: isHovered ? 1.4 : 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(
+                          isDark
+                              ? (isHovered ? 50 : 30)
+                              : (isHovered ? 30 : 15),
+                        ),
+                        blurRadius: isHovered ? 14 : 10,
+                        offset: Offset(0, isHovered ? 4 : 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 240),
+                        transitionBuilder: (child, animation) =>
+                            ScaleTransition(scale: animation, child: child),
+                        child: Icon(
+                          isChatMode
+                              ? Icons.format_list_bulleted_rounded
+                              : Icons.auto_awesome_rounded,
+                          key: ValueKey<bool>(isChatMode),
+                          size: 15,
+                          color: isChatMode ? colors.primary : colors.warning,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        targetLabel,
+                        style: typography.caption.bold.copyWith(
+                          color: isHovered
+                              ? colors.primary
+                              : colors.textPrimary,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withAlpha(isDark ? 30 : 15),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 240),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: Icon(
-                      isChatMode
-                          ? Icons.format_list_bulleted_rounded
-                          : Icons.auto_awesome_rounded,
-                      key: ValueKey<bool>(isChatMode),
-                      size: 15,
-                      color: isChatMode ? colors.primary : colors.warning,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    targetLabel,
-                    style: typography.caption.bold.copyWith(
-                      color: colors.textPrimary,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
@@ -65,127 +66,130 @@ class QuizDuelArenaPage extends HookWidget {
             backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
             body: SafeArea(
               child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Arena Battle Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              colors.primary.withAlpha(isDark ? 60 : 35),
-                              colors.secondary.withAlpha(isDark ? 60 : 35),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 640),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Arena Battle Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colors.primary.withAlpha(isDark ? 60 : 35),
+                                colors.secondary.withAlpha(isDark ? 60 : 35),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadius.dialog),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(120),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.bolt_rounded, color: colors.warning, size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                'MATCH FOUND • 1v1 DUEL',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  letterSpacing: 1.2,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(120),
-                            width: 1.2,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Match Details Subtitle
+                        Text(
+                          '${match?.subject ?? "Academic"} (${match?.examBoard ?? "Standard"}) • ${match?.totalQuestions ?? 10} Questions',
+                          style: typography.body.medium.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 13.5,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.bolt_rounded, color: colors.warning, size: 18),
-                            const SizedBox(width: 6),
-                            Text(
-                              'MATCH FOUND • 1v1 DUEL',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                letterSpacing: 1.2,
-                                fontSize: 12,
+                        const SizedBox(height: 36),
+
+                        // VS Battle Ring Cards
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.surfaceTertiary.withAlpha(180)
+                                : colors.surfaceSecondary.withAlpha(200),
+                            borderRadius: BorderRadius.circular(AppRadius.dialog),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(isDark ? 80 : 40),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.primary.withAlpha(isDark ? 40 : 15),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Match Details Subtitle
-                      Text(
-                        '${match?.subject ?? "Academic"} (${match?.examBoard ?? "Standard"}) • ${match?.totalQuestions ?? 10} Questions',
-                        style: typography.body.medium.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      const SizedBox(height: 36),
-
-                      // VS Battle Ring Cards
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceTertiary.withAlpha(180)
-                              : colors.surfaceSecondary.withAlpha(200),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 80 : 40),
-                            width: 1.5,
+                            ],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 40 : 15),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // Player 1 (You)
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: colors.primary,
-                                      width: 2.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.primary.withAlpha(90),
-                                        blurRadius: 14,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // Player 1 (You)
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: colors.primary,
+                                        width: 2.5,
                                       ),
-                                    ],
-                                  ),
-                                  child: AppAvatar(
-                                    name: myPlayer.displayName,
-                                    customDimension: 68,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  myPlayer.displayName,
-                                  style: typography.body.bold.copyWith(
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.primary.withAlpha(35),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '${myPlayer.eloRating} ELO',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.primary,
-                                      fontSize: 11,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.primary.withAlpha(90),
+                                          blurRadius: 14,
+                                        ),
+                                      ],
+                                    ),
+                                    child: AppAvatar(
+                                      name: myPlayer.displayName,
+                                      customDimension: 68,
                                     ),
                                   ),
-                                ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    myPlayer.displayName,
+                                    style: typography.body.bold.copyWith(
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary.withAlpha(35),
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.micro),
+                                    ),
+                                    child: Text(
+                                      '${myPlayer.eloRating} ELO',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
 
@@ -258,7 +262,8 @@ class QuizDuelArenaPage extends HookWidget {
                                   ),
                                   decoration: BoxDecoration(
                                     color: colors.secondary.withAlpha(35),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.micro),
                                   ),
                                   child: Text(
                                     '${opponent.eloRating} ELO',
@@ -277,10 +282,12 @@ class QuizDuelArenaPage extends HookWidget {
 
                       // Countdown Indicator Pill
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
                           color: colors.primary.withAlpha(isDark ? 40 : 20),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.dialog),
                           border: Border.all(
                             color: colors.primary.withAlpha(80),
                           ),
@@ -293,7 +300,8 @@ class QuizDuelArenaPage extends HookWidget {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.2,
-                                valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    colors.primary),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -312,8 +320,9 @@ class QuizDuelArenaPage extends HookWidget {
                 ),
               ),
             ),
-          );
-        }
+          ),
+        );
+      }
 
         if (state.status == QuizDuelStatus.finished) {
           final isWinner = state.isWinner;
@@ -322,101 +331,108 @@ class QuizDuelArenaPage extends HookWidget {
           return Scaffold(
             backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
             body: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      isDraw
-                          ? '🤝 DRAW MATCH!'
-                          : isWinner
-                              ? '🏆 VICTORY!'
-                              : '💥 DEFEAT',
-                      style: typography.largeTitle.bold.copyWith(
-                        color: isDraw
-                            ? colors.warning
-                            : isWinner
-                                ? colors.success
-                                : colors.error,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      isWinner
-                          ? 'Outstanding speed and accuracy! +35 XP earned.'
-                          : 'Great effort! Practice more to climb the leaderboard.',
-                      textAlign: TextAlign.center,
-                      style: typography.body.regular.copyWith(color: colors.textSecondary),
-                    ),
-                    const SizedBox(height: 36),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 580),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isDraw
+                              ? '🤝 DRAW MATCH!'
+                              : isWinner
+                                  ? '🏆 VICTORY!'
+                                  : '💥 DEFEAT',
+                          style: typography.largeTitle.bold.copyWith(
+                            color: isDraw
+                                ? colors.warning
+                                : isWinner
+                                    ? colors.success
+                                    : colors.error,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          isWinner
+                              ? 'Outstanding speed and accuracy! +35 XP earned.'
+                              : 'Great effort! Practice more to climb the leaderboard.',
+                          textAlign: TextAlign.center,
+                          style: typography.body.regular.copyWith(color: colors.textSecondary),
+                        ),
+                        const SizedBox(height: 36),
 
-                    // Final Scoreboard Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.6)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
+                        // Final Scoreboard Card
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.panel),
+                            border: Border.all(
+                                color: colors.surfaceBorder.withValues(alpha: 0.6)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              AppAvatar(name: myPlayer.displayName, customDimension: 52),
-                              const SizedBox(height: 6),
-                              Text(myPlayer.displayName, style: typography.body.bold),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${myPlayer.score} pts',
-                                style: typography.title2.bold.copyWith(color: colors.primary),
+                              Column(
+                                children: [
+                                  AppAvatar(name: myPlayer.displayName, customDimension: 52),
+                                  const SizedBox(height: 6),
+                                  Text(myPlayer.displayName, style: typography.body.bold),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${myPlayer.score} pts',
+                                    style: typography.title2.bold.copyWith(color: colors.primary),
+                                  ),
+                                  if (isWinner)
+                                    const AppBadge(label: 'Winner', variant: AppBadgeVariant.success),
+                                ],
                               ),
-                              if (isWinner)
-                                const AppBadge(label: 'Winner', variant: AppBadgeVariant.success),
+                              Text('—', style: typography.title1.bold),
+                              Column(
+                                children: [
+                                  AppAvatar(name: opponent.displayName, customDimension: 52),
+                                  const SizedBox(height: 6),
+                                  Text(opponent.displayName, style: typography.body.bold),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${opponent.score} pts',
+                                    style: typography.title2.bold.copyWith(color: colors.secondary),
+                                  ),
+                                  if (!isWinner && !isDraw)
+                                    const AppBadge(label: 'Winner', variant: AppBadgeVariant.success),
+                                ],
+                              ),
                             ],
                           ),
-                          Text('—', style: typography.title1.bold),
-                          Column(
-                            children: [
-                              AppAvatar(name: opponent.displayName, customDimension: 52),
-                              const SizedBox(height: 6),
-                              Text(opponent.displayName, style: typography.body.bold),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${opponent.score} pts',
-                                style: typography.title2.bold.copyWith(color: colors.secondary),
-                              ),
-                              if (!isWinner && !isDraw)
-                                const AppBadge(label: 'Winner', variant: AppBadgeVariant.success),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
+                        ),
+                        const SizedBox(height: 40),
 
-                    AppButton(
-                      text: 'Rematch ⚡',
-                      onPressed: () async {
-                        await context.read<QuizDuelCubit>().startMatchmaking(
-                          subject: match?.subject ?? 'Physics',
-                          examBoard: match?.examBoard ?? 'WAEC',
-                          userId: state.currentUserId,
-                          displayName: myPlayer.displayName,
-                          avatarUrl: myPlayer.avatarUrl,
-                        );
-                      },
+                        AppButton(
+                          text: 'Rematch ⚡',
+                          onPressed: () async {
+                            await context.read<QuizDuelCubit>().startMatchmaking(
+                              subject: match?.subject ?? 'Physics',
+                              examBoard: match?.examBoard ?? 'WAEC',
+                              userId: state.currentUserId,
+                              displayName: myPlayer.displayName,
+                              avatarUrl: myPlayer.avatarUrl,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        AppButton(
+                          text: 'Exit Arena',
+                          variant: AppButtonVariant.secondary,
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      text: 'Exit Arena',
-                      variant: AppButtonVariant.secondary,
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -455,227 +471,278 @@ class QuizDuelArenaPage extends HookWidget {
           body: Stack(
             children: [
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Split Scoreboard Header
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
-                        ),
-                        child: Row(
-                          children: [
-                            // My info
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  AppAvatar(name: myPlayer.displayName, customDimension: 36),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          myPlayer.displayName,
-                                          style: typography.caption.bold,
-                                          overflow: TextOverflow.ellipsis,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 820),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Split Scoreboard Header
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: colors.surfacePrimary,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.panel),
+                              border: Border.all(
+                                  color: colors.surfaceBorder
+                                      .withValues(alpha: 0.5)),
+                            ),
+                            child: Row(
+                              children: [
+                                // My info
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      AppAvatar(
+                                          name: myPlayer.displayName,
+                                          customDimension: 36),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              myPlayer.displayName,
+                                              style: typography.caption.bold,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              '${myPlayer.score} pts',
+                                              style: typography.body.bold
+                                                  .copyWith(
+                                                      color: colors.primary),
+                                            ),
+                                          ],
                                         ),
-                                        Text(
-                                          '${myPlayer.score} pts',
-                                          style: typography.body.bold.copyWith(color: colors.primary),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                      if (myPlayer.comboStreak > 1)
+                                        Text('🔥x${myPlayer.comboStreak}',
+                                            style: typography.caption.bold),
+                                    ],
                                   ),
-                                  if (myPlayer.comboStreak > 1)
-                                    Text('🔥x${myPlayer.comboStreak}', style: typography.caption.bold),
-                                ],
+                                ),
+                                // VS Center Badge
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    'VS',
+                                    style: typography.caption.bold
+                                        .copyWith(color: colors.textSecondary),
+                                  ),
+                                ),
+                                // Opponent info
+                                Expanded(
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      if (opponent.comboStreak > 1)
+                                        Text('🔥x${opponent.comboStreak}',
+                                            style: typography.caption.bold),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              opponent.displayName,
+                                              style: typography.caption.bold,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Text(
+                                              '${opponent.score} pts',
+                                              style: typography.body.bold
+                                                  .copyWith(
+                                                      color: colors.secondary),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      AppAvatar(
+                                          name: opponent.displayName,
+                                          customDimension: 36),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Countdown Timer Progress Bar
+                          ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.micro),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 6,
+                              backgroundColor: colors.surfaceSecondary,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(timerColor),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Question Card
+                          if (currentQuestion != null) ...[
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: colors.surfacePrimary,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.panel),
+                                border: Border.all(
+                                    color: colors.surfaceBorder
+                                        .withValues(alpha: 0.4)),
+                              ),
+                              child: LatexRichViewer(
+                                text: currentQuestion.prompt,
+                                style: typography.body.regular.copyWith(
+                                  fontSize: 16,
+                                  height: 1.4,
+                                  color: colors.textPrimary,
+                                ),
                               ),
                             ),
-                            // VS Center Badge
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                'VS',
-                                style: typography.caption.bold.copyWith(color: colors.textSecondary),
-                              ),
-                            ),
-                            // Opponent info
+                            const SizedBox(height: 16),
+
+                            // MCQ Options
                             Expanded(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  if (opponent.comboStreak > 1)
-                                    Text('🔥x${opponent.comboStreak}', style: typography.caption.bold),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          opponent.displayName,
-                                          style: typography.caption.bold,
-                                          overflow: TextOverflow.ellipsis,
+                              child: ListView.separated(
+                                itemCount: currentQuestion.options.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, index) {
+                                  final option = currentQuestion.options[index];
+                                  final isSelected =
+                                      state.selectedOptionIndex == index;
+                                  final isRoundSummary = state.status ==
+                                      QuizDuelStatus.roundSummary;
+                                  final isCorrect = option ==
+                                      currentQuestion.correctAnswer;
+
+                                  Color? cardColor = colors.surfacePrimary;
+                                  var borderColor = colors.surfaceBorder
+                                      .withValues(alpha: 0.5);
+
+                                  if (isRoundSummary) {
+                                    if (isCorrect) {
+                                      cardColor = colors.success
+                                          .withValues(alpha: 0.18);
+                                      borderColor = colors.success;
+                                    } else if (isSelected) {
+                                      cardColor = colors.error
+                                          .withValues(alpha: 0.18);
+                                      borderColor = colors.error;
+                                    }
+                                  } else if (isSelected) {
+                                    cardColor =
+                                        colors.primary.withValues(alpha: 0.15);
+                                    borderColor = colors.primary;
+                                  }
+
+                                  return Material(
+                                    color: cardColor,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.card),
+                                    child: InkWell(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.card),
+                                      onTap: (state.isMyAnswerLocked ||
+                                              isRoundSummary)
+                                          ? null
+                                          : () => onSelectOption(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                              AppRadius.card),
+                                          border: Border.all(
+                                              color: borderColor,
+                                              width: isSelected ? 2 : 1),
                                         ),
-                                        Text(
-                                          '${opponent.score} pts',
-                                          style: typography.body.bold.copyWith(color: colors.secondary),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              width: 28,
+                                              height: 28,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: isSelected
+                                                    ? colors.primary
+                                                    : colors.surfaceSecondary,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  String.fromCharCode(
+                                                      65 + index),
+                                                  style: TextStyle(
+                                                    color: isSelected
+                                                        ? colors.white
+                                                        : colors.textPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: LatexRichViewer(
+                                                text: option,
+                                                style: typography.body.regular
+                                                    .copyWith(
+                                                  color: colors.textPrimary,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  AppAvatar(name: opponent.displayName, customDimension: 36),
-                                ],
+                                  );
+                                },
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
 
-                      // Countdown Timer Progress Bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 6,
-                          backgroundColor: colors.surfaceSecondary,
-                          valueColor: AlwaysStoppedAnimation<Color>(timerColor),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Question Card
-                      if (currentQuestion != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.4)),
-                          ),
-                          child: LatexRichViewer(
-                            text: currentQuestion.prompt,
-                            style: typography.body.regular.copyWith(
-                              fontSize: 16,
-                              height: 1.4,
-                              color: colors.textPrimary,
+                          // Bottom Emote Bar
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children:
+                                  ['🔥', '⚡', '🤯', '👏', '🎯'].map((emote) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(20),
+                                    onTap: () => onSendEmote(emote),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: colors.surfaceSecondary,
+                                      ),
+                                      child: Text(emote,
+                                          style: const TextStyle(fontSize: 20)),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // MCQ Options
-                        Expanded(
-                          child: ListView.separated(
-                            itemCount: currentQuestion.options.length,
-                            separatorBuilder: (_, _) => const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final option = currentQuestion.options[index];
-                              final isSelected = state.selectedOptionIndex == index;
-                              final isRoundSummary = state.status == QuizDuelStatus.roundSummary;
-                              final isCorrect = option == currentQuestion.correctAnswer;
-
-                              Color? cardColor = colors.surfacePrimary;
-                              var borderColor = colors.surfaceBorder.withValues(alpha: 0.5);
-
-                              if (isRoundSummary) {
-                                if (isCorrect) {
-                                  cardColor = colors.success.withValues(alpha: 0.18);
-                                  borderColor = colors.success;
-                                } else if (isSelected) {
-                                  cardColor = colors.error.withValues(alpha: 0.18);
-                                  borderColor = colors.error;
-                                }
-                              } else if (isSelected) {
-                                cardColor = colors.primary.withValues(alpha: 0.15);
-                                borderColor = colors.primary;
-                              }
-
-                              return Material(
-                                color: cardColor,
-                                borderRadius: BorderRadius.circular(14),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(14),
-                                  onTap: (state.isMyAnswerLocked || isRoundSummary)
-                                      ? null
-                                      : () => onSelectOption(index),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: isSelected ? colors.primary : colors.surfaceSecondary,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              String.fromCharCode(65 + index),
-                                              style: TextStyle(
-                                                color: isSelected ? colors.white : colors.textPrimary,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: LatexRichViewer(
-                                            text: option,
-                                            style: typography.body.regular.copyWith(
-                                              color: colors.textPrimary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-
-                      // Bottom Emote Bar
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: ['🔥', '⚡', '🤯', '👏', '🎯'].map((emote) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: () => onSendEmote(emote),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colors.surfaceSecondary,
-                                  ),
-                                  child: Text(emote, style: const TextStyle(fontSize: 20)),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

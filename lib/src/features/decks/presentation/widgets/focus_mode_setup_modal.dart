@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/focus_session_config.dart';
 import 'package:kortex/src/features/decks/presentation/pages/focus_workspace_page.dart';
@@ -105,40 +106,49 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: colors.black.withValues(alpha: 0.25),
-            blurRadius: 30,
-            offset: const Offset(0, -6),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: 24 + MediaQuery.of(context).padding.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colors.textMuted.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.dialog)),
+            border: Border.all(
+              color: isDark
+                  ? colors.surfaceBorderHighlight.withAlpha(70)
+                  : colors.surfaceBorder,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.black.withValues(alpha: 0.25),
+                blurRadius: 30,
+                offset: const Offset(0, -6),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: 24 + MediaQuery.of(context).padding.bottom,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.textMuted.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
           // Header
           Row(
@@ -151,7 +161,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
                 child: Icon(
                   Icons.bolt_rounded,
@@ -200,7 +210,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: colors.surfaceSecondary,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(
                   color: colors.surfaceBorder.withValues(alpha: 0.4),
                 ),
@@ -306,7 +316,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                               : (isDark
                                   ? colors.white.withValues(alpha: 0.1)
                                   : colors.black.withValues(alpha: 0.05)),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
                           border: Border.all(
                             color: isSelected
                                 ? colors.primary
@@ -347,7 +357,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                               : (isDark
                                   ? colors.white.withValues(alpha: 0.1)
                                   : colors.black.withValues(alpha: 0.05)),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
                           border: Border.all(
                             color: isSelected
                                 ? colors.primary
@@ -376,7 +386,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: colors.surfaceSecondary,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
             ),
             child: Column(
               children: [
@@ -417,7 +427,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
                 gradient: LinearGradient(
                   colors: [colors.deepBronze, colors.primary],
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 boxShadow: [
                   BoxShadow(
                     color: colors.primary.withValues(alpha: 0.35),
@@ -445,7 +455,10 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
           ),
         ],
       ),
-    );
+    ),
+  ),
+),
+);
   }
 }
 
@@ -478,7 +491,7 @@ class _OptionChip extends StatelessWidget {
           color: isSelected
               ? colors.primary.withValues(alpha: 0.15)
               : colors.surfaceSecondary,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.card),
           border: Border.all(
             color: isSelected ? colors.primary : colors.transparent,
             width: 1.5,

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
@@ -11,6 +13,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 /// Fast, high-contrast input form with floating glassmorphic card over the
 /// full-screen campus backdrop.
@@ -124,13 +127,13 @@ class AuthFormView extends HookWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: AppRadius.radiusDialog,
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                   child: Container(
                     padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: AppRadius.radiusDialog,
                       color: isDark
                           ? colors.surfaceSecondary.withAlpha(160)
                           : colors.surfacePrimary.withAlpha(210),
@@ -158,7 +161,10 @@ class AuthFormView extends HookWidget {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: colors.primary.withAlpha(25),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: AppRadius.concentricBorderRadius(
+                                AppRadius.dialog,
+                                4,
+                              ),
                               border: Border.all(
                                 color: colors.primary.withAlpha(80),
                                 width: 1.2,
@@ -212,8 +218,8 @@ class AuthFormView extends HookWidget {
                                           if (otp.length == 6) {
                                             context.read<AuthBloc>().add(
                                               AuthVerifyOtpRequested(
-                                                email:
-                                                    emailController.text.trim(),
+                                                email: emailController.text
+                                                    .trim(),
                                                 token: otp,
                                               ),
                                             );
@@ -399,18 +405,33 @@ class AuthFormView extends HookWidget {
                             label: isRegister
                                 ? l10n.authAlreadyHaveAccount
                                 : l10n.authNeedAccount,
-                            child: GestureDetector(
-                              onTap: () {
-                                context.read<AuthModeCubit>().toggleFormType();
+                            child: PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return GestureDetector(
+                                  onTap: () {
+                                    context
+                                        .read<AuthModeCubit>()
+                                        .toggleFormType();
+                                  },
+                                  child: AnimatedDefaultTextStyle(
+                                    duration: AppMotion.snappy,
+                                    curve: AppMotion.easeOutCubic,
+                                    style: typography.subhead.regular.copyWith(
+                                      color: isHovered
+                                          ? colors.primary
+                                          : colors.textSecondary,
+                                      decoration: isHovered
+                                          ? TextDecoration.underline
+                                          : TextDecoration.none,
+                                    ),
+                                    child: Text(
+                                      isRegister
+                                          ? l10n.authAlreadyHaveAccount
+                                          : l10n.authNeedAccount,
+                                    ),
+                                  ),
+                                );
                               },
-                              child: Text(
-                                isRegister
-                                    ? l10n.authAlreadyHaveAccount
-                                    : l10n.authNeedAccount,
-                                style: typography.subhead.regular.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
                             ),
                           ),
                         ),

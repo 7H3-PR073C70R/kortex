@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
@@ -17,6 +19,7 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class AddExamModalSheet extends StatefulWidget {
   const AddExamModalSheet({
@@ -42,10 +45,15 @@ class AddExamModalSheet extends StatefulWidget {
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
         value: context.read<CramPlannerCubit>(),
-        child: AddExamModalSheet(
-          initialExam: initialExam,
-          preselectedCourseCode: preselectedCourseCode,
-          preselectedCourseTitle: preselectedCourseTitle,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: AddExamModalSheet(
+              initialExam: initialExam,
+              preselectedCourseCode: preselectedCourseCode,
+              preselectedCourseTitle: preselectedCourseTitle,
+            ),
+          ),
         ),
       ),
     );
@@ -109,8 +117,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
     // Preselect course if matching code/title or initialExam
     if (_registeredCourses.isNotEmpty) {
-      final targetCode = widget.preselectedCourseCode ??
-          widget.initialExam?.subjectTrack;
+      final targetCode =
+          widget.preselectedCourseCode ?? widget.initialExam?.subjectTrack;
       if (targetCode != null && targetCode.isNotEmpty) {
         _selectedCourse = _registeredCourses.firstWhere(
           (c) =>
@@ -146,7 +154,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
         if (locator.isRegistered<DecksBloc>()) {
           final decks = locator<DecksBloc>().state.allDecks;
           for (final d in decks) {
-            final matchCourse = (d.courseId != null && d.courseId == course.id) ||
+            final matchCourse =
+                (d.courseId != null && d.courseId == course.id) ||
                 (d.courseCode != null &&
                     d.courseCode!.toLowerCase() ==
                         course.courseCode.toLowerCase()) ||
@@ -160,20 +169,27 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
       // 2. For secondary school exams (WAEC, JAMB, NECO), take past questions into account
       try {
-        final authBloc = locator.isRegistered<AuthBloc>() ? locator<AuthBloc>() : null;
-        final track = (authBloc?.state.userProfile?.targetTrack ?? 'WAEC').toUpperCase();
-        final isSecondary = track.contains('WAEC') ||
+        final authBloc = locator.isRegistered<AuthBloc>()
+            ? locator<AuthBloc>()
+            : null;
+        final track = (authBloc?.state.userProfile?.targetTrack ?? 'WAEC')
+            .toUpperCase();
+        final isSecondary =
+            track.contains('WAEC') ||
             track.contains('JAMB') ||
             track.contains('NECO');
 
-        if (isSecondary && locator.isRegistered<PastQuestionsLocalDataSource>()) {
+        if (isSecondary &&
+            locator.isRegistered<PastQuestionsLocalDataSource>()) {
           final pds = locator<PastQuestionsLocalDataSource>();
           if (!pds.isInitialized) {
             await pds.initialize();
           }
           final examCategory = track.contains('JAMB')
               ? ExamCategory.jamb
-              : (track.contains('NECO') ? ExamCategory.neco : ExamCategory.waec);
+              : (track.contains('NECO')
+                    ? ExamCategory.neco
+                    : ExamCategory.waec);
 
           final questions = await pds.getPastQuestions(
             examCategory: examCategory,
@@ -315,7 +331,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
           border: Border.all(
             color: colors.primary.withAlpha(isDark ? 60 : 30),
           ),
@@ -374,7 +392,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                         ? colors.surfaceSecondary
                         : colors.surfacePrimary,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AppRadius.radiusCard,
                       borderSide: BorderSide(
                         color: colors.surfaceBorder,
                       ),
@@ -396,7 +414,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                         _selectedCourse = course;
                         if (_nameController.text.isEmpty ||
                             _nameController.text.endsWith('Final Exam')) {
-                          _nameController.text = '${course.courseCode} Final Exam';
+                          _nameController.text =
+                              '${course.courseCode} Final Exam';
                         }
                       });
                       unawaited(_calculateWorkload());
@@ -430,7 +449,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(isDark ? 30 : 15),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: AppRadius.radiusPanel,
                   border: Border.all(
                     color: colors.primary.withAlpha(isDark ? 80 : 40),
                   ),
@@ -460,7 +479,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(colors.primary),
+                              valueColor: AlwaysStoppedAnimation(
+                                colors.primary,
+                              ),
                             ),
                           ),
                       ],
@@ -503,7 +524,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                           ),
                           decoration: BoxDecoration(
                             color: colors.primary.withAlpha(isDark ? 60 : 30),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadius.radiusBadge,
                           ),
                           child: Text(
                             l10n.dailyTargetPace(_dailyTarget),
@@ -526,49 +547,72 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                   // Date Picker Tile
                   Expanded(
                     flex: 6,
-                    child: InkWell(
-                      onTap: () => unawaited(_pickDate()),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colors.surfaceBorder),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_rounded,
-                                  size: 14,
+                    child: PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: Curves.easeOutCubic,
+                          child: InkWell(
+                            onTap: () => unawaited(_pickDate()),
+                            borderRadius: AppRadius.radiusCard,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? (isHovered
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              220,
+                                            )
+                                          : colors.surfaceSecondary)
+                                    : (isHovered
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              120,
+                                            )
+                                          : colors.surfacePrimary),
+                                borderRadius: AppRadius.radiusCard,
+                                border: Border.all(
+                                  color: isHovered
+                                      ? colors.primary.withAlpha(
+                                          isDark ? 160 : 100,
+                                        )
+                                      : colors.surfaceBorder,
+                                ),
+                              ),
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 14,
+                                color: colors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                l10n.targetDateLabel,
+                                style: typography.caption.regular.copyWith(
                                   color: colors.textSecondary,
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  l10n.targetDateLabel,
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              formattedDate,
-                              style: typography.callout.bold.copyWith(
-                                color: colors.textPrimary,
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            formattedDate,
+                            style: typography.callout.bold.copyWith(
+                              color: colors.textPrimary,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -577,49 +621,72 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                   // Time Picker Tile
                   Expanded(
                     flex: 4,
-                    child: InkWell(
-                      onTap: () => unawaited(_pickTime()),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: colors.surfaceBorder),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 14,
+                    child: PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: Curves.easeOutCubic,
+                          child: InkWell(
+                            onTap: () => unawaited(_pickTime()),
+                            borderRadius: AppRadius.radiusCard,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? (isHovered
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              220,
+                                            )
+                                          : colors.surfaceSecondary)
+                                    : (isHovered
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              120,
+                                            )
+                                          : colors.surfacePrimary),
+                                borderRadius: AppRadius.radiusCard,
+                                border: Border.all(
+                                  color: isHovered
+                                      ? colors.primary.withAlpha(
+                                          isDark ? 160 : 100,
+                                        )
+                                      : colors.surfaceBorder,
+                                ),
+                              ),
+                              child: child,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 14,
+                                color: colors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                l10n.timePickerLabel,
+                                style: typography.caption.regular.copyWith(
                                   color: colors.textSecondary,
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  l10n.timePickerLabel,
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              formattedTime,
-                              style: typography.callout.bold.copyWith(
-                                color: colors.textPrimary,
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            formattedTime,
+                            style: typography.callout.bold.copyWith(
+                              color: colors.textPrimary,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

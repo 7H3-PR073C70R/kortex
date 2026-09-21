@@ -5,11 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class PastQuestionCard extends StatelessWidget {
@@ -31,7 +34,7 @@ class PastQuestionCard extends StatelessWidget {
   Widget _buildQuestionImage(String imagePath) {
     return AppMultimodalImage(
       imageUrl: imagePath,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.card),
     );
   }
 
@@ -48,7 +51,7 @@ class PastQuestionCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
           color: isDark ? colors.surfaceBorderHighlight : colors.surfaceBorder,
         ),
@@ -76,12 +79,12 @@ class PastQuestionCard extends StatelessWidget {
                     if (question.isUserAdded)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: colors.primary.withAlpha(isDark ? 45 : 20),
-                          borderRadius: BorderRadius.circular(7),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
                           border: Border.all(
                             color: colors.primary.withAlpha(70),
                             width: 0.8,
@@ -109,12 +112,12 @@ class PastQuestionCard extends StatelessWidget {
                     if (question.isTheory)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: colors.syllabotAccent.withAlpha(isDark ? 45 : 20),
-                          borderRadius: BorderRadius.circular(7),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
                           border: Border.all(
                             color: colors.syllabotAccent.withAlpha(70),
                             width: 0.8,
@@ -131,11 +134,11 @@ class PastQuestionCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
-                        vertical: 3.5,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: colors.primary.withAlpha(isDark ? 40 : 20),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: Text(
                         '${question.subject} • ${question.year} • Q${question.questionNumber}',
@@ -147,12 +150,12 @@ class PastQuestionCard extends StatelessWidget {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
                         color: colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: Text(
                         question.topic,
@@ -191,7 +194,7 @@ class PastQuestionCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: colors.backgroundPrimary.withAlpha(isDark ? 100 : 40),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.card),
                 border: Border.all(
                   color: colors.surfaceBorder.withAlpha(80),
                 ),
@@ -219,7 +222,7 @@ class PastQuestionCard extends StatelessWidget {
           if (question.imageUrl != null && question.imageUrl!.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.card),
               child: _buildQuestionImage(question.imageUrl!),
             ),
           ],
@@ -241,100 +244,112 @@ class PastQuestionCard extends StatelessWidget {
               final isSelected = question.userSelectedOptionIndex == idx;
               final isCorrect = idx == question.correctOptionIndex;
 
-              var optionBgColor = isDark
+              var baseBgColor = isDark
                   ? colors.backgroundPrimary
                   : colors.surfaceSecondary.withAlpha(50);
-              var optionBorderColor = colors.surfaceBorder.withAlpha(90);
+              var baseBorderColor = colors.surfaceBorder.withAlpha(90);
               var optionTextColor = colors.textPrimary;
 
               if (question.isAnswered && isInstantFeedback) {
                 if (isCorrect) {
-                  optionBgColor = colors.success.withAlpha(isDark ? 50 : 25);
-                  optionBorderColor = colors.success.withAlpha(180);
+                  baseBgColor = colors.success.withAlpha(isDark ? 50 : 25);
+                  baseBorderColor = colors.success.withAlpha(180);
                   optionTextColor = colors.success;
                 } else if (isSelected) {
-                  optionBgColor = colors.error.withAlpha(isDark ? 50 : 25);
-                  optionBorderColor = colors.error.withAlpha(180);
+                  baseBgColor = colors.error.withAlpha(isDark ? 50 : 25);
+                  baseBorderColor = colors.error.withAlpha(180);
                   optionTextColor = colors.error;
                 }
               } else if (isSelected) {
-                optionBgColor = colors.primary.withAlpha(isDark ? 50 : 25);
-                optionBorderColor = colors.primary;
+                baseBgColor = colors.primary.withAlpha(isDark ? 50 : 25);
+                baseBorderColor = colors.primary;
                 optionTextColor = colors.primary;
               }
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: ShrinkableButton(
-                  onTap: () {
-                    unawaited(HapticFeedback.selectionClick());
-                    context.read<PastQuestionsBloc>().add(
-                          SelectOptionEvent(
-                            questionId: question.id,
-                            optionIndex: idx,
-                          ),
-                        );
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      color: optionBgColor,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: optionBorderColor, width: 1.2),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected
-                                ? colors.primary
-                                : colors.surfaceSecondary,
-                          ),
-                          child: Center(
-                            child: Text(
-                              letter,
-                              style: typography.caption.bold.copyWith(
+                child: PlatformHoverBuilder(
+                  builder: (context, isHovered, _) {
+                    final optionBgColor = isHovered && !isSelected && !question.isAnswered
+                        ? colors.primary.withAlpha(isDark ? 20 : 10)
+                        : baseBgColor;
+                    final optionBorderColor = isHovered && !isSelected && !question.isAnswered
+                        ? colors.primary.withAlpha(isDark ? 80 : 60)
+                        : baseBorderColor;
+
+                    return ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.selectionClick());
+                        context.read<PastQuestionsBloc>().add(
+                              SelectOptionEvent(
+                                questionId: question.id,
+                                optionIndex: idx,
+                              ),
+                            );
+                      },
+                      child: AnimatedContainer(
+                        duration: AppMotion.standard,
+                        curve: AppMotion.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 11,
+                        ),
+                        decoration: BoxDecoration(
+                          color: optionBgColor,
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(color: optionBorderColor, width: 1.2),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
                                 color: isSelected
-                                    ? colors.white
-                                    : colors.textSecondary,
-                                fontSize: 11,
+                                    ? colors.primary
+                                    : colors.surfaceSecondary,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  letter,
+                                  style: typography.caption.bold.copyWith(
+                                    color: isSelected
+                                        ? colors.white
+                                        : colors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: LatexRichViewer(
-                            text: optionText,
-                            style: typography.subhead.medium.copyWith(
-                              color: optionTextColor,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: LatexRichViewer(
+                                text: optionText,
+                                style: typography.subhead.medium.copyWith(
+                                  color: optionTextColor,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (question.isAnswered && isInstantFeedback) ...[
+                              if (isCorrect)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: colors.success,
+                                  size: 20,
+                                )
+                              else if (isSelected)
+                                Icon(
+                                  Icons.cancel_rounded,
+                                  color: colors.error,
+                                  size: 20,
+                                ),
+                            ],
+                          ],
                         ),
-                        if (question.isAnswered && isInstantFeedback) ...[
-                          if (isCorrect)
-                            Icon(
-                              Icons.check_circle_rounded,
-                              color: colors.success,
-                              size: 20,
-                            )
-                          else if (isSelected)
-                            Icon(
-                              Icons.cancel_rounded,
-                              color: colors.error,
-                              size: 20,
-                            ),
-                        ],
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
               );
             }),
@@ -346,7 +361,7 @@ class PastQuestionCard extends StatelessWidget {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(isDark ? 30 : 15),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(
                     color: colors.primary.withAlpha(isDark ? 70 : 40),
                   ),
@@ -390,49 +405,59 @@ class PastQuestionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              ShrinkableButton(
-                onTap: () {
-                  unawaited(
-                    context.router.push(
-                      SyllabotChatRoute(
-                        initialPrompt:
-                            'Explain this ${question.subject} question '
-                            'step-by-step:\n"${question.prompt}"',
+              PlatformHoverBuilder(
+                builder: (context, isHovered, _) {
+                  return ShrinkableButton(
+                    onTap: () {
+                      unawaited(
+                        context.router.push(
+                          SyllabotChatRoute(
+                            initialPrompt:
+                                'Explain this ${question.subject} question '
+                                'step-by-step:\n"${question.prompt}"',
+                          ),
+                        ),
+                      );
+                    },
+                    child: AnimatedContainer(
+                      duration: AppMotion.standard,
+                      curve: AppMotion.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.syllabotAccent.withAlpha(
+                          isDark ? (isHovered ? 65 : 45) : (isHovered ? 40 : 25),
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                        border: Border.all(
+                          color: colors.syllabotAccent.withAlpha(
+                            isDark ? (isHovered ? 130 : 90) : (isHovered ? 80 : 50),
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_awesome_rounded,
+                            color: colors.syllabotAccent,
+                            size: 15,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Ask Syllabot AI',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.syllabotAccent,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.syllabotAccent.withAlpha(isDark ? 45 : 25),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: colors.syllabotAccent.withAlpha(isDark ? 90 : 50),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        color: colors.syllabotAccent,
-                        size: 15,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Ask Syllabot AI',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.syllabotAccent,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),
@@ -466,7 +491,7 @@ class _TheoryModelAnswerWidgetState extends State<_TheoryModelAnswerWidget> {
     return Container(
       decoration: BoxDecoration(
         color: colors.primary.withAlpha(isDark ? 28 : 12),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
           color: colors.primary.withAlpha(isDark ? 65 : 35),
         ),
@@ -476,7 +501,7 @@ class _TheoryModelAnswerWidgetState extends State<_TheoryModelAnswerWidget> {
         children: [
           InkWell(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.card),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(

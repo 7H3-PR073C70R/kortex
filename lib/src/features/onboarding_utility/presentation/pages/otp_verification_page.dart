@@ -8,6 +8,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -16,6 +18,8 @@ import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/otp_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class OtpVerificationPage extends HookWidget {
@@ -115,7 +119,48 @@ class _OtpView extends HookWidget {
                       ),
                       child: Column(
                         children: [
-                          const SizedBox(height: 24),
+                          if (Navigator.canPop(context)) ...[
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return ShrinkableButton(
+                                    onTap: () {
+                                      unawaited(HapticFeedback.lightImpact());
+                                      unawaited(Navigator.maybePop(context));
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: isHovered
+                                            ? colors.surfaceSecondary.withAlpha(
+                                                140,
+                                              )
+                                            : colors.surfaceSecondary.withAlpha(
+                                                80,
+                                              ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isHovered
+                                              ? colors.surfaceBorderHighlight
+                                              : colors.surfaceBorder,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.arrow_back_ios_new_rounded,
+                                        size: 18,
+                                        color: colors.textPrimary,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          const SizedBox(height: 16),
                           _EnvelopeIcon(),
                           const SizedBox(height: 28),
                           Semantics(
@@ -221,14 +266,14 @@ class _OtpGlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: AppRadius.radiusDialog,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
         child: Container(
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             color: colors.surfacePrimary.withAlpha(60),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppRadius.radiusDialog,
             border: Border.all(
               color: colors.white.withAlpha(40),
             ),
@@ -259,32 +304,38 @@ class _OtpGlassCard extends StatelessWidget {
                   return Semantics(
                     button: true,
                     label: l10n.otpVerifyButtonSemantics,
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: state.isLoading ? null : submitOtp,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          foregroundColor: colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: state.isLoading
-                            ? AppLogoLoader(
-                                size: 22,
-                                color: colors.white,
-                              )
-                            : Text(
-                                l10n.otpVerifyButton,
-                                style: typography.callout.semiBold.copyWith(
-                                  color: colors.white,
-                                  fontSize: 16,
-                                ),
+                    child: PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: state.isLoading ? null : submitOtp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isHovered
+                                  ? colors.primary.withAlpha(220)
+                                  : colors.primary,
+                              foregroundColor: colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppRadius.radiusPanel,
                               ),
-                      ),
+                              elevation: isHovered ? 4 : 0,
+                            ),
+                            child: state.isLoading
+                                ? AppLogoLoader(
+                                    size: 22,
+                                    color: colors.white,
+                                  )
+                                : Text(
+                                    l10n.otpVerifyButton,
+                                    style: typography.callout.semiBold.copyWith(
+                                      color: colors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },
@@ -320,16 +371,41 @@ class _ResendSection extends StatelessWidget {
           return Semantics(
             button: true,
             label: l10n.otpResendSemantics,
-            child: TextButton(
-              onPressed: state.isResending
-                  ? null
-                  : () => unawaited(cubit.resendOtp(email: email)),
-              child: Text(
-                state.isResending ? l10n.otpResending : l10n.otpResendCode,
-                style: typography.callout.semiBold.copyWith(
-                  color: colors.primary,
-                ),
-              ),
+            child: PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                return AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: AppMotion.easeOutCubic,
+                  decoration: BoxDecoration(
+                    color: isHovered
+                        ? colors.primary.withAlpha(20)
+                        : colors.transparent,
+                    borderRadius: AppRadius.radiusBadge,
+                  ),
+                  child: TextButton(
+                    onPressed: state.isResending
+                        ? null
+                        : () => unawaited(cubit.resendOtp(email: email)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusBadge,
+                      ),
+                    ),
+                    child: Text(
+                      state.isResending
+                          ? l10n.otpResending
+                          : l10n.otpResendCode,
+                      style: typography.callout.semiBold.copyWith(
+                        color: colors.primary,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           );
         }
@@ -368,57 +444,76 @@ class _PinBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 46,
-      height: 54,
-      margin: EdgeInsets.symmetric(horizontal: index == 2 ? 10 : 4),
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary.withAlpha(80),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: focusNode.hasFocus
-              ? colors.primary
-              : colors.white.withAlpha(40),
-          width: focusNode.hasFocus ? 2 : 1,
-        ),
-        boxShadow: focusNode.hasFocus
-            ? [
-                BoxShadow(
-                  color: colors.primary.withAlpha(60),
-                  blurRadius: 12,
-                ),
-              ]
-            : null,
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        textAlign: TextAlign.center,
-        maxLength: 1,
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        style: typography.title2.bold.copyWith(
-          color: colors.textPrimary,
-          fontSize: 22,
-        ),
-        decoration: const InputDecoration(
-          counterText: '',
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-        ),
-        onChanged: (value) {
-          if (value.length == 1) {
-            if (index < 5) {
-              focusNodes[index + 1].requestFocus();
-            } else {
-              focusNode.unfocus();
-              onComplete();
-            }
-          } else if (value.isEmpty && index > 0) {
-            focusNodes[index - 1].requestFocus();
-          }
-        },
-      ),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
+          width: 46,
+          height: 54,
+          margin: EdgeInsets.symmetric(horizontal: index == 2 ? 10 : 4),
+          decoration: BoxDecoration(
+            color: focusNode.hasFocus
+                ? colors.surfacePrimary.withAlpha(120)
+                : isHovered
+                ? colors.surfacePrimary.withAlpha(100)
+                : colors.surfacePrimary.withAlpha(80),
+            borderRadius: AppRadius.radiusCard,
+            border: Border.all(
+              color: focusNode.hasFocus
+                  ? colors.primary
+                  : isHovered
+                  ? colors.primary.withAlpha(120)
+                  : colors.white.withAlpha(40),
+              width: focusNode.hasFocus ? 2 : 1,
+            ),
+            boxShadow: focusNode.hasFocus
+                ? [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(60),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : isHovered
+                ? [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(25),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : null,
+          ),
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textAlign: TextAlign.center,
+            maxLength: 1,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: typography.title2.bold.copyWith(
+              color: colors.textPrimary,
+              fontSize: 22,
+            ),
+            decoration: const InputDecoration(
+              counterText: '',
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+            onChanged: (value) {
+              if (value.length == 1) {
+                if (index < 5) {
+                  focusNodes[index + 1].requestFocus();
+                } else {
+                  focusNode.unfocus();
+                  onComplete();
+                }
+              } else if (value.isEmpty && index > 0) {
+                focusNodes[index - 1].requestFocus();
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }

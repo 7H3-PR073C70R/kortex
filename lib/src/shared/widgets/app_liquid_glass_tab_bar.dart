@@ -4,8 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// A reusable platform-adaptive segmented tab bar.
@@ -96,7 +99,7 @@ class AppLiquidGlassTabBar extends StatelessWidget {
         color: isDark
             ? colors.surfaceSecondary.withAlpha(180)
             : colors.surfaceSecondary.withAlpha(160),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
           color: isDark
               ? colors.surfaceBorderHighlight.withAlpha(60)
@@ -112,8 +115,8 @@ class AppLiquidGlassTabBar extends StatelessWidget {
             children: [
               // Sliding active pill
               AnimatedPositioned(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
+                duration: AppMotion.standard,
+                curve: AppMotion.easeOutCubic,
                 left: selectedIndex * tabWidth,
                 top: 0,
                 bottom: 0,
@@ -121,7 +124,7 @@ class AppLiquidGlassTabBar extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isDark ? colors.primary : colors.surfacePrimary,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     boxShadow: [
                       BoxShadow(
                         color: colors.black.withAlpha(isDark ? 45 : 18),
@@ -142,35 +145,42 @@ class AppLiquidGlassTabBar extends StatelessWidget {
                       button: true,
                       selected: isSelected,
                       label: tabs[index],
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          if (selectedIndex != index) {
-                            unawaited(HapticFeedback.selectionClick());
-                            onTabSelected(index);
-                          }
-                        },
-                        child: Center(
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 180),
-                            style: isSelected
-                                ? typography.caption.bold.copyWith(
-                                    color: isDark
-                                        ? colors.white
-                                        : colors.primary,
-                                    fontSize: isCompact ? 11.5 : 12.5,
-                                  )
-                                : typography.caption.medium.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: isCompact ? 11.5 : 12.5,
-                                  ),
-                            child: Text(
-                              tabs[index],
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                      child: PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              if (selectedIndex != index) {
+                                unawaited(HapticFeedback.selectionClick());
+                                onTabSelected(index);
+                              }
+                            },
+                            child: Center(
+                              child: AnimatedDefaultTextStyle(
+                                duration: AppMotion.snappy,
+                                curve: AppMotion.easeOutCubic,
+                                style: isSelected
+                                    ? typography.caption.bold.copyWith(
+                                        color: isDark
+                                            ? colors.white
+                                            : colors.primary,
+                                        fontSize: isCompact ? 11.5 : 12.5,
+                                      )
+                                    : typography.caption.medium.copyWith(
+                                        color: isHovered
+                                            ? colors.textPrimary
+                                            : colors.textSecondary,
+                                        fontSize: isCompact ? 11.5 : 12.5,
+                                      ),
+                                child: Text(
+                                  tabs[index],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                   );

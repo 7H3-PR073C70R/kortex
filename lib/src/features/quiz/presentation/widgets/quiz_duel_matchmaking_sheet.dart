@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -146,57 +147,62 @@ class QuizDuelMatchmakingSheet extends HookWidget {
           );
         }
       },
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-        ),
-        padding: EdgeInsets.only(
-          top: 20,
-          left: 20,
-          right: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        decoration: BoxDecoration(
-          color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.textSecondary.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 640,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+          ),
+          child: Container(
+            padding: EdgeInsets.only(
+              top: 20,
+              left: 20,
+              right: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.dialog),
               ),
-              const SizedBox(height: 16),
-
-              // Title Header
-              Row(
+              border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.5)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [colors.primary, colors.secondary],
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textSecondary.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
                       ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      Icons.flash_on_rounded,
-                      color: colors.white,
-                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 16),
+
+                  // Title Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colors.primary, colors.secondary],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                        child: Icon(
+                          Icons.flash_on_rounded,
+                          color: colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,6 +335,14 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                       selected: isSelected,
                       selectedColor: colors.primary.withValues(alpha: 0.2),
                       backgroundColor: colors.surfaceSecondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                        side: BorderSide(
+                          color: isSelected
+                              ? colors.primary.withValues(alpha: 0.4)
+                              : colors.surfaceBorder.withValues(alpha: 0.3),
+                        ),
+                      ),
                       labelStyle: TextStyle(
                         color: isSelected ? colors.primary : colors.textPrimary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -363,6 +377,14 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                       selected: isSelected,
                       selectedColor: colors.primary.withValues(alpha: 0.2),
                       backgroundColor: colors.surfaceSecondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                        side: BorderSide(
+                          color: isSelected
+                              ? colors.primary.withValues(alpha: 0.4)
+                              : colors.surfaceBorder.withValues(alpha: 0.3),
+                        ),
+                      ),
                       labelStyle: TextStyle(
                         color: isSelected ? colors.primary : colors.textPrimary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -383,7 +405,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: colors.surfaceSecondary.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                     border: Border.all(color: colors.surfaceBorder.withValues(alpha: 0.4)),
                   ),
                   child: Row(
@@ -412,6 +434,8 @@ class QuizDuelMatchmakingSheet extends HookWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

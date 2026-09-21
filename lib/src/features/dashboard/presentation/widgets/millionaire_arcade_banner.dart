@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// ADHD-friendly 1-tap entry banner into the randomized Daily Dopamine Arcade (Millionaire Mode).
@@ -18,50 +21,48 @@ class MillionaireArcadeBanner extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return ShrinkableButton(
-      onTap: () {
-        unawaited(HapticFeedback.mediumImpact());
-        unawaited(
-          context.router.push(
-            QuizWorkspaceRoute(
-              deckId: 'arcade_global',
-              deckTitle: 'Daily Dopamine Arcade',
-              assessmentMode: AssessmentMode.millionaireMode,
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return ShrinkableButton(
+          onTap: () {
+            unawaited(HapticFeedback.mediumImpact());
+            unawaited(
+              context.router.push(
+                QuizWorkspaceRoute(
+                  deckId: 'arcade_global',
+                  deckTitle: 'Daily Dopamine Arcade',
+                  assessmentMode: AssessmentMode.millionaireMode,
+                ),
+              ),
+            );
+          },
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        colors.surfaceSecondary,
+                        colors.surfaceTertiary,
+                        colors.surfacePrimary,
+                      ]
+                    : [
+                        colors.surfacePrimary,
+                        colors.backgroundSecondary,
+                        colors.surfaceTertiary,
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
+              border: Border.all(
+                color: isHovered
+                    ? colors.primary.withValues(alpha: isDark ? 0.7 : 0.5)
+                    : colors.primary.withValues(alpha: isDark ? 0.35 : 0.2),
+              ),
             ),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    colors.surfaceSecondary,
-                    colors.surfaceTertiary,
-                    colors.surfacePrimary,
-                  ]
-                : [
-                    colors.surfacePrimary,
-                    colors.backgroundSecondary,
-                    colors.surfaceTertiary,
-                  ],
-          ),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: colors.primary.withValues(alpha: isDark ? 0.45 : 0.25),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.primary.withValues(alpha: isDark ? 0.3 : 0.1),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -74,14 +75,7 @@ class MillionaireArcadeBanner extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [colors.warning, colors.slateTerracotta],
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.warning.withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -108,7 +102,7 @@ class MillionaireArcadeBanner extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: (isDark ? colors.white : colors.black).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                   ),
                   child: Text(
                     '1 Tap • 5 Min • 12 Rungs',
@@ -198,14 +192,7 @@ class MillionaireArcadeBanner extends StatelessWidget {
                     gradient: LinearGradient(
                       colors: [colors.primary, colors.syllabotAccent],
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -231,6 +218,8 @@ class MillionaireArcadeBanner extends StatelessWidget {
         ),
       ),
     );
+        },
+      );
   }
 }
 
@@ -254,7 +243,7 @@ class _MiniIconBadge extends StatelessWidget {
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           color: (isDark ? colors.white : colors.black).withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.badge),
         ),
         child: Icon(
           icon,

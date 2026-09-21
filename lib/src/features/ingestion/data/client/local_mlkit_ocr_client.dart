@@ -1,8 +1,19 @@
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:path_provider/path_provider.dart';
+
+/// Returns `true` when the app is running on an iOS Simulator.
+///
+/// Google ML Kit ships binary XCFrameworks that do not include an
+/// `arm64-apple-ios-simulator` slice, which is required by iOS 26+ simulators
+/// on Apple Silicon. Calling ML Kit on simulator would crash at the native
+/// linker level; this guard lets callers degrade gracefully.
+bool get _isIosSimulator =>
+    !kIsWeb &&
+    Platform.isIOS &&
+    Platform.environment.containsKey('SIMULATOR_DEVICE_NAME');
 
 /// Exception thrown when on-device OCR encounters an invalid document,
 /// corrupted payload, or unreadable content.
@@ -53,6 +64,10 @@ class LocalMlkitOcrClient {
     Uint8List bytes, {
     String? imagePath,
   }) async {
+    // ML Kit XCFrameworks do not include an arm64 simulator slice.
+    // Return empty instead of crashing on iOS 26+ simulator.
+    if (_isIosSimulator) return const [];
+
     if (bytes.isEmpty) {
       throw const OcrProcessingException(
         'Empty document payload. Please select a valid image.',

@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/features/syllabot/presentation/pages/syllabot_chat_page.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
@@ -41,12 +43,12 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
     super.initState();
     _expandController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
-      reverseDuration: const Duration(milliseconds: 260),
+      duration: AppMotion.expressive,
+      reverseDuration: AppMotion.standard,
     );
     _expandAnimation = CurvedAnimation(
       parent: _expandController,
-      curve: Curves.easeOutCubic,
+      curve: AppMotion.easeOutCubic,
       reverseCurve: Curves.easeInCubic,
     );
   }
@@ -116,58 +118,63 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                   label: 'Ask Syllabot AI Assistant',
                   child: Material(
                     type: MaterialType.transparency,
-                    child: ShrinkableButton(
-                      onTap: _expand,
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              colors.surfacePrimary,
-                              colors.surfaceSecondary,
+                    child: PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.04 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          child: child,
+                        );
+                      },
+                      child: ShrinkableButton(
+                        onTap: _expand,
+                        child: Container(
+                          padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                colors.surfacePrimary,
+                                colors.surfaceSecondary,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(isDark ? 90 : 70),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(isDark ? 80 : 20),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 90 : 70),
-                            width: 1.2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 55 : 30),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                            BoxShadow(
-                              color: colors.black.withAlpha(isDark ? 80 : 15),
-                              blurRadius: 12,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SyllabotAvatar(size: 32),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Ask Syllabot',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 12.5,
-                                letterSpacing: 0.2,
-                                decoration: TextDecoration.none,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SyllabotAvatar(size: 32),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Ask Syllabot',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 12.5,
+                                  letterSpacing: 0.2,
+                                  decoration: TextDecoration.none,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.auto_awesome_rounded,
-                              color: colors.syllabotAccent,
-                              size: 14,
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.auto_awesome_rounded,
+                                color: colors.syllabotAccent,
+                                size: 14,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

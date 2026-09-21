@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// An interactive lifeline and status bar for the Millionaire quiz mode.
@@ -43,8 +46,8 @@ class MillionaireLifelineBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark
             ? colors.surfaceSecondary.withValues(alpha: 0.85)
-            : colors.cardBackground,
-        borderRadius: BorderRadius.circular(18),
+            : colors.surfacePrimary,
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
           color: colors.surfaceBorder,
         ),
@@ -69,7 +72,7 @@ class MillionaireLifelineBar extends StatelessWidget {
                       ? [colors.success, colors.success.withAlpha(200)]
                       : [colors.warning, colors.warning.withAlpha(200)],
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.badge),
                 boxShadow: [
                   BoxShadow(
                     color: (state.isCurrentTierSafeCheckpoint
@@ -152,38 +155,48 @@ class MillionaireLifelineBar extends StatelessWidget {
                   const SizedBox(width: 8),
 
                   // Walk Away Action
-                  ShrinkableButton(
-                    onTap: onWalkAway,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: colors.error.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: colors.error.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Tooltip(
-                        message: 'Bank current XP and walk away safely',
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.savings_rounded,
-                              color: colors.error,
-                              size: 15,
+                  PlatformHoverBuilder(
+                    builder: (context, isHovered, _) {
+                      return ShrinkableButton(
+                        onTap: onWalkAway,
+                        child: AnimatedContainer(
+                          duration: AppMotion.standard,
+                          curve: AppMotion.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: colors.error.withValues(
+                              alpha: isHovered ? 0.22 : 0.12,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Bank',
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.error,
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                            border: Border.all(
+                              color: colors.error.withValues(
+                                alpha: isHovered ? 0.55 : 0.3,
                               ),
                             ),
-                          ],
+                          ),
+                          child: Tooltip(
+                            message: 'Bank current XP and walk away safely',
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.savings_rounded,
+                                  color: colors.error,
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Bank',
+                                  style: typography.footnote.bold.copyWith(
+                                    color: colors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -216,39 +229,49 @@ class _LifelinePill extends StatelessWidget {
 
     return Opacity(
       opacity: isAvailable ? 1.0 : 0.35,
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: isAvailable
-                ? colors.primary.withValues(alpha: isDark ? 0.2 : 0.1)
-                : colors.surfaceSecondary.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isAvailable
-                  ? colors.primary.withValues(alpha: 0.4)
-                  : colors.transparent,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: isAvailable ? colors.primary : colors.textMuted,
-                size: 14,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: typography.footnote.bold.copyWith(
-                  color: isAvailable ? colors.primary : colors.textMuted,
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, _) {
+          return ShrinkableButton(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: AppMotion.standard,
+              curve: AppMotion.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isAvailable
+                    ? colors.primary.withValues(
+                        alpha: isHovered
+                            ? (isDark ? 0.35 : 0.2)
+                            : (isDark ? 0.2 : 0.1),
+                      )
+                    : colors.surfaceSecondary.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(AppRadius.badge),
+                border: Border.all(
+                  color: isAvailable
+                      ? colors.primary.withValues(alpha: isHovered ? 0.7 : 0.4)
+                      : colors.transparent,
                 ),
               ),
-            ],
-          ),
-        ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    color: isAvailable ? colors.primary : colors.textMuted,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    label,
+                    style: typography.footnote.bold.copyWith(
+                      color: isAvailable ? colors.primary : colors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

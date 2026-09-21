@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -117,29 +119,19 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
           '${l10n.dashboardMasteredChip}: '
           '${widget.analytics.totalCardsMastered}.',
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(160)
                   : colors.surfacePrimary.withAlpha(215),
               border: Border.all(
-                color: isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(70)
-                    : colors.surfaceBorder.withAlpha(140),
-                width: 1.2,
+                color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 40 : 10),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,7 +146,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
                             color: colors.primary.withAlpha(isDark ? 50 : 25),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
                           ),
                           child: Icon(
                             Icons.grid_view_rounded,
@@ -174,7 +166,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                               ),
                             ),
                             Text(
-                              'Activity • Past 28 Days',
+                              l10n.dashboardHeatmapSubtitle,
                               style: typography.footnote.medium.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 11,
@@ -198,7 +190,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                         ),
                         decoration: BoxDecoration(
                           color: colors.primary.withAlpha(isDark ? 40 : 20),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
                           border: Border.all(
                             color: colors.primary.withAlpha(isDark ? 80 : 40),
                             width: 0.8,
@@ -290,14 +282,15 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                                         _selectedDay = isSelected ? null : day;
                                       });
                                     },
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(AppRadius.micro),
                                     child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 150),
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
                                       width: cellWidth,
                                       height: cellWidth,
                                       decoration: BoxDecoration(
                                         color: color,
-                                        borderRadius: BorderRadius.circular(6),
+                                        borderRadius: BorderRadius.circular(AppRadius.micro),
                                         border: Border.all(
                                           color: isSelected
                                               ? colors.textPrimary
@@ -308,16 +301,6 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                                                     : colors.transparent),
                                           width: isSelected ? 1.8 : 0.8,
                                         ),
-                                        boxShadow: isSelected
-                                            ? [
-                                                BoxShadow(
-                                                  color: colors.primary.withAlpha(
-                                                    100,
-                                                  ),
-                                                  blurRadius: 6,
-                                                ),
-                                              ]
-                                            : null,
                                       ),
                                     ),
                                   ),
@@ -334,7 +317,8 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
 
                 // Selected Day Inspector Tooltip / Summary Banner
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: AppMotion.standard,
+                  curve: AppMotion.easeOutCubic,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 7,
@@ -345,7 +329,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                         : (isDark
                               ? colors.surfacePrimary.withAlpha(80)
                               : colors.surfaceSecondary.withAlpha(90)),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
                     border: Border.all(
                       color: _selectedDay != null
                           ? colors.primary.withAlpha(isDark ? 80 : 40)
@@ -387,7 +371,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                         ),
                       ] else ...[
                         Text(
-                          'Tap any day to inspect study volume',
+                          l10n.dashboardHeatmapTapHint,
                           style: typography.footnote.regular.copyWith(
                             color: colors.textSecondary,
                             fontSize: 11,
@@ -398,7 +382,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Less',
+                              l10n.dashboardHeatmapLess,
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textSecondary.withAlpha(160),
                                 fontSize: 9.5,
@@ -424,7 +408,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                             }),
                             const SizedBox(width: 4),
                             Text(
-                              'More',
+                              l10n.dashboardHeatmapMore,
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textSecondary.withAlpha(160),
                                 fontSize: 9.5,
@@ -535,11 +519,9 @@ class _MetricChip extends StatelessWidget {
         color: isDark
             ? colors.surfacePrimary.withAlpha(120)
             : colors.surfaceSecondary.withAlpha(140),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         border: Border.all(
-          color: isDark
-              ? colors.surfaceBorderHighlight.withAlpha(50)
-              : colors.surfaceBorder.withAlpha(100),
+          color: colors.surfaceBorder.withAlpha(isDark ? 50 : 25),
         ),
       ),
       child: Column(

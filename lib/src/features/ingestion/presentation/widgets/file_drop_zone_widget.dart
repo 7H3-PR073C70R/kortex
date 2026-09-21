@@ -11,6 +11,8 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -19,6 +21,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class FileDropZoneWidget extends HookWidget {
@@ -102,7 +105,8 @@ class FileDropZoneWidget extends HookWidget {
 
         return {
           'deckId': deckId,
-          'deckTitle': deckTitle ?? filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
+          'deckTitle':
+              deckTitle ?? filename.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), ''),
         };
       }
     } on Object catch (_) {}
@@ -123,7 +127,7 @@ class FileDropZoneWidget extends HookWidget {
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: colors.surfacePrimary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.radiusDialog,
           side: BorderSide(color: colors.primary.withAlpha(60)),
         ),
         title: Row(
@@ -144,14 +148,18 @@ class FileDropZoneWidget extends HookWidget {
             Expanded(
               child: Text(
                 '50MB Limit Exceeded',
-                style: typography.title3.bold.copyWith(color: colors.textPrimary),
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ),
           ],
         ),
         content: Text(
           'The selected file "$filename" is $sizeMb MB, which exceeds the 50MB free tier limit.\n\nUpgrade to Kortexify Pro to upload documents up to 200MB with unlimited AI flashcard synthesis.',
-          style: typography.callout.regular.copyWith(color: colors.textSecondary),
+          style: typography.callout.regular.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
@@ -191,7 +199,7 @@ class FileDropZoneWidget extends HookWidget {
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: colors.surfacePrimary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.radiusDialog,
           side: BorderSide(color: colors.primary.withAlpha(60)),
         ),
         title: Row(
@@ -212,14 +220,18 @@ class FileDropZoneWidget extends HookWidget {
             Expanded(
               child: Text(
                 'Daily Limit Reached',
-                style: typography.title3.bold.copyWith(color: colors.textPrimary),
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ),
           ],
         ),
         content: Text(
           'You have reached your free daily limit of 3 document uploads.\n\nUpgrade to Kortexify Pro for unlimited document uploads, 200MB file limit, and high-speed cloud AI card generation.',
-          style: typography.callout.regular.copyWith(color: colors.textSecondary),
+          style: typography.callout.regular.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
@@ -264,7 +276,7 @@ class FileDropZoneWidget extends HookWidget {
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: colors.surfacePrimary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.radiusDialog,
           side: BorderSide(color: colors.primary.withAlpha(60)),
         ),
         title: Row(
@@ -285,7 +297,9 @@ class FileDropZoneWidget extends HookWidget {
             Expanded(
               child: Text(
                 'Document Already Extracted',
-                style: typography.title3.bold.copyWith(color: colors.textPrimary),
+                style: typography.title3.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ),
           ],
@@ -294,7 +308,9 @@ class FileDropZoneWidget extends HookWidget {
           courseId != null
               ? 'We previously extracted this document as "$deckTitle".\n\nWould you like to link it to ${courseCode ?? "this course"}, open the existing deck, or re-extract it from scratch?'
               : 'We previously extracted this document as "$deckTitle".\n\nWould you like to open the existing study deck or re-extract it from scratch?',
-          style: typography.callout.regular.copyWith(color: colors.textSecondary),
+          style: typography.callout.regular.copyWith(
+            color: colors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
@@ -345,7 +361,8 @@ class FileDropZoneWidget extends HookWidget {
                 }
                 if (context.mounted) {
                   context.showSnackBar(
-                    message: 'Linked "$deckTitle" to ${courseCode ?? "Course"}!',
+                    message:
+                        'Linked "$deckTitle" to ${courseCode ?? "Course"}!',
                     type: SnackBarType.success,
                   );
                   unawaited(
@@ -485,7 +502,7 @@ class FileDropZoneWidget extends HookWidget {
                 : (isHovering.value
                       ? colors.primary.withAlpha(20)
                       : colors.surfacePrimary.withAlpha(200)),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppRadius.radiusDialog,
             border: Border.all(
               color: isHovering.value
                   ? colors.primary
@@ -546,119 +563,149 @@ class FileDropZoneWidget extends HookWidget {
                 alignment: WrapAlignment.center,
                 children: [
                   // Browse Files Button
-                  ShrinkableButton(
-                    onTap: handlePickFile,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colors.primary,
-                            colors.primary.withAlpha(210),
+                  PlatformHoverBuilder(
+                    builder: (context, isHovered, child) {
+                      return AnimatedScale(
+                        scale: isHovered ? 1.04 : 1.0,
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        child: child,
+                      );
+                    },
+                    child: ShrinkableButton(
+                      onTap: handlePickFile,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colors.primary,
+                              colors.primary.withAlpha(210),
+                            ],
+                          ),
+                          borderRadius: AppRadius.radiusCard,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(isDark ? 80 : 40),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.primary.withAlpha(isDark ? 80 : 40),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.folder_open_rounded,
-                            color: colors.white,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.browseFilesButton,
-                            style: typography.footnote.bold.copyWith(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.folder_open_rounded,
                               color: colors.white,
+                              size: 18,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.browseFilesButton,
+                              style: typography.footnote.bold.copyWith(
+                                color: colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
 
                   // Camera Scanner Button
                   if (onCameraScanTap != null)
-                    ShrinkableButton(
-                      onTap: onCameraScanTap,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 90 : 60),
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.04 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          child: child,
+                        );
+                      },
+                      child: ShrinkableButton(
+                        onTap: onCameraScanTap,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.camera_alt_outlined,
-                              color: colors.primary,
-                              size: 18,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.surfaceSecondary
+                                : colors.surfacePrimary,
+                            borderRadius: AppRadius.radiusCard,
+                            border: Border.all(
+                              color: colors.primary.withAlpha(isDark ? 90 : 60),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.cameraCaptureButton,
-                              style: typography.footnote.bold.copyWith(
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.camera_alt_outlined,
                                 color: colors.primary,
+                                size: 18,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                l10n.cameraCaptureButton,
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   if (onLmsImportTap != null)
-                    ShrinkableButton(
-                      onTap: onLmsImportTap,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 90 : 60),
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.04 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          child: child,
+                        );
+                      },
+                      child: ShrinkableButton(
+                        onTap: onLmsImportTap,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.school_outlined,
-                              color: colors.primary,
-                              size: 18,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.surfaceSecondary
+                                : colors.surfacePrimary,
+                            borderRadius: AppRadius.radiusCard,
+                            border: Border.all(
+                              color: colors.primary.withAlpha(isDark ? 90 : 60),
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Import LMS',
-                              style: typography.footnote.bold.copyWith(
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.school_outlined,
                                 color: colors.primary,
+                                size: 18,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                'Import LMS',
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

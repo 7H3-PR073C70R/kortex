@@ -76,9 +76,14 @@ class _LeaderboardView extends HookWidget {
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              child: StreakLeaderboardWidget(
-                entries: state.leaderboardEntries,
-                streakFreezeCount: effectiveStreakFreezes,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 680),
+                  child: StreakLeaderboardWidget(
+                    entries: state.leaderboardEntries,
+                    streakFreezeCount: effectiveStreakFreezes,
+                  ),
+                ),
               ),
             ),
           );

@@ -11,6 +11,8 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -32,6 +34,7 @@ import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Consolidated Account & Security management page.
@@ -75,8 +78,9 @@ class SecuritySettingsPage extends HookWidget {
           storage.getPreference(key: '__biometric_lock_enabled') == 'true';
       biometricLockEnabled.value = savedBiometric;
 
-      final savedTimeoutStr =
-          storage.getPreference(key: '__biometric_lock_timeout_seconds');
+      final savedTimeoutStr = storage.getPreference(
+        key: '__biometric_lock_timeout_seconds',
+      );
       if (savedTimeoutStr != null) {
         final parsed = int.tryParse(savedTimeoutStr);
         if (parsed != null && parsed >= 0) {
@@ -140,58 +144,64 @@ class SecuritySettingsPage extends HookWidget {
             ),
           ),
           body: SafeArea(
-            child: Column(
-              children: [
-                // Top Segmented Pill Tab Bar
-                _buildSegmentBar(
-                  selectedTab: selectedTabIndex,
-                  colors: colors,
-                  typography: typography,
-                ),
-
-                // Tab Content
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    layoutBuilder: (currentChild, previousChildren) => Stack(
-                      alignment: Alignment.topCenter,
-                      children: <Widget>[
-                        ...previousChildren,
-                        ?currentChild,
-                      ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  children: [
+                    // Top Segmented Pill Tab Bar
+                    _buildSegmentBar(
+                      selectedTab: selectedTabIndex,
+                      colors: colors,
+                      typography: typography,
                     ),
-                    child: selectedTabIndex.value == 0
-                        ? _buildSecurityTab(
-                            context: context,
-                            email: email,
-                            colors: colors,
-                            typography: typography,
-                            isDark: isDark,
-                            currentPasswordController:
-                                currentPasswordController,
-                            newPasswordController: newPasswordController,
-                            confirmPasswordController:
-                                confirmPasswordController,
-                            hasMinLength: hasMinLength,
-                            hasNumber: hasNumber,
-                            hasSpecial: hasSpecial,
-                            isUpdatingPassword: isUpdatingPassword,
-                            biometricLockEnabled: biometricLockEnabled,
-                            backgroundLockTimeoutSeconds:
-                                backgroundLockTimeoutSeconds,
-                            twoFactorEnabled: twoFactorEnabled,
-                            activeTotpFactorId: activeTotpFactorId,
-                          )
-                        : _buildAccountDataTab(
-                            context: context,
-                            displayName: displayName,
-                            email: email,
-                            colors: colors,
-                            typography: typography,
-                          ),
-                  ),
+
+                    // Tab Content
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: AppMotion.snappy,
+                        layoutBuilder: (currentChild, previousChildren) =>
+                            Stack(
+                              alignment: Alignment.topCenter,
+                              children: <Widget>[
+                                ...previousChildren,
+                                ?currentChild,
+                              ],
+                            ),
+                        child: selectedTabIndex.value == 0
+                            ? _buildSecurityTab(
+                                context: context,
+                                email: email,
+                                colors: colors,
+                                typography: typography,
+                                isDark: isDark,
+                                currentPasswordController:
+                                    currentPasswordController,
+                                newPasswordController: newPasswordController,
+                                confirmPasswordController:
+                                    confirmPasswordController,
+                                hasMinLength: hasMinLength,
+                                hasNumber: hasNumber,
+                                hasSpecial: hasSpecial,
+                                isUpdatingPassword: isUpdatingPassword,
+                                biometricLockEnabled: biometricLockEnabled,
+                                backgroundLockTimeoutSeconds:
+                                    backgroundLockTimeoutSeconds,
+                                twoFactorEnabled: twoFactorEnabled,
+                                activeTotpFactorId: activeTotpFactorId,
+                              )
+                            : _buildAccountDataTab(
+                                context: context,
+                                displayName: displayName,
+                                email: email,
+                                colors: colors,
+                                typography: typography,
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -209,7 +219,7 @@ class SecuritySettingsPage extends HookWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.radiusPanel,
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(60),
         ),
@@ -256,42 +266,52 @@ class SecuritySettingsPage extends HookWidget {
     required AppThemeColorsExtension colors,
     required TypographyThemeExtension typography,
   }) {
-    return ShrinkableButton(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.primary : colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: colors.primary.withAlpha(40),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected ? colors.white : colors.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              title,
-              style: typography.caption.bold.copyWith(
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedScale(
+          scale: isHovered && !isSelected ? 1.02 : 1.0,
+          duration: AppMotion.snappy,
+          curve: Curves.easeOutCubic,
+          child: child,
+        );
+      },
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: isSelected ? colors.primary : colors.transparent,
+            borderRadius: AppRadius.radiusCard,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: colors.primary.withAlpha(40),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
                 color: isSelected ? colors.white : colors.textSecondary,
-                fontSize: 12.5,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: typography.caption.bold.copyWith(
+                  color: isSelected ? colors.white : colors.textSecondary,
+                  fontSize: 12.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -384,129 +404,149 @@ class SecuritySettingsPage extends HookWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: ShrinkableButton(
-                        onTap: () async {
-                          final newPass = newPasswordController.text.trim();
-                          final confirmPass =
-                              confirmPasswordController.text.trim();
+                      child: PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return AnimatedScale(
+                            scale: isHovered ? 1.02 : 1.0,
+                            duration: AppMotion.snappy,
+                            curve: Curves.easeOutCubic,
+                            child: child,
+                          );
+                        },
+                        child: ShrinkableButton(
+                          onTap: () async {
+                            final newPass = newPasswordController.text.trim();
+                            final confirmPass = confirmPasswordController.text
+                                .trim();
 
-                          if (newPass.length < 8) {
-                            AppFeedback.heavy();
-                            context.showSnackBar(
-                              message: 'Password must be at least 8 chars.',
-                              type: SnackBarType.error,
-                            );
-                            return;
-                          }
-
-                          if (newPass != confirmPass) {
-                            AppFeedback.heavy();
-                            context.showSnackBar(
-                              message: 'Passwords do not match.',
-                              type: SnackBarType.error,
-                            );
-                            return;
-                          }
-
-                          isUpdatingPassword.value = true;
-                          final result =
-                              await locator<UpdatePasswordUseCase>()(newPass);
-                          isUpdatingPassword.value = false;
-
-                          if (result.isLeft) {
-                            final failure =
-                                (result as Left<Failure, void>).value;
-                            AppFeedback.heavy();
-                            if (context.mounted) {
+                            if (newPass.length < 8) {
+                              AppFeedback.heavy();
                               context.showSnackBar(
-                                message:
-                                    'Failed to update: '
-                                    '${failure.message ?? "Error"}',
+                                message: 'Password must be at least 8 chars.',
                                 type: SnackBarType.error,
                               );
+                              return;
                             }
-                          } else {
-                            AppFeedback.light();
-                            if (context.mounted) {
+
+                            if (newPass != confirmPass) {
+                              AppFeedback.heavy();
                               context.showSnackBar(
-                                message: 'Password updated successfully!',
-                                type: SnackBarType.success,
+                                message: 'Passwords do not match.',
+                                type: SnackBarType.error,
                               );
-                              currentPasswordController.clear();
-                              newPasswordController.clear();
-                              confirmPasswordController.clear();
+                              return;
                             }
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: isUpdatingPassword.value
-                                ? AppLogoLoader(
-                                    size: 18,
-                                    color: colors.white,
-                                    showMessage: false,
-                                  )
-                                : Text(
-                                    'Update Password',
-                                    style: typography.caption.bold.copyWith(
+
+                            isUpdatingPassword.value = true;
+                            final result =
+                                await locator<UpdatePasswordUseCase>()(newPass);
+                            isUpdatingPassword.value = false;
+
+                            if (result.isLeft) {
+                              final failure =
+                                  (result as Left<Failure, void>).value;
+                              AppFeedback.heavy();
+                              if (context.mounted) {
+                                context.showSnackBar(
+                                  message:
+                                      'Failed to update: '
+                                      '${failure.message ?? "Error"}',
+                                  type: SnackBarType.error,
+                                );
+                              }
+                            } else {
+                              AppFeedback.light();
+                              if (context.mounted) {
+                                context.showSnackBar(
+                                  message: 'Password updated successfully!',
+                                  type: SnackBarType.success,
+                                );
+                                currentPasswordController.clear();
+                                newPasswordController.clear();
+                                confirmPasswordController.clear();
+                              }
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: AppRadius.radiusCard,
+                            ),
+                            child: Center(
+                              child: isUpdatingPassword.value
+                                  ? AppLogoLoader(
+                                      size: 18,
                                       color: colors.white,
-                                      fontSize: 13,
+                                      showMessage: false,
+                                    )
+                                  : Text(
+                                      'Update Password',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.white,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    ShrinkableButton(
-                      onTap: () async {
-                        AppFeedback.selection();
-                        final result =
-                            await locator<SendPasswordResetEmailUseCase>()(
-                              email,
-                            );
-                        if (result.isLeft) {
-                          final failure =
-                              (result as Left<Failure, void>).value;
-                          if (context.mounted) {
-                            context.showSnackBar(
-                              message:
-                                  'Failed to send reset link: '
-                                  '${failure.message ?? "Error"}',
-                              type: SnackBarType.error,
-                            );
-                          }
-                        } else {
-                          if (context.mounted) {
-                            context.showSnackBar(
-                              message: 'Reset link sent to $email',
-                              type: SnackBarType.success,
-                            );
-                          }
-                        }
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.02 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: Curves.easeOutCubic,
+                          child: child,
+                        );
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfacePrimary,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: colors.surfaceBorder.withAlpha(90),
+                      child: ShrinkableButton(
+                        onTap: () async {
+                          AppFeedback.selection();
+                          final result =
+                              await locator<SendPasswordResetEmailUseCase>()(
+                                email,
+                              );
+                          if (result.isLeft) {
+                            final failure =
+                                (result as Left<Failure, void>).value;
+                            if (context.mounted) {
+                              context.showSnackBar(
+                                message:
+                                    'Failed to send reset link: '
+                                    '${failure.message ?? "Error"}',
+                                type: SnackBarType.error,
+                              );
+                            }
+                          } else {
+                            if (context.mounted) {
+                              context.showSnackBar(
+                                message: 'Reset link sent to $email',
+                                type: SnackBarType.success,
+                              );
+                            }
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
                           ),
-                        ),
-                        child: Text(
-                          'Send Reset Email',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 12,
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius: AppRadius.radiusCard,
+                            border: Border.all(
+                              color: colors.surfaceBorder.withAlpha(90),
+                            ),
+                          ),
+                          child: Text(
+                            'Send Reset Email',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ),
@@ -558,8 +598,8 @@ class SecuritySettingsPage extends HookWidget {
                         final biometricService =
                             locator<BiometricAuthService>();
                         if (val) {
-                          final canAuth =
-                              await biometricService.canAuthenticate();
+                          final canAuth = await biometricService
+                              .canAuthenticate();
                           if (!canAuth) {
                             if (context.mounted) {
                               context.showSnackBar(
@@ -621,7 +661,7 @@ class SecuritySettingsPage extends HookWidget {
                     ),
                     decoration: BoxDecoration(
                       color: colors.surfacePrimary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.radiusCard,
                       border: Border.all(
                         color: colors.surfaceBorder.withAlpha(70),
                       ),
@@ -649,8 +689,14 @@ class SecuritySettingsPage extends HookWidget {
                           ],
                         ),
                         DropdownButton<int>(
-                          value: const [0, 15, 30, 60, 300]
-                                  .contains(backgroundLockTimeoutSeconds.value)
+                          value:
+                              const [
+                                0,
+                                15,
+                                30,
+                                60,
+                                300,
+                              ].contains(backgroundLockTimeoutSeconds.value)
                               ? backgroundLockTimeoutSeconds.value
                               : 30,
                           underline: const SizedBox.shrink(),
@@ -670,8 +716,8 @@ class SecuritySettingsPage extends HookWidget {
                             backgroundLockTimeoutSeconds.value = newSeconds;
                             await locator<BiometricAuthService>()
                                 .setBackgroundLockTimeout(
-                              Duration(seconds: newSeconds),
-                            );
+                                  Duration(seconds: newSeconds),
+                                );
                             if (context.mounted) {
                               context.showSnackBar(
                                 message: 'Auto-lock timeout updated.',
@@ -679,14 +725,26 @@ class SecuritySettingsPage extends HookWidget {
                             }
                           },
                           items: const [
-                            DropdownMenuItem(value: 0, child: Text('Immediately')),
-                            DropdownMenuItem(value: 15, child: Text('15 seconds')),
+                            DropdownMenuItem(
+                              value: 0,
+                              child: Text('Immediately'),
+                            ),
+                            DropdownMenuItem(
+                              value: 15,
+                              child: Text('15 seconds'),
+                            ),
                             DropdownMenuItem(
                               value: 30,
                               child: Text('30 seconds (Default)'),
                             ),
-                            DropdownMenuItem(value: 60, child: Text('1 minute')),
-                            DropdownMenuItem(value: 300, child: Text('5 minutes')),
+                            DropdownMenuItem(
+                              value: 60,
+                              child: Text('1 minute'),
+                            ),
+                            DropdownMenuItem(
+                              value: 300,
+                              child: Text('5 minutes'),
+                            ),
                           ],
                         ),
                       ],
@@ -762,7 +820,7 @@ class SecuritySettingsPage extends HookWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: colors.surfacePrimary,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppRadius.radiusCard,
                     border: Border.all(
                       color: colors.surfaceBorder.withAlpha(70),
                     ),
@@ -807,47 +865,56 @@ class SecuritySettingsPage extends HookWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                ShrinkableButton(
-                  onTap: () async {
-                    AppFeedback.medium();
-                    final result =
-                        await locator<SignOutOtherSessionsUseCase>()(
-                          const NoParams(),
-                        );
-                    if (result.isLeft) {
-                      final failure = (result as Left<Failure, void>).value;
-                      if (context.mounted) {
-                        context.showSnackBar(
-                          message: failure.message ?? 'Sign out failed',
-                          type: SnackBarType.error,
-                        );
-                      }
-                    } else {
-                      if (context.mounted) {
-                        context.showSnackBar(
-                          message:
-                              'Signed out of all other active sessions!',
-                          type: SnackBarType.success,
-                        );
-                      }
-                    }
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedScale(
+                      scale: isHovered ? 1.02 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutCubic,
+                      child: child,
+                    );
                   },
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: colors.error.withAlpha(20),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: colors.error.withAlpha(80),
+                  child: ShrinkableButton(
+                    onTap: () async {
+                      AppFeedback.medium();
+                      final result =
+                          await locator<SignOutOtherSessionsUseCase>()(
+                            const NoParams(),
+                          );
+                      if (result.isLeft) {
+                        final failure = (result as Left<Failure, void>).value;
+                        if (context.mounted) {
+                          context.showSnackBar(
+                            message: failure.message ?? 'Sign out failed',
+                            type: SnackBarType.error,
+                          );
+                        }
+                      } else {
+                        if (context.mounted) {
+                          context.showSnackBar(
+                            message: 'Signed out of all other active sessions!',
+                            type: SnackBarType.success,
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: colors.error.withAlpha(20),
+                        borderRadius: AppRadius.radiusCard,
+                        border: Border.all(
+                          color: colors.error.withAlpha(80),
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Sign Out All Other Devices',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.error,
-                          fontSize: 12.5,
+                      child: Center(
+                        child: Text(
+                          'Sign Out All Other Devices',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.error,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ),
                     ),
@@ -863,7 +930,7 @@ class SecuritySettingsPage extends HookWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: colors.error.withAlpha(isDark ? 25 : 12),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.radiusDialog,
               border: Border.all(
                 color: colors.error.withAlpha(isDark ? 90 : 60),
               ),
@@ -888,25 +955,35 @@ class SecuritySettingsPage extends HookWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
-                ShrinkableButton(
-                  onTap: () => _confirmAccountDeletion(
-                    context,
-                    colors,
-                    typography,
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: colors.error,
-                      borderRadius: BorderRadius.circular(12),
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedScale(
+                      scale: isHovered ? 1.02 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutCubic,
+                      child: child,
+                    );
+                  },
+                  child: ShrinkableButton(
+                    onTap: () => _confirmAccountDeletion(
+                      context,
+                      colors,
+                      typography,
                     ),
-                    child: Center(
-                      child: Text(
-                        'Delete Account & Purge Data',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.white,
-                          fontSize: 12.5,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: colors.error,
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Delete Account & Purge Data',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.white,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ),
                     ),
@@ -1019,33 +1096,43 @@ class SecuritySettingsPage extends HookWidget {
                     ),
                   ],
                 ),
-                ShrinkableButton(
-                  onTap: () {
-                    AppFeedback.light();
-                    PaintingBinding.instance.imageCache.clear();
-                    PaintingBinding.instance.imageCache.clearLiveImages();
-                    context.showSnackBar(
-                      message: 'Local memory and image cache cleared!',
-                      type: SnackBarType.success,
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedScale(
+                      scale: isHovered ? 1.04 : 1.0,
+                      duration: AppMotion.snappy,
+                      curve: Curves.easeOutCubic,
+                      child: child,
                     );
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(25),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(80),
+                  child: ShrinkableButton(
+                    onTap: () {
+                      AppFeedback.light();
+                      PaintingBinding.instance.imageCache.clear();
+                      PaintingBinding.instance.imageCache.clearLiveImages();
+                      context.showSnackBar(
+                        message: 'Local memory and image cache cleared!',
+                        type: SnackBarType.success,
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                    ),
-                    child: Text(
-                      'Clear Cache',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        fontSize: 11.5,
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(25),
+                        borderRadius: AppRadius.radiusBadge,
+                        border: Border.all(
+                          color: colors.primary.withAlpha(80),
+                        ),
+                      ),
+                      child: Text(
+                        'Clear Cache',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 11.5,
+                        ),
                       ),
                     ),
                   ),
@@ -1073,7 +1160,7 @@ class SecuritySettingsPage extends HookWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.radiusDialog,
         border: Border.all(
           color: colors.surfaceBorder.withAlpha(80),
         ),
@@ -1140,7 +1227,7 @@ class SecuritySettingsPage extends HookWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: colors.success.withAlpha(25),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.radiusBadge,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1184,55 +1271,67 @@ class SecuritySettingsPage extends HookWidget {
     required AppThemeColorsExtension colors,
     required TypographyThemeExtension typography,
   }) {
-    return ShrinkableButton(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.surfacePrimary,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: colors.surfaceBorder.withAlpha(80),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: Curves.easeOutCubic,
+          transform: isHovered
+              ? Matrix4.translationValues(0, -2, 0)
+              : Matrix4.identity(),
+          child: child,
+        );
+      },
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: AppRadius.radiusCard,
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(80),
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colors.primary.withAlpha(25),
-                borderRadius: BorderRadius.circular(10),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(25),
+                  borderRadius: AppRadius.radiusCard,
+                ),
+                child: Icon(icon, color: colors.primary, size: 20),
               ),
-              child: Icon(icon, color: colors.primary, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: typography.body.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 13,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: typography.body.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 11,
+                    Text(
+                      subtitle,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 14,
-              color: colors.textSecondary,
-            ),
-          ],
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: colors.textSecondary,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1247,10 +1346,8 @@ class SecuritySettingsPage extends HookWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isValid
-            ? colors.success.withAlpha(25)
-            : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(8),
+        color: isValid ? colors.success.withAlpha(25) : colors.surfacePrimary,
+        borderRadius: AppRadius.radiusBadge,
         border: Border.all(
           color: isValid
               ? colors.success.withAlpha(90)
@@ -1375,62 +1472,68 @@ class SecuritySettingsPage extends HookWidget {
       context: context,
       backgroundColor: colors.transparent,
       builder: (sheetContext) {
-        return Container(
-          decoration: BoxDecoration(
-            color: sheetContext.colors.surfacePrimary,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Select Deck to Export',
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Container(
+              decoration: BoxDecoration(
+                color: sheetContext.colors.surfacePrimary,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.dialog),
                 ),
               ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: decks.length,
-                  separatorBuilder: (_, index) => const Divider(height: 1),
-                  itemBuilder: (_, index) {
-                    final d = decks[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        Icons.style_rounded,
-                        color: colors.primary,
-                      ),
-                      title: Text(
-                        d.title,
-                        style: typography.body.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${d.totalCards} cards • ${d.subject}',
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      trailing: Icon(
-                        Icons.chevron_right_rounded,
-                        color: colors.textSecondary,
-                      ),
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        unawaited(_openExportSheet(context, d));
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select Deck to Export',
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: decks.length,
+                      separatorBuilder: (_, index) => const Divider(height: 1),
+                      itemBuilder: (_, index) {
+                        final d = decks[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Icon(
+                            Icons.style_rounded,
+                            color: colors.primary,
+                          ),
+                          title: Text(
+                            d.title,
+                            style: typography.body.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${d.totalCards} cards • ${d.subject}',
+                            style: typography.footnote.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            color: colors.textSecondary,
+                          ),
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            unawaited(_openExportSheet(context, d));
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -1516,7 +1619,7 @@ class SecuritySettingsPage extends HookWidget {
         builder: (ctx) => AlertDialog(
           backgroundColor: colors.surfaceSecondary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.radiusDialog,
           ),
           title: Text(
             'Delete Account Permanently?',

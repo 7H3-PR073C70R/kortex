@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class StudyCalibrationGraphWidget extends StatelessWidget {
   const StudyCalibrationGraphWidget({
@@ -55,7 +58,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                   colors.surfaceSecondary.withValues(alpha: 0.5),
                 ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: AppRadius.radiusDialog,
         border: Border.all(
           color: colors.primary.withValues(alpha: isDark ? 0.25 : 0.15),
         ),
@@ -104,7 +107,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadius.radiusBadge,
                   border: Border.all(
                     color: statusColor.withValues(alpha: 0.4),
                   ),
@@ -225,47 +228,65 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
 
           if (onStartStudySession != null && !exam.isPast) ...[
             const SizedBox(height: 16),
-            InkWell(
-              onTap: onStartStudySession,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      colors.primary,
-                      colors.primary.withValues(alpha: 0.85),
-                    ],
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) {
+                return AnimatedContainer(
+                  duration: AppMotion.snappy,
+                  curve: Curves.easeOutCubic,
+                  transform: Matrix4.translationValues(
+                    0,
+                    isHovered ? -1.5 : 0,
+                    0,
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.primary.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.play_circle_fill_rounded,
-                      color: colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        "Review Today's ${exam.dailyTarget} Flashcards",
-                        style: typography.callout.bold.copyWith(
-                          color: colors.white,
+                  child: InkWell(
+                    onTap: onStartStudySession,
+                    borderRadius: AppRadius.radiusCard,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            colors.primary,
+                            colors.primary.withValues(
+                              alpha: isHovered ? 0.95 : 0.85,
+                            ),
+                          ],
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        borderRadius: AppRadius.radiusCard,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primary.withValues(
+                              alpha: isHovered ? 0.45 : 0.3,
+                            ),
+                            blurRadius: isHovered ? 16 : 12,
+                            offset: Offset(0, isHovered ? 6 : 4),
+                          ),
+                        ],
                       ),
+                      child: child,
                     ),
-                  ],
-                ),
+                  ),
+                );
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.play_circle_fill_rounded,
+                    color: colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      "Review Today's ${exam.dailyTarget} Flashcards",
+                      style: typography.callout.bold.copyWith(
+                        color: colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -286,17 +307,40 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? colors.surfacePrimary.withValues(alpha: 0.6)
-            : colors.surfaceSecondary.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colors.surfaceBorder.withValues(alpha: 0.6),
-        ),
-      ),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(0, isHovered ? -1.5 : 0, 0),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark
+                ? (isHovered
+                      ? colors.surfacePrimary.withValues(alpha: 0.85)
+                      : colors.surfacePrimary.withValues(alpha: 0.6))
+                : (isHovered
+                      ? colors.surfaceSecondary
+                      : colors.surfaceSecondary.withValues(alpha: 0.8)),
+            borderRadius: AppRadius.radiusCard,
+            border: Border.all(
+              color: isHovered
+                  ? color.withValues(alpha: 0.6)
+                  : colors.surfaceBorder.withValues(alpha: 0.6),
+            ),
+            boxShadow: isHovered
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: child,
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -363,8 +407,16 @@ class _TrajectoryPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     canvas
-      ..drawLine(Offset(0, height * 0.25), Offset(width, height * 0.25), gridPaint)
-      ..drawLine(Offset(0, height * 0.75), Offset(width, height * 0.75), gridPaint)
+      ..drawLine(
+        Offset(0, height * 0.25),
+        Offset(width, height * 0.25),
+        gridPaint,
+      )
+      ..drawLine(
+        Offset(0, height * 0.75),
+        Offset(width, height * 0.75),
+        gridPaint,
+      )
       ..drawLine(Offset(0, height), Offset(width, height), gridPaint);
 
     // 1. Draw Ideal Trajectory Path (straight or slight curve from bottom-left to top-right)

@@ -5,6 +5,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/animated_page_indicator.dart';
@@ -12,6 +13,7 @@ import 'package:kortex/src/features/onboarding/presentation/widgets/interactive_
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_page_view.dart';
 import 'package:kortex/src/features/onboarding/presentation/widgets/onboarding_top_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -70,8 +72,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (_currentIndex < totalSlides - 1) {
       unawaited(
         _pageController.nextPage(
-          duration: const Duration(milliseconds: 380),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.expressive,
+          curve: AppMotion.easeOutCubic,
         ),
       );
     } else {
@@ -86,8 +88,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     unawaited(
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 380),
-        curve: Curves.easeOutCubic,
+        duration: AppMotion.expressive,
+        curve: AppMotion.easeOutCubic,
       ),
     );
   }
@@ -166,49 +168,60 @@ class _OnboardingPageState extends State<OnboardingPage> {
                           label: forwardActionSemantics,
                           child: Tooltip(
                             message: forwardActionLabel,
-                            child: ShrinkableButton(
-                              onTap: () => _onNext(slides.length),
-                              child: Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      colors.primary,
-                                      colors.primary.withAlpha(220),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.primary.withAlpha(
-                                        isDark ? 110 : 75,
+                            child: PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return ShrinkableButton(
+                                  onTap: () => _onNext(slides.length),
+                                  child: AnimatedContainer(
+                                    duration: AppMotion.snappy,
+                                    curve: AppMotion.easeOutCubic,
+                                    width: isHovered ? 58 : 56,
+                                    height: isHovered ? 58 : 56,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          colors.primary,
+                                          if (isHovered)
+                                            colors.primary.withAlpha(245)
+                                          else
+                                            colors.primary.withAlpha(220),
+                                        ],
                                       ),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 6),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.primary.withAlpha(
+                                            isDark
+                                                ? (isHovered ? 140 : 110)
+                                                : (isHovered ? 100 : 75),
+                                          ),
+                                          blurRadius: isHovered ? 24 : 18,
+                                          offset: Offset(0, isHovered ? 8 : 6),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                alignment: Alignment.center,
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 260),
-                                  transitionBuilder: (child, animation) =>
-                                      ScaleTransition(
-                                        scale: animation,
-                                        child: child,
+                                    alignment: Alignment.center,
+                                    child: AnimatedSwitcher(
+                                      duration: AppMotion.snappy,
+                                      transitionBuilder: (child, animation) =>
+                                          ScaleTransition(
+                                            scale: animation,
+                                            child: child,
+                                          ),
+                                      child: Icon(
+                                        isLastPage
+                                            ? Icons.rocket_launch_outlined
+                                            : Icons.arrow_forward_rounded,
+                                        key: ValueKey<bool>(isLastPage),
+                                        color: colors.white,
+                                        size: 22,
                                       ),
-                                  child: Icon(
-                                    isLastPage
-                                        ? Icons.rocket_launch_outlined
-                                        : Icons.arrow_forward_rounded,
-                                    key: ValueKey<bool>(isLastPage),
-                                    color: colors.white,
-                                    size: 22,
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ),
                         ),

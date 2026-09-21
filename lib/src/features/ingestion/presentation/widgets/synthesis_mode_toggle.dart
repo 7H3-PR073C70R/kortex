@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Two-tier hybrid synthesis mode selector (Tier 1: Local vs Tier 2: AI Smart).
@@ -27,7 +30,7 @@ class SynthesisModeToggle extends StatelessWidget {
         color: isDark
             ? colors.surfaceSecondary.withAlpha(160)
             : colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
         border: Border.all(
           color: colors.primary.withAlpha(isDark ? 50 : 25),
         ),
@@ -87,63 +90,76 @@ class _ModeOptionCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return ShrinkableButton(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark
-                    ? colors.primary.withAlpha(40)
-                    : colors.primary.withAlpha(25))
-              : colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? colors.primary : colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 17,
-              color: isSelected ? colors.primary : colors.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: typography.caption.bold.copyWith(
-                  color: isSelected ? colors.primary : colors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return ShrinkableButton(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isDark
+                        ? colors.primary.withAlpha(40)
+                        : colors.primary.withAlpha(25))
+                  : (isHovered
+                        ? colors.primary.withAlpha(isDark ? 20 : 12)
+                        : colors.transparent),
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              border: Border.all(
                 color: isSelected
                     ? colors.primary
-                    : colors.textSecondary.withAlpha(30),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                badge,
-                style: typography.caption.bold.copyWith(
-                  fontSize: 9,
-                  color: isSelected ? colors.white : colors.textSecondary,
-                ),
+                    : (isHovered
+                          ? colors.primary.withAlpha(60)
+                          : colors.transparent),
+                width: 1.5,
               ),
             ),
-          ],
-        ),
-      ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 17,
+                  color: isSelected ? colors.primary : colors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.caption.bold.copyWith(
+                      color: isSelected ? colors.primary : colors.textSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? colors.primary
+                        : colors.textSecondary.withAlpha(30),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                  ),
+                  child: Text(
+                    badge,
+                    style: typography.caption.bold.copyWith(
+                      fontSize: 9,
+                      color: isSelected ? colors.white : colors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

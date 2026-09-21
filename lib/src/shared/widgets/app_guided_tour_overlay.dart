@@ -5,8 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Representation of a single step in the interactive app walkthrough.
@@ -30,7 +33,7 @@ class _TourStep {
   final IconData icon;
   final Color accentColor;
   final Rect Function(BuildContext context, Size screenSize, EdgeInsets insets)
-      resolveTarget;
+  resolveTarget;
 }
 
 /// Interactive spotlight walkthrough overlay that guides users through the core
@@ -148,7 +151,8 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         subtitle: 'Scientifically spaced flashcard reviews',
         description:
             'Never cram at the last minute. Cards due for review appear right here every morning, scheduled by the FSRS algorithm right before you are predicted to forget.',
-        proTip: 'Completing 10–15 cards a day cements durable long-term recall.',
+        proTip:
+            'Completing 10–15 cards a day cements durable long-term recall.',
         icon: Icons.alarm_on_rounded,
         accentColor: colors.success,
         resolveTarget: (context, screenSize, insets) {
@@ -171,7 +175,8 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         subtitle: 'Curated decks & AI camera note scanner',
         description:
             'Browse curated past questions and subject curricula, or use the built-in OCR camera scanner to instantly turn textbook pages and lecture slides into active-recall cards.',
-        proTip: 'Tap "+" inside Study Decks to convert physical notes into decks.',
+        proTip:
+            'Tap "+" inside Study Decks to convert physical notes into decks.',
         icon: Icons.style_rounded,
         accentColor: colors.warning,
         resolveTarget: (context, screenSize, insets) {
@@ -195,7 +200,8 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         subtitle: 'Your personal Socratic academic tutor',
         description:
             'Stuck on a tricky math equation, physics proof, or past question? Tap this floating copilot anytime on any screen for step-by-step guidance and concept breakdowns.',
-        proTip: 'Syllabot floats above all screens so help is always one tap away.',
+        proTip:
+            'Syllabot floats above all screens so help is always one tap away.',
         icon: Icons.psychology_rounded,
         accentColor: colors.secondary,
         resolveTarget: (context, screenSize, insets) {
@@ -216,7 +222,8 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         subtitle: 'Live virtual study rooms & leaderboards',
         description:
             'Connect with fellow candidates and scholars. Join synchronized Pomodoro live study rooms, discuss challenging questions in subject forums, and climb academic rankings.',
-        proTip: 'Studying in live virtual rooms boosts focus and accountability.',
+        proTip:
+            'Studying in live virtual rooms boosts focus and accountability.',
         icon: Icons.groups_rounded,
         accentColor: colors.latexHighlight,
         resolveTarget: (context, screenSize, insets) {
@@ -341,12 +348,12 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     final isLastStep = _currentStepIndex == _steps.length - 1;
 
     // Resolve animated spotlight rectangle
-    final fromRect = _previousTargetRect ??
-        step.resolveTarget(context, screenSize, insets);
-    final toRect = _currentTargetRect ??
-        step.resolveTarget(context, screenSize, insets);
-    final animatedRect = Rect.lerp(fromRect, toRect, _morphAnimation.value) ??
-        toRect;
+    final fromRect =
+        _previousTargetRect ?? step.resolveTarget(context, screenSize, insets);
+    final toRect =
+        _currentTargetRect ?? step.resolveTarget(context, screenSize, insets);
+    final animatedRect =
+        Rect.lerp(fromRect, toRect, _morphAnimation.value) ?? toRect;
 
     // Determine whether the target is in the upper or lower half of screen
     final isTargetInTopHalf = animatedRect.center.dy < screenSize.height * 0.48;
@@ -407,22 +414,16 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                       color: isDark
                           ? colors.surfacePrimary.withAlpha(245)
                           : colors.surfacePrimary.withAlpha(252),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(AppRadius.dialog),
                       border: Border.all(
                         color: step.accentColor.withAlpha(isDark ? 100 : 70),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: step.accentColor.withAlpha(isDark ? 50 : 30),
-                          blurRadius: 36,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: colors.black.withAlpha(120),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
+                          color: colors.black.withAlpha(isDark ? 80 : 25),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -443,7 +444,9 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                 ),
                                 decoration: BoxDecoration(
                                   color: step.accentColor.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.badge,
+                                  ),
                                   border: Border.all(
                                     color: step.accentColor.withAlpha(90),
                                   ),
@@ -477,20 +480,30 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                 ),
                               ),
                             ),
-                            TextButton(
-                              onPressed: _finishTour,
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                            PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return AnimatedScale(
+                                  scale: isHovered ? 1.05 : 1.0,
+                                  duration: AppMotion.snappy,
+                                  curve: AppMotion.easeOutCubic,
+                                  child: child,
+                                );
+                              },
+                              child: TextButton(
+                                onPressed: _finishTour,
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                 ),
-                              ),
-                              child: Text(
-                                'Skip Tour',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 12,
+                                child: Text(
+                                  'Skip Tour',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ),
@@ -506,7 +519,9 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                               height: 44,
                               decoration: BoxDecoration(
                                 color: step.accentColor.withAlpha(35),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
+                                ),
                                 border: Border.all(
                                   color: step.accentColor.withAlpha(80),
                                   width: 1.2,
@@ -568,7 +583,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                           ),
                           decoration: BoxDecoration(
                             color: step.accentColor.withAlpha(16),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
                             border: Border.all(
                               color: step.accentColor.withAlpha(50),
                             ),
@@ -612,7 +627,9 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                     color: isSelected
                                         ? step.accentColor
                                         : colors.surfaceBorderHighlight,
-                                    borderRadius: BorderRadius.circular(3),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.micro,
+                                    ),
                                   ),
                                 );
                               }),
@@ -625,23 +642,34 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                 if (_currentStepIndex > 0)
                                   Padding(
                                     padding: const EdgeInsets.only(right: 6),
-                                    child: TextButton(
-                                      onPressed: _goToPreviousStep,
-                                      style: TextButton.styleFrom(
-                                        visualDensity: VisualDensity.compact,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
+                                    child: PlatformHoverBuilder(
+                                      builder: (context, isHovered, child) {
+                                        return AnimatedScale(
+                                          scale: isHovered ? 1.05 : 1.0,
+                                          duration: AppMotion.snappy,
+                                          curve: AppMotion.easeOutCubic,
+                                          child: child,
+                                        );
+                                      },
+                                      child: TextButton(
+                                        onPressed: _goToPreviousStep,
+                                        style: TextButton.styleFrom(
+                                          visualDensity: VisualDensity.compact,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
                                         ),
-                                        minimumSize: Size.zero,
-                                        tapTargetSize:
-                                            MaterialTapTargetSize.shrinkWrap,
-                                      ),
-                                      child: Text(
-                                        'Back',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.textSecondary,
-                                          fontSize: 12,
+                                        child: Text(
+                                          'Back',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.textSecondary,
+                                                fontSize: 12,
+                                              ),
                                         ),
                                       ),
                                     ),
@@ -655,14 +683,9 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                     ),
                                     decoration: BoxDecoration(
                                       color: step.accentColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: step.accentColor.withAlpha(80),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.card,
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -671,17 +694,17 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                           isLastStep
                                               ? 'Start Learning'
                                               : 'Next Step',
-                                          style:
-                                              typography.caption.bold.copyWith(
-                                            color: colors.white,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                         ),
                                         const SizedBox(width: 4),
                                         Icon(
                                           isLastStep
                                               ? Icons
-                                                  .check_circle_outline_rounded
+                                                    .check_circle_outline_rounded
                                               : Icons.arrow_forward_rounded,
                                           color: colors.white,
                                           size: 15,
@@ -708,7 +731,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
 }
 
 /// Custom painter that carves a rounded spotlight cutout out of a dark scrim
-/// with an animated glowing pulse ring.
+/// with a crisp pulse border.
 class _SpotlightPainter extends CustomPainter {
   const _SpotlightPainter({
     required this.targetRect,
@@ -726,7 +749,10 @@ class _SpotlightPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     // 1. Inflate target slightly for comfortable breathing margin
     final cutoutRect = targetRect.inflate(8);
-    final rrect = RRect.fromRectAndRadius(cutoutRect, const Radius.circular(16));
+    final rrect = RRect.fromRectAndRadius(
+      cutoutRect,
+      const Radius.circular(AppRadius.card),
+    );
 
     // 2. Draw scrim with cutout hole
     final scrimPath = Path()
@@ -740,16 +766,7 @@ class _SpotlightPainter extends CustomPainter {
 
     canvas.drawPath(scrimPath, scrimPaint);
 
-    // 3. Draw outer glowing pulse border
-    final auraPaint = Paint()
-      ..color = accentColor.withAlpha((40 * pulseValue).toInt())
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4 * pulseValue
-      ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 8);
-
-    canvas.drawRRect(rrect, auraPaint);
-
-    // 4. Draw crisp highlight stroke
+    // 3. Draw crisp highlight stroke
     final borderPaint = Paint()
       ..color = accentColor.withAlpha((180 * pulseValue).toInt())
       ..style = PaintingStyle.stroke

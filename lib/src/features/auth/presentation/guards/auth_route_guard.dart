@@ -53,15 +53,20 @@ class AuthRouteGuard extends AutoRouteGuard {
         final isCalibratedLocally = () {
           try {
             final storage = locator<LocalStorageService>();
-            if (storage.getPreference(key: PrefKeys.hasCompletedOnboarding) == 'true') {
+            if (storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
+                'true') {
               return true;
             }
-            final rawCalib = storage.getPreference(key: '__calibration_profile');
+            final rawCalib = storage.getPreference(
+              key: '__calibration_profile',
+            );
             if (rawCalib != null && rawCalib.isNotEmpty) {
               final map = jsonDecode(rawCalib) as Map<String, dynamic>;
               if (map['isCalibrated'] == true) return true;
             }
-            final rawCourses = storage.getPreference(key: PrefKeys.userCuratedCourses);
+            final rawCourses = storage.getPreference(
+              key: PrefKeys.userCuratedCourses,
+            );
             if (rawCourses != null && rawCourses.isNotEmpty) {
               final list = jsonDecode(rawCourses) as List<dynamic>;
               if (list.isNotEmpty) return true;

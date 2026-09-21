@@ -1581,6 +1581,110 @@
             }
         }
     },
+    "navTabStudyHub": "Study Hub",
+    "@navTabStudyHub": {
+        "description": "Label for Study Hub navigation tab"
+    },
+    "neuralEngineActive": "Neural Engine Active",
+    "@neuralEngineActive": {
+        "description": "Status text for active neural engine in desktop navigation rail"
+    },
+    "fifteenMinSprint": "15-MIN SPRINT",
+    "@fifteenMinSprint": {
+        "description": "Badge label for 15-minute quick study sprint"
+    },
+    "nextBestActionTitle": "NEXT BEST ACTION",
+    "@nextBestActionTitle": {
+        "description": "Header title for Next Best Action recommendation card"
+    },
+    "startAction": "Start",
+    "@startAction": {
+        "description": "Generic start action button label"
+    },
+    "podPulseTitle": "POD PULSE",
+    "@podPulseTitle": {
+        "description": "Header title for study circle pod live pulse"
+    },
+    "activeToday": "Active Today",
+    "@activeToday": {
+        "description": "Label for active members today in study pod"
+    },
+    "groupFocus": "Group Focus",
+    "@groupFocus": {
+        "description": "Label for cumulative group focus minutes in study pod"
+    },
+    "podKarma": "Pod Karma",
+    "@podKarma": {
+        "description": "Label for pod karma points earned by group"
+    },
+    "podSuffix": "{track} Pod",
+    "@podSuffix": {
+        "description": "Target track pod name with track prefix",
+        "placeholders": {
+            "track": {
+                "type": "String",
+                "example": "JAMB Engineering"
+            }
+        }
+    },
+    "studyCirclePod": "Study Circle Pod",
+    "@studyCirclePod": {
+        "description": "Fallback name for study circle pod"
+    },
+    "backlogTriageTitle": "BACKLOG TRIAGE",
+    "@backlogTriageTitle": {
+        "description": "Header title for backlog study debt triage card"
+    },
+    "backlogTriageSubtitle": "Feeling overwhelmed? No guilt.",
+    "@backlogTriageSubtitle": {
+        "description": "Encouraging subtitle for backlog triage"
+    },
+    "backlogTriageBody": "Syllabot can prioritize your 10 highest-decay cards in \"{title}\".",
+    "@backlogTriageBody": {
+        "description": "Explanation of how Syllabot will triage overdue cards",
+        "placeholders": {
+            "title": {
+                "type": "String",
+                "example": "Fourier Series"
+            }
+        }
+    },
+    "triageTenAction": "Triage 10",
+    "@triageTenAction": {
+        "description": "Button label to triage 10 overdue cards"
+    },
+    "allCaughtUpTitle": "All caught up!",
+    "@allCaughtUpTitle": {
+        "description": "Celebratory title when user has 0 cards due for review"
+    },
+    "allCaughtUpSubtitle": "No active-recall cards due for review today. Keep it up!",
+    "@allCaughtUpSubtitle": {
+        "description": "Subtitle explaining no active recall cards are currently due"
+    },
+    "curateCoursesTitle": "Curate Your Courses",
+    "@curateCoursesTitle": {
+        "description": "Title prompting user to curate subject courses"
+    },
+    "curateCoursesSubtitle": "Tap to set up your subjects and track your syllabus progress.",
+    "@curateCoursesSubtitle": {
+        "description": "Subtitle prompting user to curate subject courses"
+    },
+    "dashboardHeatmapSubtitle": "Activity • Past 28 Days",
+    "@dashboardHeatmapSubtitle": {
+        "description": "Subtitle for dashboard retention heat map"
+    },
+    "dashboardHeatmapTapHint": "Tap any day to inspect study volume",
+    "@dashboardHeatmapTapHint": {
+        "description": "Hint text when no day is selected in heat map"
+    },
+    "dashboardHeatmapLess": "Less",
+    "@dashboardHeatmapLess": {
+        "description": "Label for lower intensity in heat map scale"
+    },
+    "dashboardHeatmapMore": "More",
+    "@dashboardHeatmapMore": {
+        "description": "Label for higher intensity in heat map scale"
+    },
     "deckDetailTitle": "Active Recall Session",
     "@deckDetailTitle": {
         "description": "Title for active recall flashcard session"
@@ -3233,6 +3337,16 @@
             "date": {
                 "type": "String",
                 "example": "Aug 31, 2026"
+            }
+        }
+    },
+    "reviewsThisYearCount": "{count} Reviews this Year",
+    "@reviewsThisYearCount": {
+        "description": "Annual study activity review count badge",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "320"
             }
         }
     },

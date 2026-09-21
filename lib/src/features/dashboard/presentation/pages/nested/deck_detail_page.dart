@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
@@ -15,6 +17,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
@@ -142,7 +145,7 @@ class _DeckDetailContent extends HookWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: colors.primary,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.badge),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -167,148 +170,157 @@ class _DeckDetailContent extends HookWidget {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: isLoadingCards.value
-              ? const Center(
-                  child: AppLogoLoader(size: 56),
-                )
-              : dynamicCards.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.style_outlined,
-                            size: 56,
-                            color: colors.textMuted.withAlpha(120),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No Flashcards Found',
-                            style: typography.callout.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'This deck does not have any active cards yet.',
-                            textAlign: TextAlign.center,
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: isLoadingCards.value
+                  ? const Center(
+                      child: AppLogoLoader(size: 56),
                     )
-                  : Column(
-                      children: [
-                        // Progress Tracker
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              l10n.deckDetailCardProgress(
-                                currentCardIndex.value + 1,
-                                dynamicCards.length,
-                              ),
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 50 : 25),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'FSRS ACTIVE QUEUE',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-              const SizedBox(height: 16),
-
-              // Flashcard Surface
-              Expanded(
-                child: Semantics(
-                  button: true,
-                  label: isFlipped.value
-                      ? dynamicCards[currentCardIndex.value].back
-                      : dynamicCards[currentCardIndex.value].front,
-                  child: InkWell(
-                    onTap: () {
-                      unawaited(HapticFeedback.lightImpact());
-                      isFlipped.value = !isFlipped.value;
-                    },
-                    borderRadius: BorderRadius.circular(24),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(28),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? colors.surfaceSecondary.withAlpha(200)
-                                : colors.surfacePrimary.withAlpha(220),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: isFlipped.value
-                                  ? colors.success.withAlpha(isDark ? 90 : 50)
-                                  : colors.primary.withAlpha(isDark ? 80 : 40),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isFlipped.value
-                                    ? colors.success.withAlpha(25)
-                                    : colors.primary.withAlpha(25),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
+                  : dynamicCards.isEmpty
+                      ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isFlipped.value
-                                      ? colors.success.withAlpha(
-                                          isDark ? 50 : 25,
-                                        )
-                                      : colors.primary.withAlpha(
-                                          isDark ? 50 : 25,
-                                        ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  isFlipped.value
-                                      ? l10n.deckDetailAnswerFormula
-                                      : l10n.deckDetailQuestion,
-                                  style: typography.caption.bold.copyWith(
-                                    color: isFlipped.value
-                                        ? colors.success
-                                        : colors.primary,
-                                    fontSize: 11,
-                                    letterSpacing: 0.8,
-                                  ),
+                              Icon(
+                                Icons.style_outlined,
+                                size: 56,
+                                color: colors.textMuted.withAlpha(120),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No Flashcards Found',
+                                style: typography.callout.bold.copyWith(
+                                  color: colors.textPrimary,
                                 ),
                               ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'This deck does not have any active cards yet.',
+                                textAlign: TextAlign.center,
+                                style: typography.footnote.regular.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            // Progress Tracker
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  l10n.deckDetailCardProgress(
+                                    currentCardIndex.value + 1,
+                                    dynamicCards.length,
+                                  ),
+                                  style: typography.footnote.bold.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                                  ),
+                                  child: Text(
+                                    'FSRS ACTIVE QUEUE',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                  const SizedBox(height: 16),
+
+                  // Flashcard Surface
+                  Expanded(
+                    child: Semantics(
+                      button: true,
+                      label: isFlipped.value
+                          ? dynamicCards[currentCardIndex.value].back
+                          : dynamicCards[currentCardIndex.value].front,
+                      child: PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return InkWell(
+                            onTap: () {
+                              unawaited(HapticFeedback.lightImpact());
+                              isFlipped.value = !isFlipped.value;
+                            },
+                            borderRadius: BorderRadius.circular(AppRadius.dialog),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(AppRadius.dialog),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                                child: AnimatedContainer(
+                                  duration: AppMotion.snappy,
+                                  curve: AppMotion.easeOutCubic,
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(28),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary.withAlpha(200)
+                                        : colors.surfacePrimary.withAlpha(220),
+                                    borderRadius: BorderRadius.circular(AppRadius.dialog),
+                                    border: Border.all(
+                                      color: isFlipped.value
+                                          ? colors.success.withAlpha(isDark ? 90 : 50)
+                                          : isHovered
+                                              ? colors.primary.withAlpha(isDark ? 140 : 80)
+                                              : colors.primary.withAlpha(isDark ? 80 : 40),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: isFlipped.value
+                                            ? colors.success.withAlpha(25)
+                                            : colors.primary.withAlpha(25),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isFlipped.value
+                                              ? colors.success.withAlpha(
+                                                  isDark ? 50 : 25,
+                                                )
+                                              : colors.primary.withAlpha(
+                                                  isDark ? 50 : 25,
+                                                ),
+                                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                                        ),
+                                        child: Text(
+                                          isFlipped.value
+                                              ? l10n.deckDetailAnswerFormula
+                                              : l10n.deckDetailQuestion,
+                                          style: typography.caption.bold.copyWith(
+                                            color: isFlipped.value
+                                                ? colors.success
+                                                : colors.primary,
+                                            fontSize: 11,
+                                            letterSpacing: 0.8,
+                                          ),
+                                        ),
+                                      ),
                               const SizedBox(height: 24),
                               Text(
                                 isFlipped.value
@@ -334,70 +346,74 @@ class _DeckDetailContent extends HookWidget {
                         ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
-              const SizedBox(height: 20),
-
-              // FSRS-6 Rating Buttons (Hard / Good / Easy)
-              if (isFlipped.value) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: _FsrsRatingButton(
-                        label: l10n.deckDetailHard,
-                        interval: '1d',
-                        color: colors.error,
-                        onTap: () {
-                          if (currentCardIndex.value < dynamicCards.length - 1) {
-                            currentCardIndex.value++;
-                            isFlipped.value = false;
-                          } else {
-                            unawaited(context.router.maybePop());
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _FsrsRatingButton(
-                        label: l10n.deckDetailGood,
-                        interval: '3d',
-                        color: colors.primary,
-                        onTap: () {
-                          if (currentCardIndex.value < dynamicCards.length - 1) {
-                            currentCardIndex.value++;
-                            isFlipped.value = false;
-                          } else {
-                            unawaited(context.router.maybePop());
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _FsrsRatingButton(
-                        label: l10n.deckDetailEasy,
-                        interval: '7d',
-                        color: colors.success,
-                        onTap: () {
-                          if (currentCardIndex.value < dynamicCards.length - 1) {
-                            currentCardIndex.value++;
-                            isFlipped.value = false;
-                          } else {
-                            unawaited(context.router.maybePop());
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+            ),
           ),
+            const SizedBox(height: 20),
+
+            // FSRS-6 Rating Buttons (Hard / Good / Easy)
+            if (isFlipped.value) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: _FsrsRatingButton(
+                      label: l10n.deckDetailHard,
+                      interval: '1d',
+                      color: colors.error,
+                      onTap: () {
+                        if (currentCardIndex.value < dynamicCards.length - 1) {
+                          currentCardIndex.value++;
+                          isFlipped.value = false;
+                        } else {
+                          unawaited(context.router.maybePop());
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _FsrsRatingButton(
+                      label: l10n.deckDetailGood,
+                      interval: '3d',
+                      color: colors.primary,
+                      onTap: () {
+                        if (currentCardIndex.value < dynamicCards.length - 1) {
+                          currentCardIndex.value++;
+                          isFlipped.value = false;
+                        } else {
+                          unawaited(context.router.maybePop());
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _FsrsRatingButton(
+                      label: l10n.deckDetailEasy,
+                      interval: '7d',
+                      color: colors.success,
+                      onTap: () {
+                        if (currentCardIndex.value < dynamicCards.length - 1) {
+                          currentCardIndex.value++;
+                          isFlipped.value = false;
+                        } else {
+                          unawaited(context.router.maybePop());
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
       ),
-    );
+    ),
+  ),
+),
+);
   }
 }
 
@@ -421,38 +437,51 @@ class _FsrsRatingButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: '$label, $interval',
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.lightImpact());
-          onTap();
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, child) {
+          return ShrinkableButton(
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              onTap();
+            },
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              height: 48,
+              decoration: BoxDecoration(
+                color: isHovered
+                    ? color.withAlpha(55)
+                    : color.withAlpha(35),
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(
+                  color: isHovered
+                      ? color.withAlpha(180)
+                      : color.withAlpha(120),
+                  width: 1.2,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: typography.caption.bold.copyWith(
+                      color: color,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    interval,
+                    style: typography.footnote.regular.copyWith(
+                      color: color.withAlpha(200),
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         },
-        child: Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withAlpha(35),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: color.withAlpha(120), width: 1.2),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: typography.caption.bold.copyWith(
-                  color: color,
-                  fontSize: 13,
-                ),
-              ),
-              Text(
-                interval,
-                style: typography.footnote.regular.copyWith(
-                  color: color.withAlpha(200),
-                  fontSize: 10.5,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

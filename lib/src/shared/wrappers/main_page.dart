@@ -9,6 +9,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/num_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -20,6 +22,7 @@ import 'package:kortex/src/features/ingestion/presentation/widgets/background_in
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
@@ -74,7 +77,7 @@ final List<_MainNavItem> _kNavItems = [
 String _getHomeLabel(AppLocalizations l10n) => l10n.navTabHome;
 String _getDecksLabel(AppLocalizations l10n) => l10n.navTabDecks;
 String _getForumLabel(AppLocalizations l10n) => l10n.forumTab;
-String _getStudyHubLabel(AppLocalizations l10n) => 'Study Hub';
+String _getStudyHubLabel(AppLocalizations l10n) => l10n.navTabStudyHub;
 String _getProfileLabel(AppLocalizations l10n) => l10n.navTabProfile;
 
 /// Main application shell wrapper using [AutoTabsScaffold], responsive
@@ -98,8 +101,8 @@ class MainPage extends HookWidget {
         children: [
           AutoTabsScaffold(
             routes: _kNavItems.map((item) => item.route).toList(),
-            animationDuration: const Duration(milliseconds: 250),
-            animationCurve: Curves.easeInOut,
+            animationDuration: AppMotion.standard,
+            animationCurve: AppMotion.easeOutCubic,
             extendBody: true,
             transitionBuilder: (context, child, animation) {
               final tabsRouter = AutoTabsRouter.of(context);
@@ -282,14 +285,12 @@ class _DesktopNavRail extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppRadius.radiusPanel,
                   color: isDark
                       ? colors.surfaceSecondary.withAlpha(120)
                       : colors.surfaceSecondary.withAlpha(180),
                   border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(50)
-                        : colors.surfaceBorder,
+                    color: colors.surfaceBorder,
                   ),
                 ),
                 child: Row(
@@ -311,7 +312,7 @@ class _DesktopNavRail extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Neural Engine Active',
+                        l10n.neuralEngineActive,
                         style: typography.caption.medium.copyWith(
                           color: colors.textSecondary,
                           fontSize: 11,
@@ -359,67 +360,74 @@ class _DesktopNavRailItem extends StatelessWidget {
       button: true,
       selected: isSelected,
       label: l10n.navTabSemantics(label, itemIndex + 1, totalItems),
-      child: ShrinkableButton(
-        onTap: onTap,
-        shrinkScale: 0.98,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            color: isSelected
-                ? colors.primary.withAlpha(isDark ? 45 : 25)
-                : colors.transparent,
-            border: Border.all(
-              color: isSelected
-                  ? colors.primary.withAlpha(isDark ? 100 : 70)
-                  : colors.transparent,
-              width: 1.2,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: isSelected ? colors.primary : colors.textSecondary,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: isSelected
-                      ? typography.subhead.semiBold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 14,
-                        )
-                      : typography.subhead.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 14,
-                        ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, _) {
+          return ShrinkableButton(
+            onTap: onTap,
+            shrinkScale: 0.98,
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: AppRadius.radiusCard,
+                color: isSelected
+                    ? colors.primary.withAlpha(isDark ? 45 : 25)
+                    : (isHovered
+                        ? colors.surfaceBorder.withAlpha(isDark ? 35 : 45)
+                        : colors.transparent),
+                border: Border.all(
+                  color: isSelected
+                      ? colors.primary.withAlpha(isDark ? 100 : 70)
+                      : (isHovered
+                          ? colors.surfaceBorder
+                          : colors.transparent),
                 ),
               ),
-              if (isSelected)
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withAlpha(160),
-                        blurRadius: 6,
-                      ),
-                    ],
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    size: 22,
+                    color: isSelected ? colors.primary : colors.textSecondary,
                   ),
-                ),
-            ],
-          ),
-        ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: isSelected
+                          ? typography.subhead.semiBold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 14,
+                            )
+                          : typography.subhead.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 14,
+                            ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isSelected)
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.primary,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primary.withAlpha(160),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
