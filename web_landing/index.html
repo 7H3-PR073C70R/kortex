@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Master complex exams in half the time with local AI and FSRS-6 spaced repetition. Drop in messy lecture slides, textbook PDFs, or camera photos of math formulas. 100% offline-first privacy.">
-  <meta name="keywords" content="FSRS spaced repetition, offline study app, KaTeX math OCR, JAMB CBT, WAEC past questions, active recall flashcards, Bionic reading, Socratic AI tutor, Kortex">
+  <meta name="description" content="Study smarter with Kortexify. Drop in your PDFs, slides, or photos of your notes and get clean flashcards and practice tests, shown to you right before you forget. Works offline, no internet needed.">
+  <meta name="keywords" content="spaced repetition study app, offline study app, math from photos, JAMB CBT, WAEC past questions, active recall flashcards, focus study tool, Kortex">
   <meta name="author" content="Kortex Technologies">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kortex-study-app-2026.web.app/">
-  <meta property="og:title" content="Kortex | Master Complex Exams in Half the Time">
-  <meta property="og:description" content="Master complex exams with local AI and FSRS-6 spaced repetition. Offline PDF parsing, camera math OCR, 3D active recall, and CBT practice.">
-  <meta property="og:image" content="assets/kortexify_logo.svg?v=2">
+  <meta property="og:title" content="Kortex | Pass Your Hardest Exams in Half the Time">
+  <meta property="og:description" content="Turn messy notes into flashcards and practice tests that show up right before you forget. Works fully offline, no account to try the demo.">
+  <meta property="og:image" content="assets/images/social_og.jpg">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Kortex | Master Complex Exams in Half the Time">
-  <meta name="twitter:description" content="Master complex exams with local AI and FSRS-6 spaced repetition. Offline PDF parsing, camera math OCR, 3D active recall, and CBT practice.">
-  <meta name="twitter:image" content="assets/kortexify_logo.svg?v=2">
+  <meta name="twitter:title" content="Kortex | Pass Your Hardest Exams in Half the Time">
+  <meta name="twitter:description" content="Turn messy notes into flashcards and practice tests that show up right before you forget. Works fully offline.">
+  <meta name="twitter:image" content="assets/images/social_og.jpg">
 
-  <title>Kortex | Master Complex Exams in Half the Time</title>
+  <title>Kortex | Pass Your Hardest Exams in Half the Time</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg?v=2">
@@ -31,13 +31,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
-  <!-- KaTeX CSS for LaTeX Math Formula Rendering -->
+  <!-- KaTeX CSS for Math Formula Rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=5.4">
-  <link rel="stylesheet" href="css/animations.css?v=5.4">
-  <link rel="stylesheet" href="css/styles.css?v=5.4">
+  <link rel="stylesheet" href="css/variables.css?v=6.6">
+  <link rel="stylesheet" href="css/animations.css?v=6.6">
+  <link rel="stylesheet" href="css/styles.css?v=6.6">
 
   <!-- Structured Data JSON-LD -->
   <script type="application/ld+json">
@@ -52,11 +52,15 @@
       "price": "0.00",
       "priceCurrency": "USD"
     },
-    "description": "Tactile, low-fatigue cognitive study engine with offline PDF and OCR parsing, KaTeX math rendering, FSRS-6 adaptive spaced repetition, Socratic AI tutoring, and CBT exam practice."
+    "image": "assets/images/social_og.jpg",
+    "description": "A calm, low fatigue study app that turns your notes into flashcards and practice tests, schedules reviews with spaced repetition, and helps you prepare for JAMB, WAEC, NECO, SAT, and university exams. Works offline."
   }
   </script>
 </head>
 <body>
+
+  <!-- Scroll Progress -->
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
   <!-- Site Header -->
   <header class="site-header">
@@ -68,23 +72,23 @@
 
       <nav aria-label="Primary Navigation">
         <ul class="nav-links">
-          <li><a href="#pillars" class="nav-link">How It Works</a></li>
-          <li><a href="#differentiators" class="nav-link">Privacy & Access</a></li>
-          <li><a href="#newsletter" class="nav-link">Updates</a></li>
-          <li><a href="#faq" class="nav-link">FAQ</a></li>
+          <li><a href="#pillars" class="nav-link" data-navspy="pillars">How It Works</a></li>
+          <li><a href="#features" class="nav-link" data-navspy="features">What You Get</a></li>
+          <li><a href="#differentiators" class="nav-link" data-navspy="differentiators">Privacy</a></li>
+          <li><a href="#faq" class="nav-link" data-navspy="faq">FAQ</a></li>
           <li><a href="contact.html" class="nav-link">Contact</a></li>
         </ul>
       </nav>
 
       <div class="nav-actions">
-        <!-- Interactive Boutique Preset Accent Switcher -->
-        <div class="accent-picker" title="Switch Theme Palette Accent" role="group" aria-label="Theme Palette Accents">
-          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage Focus"></button>
-          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre Academic"></button>
-          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss STEM"></button>
-          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze Editorial"></button>
+        <!-- Boutique Accent Switcher -->
+        <div class="accent-picker" title="Switch Color Accent" role="group" aria-label="Color Accents">
+          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage"></button>
+          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre"></button>
+          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss"></button>
+          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze"></button>
           <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Slate Terracotta"></button>
-          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan LaTeX"></button>
+          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan"></button>
         </div>
 
         <!-- Light / Dark Mode Toggle -->
@@ -95,7 +99,7 @@
           </svg>
         </button>
 
-        <a href="#try-free" class="nav-cta">Try Free: No Login</a>
+        <a href="#workstation" class="nav-cta">Try the Live Demo</a>
       </div>
     </div>
   </header>
@@ -106,27 +110,23 @@
     <!-- Hero Section -->
     <section class="hero-section" id="try-free">
       <div class="container">
-        
-        <!-- Badge -->
+
         <div class="hero-badge reveal-on-scroll">
           <span class="pulse-dot"></span>
-          <span>Low-Fatigue Cognitive Study Engine</span>
+          <span>A calmer way to study for the exams that matter</span>
         </div>
 
-        <!-- Outcome-Driven Headline -->
         <h1 class="hero-title reveal-on-scroll delay-1">
-          Pass your hardest exams in half the time without losing sleep.
+          Pass your hardest exams in half the time, without losing sleep.
         </h1>
 
-        <!-- Human Subtitle -->
         <p class="hero-subtitle reveal-on-scroll delay-2">
-          Drop in messy PDFs, photos of your notes, or recorded lectures. Kortexify creates flashcards and practice tests automatically, showing them to you right before you forget them.
+          Drop in your messy PDFs, lecture slides, or photos of your notes. Kortexify turns them into flashcards and practice tests, then shows them to you right before you forget them.
         </p>
 
-        <!-- CTA Group -->
         <div class="hero-cta-group reveal-on-scroll delay-3">
-          <a href="#workstation" class="btn-primary-cta">
-            <span>Try For Free (No Signup Needed)</span>
+          <a href="#workstation" class="btn-primary-cta" data-magnetic>
+            <span>Try the Live Demo (Free)</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M5 12h14M12 5l7 7-7 7"></path>
             </svg>
@@ -139,25 +139,35 @@
           </a>
         </div>
 
-        <!-- Trust Badges Bar -->
         <div class="trust-badges-bar reveal-on-scroll delay-3">
           <div class="trust-badge-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
-            <span>Works 100% Offline</span>
+            <span>Works 100% offline</span>
           </div>
           <div class="trust-badge-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
-            <span>No Account Required</span>
+            <span>Made for tired, easily distracted brains</span>
           </div>
           <div class="trust-badge-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"></path></svg>
-            <span>Trusted by over <strong class="social-proof-count">25,000</strong> students</span>
+            <span>No credit card to start</span>
           </div>
         </div>
 
-        <!-- Interactive Multi-Modal Workstation Preview -->
-        <div class="workstation-wrapper reveal-on-scroll delay-4" id="workstation">
-          
+      </div>
+    </section>
+
+    <!-- Live Interactive Demo -->
+    <section class="section demo-section" id="workstation">
+      <div class="container">
+        <div class="section-header reveal-on-scroll">
+          <span class="section-badge">Try it right here</span>
+          <h2 class="section-title">Feel the study loop in ten seconds.</h2>
+          <p class="section-subtitle">Flip the card, rate how well you remembered it, and watch your next review reschedule itself. No signup, no download.</p>
+        </div>
+
+        <div class="workstation-wrapper reveal-on-scroll delay-1" data-tilt>
+
           <div class="workstation-tabs-bar">
             <div class="window-dots">
               <span class="dot-red"></span>
@@ -173,17 +183,16 @@
           </div>
 
           <div class="workstation-body">
-            
-            <!-- Tab 1: Retain (3D Flashcard & KaTeX) -->
+
+            <!-- Retain Panel (3D Flashcard) -->
             <div class="tab-panel active" id="panel-retain">
               <div class="card-scene">
-                <div class="flashcard-3d" id="interactiveFlashcard" tabindex="0" role="button" aria-label="Interactive 3D Flashcard. Click or press space to flip.">
-                  
-                  <!-- Front of Card -->
+                <div class="flashcard-3d" id="interactiveFlashcard" tabindex="0" role="button" aria-label="Interactive flashcard. Click or press space to flip.">
+
                   <div class="card-face card-face-front">
                     <div class="card-meta-bar">
                       <span class="card-badge-topic" id="cardTopicBadge">Quick Question</span>
-                      <span class="flip-hint-pill">Click Card or Press Space ↺</span>
+                      <span class="flip-hint-pill">Click card or press space ↺</span>
                     </div>
 
                     <div class="card-content-area">
@@ -194,23 +203,22 @@
                     </div>
 
                     <div class="card-meta-bar" style="margin-bottom: 0;">
-                      <span style="font-size: 0.78rem; color: var(--text-muted);">Active Recall • Front Prompt</span>
+                      <span style="font-size: 0.78rem; color: var(--text-muted);">Active recall</span>
                       <button id="flipCardTrigger" type="button" class="tab-btn" style="padding: 4px 10px; font-size: 0.78rem; background: var(--color-primary-subtle); color: var(--color-primary);">
-                        Reveal Solution →
+                        Reveal answer →
                       </button>
                     </div>
                   </div>
 
-                  <!-- Back of Card -->
                   <div class="card-face card-face-back">
                     <div class="card-meta-bar">
-                      <span class="card-badge-topic" style="background: rgba(82, 121, 111, 0.15); color: var(--color-recall-easy);">Solution</span>
-                      <span class="flip-hint-pill">Click to Flip Back ↺</span>
+                      <span class="card-badge-topic" style="background: rgba(82, 121, 111, 0.15); color: var(--color-recall-easy);">Answer</span>
+                      <span class="flip-hint-pill">Click to flip back ↺</span>
                     </div>
 
                     <div class="card-content-area">
                       <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;" id="cardAnswerText">
-                        Because reading isn't testing. Your brain only keeps information when you practice bringing it back out. Kortexify builds that exact practice for you.
+                        Because reading isn't testing. Your brain only keeps information when you practice bringing it back out. Kortexify builds that practice for you.
                       </p>
                       <div id="katexBackFormula" style="display: none; justify-content: center; margin-top: 12px; font-size: 1.1rem; color: var(--text-primary);"></div>
                     </div>
@@ -223,58 +231,17 @@
                 </div>
               </div>
 
-              <!-- FSRS-6 Rating Calibration Bar -->
               <div class="fsrs-rating-container">
                 <div>
                   <div class="fsrs-rating-label">How well did you remember this?</div>
-                  <div style="font-size: 0.78rem; color: var(--text-muted);">We'll use this to schedule your next review automatically.</div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted);">We use this to plan your next review for you.</div>
                 </div>
 
                 <div class="fsrs-button-group">
-                  <button class="rating-pill-btn again" data-rating="again" type="button">
-                    Again
-                  </button>
-                  <button class="rating-pill-btn hard" data-rating="hard" type="button">
-                    Hard
-                  </button>
-                  <button class="rating-pill-btn good" data-rating="good" type="button">
-                    Good
-                  </button>
-                  <button class="rating-pill-btn easy" data-rating="easy" type="button">
-                    Easy
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tab 2: Ingest (OCR & Document Drop Simulation) -->
-            <div class="tab-panel" id="panel-ingest">
-              <div class="dropzone-simulation">
-                <div class="dropzone-icon">📥</div>
-                <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
-                  Drop Lecture PDFs, Slides, or Past Papers
-                </h4>
-                <p style="font-size: 0.88rem; color: var(--text-secondary); max-width: 500px; margin: 0 auto 16px;">
-                  Kortex runs on-device OCR and table extraction to isolate formulas, definitions, and high-yield test points with zero manual typing.
-                </p>
-                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                  <span class="diff-chip">PDF & EPUB Parsing</span>
-                  <span class="diff-chip">Camera Math OCR</span>
-                  <span class="diff-chip">Voice Lecture Memos</span>
-                  <span class="diff-chip">Anki .apkg Export</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tab 3: Test (Socratic Syllabot Simulation) -->
-            <div class="tab-panel" id="panel-test">
-              <div class="chat-dialogue-simulation">
-                <div class="chat-bubble chat-bubble-user">
-                  <strong>Student:</strong> "I always get stuck on when to use Integration by Parts versus Substitution on exam questions."
-                </div>
-                <div class="chat-bubble chat-bubble-ai">
-                  <strong>Syllabot AI (Socratic Tutor):</strong><br>
-                  "Look at the structure of the integrand. If one factor is the derivative of another, $u$-substitution is faster. But if you have a product like $\int x e^{2x} dx$, what happens when you differentiate $x$?"
+                  <button class="rating-pill-btn again" data-rating="again" type="button">Again</button>
+                  <button class="rating-pill-btn hard" data-rating="hard" type="button">Hard</button>
+                  <button class="rating-pill-btn good" data-rating="good" type="button">Good</button>
+                  <button class="rating-pill-btn easy" data-rating="easy" type="button">Easy</button>
                 </div>
               </div>
             </div>
@@ -282,46 +249,84 @@
           </div>
 
         </div>
-
       </div>
     </section>
 
-    <!-- Core Value Pillars (3 Scannable Sections: Ingest, Retain, Test) -->
+    <!-- Honest Social Proof Strip -->
+    <section class="proof-strip" aria-label="What makes Kortexify different">
+      <div class="container">
+        <div class="proof-grid" data-reveal-group>
+          <div class="proof-item">
+            <div class="proof-num"><span data-countup="100">0</span>%</div>
+            <div class="proof-label">Offline capable. Use it with no data or Wi-Fi.</div>
+          </div>
+          <div class="proof-item">
+            <div class="proof-num"><span data-countup="4">0</span></div>
+            <div class="proof-label">Exam boards covered: JAMB, WAEC, NECO, SAT.</div>
+          </div>
+          <div class="proof-item">
+            <div class="proof-num"><span data-countup="3">0</span> steps</div>
+            <div class="proof-label">From messy notes to a timed practice test.</div>
+          </div>
+          <div class="proof-item">
+            <div class="proof-num"><span data-countup="0">0</span></div>
+            <div class="proof-label">Ads. Your study data is never sold to advertisers.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Value Pillars: Ingest, Retain, Test -->
     <section class="section" id="pillars">
       <div class="container">
-        
+
         <div class="section-header reveal-on-scroll">
           <span class="section-badge">The 3 Steps</span>
-          <h2 class="section-title">Step-by-Step System</h2>
+          <h2 class="section-title">A simple system that does the hard part for you.</h2>
         </div>
 
         <div class="pillars-container">
-          
+
           <!-- Pillar 1: Ingest -->
           <div class="pillar-row reveal-on-scroll delay-1">
             <div class="pillar-info">
               <div class="pillar-number">Step 1</div>
-              <h3 class="pillar-title">Turn Messy Notes Into Quick Flashcards</h3>
+              <h3 class="pillar-title">Turn messy notes into quick flashcards</h3>
               <p class="pillar-desc">
-                Stop spending hours retyping your textbooks. Drop in your PDFs, photos of hand-written formulas, or voice notes. We instantly turn them into clean cards and clear study guides.
+                Stop spending hours retyping your textbooks. Drop in your PDFs, lecture slides, or photos of hand-written formulas. We pull out the key points and turn them into clean cards and clear study guides, with no typing from you.
               </p>
             </div>
             <div class="pillar-visual">
               <div class="interactive-pillar-card" id="pillarIngestCard">
                 <div class="interactive-card-header">
                   <div class="interactive-tag">
-                    <span class="pulse-dot"></span> LIVE PARSER
+                    <span class="pulse-dot"></span> LIVE PREVIEW
                   </div>
                   <div class="interactive-tabs" role="tablist">
                     <button class="int-tab active" data-tab="pdf" type="button">📄 PDF</button>
-                    <button class="int-tab" data-tab="ocr" type="button">📸 Photo OCR</button>
-                    <button class="int-tab" data-tab="voice" type="button">🎙️ Audio</button>
+                    <button class="int-tab" data-tab="ocr" type="button">📸 Photo</button>
+                    <button class="int-tab" data-tab="slides" type="button">🗂️ Slides</button>
                   </div>
                 </div>
 
-                <!-- Tailored Ingest Lottie Animation -->
-                <div style="border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface-elevated2); border: 1px solid var(--border-subtle); margin-bottom: 0.65rem;">
-                  <lottie-player src="assets/lotties/ingest.json" background="transparent" speed="1" style="width: 100%; height: 180px; display: block;" loop autoplay></lottie-player>
+                <div class="pillar-media">
+                  <svg viewBox="0 0 400 180" class="anim-svg anim-ingest" role="img" aria-label="A document being scanned and turned into flashcards">
+                    <g class="ing-doc">
+                      <rect x="40" y="34" width="120" height="112" rx="10"/>
+                      <line x1="58" y1="62" x2="142" y2="62"/>
+                      <line x1="58" y1="82" x2="142" y2="82"/>
+                      <line x1="58" y1="102" x2="120" y2="102"/>
+                      <line x1="58" y1="122" x2="132" y2="122"/>
+                    </g>
+                    <rect class="ing-scan" x="40" y="34" width="120" height="5" rx="2.5"/>
+                    <path class="ing-arrow" d="M176 90 H210"/>
+                    <path class="ing-arrow" d="M204 84 l8 6 l-8 6"/>
+                    <g class="ing-cards">
+                      <rect class="ing-card c1" x="232" y="36" width="128" height="40" rx="9"/>
+                      <rect class="ing-card c2" x="232" y="84" width="128" height="40" rx="9"/>
+                      <rect class="ing-card c3" x="232" y="132" width="128" height="40" rx="9"/>
+                    </g>
+                  </svg>
                 </div>
 
                 <div class="interactive-demo-body">
@@ -333,22 +338,21 @@
                         <span class="doc-pages">Page 4 of 28</span>
                       </div>
                       <div class="doc-formula-preview">
-                        <span class="formula-label">Detected Equation:</span>
-                        <code class="formula-code">\int x \cdot e^x \, dx = (x - 1)e^x + C</code>
+                        <span class="formula-label">Detected equation:</span>
+                        <code class="formula-code">∫ x · e<sup>x</sup> dx = (x − 1)e<sup>x</sup> + C</code>
                       </div>
                     </div>
                   </div>
 
-                  <!-- Generated Flashcard (Clickable to Flip!) -->
                   <div class="mini-flashcard-interactive" id="miniFlashcard" title="Click to flip card!">
                     <div class="mini-card-inner">
                       <div class="mini-card-front">
                         <span class="mini-card-badge">AUTO-GENERATED CARD • CLICK TO FLIP 🔄</span>
-                        <p class="mini-card-text" id="miniCardFrontText">What is the integration by parts formula for \int u \, v' \, dx?</p>
+                        <p class="mini-card-text" id="miniCardFrontText">What is the integration by parts formula for ∫ u dv?</p>
                       </div>
                       <div class="mini-card-back">
                         <span class="mini-card-badge back-badge">ANSWER ✓</span>
-                        <p class="mini-card-text" id="miniCardBackText">\int u \, dv = uv - \int v \, du</p>
+                        <p class="mini-card-text" id="miniCardBackText">∫ u dv = uv − ∫ v du</p>
                       </div>
                     </div>
                   </div>
@@ -356,8 +360,8 @@
 
                 <div class="pillar-chips-row">
                   <span class="diff-chip">📑 PDFs & Slides</span>
-                  <span class="diff-chip">📸 Photo Notes</span>
-                  <span class="diff-chip">🎙️ Voice Lectures</span>
+                  <span class="diff-chip">📸 Photo notes</span>
+                  <span class="diff-chip">🔬 Math from images</span>
                 </div>
               </div>
             </div>
@@ -367,44 +371,47 @@
           <div class="pillar-row reverse reveal-on-scroll delay-2">
             <div class="pillar-info">
               <div class="pillar-number">Step 2</div>
-              <h3 class="pillar-title">Study Only What You Are About To Forget</h3>
+              <h3 class="pillar-title">Study only what you are about to forget</h3>
               <p class="pillar-desc">
-                Your brain naturally loses information over time. Our smart reminder system tracks your memory and tests you right before a topic slips away. You study less and remember far longer.
+                Your brain naturally loses information over time. Our reminder system tracks your memory and tests you right before a topic slips away. You study less and remember far longer.
               </p>
             </div>
             <div class="pillar-visual">
               <div class="interactive-pillar-card" id="pillarRetainCard">
                 <div class="interactive-card-header">
                   <div class="interactive-tag">
-                    <span class="pulse-dot recall-dot"></span> FSRS-6 MEMORY ENGINE
+                    <span class="pulse-dot recall-dot"></span> SMART SCHEDULER
                   </div>
                   <div class="retention-score-badge">
                     Recall: <strong id="retentionVal">94%</strong>
                   </div>
                 </div>
 
-                <!-- Tailored Retain Lottie Animation -->
-                <div style="border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface-elevated2); border: 1px solid var(--border-subtle); margin-bottom: 0.65rem;">
-                  <lottie-player src="assets/lotties/retain.json" background="transparent" speed="1" style="width: 100%; height: 180px; display: block;" loop autoplay></lottie-player>
+                <div class="pillar-media">
+                  <svg viewBox="0 0 400 180" class="anim-svg anim-retain" role="img" aria-label="The forgetting curve changing based on how well you remembered">
+                    <path class="rt-axis" d="M44 24 V150 H360"/>
+                    <path id="rtCurve" class="rt-curve" pathLength="1" d="M44 44 C 120 66, 150 150, 356 150"/>
+                    <g id="rtNodes" class="rt-nodes"></g>
+                  </svg>
                 </div>
 
                 <div class="fsrs-controls-block">
-                  <div class="fsrs-prompt-text">Test your memory feedback (Click to simulate):</div>
+                  <div class="fsrs-prompt-text">Tap a button to see how the plan changes:</div>
                   <div class="fsrs-btn-group">
-                    <button class="fsrs-rate-btn again" data-rating="again" type="button">Again<br><small>&lt; 10m</small></button>
-                    <button class="fsrs-rate-btn hard" data-rating="hard" type="button">Hard<br><small>1 day</small></button>
-                    <button class="fsrs-rate-btn good active" data-rating="good" type="button">Good<br><small>3 days</small></button>
-                    <button class="fsrs-rate-btn easy" data-rating="easy" type="button">Easy<br><small>10 days</small></button>
+                    <button class="fsrs-rate-btn again" data-rating="again" type="button">Again</button>
+                    <button class="fsrs-rate-btn hard" data-rating="hard" type="button">Hard</button>
+                    <button class="fsrs-rate-btn good active" data-rating="good" type="button">Good</button>
+                    <button class="fsrs-rate-btn easy" data-rating="easy" type="button">Easy</button>
                   </div>
                   <div class="fsrs-status-msg" id="fsrsStatusMsg">
-                    ✓ High recall stability. Next review scheduled for <strong>Thursday (3 days)</strong>.
+                    ✓ You remembered well. Your next review is set for <strong>Thursday (3 days)</strong>.
                   </div>
                 </div>
 
                 <div class="pillar-chips-row">
-                  <span class="diff-chip">🧠 FSRS-6 Algorithm</span>
-                  <span class="diff-chip">⚡ Zero-Wasted Reviews</span>
-                  <span class="diff-chip">📈 98% Exam Retention</span>
+                  <span class="diff-chip">🧠 Spaced repetition</span>
+                  <span class="diff-chip">⚡ No wasted reviews</span>
+                  <span class="diff-chip">📈 Built for long memory</span>
                 </div>
               </div>
             </div>
@@ -414,31 +421,38 @@
           <div class="pillar-row reveal-on-scroll delay-3">
             <div class="pillar-info">
               <div class="pillar-number">Step 3</div>
-              <h3 class="pillar-title">Practice Under Real Exam Conditions</h3>
+              <h3 class="pillar-title">Practice under real exam conditions</h3>
               <p class="pillar-desc">
-                Reading over your notes makes you feel ready, but real tests feel different. Practice with real exam questions and timed tests for JAMB, WAEC, NECO, SAT, and university finals. If you miss a question, we automatically turn it into a quick review card so you never miss it twice.
+                Reading your notes makes you feel ready, but the real exam feels different. Practice with timed questions for JAMB, WAEC, NECO, SAT, and university finals. Miss a question and it turns into a review card so you do not miss it twice.
               </p>
             </div>
             <div class="pillar-visual">
               <div class="interactive-pillar-card" id="pillarTestCard">
                 <div class="interactive-card-header">
                   <div class="interactive-tag">
-                    <span class="pulse-dot exam-dot"></span> CBT EXAM SIMULATOR
+                    <span class="pulse-dot exam-dot"></span> EXAM SIMULATOR
                   </div>
                   <div class="exam-timer-box">
                     ⏱️ <span id="examTimer">00:45</span>
                   </div>
                 </div>
 
-                <!-- Tailored Test Lottie Animation -->
-                <div style="border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface-elevated2); border: 1px solid var(--border-subtle); margin-bottom: 0.65rem;">
-                  <lottie-player src="assets/lotties/test.json" background="transparent" speed="1" style="width: 100%; height: 140px; display: block;" loop autoplay></lottie-player>
+                <div class="pillar-media">
+                  <svg viewBox="0 0 400 180" class="anim-svg anim-test" role="img" aria-label="A timed question being answered correctly">
+                    <circle class="ts-ring-bg" cx="108" cy="90" r="50"/>
+                    <circle class="ts-ring" pathLength="1" cx="108" cy="90" r="50"/>
+                    <path class="ts-check" pathLength="1" d="M88 90 l14 14 l26 -30"/>
+                    <g class="ts-bars">
+                      <rect class="ts-bar b1" x="210" y="48" width="150" height="18" rx="9"/>
+                      <rect class="ts-bar b2" x="210" y="81" width="150" height="18" rx="9"/>
+                      <rect class="ts-bar b3" x="210" y="114" width="150" height="18" rx="9"/>
+                    </g>
+                  </svg>
                 </div>
 
-                <!-- Live Mini Question Card -->
                 <div class="interactive-exam-body">
                   <div class="exam-q-header">
-                    <span class="exam-exam-type">JAMB / SAT Physics Simulation</span>
+                    <span class="exam-exam-type">JAMB / SAT Physics</span>
                     <span class="exam-q-num">Q. 14 of 40</span>
                   </div>
                   <div class="exam-question-prompt">
@@ -446,18 +460,10 @@
                   </div>
 
                   <div class="exam-options-grid" id="examOptionsGrid">
-                    <button class="exam-opt-btn" data-correct="false" data-opt="A" type="button">
-                      <span class="opt-letter">A</span> 12 N
-                    </button>
-                    <button class="exam-opt-btn" data-correct="true" data-opt="B" type="button">
-                      <span class="opt-letter">B</span> 24 N
-                    </button>
-                    <button class="exam-opt-btn" data-correct="false" data-opt="C" type="button">
-                      <span class="opt-letter">C</span> 28 N
-                    </button>
-                    <button class="exam-opt-btn" data-correct="false" data-opt="D" type="button">
-                      <span class="opt-letter">D</span> 36 N
-                    </button>
+                    <button class="exam-opt-btn" data-correct="false" data-opt="A" type="button"><span class="opt-letter">A</span> 12 N</button>
+                    <button class="exam-opt-btn" data-correct="true" data-opt="B" type="button"><span class="opt-letter">B</span> 24 N</button>
+                    <button class="exam-opt-btn" data-correct="false" data-opt="C" type="button"><span class="opt-letter">C</span> 28 N</button>
+                    <button class="exam-opt-btn" data-correct="false" data-opt="D" type="button"><span class="opt-letter">D</span> 36 N</button>
                   </div>
 
                   <div class="exam-feedback-box" id="examFeedbackBox" style="display: none;">
@@ -470,7 +476,7 @@
                   <span class="diff-chip">JAMB</span>
                   <span class="diff-chip">WAEC / NECO</span>
                   <span class="diff-chip">SAT</span>
-                  <span class="diff-chip">University Exams</span>
+                  <span class="diff-chip">University exams</span>
                 </div>
               </div>
             </div>
@@ -481,85 +487,221 @@
       </div>
     </section>
 
-    <!-- Key Differentiators -->
-    <section class="section" id="differentiators" style="background: var(--bg-surface-elevated1);">
+    <!-- Everything Else You Get (verified features) -->
+    <section class="section features-section" id="features" style="background: var(--bg-surface-elevated1);">
       <div class="container">
-        
         <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Why Students Love Kortexify</span>
-          <h2 class="section-title">Designed for everyone.</h2>
+          <span class="section-badge">More than flashcards</span>
+          <h2 class="section-title">Everything you need to actually stick with it.</h2>
+          <p class="section-subtitle">Real tools already built into the app, not a wish list.</p>
+        </div>
+
+        <div class="feature-rows">
+
+          <article class="feature-row reveal-on-scroll">
+            <div class="feature-row-media">
+              <img src="assets/images/feat_community.jpg" width="800" height="600" alt="Students studying together and talking through a topic" loading="lazy" decoding="async">
+            </div>
+            <div class="feature-row-body">
+              <span class="feature-eyebrow">Community</span>
+              <h3 class="feature-title">Study with friends, not just against them</h3>
+              <p class="feature-text">Join live study rooms, talk tricky topics through in the forums, and climb the leaderboard when you want a little friendly pressure to keep you going.</p>
+              <div class="feature-chips">
+                <span class="diff-chip">Live study rooms</span>
+                <span class="diff-chip">Forums</span>
+                <span class="diff-chip">Leaderboards</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="feature-row reverse reveal-on-scroll">
+            <div class="feature-row-media">
+              <img src="assets/images/feat_voice.jpg" width="800" height="600" alt="A student asking a question out loud to their phone" loading="lazy" decoding="async">
+            </div>
+            <div class="feature-row-body">
+              <span class="feature-eyebrow">Voice</span>
+              <h3 class="feature-title">Ask out loud when typing feels like too much</h3>
+              <p class="feature-text">On the days when reading and typing are exhausting, use your voice to ask your tutor a question and get an explanation back. Voice is built for talking with your tutor today.</p>
+              <div class="feature-chips">
+                <span class="diff-chip">Voice questions</span>
+                <span class="diff-chip">Low-friction for tired brains</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="feature-row reveal-on-scroll">
+            <div class="feature-row-media">
+              <img src="assets/images/feat_planner.jpg" width="800" height="600" alt="A student planning study sessions with a calendar" loading="lazy" decoding="async">
+            </div>
+            <div class="feature-row-body">
+              <span class="feature-eyebrow">Planner</span>
+              <h3 class="feature-title">A plan that counts down to exam day</h3>
+              <p class="feature-text">Add your exam dates once. Kortexify spreads your reviews so the heavy topics land fresh in your head right before the test, instead of the night before.</p>
+              <div class="feature-chips">
+                <span class="diff-chip">Exam countdown</span>
+                <span class="diff-chip">Auto-scheduled reviews</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="feature-row reverse reveal-on-scroll">
+            <div class="feature-row-media">
+              <img src="assets/images/feat_duel.jpg" width="800" height="600" alt="Two students in a friendly quiz battle on their phones" loading="lazy" decoding="async">
+            </div>
+            <div class="feature-row-body">
+              <span class="feature-eyebrow">Quiz duels</span>
+              <h3 class="feature-title">Go head to head with a classmate</h3>
+              <p class="feature-text">Challenge a friend to a timed question battle and see who knows the topic cold. A little competition makes revision feel less like a chore.</p>
+              <div class="feature-chips">
+                <span class="diff-chip">Timed battles</span>
+                <span class="diff-chip">Friendly competition</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="feature-row reveal-on-scroll">
+            <div class="feature-row-media">
+              <img src="assets/images/feat_export.jpg" width="800" height="600" alt="A laptop open to a study deck on a desk" loading="lazy" decoding="async">
+            </div>
+            <div class="feature-row-body">
+              <span class="feature-eyebrow">Your data, your rules</span>
+              <h3 class="feature-title">Take your cards with you, anytime</h3>
+              <p class="feature-text">Already keep decks in Anki? Export yours so you never lose the work you have put in. Your study material stays yours, on and offline.</p>
+              <div class="feature-chips">
+                <span class="diff-chip">Anki export</span>
+                <span class="diff-chip">Works offline</span>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Meet Syllabot (Socratic tutor) -->
+    <section class="section syllabot-section" id="syllabot">
+      <div class="container">
+        <div class="syllabot-grid" data-reveal-group>
+          <div class="syllabot-copy">
+            <span class="section-badge">Socratic Tutor</span>
+            <h2 class="section-title">Meet Syllabot, the tutor that asks you back.</h2>
+            <p class="section-subtitle">Instead of just handing you the answer, Syllabot nudges you to think it through, so it stays with you on exam day. When typing feels like too much, you can ask out loud with your voice.</p>
+            <div class="pillar-chips-row" style="margin-top: 1.1rem;">
+              <span class="diff-chip">🧭 Step-by-step hints</span>
+              <span class="diff-chip">🎙️ Ask by voice</span>
+              <span class="diff-chip">📚 Knows your syllabus</span>
+            </div>
+          </div>
+
+          <div class="interactive-pillar-card syllabot-chat-card" data-tilt>
+            <div class="interactive-card-header">
+              <div class="interactive-tag">
+                <span class="pulse-dot"></span> SYLLABOT AI
+              </div>
+              <span class="retention-score-badge">Online now</span>
+            </div>
+            <div class="chat-dialogue-simulation">
+              <div class="chat-bubble chat-bubble-user">
+                <strong>You:</strong> "I keep mixing up when to use Integration by Parts versus plain Substitution."
+              </div>
+              <div class="chat-bubble chat-bubble-ai">
+                <strong>Syllabot:</strong><br>"Good question. Look at the shape of the problem. If one part is the derivative of the other, substitution is usually faster. But when you have x multiplied by e to the 2x, what happens if you take the derivative of just the x?"
+              </div>
+              <div class="chat-bubble chat-bubble-user">
+                <strong>You:</strong> "It becomes 1, so the messy part goes away?"
+              </div>
+              <div class="chat-bubble chat-bubble-ai">
+                <strong>Syllabot:</strong><br>"Exactly. That is your signal for Integration by Parts. Try setting it up and tell me what you pick for u."
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Differentiators -->
+    <section class="section" id="differentiators">
+      <div class="container">
+
+        <div class="section-header reveal-on-scroll">
+          <span class="section-badge">Why students love Kortexify</span>
+          <h2 class="section-title">Designed for the way you actually study.</h2>
         </div>
 
         <div class="differentiators-grid">
-          
-          <!-- Differentiator 1 -->
-          <div class="differentiator-card reveal-on-scroll delay-1">
-            <div>
-              <span class="diff-badge">🛡️ Works 100% Offline</span>
-              <h3 class="diff-title">Study in lecture basements, on the bus, or anywhere without internet.</h3>
-              <p class="diff-desc">
-                Everything stays safely saved on your device without taking up space or tracking your personal data.
-              </p>
-            </div>
-            <div class="diff-chips-row">
-              <span class="diff-chip">No Internet Needed</span>
-              <span class="diff-chip">Private & Secure</span>
-            </div>
-          </div>
 
-          <!-- Differentiator 2 -->
-          <div class="differentiator-card reveal-on-scroll delay-2">
-            <div>
-              <span class="diff-badge diff-badge-secondary">🧠 Designed For Every Type Of Brain</span>
-              <h3 class="diff-title">Focus better, read easier.</h3>
+          <article class="differentiator-card diff-card-media reveal-on-scroll delay-1">
+            <div class="diff-media">
+              <img src="assets/images/diff_offline.jpg" width="900" height="675" alt="A student studying on the bus without internet" loading="lazy" decoding="async">
+            </div>
+            <div class="diff-body">
+              <span class="diff-badge">🛡️ Works 100% offline</span>
+              <h3 class="diff-title">Study in a lecture hall basement, on the bus, or anywhere with no signal.</h3>
               <p class="diff-desc">
-                If reading dense pages gives you a headache, toggle on specialized reading fonts, high-contrast dark themes, or quick focus timers with one tap.
+                Your cards and practice tests live on your device. You do not need internet, and we do not track where you study.
               </p>
+              <div class="diff-chips-row">
+                <span class="diff-chip">No internet needed</span>
+                <span class="diff-chip">Private by default</span>
+              </div>
             </div>
-            <div class="diff-chips-row">
-              <span class="diff-chip">Specialized Fonts</span>
-              <span class="diff-chip">Focus Timers</span>
-              <span class="diff-chip">Dark Themes</span>
+          </article>
+
+          <article class="differentiator-card diff-card-media reveal-on-scroll delay-2">
+            <div class="diff-media">
+              <img src="assets/images/diff_focus.jpg" width="900" height="675" alt="A student studying calmly in low light with a tablet" loading="lazy" decoding="async">
             </div>
-          </div>
+            <div class="diff-body">
+              <span class="diff-badge diff-badge-secondary">🧠 Made for every kind of brain</span>
+              <h3 class="diff-title">Focus better and read easier, even on your low-energy days.</h3>
+              <p class="diff-desc">
+                If dense pages give you a headache, switch on an easier reading font, a high-contrast dark theme, or a short focus timer with one tap.
+              </p>
+              <div class="diff-chips-row">
+                <span class="diff-chip">Easier reading fonts</span>
+                <span class="diff-chip">Focus timers</span>
+                <span class="diff-chip">Dark themes</span>
+              </div>
+            </div>
+          </article>
 
         </div>
 
       </div>
     </section>
 
-    <!-- Comparison Matrix Table -->
-    <section class="section" id="comparison">
+    <!-- Comparison Matrix -->
+    <section class="section" id="comparison" style="background: var(--bg-surface-elevated1);">
       <div class="container">
-        
+
         <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Comparison Table</span>
-          <h2 class="section-title">The Kortexify Advantage</h2>
+          <span class="section-badge">The honest comparison</span>
+          <h2 class="section-title">Why not just use what you already have?</h2>
         </div>
 
-        <div class="comparison-wrapper reveal-on-scroll delay-1">
+        <div class="comparison-wrapper reveal-on-scroll delay-1" data-reveal-group>
           <table class="comparison-table">
             <thead>
               <tr>
-                <th>What You Study With</th>
-                <th>The Problem</th>
-                <th class="col-highlight">The Kortexify Advantage</th>
+                <th>What you study with</th>
+                <th>The problem</th>
+                <th class="col-highlight">What Kortexify does instead</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Paper Notes</td>
+                <td>Paper notes</td>
                 <td><span class="cross-red">✗ Easy to lose and hard to organize</span></td>
                 <td class="col-highlight"><span class="check-green">✓ Everything stays organized in one pocket-sized place</span></td>
               </tr>
               <tr>
-                <td>Basic AI Tools</td>
-                <td><span class="cross-red">✗ Makes up wrong answers and needs internet</span></td>
-                <td class="col-highlight"><span class="check-green">✓ Gives accurate answers and works completely offline</span></td>
+                <td>Basic AI tools</td>
+                <td><span class="cross-red">✗ Can invent wrong answers and need internet</span></td>
+                <td class="col-highlight"><span class="check-green">✓ Built to cut down wrong answers and works offline</span></td>
               </tr>
               <tr>
-                <td>Normal Flashcards</td>
-                <td><span class="cross-red">✗ Shows you cards you already know</span></td>
+                <td>Normal flashcards</td>
+                <td><span class="cross-red">✗ Keeps showing you cards you already know</span></td>
                 <td class="col-highlight"><span class="check-green">✓ Reminds you only when you are about to forget</span></td>
               </tr>
             </tbody>
@@ -575,66 +717,127 @@
         <div class="founder-card reveal-on-scroll">
           <div class="founder-quote-icon">“</div>
           <p class="founder-text">
-            We have all been there at 2:30 AM, staring at the exact same page for the fifth time, exhausted and stressed out. Cramming does not make you smarter; it just wears you out. We built Kortexify so you can walk into every exam feeling completely ready without sacrificing your sleep or your health.
+            We have all been there at 2:30 AM, staring at the same page for the fifth time, exhausted and stressed. Cramming does not make you smarter, it just wears you out. We built Kortexify so you can walk into every exam feeling ready, without giving up your sleep or your health.
           </p>
           <div class="founder-profile">
-            <div class="founder-avatar">KX</div>
             <div>
-              <div style="font-weight: 750; color: var(--text-primary);">A Quick Note From Our Team</div>
+              <div style="font-weight: 750; color: var(--text-primary);">A quick note from our team</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Frequently Asked Questions -->
+    <!-- FAQ -->
     <section class="section" id="faq">
       <div class="container">
-        
+
         <div class="section-header reveal-on-scroll">
-          <span class="section-badge">Common Questions</span>
-          <h2 class="section-title">Frequently Asked Questions</h2>
+          <span class="section-badge">Common questions</span>
+          <h2 class="section-title">Everything you might be wondering.</h2>
         </div>
 
-        <div class="faq-grid reveal-on-scroll delay-1">
-          
+        <div class="faq-grid" data-reveal-group>
+
           <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>How does Kortexify save me study time?</span>
-              <span class="faq-icon">+</span>
+            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA1" id="faqQ1">
+              <span class="faq-question-text">How does Kortexify save me study time?</span>
+              <span class="faq-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
             </button>
-            <div class="faq-answer">
-              Most students waste hours re-reading stuff they already know. Kortexify figures out which topics are fading from your mind and shows you only those cards, cutting your study time down significantly.
+            <div class="faq-answer" id="faqA1" role="region" aria-labelledby="faqQ1">
+              <div class="faq-answer-clip">
+                <p class="faq-answer-text">Most students waste hours re-reading things they already know. Kortexify works out which topics are fading from your memory and shows you only those cards, so you spend your time where it counts.</p>
+              </div>
             </div>
           </div>
 
           <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>Can I upload my own class notes?</span>
-              <span class="faq-icon">+</span>
+            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA2" id="faqQ2">
+              <span class="faq-question-text">What can I put into the app?</span>
+              <span class="faq-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
             </button>
-            <div class="faq-answer">
-              Yes. You can upload lecture slides, PDF textbooks, audio files, or pictures of hand-written chalkboard notes.
+            <div class="faq-answer" id="faqA2" role="region" aria-labelledby="faqQ2">
+              <div class="faq-answer-clip">
+                <p class="faq-answer-text">You can add lecture PDFs, slides, and photos of your hand-written notes or chalkboard formulas. Kortexify reads them and turns the key points into cards for you.</p>
+              </div>
             </div>
           </div>
 
           <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>Does it work without Wi-Fi?</span>
-              <span class="faq-icon">+</span>
+            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA3" id="faqQ3">
+              <span class="faq-question-text">Can I talk to the AI tutor instead of typing?</span>
+              <span class="faq-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
             </button>
-            <div class="faq-answer">
-              Yes, completely. All your cards and practice tests work on your phone or laptop without using any internet data.
+            <div class="faq-answer" id="faqA3" role="region" aria-labelledby="faqQ3">
+              <div class="faq-answer-clip">
+                <p class="faq-answer-text">Yes. When typing feels like too much, use your voice to ask Syllabot a question and get an explanation back. Voice is built for chatting with your tutor.</p>
+              </div>
             </div>
           </div>
 
           <div class="faq-item">
-            <button class="faq-question" type="button" aria-expanded="false">
-              <span>What exams can I prepare for?</span>
-              <span class="faq-icon">+</span>
+            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA4" id="faqQ4">
+              <span class="faq-question-text">Does it work without Wi-Fi?</span>
+              <span class="faq-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
             </button>
-            <div class="faq-answer">
-              You can practice with real questions for JAMB, WAEC, NECO, SAT, and university level courses.
+            <div class="faq-answer" id="faqA4" role="region" aria-labelledby="faqQ4">
+              <div class="faq-answer-clip">
+                <p class="faq-answer-text">Yes. Your cards and practice tests live on your phone or laptop, so you can study without using any data.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA5" id="faqQ5">
+              <span class="faq-question-text">What exams can I prepare for?</span>
+              <span class="faq-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </button>
+            <div class="faq-answer" id="faqA5" role="region" aria-labelledby="faqQ5">
+              <div class="faq-answer-clip">
+                <p class="faq-answer-text">You can practice with real questions for JAMB, WAEC, NECO, SAT, and university level courses.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question" type="button" aria-expanded="false" aria-controls="faqA6" id="faqQ6">
+              <span class="faq-question-text">Is it free to start?</span>
+              <span class="faq-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <line class="faq-bar" x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line class="faq-bar faq-bar-v" x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </button>
+            <div class="faq-answer" id="faqA6" role="region" aria-labelledby="faqQ6">
+              <div class="faq-answer-clip">
+                <p class="faq-answer-text">Yes. Try the live demo on this page right now with no signup. You do not need a credit card to get going.</p>
+              </div>
             </div>
           </div>
 
@@ -643,17 +846,17 @@
       </div>
     </section>
 
-    <!-- Newsletter Section -->
+    <!-- Newsletter -->
     <section class="newsletter-section section" id="newsletter">
       <div class="container">
         <div class="newsletter-card reveal-on-scroll delay-1">
           <div class="newsletter-left">
-            <span class="section-badge">Stay Updated</span>
-            <h2 class="newsletter-title">Join the Kortexify waitlist.</h2>
-            <p class="newsletter-desc">Be the first to know when we release new features, like automated flashcard generation and exam simulations.</p>
+            <span class="section-badge">Stay updated</span>
+            <h2 class="newsletter-title">Be first in line when we launch.</h2>
+            <p class="newsletter-desc">Join the list and we will email you when new features land and when early access opens up.</p>
             <ul class="newsletter-perks">
               <li><span class="newsletter-perk-icon">✓</span> Early access to betas</li>
-              <li><span class="newsletter-perk-icon">✓</span> Exclusive study tips</li>
+              <li><span class="newsletter-perk-icon">✓</span> Practical study tips</li>
               <li><span class="newsletter-perk-icon">✓</span> No spam, ever</li>
             </ul>
           </div>
@@ -661,7 +864,7 @@
             <div class="newsletter-form-card">
               <form id="landingNewsletterForm">
                 <div class="newsletter-form-col">
-                  <label for="landingNewsletterEmail" class="newsletter-form-label">Email Address</label>
+                  <label for="landingNewsletterEmail" class="newsletter-form-label">Email address</label>
                   <div class="newsletter-input-wrap">
                     <span class="newsletter-input-icon">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
@@ -686,19 +889,27 @@
     <section class="final-cta-section">
       <div class="container">
         <div class="section-header reveal-on-scroll" style="margin-bottom: 1.8rem;">
-          <h2 class="section-title">Ready to ace your exams with total confidence?</h2>
+          <h2 class="section-title">Ready to walk into your next exam feeling ready?</h2>
           <p class="section-subtitle">
-            Get started in under 30 seconds. No credit card or account creation needed.
+            Try the demo above in a few taps. No credit card, no pressure.
           </p>
         </div>
 
-        <div class="hero-cta-group reveal-on-scroll delay-1" style="margin-bottom: 0;">
-          <a href="#workstation" class="btn-primary-cta">
-            <span>Start Studying For Free</span>
+        <div class="hero-cta-group reveal-on-scroll delay-1" style="margin-bottom: 1.4rem;">
+          <a href="#workstation" class="btn-primary-cta" data-magnetic>
+            <span>Try the Live Demo</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M5 12h14M12 5l7 7-7 7"></path>
             </svg>
           </a>
+          <a href="contact.html" class="btn-secondary-cta">
+            <span>Talk to our team</span>
+          </a>
+        </div>
+
+        <div class="store-badges reveal-on-scroll delay-2" aria-label="Get the app">
+          <span class="store-badge">📱 App Store, coming soon</span>
+          <span class="store-badge">🤖 Google Play, coming soon</span>
         </div>
       </div>
     </section>
@@ -725,15 +936,12 @@
     </div>
   </footer>
 
-  <!-- KaTeX Core Library for Math Formula Rendering -->
+  <!-- KaTeX Core Library for Math Rendering -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 
-  <!-- Lottie Player -->
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-
   <!-- Scripts -->
-  <script src="js/storage.js?v=5.4"></script>
-  <script src="js/animations.js?v=5.4"></script>
-  <script src="js/main.js?v=5.5"></script>
+  <script src="js/storage.js?v=6.6"></script>
+  <script src="js/animations.js?v=6.6"></script>
+  <script src="js/main.js?v=6.6"></script>
 </body>
 </html>

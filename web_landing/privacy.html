@@ -16,9 +16,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=5.0">
-  <link rel="stylesheet" href="css/animations.css?v=5.0">
-  <link rel="stylesheet" href="css/styles.css?v=5.0">
+  <link rel="stylesheet" href="css/variables.css?v=6.6">
+  <link rel="stylesheet" href="css/animations.css?v=6.6">
+  <link rel="stylesheet" href="css/styles.css?v=6.6">
+
+  <!-- No-JS fallback: reveal classes must never hide legal copy -->
+  <noscript><style>.reveal-on-scroll, [data-reveal-group] > * { opacity: 1 !important; transform: none !important; }</style></noscript>
 
   <style>
     .legal-container {
@@ -86,9 +89,89 @@
     .back-link:hover {
       color: var(--text-primary);
     }
+
+    /* Privacy commitment padlock (inline SVG, theme aware) */
+    .pv-lock { flex-shrink: 0; }
+    .pv-ring {
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 2;
+      opacity: 0.5;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pvPulse 3.2s var(--ease-in-out-quart) infinite;
+    }
+    @keyframes pvPulse {
+      0% { transform: scale(0.9); opacity: 0.55; }
+      70%, 100% { transform: scale(1.12); opacity: 0; }
+    }
+    .pv-body {
+      fill: var(--color-primary-subtle);
+      stroke: var(--text-secondary);
+      stroke-width: 2;
+    }
+    .pv-shackle { fill: none; stroke: var(--text-secondary); stroke-width: 2.5; }
+    .pv-pin {
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    /* Data journey figure */
+    .pv-flow-figure {
+      margin: 0 0 2.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem 1.4rem 1.1rem;
+      box-shadow: var(--shadow-xs);
+    }
+    .pv-flow-svg { width: 100%; max-width: 420px; height: auto; margin: 0 auto; display: block; }
+    .pvf-line {
+      fill: none;
+      stroke: var(--text-secondary);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .pvf-thin {
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      stroke-linecap: round;
+      opacity: 0.8;
+    }
+    .pvf-device { fill: var(--color-primary-subtle); }
+    .pvf-lockbody { fill: var(--color-primary-subtle); }
+    .pvf-flow {
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-dasharray: 3 18;
+      animation: pvfDash 1.8s linear infinite;
+    }
+    @keyframes pvfDash {
+      to { stroke-dashoffset: -42; }
+    }
+    .pv-flow-figure figcaption {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-top: 0.9rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pvf-flow { animation: none; opacity: 0.7; }
+      .pv-ring { animation: none; }
+    }
   </style>
 </head>
 <body>
+
+  <!-- Scroll Progress -->
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
   <!-- Site Header -->
   <header class="site-header">
@@ -133,20 +216,44 @@
   <main class="legal-container">
     <a href="/" class="back-link">← Back to Home</a>
     
-    <div class="legal-header">
+    <div class="legal-header reveal-on-scroll">
       <h1 class="legal-title">Privacy Policy</h1>
       <p class="legal-meta">Last Updated: September 2026 • Effective Date: September 2026</p>
     </div>
 
     <div class="legal-highlight-box" style="display: flex; align-items: flex-start; gap: 16px;">
-      <lottie-player src="assets/lotties/secure.json" background="transparent" speed="1" style="width: 60px; height: 60px; flex-shrink: 0;" loop autoplay></lottie-player>
+      <svg class="pv-lock" viewBox="0 0 64 64" width="58" height="58" role="img" aria-label="A closed padlock">
+        <circle class="pv-ring" cx="32" cy="32" r="26"/>
+        <rect class="pv-body" x="21" y="31" width="22" height="16" rx="4"/>
+        <path class="pv-shackle" d="M26 31 v-6 a6 6 0 0 1 12 0 v6"/>
+        <circle class="pv-pin" cx="32" cy="37.5" r="1.8" fill="var(--color-primary)"/>
+        <line class="pv-pin" x1="32" y1="39.5" x2="32" y2="43"/>
+      </svg>
       <div>
         <strong style="color: var(--color-primary);">Our Core Privacy Commitment:</strong>
         <p style="margin-top: 0.5rem; margin-bottom: 0;">Kortex is built around offline-first architecture. We never sell your personal data, lecture handouts, or study cards to third-party advertisers. Your uploaded PDFs, notes, and formulas are processed locally or through zero-retention private pipelines strictly to power your study decks.</p>
       </div>
     </div>
 
-    <section class="legal-section">
+    <figure class="pv-flow-figure reveal-on-scroll">
+      <svg viewBox="0 0 340 96" class="pv-flow-svg" role="img" aria-label="Notes travel from your device through an encrypted line to sync">
+        <rect class="pvf-line pvf-device" x="14" y="22" width="40" height="52" rx="7"/>
+        <line class="pvf-thin" x1="25" y1="38" x2="43" y2="38"/>
+        <line class="pvf-thin" x1="25" y1="48" x2="43" y2="48"/>
+        <line class="pvf-thin" x1="25" y1="58" x2="37" y2="58"/>
+        <path class="pvf-line" d="M62 48 H136"/>
+        <path class="pvf-flow" d="M62 48 H136"/>
+        <rect class="pvf-line pvf-lockbody" x="146" y="40" width="24" height="17" rx="4"/>
+        <path class="pvf-line" d="M152 40 v-5 a6 6 0 0 1 12 0 v5"/>
+        <circle cx="158" cy="47" r="1.6" fill="var(--color-primary)"/>
+        <path class="pvf-line" d="M178 48 H252"/>
+        <path class="pvf-flow" d="M178 48 H252"/>
+        <path class="pvf-line" d="M262 62 a10 10 0 1 1 3 -19 a13 13 0 0 1 25 3 a8.5 8.5 0 1 1 -3 16 z"/>
+      </svg>
+      <figcaption>Your cards and notes live on your device. Sync only runs when you turn it on, and everything in transit is encrypted.</figcaption>
+    </figure>
+
+    <section class="legal-section reveal-on-scroll">
       <h2>1. Information We Collect</h2>
       <p>When you use Kortex, we only store data required to run your personalized spaced repetition engine:</p>
       <ul>
@@ -156,7 +263,7 @@
       </ul>
     </section>
 
-    <section class="legal-section">
+    <section class="legal-section reveal-on-scroll">
       <h2>2. How We Use Your Information</h2>
       <p>Your data is processed strictly for cognitive service delivery:</p>
       <ul>
@@ -166,17 +273,17 @@
       </ul>
     </section>
 
-    <section class="legal-section">
+    <section class="legal-section reveal-on-scroll">
       <h2>3. AI Processing & Privacy Safeguards</h2>
       <p>When extracting LaTeX equations or generating Socratic prompts, content is parsed locally whenever device capability permits. Cloud fallbacks operate under strict zero-retention agreements: your study materials are never used to train public models.</p>
     </section>
 
-    <section class="legal-section">
+    <section class="legal-section reveal-on-scroll">
       <h2>4. Data Storage & Security</h2>
       <p>All data in transit is encrypted using modern TLS 1.3. On-device databases are isolated within your operating system sandbox. Any cloud synchronization utilizes AES-256 encryption with granular Row Level Security (RLS) policies.</p>
     </section>
 
-    <section class="legal-section">
+    <section class="legal-section reveal-on-scroll">
       <h2>5. Your Rights & Data Portability</h2>
       <p>You own your academic materials. At any time, you can:</p>
       <ul>
@@ -185,7 +292,7 @@
       </ul>
     </section>
 
-    <section class="legal-section">
+    <section class="legal-section reveal-on-scroll">
       <h2>6. Contact Us</h2>
       <p>If you have any questions or privacy inquiries, contact our team at <a href="mailto:privacy@kortexify.app" style="color: var(--color-primary); font-weight: 600;">privacy@kortexify.app</a> or visit our <a href="contact.html" style="color: var(--color-primary); font-weight: 600;">Contact Page</a>.</p>
     </section>
@@ -211,12 +318,9 @@
     </div>
   </footer>
 
-  <!-- Lottie Player -->
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-
   <!-- Scripts -->
-  <script src="js/storage.js?v=5.0"></script>
-  <script src="js/main.js?v=5.0"></script>
-  <script src="js/main.js?v=5.5"></script>
+  <script src="js/storage.js?v=6.6"></script>
+  <script src="js/animations.js?v=6.6"></script>
+  <script src="js/main.js?v=6.6"></script>
 </body>
 </html>

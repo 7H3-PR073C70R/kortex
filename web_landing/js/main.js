@@ -261,29 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  const baseCount = 25420;
-  const countElements = document.querySelectorAll('.social-proof-count');
-
-  function updateCounts(val) {
-    countElements.forEach((el) => {
-      el.textContent = val.toLocaleString();
-    });
-  }
-
-  let currentCount = parseInt(
-    localStorage.getItem('kortex_live_counter') || baseCount,
-    10
-  );
-  updateCounts(currentCount);
-
-  setInterval(() => {
-    if (Math.random() > 0.65) {
-      currentCount += Math.floor(Math.random() * 3) + 1;
-      localStorage.setItem('kortex_live_counter', currentCount);
-      updateCounts(currentCount);
-    }
-  }, 16000);
-
   const faqItems = document.querySelectorAll('.faq-item');
   faqItems.forEach((item) => {
     const questionBtn = item.querySelector('.faq-question');
@@ -387,40 +364,69 @@ document.addEventListener('DOMContentLoaded', () => {
   const miniCardFrontText = document.getElementById('miniCardFrontText');
   const miniCardBackText = document.getElementById('miniCardBackText');
 
+  /* Renders a string with $...$ math delimiters into an element using KaTeX.
+     Falls back to plain text if the KaTeX CDN is unavailable. */
+  const renderMathText = (el, str) => {
+    if (!el || !str) return;
+    el.textContent = '';
+    str.split('$').forEach((seg, i) => {
+      if (!seg) return;
+      if (i % 2 === 1 && window.katex) {
+        const span = document.createElement('span');
+        try {
+          window.katex.render(seg, span, { displayMode: false, throwOnError: false });
+        } catch (e) {
+          span.textContent = seg;
+        }
+        el.appendChild(span);
+      } else {
+        el.appendChild(document.createTextNode(seg));
+      }
+    });
+  };
+
   const ingestData = {
     pdf: {
       badge: 'Calculus_III_Notes.pdf',
-      code: '\\int x \\cdot e^x \\, dx = (x - 1)e^x + C',
-      front: 'What is the integration by parts formula for \\int u \\, v\' \\, dx?',
-      back: '\\int u \\, dv = uv - \\int v \\, du'
+      code: '$\\int x \\cdot e^x \\, dx = (x - 1)e^x + C$',
+      front: 'What is the integration by parts formula for $\\int u \\, dv$?',
+      back: '$\\int u \\, dv = uv - \\int v \\, du$'
     },
     ocr: {
-      badge: 'Physics_Blackboard.jpg (Camera OCR)',
-      code: 'E^2 = (pc)^2 + (m_0 c^2)^2',
+      badge: 'Physics_Blackboard.jpg (Photo)',
+      code: '$E^2 = (pc)^2 + (m_0 c^2)^2$',
       front: 'What is the relativistic energy-momentum relation?',
-      back: 'E^2 = p^2 c^2 + m^2 c^4'
+      back: '$E^2 = p^2c^2 + m_0^2c^4$'
     },
-    voice: {
-      badge: 'Bio_Lecture_Audio.m4a (Whisper AI)',
-      code: '6CO_2 + 6H_2O \\xrightarrow{light} C_6H_{12}O_6 + 6O_2',
+    slides: {
+      badge: 'CHEM_201_Lecture_Slides.pptx (Slides)',
+      code: '$6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\xrightarrow{\\text{light}} \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$',
       front: 'What are the net inputs and outputs of oxygenic photosynthesis?',
-      back: '6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂'
+      back: 'Inputs $6\\,\\text{CO}_2 + 6\\,\\text{H}_2\\text{O}$, outputs $\\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\,\\text{O}_2$'
     }
   };
+
+  const applyIngest = (mode) => {
+    const data = ingestData[mode];
+    if (!data) return;
+    if (docBadge) docBadge.textContent = data.badge;
+    renderMathText(formulaCode, data.code);
+    renderMathText(miniCardFrontText, data.front);
+    renderMathText(miniCardBackText, data.back);
+  };
+
+  /* Render the default tab's math on load, not just on click */
+  applyIngest('pdf');
+
+  /* Exam prompt uses real math typesetting too */
+  renderMathText(document.querySelector('.exam-question-prompt'), 'A 2.0 kg object moves with velocity $v(t) = 3t^2 + 2$ m/s. What is the net force acting on it at $t = 2$ s?');
 
   intTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       intTabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      const mode = tab.getAttribute('data-tab');
-      const data = ingestData[mode];
-      if (data) {
-        if (docBadge) docBadge.textContent = data.badge;
-        if (formulaCode) formulaCode.textContent = data.code;
-        if (miniCardFrontText) miniCardFrontText.textContent = data.front;
-        if (miniCardBackText) miniCardBackText.textContent = data.back;
-        if (miniFlashcard) miniFlashcard.classList.remove('flipped');
-      }
+      applyIngest(tab.getAttribute('data-tab'));
+      if (miniFlashcard) miniFlashcard.classList.remove('flipped');
     });
   });
 
@@ -434,22 +440,70 @@ document.addEventListener('DOMContentLoaded', () => {
   const retentionVal = document.getElementById('retentionVal');
   const fsrsStatusMsg = document.getElementById('fsrsStatusMsg');
 
+  /* The forgetting curve reacts to the tapped rating: each grade redraws a
+     different decay shape, with review dots placed at realistic spacing */
+  const rtCurve = document.getElementById('rtCurve');
+  const rtNodes = document.getElementById('rtNodes');
+  const motionReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const rtPlans = {
+    again: { d: 'M44 48 C 86 66, 106 128, 152 144 S 262 150, 356 150', stops: [0.07] },
+    hard:  { d: 'M44 46 C 102 62, 130 134, 198 146 S 292 150, 356 150', stops: [0.12, 0.3] },
+    good:  { d: 'M44 44 C 120 66, 150 150, 356 150', stops: [0.15, 0.38, 0.6] },
+    easy:  { d: 'M44 42 C 165 58, 215 146, 356 150', stops: [0.2, 0.45, 0.68, 0.9] }
+  };
+
+  const drawRetentionPlan = (rating, animate) => {
+    const plan = rtPlans[rating];
+    if (!plan || !rtCurve || !rtNodes) return;
+
+    rtCurve.setAttribute('d', plan.d);
+    const len = rtCurve.getTotalLength();
+
+    rtNodes.innerHTML = '';
+    plan.stops.forEach((stop) => {
+      const p = rtCurve.getPointAtLength(len * stop);
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('class', 'rt-node');
+      dot.setAttribute('cx', p.x.toFixed(1));
+      dot.setAttribute('cy', p.y.toFixed(1));
+      dot.setAttribute('r', '6');
+      rtNodes.appendChild(dot);
+    });
+
+    if (animate && !motionReduced && typeof rtCurve.animate === 'function') {
+      rtCurve.animate(
+        [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }],
+        { duration: 750, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }
+      );
+      rtNodes.querySelectorAll('.rt-node').forEach((dot, i) => {
+        dot.animate(
+          [{ opacity: 0, transform: 'scale(0.3)' }, { opacity: 1, transform: 'scale(1)' }],
+          { duration: 320, delay: 380 + i * 130, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'backwards' }
+        );
+      });
+    }
+  };
+
+  /* Draw the default "Good" plan once on load */
+  drawRetentionPlan('good', true);
+
   const fsrsFeedback = {
     again: {
       retention: '45%',
-      msg: '⚠️ Concept reset. Scheduled for review in <strong>10 minutes</strong> to rebuild memory pathways.'
+      msg: '⚠️ No problem, that one is tricky. We will show it again in <strong>10 minutes</strong> so it sticks.'
     },
     hard: {
       retention: '78%',
-      msg: '⚡ Moderate recall. Scheduled for review <strong>tomorrow</strong> to strengthen synaptic consolidation.'
+      msg: '⚡ You got there with effort. We will check on it again <strong>tomorrow</strong>.'
     },
     good: {
       retention: '94%',
-      msg: '✓ High recall stability. Next review scheduled for <strong>Thursday (3 days)</strong>.'
+      msg: '✓ Solid recall. Your next review is set for <strong>Thursday (3 days)</strong>.'
     },
     easy: {
       retention: '99%',
-      msg: '🌟 Mastery locked in! Next review safely deferred for <strong>10 days</strong>.'
+      msg: '🌟 You have this one. We will hold off for <strong>10 days</strong> and bring it back later.'
     }
   };
 
@@ -462,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (info) {
         if (retentionVal) retentionVal.textContent = info.retention;
         if (fsrsStatusMsg) fsrsStatusMsg.innerHTML = info.msg;
+        drawRetentionPlan(rating, true);
       }
     });
   });
@@ -498,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
           feedbackStatus.textContent = '✓ Correct! +100 Mastery XP';
         }
         if (feedbackExplanation) {
-          feedbackExplanation.textContent = 'Acceleration a = dv/dt = 6t. At t = 2s, a = 12 m/s². Force F = m · a = 2.0 kg · 12 m/s² = 24 N.';
+          renderMathText(feedbackExplanation, 'Acceleration $a = \\frac{dv}{dt} = 6t$, so at $t = 2$ s, $a = 12\\,\\text{m/s}^2$. Then $F = ma = 2.0 \\times 12 = 24\\,\\text{N}$.');
         }
       } else {
         btn.classList.add('wrong');
@@ -509,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
           feedbackStatus.textContent = '✗ Incorrect. Automatically added to your review deck!';
         }
         if (feedbackExplanation) {
-          feedbackExplanation.textContent = 'Remember: F = m(dv/dt). Derivative of 3t² + 2 is 6t. At t=2, a = 12. F = 2 · 12 = 24 N.';
+          renderMathText(feedbackExplanation, 'Remember $F = m\\frac{dv}{dt}$. The derivative of $3t^2 + 2$ is $6t$. At $t = 2$, $a = 12$, so $F = 2 \\times 12 = 24\\,\\text{N}$.');
         }
       }
 

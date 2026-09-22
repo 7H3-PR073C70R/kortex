@@ -16,9 +16,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=5.2">
-  <link rel="stylesheet" href="css/animations.css?v=5.2">
-  <link rel="stylesheet" href="css/styles.css?v=5.2">
+  <link rel="stylesheet" href="css/variables.css?v=6.6">
+  <link rel="stylesheet" href="css/animations.css?v=6.6">
+  <link rel="stylesheet" href="css/styles.css?v=6.6">
+
+  <!-- No-JS fallback: reveal classes must never hide the form -->
+  <noscript><style>.reveal-on-scroll, [data-reveal-group] > * { opacity: 1 !important; transform: none !important; }</style></noscript>
 
   <style>
     .contact-page-wrapper {
@@ -316,9 +319,73 @@
       border: 1px solid rgba(200, 109, 81, 0.35);
       color: var(--color-recall-again);
     }
+
+    /* Envelope + orbiting paper plane hero */
+    .ct-mail { display: block; margin: 0 auto -6px auto; }
+    .ct-env {
+      fill: var(--color-primary-subtle);
+      stroke: var(--text-secondary);
+      stroke-width: 2.5;
+      stroke-linejoin: round;
+    }
+    .ct-crease {
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .ct-orbit {
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 1.5;
+      stroke-dasharray: 2 7;
+      opacity: 0.5;
+    }
+    .ct-plane path {
+      fill: var(--color-primary);
+      stroke: var(--bg-canvas);
+      stroke-width: 1;
+    }
+
+    /* Channel list micro-interactions */
+    .channel-item { transition: transform 220ms var(--ease-out-quint); }
+    .channel-item:hover { transform: translateX(5px); }
+    .channel-icon-box {
+      transition: transform 240ms var(--ease-out-quint), background-color 240ms var(--ease-out-quint);
+    }
+    .channel-item:hover .channel-icon-box { transform: scale(1.1) rotate(-4deg); }
+    .channel-link svg { transition: transform 200ms var(--ease-out-quint); }
+
+    /* Ticking clock in the support commitment badge */
+    .clock-hand-fast {
+      transform-origin: 12px 12px;
+      animation: clockSpin 9s linear infinite;
+    }
+    @keyframes clockSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Submit arrow slide + feedback pop */
+    .btn-contact-submit svg { transition: transform 200ms var(--ease-out-quint); }
+    .btn-contact-submit:hover:not(:disabled) svg { transform: translateX(4px); }
+    .submission-feedback-box.success,
+    .submission-feedback-box.error { animation: fbPop 300ms var(--ease-out-quint); }
+    @keyframes fbPop {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ct-plane, .clock-hand-fast { display: none; }
+      .clock-hand-fast { animation: none; }
+    }
   </style>
 </head>
 <body>
+
+  <!-- Scroll Progress -->
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
   <!-- Site Header -->
   <header class="site-header">
@@ -373,8 +440,18 @@
     </div>
 
     <!-- Section Header -->
-    <div class="contact-hero-header" style="text-align: center;">
-      <lottie-player src="assets/lotties/contact.json" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto -10px auto;" loop autoplay></lottie-player>
+    <div class="contact-hero-header reveal-on-scroll" style="text-align: center;">
+      <svg class="ct-mail" viewBox="0 0 120 100" width="118" height="98" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="A paper plane circling an envelope">
+        <rect class="ct-env" x="30" y="42" width="60" height="38" rx="6"/>
+        <path class="ct-crease" d="M33 46 L60 66 L87 46"/>
+        <path id="ctOrbit" class="ct-orbit" d="M10 30 a50 18 0 1 0 100 0 a50 18 0 1 0 -100 0"/>
+        <g class="ct-plane">
+          <path d="M-8 -5.5 L10 0 L-8 5.5 L-4.5 0 Z"/>
+          <animateMotion dur="7s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#ctOrbit" xlink:href="#ctOrbit"/>
+          </animateMotion>
+        </g>
+      </svg>
       <span class="section-badge">Get in Touch</span>
       <h1 class="section-title">We’d Love to Hear From You</h1>
       <p class="section-subtitle">
@@ -386,7 +463,7 @@
       
       <!-- Left Column: Direct Channels & Human Support Box -->
       <div class="contact-info-card">
-        <div class="channel-list">
+        <div class="channel-list" data-reveal-group>
           
           <div class="channel-item">
             <div class="channel-icon-box">
@@ -428,6 +505,7 @@
           <div class="commitment-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <circle cx="12" cy="12" r="10"></circle>
+              <line class="clock-hand-fast" x1="12" y1="12" x2="12" y2="7" stroke="currentColor" stroke-linecap="round"></line>
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
             <span>Direct Human Support • Under 24h</span>
@@ -440,18 +518,18 @@
       </div>
 
       <!-- Right Column: Interactive Contact Form -->
-      <div class="contact-form-card">
+      <div class="contact-form-card reveal-on-scroll delay-1">
         <form id="mainContactForm">
           
           <div class="form-fields-container">
             <div class="form-row">
               <label class="field-label" for="contactName">Your Name <span class="required">*</span></label>
-              <input type="text" id="contactName" class="text-input" placeholder="e.g. Alex Morgan" required autocomplete="name">
+              <input type="text" id="contactName" class="text-input" placeholder="e.g. Wuke Anjolaoluwa Omotoyosi" required autocomplete="name">
             </div>
 
             <div class="form-row">
               <label class="field-label" for="contactEmail">Student or Personal Email <span class="required">*</span></label>
-              <input type="email" id="contactEmail" class="text-input" placeholder="alex@university.edu" required autocomplete="email">
+              <input type="email" id="contactEmail" class="text-input" placeholder="wuke@university.edu" required autocomplete="email">
             </div>
 
             <div class="form-row">
@@ -521,12 +599,10 @@
     </div>
   </footer>
 
-  <!-- Lottie Player -->
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-
   <!-- Scripts -->
-  <script src="js/storage.js?v=5.3"></script>
-  <script src="js/main.js?v=5.3"></script>
+  <script src="js/storage.js?v=6.6"></script>
+  <script src="js/animations.js?v=6.6"></script>
+  <script src="js/main.js?v=6.6"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const contactForm = document.getElementById('mainContactForm');

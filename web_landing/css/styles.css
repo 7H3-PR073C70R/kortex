@@ -1236,6 +1236,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   padding: 16px 20px;
   font-size: 0.94rem;
   font-weight: 600;
@@ -1243,17 +1244,27 @@ button {
   text-align: left;
 }
 
+.faq-question-text {
+  transition: color var(--duration-fast);
+}
+
 .faq-icon {
-  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   color: var(--text-muted);
-  font-weight: 400;
 }
 
 .faq-answer {
-  padding: 0 20px 16px;
   font-size: 0.88rem;
   color: var(--text-secondary);
   line-height: 1.6;
+}
+
+.faq-answer-text {
+  padding: 0 20px 18px;
+  margin: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -1460,6 +1471,17 @@ button {
   border: 1px solid var(--border-subtle);
   color: var(--text-primary);
   overflow-x: auto;
+}
+
+/* KaTeX typeset math inside the interactive demo copy */
+.formula-code .katex {
+  font-size: 1.06rem;
+}
+
+.mini-card-text .katex,
+.exam-question-prompt .katex,
+.feedback-explanation .katex {
+  font-size: 1.08em;
 }
 
 .conversion-arrow-bar {
@@ -1796,5 +1818,275 @@ button {
 .pillar-chips-row .diff-chip {
   font-size: 0.72rem;
   padding: 4px 8px;
+}
+
+/* ==========================================================================
+   MARKETING SECTIONS (Hero visual, Demo, Proof strip, Features, Syllabot)
+   ========================================================================== */
+
+/* Hero product shot */
+.hero-visual {
+  margin-top: clamp(2rem, 4vw, 3rem);
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.hero-phone {
+  width: min(340px, 74vw);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-lg);
+  background: var(--bg-card);
+}
+
+[data-theme="light"] .hero-phone {
+  outline: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.hero-phone img {
+  width: 100%;
+  height: auto;
+}
+
+/* Interactive demo section */
+.demo-section .workstation-wrapper {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Pillar motion graphic media wrapper */
+.pillar-media {
+  display: grid;
+  place-items: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-surface-elevated2);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 0.65rem;
+}
+
+/* Honest proof strip */
+.proof-strip {
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated1);
+  padding: clamp(1.8rem, 3.5vw, 2.8rem) 0;
+}
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem 1rem;
+  text-align: center;
+}
+
+@media (min-width: 860px) {
+  .proof-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.proof-num {
+  font-family: var(--font-heading);
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-primary);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.proof-label {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Features: alternating image + text rows (equal height) */
+.feature-rows {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.5rem, 6vw, 5rem);
+}
+
+.feature-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.4rem, 3.5vw, 3rem);
+  align-items: stretch;
+}
+
+@media (min-width: 840px) {
+  .feature-row {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  /* Alternate the image side */
+  .feature-row.reverse .feature-row-media {
+    order: 2;
+  }
+
+  .feature-row.reverse .feature-row-body {
+    order: 1;
+  }
+}
+
+.feature-row-media {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  background: var(--bg-surface-elevated2);
+  /* Mobile: fixed pleasant ratio; desktop: stretch to match text height */
+  aspect-ratio: 16 / 10;
+  min-height: 100%;
+}
+
+@media (min-width: 840px) {
+  .feature-row-media {
+    aspect-ratio: auto;
+    min-height: 340px;
+  }
+}
+
+.feature-row-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.feature-row-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.feature-eyebrow {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-tint);
+  border: 1px solid var(--border-primary);
+}
+
+.feature-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+  font-weight: 750;
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-heading);
+  color: var(--text-primary);
+}
+
+.feature-text {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  line-height: 1.65;
+  max-width: 46ch;
+}
+
+.feature-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 0.4rem;
+}
+
+/* Differentiator cards with lead image */
+.diff-card-media {
+  padding: 0;
+  overflow: hidden;
+}
+
+.diff-card-media .diff-body {
+  padding: clamp(1.4rem, 3vw, 2rem);
+}
+
+.diff-media {
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: var(--bg-surface-elevated2);
+}
+
+.diff-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Syllabot section */
+.syllabot-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.8rem, 4vw, 3rem);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .syllabot-grid {
+    grid-template-columns: 1fr 0.9fr;
+  }
+}
+
+.syllabot-copy .section-title,
+.syllabot-copy .section-badge,
+.syllabot-copy .section-subtitle {
+  text-align: left;
+}
+
+.syllabot-copy .pillar-chips-row {
+  justify-content: flex-start;
+  border-top: none;
+  padding-top: 0;
+}
+
+.syllabot-chat-card {
+  max-width: 480px;
+}
+
+/* Founder photo */
+.founder-photo {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  outline: 1px solid var(--border-highlight);
+}
+
+/* Store badges row */
+.store-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  box-shadow: var(--shadow-xs);
 }
 

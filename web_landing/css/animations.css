@@ -162,32 +162,454 @@
 }
 
 /* --------------------------------------------------------------------------
-   6. FAQ Accordion Expansion
+   6. FAQ Accordion Expansion (grid auto-height + staged content reveal)
    -------------------------------------------------------------------------- */
 .faq-answer {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 260ms var(--ease-drawer),
-              opacity 220ms var(--ease-out-quint),
-              padding 260ms var(--ease-drawer);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms var(--ease-drawer);
 }
 
 .faq-item.active .faq-answer {
-  max-height: 280px;
-  opacity: 1;
+  grid-template-rows: 1fr;
 }
 
-.faq-icon {
-  transition: transform 220ms var(--ease-out-quint);
+.faq-answer-clip {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Answer text slides down and fades in just after the panel starts opening */
+.faq-answer-text {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 260ms var(--ease-out-quint),
+              transform 420ms var(--ease-drawer);
+}
+
+.faq-item.active .faq-answer-text {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 130ms;
+}
+
+/* Plus/minus morph: the whole icon spins, the vertical bar collapses */
+.faq-icon svg {
+  transition: transform 420ms var(--ease-drawer);
+}
+
+.faq-item.active .faq-icon svg {
+  transform: rotate(180deg);
+}
+
+.faq-bar {
+  transition: opacity 200ms var(--ease-out-quint);
+}
+
+.faq-bar-v {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 320ms var(--ease-drawer),
+              opacity 200ms var(--ease-out-quint);
+}
+
+.faq-item.active .faq-bar-v {
+  transform: scaleY(0);
+  opacity: 0;
 }
 
 .faq-item.active .faq-icon {
-  transform: rotate(45deg);
+  color: var(--color-primary);
+}
+
+.faq-item.active .faq-question-text {
+  color: var(--text-primary);
+}
+
+.faq-question:active {
+  transform: scale(0.99);
+}
+
+.faq-item.active {
+  border-color: var(--border-primary);
 }
 
 /* --------------------------------------------------------------------------
-   7. Accessibility: Reduced Motion
+   7. Scroll Progress Bar (transform-only, GPU friendly)
+   -------------------------------------------------------------------------- */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  z-index: 200;
+  pointer-events: none;
+  transition: transform 90ms linear;
+}
+
+/* Active nav link highlight (driven by scroll spy) */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 100%;
+  height: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 220ms var(--ease-out-quint);
+}
+
+.nav-link.is-active {
+  color: var(--text-primary);
+}
+
+.nav-link.is-active::after {
+  transform: scaleX(1);
+}
+
+/* --------------------------------------------------------------------------
+   8. Staggered Group Reveals (pure CSS, JS only toggles one class)
+   -------------------------------------------------------------------------- */
+[data-reveal-group] > * {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0) scale(0.97);
+  transition: opacity 560ms var(--ease-out-quint),
+              transform 560ms var(--ease-out-quint);
+  will-change: opacity, transform;
+}
+
+[data-reveal-group].is-revealed > * {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+[data-reveal-group].is-revealed > *:nth-child(1) { transition-delay: 60ms; }
+[data-reveal-group].is-revealed > *:nth-child(2) { transition-delay: 130ms; }
+[data-reveal-group].is-revealed > *:nth-child(3) { transition-delay: 200ms; }
+[data-reveal-group].is-revealed > *:nth-child(4) { transition-delay: 270ms; }
+[data-reveal-group].is-revealed > *:nth-child(5) { transition-delay: 340ms; }
+[data-reveal-group].is-revealed > *:nth-child(6) { transition-delay: 410ms; }
+
+/* --------------------------------------------------------------------------
+   9. Interactive Card Lift + Pointer Tilt
+   -------------------------------------------------------------------------- */
+[data-tilt] {
+  transform-style: preserve-3d;
+  transition: transform 160ms var(--ease-out-quint),
+              opacity 600ms var(--ease-out-quint),
+              box-shadow 200ms var(--ease-out-quint);
+}
+
+.differentiator-card {
+  transition: transform 200ms var(--ease-out-quint),
+              box-shadow 200ms var(--ease-out-quint),
+              border-color 200ms var(--ease-out-quint);
+}
+
+.differentiator-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--border-highlight);
+  box-shadow: var(--shadow-md);
+}
+
+/* Image zoom on card hover (media wrappers clip overflow) */
+.diff-media img {
+  transition: transform 420ms var(--ease-out-quint);
+}
+
+.differentiator-card:hover .diff-media img {
+  transform: scale(1.05);
+}
+
+/* Feature rows: image settle + directional drift on reveal */
+.feature-row-media {
+  transition: transform 700ms var(--ease-out-quint);
+}
+
+.feature-row-media img {
+  transform: scale(1.1);
+  transition: transform 1200ms var(--ease-out-quint);
+}
+
+.feature-row-body {
+  opacity: 0;
+  transform: translateX(28px);
+  transition: opacity 620ms var(--ease-out-quint),
+              transform 620ms var(--ease-out-quint);
+}
+
+.feature-row.reverse .feature-row-body {
+  transform: translateX(-28px);
+}
+
+.feature-row.is-revealed .feature-row-media img {
+  transform: scale(1);
+}
+
+.feature-row.is-revealed .feature-row-body {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 120ms;
+}
+
+@media (max-width: 839px) {
+  .feature-row-body,
+  .feature-row.reverse .feature-row-body {
+    transform: translateY(20px);
+  }
+
+  .feature-row.is-revealed .feature-row-body {
+    transform: translateY(0);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. Ambient Float for Hero Product Shot (parallax lives on the parent)
+   -------------------------------------------------------------------------- */
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.hero-phone img {
+  animation: heroFloat 7s ease-in-out infinite;
+}
+
+/* --------------------------------------------------------------------------
+   11. CTA Arrow Slide + Button Ripple Feel
+   -------------------------------------------------------------------------- */
+.btn-primary-cta svg,
+.btn-secondary-cta svg,
+.nav-cta svg {
+  transition: transform 200ms var(--ease-out-quint);
+}
+
+.btn-primary-cta:hover svg,
+.nav-cta:hover svg {
+  transform: translateX(4px);
+}
+
+/* --------------------------------------------------------------------------
+   12. Comparison Row Spotlight
+   -------------------------------------------------------------------------- */
+.comparison-table tbody tr {
+  transition: background-color 160ms var(--ease-out-quint);
+}
+
+.comparison-table tbody tr:hover {
+  background-color: var(--color-primary-tint);
+}
+
+/* --------------------------------------------------------------------------
+   13. Staged Chat Bubbles (revealed in sequence when scrolled into view)
+   -------------------------------------------------------------------------- */
+.chat-bubble {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  transition: opacity 320ms var(--ease-out-quint),
+              transform 320ms var(--ease-out-quint);
+}
+
+.chat-bubble.is-shown {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* --------------------------------------------------------------------------
+   14. Theme / Accent Cross-fade
+   -------------------------------------------------------------------------- */
+.theme-toggle-btn svg {
+  transition: transform 320ms var(--ease-out-quint);
+}
+
+.theme-toggle-btn.is-switching svg {
+  transform: rotate(180deg) scale(0.9);
+}
+
+/* --------------------------------------------------------------------------
+   16. Pillar SVG Motion Graphics (scan, draw, pulse — calm ambient loops)
+   -------------------------------------------------------------------------- */
+.anim-svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Pillar 1: document scanned into flashcards */
+.ing-doc rect {
+  fill: var(--color-primary-subtle);
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+}
+
+.ing-doc line {
+  stroke: var(--text-secondary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+.ing-scan {
+  fill: var(--color-primary);
+  animation: ingScan 3.4s var(--ease-in-out-quart) infinite;
+}
+
+@keyframes ingScan {
+  0%, 100% {
+    transform: translateY(2px);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(105px);
+    opacity: 1;
+  }
+}
+
+.ing-arrow {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.95;
+}
+
+.ing-card {
+  fill: var(--color-primary-subtle);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  opacity: 0;
+  animation: ingCard 6.8s var(--ease-out-quint) infinite;
+}
+
+.ing-card.c1 { animation-delay: 400ms; }
+.ing-card.c2 { animation-delay: 1100ms; }
+.ing-card.c3 { animation-delay: 1800ms; }
+
+@keyframes ingCard {
+  0% {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  14%, 88% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+/* Pillar 2: forgetting curve is state-driven (redrawn by main.js on each
+   rating tap), so it carries no looping animation of its own */
+.rt-axis {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+  opacity: 0.6;
+}
+
+.rt-curve {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.rt-node {
+  fill: var(--color-secondary);
+  stroke: var(--bg-surface-elevated2);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Pillar 3: timer ring completing with a correct answer */
+.ts-ring-bg {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 8;
+  opacity: 0.28;
+}
+
+.ts-ring {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 108px 90px;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tsRing 5.5s linear infinite;
+}
+
+@keyframes tsRing {
+  0% { stroke-dashoffset: 1; }
+  45%, 85% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 1; }
+}
+
+.ts-check {
+  fill: none;
+  stroke: var(--color-recall-easy);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tsCheck 5.5s var(--ease-out-quint) infinite;
+}
+
+@keyframes tsCheck {
+  0%, 45% { stroke-dashoffset: 1; }
+  58%, 85% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 1; }
+}
+
+.ts-bar {
+  fill: var(--color-primary-subtle);
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+  opacity: 0;
+  animation: tsBar 5.5s var(--ease-out-quint) infinite;
+}
+
+.ts-bar.b2 { stroke: var(--color-primary); }
+.ts-bar.b1 { animation-delay: 300ms; }
+.ts-bar.b2 { animation-delay: 750ms; }
+.ts-bar.b3 { animation-delay: 1200ms; }
+
+@keyframes tsBar {
+  0% {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  16%, 84% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   17. Accessibility: Reduced Motion
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -202,11 +624,40 @@
     transform: none !important;
   }
 
+  [data-reveal-group] > *,
+  .chat-bubble {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hero-phone img {
+    animation: none !important;
+  }
+
   .flashcard-3d.flipped {
     transform: none !important;
   }
 
   .tab-panel {
     transform: none !important;
+  }
+
+  .ing-scan {
+    display: none;
+  }
+
+  .ing-card,
+  .rt-node,
+  .ts-bar {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .rt-curve,
+  .ts-ring,
+  .ts-check {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
   }
 }
