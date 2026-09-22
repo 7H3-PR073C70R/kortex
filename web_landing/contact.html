@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Contact Kortex. Reach product support, engineering team, or subscribe to engineering development logs.">
-  <title>Contact & Development Updates | Kortex</title>
+  <meta name="description" content="Contact Kortex. Reach product support, engineering team, or campus partnerships.">
+  <title>Contact Us | Kortex</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg">
@@ -16,9 +16,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=5.1">
-  <link rel="stylesheet" href="css/animations.css?v=5.1">
-  <link rel="stylesheet" href="css/styles.css?v=5.1">
+  <link rel="stylesheet" href="css/variables.css?v=5.2">
+  <link rel="stylesheet" href="css/animations.css?v=5.2">
+  <link rel="stylesheet" href="css/styles.css?v=5.2">
 
   <style>
     .contact-page-wrapper {
@@ -59,28 +59,33 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: clamp(1.8rem, 3.5vw, 2.5rem);
-      align-items: start;
+      align-items: stretch;
     }
 
     @media (min-width: 860px) {
       .contact-grid {
-        grid-template-columns: 1fr 1.22fr;
+        grid-template-columns: 1fr 1.25fr;
       }
     }
 
-    /* Left Card: Direct Channels & Dev Updates */
-    .contact-info-card {
+    /* Cards: Identical Height & Structure */
+    .contact-info-card,
+    .contact-form-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-xl);
-      padding: clamp(1.6rem, 3vw, 2.4rem);
+      padding: clamp(1.8rem, 3.5vw, 2.5rem);
       box-shadow: var(--shadow-sm);
     }
 
     .channel-list {
       display: flex;
       flex-direction: column;
-      gap: 1.6rem;
+      gap: 1.8rem;
     }
 
     .channel-item {
@@ -132,108 +137,48 @@
       text-decoration: underline;
     }
 
-    .card-divider {
-      margin: 2rem 0;
-      border: 0;
-      border-top: 1px solid var(--border-subtle);
-    }
-
-    /* Quick Newsletter Box inside Left Card */
-    .newsletter-box {
+    /* Human Support Guarantee Box (Sits at the bottom of left card for perfect height match) */
+    .support-commitment-box {
+      margin-top: 2rem;
+      padding: 1.25rem 1.4rem;
       background: var(--bg-surface-elevated1);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
-      padding: 1.35rem;
     }
 
-    .newsletter-box-title {
-      display: flex;
+    .commitment-badge {
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-family: var(--font-heading);
-      font-size: 0.92rem;
-      font-weight: 750;
-      color: var(--text-primary);
-      margin-bottom: 0.4rem;
+      gap: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 0.45rem;
     }
 
-    .newsletter-box-desc {
+    .commitment-badge svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .commitment-text {
       font-size: 0.82rem;
       color: var(--text-secondary);
-      line-height: 1.5;
-      margin-bottom: 0.9rem;
-    }
-
-    .newsletter-input-group {
-      display: flex;
-      gap: 8px;
-    }
-
-    .newsletter-input {
-      flex: 1;
-      height: 42px;
-      padding: 0 12px;
-      font-size: 0.84rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      color: var(--text-primary);
-      transition: border-color var(--duration-fast);
-    }
-
-    .newsletter-input:focus {
-      border-color: var(--color-primary);
-      outline: none;
-    }
-
-    .newsletter-btn {
-      height: 42px;
-      padding: 0 14px;
-      font-size: 0.84rem;
-      font-weight: 600;
-      border-radius: var(--radius-md);
-      background: var(--color-primary);
-      color: #FFFFFF;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: background-color var(--duration-fast), transform var(--duration-fast);
-    }
-
-    .newsletter-btn:hover {
-      background-color: var(--color-primary-hover);
-    }
-
-    .newsletter-btn:active {
-      transform: scale(0.97);
-    }
-
-    .newsletter-status-msg {
-      font-size: 0.78rem;
-      margin-top: 0.5rem;
-      display: none;
-    }
-
-    .newsletter-status-msg.success {
-      display: block;
-      color: var(--color-recall-easy);
-    }
-
-    .newsletter-status-msg.error {
-      display: block;
-      color: var(--color-recall-again);
+      line-height: 1.55;
+      margin: 0;
     }
 
     /* Right Card: Main Contact Form */
-    .contact-form-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-xl);
-      padding: clamp(1.6rem, 3vw, 2.4rem);
-      box-shadow: var(--shadow-sm);
+    .form-fields-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
     }
 
     .form-row {
-      margin-bottom: 1.35rem;
+      display: flex;
+      flex-direction: column;
     }
 
     .field-label {
@@ -286,7 +231,7 @@
     }
 
     .textarea-input {
-      min-height: 130px;
+      min-height: 125px;
       resize: vertical;
       line-height: 1.55;
     }
@@ -295,7 +240,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin: 1.25rem 0 1.5rem;
+      margin-top: 0.4rem;
       cursor: pointer;
     }
 
@@ -308,9 +253,13 @@
     }
 
     .checkbox-label {
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       color: var(--text-secondary);
       user-select: none;
+    }
+
+    .form-footer-action {
+      margin-top: 1.35rem;
     }
 
     .btn-contact-submit {
@@ -345,7 +294,7 @@
     }
 
     .submission-feedback-box {
-      margin-top: 1.1rem;
+      margin-top: 1rem;
       padding: 12px 16px;
       border-radius: var(--radius-md);
       font-size: 0.86rem;
@@ -366,96 +315,6 @@
       border: 1px solid rgba(200, 109, 81, 0.35);
       color: var(--color-recall-again);
     }
-
-    /* Bottom CSV Export & Submissions Toolbar */
-    .export-toolbar-card {
-      margin-top: clamp(2.5rem, 5vw, 3.5rem);
-      background: var(--bg-surface-elevated1);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem 1.6rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1.25rem;
-    }
-
-    .export-stats-col {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .export-icon {
-      font-size: 1.4rem;
-    }
-
-    .export-stats-text {
-      font-size: 0.88rem;
-      color: var(--text-secondary);
-    }
-
-    .export-stats-text strong {
-      color: var(--text-primary);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .export-actions-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .btn-export-csv {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 0.82rem;
-      font-weight: 600;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: all var(--duration-fast);
-    }
-
-    .btn-export-csv:hover {
-      border-color: var(--border-highlight);
-      background: var(--bg-card-hover);
-    }
-
-    .btn-export-csv:active {
-      transform: scale(0.97);
-    }
-
-    .btn-export-primary {
-      background: var(--color-primary-subtle);
-      border-color: var(--border-primary);
-      color: var(--color-primary);
-    }
-
-    .btn-export-primary:hover {
-      background: var(--color-primary);
-      color: #FFFFFF;
-    }
-
-    .btn-clear-data {
-      padding: 7px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      background: transparent;
-      border: 1px solid transparent;
-      cursor: pointer;
-    }
-
-    .btn-clear-data:hover {
-      color: var(--color-recall-again);
-    }
   </style>
 </head>
 <body>
@@ -472,7 +331,7 @@
         <ul class="nav-links">
           <li><a href="/#pillars" class="nav-link">How It Works</a></li>
           <li><a href="/#differentiators" class="nav-link">Privacy & Access</a></li>
-          <li><a href="/#comparison" class="nav-link">Why Kortex</a></li>
+          <li><a href="/#newsletter" class="nav-link">Updates</a></li>
           <li><a href="privacy.html" class="nav-link">Privacy</a></li>
         </ul>
       </nav>
@@ -517,13 +376,13 @@
       <span class="section-badge">Get in Touch</span>
       <h1 class="section-title">We’d Love to Hear From You</h1>
       <p class="section-subtitle">
-        Have questions about study tools, exam past papers, campus partnerships, or engineering progress? Send us a message or subscribe below.
+        Have questions about study tools, exam past papers, campus partnerships, or bug reports? Send us a message below.
       </p>
     </div>
 
     <div class="contact-grid">
       
-      <!-- Left Column: Direct Channels & Dev Updates Newsletter -->
+      <!-- Left Column: Direct Channels & Human Support Box -->
       <div class="contact-info-card">
         <div class="channel-list">
           
@@ -556,24 +415,18 @@
 
         </div>
 
-        <hr class="card-divider">
-
-        <!-- Dedicated Newsletter Subscription Box -->
-        <div class="newsletter-box">
-          <div class="newsletter-box-title">
-            <span>💌</span>
-            <span>Subscribe to Development Dispatches</span>
+        <!-- Sits at the bottom of left card so heights match perfectly -->
+        <div class="support-commitment-box">
+          <div class="commitment-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Direct Human Support • Under 24h</span>
           </div>
-          <p class="newsletter-box-desc">
-            Get bi-weekly technical engineering logs, local AI benchmarks, FSRS updates, and early feature announcements.
+          <p class="commitment-text">
+            Every message is read by an actual educator or engineer on our core team. We prioritize student questions, exam date deadlines, and university campus requests.
           </p>
-          <form id="sidebarNewsletterForm">
-            <div class="newsletter-input-group">
-              <input type="email" id="sidebarNewsletterEmail" class="newsletter-input" placeholder="Your student or personal email" required>
-              <button type="submit" class="newsletter-btn" id="sidebarNewsletterBtn">Subscribe</button>
-            </div>
-            <div id="sidebarNewsletterStatus" class="newsletter-status-msg"></div>
-          </form>
         </div>
 
       </div>
@@ -582,73 +435,60 @@
       <div class="contact-form-card">
         <form id="mainContactForm">
           
-          <div class="form-row">
-            <label class="field-label" for="contactName">Your Name <span class="required">*</span></label>
-            <input type="text" id="contactName" class="text-input" placeholder="e.g. Alex Morgan" required autocomplete="name">
+          <div class="form-fields-container">
+            <div class="form-row">
+              <label class="field-label" for="contactName">Your Name <span class="required">*</span></label>
+              <input type="text" id="contactName" class="text-input" placeholder="e.g. Alex Morgan" required autocomplete="name">
+            </div>
+
+            <div class="form-row">
+              <label class="field-label" for="contactEmail">Student or Personal Email <span class="required">*</span></label>
+              <input type="email" id="contactEmail" class="text-input" placeholder="alex@university.edu" required autocomplete="email">
+            </div>
+
+            <div class="form-row">
+              <label class="field-label" for="contactTopic">Inquiry Topic</label>
+              <select id="contactTopic" class="select-input">
+                <option value="early_access">Early Beta Access & Downloads</option>
+                <option value="exam_past_questions">JAMB, WAEC & Past Questions</option>
+                <option value="feature_request">Feature Request / Feedback</option>
+                <option value="campus_partnership">Campus Ambassador & Partnership</option>
+                <option value="bug_report">Bug Report / Technical Issue</option>
+                <option value="other">General Inquiry</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <label class="field-label" for="contactMessage">Your Message <span class="required">*</span></label>
+              <textarea id="contactMessage" class="textarea-input" placeholder="Tell us how we can help or what you'd like to see in Kortex..." required></textarea>
+            </div>
+
+            <label class="checkbox-row" for="contactNewsletterOptIn">
+              <input type="checkbox" id="contactNewsletterOptIn" checked>
+              <span class="checkbox-label">Notify me about major app updates and new study tools</span>
+            </label>
+
+            <!-- Anti-Spam Bot Trap (Invisible to humans, triggers silent drop for automated scripts) -->
+            <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+              <label for="company_fax_hp">Leave this field blank</label>
+              <input type="text" id="company_fax_hp" name="company_fax_hp" tabindex="-1" autocomplete="off">
+            </div>
           </div>
 
-          <div class="form-row">
-            <label class="field-label" for="contactEmail">Student or Personal Email <span class="required">*</span></label>
-            <input type="email" id="contactEmail" class="text-input" placeholder="alex@university.edu" required autocomplete="email">
+          <div class="form-footer-action">
+            <button type="submit" class="btn-contact-submit" id="contactSubmitBtn">
+              <span>Send Message</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+
+            <div id="contactFeedback" class="submission-feedback-box"></div>
           </div>
 
-          <div class="form-row">
-            <label class="field-label" for="contactTopic">Inquiry Topic</label>
-            <select id="contactTopic" class="select-input">
-              <option value="early_access">Early Beta Access & Downloads</option>
-              <option value="exam_past_questions">JAMB, WAEC & Past Questions</option>
-              <option value="feature_request">Feature Request / Feedback</option>
-              <option value="campus_partnership">Campus Ambassador & Partnership</option>
-              <option value="bug_report">Bug Report / Technical Issue</option>
-              <option value="other">General Inquiry</option>
-            </select>
-          </div>
-
-          <div class="form-row">
-            <label class="field-label" for="contactMessage">Your Message <span class="required">*</span></label>
-            <textarea id="contactMessage" class="textarea-input" placeholder="Tell us how we can help or what you'd like to see in Kortex..." required></textarea>
-          </div>
-
-          <label class="checkbox-row" for="contactNewsletterOptIn">
-            <input type="checkbox" id="contactNewsletterOptIn" checked>
-            <span class="checkbox-label">Keep me updated with development dispatches & beta releases</span>
-          </label>
-
-          <button type="submit" class="btn-contact-submit" id="contactSubmitBtn">
-            <span>Send Message</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </button>
-
-          <div id="contactFeedback" class="submission-feedback-box"></div>
         </form>
       </div>
 
-    </div>
-
-    <!-- Data Management & CSV Export Bar -->
-    <div class="export-toolbar-card">
-      <div class="export-stats-col">
-        <span class="export-icon">📊</span>
-        <div class="export-stats-text">
-          Local Database: <strong id="statContactCount">0</strong> contact inquiries • <strong id="statNewsletterCount">0</strong> newsletter subscribers
-        </div>
-      </div>
-      <div class="export-actions-group">
-        <button type="button" class="btn-export-csv btn-export-primary" id="btnExportAllCsv" title="Export all contact messages and newsletter leads into a unified CSV">
-          <span>📥 Export All to CSV</span>
-        </button>
-        <button type="button" class="btn-export-csv" id="btnExportContactCsv" title="Export only contact form queries">
-          <span>Contacts (.csv)</span>
-        </button>
-        <button type="button" class="btn-export-csv" id="btnExportNewsletterCsv" title="Export only newsletter email list">
-          <span>Newsletter (.csv)</span>
-        </button>
-        <button type="button" class="btn-clear-data" id="btnClearDataBtn" title="Clear locally stored database">
-          <span>Clear Local</span>
-        </button>
-      </div>
     </div>
 
   </main>
@@ -674,112 +514,71 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="js/storage.js?v=5.1"></script>
-  <script src="js/main.js?v=5.1"></script>
+  <script src="js/storage.js?v=5.3"></script>
+  <script src="js/main.js?v=5.3"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // 1. Update live counter in export toolbar
-      function refreshStats() {
-        if (window.KortexStorage) {
-          const stats = window.KortexStorage.getStats();
-          const contactCountEl = document.getElementById('statContactCount');
-          const newsletterCountEl = document.getElementById('statNewsletterCount');
-          if (contactCountEl) contactCountEl.textContent = stats.contactCount;
-          if (newsletterCountEl) newsletterCountEl.textContent = stats.newsletterCount;
-        }
-      }
-
-      refreshStats();
-
-      // 2. Main Contact Form Submission Handler
       const contactForm = document.getElementById('mainContactForm');
       const contactSubmitBtn = document.getElementById('contactSubmitBtn');
       const contactFeedback = document.getElementById('contactFeedback');
 
+      const SUPABASE_URL   = 'https://mongizqfijuhycdxltpw.supabase.co';
+      const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
+      const CONTACT_URL    = `${SUPABASE_URL}/functions/v1/submit-contact`;
+
       if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
+        contactForm.addEventListener('submit', async (e) => {
           e.preventDefault();
 
-          const name = document.getElementById('contactName').value;
-          const email = document.getElementById('contactEmail').value;
-          const topic = document.getElementById('contactTopic').value;
-          const message = document.getElementById('contactMessage').value;
+          const name           = document.getElementById('contactName').value.trim();
+          const email          = document.getElementById('contactEmail').value.trim();
+          const topic          = document.getElementById('contactTopic').value;
+          const message        = document.getElementById('contactMessage').value.trim();
           const newsletterOptIn = document.getElementById('contactNewsletterOptIn').checked;
+          const honeypot       = document.getElementById('company_fax_hp')?.value || '';
 
           contactSubmitBtn.disabled = true;
-          const originalText = contactSubmitBtn.innerHTML;
-          contactSubmitBtn.innerHTML = '<span>Saving...</span>';
+          const originalHTML = contactSubmitBtn.innerHTML;
+          contactSubmitBtn.innerHTML = '<span>Sending securely…</span>';
+          contactFeedback.className = 'submission-feedback-box';
 
           try {
-            window.KortexStorage.saveContactMessage({
-              name,
-              email,
-              topic,
-              message,
-              newsletterOptIn
+            // 1. Try real API first
+            const res  = await fetch(CONTACT_URL, {
+              method : 'POST',
+              headers: {
+                'Content-Type' : 'application/json',
+                'apikey'       : SUPABASE_ANON,
+                'Authorization': `Bearer ${SUPABASE_ANON}`,
+              },
+              body: JSON.stringify({ name, email, topic, message, newsletterOptIn, hp: honeypot }),
             });
 
-            setTimeout(() => {
-              contactSubmitBtn.disabled = false;
-              contactSubmitBtn.innerHTML = originalText;
-              contactFeedback.className = 'submission-feedback-box success';
-              contactFeedback.innerHTML = '✓ <strong>Message Received!</strong> Your inquiry has been saved to the database. Our team will get back to you within 24 hours. You can also export this to CSV below.';
-              contactForm.reset();
-              refreshStats();
-            }, 300);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+              throw new Error(data.error || `Submission failed (${res.status}). Please try again.`);
+            }
+
+            // 2. Also save locally as fallback backup
+            try {
+              const engine = window.KortexSecurityEngine || window.KortexStorage;
+              engine?.saveContactMessage({ name, email, topic, message, newsletterOptIn, honeypot });
+            } catch (_) { /* silent */ }
+
+            contactSubmitBtn.disabled = false;
+            contactSubmitBtn.innerHTML = originalHTML;
+            contactFeedback.className = 'submission-feedback-box success';
+            contactFeedback.innerHTML = '✓ <strong>Message Received!</strong> Thank you for reaching out. Our team reads every message and will reply within 24 hours.';
+            contactForm.reset();
+
           } catch (err) {
             contactSubmitBtn.disabled = false;
-            contactSubmitBtn.innerHTML = originalText;
+            contactSubmitBtn.innerHTML = originalHTML;
             contactFeedback.className = 'submission-feedback-box error';
-            contactFeedback.textContent = 'Something went wrong while saving. Please try again.';
+            contactFeedback.textContent = err.message || 'Something went wrong. Please try again.';
           }
         });
       }
-
-      // 3. Sidebar Newsletter Form Handler
-      const newsletterForm = document.getElementById('sidebarNewsletterForm');
-      const newsletterInput = document.getElementById('sidebarNewsletterEmail');
-      const newsletterStatus = document.getElementById('sidebarNewsletterStatus');
-      const newsletterBtn = document.getElementById('sidebarNewsletterBtn');
-
-      if (newsletterForm) {
-        newsletterForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const email = newsletterInput.value;
-
-          try {
-            const res = window.KortexStorage.saveNewsletterEmail(email, 'contact_page_sidebar');
-            newsletterInput.value = '';
-            newsletterStatus.className = 'newsletter-status-msg success';
-            if (res.status === 'already_subscribed') {
-              newsletterStatus.textContent = '✓ You are already subscribed! Thanks for following.';
-            } else {
-              newsletterStatus.textContent = '✓ Subscribed! You will receive development logs.';
-            }
-            refreshStats();
-          } catch (err) {
-            newsletterStatus.className = 'newsletter-status-msg error';
-            newsletterStatus.textContent = err.message || 'Please enter a valid email.';
-          }
-        });
-      }
-
-      // 4. CSV Export Actions
-      document.getElementById('btnExportAllCsv')?.addEventListener('click', () => {
-        window.KortexStorage.exportAllCSV();
-      });
-
-      document.getElementById('btnExportContactCsv')?.addEventListener('click', () => {
-        window.KortexStorage.exportContactCSV();
-      });
-
-      document.getElementById('btnExportNewsletterCsv')?.addEventListener('click', () => {
-        window.KortexStorage.exportNewsletterCSV();
-      });
-
-      document.getElementById('btnClearDataBtn')?.addEventListener('click', () => {
-        window.KortexStorage.clearAllData();
-      });
     });
   </script>
 </body>

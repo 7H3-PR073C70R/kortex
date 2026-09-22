@@ -292,44 +292,82 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --------------------------------------------------------------------------
-  // 7. Landing Page Newsletter Subscription Handler
+  // 7. Landing Page Newsletter Subscription – Supabase Edge Function
   // --------------------------------------------------------------------------
-  const landingNewsletterForm = document.getElementById('landingNewsletterForm');
-  const landingNewsletterEmail = document.getElementById('landingNewsletterEmail');
+  const SUPABASE_URL    = 'https://mongizqfijuhycdxltpw.supabase.co';
+  const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
+  const NEWSLETTER_URL  = `${SUPABASE_URL}/functions/v1/subscribe-newsletter`;
+
+  const landingNewsletterForm   = document.getElementById('landingNewsletterForm');
+  const landingNewsletterEmail  = document.getElementById('landingNewsletterEmail');
   const landingNewsletterStatus = document.getElementById('landingNewsletterStatus');
-  const landingNewsletterBtn = document.getElementById('landingNewsletterBtn');
+  const landingNewsletterBtn    = document.getElementById('landingNewsletterBtn');
+  const landingNewsletterBtnTxt = document.getElementById('landingNewsletterBtnText');
+
+  function setNewsletterBtn(state) {
+    // state: 'idle' | 'loading' | 'done'
+    if (!landingNewsletterBtn) return;
+    if (state === 'loading') {
+      landingNewsletterBtn.disabled = true;
+      if (landingNewsletterBtnTxt) landingNewsletterBtnTxt.textContent = 'Joining…';
+    } else if (state === 'done') {
+      landingNewsletterBtn.disabled = true;
+      if (landingNewsletterBtnTxt) landingNewsletterBtnTxt.textContent = 'You\'re in! ✓';
+    } else {
+      landingNewsletterBtn.disabled = false;
+      if (landingNewsletterBtnTxt) landingNewsletterBtnTxt.textContent = 'Notify Me';
+    }
+  }
+
+  function showNewsletterStatus(type, msg) {
+    if (!landingNewsletterStatus) return;
+    landingNewsletterStatus.className = `newsletter-status-box ${type}`;
+    landingNewsletterStatus.textContent = msg;
+  }
 
   if (landingNewsletterForm) {
-    landingNewsletterForm.addEventListener('submit', (e) => {
+    landingNewsletterForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = landingNewsletterEmail.value;
 
-      if (!window.KortexStorage) {
+      const email    = landingNewsletterEmail ? landingNewsletterEmail.value.trim() : '';
+      const honeypot = document.getElementById('nlHoneypot')?.value || '';
+
+      if (!email) {
+        showNewsletterStatus('error', 'Please enter your email address.');
         return;
       }
 
-      landingNewsletterBtn.disabled = true;
-      const originalText = landingNewsletterBtn.innerHTML;
-      landingNewsletterBtn.innerHTML = '<span>Joining...</span>';
+      setNewsletterBtn('loading');
 
       try {
-        const res = window.KortexStorage.saveNewsletterEmail(email, 'landing_page');
-        setTimeout(() => {
-          landingNewsletterBtn.disabled = false;
-          landingNewsletterBtn.innerHTML = originalText;
-          landingNewsletterEmail.value = '';
-          landingNewsletterStatus.className = 'newsletter-status-box success';
-          if (res.status === 'already_subscribed') {
-            landingNewsletterStatus.textContent = '✓ You are already on the dispatch list! Thank you.';
-          } else {
-            landingNewsletterStatus.textContent = '✓ Welcome to Kortex Dispatches! We will notify you of major algorithm and syllabus drops.';
-          }
-        }, 300);
+        const res = await fetch(NEWSLETTER_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON,
+            'Authorization': `Bearer ${SUPABASE_ANON}`,
+          },
+          body: JSON.stringify({ email, source: 'landing_page', hp: honeypot }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error || `Submission failed (${res.status}). Please try again.`);
+        }
+
+        // Also save locally as offline cache / backup
+        try {
+          window.KortexSecurityEngine?.saveNewsletterEmail(email, 'landing_page');
+        } catch (_) { /* ignore localStorage errors */ }
+
+        if (landingNewsletterEmail) landingNewsletterEmail.value = '';
+        setNewsletterBtn('done');
+        showNewsletterStatus('success', '✓ You\'re on the list! We\'ll send you updates as we build.');
+
       } catch (err) {
-        landingNewsletterBtn.disabled = false;
-        landingNewsletterBtn.innerHTML = originalText;
-        landingNewsletterStatus.className = 'newsletter-status-box error';
-        landingNewsletterStatus.textContent = err.message || 'Please enter a valid email address.';
+        setNewsletterBtn('idle');
+        showNewsletterStatus('error', err.message || 'Something went wrong. Please try again.');
       }
     });
   }

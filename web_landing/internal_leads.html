@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- STRICT SEARCH ENGINE BLOCK: Never index or cache internal admin tools -->
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <title>Kortex Internal Leads & Export Portal</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .internal-header {
+      padding: 1.25rem 2rem;
+      background: var(--bg-surface-elevated1);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .internal-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(200, 109, 81, 0.15);
+      border: 1px solid rgba(200, 109, 81, 0.35);
+      color: var(--color-recall-again);
+    }
+
+    .internal-container {
+      max-width: 1180px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Passcode Gateway Overlay */
+    .gateway-card {
+      max-width: 440px;
+      margin: 4rem auto;
+      background: var(--bg-surface-elevated1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      box-shadow: var(--shadow-surface);
+    }
+
+    .gateway-icon {
+      font-size: 2.2rem;
+      margin-bottom: 1rem;
+    }
+
+    .gateway-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .gateway-desc {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    /* Dashboard view */
+    .dashboard-view {
+      display: none;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-surface-elevated1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+    }
+
+    .stat-card-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card-val {
+      font-size: 2rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+    }
+
+    .action-panel {
+      background: var(--bg-surface-elevated1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      transition: all var(--duration-fast);
+    }
+
+    .btn-action:hover {
+      border-color: var(--border-highlight);
+      background: var(--bg-card-hover);
+    }
+
+    .btn-action-primary {
+      background: var(--color-primary);
+      color: #FFFFFF;
+      border-color: var(--color-primary);
+    }
+
+    .btn-action-primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .btn-action-danger {
+      color: var(--color-recall-again);
+      border-color: rgba(200, 109, 81, 0.3);
+      background: rgba(200, 109, 81, 0.08);
+    }
+
+    .btn-action-danger:hover {
+      background: rgba(200, 109, 81, 0.18);
+    }
+
+    .data-table-container {
+      background: var(--bg-surface-elevated1);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      margin-bottom: 2rem;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    .data-table th, .data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .data-table th {
+      background: var(--bg-surface-elevated2);
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+
+    .data-table tr:hover td {
+      background: var(--bg-card-hover);
+    }
+
+    .lead-topic-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Banner -->
+  <header class="internal-header">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
+        <img src="assets/kortexify_logo.svg" alt="Kortex" width="22" height="22">
+        <strong style="font-size: 0.95rem; letter-spacing: 0.04em;">KORTEX</strong>
+      </a>
+      <span class="internal-badge">Internal Staff Only</span>
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-muted);">
+      Confidential • Lead Generation & Inquiries
+    </div>
+  </header>
+
+  <!-- Passcode Access Gateway -->
+  <div id="authGateway" class="internal-container">
+    <div class="gateway-card">
+      <div class="gateway-icon">🔒</div>
+      <h1 class="gateway-title">Admin Access Gateway</h1>
+      <p class="gateway-desc">
+        Lead data and customer inquiries are confidential. Enter the team access passcode to continue. Authentication is server-verified — no passcode is stored in browser source code.
+      </p>
+      <form id="passkeyForm" autocomplete="off">
+        <div style="margin-bottom: 1.25rem;">
+          <input type="password" id="accessPasskey" class="text-input"
+            placeholder="Team passcode…"
+            required
+            autocomplete="current-password"
+            style="text-align: center; letter-spacing: 0.15em; font-family: 'JetBrains Mono', monospace;">
+        </div>
+        <button type="submit" id="passkeySubmitBtn" class="btn-action btn-action-primary" style="width: 100%; justify-content: center;">
+          <span id="passkeyBtnText">Verify Access</span>
+        </button>
+      </form>
+      <div id="authError" style="display: none; margin-top: 1rem; font-size: 0.82rem; color: var(--color-recall-again);">
+        Incorrect passcode or too many attempts. Please wait before retrying.
+      </div>
+    </div>
+  </div>
+
+  <!-- Authenticated Dashboard -->
+  <div id="dashboardView" class="internal-container dashboard-view">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h1 style="font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem;">Internal Lead Database</h1>
+        <p style="font-size: 0.88rem; color: var(--text-secondary);">Protected customer inquiries, student newsletter signups, and sanitized CSV exports.</p>
+      </div>
+      <button type="button" class="btn-action" id="lockDashboardBtn">
+        <span>Lock Session</span>
+      </button>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-card-title">Contact Inquiries</div>
+        <div class="stat-card-val" id="statContacts">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-title">Newsletter Subscribers</div>
+        <div class="stat-card-val" id="statNewsletters">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-title">Total Unique Leads</div>
+        <div class="stat-card-val" id="statTotal">0</div>
+      </div>
+    </div>
+
+    <!-- Export Actions -->
+    <div class="action-panel">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn-action btn-action-primary" id="btnExportContacts">
+          <span>📥 Export Contacts (.csv)</span>
+        </button>
+        <button type="button" class="btn-action" id="btnExportNewsletters">
+          <span>📥 Export Newsletter (.csv)</span>
+        </button>
+      </div>
+      <div>
+        <button type="button" class="btn-action btn-action-danger" id="btnRefresh">
+          <span>↻ Refresh Data</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Table of Contact Submissions -->
+    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="font-size: 1.15rem; font-weight: 700;">Recent Contact Inquiries</h2>
+    </div>
+    <div class="data-table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Topic</th>
+            <th>Message</th>
+            <th>Opt-in</th>
+          </tr>
+        </thead>
+        <tbody id="contactTableBody">
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No submissions yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table of Newsletter Subscribers -->
+    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+      <h2 style="font-size: 1.15rem; font-weight: 700;">Newsletter Subscribers</h2>
+    </div>
+    <div class="data-table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Subscribed Date</th>
+            <th>Email</th>
+            <th>Acquisition Source</th>
+          </tr>
+        </thead>
+        <tbody id="newsletterTableBody">
+          <tr>
+            <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">No subscribers yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    'use strict';
+
+    // ── Configuration ─────────────────────────────────────────────────────────
+    const SUPABASE_URL  = 'https://mongizqfijuhycdxltpw.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
+    const AUTH_URL      = `${SUPABASE_URL}/functions/v1/verify-admin-token`;
+    const LEADS_URL     = `${SUPABASE_URL}/functions/v1/get-admin-leads`;
+    const TOKEN_KEY     = 'kortex_admin_token';  // sessionStorage key (cleared on tab close)
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getToken() { return sessionStorage.getItem(TOKEN_KEY); }
+    function clearToken() { sessionStorage.removeItem(TOKEN_KEY); }
+
+    function setToken(token) {
+      // Only store in sessionStorage — wiped automatically when tab closes
+      sessionStorage.setItem(TOKEN_KEY, token);
+    }
+
+    function showView(view) {
+      document.getElementById('authGateway').style.display  = view === 'auth' ? '' : 'none';
+      document.getElementById('dashboardView').style.display = view === 'dash' ? '' : 'none';
+    }
+
+    async function apiGet(path) {
+      const res = await fetch(LEADS_URL + path, {
+        headers: {
+          'X-Admin-Token' : getToken(),
+          'apikey'        : SUPABASE_ANON,
+        },
+      });
+      if (res.status === 401) { clearToken(); showView('auth'); return null; }
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
+      return res.json();
+    }
+
+    async function downloadCsv(path, filename) {
+      const res = await fetch(LEADS_URL + path, {
+        headers: {
+          'X-Admin-Token' : getToken(),
+          'apikey'        : SUPABASE_ANON,
+        },
+      });
+      if (res.status === 401) { clearToken(); showView('auth'); return; }
+      if (!res.ok) { alert('Export failed.'); return; }
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function renderEmptyRow(cols, msg) {
+      return `<tr><td colspan="${cols}" style="text-align:center;color:var(--text-muted);padding:2rem;">${escapeHtml(msg)}</td></tr>`;
+    }
+
+    function renderTableRows(rows, cols) {
+      if (!rows || rows.length === 0) return renderEmptyRow(cols.length, 'No records found.');
+      return rows.map(row => {
+        const cells = cols.map(col => {
+          const val = row[col.key];
+          if (col.email) return `<td><a href="mailto:${escapeHtml(val)}" style="color:var(--color-primary);">${escapeHtml(val)}</a></td>`;
+          if (col.tag)   return `<td><span class="lead-topic-tag">${escapeHtml(val)}</span></td>`;
+          if (col.mono)  return `<td style="white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:0.78rem;">${escapeHtml(new Date(val).toLocaleString())}</td>`;
+          if (col.bold)  return `<td style="font-weight:600;">${escapeHtml(val)}</td>`;
+          if (col.wrap)  return `<td style="max-width:320px;word-break:break-word;">${escapeHtml(val)}</td>`;
+          return `<td>${escapeHtml(String(val ?? ''))}</td>`;
+        });
+        return `<tr>${cells.join('')}</tr>`;
+      }).join('');
+    }
+
+    async function loadDashboard() {
+      document.getElementById('statContacts').textContent    = '…';
+      document.getElementById('statNewsletters').textContent = '…';
+      document.getElementById('statTotal').textContent       = '…';
+
+      const [contactData, newsData] = await Promise.all([
+        apiGet('?type=contact&limit=200'),
+        apiGet('?type=newsletter&limit=200'),
+      ]);
+
+      if (contactData) {
+        document.getElementById('statContacts').textContent = contactData.total ?? 0;
+        const tbody = document.getElementById('contactTableBody');
+        tbody.innerHTML = renderTableRows(contactData.data, [
+          { key: 'submitted_at', mono: true },
+          { key: 'name',         bold: true },
+          { key: 'email',        email: true },
+          { key: 'topic',        tag: true },
+          { key: 'message',      wrap: true },
+          { key: 'newsletter_optin', format: v => v ? '✓ Yes' : '—' },
+        ]);
+      }
+
+      if (newsData) {
+        document.getElementById('statNewsletters').textContent = newsData.total ?? 0;
+        document.getElementById('statTotal').textContent       =
+          (Number(contactData?.total ?? 0) + Number(newsData.total ?? 0));
+        const tbody = document.getElementById('newsletterTableBody');
+        tbody.innerHTML = renderTableRows(newsData.data, [
+          { key: 'subscribed_at', mono: true },
+          { key: 'email',         email: true },
+          { key: 'source',        tag: true },
+        ]);
+      }
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      const passkeyForm     = document.getElementById('passkeyForm');
+      const accessPasskey   = document.getElementById('accessPasskey');
+      const authError       = document.getElementById('authError');
+      const lockDashboardBtn = document.getElementById('lockDashboardBtn');
+      const passkeySubmitBtn = document.getElementById('passkeySubmitBtn');
+      const passkeyBtnText   = document.getElementById('passkeyBtnText');
+
+      // Auto-restore session if token still valid
+      if (getToken()) {
+        showView('dash');
+        loadDashboard();
+      } else {
+        showView('auth');
+      }
+
+      // ── Login ──────────────────────────────────────────────────────────────
+      passkeyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const passcode = accessPasskey.value;
+        if (!passcode) return;
+
+        passkeySubmitBtn.disabled = true;
+        passkeyBtnText.textContent = 'Verifying…';
+        authError.style.display = 'none';
+
+        try {
+          const res = await fetch(AUTH_URL, {
+            method : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body   : JSON.stringify({ passcode }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.token) {
+            throw new Error(data.error || 'Invalid passcode.');
+          }
+
+          setToken(data.token);
+          accessPasskey.value = '';
+          showView('dash');
+          loadDashboard();
+
+        } catch (err) {
+          authError.textContent = err.message || 'Access denied.';
+          authError.style.display = 'block';
+          accessPasskey.value = '';
+          accessPasskey.focus();
+        } finally {
+          passkeySubmitBtn.disabled = false;
+          passkeyBtnText.textContent = 'Verify Access';
+        }
+      });
+
+      // ── Logout ─────────────────────────────────────────────────────────────
+      lockDashboardBtn.addEventListener('click', () => {
+        clearToken();
+        showView('auth');
+        accessPasskey.value = '';
+        authError.style.display = 'none';
+      });
+
+      // ── Export buttons ─────────────────────────────────────────────────────
+      document.getElementById('btnExportContacts').addEventListener('click', () => {
+        downloadCsv('?type=contact&format=csv&limit=500', `contacts_${new Date().toISOString().slice(0,10)}.csv`);
+      });
+
+      document.getElementById('btnExportNewsletters').addEventListener('click', () => {
+        downloadCsv('?type=newsletter&format=csv&limit=500', `newsletter_${new Date().toISOString().slice(0,10)}.csv`);
+      });
+
+      document.getElementById('btnRefresh').addEventListener('click', () => {
+        loadDashboard();
+      });
+    });
+  </script>
+</body>
+</html>

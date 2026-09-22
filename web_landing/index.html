@@ -35,9 +35,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=5.0">
-  <link rel="stylesheet" href="css/animations.css?v=5.0">
-  <link rel="stylesheet" href="css/styles.css?v=5.0">
+  <link rel="stylesheet" href="css/variables.css?v=5.4">
+  <link rel="stylesheet" href="css/animations.css?v=5.4">
+  <link rel="stylesheet" href="css/styles.css?v=5.4">
 
   <!-- Structured Data JSON-LD -->
   <script type="application/ld+json">
@@ -70,7 +70,7 @@
         <ul class="nav-links">
           <li><a href="#pillars" class="nav-link">How It Works</a></li>
           <li><a href="#differentiators" class="nav-link">Privacy & Access</a></li>
-          <li><a href="#comparison" class="nav-link">Why Kortex</a></li>
+          <li><a href="#newsletter" class="nav-link">Updates</a></li>
           <li><a href="#faq" class="nav-link">FAQ</a></li>
           <li><a href="contact.html" class="nav-link">Contact</a></li>
         </ul>
@@ -553,28 +553,80 @@
       </div>
     </section>
 
-    <!-- Development Dispatches & Newsletter -->
+    <!-- Student Community & Product Updates -->
     <section class="newsletter-section" id="newsletter">
       <div class="container">
         <div class="newsletter-card reveal-on-scroll">
-          <span class="section-badge">Engineering Dispatches</span>
-          <h2 class="newsletter-title">Follow the development journey.</h2>
-          <p class="newsletter-desc">
-            Get bi-weekly technical notes on our on-device AI pipeline, FSRS-6 spaced repetition benchmarks, CBT question drops, and early feature builds. Zero spam.
-          </p>
-          <form id="landingNewsletterForm" class="newsletter-form-row">
-            <input type="email" id="landingNewsletterEmail" class="text-input" placeholder="Your student or personal email" required autocomplete="email">
-            <button type="submit" class="btn-primary-cta" id="landingNewsletterBtn">
-              <span>Subscribe</span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </button>
-          </form>
-          <div id="landingNewsletterStatus" class="newsletter-status-box"></div>
-          <div class="newsletter-privacy-note">
-            🛡️ 100% privacy guarantee. We never share or sell your email. Unsubscribe anytime with a single click.
+
+          <!-- Left: Copy & Social Proof -->
+          <div class="newsletter-left">
+            <span class="section-badge">Student Community &amp; Updates</span>
+            <h2 class="newsletter-title">Stay ahead of your exams.<br>We'll show you how.</h2>
+            <p class="newsletter-desc">
+              Real updates from the team building Kortex — past questions drops, FSRS tuning tips, and early feature previews. No fluff.
+            </p>
+
+            <ul class="newsletter-perks">
+              <li>
+                <span class="newsletter-perk-icon">📚</span>
+                <span>New CBT past questions every release</span>
+              </li>
+              <li>
+                <span class="newsletter-perk-icon">🧠</span>
+                <span>Memory science tips that actually work</span>
+              </li>
+              <li>
+                <span class="newsletter-perk-icon">⚡</span>
+                <span>Early access to new features &amp; beta builds</span>
+              </li>
+              <li>
+                <span class="newsletter-perk-icon">🔒</span>
+                <span>Zero spam. One-click unsubscribe. Always.</span>
+              </li>
+            </ul>
           </div>
+
+          <!-- Right: Form -->
+          <div class="newsletter-right">
+            <div class="newsletter-form-card">
+              <p class="newsletter-form-label">Join students already on the list</p>
+
+              <form id="landingNewsletterForm" class="newsletter-form-col">
+                <!-- Honeypot -->
+                <div style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;width:0;height:0;overflow:hidden;" aria-hidden="true">
+                  <input type="text" id="nlHoneypot" name="company_fax" tabindex="-1" autocomplete="off">
+                </div>
+
+                <div class="newsletter-input-wrap">
+                  <svg class="newsletter-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  <input
+                    type="email"
+                    id="landingNewsletterEmail"
+                    class="newsletter-email-input"
+                    placeholder="your@email.com"
+                    required
+                    autocomplete="email"
+                  >
+                </div>
+
+                <button type="submit" class="btn-newsletter-submit" id="landingNewsletterBtn">
+                  <span id="landingNewsletterBtnText">Notify Me</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </form>
+
+              <div id="landingNewsletterStatus" class="newsletter-status-box"></div>
+
+              <p class="newsletter-form-privacy">
+                No spam. Unsubscribe anytime.
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
@@ -682,8 +734,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 
   <!-- Scripts -->
-  <script src="js/storage.js?v=5.1"></script>
-  <script src="js/animations.js?v=5.1"></script>
-  <script src="js/main.js?v=5.1"></script>
+  <script src="js/storage.js?v=5.4"></script>
+  <script src="js/animations.js?v=5.4"></script>
+  <script src="js/main.js?v=5.4"></script>
 </body>
 </html>
