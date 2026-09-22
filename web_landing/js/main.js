@@ -408,4 +408,152 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // --------------------------------------------------------------------------
+  // 6. Interactive Pillar Experiences (Pillars 1, 2, 3)
+  // --------------------------------------------------------------------------
+  
+  // Pillar 1: Ingest Tabs & Flashcard Flip
+  const intTabs = document.querySelectorAll('.int-tab');
+  const docBadge = document.querySelector('.doc-badge');
+  const formulaCode = document.querySelector('.formula-code');
+  const miniFlashcard = document.getElementById('miniFlashcard');
+  const miniCardFrontText = document.getElementById('miniCardFrontText');
+  const miniCardBackText = document.getElementById('miniCardBackText');
+
+  const ingestData = {
+    pdf: {
+      badge: 'Calculus_III_Notes.pdf',
+      code: '\\int x \\cdot e^x \\, dx = (x - 1)e^x + C',
+      front: 'What is the integration by parts formula for \\int u \\, v\' \\, dx?',
+      back: '\\int u \\, dv = uv - \\int v \\, du'
+    },
+    ocr: {
+      badge: 'Physics_Blackboard.jpg (Camera OCR)',
+      code: 'E^2 = (pc)^2 + (m_0 c^2)^2',
+      front: 'What is the relativistic energy-momentum relation?',
+      back: 'E^2 = p^2 c^2 + m^2 c^4'
+    },
+    voice: {
+      badge: 'Bio_Lecture_Audio.m4a (Whisper AI)',
+      code: '6CO_2 + 6H_2O \\xrightarrow{light} C_6H_{12}O_6 + 6O_2',
+      front: 'What are the net inputs and outputs of oxygenic photosynthesis?',
+      back: '6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂'
+    }
+  };
+
+  intTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      intTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const mode = tab.getAttribute('data-tab');
+      const data = ingestData[mode];
+      if (data) {
+        if (docBadge) docBadge.textContent = data.badge;
+        if (formulaCode) formulaCode.textContent = data.code;
+        if (miniCardFrontText) miniCardFrontText.textContent = data.front;
+        if (miniCardBackText) miniCardBackText.textContent = data.back;
+        if (miniFlashcard) miniFlashcard.classList.remove('flipped');
+      }
+    });
+  });
+
+  if (miniFlashcard) {
+    miniFlashcard.addEventListener('click', () => {
+      miniFlashcard.classList.toggle('flipped');
+    });
+  }
+
+  // Pillar 2: FSRS Spaced-Repetition Simulator
+  const fsrsButtons = document.querySelectorAll('.fsrs-rate-btn');
+  const retentionVal = document.getElementById('retentionVal');
+  const fsrsStatusMsg = document.getElementById('fsrsStatusMsg');
+
+  const fsrsFeedback = {
+    again: {
+      retention: '45%',
+      msg: '⚠️ Concept reset. Scheduled for review in <strong>10 minutes</strong> to rebuild memory pathways.'
+    },
+    hard: {
+      retention: '78%',
+      msg: '⚡ Moderate recall. Scheduled for review <strong>tomorrow</strong> to strengthen synaptic consolidation.'
+    },
+    good: {
+      retention: '94%',
+      msg: '✓ High recall stability. Next review scheduled for <strong>Thursday (3 days)</strong>.'
+    },
+    easy: {
+      retention: '99%',
+      msg: '🌟 Mastery locked in! Next review safely deferred for <strong>10 days</strong>.'
+    }
+  };
+
+  fsrsButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      fsrsButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const rating = btn.getAttribute('data-rating');
+      const info = fsrsFeedback[rating];
+      if (info) {
+        if (retentionVal) retentionVal.textContent = info.retention;
+        if (fsrsStatusMsg) fsrsStatusMsg.innerHTML = info.msg;
+      }
+    });
+  });
+
+  // Pillar 3: CBT Exam Question Simulator
+  const examOptBtns = document.querySelectorAll('.exam-opt-btn');
+  const examFeedbackBox = document.getElementById('examFeedbackBox');
+  const feedbackStatus = document.getElementById('feedbackStatus');
+  const feedbackExplanation = document.getElementById('feedbackExplanation');
+  const examTimer = document.getElementById('examTimer');
+
+  let timerSecs = 45;
+  if (examTimer) {
+    setInterval(() => {
+      if (timerSecs > 0) {
+        timerSecs--;
+        const m = String(Math.floor(timerSecs / 60)).padStart(2, '0');
+        const s = String(timerSecs % 60).padStart(2, '0');
+        examTimer.textContent = `${m}:${s}`;
+      }
+    }, 1000);
+  }
+
+  examOptBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isCorrect = btn.getAttribute('data-correct') === 'true';
+      examOptBtns.forEach(b => {
+        b.classList.remove('correct', 'wrong');
+      });
+
+      if (isCorrect) {
+        btn.classList.add('correct');
+        if (feedbackStatus) {
+          feedbackStatus.className = 'feedback-status success';
+          feedbackStatus.textContent = '✓ Correct! +100 Mastery XP';
+        }
+        if (feedbackExplanation) {
+          feedbackExplanation.textContent = 'Acceleration a = dv/dt = 6t. At t = 2s, a = 12 m/s². Force F = m · a = 2.0 kg · 12 m/s² = 24 N.';
+        }
+      } else {
+        btn.classList.add('wrong');
+        // also highlight the correct option
+        const correctBtn = document.querySelector('.exam-opt-btn[data-correct="true"]');
+        if (correctBtn) correctBtn.classList.add('correct');
+        if (feedbackStatus) {
+          feedbackStatus.className = 'feedback-status error';
+          feedbackStatus.textContent = '✗ Incorrect. Automatically added to your review deck!';
+        }
+        if (feedbackExplanation) {
+          feedbackExplanation.textContent = 'Remember: F = m(dv/dt). Derivative of 3t² + 2 is 6t. At t=2, a = 12. F = 2 · 12 = 24 N.';
+        }
+      }
+
+      if (examFeedbackBox) {
+        examFeedbackBox.style.display = 'block';
+      }
+    });
+  });
 });
+

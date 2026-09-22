@@ -190,6 +190,7 @@
                       <p class="card-question-title" id="cardQuestionText">
                         Why do you forget things after reading them?
                       </p>
+                      <div id="katexFrontFormula" style="display: none; justify-content: center; margin-top: 12px; font-size: 1.1rem; color: var(--text-primary);"></div>
                     </div>
 
                     <div class="card-meta-bar" style="margin-bottom: 0;">
@@ -211,6 +212,7 @@
                       <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;" id="cardAnswerText">
                         Because reading isn't testing. Your brain only keeps information when you practice bringing it back out. Kortexify builds that exact practice for you.
                       </p>
+                      <div id="katexBackFormula" style="display: none; justify-content: center; margin-top: 12px; font-size: 1.1rem; color: var(--text-primary);"></div>
                     </div>
 
                     <div style="font-size: 0.78rem; color: var(--color-recall-easy); font-weight: 600;">
@@ -305,12 +307,57 @@
               </p>
             </div>
             <div class="pillar-visual">
-              <div class="pillar-visual-card">
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-primary); margin-bottom: 12px; letter-spacing: 0.04em;">INPUTS ACCEPTED</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                  <div class="diff-chip" style="padding: 10px; justify-content: center;">📑 PDFs & Slides</div>
-                  <div class="diff-chip" style="padding: 10px; justify-content: center;">📸 Photo Notes</div>
-                  <div class="diff-chip" style="padding: 10px; justify-content: center;">🎙️ Voice Lectures</div>
+              <div class="interactive-pillar-card" id="pillarIngestCard">
+                <div class="interactive-card-header">
+                  <div class="interactive-tag">
+                    <span class="pulse-dot"></span> LIVE PARSER
+                  </div>
+                  <div class="interactive-tabs" role="tablist">
+                    <button class="int-tab active" data-tab="pdf" type="button">📄 PDF</button>
+                    <button class="int-tab" data-tab="ocr" type="button">📸 Photo OCR</button>
+                    <button class="int-tab" data-tab="voice" type="button">🎙️ Audio</button>
+                  </div>
+                </div>
+
+                <!-- Tailored Ingest Lottie Animation -->
+                <div style="border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface-elevated2); border: 1px solid var(--border-subtle); margin-bottom: 0.65rem;">
+                  <lottie-player src="assets/lotties/ingest.json" background="transparent" speed="1" style="width: 100%; height: 180px; display: block;" loop autoplay></lottie-player>
+                </div>
+
+                <div class="interactive-demo-body">
+                  <div class="doc-preview-container">
+                    <div class="doc-scan-line"></div>
+                    <div class="doc-content-mock">
+                      <div class="doc-header-row">
+                        <span class="doc-badge">Calculus_III_Notes.pdf</span>
+                        <span class="doc-pages">Page 4 of 28</span>
+                      </div>
+                      <div class="doc-formula-preview">
+                        <span class="formula-label">Detected Equation:</span>
+                        <code class="formula-code">\int x \cdot e^x \, dx = (x - 1)e^x + C</code>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Generated Flashcard (Clickable to Flip!) -->
+                  <div class="mini-flashcard-interactive" id="miniFlashcard" title="Click to flip card!">
+                    <div class="mini-card-inner">
+                      <div class="mini-card-front">
+                        <span class="mini-card-badge">AUTO-GENERATED CARD • CLICK TO FLIP 🔄</span>
+                        <p class="mini-card-text" id="miniCardFrontText">What is the integration by parts formula for \int u \, v' \, dx?</p>
+                      </div>
+                      <div class="mini-card-back">
+                        <span class="mini-card-badge back-badge">ANSWER ✓</span>
+                        <p class="mini-card-text" id="miniCardBackText">\int u \, dv = uv - \int v \, du</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pillar-chips-row">
+                  <span class="diff-chip">📑 PDFs & Slides</span>
+                  <span class="diff-chip">📸 Photo Notes</span>
+                  <span class="diff-chip">🎙️ Voice Lectures</span>
                 </div>
               </div>
             </div>
@@ -326,10 +373,38 @@
               </p>
             </div>
             <div class="pillar-visual">
-              <div class="pillar-visual-card">
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-recall-easy); margin-bottom: 12px; letter-spacing: 0.04em;">SMART REMINDERS</div>
-                <div style="padding: 16px; background: var(--color-primary-tint); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-                  <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">Study exactly when you need to, saving hours of wasted time.</p>
+              <div class="interactive-pillar-card" id="pillarRetainCard">
+                <div class="interactive-card-header">
+                  <div class="interactive-tag">
+                    <span class="pulse-dot recall-dot"></span> FSRS-6 MEMORY ENGINE
+                  </div>
+                  <div class="retention-score-badge">
+                    Recall: <strong id="retentionVal">94%</strong>
+                  </div>
+                </div>
+
+                <!-- Tailored Retain Lottie Animation -->
+                <div style="border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface-elevated2); border: 1px solid var(--border-subtle); margin-bottom: 0.65rem;">
+                  <lottie-player src="assets/lotties/retain.json" background="transparent" speed="1" style="width: 100%; height: 180px; display: block;" loop autoplay></lottie-player>
+                </div>
+
+                <div class="fsrs-controls-block">
+                  <div class="fsrs-prompt-text">Test your memory feedback (Click to simulate):</div>
+                  <div class="fsrs-btn-group">
+                    <button class="fsrs-rate-btn again" data-rating="again" type="button">Again<br><small>&lt; 10m</small></button>
+                    <button class="fsrs-rate-btn hard" data-rating="hard" type="button">Hard<br><small>1 day</small></button>
+                    <button class="fsrs-rate-btn good active" data-rating="good" type="button">Good<br><small>3 days</small></button>
+                    <button class="fsrs-rate-btn easy" data-rating="easy" type="button">Easy<br><small>10 days</small></button>
+                  </div>
+                  <div class="fsrs-status-msg" id="fsrsStatusMsg">
+                    ✓ High recall stability. Next review scheduled for <strong>Thursday (3 days)</strong>.
+                  </div>
+                </div>
+
+                <div class="pillar-chips-row">
+                  <span class="diff-chip">🧠 FSRS-6 Algorithm</span>
+                  <span class="diff-chip">⚡ Zero-Wasted Reviews</span>
+                  <span class="diff-chip">📈 98% Exam Retention</span>
                 </div>
               </div>
             </div>
@@ -345,9 +420,53 @@
               </p>
             </div>
             <div class="pillar-visual">
-              <div class="pillar-visual-card">
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-secondary); margin-bottom: 12px; letter-spacing: 0.04em;">EXAM PRACTICE</div>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <div class="interactive-pillar-card" id="pillarTestCard">
+                <div class="interactive-card-header">
+                  <div class="interactive-tag">
+                    <span class="pulse-dot exam-dot"></span> CBT EXAM SIMULATOR
+                  </div>
+                  <div class="exam-timer-box">
+                    ⏱️ <span id="examTimer">00:45</span>
+                  </div>
+                </div>
+
+                <!-- Tailored Test Lottie Animation -->
+                <div style="border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface-elevated2); border: 1px solid var(--border-subtle); margin-bottom: 0.65rem;">
+                  <lottie-player src="assets/lotties/test.json" background="transparent" speed="1" style="width: 100%; height: 140px; display: block;" loop autoplay></lottie-player>
+                </div>
+
+                <!-- Live Mini Question Card -->
+                <div class="interactive-exam-body">
+                  <div class="exam-q-header">
+                    <span class="exam-exam-type">JAMB / SAT Physics Simulation</span>
+                    <span class="exam-q-num">Q. 14 of 40</span>
+                  </div>
+                  <div class="exam-question-prompt">
+                    A 2.0 kg object moves with velocity v(t) = 3t² + 2 m/s. What is the net force acting on it at t = 2 s?
+                  </div>
+
+                  <div class="exam-options-grid" id="examOptionsGrid">
+                    <button class="exam-opt-btn" data-correct="false" data-opt="A" type="button">
+                      <span class="opt-letter">A</span> 12 N
+                    </button>
+                    <button class="exam-opt-btn" data-correct="true" data-opt="B" type="button">
+                      <span class="opt-letter">B</span> 24 N
+                    </button>
+                    <button class="exam-opt-btn" data-correct="false" data-opt="C" type="button">
+                      <span class="opt-letter">C</span> 28 N
+                    </button>
+                    <button class="exam-opt-btn" data-correct="false" data-opt="D" type="button">
+                      <span class="opt-letter">D</span> 36 N
+                    </button>
+                  </div>
+
+                  <div class="exam-feedback-box" id="examFeedbackBox" style="display: none;">
+                    <div class="feedback-status" id="feedbackStatus"></div>
+                    <div class="feedback-explanation" id="feedbackExplanation"></div>
+                  </div>
+                </div>
+
+                <div class="pillar-chips-row">
                   <span class="diff-chip">JAMB</span>
                   <span class="diff-chip">WAEC / NECO</span>
                   <span class="diff-chip">SAT</span>
@@ -608,6 +727,9 @@
 
   <!-- KaTeX Core Library for Math Formula Rendering -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+
+  <!-- Lottie Player -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 
   <!-- Scripts -->
   <script src="js/storage.js?v=5.4"></script>
