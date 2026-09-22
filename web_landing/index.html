@@ -4,23 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Study smarter with Kortexify. Drop in your PDFs, slides, or photos of your notes and get clean flashcards and practice tests, shown to you right before you forget. Works offline, no internet needed.">
-  <meta name="keywords" content="spaced repetition study app, offline study app, math from photos, JAMB CBT, WAEC past questions, active recall flashcards, focus study tool, Kortex">
-  <meta name="author" content="Kortex Technologies">
+  <meta name="keywords" content="spaced repetition study app, offline study app, math from photos, JAMB CBT, WAEC past questions, active recall flashcards, focus study tool, Kortexify">
+  <meta name="author" content="Kortexify Technologies">
 
   <!-- Open Graph / Social Sharing -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://kortex-study-app-2026.web.app/">
-  <meta property="og:title" content="Kortex | Pass Your Hardest Exams in Half the Time">
+  <meta property="og:title" content="Kortexify | Pass Your Hardest Exams in Half the Time">
   <meta property="og:description" content="Turn messy notes into flashcards and practice tests that show up right before you forget. Works fully offline, no account to try the demo.">
   <meta property="og:image" content="assets/images/social_og.jpg">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Kortex | Pass Your Hardest Exams in Half the Time">
+  <meta name="twitter:title" content="Kortexify | Pass Your Hardest Exams in Half the Time">
   <meta name="twitter:description" content="Turn messy notes into flashcards and practice tests that show up right before you forget. Works fully offline.">
   <meta name="twitter:image" content="assets/images/social_og.jpg">
 
-  <title>Kortex | Pass Your Hardest Exams in Half the Time</title>
+  <title>Kortexify | Pass Your Hardest Exams in Half the Time</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg?v=2">
@@ -35,16 +35,16 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=6.6">
-  <link rel="stylesheet" href="css/animations.css?v=6.6">
-  <link rel="stylesheet" href="css/styles.css?v=6.6">
+  <link rel="stylesheet" href="css/variables.css?v=6.11">
+  <link rel="stylesheet" href="css/animations.css?v=6.11">
+  <link rel="stylesheet" href="css/styles.css?v=6.11">
 
   <!-- Structured Data JSON-LD -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "Kortex",
+    "name": "Kortexify",
     "applicationCategory": "EducationalApplication",
     "operatingSystem": "iOS, Android, Web, macOS, Windows",
     "offers": {
@@ -65,9 +65,9 @@
   <!-- Site Header -->
   <header class="site-header">
     <div class="container nav-content">
-      <a href="/" class="brand-logo" aria-label="Kortex Home">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortex Logo" width="32" height="32">
-        <span class="brand-name">KORTEX</span>
+      <a href="/" class="brand-logo" aria-label="Kortexify Home">
+        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="32" height="32">
+        <span class="brand-name">KORTEXIFY</span>
       </a>
 
       <nav aria-label="Primary Navigation">
@@ -123,6 +123,22 @@
         <p class="hero-subtitle reveal-on-scroll delay-2">
           Drop in your messy PDFs, lecture slides, or photos of your notes. Kortexify turns them into flashcards and practice tests, then shows them to you right before you forget them.
         </p>
+
+        <form class="hero-signup reveal-on-scroll delay-3" data-newsletter-form="hero_waitlist">
+          <div class="hero-signup-field">
+            <label class="hero-signup-label" for="heroNewsletterEmail">Email address</label>
+            <span class="hero-signup-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 6l-10 7L2 6"></path></svg>
+            </span>
+            <input type="email" id="heroNewsletterEmail" class="hero-signup-input" data-nl-email placeholder="you@university.edu" autocomplete="email" required>
+          </div>
+          <input type="text" name="hp" class="hero-signup-hp" data-nl-hp tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button type="submit" class="hero-signup-btn" data-nl-btn>
+            <span data-nl-btn-text>Notify Me</span>
+          </button>
+          <div class="hero-signup-status" data-nl-status></div>
+          <p class="hero-signup-note">Free to join. Early access updates only, no spam.</p>
+        </form>
 
         <div class="hero-cta-group reveal-on-scroll delay-3">
           <a href="#workstation" class="btn-primary-cta" data-magnetic>
@@ -261,10 +277,6 @@
             <div class="proof-label">Offline capable. Use it with no data or Wi-Fi.</div>
           </div>
           <div class="proof-item">
-            <div class="proof-num"><span data-countup="4">0</span></div>
-            <div class="proof-label">Exam boards covered: JAMB, WAEC, NECO, SAT.</div>
-          </div>
-          <div class="proof-item">
             <div class="proof-num"><span data-countup="3">0</span> steps</div>
             <div class="proof-label">From messy notes to a timed practice test.</div>
           </div>
@@ -272,6 +284,61 @@
             <div class="proof-num"><span data-countup="0">0</span></div>
             <div class="proof-label">Ads. Your study data is never sold to advertisers.</div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Exam Coverage Band -->
+    <section class="exam-coverage" id="exams" aria-label="Exams you can prepare for">
+      <div class="container">
+        <div class="exam-coverage-head reveal-on-scroll">
+          <span class="section-badge">Exam ready</span>
+          <h2 class="section-title">Practice on the exams that count.</h2>
+          <p class="exam-coverage-sub">Here are a few of the boards you can drill with timed past questions. If your exam has past questions, you can practice it here, and we keep adding more.</p>
+        </div>
+
+        <div class="exam-logo-row" data-reveal-group>
+          <figure class="exam-logo-chip">
+            <div class="exam-logo-tile">
+              <img class="exam-logo-img" src="https://en.wikipedia.org/wiki/Special:FilePath/Official%20JAMB%20logo.png?width=200" alt="JAMB logo" width="200" height="188" loading="lazy" decoding="async">
+            </div>
+            <figcaption class="exam-logo-cap">JAMB</figcaption>
+          </figure>
+
+          <figure class="exam-logo-chip">
+            <div class="exam-logo-tile">
+              <img class="exam-logo-img" src="https://commons.wikimedia.org/wiki/Special:FilePath/Waec%20logo.png?width=170" alt="WAEC logo" width="170" height="185" loading="lazy" decoding="async">
+            </div>
+            <figcaption class="exam-logo-cap">WAEC</figcaption>
+          </figure>
+
+          <figure class="exam-logo-chip">
+            <div class="exam-logo-tile">
+              <img class="exam-logo-img" src="https://neco.gov.ng/assets/neco-logo.df6f9256.png" alt="NECO logo" width="1180" height="964" loading="lazy" decoding="async">
+            </div>
+            <figcaption class="exam-logo-cap">NECO</figcaption>
+          </figure>
+
+          <figure class="exam-logo-chip">
+            <div class="exam-logo-tile">
+              <img class="exam-logo-img" src="https://commons.wikimedia.org/wiki/Special:FilePath/SAT%20logo%20(2017).svg?width=220" alt="SAT logo" width="220" height="139" loading="lazy" decoding="async">
+            </div>
+            <figcaption class="exam-logo-cap">SAT</figcaption>
+          </figure>
+
+          <figure class="exam-logo-chip">
+            <div class="exam-logo-tile exam-logo-tile-more">
+              <svg class="exam-more-glyph" viewBox="0 0 64 64" fill="none" role="img" aria-label="Many more exams">
+                <rect class="em-layer em-l3" x="20" y="12" width="32" height="24" rx="5"/>
+                <rect class="em-layer em-l2" x="16" y="18" width="32" height="24" rx="5"/>
+                <rect class="em-layer em-l1" x="12" y="24" width="32" height="24" rx="5"/>
+                <circle class="em-pulse" cx="46" cy="46" r="10"/>
+                <circle class="em-badge" cx="46" cy="46" r="10"/>
+                <path class="em-plus" d="M46 41v10M41 46h10"/>
+              </svg>
+            </div>
+            <figcaption class="exam-logo-cap">and more</figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -862,21 +929,22 @@
           </div>
           <div class="newsletter-right">
             <div class="newsletter-form-card">
-              <form id="landingNewsletterForm">
+              <form id="landingNewsletterForm" data-newsletter-form="landing_page">
                 <div class="newsletter-form-col">
                   <label for="landingNewsletterEmail" class="newsletter-form-label">Email address</label>
                   <div class="newsletter-input-wrap">
                     <span class="newsletter-input-icon">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                     </span>
-                    <input type="email" id="landingNewsletterEmail" class="newsletter-email-input" placeholder="student@university.edu" required>
+                    <input type="email" id="landingNewsletterEmail" class="newsletter-email-input" data-nl-email placeholder="student@university.edu" autocomplete="email" required>
                   </div>
                 </div>
+                <input type="text" name="hp" class="newsletter-hp" data-nl-hp tabindex="-1" autocomplete="off" aria-hidden="true">
                 <div class="newsletter-form-col" style="margin-top: 0.625rem;">
-                <button type="submit" id="landingNewsletterBtn" class="btn-newsletter-submit">
-                  <span id="landingNewsletterBtnText">Notify Me</span>
+                <button type="submit" id="landingNewsletterBtn" class="btn-newsletter-submit" data-nl-btn>
+                  <span id="landingNewsletterBtnText" data-nl-btn-text>Notify Me</span>
                 </button>
-                <div id="landingNewsletterStatus" class="newsletter-status-box"></div>
+                <div id="landingNewsletterStatus" class="newsletter-status-box" data-nl-status></div>
                 <div class="newsletter-form-privacy">We respect your privacy. Unsubscribe at any time.</div>
               </form>
             </div>
@@ -920,12 +988,12 @@
   <footer class="site-footer">
     <div class="container footer-content">
       <div class="brand-logo">
-        <img src="assets/kortexify_logo.svg?v=2" alt="Kortex Logo" width="26" height="26">
-        <span class="brand-name" style="font-size: 0.95rem;">KORTEX</span>
+        <img src="assets/kortexify_logo.svg?v=2" alt="Kortexify Logo" width="26" height="26">
+        <span class="brand-name" style="font-size: 0.95rem;">KORTEXIFY</span>
       </div>
 
       <div class="footer-copyright">
-        © 2026 Kortex Inc. All rights reserved.
+        © 2026 Kortexify Inc. All rights reserved.
       </div>
 
       <div class="footer-legal-links">
@@ -940,8 +1008,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 
   <!-- Scripts -->
-  <script src="js/storage.js?v=6.6"></script>
-  <script src="js/animations.js?v=6.6"></script>
-  <script src="js/main.js?v=6.6"></script>
+  <script src="js/storage.js?v=6.11"></script>
+  <script src="js/animations.js?v=6.11"></script>
+  <script src="js/main.js?v=6.11"></script>
 </body>
 </html>

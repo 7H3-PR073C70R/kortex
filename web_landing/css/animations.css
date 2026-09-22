@@ -235,6 +235,55 @@
 }
 
 /* --------------------------------------------------------------------------
+   6b. Exam Coverage Logo Chips (tile hover lift, decoupled from reveal)
+   -------------------------------------------------------------------------- */
+.exam-logo-tile {
+  transition: transform 240ms var(--ease-out-quint),
+              box-shadow 240ms var(--ease-out-quint),
+              border-color 240ms var(--ease-out-quint);
+}
+
+.exam-logo-chip:hover .exam-logo-tile {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-highlight);
+}
+
+.exam-logo-img {
+  transition: transform 240ms var(--ease-out-quint);
+}
+
+.exam-logo-chip:hover .exam-logo-img {
+  transform: scale(1.04);
+}
+
+/* "and more" deck: layers fan open on hover, badge breathes */
+.em-layer {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 340ms var(--ease-out-quint);
+}
+
+.exam-logo-chip:hover .em-l3 {
+  transform: translate(7px, -7px);
+}
+
+.exam-logo-chip:hover .em-l2 {
+  transform: translate(3.5px, -3.5px);
+}
+
+.em-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: emPulse 3s var(--ease-in-out-quart) infinite;
+}
+
+@keyframes emPulse {
+  0% { transform: scale(0.75); opacity: 0.5; }
+  70%, 100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* --------------------------------------------------------------------------
    7. Scroll Progress Bar (transform-only, GPU friendly)
    -------------------------------------------------------------------------- */
 .scroll-progress {
@@ -659,5 +708,9 @@
   .ts-check {
     animation: none !important;
     stroke-dashoffset: 0 !important;
+  }
+
+  .em-pulse {
+    display: none;
   }
 }

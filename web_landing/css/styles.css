@@ -384,6 +384,154 @@ button {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* Hero email capture (above-the-fold lead gen) */
+.hero-signup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 auto 1.15rem;
+}
+
+.hero-signup-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.hero-signup-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.hero-signup-icon {
+  position: absolute;
+  left: 15px;
+  display: inline-flex;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.hero-signup-input {
+  width: 100%;
+  height: 54px;
+  padding: 0 16px 0 44px;
+  background: var(--bg-surface-elevated1);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.96rem;
+  font-family: var(--font-body);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.hero-signup-input::placeholder {
+  color: var(--text-muted);
+}
+
+.hero-signup-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}
+
+.hero-signup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 54px;
+  flex: 0 0 auto;
+  padding: 0 26px;
+  background: var(--color-primary);
+  color: #FFFFFF;
+  font-size: 0.98rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.01em;
+  transition: background-color var(--duration-fast), transform var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.hero-signup-btn:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hero-signup-btn:active {
+  transform: scale(0.97);
+}
+
+.hero-signup-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.hero-signup-status {
+  flex-basis: 100%;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  display: none;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.hero-signup-status.success {
+  display: block;
+  background: rgba(120, 140, 126, 0.12);
+  border: 1px solid rgba(120, 140, 126, 0.35);
+  color: var(--color-recall-easy);
+}
+
+.hero-signup-status.error {
+  display: block;
+  background: rgba(200, 109, 81, 0.1);
+  border: 1px solid rgba(200, 109, 81, 0.3);
+  color: var(--color-recall-again);
+}
+
+.hero-signup-note {
+  flex-basis: 100%;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+/* Honeypot fields: keep out of the visual flow, bots fill them */
+.hero-signup-hp,
+.newsletter-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .hero-signup-btn {
+    flex: 1 1 100%;
+  }
+}
+
 /* Trust Badges Bar */
 .trust-badges-bar {
   display: flex;
@@ -1878,14 +2026,15 @@ button {
 
 .proof-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem 1rem;
+  grid-template-columns: 1fr;
+  gap: 1.9rem;
   text-align: center;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 620px) {
   .proof-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem 1rem;
   }
 }
 
@@ -1904,6 +2053,108 @@ button {
   font-size: 0.82rem;
   color: var(--text-secondary);
   line-height: 1.5;
+}
+
+/* Exam coverage band */
+.exam-coverage {
+  padding: clamp(3.2rem, 6vw, 5.2rem) 0;
+}
+
+.exam-coverage-head {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto clamp(2rem, 4vw, 2.8rem);
+}
+
+.exam-coverage-sub {
+  margin-top: 0.9rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.exam-logo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(1rem, 2.4vw, 1.6rem);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.exam-logo-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.exam-logo-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 158px;
+  height: 116px;
+  padding: 1rem;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.exam-logo-img {
+  height: 64px;
+  width: auto;
+  max-width: 122px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.exam-logo-cap {
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+
+.exam-logo-tile-more {
+  background: var(--bg-surface-elevated1);
+  border: 1.5px dashed var(--border-highlight);
+  box-shadow: none;
+}
+
+.exam-more-glyph {
+  width: 68px;
+  height: 68px;
+  display: block;
+  overflow: visible;
+}
+
+.em-layer {
+  fill: var(--color-primary-subtle);
+  stroke: var(--text-secondary);
+  stroke-width: 1.6;
+}
+
+.em-l3 { opacity: 0.4; }
+.em-l2 { opacity: 0.7; }
+.em-l1 { opacity: 1; stroke: var(--color-primary); }
+
+.em-badge { fill: var(--color-primary); }
+
+.em-plus {
+  stroke: #FFFFFF;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.em-pulse {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 1.5;
 }
 
 /* Features: alternating image + text rows (equal height) */

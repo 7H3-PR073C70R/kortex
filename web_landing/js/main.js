@@ -284,45 +284,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
   const NEWSLETTER_URL  = `${SUPABASE_URL}/functions/v1/subscribe-newsletter`;
 
-  const landingNewsletterForm   = document.getElementById('landingNewsletterForm');
-  const landingNewsletterEmail  = document.getElementById('landingNewsletterEmail');
-  const landingNewsletterStatus = document.getElementById('landingNewsletterStatus');
-  const landingNewsletterBtn    = document.getElementById('landingNewsletterBtn');
-  const landingNewsletterBtnTxt = document.getElementById('landingNewsletterBtnText');
+  const initNewsletterForm = (form) => {
+    const emailEl  = form.querySelector('[data-nl-email]');
+    const statusEl = form.querySelector('[data-nl-status]');
+    const btnEl    = form.querySelector('[data-nl-btn]');
+    const btnTxt   = form.querySelector('[data-nl-btn-text]');
+    const source   = form.getAttribute('data-newsletter-form') || 'landing_page';
+    const idleLabel = btnTxt ? btnTxt.textContent.trim() : 'Notify Me';
 
-  function setNewsletterBtn(state) {
-    if (!landingNewsletterBtn) return;
-    if (state === 'loading') {
-      landingNewsletterBtn.disabled = true;
-      if (landingNewsletterBtnTxt) landingNewsletterBtnTxt.textContent = 'Joining…';
-    } else if (state === 'done') {
-      landingNewsletterBtn.disabled = true;
-      if (landingNewsletterBtnTxt) landingNewsletterBtnTxt.textContent = 'You\'re in! ✓';
-    } else {
-      landingNewsletterBtn.disabled = false;
-      if (landingNewsletterBtnTxt) landingNewsletterBtnTxt.textContent = 'Notify Me';
-    }
-  }
+    const setBtn = (state) => {
+      if (!btnEl) return;
+      if (state === 'loading') {
+        btnEl.disabled = true;
+        if (btnTxt) btnTxt.textContent = 'Joining…';
+      } else if (state === 'done') {
+        btnEl.disabled = true;
+        if (btnTxt) btnTxt.textContent = 'You\'re in! ✓';
+      } else {
+        btnEl.disabled = false;
+        if (btnTxt) btnTxt.textContent = idleLabel;
+      }
+    };
 
-  function showNewsletterStatus(type, msg) {
-    if (!landingNewsletterStatus) return;
-    landingNewsletterStatus.className = `newsletter-status-box ${type}`;
-    landingNewsletterStatus.textContent = msg;
-  }
+    const showStatus = (type, msg) => {
+      if (!statusEl) return;
+      statusEl.classList.remove('success', 'error');
+      statusEl.classList.add(type);
+      statusEl.textContent = msg;
+    };
 
-  if (landingNewsletterForm) {
-    landingNewsletterForm.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const email    = landingNewsletterEmail ? landingNewsletterEmail.value.trim() : '';
-      const honeypot = document.getElementById('nlHoneypot')?.value || '';
+      const email    = emailEl ? emailEl.value.trim() : '';
+      const hpEl     = form.querySelector('[data-nl-hp]');
+      const honeypot = hpEl ? hpEl.value : '';
 
       if (!email) {
-        showNewsletterStatus('error', 'Please enter your email address.');
+        showStatus('error', 'Please enter your email address.');
         return;
       }
 
-      setNewsletterBtn('loading');
+      setBtn('loading');
 
       try {
         const res = await fetch(NEWSLETTER_URL, {
@@ -332,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'apikey': SUPABASE_ANON,
             'Authorization': `Bearer ${SUPABASE_ANON}`,
           },
-          body: JSON.stringify({ email, source: 'landing_page', hp: honeypot }),
+          body: JSON.stringify({ email, source, hp: honeypot }),
         });
 
         const data = await res.json().catch(() => ({}));
@@ -342,19 +345,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-          window.KortexSecurityEngine?.saveNewsletterEmail(email, 'landing_page');
+          window.KortexSecurityEngine?.saveNewsletterEmail(email, source);
         } catch (_) { /* ignore localStorage errors */ }
 
-        if (landingNewsletterEmail) landingNewsletterEmail.value = '';
-        setNewsletterBtn('done');
-        showNewsletterStatus('success', '✓ You\'re on the list! We\'ll send you updates as we build.');
+        if (emailEl) emailEl.value = '';
+        setBtn('done');
+        showStatus('success', '✓ You\'re on the list! We\'ll send you updates as we build.');
 
       } catch (err) {
-        setNewsletterBtn('idle');
-        showNewsletterStatus('error', err.message || 'Something went wrong. Please try again.');
+        setBtn('idle');
+        showStatus('error', err.message || 'Something went wrong. Please try again.');
       }
     });
-  }
+  };
+
+  document.querySelectorAll('[data-newsletter-form]').forEach(initNewsletterForm);
 
   
   const intTabs = document.querySelectorAll('.int-tab');
