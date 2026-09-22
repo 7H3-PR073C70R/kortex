@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const runCount = (el) => {
     const target = parseInt(el.getAttribute('data-countup'), 10) || 0;
     if (reducedMotion || target <= 0) {
-      el.textContent = String(target);
+      el.textContent = target.toLocaleString('en-US');
       return;
     }
     const duration = 1200;
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tick = (now) => {
       const p = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
-      el.textContent = String(Math.round(target * eased));
+      el.textContent = Math.round(target * eased).toLocaleString('en-US');
       if (p < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.6 });
     counters.forEach((el) => countObserver.observe(el));
   } else {
-    counters.forEach((el) => { el.textContent = el.getAttribute('data-countup'); });
+    counters.forEach((el) => { el.textContent = (parseInt(el.getAttribute('data-countup'), 10) || 0).toLocaleString('en-US'); });
   }
 
   /* ----------------------------------------------------------------------

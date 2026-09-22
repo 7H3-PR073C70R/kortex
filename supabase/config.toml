@@ -454,4 +454,7 @@ verify_jwt = false
 [functions.presence-heartbeat]
 verify_jwt = true
 
+[functions.newsletter-count]
+verify_jwt = false
+
 

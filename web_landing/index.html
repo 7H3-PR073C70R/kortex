@@ -35,9 +35,9 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=6.11">
-  <link rel="stylesheet" href="css/animations.css?v=6.11">
-  <link rel="stylesheet" href="css/styles.css?v=6.11">
+  <link rel="stylesheet" href="css/variables.css?v=6.15">
+  <link rel="stylesheet" href="css/animations.css?v=6.15">
+  <link rel="stylesheet" href="css/styles.css?v=6.15">
 
   <!-- Structured Data JSON-LD -->
   <script type="application/ld+json">
@@ -125,33 +125,30 @@
         </p>
 
         <form class="hero-signup reveal-on-scroll delay-3" data-newsletter-form="hero_waitlist">
-          <div class="hero-signup-field">
-            <label class="hero-signup-label" for="heroNewsletterEmail">Email address</label>
+          <div class="hero-signup-capsule">
             <span class="hero-signup-icon" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 6l-10 7L2 6"></path></svg>
             </span>
-            <input type="email" id="heroNewsletterEmail" class="hero-signup-input" data-nl-email placeholder="you@university.edu" autocomplete="email" required>
+            <label class="hero-signup-label" for="heroNewsletterEmail">Email address</label>
+            <input type="email" id="heroNewsletterEmail" class="hero-signup-input" data-nl-email placeholder="Enter your email for early access" autocomplete="email" required>
+            <input type="text" name="hp" class="hero-signup-hp" data-nl-hp tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button type="submit" class="hero-signup-btn" data-nl-btn>
+              <span data-nl-btn-text>Notify Me</span>
+            </button>
           </div>
-          <input type="text" name="hp" class="hero-signup-hp" data-nl-hp tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button type="submit" class="hero-signup-btn" data-nl-btn>
-            <span data-nl-btn-text>Notify Me</span>
-          </button>
           <div class="hero-signup-status" data-nl-status></div>
-          <p class="hero-signup-note">Free to join. Early access updates only, no spam.</p>
+          <p class="hero-signup-note">Free to join. We'll email you the moment early access opens.</p>
         </form>
 
-        <div class="hero-cta-group reveal-on-scroll delay-3">
-          <a href="#workstation" class="btn-primary-cta" data-magnetic>
-            <span>Try the Live Demo (Free)</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7"></path>
-            </svg>
+        <div class="hero-secondary reveal-on-scroll delay-3">
+          <a href="#workstation" class="hero-text-link">
+            <span>Try the live demo</span>
+            <svg class="hero-link-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
           </a>
-          <a href="#pillars" class="btn-secondary-cta">
-            <span>See How It Works</span>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 9l-7 7-7-7"></path>
-            </svg>
+          <span class="hero-secondary-sep" aria-hidden="true"></span>
+          <a href="#pillars" class="hero-text-link">
+            <span>See how it works</span>
+            <svg class="hero-link-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"></path></svg>
           </a>
         </div>
 
@@ -272,6 +269,10 @@
     <section class="proof-strip" aria-label="What makes Kortexify different">
       <div class="container">
         <div class="proof-grid" data-reveal-group>
+          <div class="proof-item">
+            <div class="proof-num"><span data-countup="2000">0</span>+</div>
+            <div class="proof-label">Past exam questions ready to practice, and more added often.</div>
+          </div>
           <div class="proof-item">
             <div class="proof-num"><span data-countup="100">0</span>%</div>
             <div class="proof-label">Offline capable. Use it with no data or Wi-Fi.</div>
@@ -1008,8 +1009,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 
   <!-- Scripts -->
-  <script src="js/storage.js?v=6.11"></script>
-  <script src="js/animations.js?v=6.11"></script>
-  <script src="js/main.js?v=6.11"></script>
+  <script src="js/storage.js?v=6.15"></script>
+  <script src="js/animations.js?v=6.15"></script>
+  <script src="js/main.js?v=6.15"></script>
 </body>
 </html>
