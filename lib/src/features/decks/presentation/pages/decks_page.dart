@@ -2,14 +2,17 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
@@ -68,7 +71,7 @@ class _DecksView extends HookWidget {
               constraints: const BoxConstraints(maxWidth: 600),
               child: SafeArea(
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 20,
@@ -156,8 +159,10 @@ class _DecksView extends HookWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+    final reduceMotion = context.reduceMotion;
 
     final searchController = useTextEditingController();
+    final searchQueryEmpty = useState(true);
 
     useEffect(() {
       context.read<DecksBloc>().add(const DecksRefreshed());
@@ -201,7 +206,7 @@ class _DecksView extends HookWidget {
                   },
                   color: colors.primary,
                   child: ListView(
-                    physics: const BouncingScrollPhysics(
+                    physics: const ClampingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -266,328 +271,86 @@ class _DecksView extends HookWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // ADHD-Friendly Quick Focus Sprint Banner
+                      // 2. Today focus — the single obvious next action.
+                      //    One decision at the front door beats four equal tiles.
                       if (state.allDecks.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isDark
-                                  ? [
-                                      colors.surfaceSecondary,
-                                      colors.surfaceTertiary,
-                                    ]
-                                  : [
-                                      colors.surfacePrimary,
-                                      colors.surfaceSecondary,
-                                    ],
-                            ),
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.panel,
-                            ),
-                            border: Border.all(
-                              color: colors.primary.withValues(alpha: 0.35),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.black.withValues(
-                                  alpha: isDark ? 0.2 : 0.08,
-                                ),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                        _TodayHeroCard(state: state),
+                        const SizedBox(height: 14),
+
+                        // 3. Sprint options demoted to a compact secondary row:
+                        //    still one tap away, no longer competing with the queue.
+                        Text(
+                          l10n.decksSprintLabel,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textMuted,
+                            fontSize: 11,
+                            letterSpacing: 0.4,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: colors.primary.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.bolt_rounded,
-                                      color: colors.primary,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Quick Focus Sprint',
-                                          style: typography.body.bold.copyWith(
-                                            color: colors.textPrimary,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        Text(
-                                          'Randomized flashcards to beat predictive boredom',
-                                          style: typography.caption.regular
-                                              .copyWith(
-                                                color: colors.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              _SprintChip(
+                                icon: Icons.flash_on_rounded,
+                                label: l10n.decksSprintQuick10,
+                                tone: _SprintTone.primary,
+                                onTap: () => _startSprint(context, state, '10'),
                               ),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ShrinkableButton(
-                                      onTap: () {
-                                        final targetDeckId =
-                                            state.allDecks.length > 1
-                                            ? 'all'
-                                            : state.allDecks.first.id;
-                                        AppFeedback.selection();
-                                        unawaited(
-                                          context.router.push(
-                                            StudySessionRoute(
-                                              deckId: 'sprint:10:$targetDeckId',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colors.primary,
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.card,
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.flash_on_rounded,
-                                              color: colors.white,
-                                              size: 16,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Quick 10',
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.white,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: ShrinkableButton(
-                                      onTap: () {
-                                        final targetDeckId =
-                                            state.allDecks.length > 1
-                                            ? 'all'
-                                            : state.allDecks.first.id;
-                                        AppFeedback.selection();
-                                        unawaited(
-                                          context.router.push(
-                                            StudySessionRoute(
-                                              deckId: 'sprint:20:$targetDeckId',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? colors.white.withValues(
-                                                  alpha: 0.1,
-                                                )
-                                              : colors.black.withValues(
-                                                  alpha: 0.06,
-                                                ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.card,
-                                          ),
-                                          border: Border.all(
-                                            color: colors.surfaceBorder
-                                                .withValues(
-                                                  alpha: 0.6,
-                                                ),
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.track_changes_rounded,
-                                              color: colors.textPrimary,
-                                              size: 16,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Power 20',
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.textPrimary,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(width: 8),
+                              _SprintChip(
+                                icon: Icons.track_changes_rounded,
+                                label: l10n.decksSprintPower20,
+                                tone: _SprintTone.neutral,
+                                onTap: () => _startSprint(context, state, '20'),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ShrinkableButton(
-                                      onTap: () {
-                                        final targetDeckId =
-                                            state.allDecks.length > 1
-                                            ? 'all'
-                                            : state.allDecks.first.id;
-                                        AppFeedback.selection();
-                                        unawaited(
-                                          context.router.push(
-                                            StudySessionRoute(
-                                              deckId:
-                                                  'sprint:speed:3:$targetDeckId',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colors.warning.withValues(
-                                            alpha: isDark ? 0.2 : 0.12,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.card,
-                                          ),
-                                          border: Border.all(
-                                            color: colors.warning.withValues(
-                                              alpha: 0.6,
-                                            ),
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.timer_outlined,
-                                              color: colors.warning,
-                                              size: 16,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Speed Run (3m)',
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.warning,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
+                              const SizedBox(width: 8),
+                              _SprintChip(
+                                icon: Icons.timer_outlined,
+                                label: l10n.decksSprintSpeedRun,
+                                tone: _SprintTone.warning,
+                                onTap: () {
+                                  AppFeedback.selection();
+                                  unawaited(
+                                    context.router.push(
+                                      StudySessionRoute(
+                                        deckId:
+                                            'sprint:speed:3:${_sprintTargetDeckId(state)}',
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: ShrinkableButton(
-                                      onTap: () {
-                                        AppFeedback.selection();
-                                        unawaited(
-                                          FocusModeSetupModal.show(
-                                            context,
-                                            decks: state.allDecks,
-                                            initialDeck: state.allDecks
-                                                .firstWhere(
-                                                  (d) => d.dueCards > 0,
-                                                  orElse: () =>
-                                                      state.allDecks.first,
-                                                ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              colors.deepBronze,
-                                              colors.primary,
-                                            ],
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.card,
-                                          ),
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.bolt_rounded,
-                                              color: colors.white,
-                                              size: 16,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Hyperdrive',
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.white,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _SprintChip(
+                                icon: Icons.bolt_rounded,
+                                label: l10n.decksSprintHyperdrive,
+                                tone: _SprintTone.gradient,
+                                onTap: () {
+                                  AppFeedback.selection();
+                                  unawaited(
+                                    FocusModeSetupModal.show(
+                                      context,
+                                      decks: state.allDecks,
+                                      initialDeck: state.allDecks.firstWhere(
+                                        (d) => d.dueCards > 0,
+                                        orElse: () => state.allDecks.first,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
+                      ] else ...[
+                        const SizedBox(height: 2),
                       ],
 
-                      // 2. Search Field - Unified full-width text field
+                      // 4. Search Field - Unified full-width text field
                       TextField(
                         controller: searchController,
                         style: typography.body.medium.copyWith(
@@ -606,21 +369,41 @@ class _DecksView extends HookWidget {
                             color: colors.textSecondary,
                             size: 20,
                           ),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.close_rounded,
-                                    color: colors.textSecondary,
-                                    size: 18,
-                                  ),
-                                  onPressed: () {
-                                    searchController.clear();
-                                    context.read<DecksBloc>().add(
-                                      const DecksSearchQueryChanged(''),
-                                    );
-                                  },
-                                )
-                              : null,
+                          suffixIcon: searchQueryEmpty.value
+                              ? null
+                              : Semantics(
+                                  button: true,
+                                  label: l10n.decksClearSearch,
+                                  child:
+                                      IconButton(
+                                            icon: Icon(
+                                              Icons.close_rounded,
+                                              color: colors.textSecondary,
+                                              size: 18,
+                                            ),
+                                            onPressed: () {
+                                              searchController.clear();
+                                              searchQueryEmpty.value = true;
+                                              context.read<DecksBloc>().add(
+                                                const DecksSearchQueryChanged(
+                                                  '',
+                                                ),
+                                              );
+                                            },
+                                          )
+                                          .animate(
+                                            delay: 60.ms,
+                                          )
+                                          .fadeIn(
+                                            duration: 140.ms,
+                                          )
+                                          .scale(
+                                            begin: const Offset(0.5, 0.5),
+                                            end: const Offset(1, 1),
+                                            duration: 180.ms,
+                                            curve: AppMotion.snappyCurve,
+                                          ),
+                                ),
                           filled: true,
                           fillColor: isDark
                               ? colors.surfaceSecondary.withAlpha(200)
@@ -656,6 +439,7 @@ class _DecksView extends HookWidget {
                           ),
                         ),
                         onChanged: (query) {
+                          searchQueryEmpty.value = query.isEmpty;
                           context.read<DecksBloc>().add(
                             DecksSearchQueryChanged(query),
                           );
@@ -663,10 +447,10 @@ class _DecksView extends HookWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // 3. Filter Category Pills
+                      // 5. Filter Category Pills
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         child: Row(
                           children: [
                             _FilterChip(
@@ -708,7 +492,7 @@ class _DecksView extends HookWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      // 4. Decks List / Empty State
+                      // 6. Decks List / Empty State
                       if (state.filteredDecks.isEmpty)
                         if (state.activeFilter == 'due')
                           AppEmptyState(
@@ -777,18 +561,71 @@ class _DecksView extends HookWidget {
                             ),
                           )
                       else
-                        ...state.filteredDecks.map((deck) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: DeckListTileCard(deck: deck),
-                          );
-                        }),
+                        for (
+                          var index = 0;
+                          index < state.filteredDecks.length;
+                          index++
+                        )
+                          _buildDeckTile(
+                            context,
+                            state.filteredDecks[index],
+                            index,
+                            reduceMotion,
+                          ),
                     ],
                   ),
                 );
               },
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Deck tiles enter with a short stagger (first 8 only) so the list feels
+  /// assembled rather than popped. Keyed by deck id so filtering or search
+  /// re-renders never replay the entrance for already-visible tiles.
+  Widget _buildDeckTile(
+    BuildContext context,
+    DeckEntity deck,
+    int index,
+    bool reduceMotion,
+  ) {
+    Widget tile = Padding(
+      key: ValueKey<String>(deck.id),
+      padding: const EdgeInsets.only(bottom: 14),
+      child: DeckListTileCard(deck: deck),
+    );
+
+    if (!reduceMotion && index < 8) {
+      tile = tile
+          .animate(delay: (index * 80).ms)
+          .fadeIn(duration: 200.ms, curve: Curves.easeOut)
+          .slideY(
+            begin: 0.04,
+            end: 0,
+            duration: 250.ms,
+            curve: Curves.easeOutQuint,
+          );
+    }
+    return tile;
+  }
+
+  /// Sprint pools come from the single due deck when there is exactly one,
+  /// otherwise they run cross-deck over everything.
+  String _sprintTargetDeckId(DecksState state) {
+    final dueDecks = state.allDecks.where((d) => d.dueCards > 0).toList();
+    if (dueDecks.length == 1) return dueDecks.first.id;
+    return 'all';
+  }
+
+  void _startSprint(BuildContext context, DecksState state, String size) {
+    AppFeedback.selection();
+    unawaited(
+      context.router.push(
+        StudySessionRoute(
+          deckId: 'sprint:$size:${_sprintTargetDeckId(state)}',
         ),
       ),
     );
@@ -820,7 +657,15 @@ class _DecksView extends HookWidget {
           ),
           const SizedBox(height: 20),
 
-          // 2. Search Bar Shimmer
+          // 2. Today Hero Shimmer
+          const ShimmerPlaceholder(
+            width: double.infinity,
+            height: 132,
+            borderRadius: 16,
+          ),
+          const SizedBox(height: 16),
+
+          // 3. Search Bar Shimmer
           const ShimmerPlaceholder(
             width: double.infinity,
             height: 48,
@@ -828,7 +673,7 @@ class _DecksView extends HookWidget {
           ),
           const SizedBox(height: 16),
 
-          // 3. Filter Category Pills Shimmer
+          // 4. Filter Category Pills Shimmer
           const Row(
             children: [
               ShimmerPlaceholder(width: 80, height: 32, borderRadius: 16),
@@ -840,7 +685,7 @@ class _DecksView extends HookWidget {
           ),
           const SizedBox(height: 24),
 
-          // 4. Deck Card List Skeletons
+          // 5. Deck Card List Skeletons
           Expanded(
             child: ListView.separated(
               physics: const NeverScrollableScrollPhysics(),
@@ -854,6 +699,302 @@ class _DecksView extends HookWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The "what should I do right now?" answer, front and center.
+/// Due > 0: one number, one button. Due == 0: calm confirmation, no dead end.
+class _TodayHeroCard extends StatelessWidget {
+  const _TodayHeroCard({required this.state});
+
+  final DecksState state;
+
+  static const int _secondsPerCard = 12;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+    final reduceMotion = context.reduceMotion;
+
+    final totalDue = state.totalDueCards;
+    final hasDue = totalDue > 0;
+    final dueMinutes = (totalDue * _secondsPerCard / 60).ceil().clamp(1, 999);
+
+    final dueDecks = state.allDecks.where((d) => d.dueCards > 0).toList();
+    final reviewDeckId = dueDecks.length == 1 ? dueDecks.first.id : 'all';
+
+    final Widget hero = Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [colors.surfaceSecondary, colors.surfaceTertiary]
+              : [colors.surfacePrimary, colors.surfaceSecondary],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.panel),
+        border: Border.all(
+          color: hasDue
+              ? colors.primary.withValues(alpha: 0.35)
+              : colors.success.withValues(alpha: 0.35),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: (hasDue ? colors.primary : colors.success).withValues(
+                    alpha: 0.18,
+                  ),
+                ),
+                child: Icon(
+                  hasDue
+                      ? Icons.school_rounded
+                      : Icons.check_circle_outline_rounded,
+                  color: hasDue ? colors.primary : colors.success,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasDue
+                          ? l10n.decksHeroWaitingTitle(totalDue)
+                          : l10n.decksHeroAllCaughtUp,
+                      style: typography.body.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 16.5,
+                        height: 1.25,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      hasDue
+                          ? l10n.decksHeroEstimate(dueMinutes)
+                          : l10n.decksHeroAllCaughtUpSubtitle,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (hasDue)
+            ShrinkableButton(
+              onTap: () {
+                AppFeedback.selection();
+                unawaited(
+                  context.router.push(
+                    StudySessionRoute(deckId: reviewDeckId),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colors.primary, colors.syllabotAccent],
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.black.withAlpha(isDark ? 45 : 25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Semantics(
+                  button: true,
+                  label: l10n.decksHeroReviewCta(totalDue),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.play_arrow_rounded,
+                        color: colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        l10n.decksHeroReviewCta(totalDue),
+                        style: typography.caption.bold.copyWith(
+                          color: colors.white,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.lightImpact());
+                context.read<DecksBloc>().add(
+                  const DecksFilterChanged('all'),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.white.withValues(alpha: 0.08)
+                      : colors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(
+                    color: colors.surfaceBorder.withValues(alpha: 0.6),
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  l10n.decksHeroBrowseDecks,
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    if (reduceMotion) return hero;
+
+    return hero
+        .animate()
+        .fadeIn(duration: 250.ms, curve: Curves.easeOut)
+        .scale(
+          begin: const Offset(0.97, 0.97),
+          end: const Offset(1, 1),
+          duration: 250.ms,
+          curve: Curves.easeOutQuint,
+        )
+        .slideY(
+          begin: 0.04,
+          end: 0,
+          duration: 250.ms,
+          curve: Curves.easeOutQuint,
+        );
+  }
+}
+
+enum _SprintTone { primary, neutral, warning, gradient }
+
+/// Compact secondary action: same destinations as before, no longer shouting.
+class _SprintChip extends StatelessWidget {
+  const _SprintChip({
+    required this.icon,
+    required this.label,
+    required this.tone,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final _SprintTone tone;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final (Color fg, Color bg, Border? border) = switch (tone) {
+      _SprintTone.primary => (
+        colors.white,
+        colors.primary,
+        null,
+      ),
+      _SprintTone.neutral => (
+        colors.textPrimary,
+        isDark
+            ? colors.white.withValues(alpha: 0.08)
+            : colors.black.withValues(alpha: 0.05),
+        Border.all(color: colors.surfaceBorder.withValues(alpha: 0.6)),
+      ),
+      _SprintTone.warning => (
+        colors.warning,
+        colors.warning.withValues(alpha: isDark ? 0.16 : 0.1),
+        Border.all(color: colors.warning.withValues(alpha: 0.45)),
+      ),
+      _SprintTone.gradient => (
+        colors.white,
+        colors.transparent,
+        null,
+      ),
+    };
+
+    return Semantics(
+      button: true,
+      label: label,
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            gradient: tone == _SprintTone.gradient
+                ? LinearGradient(
+                    colors: [colors.deepBronze, colors.primary],
+                  )
+                : null,
+            color: tone == _SprintTone.gradient ? null : bg,
+            borderRadius: BorderRadius.circular(AppRadius.badge),
+            border: border,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: tone == _SprintTone.gradient ? colors.white : fg,
+                size: 15,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: typography.caption.bold.copyWith(
+                  color: tone == _SprintTone.gradient ? colors.white : fg,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -966,60 +1107,79 @@ class _FilterChip extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return ShrinkableButton(
-      onTap: () {
-        unawaited(HapticFeedback.lightImpact());
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.primary
-              : (isDark
-                    ? colors.surfaceSecondary.withAlpha(150)
-                    : colors.surfacePrimary.withAlpha(200)),
-          borderRadius: BorderRadius.circular(AppRadius.badge),
-          border: Border.all(
+    return Semantics(
+      selected: isSelected,
+      button: true,
+      label: label,
+      child: ShrinkableButton(
+        onTap: () {
+          unawaited(HapticFeedback.lightImpact());
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: AppMotion.snappyCurve,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
             color: isSelected
                 ? colors.primary
                 : (isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(70)
-                      : colors.surfaceBorder.withAlpha(120)),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: typography.caption.bold.copyWith(
-                color: isSelected ? colors.white : colors.textPrimary,
-                fontSize: 12,
-              ),
+                      ? colors.surfaceSecondary.withAlpha(150)
+                      : colors.surfacePrimary.withAlpha(200)),
+            borderRadius: BorderRadius.circular(AppRadius.badge),
+            border: Border.all(
+              color: isSelected
+                  ? colors.primary
+                  : (isDark
+                        ? colors.surfaceBorderHighlight.withAlpha(70)
+                        : colors.surfaceBorder.withAlpha(120)),
             ),
-            if (count != null && count! > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isDueBadge
-                      ? colors.error
-                      : (isSelected
-                            ? colors.white.withAlpha(40)
-                            : colors.primary.withAlpha(30)),
-                  borderRadius: BorderRadius.circular(AppRadius.micro),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: typography.caption.bold.copyWith(
+                  color: isSelected ? colors.white : colors.textPrimary,
+                  fontSize: 12,
                 ),
-                child: Text(
-                  '$count',
-                  style: typography.footnote.bold.copyWith(
-                    color: colors.white,
-                    fontSize: 10.5,
+              ),
+              if (count != null && count! > 0) ...[
+                const SizedBox(width: 6),
+                AnimatedSwitcher(
+                  duration: AppMotion.snappy,
+                  switchInCurve: AppMotion.snappyCurve,
+                  switchOutCurve: AppMotion.exitCurve,
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Container(
+                    key: ValueKey('$count-$isDueBadge-$isSelected'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDueBadge
+                          ? colors.error
+                          : (isSelected
+                                ? colors.white.withAlpha(40)
+                                : colors.primary.withAlpha(30)),
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: typography.footnote.bold.copyWith(
+                        color: colors.white,
+                        fontSize: 10.5,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

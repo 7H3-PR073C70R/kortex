@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-/// Modal dialog displaying simulated peer crowd polling distribution for Millionaire Mode.
+/// Modal dialog showing how the room would answer, for Millionaire Mode.
 class MillionaireAudiencePollDialog extends StatelessWidget {
   const MillionaireAudiencePollDialog({
     required this.distribution,
@@ -40,6 +42,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final reduceMotion = quizReduceMotion(context);
 
     const optionLetters = ['A', 'B', 'C', 'D'];
 
@@ -109,13 +112,13 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Ask the Crowd',
+                        'What the studio thinks',
                         style: typography.headline.bold.copyWith(
                           color: colors.textPrimary,
                         ),
                       ),
                       Text(
-                        'Peer consensus & confidence polling',
+                        'How the room would answer',
                         style: typography.footnote.regular.copyWith(
                           color: colors.textSecondary,
                         ),
@@ -201,21 +204,31 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                             width: double.infinity,
                             color: colors.surfaceSecondary,
                           ),
-                          FractionallySizedBox(
-                            widthFactor: (pct / 100.0).clamp(0.0, 1.0),
-                            child: Container(
-                              height: 10,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: isMax
-                                      ? [
-                                          colors.success,
-                                          colors.success.withAlpha(200),
-                                        ]
-                                      : [
-                                          colors.primary,
-                                          colors.primary.withAlpha(200),
-                                        ],
+                          // Bars grow from zero, one after another, so the
+                          // room "tallies" in front of the player.
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration: reduceMotion
+                                ? Duration.zero
+                                : AppMotion.expressive +
+                                      AppMotion.staggerDelay * i,
+                            curve: AppMotion.easeOutCubic,
+                            builder: (context, t, _) => FractionallySizedBox(
+                              widthFactor: (pct / 100.0 * t).clamp(0.0, 1.0),
+                              child: Container(
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: isMax
+                                        ? [
+                                            colors.success,
+                                            colors.success.withAlpha(200),
+                                          ]
+                                        : [
+                                            colors.primary,
+                                            colors.primary.withAlpha(200),
+                                          ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -248,7 +261,8 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Crowd confidence reflects peer data. Trust your reasoning!',
+                      'The room is guessing too. Trust your own reasoning '
+                      'first.',
                       style: typography.caption.regular.copyWith(
                         color: colors.warning,
                       ),
@@ -270,7 +284,7 @@ class MillionaireAudiencePollDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.card),
                 ),
                 child: Text(
-                  'Resume Ascent',
+                  'Back to the question',
                   style: typography.headline.bold.copyWith(
                     color: colors.white,
                   ),

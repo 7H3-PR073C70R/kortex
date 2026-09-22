@@ -254,7 +254,7 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                       if (isCompact) {
                         return SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
+                          physics: const ClampingScrollPhysics(),
                           child: Row(
                             children: dayItems,
                           ),

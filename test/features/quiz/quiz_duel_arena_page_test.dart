@@ -37,7 +37,10 @@ void main() {
         duelId: 'test_duel_123',
         subject: 'Physics',
         examBoard: 'WAEC',
-        questions: QuizDuelWebSocketClient.getDefaultDuelQuestions('Physics', 'WAEC'),
+        questions: QuizDuelWebSocketClient.getDefaultDuelQuestions(
+          'Physics',
+          'WAEC',
+        ),
         player1: const QuizDuelParticipant(
           userId: 'user_1',
           displayName: 'Scholar One',
@@ -55,7 +58,9 @@ void main() {
       );
     });
 
-    testWidgets('renders countdown view when status is countdown', (tester) async {
+    testWidgets('renders countdown view when status is countdown', (
+      tester,
+    ) async {
       when(() => mockCubit.state).thenReturn(
         QuizDuelState(
           status: QuizDuelStatus.countdown,
@@ -71,39 +76,47 @@ void main() {
         ),
       );
 
-      expect(find.text('MATCH FOUND • 1v1 DUEL'), findsOneWidget);
+      expect(find.text('RIVAL FOUND • 1v1 DUEL'), findsOneWidget);
       expect(find.text('Scholar One'), findsOneWidget);
       expect(find.text('Syllabot Rival'), findsOneWidget);
       expect(find.text('VS'), findsOneWidget);
     });
 
-    testWidgets('renders active question, scoreboard, timer, and options in round', (tester) async {
-      when(() => mockCubit.state).thenReturn(
-        QuizDuelState(
-          status: QuizDuelStatus.inRound,
-          currentUserId: 'user_1',
-          match: testMatch,
-          remainingSeconds: 12,
-        ),
-      );
+    testWidgets(
+      'renders active question, scoreboard, timer, and options in round',
+      (tester) async {
+        when(() => mockCubit.state).thenReturn(
+          QuizDuelState(
+            status: QuizDuelStatus.inRound,
+            currentUserId: 'user_1',
+            match: testMatch,
+            remainingSeconds: 12,
+          ),
+        );
 
-      await tester.pumpWidget(
-        createTestApp(
-          cubit: mockCubit,
-          child: const QuizDuelArenaPage(),
-        ),
-      );
+        await tester.pumpWidget(
+          createTestApp(
+            cubit: mockCubit,
+            child: const QuizDuelArenaPage(),
+          ),
+        );
 
-      expect(find.text('Scholar One'), findsOneWidget);
-      expect(find.text('120 pts'), findsOneWidget);
-      expect(find.text('Syllabot Rival'), findsOneWidget);
-      expect(find.text('95 pts'), findsOneWidget);
-      expect(find.text('What is the SI unit of electric potential difference?'), findsOneWidget);
-      expect(find.text('Volt'), findsOneWidget);
-      expect(find.text('Ampere'), findsOneWidget);
-    });
+        expect(find.text('Scholar One'), findsOneWidget);
+        expect(find.text('120 pts'), findsOneWidget);
+        expect(find.text('Syllabot Rival'), findsOneWidget);
+        expect(find.text('95 pts'), findsOneWidget);
+        expect(
+          find.text('What is the SI unit of electric potential difference?'),
+          findsOneWidget,
+        );
+        expect(find.text('Volt'), findsOneWidget);
+        expect(find.text('Ampere'), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders victory screen when match finishes with local win', (tester) async {
+    testWidgets('renders victory screen when match finishes with local win', (
+      tester,
+    ) async {
       when(() => mockCubit.state).thenReturn(
         QuizDuelState(
           status: QuizDuelStatus.finished,
@@ -124,11 +137,11 @@ void main() {
         ),
       );
 
-      expect(find.text('🏆 VICTORY!'), findsOneWidget);
+      expect(find.text('You won this one'), findsOneWidget);
       expect(find.text('450 pts'), findsOneWidget);
       expect(find.text('300 pts'), findsOneWidget);
-      expect(find.text('Rematch ⚡'), findsOneWidget);
-      expect(find.text('Exit Arena'), findsOneWidget);
+      expect(find.text('Rematch'), findsOneWidget);
+      expect(find.text('Leave arena'), findsOneWidget);
     });
   });
 }

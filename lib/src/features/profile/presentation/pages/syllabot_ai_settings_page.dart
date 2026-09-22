@@ -406,37 +406,47 @@ class SyllabotAiSettingsPage extends HookWidget {
     required AppThemeColorsExtension colors,
     required TypographyThemeExtension typography,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
-        borderRadius: AppRadius.radiusDialog,
-        border: Border.all(
-          color: colors.surfaceBorder.withAlpha(80),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 6, bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: typography.caption.bold.copyWith(
+                  color: colors.textSecondary.withAlpha(170),
+                  fontSize: 11,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary.withAlpha(120),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: typography.body.bold.copyWith(
-              color: colors.textPrimary,
-              fontSize: 14.5,
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.surfacePrimary,
+            borderRadius: AppRadius.radiusDialog,
+            border: Border.all(
+              color: colors.surfaceBorder.withAlpha(80),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: typography.caption.regular.copyWith(
-              color: colors.textSecondary,
-              fontSize: 11.5,
-            ),
-          ),
-          const SizedBox(height: 14),
-          child,
-        ],
-      ),
+          child: child,
+        ),
+      ],
     );
   }
 

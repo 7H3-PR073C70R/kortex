@@ -321,42 +321,38 @@ class _MobileCalibrationLayout extends StatelessWidget {
               physics: const ClampingScrollPhysics(),
               child: CalibrationGlassCard(
                 child: AnimatedSwitcher(
-                  duration: AppMotion.standard,
+                  duration: const Duration(milliseconds: 300),
+                  reverseDuration: const Duration(milliseconds: 250),
                   layoutBuilder: (currentChild, previousChildren) {
                     return Stack(
                       alignment: Alignment.topCenter,
                       children: <Widget>[
                         ...previousChildren,
-                        ?currentChild,
+                        if (currentChild != null) currentChild,
                       ],
                     );
                   },
                   transitionBuilder: (child, animation) {
                     final isCurrentChild =
                         child.key == ValueKey<int>(state.currentStepIndex);
-                    final offsetTween = isCurrentChild
-                        ? Tween<Offset>(
-                            begin: Offset(
-                              state.isForwardTrajectory ? 0.05 : -0.05,
-                              0,
-                            ),
-                            end: Offset.zero,
-                          ).chain(CurveTween(curve: Curves.easeOutCubic))
-                        : Tween<Offset>(
-                            begin: Offset(
-                              state.isForwardTrajectory ? -0.05 : 0.05,
-                              0,
-                            ),
-                            end: Offset.zero,
-                          ).chain(CurveTween(curve: Curves.easeInCubic));
+                    
+                    final curve = CurvedAnimation(
+                      parent: animation,
+                      curve: AppMotion.easeOutCubic,
+                      reverseCurve: AppMotion.exitCurve,
+                    );
+
+                    final offsetTween = Tween<Offset>(
+                      begin: isCurrentChild
+                          ? Offset(state.isForwardTrajectory ? 0.05 : -0.05, 0)
+                          : Offset(state.isForwardTrajectory ? -0.03 : 0.03, 0),
+                      end: Offset.zero,
+                    );
 
                     return SlideTransition(
-                      position: animation.drive(offsetTween),
+                      position: offsetTween.animate(curve),
                       child: FadeTransition(
-                        opacity: CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeInOut,
-                        ),
+                        opacity: curve,
                         child: child,
                       ),
                     );

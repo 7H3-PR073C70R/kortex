@@ -669,7 +669,7 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
           Expanded(
             child: Center(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 child: LatexCardContentViewer(
                   text: content,
                   isBackFace: isBack,
@@ -1055,7 +1055,7 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                     },
                     child: ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
+                        parent: ClampingScrollPhysics(),
                       ),
                       itemCount: allDecks.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),

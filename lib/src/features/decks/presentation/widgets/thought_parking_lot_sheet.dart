@@ -6,6 +6,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/thought_entry.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
 
 class ThoughtParkingLotSheet extends StatefulWidget {
   const ThoughtParkingLotSheet({super.key});
@@ -62,204 +63,125 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
     final colors = context.colors;
     final typography = context.typography;
     final cubit = context.read<FocusSessionCubit>();
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final isDark = context.isDarkMode;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 580,
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
+    return DeckSheetScaffold(
+      title: 'Thought Parking Lot',
+      subtitle: 'Dump intrusive thoughts in 5s. Clear your working memory.',
+      maxWidth: 580,
+      maxHeightFactor: 0.8,
+      scrollable: false,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: colors.primary.withValues(alpha: 0.12),
+          shape: BoxShape.circle,
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.dialog),
-            ),
-            border: Border.all(
-              color: isDark
-                  ? colors.surfaceBorderHighlight.withAlpha(70)
-                  : colors.surfaceBorder,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 16,
-            bottom: 20 + bottomInset,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.textMuted.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(AppRadius.micro),
+        child: Icon(
+          Icons.psychology_rounded,
+          color: colors.primary,
+          size: 20,
+        ),
+      ),
+      children: [
+        // Input field
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                style: typography.body.medium.copyWith(
+                  color: colors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Park an intrusive thought...',
+                  hintStyle: typography.body.regular.copyWith(
+                    color: colors.textMuted,
+                  ),
+                  filled: true,
+                  fillColor: colors.surfaceSecondary,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    borderSide: BorderSide.none,
                   ),
                 ),
+                onSubmitted: (_) => _submitThought(cubit),
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: () => _submitThought(cubit),
+              style: IconButton.styleFrom(
+                backgroundColor: colors.primary,
+                foregroundColor: colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                ),
+              ),
+              icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
 
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.psychology_rounded,
-                      color: colors.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+        // Thoughts list
+        Flexible(
+          child: BlocBuilder<FocusSessionCubit, FocusSessionState>(
+            builder: (context, state) {
+              if (state.parkedThoughts.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 40,
+                          color: colors.textMuted.withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(height: 8),
                         Text(
-                          'Thought Parking Lot',
-                          style: typography.headline.bold.copyWith(
-                            color: colors.textPrimary,
+                          'Your mind is clear!',
+                          style: typography.body.medium.copyWith(
+                            color: colors.textSecondary,
                           ),
                         ),
                         Text(
-                          'Dump intrusive thoughts in 5s. Clear your working memory.',
+                          'Anything distracting you? Drop it here and resume.',
                           style: typography.footnote.regular.copyWith(
-                            color: colors.textSecondary,
+                            color: colors.textMuted,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close_rounded, color: colors.textMuted),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                );
+              }
 
-              // Input field
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Park an intrusive thought...',
-                        hintStyle: typography.body.regular.copyWith(
-                          color: colors.textMuted,
-                        ),
-                        filled: true,
-                        fillColor: colors.surfaceSecondary,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onSubmitted: (_) => _submitThought(cubit),
+              return ListView.separated(
+                shrinkWrap: true,
+                itemCount: state.parkedThoughts.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final thought = state.parkedThoughts[index];
+                  return _ThoughtListTile(
+                    thought: thought,
+                    onToggle: () => unawaited(
+                      cubit.toggleThoughtResolved(thought.id),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: () => _submitThought(cubit),
-                    style: IconButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      foregroundColor: colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                      ),
-                    ),
-                    icon: const Icon(Icons.arrow_upward_rounded, size: 20),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Thoughts list
-              Flexible(
-                child: BlocBuilder<FocusSessionCubit, FocusSessionState>(
-                  builder: (context, state) {
-                    if (state.parkedThoughts.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle_outline_rounded,
-                                size: 40,
-                                color: colors.textMuted.withValues(alpha: 0.4),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Your mind is clear!',
-                                style: typography.body.medium.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                              Text(
-                                'Anything distracting you? Drop it here and resume.',
-                                style: typography.footnote.regular.copyWith(
-                                  color: colors.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: state.parkedThoughts.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final thought = state.parkedThoughts[index];
-                        return _ThoughtListTile(
-                          thought: thought,
-                          onToggle: () => unawaited(
-                            cubit.toggleThoughtResolved(thought.id),
-                          ),
-                          onDelete: () =>
-                              unawaited(cubit.deleteThought(thought.id)),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+                    onDelete: () => unawaited(cubit.deleteThought(thought.id)),
+                  );
+                },
+              );
+            },
           ),
         ),
-      ),
+      ],
     );
   }
 }

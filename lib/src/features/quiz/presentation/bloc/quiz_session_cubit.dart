@@ -107,6 +107,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
             questions: finalQuestions,
             currentIndex: 0,
             elapsedSeconds: 0,
+            clearPendingAnswer: true,
             currentTier: 1,
             bankedTier: 0,
             speedBonusXp: 0,
@@ -158,6 +159,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         questions: finalQuestions,
         currentIndex: 0,
         elapsedSeconds: 0,
+        clearPendingAnswer: true,
         durationMinutes: assessmentMode == AssessmentMode.millionaireMode
             ? null
             : durationMinutes,
@@ -184,6 +186,35 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     _startTimer();
   }
 
+  /// Re-opens already answered questions as a read-only walkthrough.
+  /// Answers and verdicts are kept exactly as they were, so the results
+  /// page can send a student straight to the ones they missed.
+  void startReview({
+    required String title,
+    required List<QuizQuestionEntity> questions,
+  }) {
+    _timer?.cancel();
+    emit(
+      state.copyWith(
+        status: QuizSessionStatus.inProgress,
+        quizTitle: title,
+        questions: questions,
+        currentIndex: 0,
+        elapsedSeconds: 0,
+        clearDurationMinutes: true,
+        flaggedQuestionIds: const {},
+        assessmentMode: AssessmentMode.discoveryMode,
+        isHintRevealed: false,
+        clearPendingAnswer: true,
+        eliminatedOptionIndices: const {},
+        clearActiveClue: true,
+        clearAudienceDistribution: true,
+        isSecondChanceActive: false,
+        isSoftFailed: false,
+      ),
+    );
+  }
+
   /// Starts a gamified "Who Wants to Be a Millionaire" ascent quiz mode.
   void startMillionaireQuiz({
     required String title,
@@ -204,14 +235,14 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     );
   }
 
-  /// Starts the Global Free-Play "Daily Dopamine Arcade" cross-subject climb.
-  /// Pulls questions across all user decks and curates a 12-tier ascent.
+  /// Starts the free-play daily millionaire climb across all of the user's
+  /// decks. Pulls questions across subjects and curates a 12-tier ascent.
   Future<void> startMillionaireArcade() async {
     _timer?.cancel();
     emit(
       state.copyWith(
         status: QuizSessionStatus.loading,
-        quizTitle: 'Daily Dopamine Arcade',
+        quizTitle: 'Daily Millionaire Climb',
         assessmentMode: AssessmentMode.millionaireMode,
         millionaireScope: MillionaireScope.globalArcade,
       ),
@@ -282,7 +313,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
             questions: questions,
           );
           startMillionaireQuiz(
-            title: 'Daily Dopamine Arcade',
+            title: 'Daily Millionaire Climb',
             questions: tiered,
             scope: MillionaireScope.globalArcade,
           );
@@ -293,7 +324,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
 
     final fallback = _generateFallbackArcadeQuestions();
     startMillionaireQuiz(
-      title: 'Daily Dopamine Arcade',
+      title: 'Daily Millionaire Climb',
       questions: fallback,
       scope: MillionaireScope.globalArcade,
     );
@@ -561,6 +592,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         isSecondChanceActive: false,
         status: QuizSessionStatus.inProgress,
         questions: updatedList,
+        clearPendingAnswer: true,
         eliminatedOptionIndices: updatedEliminated,
       ),
     );
@@ -581,6 +613,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         currentIndex: index,
         currentTier: tier,
         isHintRevealed: false,
+        clearPendingAnswer: true,
         clearActiveClue: true,
         clearAudienceDistribution: true,
         eliminatedOptionIndices: const {},
@@ -604,18 +637,58 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   }
 
   /// Selects an answer option for the current question.
+  ///
+  /// Practice (discovery) mode only stages the choice, so the student can
+  /// change their mind before committing it with [checkAnswer]. Exam
+  /// simulation records the choice immediately but keeps it editable, and
+  /// never reveals correctness mid-test. Millionaire grades on tap to keep
+  /// the game-show reveal instant.
   void selectOption(String option) {
-    if (state.currentQuestion == null) return;
-    if (state.currentQuestion!.isAnswered) return;
+    final current = state.currentQuestion;
+    if (current == null || current.isAnswered) return;
 
+    if (state.assessmentMode == AssessmentMode.millionaireMode) {
+      _resolveMillionaireOption(option);
+      return;
+    }
+    if (state.assessmentMode == AssessmentMode.discoveryMode) {
+      _stageDiscoveryOption(option);
+      return;
+    }
+    _recordExamOption(option);
+  }
+
+  /// Stages or unstages a practice answer before it is checked.
+  void _stageDiscoveryOption(String option) {
+    if (state.pendingAnswer == option) {
+      clearPendingAnswer();
+      return;
+    }
+    AppFeedback.selection();
+    emit(state.copyWith(pendingAnswer: option));
+  }
+
+  /// Records an exam-simulation answer as a working selection.
+  void _recordExamOption(String option) {
+    AppFeedback.selection();
+    final updatedList = List<QuizQuestionEntity>.from(state.questions);
+    updatedList[state.currentIndex] = state.currentQuestion!.copyWith(
+      userSelectedAnswer: option,
+      isAnswered: true,
+    );
+    emit(
+      state.copyWith(
+        status: QuizSessionStatus.questionAnswered,
+        questions: updatedList,
+        clearPendingAnswer: true,
+      ),
+    );
+  }
+
+  /// Instant-graded Millionaire reveal with tier banking and shields.
+  void _resolveMillionaireOption(String option) {
     final current = state.currentQuestion!;
-    final cleanCorrect = QuizContentSanitizer.cleanOptionText(
-      current.correctAnswer,
-    ).toLowerCase();
-    final cleanSelected = QuizContentSanitizer.cleanOptionText(
-      option,
-    ).toLowerCase();
-    final isCorrect = cleanCorrect == cleanSelected;
+    final isCorrect = _matchesCorrectAnswer(current, option);
 
     final updatedQuestion = current.copyWith(
       userSelectedAnswer: option,
@@ -626,76 +699,106 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     final updatedList = List<QuizQuestionEntity>.from(state.questions);
     updatedList[state.currentIndex] = updatedQuestion;
 
-    if (state.assessmentMode == AssessmentMode.millionaireMode) {
-      if (isCorrect) {
-        AppFeedback.celebration();
-        final timeTaken = state.elapsedSeconds - state.questionStartTimeSeconds;
-        final speedBonus = (timeTaken <= 10 && timeTaken >= 0) ? 50 : 0;
-        final isCheckpoint = QuizSessionState.safeCheckpointTiers.contains(
-          state.currentTier,
-        );
-        final newBanked = isCheckpoint && state.currentTier > state.bankedTier
-            ? state.currentTier
-            : state.bankedTier;
+    if (isCorrect) {
+      AppFeedback.celebration();
+      final timeTaken = state.elapsedSeconds - state.questionStartTimeSeconds;
+      final speedBonus = (timeTaken <= 10 && timeTaken >= 0) ? 50 : 0;
+      final isCheckpoint = QuizSessionState.safeCheckpointTiers.contains(
+        state.currentTier,
+      );
+      final newBanked = isCheckpoint && state.currentTier > state.bankedTier
+          ? state.currentTier
+          : state.bankedTier;
 
+      emit(
+        state.copyWith(
+          status: QuizSessionStatus.questionAnswered,
+          questions: updatedList,
+          bankedTier: newBanked,
+          speedBonusXp: state.speedBonusXp + speedBonus,
+          clearPendingAnswer: true,
+        ),
+      );
+
+      if (state.isLastQuestion) {
+        unawaited(submitQuiz());
+      }
+    } else {
+      AppFeedback.incorrect();
+      _flagMissedCardToFsrs(current.id);
+
+      if (state.hasSecondChance) {
         emit(
           state.copyWith(
             status: QuizSessionStatus.questionAnswered,
             questions: updatedList,
-            bankedTier: newBanked,
-            speedBonusXp: state.speedBonusXp + speedBonus,
+            isSecondChanceActive: true,
+            clearPendingAnswer: true,
           ),
         );
-
-        if (state.isLastQuestion) {
-          unawaited(submitQuiz());
-        }
       } else {
-        AppFeedback.incorrect();
-        _flagMissedCardToFsrs(current.id);
-
-        if (state.hasSecondChance) {
-          emit(
-            state.copyWith(
-              status: QuizSessionStatus.questionAnswered,
-              questions: updatedList,
-              isSecondChanceActive: true,
-            ),
-          );
-        } else {
-          // Soft-fail: drops back to safe banked checkpoint without resetting to zero!
-          emit(
-            state.copyWith(
-              status: QuizSessionStatus.questionAnswered,
-              questions: updatedList,
-              currentTier: state.bankedTier,
-              isSoftFailed: true,
-            ),
-          );
-        }
+        // Soft-fail: drops back to safe banked checkpoint without resetting to zero!
+        emit(
+          state.copyWith(
+            status: QuizSessionStatus.questionAnswered,
+            questions: updatedList,
+            currentTier: state.bankedTier,
+            isSoftFailed: true,
+            clearPendingAnswer: true,
+          ),
+        );
       }
-      return;
     }
+  }
 
-    if (state.assessmentMode == AssessmentMode.discoveryMode) {
-      if (isCorrect) {
-        AppFeedback.correct();
-      } else {
-        AppFeedback.incorrect();
-      }
+  bool _matchesCorrectAnswer(QuizQuestionEntity question, String option) {
+    final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+      question.correctAnswer,
+    ).toLowerCase();
+    final cleanSelected = QuizContentSanitizer.cleanOptionText(
+      option,
+    ).toLowerCase();
+    return cleanCorrect == cleanSelected;
+  }
+
+  /// Commits the staged practice answer and reveals its verdict.
+  void checkAnswer() {
+    final current = state.currentQuestion;
+    final pending = state.pendingAnswer;
+    if (current == null || pending == null || current.isAnswered) return;
+
+    final isCorrect = _matchesCorrectAnswer(current, pending);
+    final updatedList = List<QuizQuestionEntity>.from(state.questions);
+    updatedList[state.currentIndex] = current.copyWith(
+      userSelectedAnswer: pending,
+      isAnswered: true,
+      isCorrect: isCorrect,
+    );
+
+    if (isCorrect) {
+      AppFeedback.correct();
     } else {
-      AppFeedback.selection();
+      AppFeedback.incorrect();
+      _flagMissedCardToFsrs(current.id);
     }
 
     emit(
       state.copyWith(
         status: QuizSessionStatus.questionAnswered,
         questions: updatedList,
+        clearPendingAnswer: true,
       ),
     );
   }
 
-  /// Advances to the next question.
+  /// Drops a staged practice answer so the student can pick another option.
+  void clearPendingAnswer() {
+    if (!state.hasPendingAnswer) return;
+    AppFeedback.selection();
+    emit(state.copyWith(clearPendingAnswer: true));
+  }
+
+  /// Advances to the next question, or finishes when the verdict is accepted.
   void nextQuestion() {
     if (state.isLastQuestion) return;
     if (state.assessmentMode == AssessmentMode.millionaireMode &&

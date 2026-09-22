@@ -537,7 +537,7 @@ class LatexRichViewer extends StatelessWidget {
                       ),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         child: Math.tex(
                           formula,
                           textStyle: baseStyle,
@@ -776,7 +776,7 @@ class LatexFormulaBlock extends StatelessWidget {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         child: Math.tex(
           clean,
           textStyle: style,

@@ -294,7 +294,7 @@ class LatexCardContentViewer extends StatelessWidget {
       child: Center(
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
+          physics: const ClampingScrollPhysics(),
           child: Math.tex(
             cleanFormula,
             textStyle: TextStyle(

@@ -405,6 +405,63 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     emit(state.copyWith(isFlipped: !state.isFlipped));
   }
 
+  /// Builds the FSRS-6 state vector for [card] as of [nowUtc].
+  /// Shared by the real review transition and the read-only interval previews.
+  FsrsCard _fsrsCardFor(FlashcardEntity card, DateTime nowUtc) {
+    final lastReviewUtc = card.lastReviewed?.toUtc();
+    final elapsedDays = lastReviewUtc == null
+        ? 0
+        : nowUtc.difference(lastReviewUtc).inDays.clamp(0, 36500);
+    return FsrsCard(
+      cardId: card.id,
+      due: card.nextDueDate?.toUtc(),
+      stability: card.fsrsStability,
+      difficulty: card.fsrsDifficulty,
+      elapsedDays: elapsedDays,
+      scheduledDays: card.fsrsScheduledDays > 0
+          ? card.fsrsScheduledDays
+          : card.interval,
+      reps: card.repetitions,
+      lapses: card.fsrsLapses,
+      state: FsrsCardState.values[card.fsrsState.clamp(0, 3)],
+      lastReview: lastReviewUtc,
+      lastReviewedEpoch: lastReviewUtc?.millisecondsSinceEpoch ?? 0,
+    );
+  }
+
+  /// Predicted next interval (in days) for each rating on the current card.
+  /// Pure computation via [FsrsScheduler] — nothing is enqueued or persisted.
+  /// Enables Anki-style "what will this cost me later" rating decisions.
+  Map<FsrsRating, int> get ratingIntervalPreviews {
+    final card = state.currentCard;
+    if (card == null || state.status != StudySessionStatus.studying) {
+      return const {};
+    }
+    final nowUtc = DateTime.now().toUtc();
+    final fsrsCard = _fsrsCardFor(card, nowUtc);
+    return {
+      for (final rating in FsrsRating.values)
+        rating: _fsrsScheduler
+            .reviewCard(currentCard: fsrsCard, rating: rating, now: nowUtc)
+            .card
+            .scheduledDays,
+    };
+  }
+
+  /// Soonest scheduled review (in whole days from now) across all cards in the
+  /// finished session. Returns 0 when no due information is available.
+  int get nextReviewInDays {
+    var result = 0;
+    final now = DateTime.now();
+    for (final card in state.cards) {
+      final due = card.nextDueDate;
+      if (due == null) continue;
+      final days = due.isBefore(now) ? 0 : due.difference(now).inDays;
+      if (result == 0 || days < result) result = days;
+    }
+    return result;
+  }
+
   void setFlipped({required bool isFlipped}) {
     if (state.status != StudySessionStatus.studying) return;
     AppFeedback.selection();
@@ -462,26 +519,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
     // 3. FSRS-6 Review State Transition — read native FSRS state, not SM-2 surrogates.
     final nowUtc = DateTime.now().toUtc();
-    final lastReviewUtc = currentCard.lastReviewed?.toUtc();
-    final elapsedDays = lastReviewUtc == null
-        ? 0
-        : nowUtc.difference(lastReviewUtc).inDays.clamp(0, 36500);
 
-    final fsrsCard = FsrsCard(
-      cardId: currentCard.id,
-      due: currentCard.nextDueDate?.toUtc(),
-      stability: currentCard.fsrsStability,
-      difficulty: currentCard.fsrsDifficulty,
-      elapsedDays: elapsedDays,
-      scheduledDays: currentCard.fsrsScheduledDays > 0
-          ? currentCard.fsrsScheduledDays
-          : currentCard.interval,
-      reps: currentCard.repetitions,
-      lapses: currentCard.fsrsLapses,
-      state: FsrsCardState.values[currentCard.fsrsState.clamp(0, 3)],
-      lastReview: lastReviewUtc,
-      lastReviewedEpoch: lastReviewUtc?.millisecondsSinceEpoch ?? 0,
-    );
+    final fsrsCard = _fsrsCardFor(currentCard, nowUtc);
 
     final reviewResult = _fsrsScheduler.reviewCard(
       currentCard: fsrsCard,

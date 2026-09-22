@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -117,7 +118,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
             ),
           ),
         ),
-      );
+      ).animate().fadeIn(duration: 200.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 200.ms, curve: Curves.easeOutQuint);
     }
 
     // Bot Bubble with Glassmorphism, Rich Markdown, LaTeX formulas, and Actions
@@ -397,7 +398,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
           ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 200.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 200.ms, curve: Curves.easeOutQuint);
   }
 }
 

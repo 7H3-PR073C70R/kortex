@@ -148,6 +148,18 @@ abstract class AppLocalizations {
   /// **'Continue to next onboarding slide'**
   String get onboardingNextSemantics;
 
+  /// Back button label shown on wide-screen onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get onboardingPreviousSlide;
+
+  /// Accessibility label for previous slide button
+  ///
+  /// In en, this message translates to:
+  /// **'Go back to previous onboarding slide'**
+  String get onboardingPreviousSlideSemantics;
+
   /// Accessibility label for get started button
   ///
   /// In en, this message translates to:
@@ -5449,6 +5461,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Whiteboard'**
   String get whiteboardTabLabel;
+
+  /// Calm state shown on a deck tile when nothing is due
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get deckTileUpToDate;
+
+  /// Small label under the due-count number on a deck tile
+  ///
+  /// In en, this message translates to:
+  /// **'due'**
+  String get deckTileDueLabel;
+
+  /// Tooltip for the deck tile overflow menu button
+  ///
+  /// In en, this message translates to:
+  /// **'Deck options'**
+  String get deckTileOptionsMenu;
+
+  /// Overflow menu item opening deck details
+  ///
+  /// In en, this message translates to:
+  /// **'Deck details'**
+  String get decksMenuDetails;
+
+  /// Overflow menu item to start Millionaire-mode practice
+  ///
+  /// In en, this message translates to:
+  /// **'Practice: Millionaire mode'**
+  String get decksMenuMillionaire;
+
+  /// Overflow menu export action
+  ///
+  /// In en, this message translates to:
+  /// **'Export deck'**
+  String get decksMenuExport;
+
+  /// Overflow menu destructive delete action
+  ///
+  /// In en, this message translates to:
+  /// **'Delete deck'**
+  String get decksMenuDelete;
+
+  /// Muted label above the sprint shortcut chips
+  ///
+  /// In en, this message translates to:
+  /// **'Change the pace'**
+  String get decksSprintLabel;
+
+  /// Sprint chip for a 10-card session
+  ///
+  /// In en, this message translates to:
+  /// **'Quick 10'**
+  String get decksSprintQuick10;
+
+  /// Sprint chip for a 20-card session
+  ///
+  /// In en, this message translates to:
+  /// **'Power 20'**
+  String get decksSprintPower20;
+
+  /// Sprint chip for a timed 3-minute run
+  ///
+  /// In en, this message translates to:
+  /// **'Speed Run (3m)'**
+  String get decksSprintSpeedRun;
+
+  /// Sprint chip for deep-focus hyperdrive mode
+  ///
+  /// In en, this message translates to:
+  /// **'Hyperdrive'**
+  String get decksSprintHyperdrive;
+
+  /// Accessibility label for the search field clear button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get decksClearSearch;
+
+  /// Headline of the Today hero card when cards are due
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 card is waiting} other{{count} cards are waiting}}'**
+  String decksHeroWaitingTitle(int count);
+
+  /// Estimated effort line on the Today hero card
+  ///
+  /// In en, this message translates to:
+  /// **'about {minutes} min'**
+  String decksHeroEstimate(int minutes);
+
+  /// Primary call-to-action on the Today hero card
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Review 1 due card} other{Review {count} due cards}}'**
+  String decksHeroReviewCta(int count);
+
+  /// Hero card headline when nothing is due
+  ///
+  /// In en, this message translates to:
+  /// **'All caught up'**
+  String get decksHeroAllCaughtUp;
+
+  /// Hero card subtitle when nothing is due
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing due right now — take the win.'**
+  String get decksHeroAllCaughtUpSubtitle;
+
+  /// Secondary action on the calm hero card
+  ///
+  /// In en, this message translates to:
+  /// **'Browse your decks'**
+  String get decksHeroBrowseDecks;
+
+  /// Screen-reader label for a rating button with interval preview
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, review again in about {preview}'**
+  String studyRatingSemantics(String label, String preview);
+
+  /// Non-blocking milestone banner text during sprints
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 card down — keep rolling} other{{count} cards down — keep rolling}}'**
+  String studyMilestoneCrushed(int count);
+
+  /// Action link on the milestone banner to end the sprint early
+  ///
+  /// In en, this message translates to:
+  /// **'Finish sprint'**
+  String get studyMilestoneFinish;
+
+  /// Forward-looking line on the session summary
+  ///
+  /// In en, this message translates to:
+  /// **'Next review batch in about {days, plural, =1{1 day} other{{days} days}}'**
+  String sessionSummaryNextReview(int days);
 }
 
 class _AppLocalizationsDelegate

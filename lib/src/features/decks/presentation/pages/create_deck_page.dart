@@ -394,7 +394,7 @@ class CreateDeckPage extends HookWidget {
                   constraints: const BoxConstraints(maxWidth: 760),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -485,316 +485,361 @@ class CreateDeckPage extends HookWidget {
                         ),
                         const SizedBox(height: 18),
 
-                        // Tab 1: Manual Flashcard Entry
-                        if (selectedTabIndex.value == 0) ...[
-                          Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary.withAlpha(120)
-                                  : colors.surfacePrimary,
-                              borderRadius: AppRadius.radiusPanel,
-                              border: Border.all(
-                                color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(
-                                        50,
-                                      )
-                                    : colors.surfaceBorder.withAlpha(120),
+                        // Tab content — enters/exits along the tab bar
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: Curves.easeOutQuint,
+                          switchOutCurve: Curves.easeOut,
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween(
+                                    begin: const Offset(0, 0.02),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
                               ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Add Card to Deck',
-                                  style: typography.callout.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                AppTextField(
-                                  controller: manualFrontController,
-                                  label: 'Front (Question / Term / Concept)',
-                                  hintText:
-                                      "e.g. State Le Chatelier's principle",
-                                  maxLines: 2,
-                                ),
-                                const SizedBox(height: 12),
-                                AppTextField(
-                                  controller: manualBackController,
-                                  label: 'Back (Answer / Definition / Formula)',
-                                  hintText:
-                                      'e.g. When a system at equilibrium is subjected to change, it adjusts to counteract the change.',
-                                  maxLines: 3,
-                                ),
-                                const SizedBox(height: 14),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: AppButton(
-                                    text: '+ Add Flashcard',
-                                    onPressed: addManualCard,
-                                    prefixIcon: const Icon(
-                                      Icons.add_rounded,
-                                      size: 16,
+                          child: Column(
+                            key: ValueKey<int>(selectedTabIndex.value),
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Tab 1: Manual Flashcard Entry
+                              if (selectedTabIndex.value == 0) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary.withAlpha(120)
+                                        : colors.surfacePrimary,
+                                    borderRadius: AppRadius.radiusPanel,
+                                    border: Border.all(
+                                      color: isDark
+                                          ? colors.surfaceBorderHighlight
+                                                .withAlpha(
+                                                  50,
+                                                )
+                                          : colors.surfaceBorder.withAlpha(120),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ]
-                        // Tab 2: AI Flashcard Generator
-                        else if (selectedTabIndex.value == 1) ...[
-                          Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary.withAlpha(120)
-                                  : colors.surfacePrimary,
-                              borderRadius: AppRadius.radiusPanel,
-                              border: Border.all(
-                                color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(
-                                        50,
-                                      )
-                                    : colors.surfaceBorder.withAlpha(120),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'AI Flashcard Generator',
-                                  style: typography.callout.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Enter a topic or paste notes to automatically generate active recall flashcards.',
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                AppTextField(
-                                  controller: aiTopicController,
-                                  label: 'Topic or Study Notes',
-                                  hintText:
-                                      'e.g. Organic chemistry reaction mechanisms and IUPAC naming',
-                                  maxLines: 3,
-                                ),
-                                const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Cards:',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    ...[5, 10, 15, 20].map((count) {
-                                      final isSelected =
-                                          aiCardCount.value == count;
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Add Card to Deck',
+                                        style: typography.callout.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 14,
                                         ),
-                                        child: ShrinkableButton(
-                                          onTap: () {
-                                            AppFeedback.selection();
-                                            aiCardCount.value = count;
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? colors.primary
-                                                  : (isDark
-                                                        ? colors.surfaceTertiary
-                                                              .withAlpha(80)
-                                                        : colors
-                                                              .surfaceSecondary),
-                                              borderRadius:
-                                                  AppRadius.radiusBadge,
-                                            ),
-                                            child: Text(
-                                              '$count',
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: isSelected
-                                                        ? colors.white
-                                                        : colors.textSecondary,
-                                                    fontSize: 12,
-                                                  ),
-                                            ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      AppTextField(
+                                        controller: manualFrontController,
+                                        label:
+                                            'Front (Question / Term / Concept)',
+                                        hintText:
+                                            "e.g. State Le Chatelier's principle",
+                                        maxLines: 2,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      AppTextField(
+                                        controller: manualBackController,
+                                        label:
+                                            'Back (Answer / Definition / Formula)',
+                                        hintText:
+                                            'e.g. When a system at equilibrium is subjected to change, it adjusts to counteract the change.',
+                                        maxLines: 3,
+                                      ),
+                                      const SizedBox(height: 14),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: AppButton(
+                                          text: '+ Add Flashcard',
+                                          onPressed: addManualCard,
+                                          prefixIcon: const Icon(
+                                            Icons.add_rounded,
+                                            size: 16,
                                           ),
                                         ),
-                                      );
-                                    }),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: AppButton(
-                                    text: isAiGenerating.value
-                                        ? 'Generating...'
-                                        : '✨ Generate & Add Cards',
-                                    isLoading: isAiGenerating.value,
-                                    onPressed: isAiGenerating.value
-                                        ? null
-                                        : generateCardsWithAi,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ]
-                        // Tab 3: Upload Study Document
-                        else ...[
-                          Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary.withAlpha(120)
-                                  : colors.surfacePrimary,
-                              borderRadius: AppRadius.radiusPanel,
-                              border: Border.all(
-                                color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(
-                                        50,
-                                      )
-                                    : colors.surfaceBorder.withAlpha(120),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Upload Lecture Notes / Slides',
-                                  style: typography.callout.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Extracts notes from PDF, PPTX, or TXT documents and synthesizes flashcards for this deck.',
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                ShrinkableButton(
-                                  onTap: isDocIngesting.value
-                                      ? null
-                                      : () async {
-                                          AppFeedback.light();
-                                          final doc = await FilePickerService()
-                                              .pickStudyDocument(
-                                                extensions: const [
-                                                  'pdf',
-                                                  'png',
-                                                  'jpg',
-                                                  'jpeg',
-                                                  'txt',
-                                                  'pptx',
-                                                ],
-                                              );
-                                          if (doc != null) {
-                                            pickedDoc.value = doc;
-                                          }
-                                        },
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 24,
-                                      horizontal: 16,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? colors.surfaceTertiary.withAlpha(60)
-                                          : colors.surfaceSecondary.withAlpha(
-                                              60,
-                                            ),
-                                      borderRadius: AppRadius.radiusCard,
-                                      border: Border.all(
-                                        color: pickedDoc.value != null
-                                            ? colors.primary
-                                            : colors.surfaceBorder,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Icon(
-                                          pickedDoc.value != null
-                                              ? Icons.check_circle_rounded
-                                              : Icons.upload_file_rounded,
-                                          size: 32,
-                                          color: colors.primary,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          pickedDoc.value?.name ??
-                                              'Select PDF, PPTX or Text Document',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.textPrimary,
-                                              ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                if (isDocIngesting.value) ...[
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      AppLogoLoader(
-                                        size: 14,
-                                        color: colors.primary,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        docStatus.value,
-                                        style: typography.caption.regular
-                                            .copyWith(
-                                              color: colors.primary,
-                                              fontSize: 12,
-                                            ),
                                       ),
                                     ],
                                   ),
-                                ],
-                                const SizedBox(height: 16),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: AppButton(
-                                    text: isDocIngesting.value
-                                        ? 'Processing...'
-                                        : 'Extract Flashcards',
-                                    isLoading: isDocIngesting.value,
-                                    onPressed:
-                                        isDocIngesting.value ||
-                                            pickedDoc.value == null
-                                        ? null
-                                        : ingestDocumentCards,
+                                ),
+                              ]
+                              // Tab 2: AI Flashcard Generator
+                              else if (selectedTabIndex.value == 1) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary.withAlpha(120)
+                                        : colors.surfacePrimary,
+                                    borderRadius: AppRadius.radiusPanel,
+                                    border: Border.all(
+                                      color: isDark
+                                          ? colors.surfaceBorderHighlight
+                                                .withAlpha(
+                                                  50,
+                                                )
+                                          : colors.surfaceBorder.withAlpha(120),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'AI Flashcard Generator',
+                                        style: typography.callout.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Enter a topic or paste notes to automatically generate active recall flashcards.',
+                                        style: typography.footnote.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      AppTextField(
+                                        controller: aiTopicController,
+                                        label: 'Topic or Study Notes',
+                                        hintText:
+                                            'e.g. Organic chemistry reaction mechanisms and IUPAC naming',
+                                        maxLines: 3,
+                                      ),
+                                      const SizedBox(height: 14),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Cards:',
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.textPrimary,
+                                                ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          ...[5, 10, 15, 20].map((count) {
+                                            final isSelected =
+                                                aiCardCount.value == count;
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                right: 8,
+                                              ),
+                                              child: ShrinkableButton(
+                                                onTap: () {
+                                                  AppFeedback.selection();
+                                                  aiCardCount.value = count;
+                                                },
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 6,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? colors.primary
+                                                        : (isDark
+                                                              ? colors
+                                                                    .surfaceTertiary
+                                                                    .withAlpha(
+                                                                      80,
+                                                                    )
+                                                              : colors
+                                                                    .surfaceSecondary),
+                                                    borderRadius:
+                                                        AppRadius.radiusBadge,
+                                                  ),
+                                                  child: Text(
+                                                    '$count',
+                                                    style: typography
+                                                        .caption
+                                                        .bold
+                                                        .copyWith(
+                                                          color: isSelected
+                                                              ? colors.white
+                                                              : colors
+                                                                    .textSecondary,
+                                                          fontSize: 12,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: AppButton(
+                                          text: isAiGenerating.value
+                                              ? 'Generating...'
+                                              : '✨ Generate & Add Cards',
+                                          isLoading: isAiGenerating.value,
+                                          onPressed: isAiGenerating.value
+                                              ? null
+                                              : generateCardsWithAi,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ]
+                              // Tab 3: Upload Study Document
+                              else ...[
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfaceSecondary.withAlpha(120)
+                                        : colors.surfacePrimary,
+                                    borderRadius: AppRadius.radiusPanel,
+                                    border: Border.all(
+                                      color: isDark
+                                          ? colors.surfaceBorderHighlight
+                                                .withAlpha(
+                                                  50,
+                                                )
+                                          : colors.surfaceBorder.withAlpha(120),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Upload Lecture Notes / Slides',
+                                        style: typography.callout.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Extracts notes from PDF, PPTX, or TXT documents and synthesizes flashcards for this deck.',
+                                        style: typography.footnote.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      ShrinkableButton(
+                                        onTap: isDocIngesting.value
+                                            ? null
+                                            : () async {
+                                                AppFeedback.light();
+                                                final doc =
+                                                    await FilePickerService()
+                                                        .pickStudyDocument(
+                                                          extensions: const [
+                                                            'pdf',
+                                                            'png',
+                                                            'jpg',
+                                                            'jpeg',
+                                                            'txt',
+                                                            'pptx',
+                                                          ],
+                                                        );
+                                                if (doc != null) {
+                                                  pickedDoc.value = doc;
+                                                }
+                                              },
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 24,
+                                            horizontal: 16,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isDark
+                                                ? colors.surfaceTertiary
+                                                      .withAlpha(60)
+                                                : colors.surfaceSecondary
+                                                      .withAlpha(
+                                                        60,
+                                                      ),
+                                            borderRadius: AppRadius.radiusCard,
+                                            border: Border.all(
+                                              color: pickedDoc.value != null
+                                                  ? colors.primary
+                                                  : colors.surfaceBorder,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Icon(
+                                                pickedDoc.value != null
+                                                    ? Icons.check_circle_rounded
+                                                    : Icons.upload_file_rounded,
+                                                size: 32,
+                                                color: colors.primary,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                pickedDoc.value?.name ??
+                                                    'Select PDF, PPTX or Text Document',
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color: colors.textPrimary,
+                                                    ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      if (isDocIngesting.value) ...[
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            AppLogoLoader(
+                                              size: 14,
+                                              color: colors.primary,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              docStatus.value,
+                                              style: typography.caption.regular
+                                                  .copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 12,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                      const SizedBox(height: 16),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: AppButton(
+                                          text: isDocIngesting.value
+                                              ? 'Processing...'
+                                              : 'Extract Flashcards',
+                                          isLoading: isDocIngesting.value,
+                                          onPressed:
+                                              isDocIngesting.value ||
+                                                  pickedDoc.value == null
+                                              ? null
+                                              : ingestDocumentCards,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                         const SizedBox(height: 24),
 
                         // Cards in this Deck Section

@@ -118,18 +118,23 @@ void main() {
       expect(first.correctOptionIndex, isNotNull);
     });
 
-    test('Loads on cold startup and builds instant in-memory lookup indices', () async {
-      expect(localDataSource.isInitialized, isTrue);
+    test(
+      'Loads on cold startup and builds instant in-memory lookup indices',
+      () async {
+        expect(localDataSource.isInitialized, isTrue);
 
-      final waecSubjects =
-          await localDataSource.getAvailableSubjects(ExamCategory.waec);
-      expect(waecSubjects, isNotEmpty);
-      expect(waecSubjects.contains('Mathematics'), isTrue);
+        final waecSubjects = await localDataSource.getAvailableSubjects(
+          ExamCategory.waec,
+        );
+        expect(waecSubjects, isNotEmpty);
+        expect(waecSubjects.contains('Mathematics'), isTrue);
 
-      final jambYears =
-          await localDataSource.getAvailableYears(ExamCategory.jamb);
-      expect(jambYears, isNotEmpty);
-    });
+        final jambYears = await localDataSource.getAvailableYears(
+          ExamCategory.jamb,
+        );
+        expect(jambYears, isNotEmpty);
+      },
+    );
 
     test('Sub-5ms lookup performance and zero network requirement', () async {
       final stopwatch = Stopwatch()..start();
@@ -143,68 +148,82 @@ void main() {
       stopwatch.stop();
 
       expect(mathQuestions, isNotEmpty);
-      expect(stopwatch.elapsedMilliseconds, lessThanOrEqualTo(5),
-          reason: 'Offline indexed lookups must complete in sub-5ms');
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThanOrEqualTo(5),
+        reason: 'Offline indexed lookups must complete in sub-5ms',
+      );
     });
 
-    test('Filters accurately by category, subject, year, and search query', () async {
-      final filteredBySubject = await localDataSource.getPastQuestions(
-        subject: 'English Language',
-      );
-      expect(filteredBySubject, isNotEmpty);
-      for (final q in filteredBySubject) {
-        expect(q.subject.toLowerCase(), contains('english'));
-      }
+    test(
+      'Filters accurately by category, subject, year, and search query',
+      () async {
+        final filteredBySubject = await localDataSource.getPastQuestions(
+          subject: 'English Language',
+        );
+        expect(filteredBySubject, isNotEmpty);
+        for (final q in filteredBySubject) {
+          expect(q.subject.toLowerCase(), contains('english'));
+        }
 
-      final chemistry2022 = await localDataSource.getPastQuestions(
-        subject: 'Chemistry',
-        year: 2022,
-      );
-      for (final q in chemistry2022) {
-        expect(q.year, equals(2022));
-      }
+        final chemistry2022 = await localDataSource.getPastQuestions(
+          subject: 'Chemistry',
+          year: 2022,
+        );
+        for (final q in chemistry2022) {
+          expect(q.year, equals(2022));
+        }
 
-      final searchResults = await localDataSource.getPastQuestions(
-        searchQuery: 'acid',
-      );
-      expect(searchResults, isNotEmpty);
-      for (final q in searchResults) {
-        final matches = q.prompt.toLowerCase().contains('acid') ||
-            q.topic.toLowerCase().contains('acid') ||
-            q.subject.toLowerCase().contains('acid');
-        expect(matches, isTrue);
-      }
-    });
+        final searchResults = await localDataSource.getPastQuestions(
+          searchQuery: 'acid',
+        );
+        expect(searchResults, isNotEmpty);
+        for (final q in searchResults) {
+          final matches =
+              q.prompt.toLowerCase().contains('acid') ||
+              q.topic.toLowerCase().contains('acid') ||
+              q.subject.toLowerCase().contains('acid');
+          expect(matches, isTrue);
+        }
+      },
+    );
 
-    test('Repository actively queries remote data source and merges with local questions', () async {
-      when(() => mockRemoteDataSource.getPastQuestions(
+    test(
+      'Repository actively queries remote data source and merges with local questions',
+      () async {
+        when(
+          () => mockRemoteDataSource.getPastQuestions(
             examCategory: any(named: 'examCategory'),
             subject: any(named: 'subject'),
             year: any(named: 'year'),
             searchQuery: any(named: 'searchQuery'),
             courseId: any(named: 'courseId'),
             courseCode: any(named: 'courseCode'),
-          )).thenAnswer((_) async => []);
+          ),
+        ).thenAnswer((_) async => []);
 
-      final result = await repository.getPastQuestions(
-        examCategory: ExamCategory.jamb,
-        subject: 'Physics',
-      );
+        final result = await repository.getPastQuestions(
+          examCategory: ExamCategory.jamb,
+          subject: 'Physics',
+        );
 
-      expect(result.isRight, isTrue);
-      final questions = result.fold((l) => <PastQuestionEntity>[], (r) => r);
-      expect(questions, isNotEmpty);
+        expect(result.isRight, isTrue);
+        final questions = result.fold((l) => <PastQuestionEntity>[], (r) => r);
+        expect(questions, isNotEmpty);
 
-      // Verify remote data source was called for active Supabase sync
-      verify(() => mockRemoteDataSource.getPastQuestions(
+        // Verify remote data source was called for active Supabase sync
+        verify(
+          () => mockRemoteDataSource.getPastQuestions(
             examCategory: ExamCategory.jamb,
             subject: 'Physics',
             year: any(named: 'year'),
             searchQuery: any(named: 'searchQuery'),
             courseId: any(named: 'courseId'),
             courseCode: any(named: 'courseCode'),
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('Batch 3 - CBT Test Simulator & Real-Time Timing / Flagging / Palette', () {
@@ -240,22 +259,25 @@ void main() {
       await cubit.close();
     });
 
-    test('Starts CBT simulator with duration and countdown timer calculation', () {
-      cubit.startQuizFromPastQuestions(
-        title: 'JAMB Mathematics CBT Mock',
-        questions: testQuestions,
-        durationMinutes: 45,
-      );
+    test(
+      'Starts CBT simulator with duration and countdown timer calculation',
+      () {
+        cubit.startQuizFromPastQuestions(
+          title: 'JAMB Mathematics CBT Mock',
+          questions: testQuestions,
+          durationMinutes: 45,
+        );
 
-      expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
-      expect(cubit.state.quizTitle, equals('JAMB Mathematics CBT Mock'));
-      expect(cubit.state.totalQuestions, equals(10));
-      expect(cubit.state.durationMinutes, equals(45));
-      expect(cubit.state.remainingSeconds, equals(45 * 60));
-      expect(cubit.state.formattedTimer, equals('45:00'));
-      expect(cubit.state.isTimeExpired, isFalse);
-      expect(cubit.state.isTimeRunningLow, isFalse);
-    });
+        expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
+        expect(cubit.state.quizTitle, equals('JAMB Mathematics CBT Mock'));
+        expect(cubit.state.totalQuestions, equals(10));
+        expect(cubit.state.durationMinutes, equals(45));
+        expect(cubit.state.remainingSeconds, equals(45 * 60));
+        expect(cubit.state.formattedTimer, equals('45:00'));
+        expect(cubit.state.isTimeExpired, isFalse);
+        expect(cubit.state.isTimeRunningLow, isFalse);
+      },
+    );
 
     test('Toggles question flagging for candidate review', () {
       cubit.startQuizFromPastQuestions(
@@ -284,99 +306,110 @@ void main() {
       expect(cubit.state.flaggedCount, equals(1));
     });
 
-    test('Jumps between questions via CBT Palette and supports bidirectional navigation', () {
-      cubit.startQuizFromPastQuestions(
-        title: 'General CBT Mock',
-        questions: testQuestions,
-      );
-
-      expect(cubit.state.currentIndex, equals(0));
-      expect(cubit.state.canGoPrevious, isFalse);
-      expect(cubit.state.canGoNext, isTrue);
-
-      // Jump directly to question index 7 via palette
-      cubit.jumpToQuestion(7);
-      expect(cubit.state.currentIndex, equals(7));
-      expect(cubit.state.canGoPrevious, isTrue);
-      expect(cubit.state.canGoNext, isTrue);
-
-      // Navigate backwards
-      cubit.previousQuestion();
-      expect(cubit.state.currentIndex, equals(6));
-
-      // Jump to last question
-      cubit.jumpToQuestion(9);
-      expect(cubit.state.isLastQuestion, isTrue);
-      expect(cubit.state.canGoNext, isFalse);
-    });
-
-    test('Computes diagnostic topic review and weakness breakdown upon test submission', () async {
-      cubit
-        ..startQuizFromPastQuestions(
-          title: 'Diagnostic Math Mock',
+    test(
+      'Jumps between questions via CBT Palette and supports bidirectional navigation',
+      () {
+        cubit.startQuizFromPastQuestions(
+          title: 'General CBT Mock',
           questions: testQuestions,
-        )
-        ..jumpToQuestion(0)
-        ..selectOption('Option A')
-        ..jumpToQuestion(1)
-        ..selectOption('Option A')
-        ..jumpToQuestion(2)
-        ..selectOption('Option A')
-        ..jumpToQuestion(3)
-        ..selectOption('Option B')
-        ..jumpToQuestion(4)
-        ..selectOption('Option B');
+        );
 
-      expect(cubit.state.answeredCount, equals(5));
-      expect(cubit.state.unansweredCount, equals(5));
+        expect(cubit.state.currentIndex, equals(0));
+        expect(cubit.state.canGoPrevious, isFalse);
+        expect(cubit.state.canGoNext, isTrue);
 
-      const expectedResult = QuizResultEntity(
-        id: 'result-mock-1',
-        quizTitle: 'Diagnostic Math Mock',
-        totalQuestions: 10,
-        correctAnswers: 3,
-        durationSeconds: 120,
-        weaknesses: [
-          TopicWeakness(
-            subTopic: 'Calculus',
-            totalQuestions: 5,
-            correctCount: 3,
-          ),
-          TopicWeakness(
-            subTopic: 'Algebra',
-            totalQuestions: 5,
-            correctCount: 0,
-          ),
-        ],
-      );
+        // Jump directly to question index 7 via palette
+        cubit.jumpToQuestion(7);
+        expect(cubit.state.currentIndex, equals(7));
+        expect(cubit.state.canGoPrevious, isTrue);
+        expect(cubit.state.canGoNext, isTrue);
 
-      when(() => mockSubmitQuizUseCase(
+        // Navigate backwards
+        cubit.previousQuestion();
+        expect(cubit.state.currentIndex, equals(6));
+
+        // Jump to last question
+        cubit.jumpToQuestion(9);
+        expect(cubit.state.isLastQuestion, isTrue);
+        expect(cubit.state.canGoNext, isFalse);
+      },
+    );
+
+    test(
+      'Computes diagnostic topic review and weakness breakdown upon test submission',
+      () async {
+        cubit
+          ..startQuizFromPastQuestions(
+            title: 'Diagnostic Math Mock',
+            questions: testQuestions,
+            assessmentMode: AssessmentMode.examSimulationMode,
+          )
+          ..jumpToQuestion(0)
+          ..selectOption('Option A')
+          ..jumpToQuestion(1)
+          ..selectOption('Option A')
+          ..jumpToQuestion(2)
+          ..selectOption('Option A')
+          ..jumpToQuestion(3)
+          ..selectOption('Option B')
+          ..jumpToQuestion(4)
+          ..selectOption('Option B');
+
+        expect(cubit.state.answeredCount, equals(5));
+        expect(cubit.state.unansweredCount, equals(5));
+
+        const expectedResult = QuizResultEntity(
+          id: 'result-mock-1',
+          quizTitle: 'Diagnostic Math Mock',
+          totalQuestions: 10,
+          correctAnswers: 3,
+          durationSeconds: 120,
+          weaknesses: [
+            TopicWeakness(
+              subTopic: 'Calculus',
+              totalQuestions: 5,
+              correctCount: 3,
+            ),
+            TopicWeakness(
+              subTopic: 'Algebra',
+              totalQuestions: 5,
+              correctCount: 0,
+            ),
+          ],
+        );
+
+        when(
+          () => mockSubmitQuizUseCase(
             quizTitle: any(named: 'quizTitle'),
             questions: any(named: 'questions'),
             durationSeconds: any(named: 'durationSeconds'),
-          )).thenAnswer((_) async => const Right(expectedResult));
+          ),
+        ).thenAnswer((_) async => const Right(expectedResult));
 
-      await cubit.submitQuiz();
+        await cubit.submitQuiz();
 
-      expect(cubit.state.status, equals(QuizSessionStatus.completed));
-      expect(cubit.state.result, isNotNull);
-      final res = cubit.state.result!;
-      expect(res.scorePercent, equals(30));
-      expect(res.weaknesses.length, equals(2));
+        expect(cubit.state.status, equals(QuizSessionStatus.completed));
+        expect(cubit.state.result, isNotNull);
+        final res = cubit.state.result!;
+        expect(res.scorePercent, equals(30));
+        expect(res.weaknesses.length, equals(2));
 
-      // Calculus: 3/5 = 60% accuracy (< 70% is weak)
-      final calcWeakness =
-          res.weaknesses.firstWhere((w) => w.subTopic == 'Calculus');
-      expect(calcWeakness.accuracy, equals(0.60));
-      expect(calcWeakness.isWeak, isTrue);
+        // Calculus: 3/5 = 60% accuracy (< 70% is weak)
+        final calcWeakness = res.weaknesses.firstWhere(
+          (w) => w.subTopic == 'Calculus',
+        );
+        expect(calcWeakness.accuracy, equals(0.60));
+        expect(calcWeakness.isWeak, isTrue);
 
-      // Algebra: 0/5 = 0% accuracy
-      final algWeakness =
-          res.weaknesses.firstWhere((w) => w.subTopic == 'Algebra');
-      expect(algWeakness.accuracy, equals(0.0));
-      expect(algWeakness.isWeak, isTrue);
+        // Algebra: 0/5 = 0% accuracy
+        final algWeakness = res.weaknesses.firstWhere(
+          (w) => w.subTopic == 'Algebra',
+        );
+        expect(algWeakness.accuracy, equals(0.0));
+        expect(algWeakness.isWeak, isTrue);
 
-      expect(res.weakSubTopics, containsAll(['Calculus', 'Algebra']));
-    });
+        expect(res.weakSubTopics, containsAll(['Calculus', 'Algebra']));
+      },
+    );
   });
 }

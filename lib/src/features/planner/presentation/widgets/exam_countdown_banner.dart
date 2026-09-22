@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -106,7 +107,9 @@ class ExamCountdownBanner extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
+            ).animate()
+              .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+              .slideY(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOutQuint),
           );
         }
 
@@ -311,7 +314,9 @@ class ExamCountdownBanner extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+          ).animate()
+            .fadeIn(duration: 500.ms, curve: Curves.easeOut)
+            .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), duration: 500.ms, curve: Curves.easeOutQuint),
         );
       },
     );

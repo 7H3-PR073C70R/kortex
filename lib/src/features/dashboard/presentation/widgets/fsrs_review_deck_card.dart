@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -72,15 +73,13 @@ class FsrsReviewDeckCard extends StatelessWidget {
                               : colors.surfacePrimary.withAlpha(
                                   isHovered ? 225 : 200,
                                 )),
-                    border: Border.all(
-                      color: isHero
-                          ? (isHovered
+                    border: isHero
+                        ? Border.all(
+                            color: isHovered
                                 ? colors.primary.withAlpha(isDark ? 160 : 120)
-                                : colors.primary.withAlpha(isDark ? 110 : 80))
-                          : (isHovered
-                                ? colors.surfaceBorderHighlight
-                                : colors.surfaceBorder),
-                    ),
+                                : colors.primary.withAlpha(isDark ? 110 : 80),
+                          )
+                        : null,
                     boxShadow: [
                       BoxShadow(
                         color: colors.black.withAlpha(
@@ -95,228 +94,253 @@ class FsrsReviewDeckCard extends StatelessWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top Row: Category Tag & Due Badge
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 50 : 25),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              deck.subject.toUpperCase(),
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 11,
-                                letterSpacing: 0.6,
+                    children:
+                        <Widget>[
+                              // Top Row: Category Tag & Due Badge
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 50 : 25,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      deck.subject.toUpperCase(),
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 11,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                  ),
+                                  if (deck.isDueToday)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.error.withAlpha(
+                                          isDark ? 50 : 25,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: colors.error.withAlpha(120),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.bolt_rounded,
+                                            size: 12,
+                                            color: colors.error,
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            l10n.dashboardDueCount(
+                                              deck.dueCards,
+                                            ),
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.error,
+                                                  fontSize: 10.5,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
-                            ),
-                          ),
-                          if (deck.isDueToday)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.error.withAlpha(isDark ? 50 : 25),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: colors.error.withAlpha(120),
+                              const SizedBox(height: 12),
+
+                              // Title
+                              Text(
+                                deck.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.callout.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 15.5,
+                                  height: 1.3,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                              const SizedBox(height: 14),
+
+                              // Retention Rate Bar & Metrics
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Icon(
-                                    Icons.bolt_rounded,
-                                    size: 12,
-                                    color: colors.error,
-                                  ),
-                                  const SizedBox(width: 3),
                                   Text(
-                                    l10n.dashboardDueCount(deck.dueCards),
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.error,
-                                      fontSize: 10.5,
-                                      letterSpacing: 0.5,
+                                    l10n.dashboardMemoryRetention,
+                                    style: typography.footnote.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$retentionPercent%',
+                                    style: typography.footnote.bold.copyWith(
+                                      color: retentionPercent >= 85
+                                          ? colors.success
+                                          : colors.primary,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
+                              const SizedBox(height: 6),
 
-                      // Title
-                      Text(
-                        deck.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: typography.callout.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 15.5,
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Retention Rate Bar & Metrics
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            l10n.dashboardMemoryRetention,
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                          Text(
-                            '$retentionPercent%',
-                            style: typography.footnote.bold.copyWith(
-                              color: retentionPercent >= 85
-                                  ? colors.success
-                                  : colors.primary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-
-                      // Progress Bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Container(
-                          height: 6,
-                          color: isDark
-                              ? colors.surfaceBorderHighlight.withAlpha(60)
-                              : colors.surfaceBorder.withAlpha(120),
-                          child: Stack(
-                            children: [
-                              FractionallySizedBox(
-                                widthFactor: deck.retentionRate.clamp(
-                                  0.05,
-                                  1.0,
-                                ),
+                              // Progress Bar
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
                                 child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        colors.primary,
-                                        colors.syllabotAccent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Bottom Action Strip
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.timer_outlined,
-                                size: 13,
-                                color: isDark
-                                    ? colors.textSecondary
-                                    : colors.textPrimary.withAlpha(180),
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                l10n.dashboardEstimatedMinutes(
-                                  deck.estimatedMinutes,
-                                ),
-                                style: typography.caption.medium.copyWith(
+                                  height: 6,
                                   color: isDark
-                                      ? colors.textSecondary
-                                      : colors.textPrimary.withAlpha(180),
-                                  fontSize: 11.5,
+                                      ? colors.surfaceBorderHighlight.withAlpha(
+                                          60,
+                                        )
+                                      : colors.surfaceBorder.withAlpha(120),
+                                  child: Stack(
+                                    children: [
+                                      FractionallySizedBox(
+                                        widthFactor: deck.retentionRate.clamp(
+                                          0.05,
+                                          1.0,
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                colors.primary,
+                                                colors.syllabotAccent,
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                          if (deck.dueCards > 15)
-                            GestureDetector(
-                              onTap: () {
-                                unawaited(HapticFeedback.lightImpact());
-                                unawaited(
-                                  context.router.push(
-                                    StudySessionRoute(deckId: deck.id),
+                              const SizedBox(height: 14),
+
+                              // Bottom Action Strip
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.timer_outlined,
+                                        size: 13,
+                                        color: isDark
+                                            ? colors.textSecondary
+                                            : colors.textPrimary.withAlpha(180),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        l10n.dashboardEstimatedMinutes(
+                                          deck.estimatedMinutes,
+                                        ),
+                                        style: typography.caption.medium
+                                            .copyWith(
+                                              color: isDark
+                                                  ? colors.textSecondary
+                                                  : colors.textPrimary
+                                                        .withAlpha(180),
+                                              fontSize: 11.5,
+                                            ),
+                                      ),
+                                    ],
                                   ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 50 : 25,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: colors.primary.withAlpha(80),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.flash_on_rounded,
-                                      size: 11,
-                                      color: colors.primary,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      'Sprint',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 10.5,
+                                  if (deck.dueCards > 15)
+                                    GestureDetector(
+                                      onTap: () {
+                                        unawaited(HapticFeedback.lightImpact());
+                                        unawaited(
+                                          context.router.push(
+                                            StudySessionRoute(deckId: deck.id),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: colors.primary.withAlpha(
+                                            isDark ? 50 : 25,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color: colors.primary.withAlpha(80),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.flash_on_rounded,
+                                              size: 11,
+                                              color: colors.primary,
+                                            ),
+                                            const SizedBox(width: 2),
+                                            Text(
+                                              'Sprint',
+                                              style: typography.caption.bold
+                                                  .copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 10.5,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        l10n.dashboardReviewDeck,
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 13,
+                                        color: colors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
+                            ]
+                            .animate(interval: 40.ms)
+                            .fadeIn(duration: 350.ms)
+                            .slideY(
+                              begin: 0.05,
+                              end: 0,
+                              curve: Curves.easeOutQuint,
                             ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                l10n.dashboardReviewDeck,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 11.5,
-                                ),
-                              ),
-                              const SizedBox(width: 3),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 13,
-                                color: colors.primary,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
                   ),
                 ),
               ),

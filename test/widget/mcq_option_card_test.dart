@@ -17,7 +17,9 @@ Widget createTestApp(Widget child) {
 
 void main() {
   group('McqOptionCard Widget Test Suite', () {
-    testWidgets('renders option prefix and text', (tester) async {
+    testWidgets('idle option renders prefix and text, and is tappable', (
+      tester,
+    ) async {
       var tapped = false;
 
       await tester.pumpWidget(
@@ -25,9 +27,7 @@ void main() {
           McqOptionCard(
             optionText: 'Gibbs Free Energy',
             index: 0, // Option A
-            isSelected: false,
-            isAnswered: false,
-            isCorrect: false,
+            state: McqOptionState.idle,
             onTap: () {
               tapped = true;
             },
@@ -43,40 +43,150 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('renders check icon when answered and correct', (tester) async {
+    testWidgets('pending selection is still tappable so it can be changed', (
+      tester,
+    ) async {
+      var tapped = false;
+
+      await tester.pumpWidget(
+        createTestApp(
+          McqOptionCard(
+            optionText: 'Staged Answer',
+            index: 1, // Option B
+            state: McqOptionState.selected,
+            onTap: () {
+              tapped = true;
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(McqOptionCard));
+      await tester.pump();
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('correct reveal shows a check and disables taps', (
+      tester,
+    ) async {
+      var tapped = false;
+
       await tester.pumpWidget(
         createTestApp(
           McqOptionCard(
             optionText: 'Correct Answer',
             index: 1, // Option B
-            isSelected: true,
-            isAnswered: true,
-            isCorrect: true,
-            onTap: () {},
+            state: McqOptionState.correctReveal,
+            onTap: () {
+              tapped = true;
+            },
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+
+      await tester.tap(find.byType(McqOptionCard));
+      await tester.pump();
+      expect(tapped, isFalse);
     });
 
-    testWidgets('renders cancel icon when answered and incorrect', (
+    testWidgets('wrong reveal shows a cancel mark and disables taps', (
       tester,
     ) async {
+      var tapped = false;
+
       await tester.pumpWidget(
         createTestApp(
           McqOptionCard(
             optionText: 'Wrong Answer',
             index: 2, // Option C
-            isSelected: true,
-            isAnswered: true,
-            isCorrect: false,
+            state: McqOptionState.wrongReveal,
+            onTap: () {
+              tapped = true;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+
+      await tester.tap(find.byType(McqOptionCard));
+      await tester.pump();
+      expect(tapped, isFalse);
+    });
+
+    testWidgets('muted option renders without a verdict mark', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestApp(
+          McqOptionCard(
+            optionText: 'Eliminated Option',
+            index: 3, // Option D
+            state: McqOptionState.muted,
             onTap: () {},
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+      expect(find.text('D'), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+      expect(find.byIcon(Icons.cancel_rounded), findsNothing);
+    });
+
+    test('resolveState maps raw session flags to the right visual state', () {
+      expect(
+        McqOptionCard.resolveState(
+          isSelected: false,
+          isAnswered: false,
+          isCorrect: false,
+        ),
+        McqOptionState.idle,
+      );
+      expect(
+        McqOptionCard.resolveState(
+          isSelected: true,
+          isAnswered: false,
+          isCorrect: false,
+        ),
+        McqOptionState.selected,
+      );
+      expect(
+        McqOptionCard.resolveState(
+          isSelected: true,
+          isAnswered: true,
+          isCorrect: true,
+        ),
+        McqOptionState.correctReveal,
+      );
+      expect(
+        McqOptionCard.resolveState(
+          isSelected: true,
+          isAnswered: true,
+          isCorrect: false,
+        ),
+        McqOptionState.wrongReveal,
+      );
+      expect(
+        McqOptionCard.resolveState(
+          isSelected: false,
+          isAnswered: true,
+          isCorrect: false,
+        ),
+        McqOptionState.muted,
+      );
+      expect(
+        McqOptionCard.resolveState(
+          isSelected: false,
+          isAnswered: false,
+          isCorrect: false,
+          isEliminated: true,
+        ),
+        McqOptionState.muted,
+      );
     });
   });
 }

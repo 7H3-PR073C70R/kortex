@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -27,9 +26,11 @@ class OnboardingSlideData {
   final String? floatingPillBottom;
 }
 
-/// Decoupled gesture canvas handling PageView swiping with
-/// physics-based staggered entry trajectories, 3D glass cards,
-/// and ambient gradient mesh glow.
+/// Decoupled gesture canvas handling PageView swiping with a single
+/// coherent parallax rig: the hero artwork drifts against the swipe,
+/// the copy lags behind it, and everything settles on one deceleration
+/// curve. Only transform/opacity are animated, and the ambient float
+/// re-renders just the moving wrappers — never the card subtree.
 class OnboardingPageView extends StatefulWidget {
   const OnboardingPageView({
     required this.controller,
@@ -68,11 +69,17 @@ class _OnboardingPageViewState extends State<OnboardingPageView>
 
   @override
   Widget build(BuildContext context) {
+    // Bouncing physics only pay off on wide layouts where the neighbor
+    // page peeks past the content constraint; on phones they just add
+    // rubber-band overshoot, so clamp there.
+    final canPeekNextPage = MediaQuery.sizeOf(context).width > 720;
     return PageView.builder(
       controller: widget.controller,
       itemCount: widget.slides.length,
       onPageChanged: widget.onPageChanged,
-      physics: const BouncingScrollPhysics(),
+      physics: canPeekNextPage
+          ? const ClampingScrollPhysics()
+          : const ClampingScrollPhysics(),
       itemBuilder: (context, index) {
         return _OnboardingSlideItem(
           data: widget.slides[index],
@@ -85,16 +92,24 @@ class _OnboardingPageViewState extends State<OnboardingPageView>
   }
 }
 
+/// Per-slide trajectory character. All slides now share one motion
+/// language (horizontal parallax + depth scale); the slight variations
+/// keep each slide from feeling like a copy of the last.
 class _TrajectoryVector {
   const _TrajectoryVector({
-    required this.dxMultiplier,
-    required this.dyMultiplier,
-    this.scaleMultiplier = 0.15,
+    required this.parallax,
+    required this.depth,
+    this.rise = 0,
   });
 
-  final double dxMultiplier;
-  final double dyMultiplier;
-  final double scaleMultiplier;
+  /// How far the artwork drifts against the swipe, in logical pixels.
+  final double parallax;
+
+  /// How much the artwork shrinks as it slides away (0–1).
+  final double depth;
+
+  /// Extra upward drift while off-center, in logical pixels.
+  final double rise;
 }
 
 class _OnboardingSlideItem extends StatelessWidget {
@@ -111,19 +126,15 @@ class _OnboardingSlideItem extends StatelessWidget {
   final Animation<double> pulseAnimation;
 
   static const List<_TrajectoryVector> _vectors = [
-    // Slide 0: Enters from Top-Left with elastic bounce
-    _TrajectoryVector(dxMultiplier: -1.2, dyMultiplier: -1),
-    // Slide 1: Enters from Direct Top with spring bounce
-    _TrajectoryVector(dxMultiplier: 0, dyMultiplier: -1.2),
-    // Slide 2: Enters from Top-Right with spring bounce
-    _TrajectoryVector(dxMultiplier: 1.2, dyMultiplier: -1),
-    // Slide 3: Enters from Top-Center with scale bounce
-    _TrajectoryVector(
-      dxMultiplier: 0,
-      dyMultiplier: -0.8,
-      scaleMultiplier: 0.4,
-    ),
+    _TrajectoryVector(parallax: 34, depth: 0.10),
+    _TrajectoryVector(parallax: 26, depth: 0.12, rise: 8),
+    _TrajectoryVector(parallax: 34, depth: 0.10),
+    _TrajectoryVector(parallax: 28, depth: 0.14, rise: 10),
   ];
+
+  /// Deceleration-shaped falloff: movement leaves quickly and eases
+  /// into place, so settling never snaps.
+  static double _settle(double t) => 1 - math.pow(1 - t, 3).toDouble();
 
   @override
   Widget build(BuildContext context) {
@@ -133,6 +144,37 @@ class _OnboardingSlideItem extends StatelessWidget {
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final vector = _vectors[index % _vectors.length];
+
+    // Static hero card — built once per theme change, passed through
+    // as `child` so per-frame rebuilds never touch it or the artwork.
+    // A calm, flat well (no colored gradient bloom, no drop-shadow glow)
+    // keeps focus on the motion graphics and lets the elevated cards
+    // inside each scene read with real depth.
+    final heroCard = RepaintBoundary(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.radiusDialog,
+          color: colors.surfaceSecondary,
+          border: Border.all(
+            color: colors.surfaceBorder.withAlpha(isDark ? 90 : 130),
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: AppRadius.radiusDialog,
+          child: FittedBox(
+            child: SizedBox(
+              width: 360,
+              height: 280,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: data.illustrationBuilder(context),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
@@ -150,130 +192,56 @@ class _OnboardingSlideItem extends StatelessWidget {
             }
 
             final clampedOffset = pageOffset.clamp(-1.0, 1.0);
-            final opacity = disableAnimations
-                ? 1.0
-                : (1.0 - (clampedOffset.abs() * 0.65)).clamp(0.0, 1.0);
+            final magnitude = _settle(clampedOffset.abs());
 
-            // Top Illustration Physics Trajectory
+            // Hero artwork: drifts against the swipe (parallax), eases
+            // upward slightly and recedes with depth. Clamped well above
+            // scale-zero so nothing ever teleports or collapses.
             final graphicTranslateX = disableAnimations
                 ? 0.0
-                : clampedOffset * vector.dxMultiplier * 75.0;
+                : clampedOffset * vector.parallax;
             final graphicTranslateY = disableAnimations
                 ? 0.0
-                : clampedOffset.abs() * vector.dyMultiplier * 65.0;
+                : -magnitude * vector.rise;
             final graphicScale = disableAnimations
                 ? 1.0
-                : (1.0 - (clampedOffset.abs() * vector.scaleMultiplier)).clamp(
-                    0.6,
-                    1.0,
-                  );
+                : 1.0 - magnitude * vector.depth;
 
-            // Floating micro-sine oscillation
-            final floatOffset = disableAnimations
+            // Gentle floating breath, applied to the wrapper only.
+            final floatOffset = disableAnimations || clampedOffset.abs() > 0.4
                 ? 0.0
-                : math.sin(pulseAnimation.value * math.pi) * 4.0;
+                : math.sin(pulseAnimation.value * math.pi) * 3.0;
 
-            // Bottom Content Staggered Slide & Fade
-            final titleTranslateY = disableAnimations
-                ? 0.0
-                : (clampedOffset.abs() * 26.0);
+            // Copy dock: lags the artwork by a smaller offset so the
+            // two layers separate, then reunite as the page settles.
+            final titleTranslateY = disableAnimations ? 0.0 : magnitude * 14.0;
             final titleOpacity = disableAnimations
                 ? 1.0
-                : (1.0 - clampedOffset.abs() * 0.85).clamp(0.0, 1.0);
-
-            final bodyTranslateY = disableAnimations
-                ? 0.0
-                : (clampedOffset.abs() * 38.0);
+                : (1.0 - magnitude * 0.55).clamp(0.0, 1.0);
+            final bodyTranslateY = disableAnimations ? 0.0 : magnitude * 22.0;
             final bodyOpacity = disableAnimations
                 ? 1.0
-                : (1.0 - clampedOffset.abs() * 0.92).clamp(0.0, 1.0);
+                : (1.0 - magnitude * 0.75).clamp(0.0, 1.0);
 
-            return Opacity(
-              opacity: opacity,
+            return RepaintBoundary(
               child: Column(
                 children: [
                   // ==========================================
-                  // 1. TOP VIEWPORT: Hero Glass Canvas
+                  // 1. TOP VIEWPORT: Hero Canvas with artwork
                   // ==========================================
                   SizedBox(
                     height: topViewportHeight,
                     width: double.infinity,
-                    child: RepaintBoundary(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Glassmorphism Card Wrapper
-                            Transform.translate(
-                              offset: Offset(
-                                graphicTranslateX,
-                                graphicTranslateY + floatOffset,
-                              ),
-                              child: Transform.scale(
-                                scale: graphicScale,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  decoration: BoxDecoration(
-                                    borderRadius: AppRadius.radiusDialog,
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: isDark
-                                          ? [
-                                              colors.surfaceSecondary.withAlpha(
-                                                120,
-                                              ),
-                                              colors.surfacePrimary.withAlpha(
-                                                70,
-                                              ),
-                                            ]
-                                          : [
-                                              colors.surfacePrimary.withAlpha(
-                                                190,
-                                              ),
-                                              colors.surfaceSecondary.withAlpha(
-                                                120,
-                                              ),
-                                            ],
-                                    ),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? colors.surfaceBorderHighlight
-                                                .withAlpha(80)
-                                          : colors.white.withAlpha(200),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.black.withAlpha(
-                                          isDark ? 50 : 15,
-                                        ),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: AppRadius.radiusDialog,
-                                    child: FittedBox(
-                                      child: SizedBox(
-                                        width: 360,
-                                        height: 280,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: data.illustrationBuilder(
-                                            context,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                      child: Transform.translate(
+                        offset: Offset(
+                          graphicTranslateX,
+                          graphicTranslateY + floatOffset,
+                        ),
+                        child: Transform.scale(
+                          scale: graphicScale,
+                          child: child,
                         ),
                       ),
                     ),
@@ -283,81 +251,69 @@ class _OnboardingSlideItem extends StatelessWidget {
                   // 2. BOTTOM VIEWPORT: Content Dock Area
                   // ==========================================
                   Expanded(
-                    child: RepaintBoundary(
-                      child: Center(
-                        child: SingleChildScrollView(
-                          physics: const ClampingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(28, 0, 28, 4),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Polished Glass Badge & Headline
-                              Transform.translate(
-                                offset: Offset(0, titleTranslateY),
-                                child: Opacity(
-                                  opacity: titleOpacity,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: AppRadius.radiusPanel,
-                                        child: BackdropFilter(
-                                          filter: ImageFilter.blur(
-                                            sigmaX: 8,
-                                            sigmaY: 8,
-                                          ),
-                                          child: AppBadge(
-                                            label: data.badge,
-                                            variant: data.badgeVariant,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        data.tagline,
-                                        style: typography.title1.bold.copyWith(
-                                          color: colors.textPrimary,
-                                          letterSpacing: -0.6,
-                                          fontSize: 24,
-                                          height: 1.15,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Body Text Delayed Entrance
-                              Transform.translate(
-                                offset: Offset(0, bodyTranslateY),
-                                child: Opacity(
-                                  opacity: bodyOpacity,
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 480,
+                    child: Center(
+                      child: SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(28, 0, 28, 4),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Badge & Headline
+                            Transform.translate(
+                              offset: Offset(0, titleTranslateY),
+                              child: Opacity(
+                                opacity: titleOpacity,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AppBadge(
+                                      label: data.badge,
+                                      variant: data.badgeVariant,
                                     ),
-                                    child: Text(
-                                      data.description,
-                                      style: typography.callout.regular
-                                          .copyWith(
-                                            color: colors.textSecondary,
-                                            height: 1.4,
-                                            fontSize: 14,
-                                          ),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      data.tagline,
+                                      style: typography.title1.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        letterSpacing: -0.6,
+                                        fontSize: 24,
+                                        height: 1.15,
+                                      ),
                                       textAlign: TextAlign.center,
-                                      maxLines: 3,
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+
+                            // Body Text — deeper lag for a staggered feel
+                            Transform.translate(
+                              offset: Offset(0, bodyTranslateY),
+                              child: Opacity(
+                                opacity: bodyOpacity,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 480,
+                                  ),
+                                  child: Text(
+                                    data.description,
+                                    style: typography.callout.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      height: 1.4,
+                                      fontSize: 14,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -366,6 +322,7 @@ class _OnboardingSlideItem extends StatelessWidget {
               ),
             );
           },
+          child: heroCard,
         );
       },
     );

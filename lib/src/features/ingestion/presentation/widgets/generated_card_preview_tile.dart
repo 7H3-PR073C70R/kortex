@@ -34,18 +34,34 @@ class GeneratedCardPreviewTile extends HookWidget {
     final isEditing = useState<bool>(false);
     final hasImage = card.imageUrl != null && card.imageUrl!.trim().isNotEmpty;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-        borderRadius: AppRadius.radiusPanel,
-        border: Border.all(
-          color: hasImage
-              ? colors.primary.withAlpha(isDark ? 90 : 50)
-              : colors.primary.withAlpha(isDark ? 60 : 30),
-          width: hasImage ? 1.4 : 1.0,
-        ),
-      ),
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: AppMotion.easeOutCubic,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: AppRadius.radiusDialog,
+            border: Border.all(
+              color: isEditing.value 
+                  ? colors.primary.withAlpha(120)
+                  : hasImage
+                      ? colors.primary.withAlpha(isDark ? 90 : 50)
+                      : colors.primary.withAlpha(isDark ? 40 : 20),
+              width: isEditing.value ? 2.0 : (hasImage ? 1.4 : 1.0),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.black.withAlpha(isDark ? (isHovered ? 40 : 20) : (isHovered ? 15 : 5)),
+                blurRadius: isHovered ? 16 : 8,
+                offset: Offset(0, isHovered ? 6 : 2),
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,10 +77,10 @@ class GeneratedCardPreviewTile extends HookWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
-                        vertical: 2,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(30),
+                        color: colors.primary.withAlpha(isDark ? 40 : 20),
                         borderRadius: AppRadius.radiusMicro,
                       ),
                       child: Text(
@@ -72,15 +88,16 @@ class GeneratedCardPreviewTile extends HookWidget {
                         style: typography.caption.bold.copyWith(
                           color: colors.primary,
                           fontSize: 10,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                     if (hasImage) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: colors.success.withAlpha(isDark ? 40 : 25),
@@ -97,7 +114,7 @@ class GeneratedCardPreviewTile extends HookWidget {
                               size: 10,
                               color: colors.success,
                             ),
-                            const SizedBox(width: 3),
+                            const SizedBox(width: 4),
                             Text(
                               'DIAGRAM',
                               style: typography.caption.bold.copyWith(
@@ -124,12 +141,24 @@ class GeneratedCardPreviewTile extends HookWidget {
                         );
                       },
                       child: IconButton(
-                        icon: Icon(
-                          isEditing.value
-                              ? Icons.check_rounded
-                              : Icons.edit_outlined,
-                          size: 16,
-                          color: colors.primary,
+                        icon: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, animation) {
+                            return RotationTransition(
+                              turns: child.key == const ValueKey('icon_check') 
+                                  ? Tween<double>(begin: -0.2, end: 0).animate(animation)
+                                  : Tween<double>(begin: 0.2, end: 0).animate(animation),
+                              child: FadeTransition(opacity: animation, child: child),
+                            );
+                          },
+                          child: Icon(
+                            isEditing.value
+                                ? Icons.check_rounded
+                                : Icons.edit_outlined,
+                            key: ValueKey(isEditing.value ? 'icon_check' : 'icon_edit'),
+                            size: 16,
+                            color: isEditing.value ? colors.success : colors.primary,
+                          ),
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -146,7 +175,7 @@ class GeneratedCardPreviewTile extends HookWidget {
                         },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     PlatformHoverBuilder(
                       builder: (context, isHovered, child) {
                         return AnimatedScale(
@@ -158,29 +187,38 @@ class GeneratedCardPreviewTile extends HookWidget {
                       },
                       child: ShrinkableButton(
                         onTap: () => isFlipped.value = !isFlipped.value,
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 10,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: colors.syllabotAccent.withAlpha(25),
+                            color: isFlipped.value ? colors.syllabotAccent.withAlpha(40) : colors.syllabotAccent.withAlpha(isDark ? 25 : 15),
                             borderRadius: AppRadius.radiusBadge,
+                            border: Border.all(
+                              color: isFlipped.value ? colors.syllabotAccent.withAlpha(60) : colors.transparent,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.flip_rounded,
+                                isFlipped.value ? Icons.flip_to_back_rounded : Icons.flip_to_front_rounded,
                                 size: 12,
                                 color: colors.syllabotAccent,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isFlipped.value ? 'Show Front' : 'Show Back',
-                                style: typography.caption.medium.copyWith(
-                                  color: colors.syllabotAccent,
-                                  fontSize: 11,
+                              const SizedBox(width: 6),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 150),
+                                child: Text(
+                                  isFlipped.value ? 'Back' : 'Front',
+                                  key: ValueKey(isFlipped.value),
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.syllabotAccent,
+                                    fontSize: 11,
+                                    letterSpacing: 0.2,
+                                  ),
                                 ),
                               ),
                             ],
@@ -193,112 +231,141 @@ class GeneratedCardPreviewTile extends HookWidget {
               ],
             ),
           ),
-          const Divider(height: 16),
+          Divider(height: 24, color: colors.primary.withAlpha(isDark ? 30 : 15)),
 
           // Content body
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: isEditing.value
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppTextField(
-                        controller: frontController,
-                        label: 'Front Prompt',
-                      ),
-                      const SizedBox(height: 10),
-                      AppTextField(
-                        controller: backController,
-                        label: 'Back Answer / Explanation',
-                        maxLines: 3,
-                      ),
-                    ],
-                  )
-                : (isFlipped.value
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ANSWER / EXPLANATION',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 10,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              card.back,
-                              style: typography.body.regular.copyWith(
-                                color: colors.textPrimary,
-                                height: 1.4,
-                              ),
-                            ),
-                            if (card.backLatex != null &&
-                                card.backLatex!.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Math.tex(
-                                  card.backLatex!
-                                      .replaceAll(r'$$', '')
-                                      .replaceAll(r'$', '')
-                                      .trim(),
-                                  textStyle: typography.body.bold.copyWith(
-                                    color: isDark
-                                        ? colors.syllabotAccent
-                                        : colors.primary,
-                                  ),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOutQuart,
+              switchOutCurve: Curves.easeInQuart,
+              layoutBuilder: (currentChild, previousChildren) {
+                return Stack(
+                  alignment: Alignment.topLeft,
+                  children: <Widget>[
+                    ...previousChildren,
+                    if (currentChild != null) currentChild,
+                  ],
+                );
+              },
+              child: isEditing.value
+                  ? Column(
+                      key: const ValueKey('edit_view'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppTextField(
+                          controller: frontController,
+                          label: 'Front Prompt',
+                        ),
+                        const SizedBox(height: 12),
+                        AppTextField(
+                          controller: backController,
+                          label: 'Back Answer / Explanation',
+                          maxLines: 3,
+                        ),
+                      ],
+                    )
+                  : (isFlipped.value
+                        ? Column(
+                            key: const ValueKey('back_view'),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ANSWER / EXPLANATION',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textSecondary.withAlpha(160),
+                                  fontSize: 10,
+                                  letterSpacing: 0.8,
                                 ),
                               ),
-                            ],
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'PROMPT / CONCEPT',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 10,
+                              const SizedBox(height: 8),
+                              Text(
+                                card.back,
+                                style: typography.body.regular.copyWith(
+                                  color: colors.textPrimary,
+                                  height: 1.5,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              card.front,
-                              style: typography.body.bold.copyWith(
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                            if (card.imageUrl != null &&
-                                card.imageUrl!.isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              ClipRRect(
-                                borderRadius: AppRadius.radiusCard,
-                                child: Container(
-                                  constraints: const BoxConstraints(
-                                    maxHeight: 180,
-                                  ),
+                              if (card.backLatex != null &&
+                                  card.backLatex!.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Container(
                                   width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isDark
-                                        ? colors.surfaceSecondary
-                                        : colors.backgroundSecondary.withAlpha(
-                                            120,
-                                          ),
+                                    color: colors.primary.withAlpha(isDark ? 20 : 10),
                                     borderRadius: AppRadius.radiusCard,
                                     border: Border.all(
-                                      color: colors.primary.withAlpha(60),
+                                      color: colors.primary.withAlpha(isDark ? 40 : 20),
                                     ),
                                   ),
-                                  child: AppMultimodalImage(
-                                    imageUrl: card.imageUrl!,
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Math.tex(
+                                      card.backLatex!
+                                          .replaceAll(r'$$', '')
+                                          .replaceAll(r'$', '')
+                                          .trim(),
+                                      textStyle: typography.body.bold.copyWith(
+                                        color: isDark
+                                            ? colors.syllabotAccent
+                                            : colors.primary,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
-                        )),
+                          )
+                        : Column(
+                            key: const ValueKey('front_view'),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'PROMPT / CONCEPT',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textSecondary.withAlpha(160),
+                                  fontSize: 10,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                card.front,
+                                style: typography.body.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              if (card.imageUrl != null &&
+                                  card.imageUrl!.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                ClipRRect(
+                                  borderRadius: AppRadius.radiusCard,
+                                  child: Container(
+                                    constraints: const BoxConstraints(
+                                      maxHeight: 180,
+                                    ),
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? colors.surfaceSecondary
+                                          : colors.backgroundSecondary.withAlpha(120),
+                                      borderRadius: AppRadius.radiusCard,
+                                      border: Border.all(
+                                        color: colors.primary.withAlpha(isDark ? 60 : 30),
+                                      ),
+                                    ),
+                                    child: AppMultimodalImage(
+                                      imageUrl: card.imageUrl!,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          )),
+            ),
           ),
         ],
       ),

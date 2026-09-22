@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -354,7 +355,7 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
                         onPressed: _redeem,
                       ),
                     ],
-                  ],
+                  ].animate(interval: 80.ms).fadeIn(duration: 250.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint),
                 ),
               ),
             ),

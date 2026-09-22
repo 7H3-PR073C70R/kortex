@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -479,7 +480,9 @@ class ManageExamModalSheet extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+          ).animate()
+            .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+            .slideY(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOutQuint),
         );
       },
     );

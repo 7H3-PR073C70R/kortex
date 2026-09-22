@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
@@ -114,7 +115,7 @@ class HigherEdLevelStep extends StatelessWidget {
             ),
           );
         }),
-      ],
+      ].animate(interval: 80.ms).fadeIn(duration: 200.ms, curve: Curves.easeOutQuint).slideY(begin: 0.04, end: 0, duration: 200.ms, curve: Curves.easeOutQuint),
     );
   }
 }

@@ -1,32 +1,24 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/constants/pref_keys.dart';
-import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/services/local_storage_service.dart';
-import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
-import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
-import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_chat_view.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/auth_flow_panel.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_form_view.dart';
+import 'package:kortex/src/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
-import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
-import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
-import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -53,195 +45,18 @@ class AuthPage extends HookWidget {
   }
 }
 
-Future<void> _handleGoogleSignIn(BuildContext context) async {
-  try {
-    final result = await locator<SocialAuthService>().signInWithGoogle();
-    if (result != null && context.mounted) {
-      context.read<AuthBloc>().add(
-        AuthSocialLoginRequested(
-          provider: result.provider,
-          idToken: result.idToken,
-        ),
-      );
-    }
-  } on Object catch (e) {
-    if (context.mounted) {
-      final message = e is SocialAuthException
-          ? e.message
-          : 'Google Sign-In failed: $e';
-      context.showSnackBar(
-        message: message,
-        type: SnackBarType.error,
-      );
-    }
-  }
-}
-
-Future<void> _handleAppleSignIn(BuildContext context) async {
-  try {
-    final result = await locator<SocialAuthService>().signInWithApple();
-    if (result != null && context.mounted) {
-      context.read<AuthBloc>().add(
-        AuthSocialLoginRequested(
-          provider: result.provider,
-          idToken: result.idToken,
-          rawNonce: result.rawNonce,
-        ),
-      );
-    }
-  } on Object catch (e) {
-    if (context.mounted) {
-      final message = e is SocialAuthException
-          ? e.message
-          : 'Apple Sign-In failed: $e';
-      context.showSnackBar(
-        message: message,
-        type: SnackBarType.error,
-      );
-    }
-  }
-}
-
 class _AuthView extends HookWidget {
   const _AuthView();
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
 
     final authModeCubit = context.watch<AuthModeCubit>();
     final modeState = authModeCubit.state;
     final isChatMode = modeState.isChat;
 
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) async {
-        final isNewlyRegistered =
-            locator.isRegistered<LocalStorageService>() &&
-            locator<LocalStorageService>().getPreference(
-                  key: PrefKeys.isNewlyRegistered,
-                ) ==
-                'true';
-
-        if (state.status == AuthStatus.needsOnboarding && state.user != null) {
-          if (!isChatMode) {
-            if (isNewlyRegistered) {
-              context.showSnackBar(
-                message: l10n.authAccountCreatedWelcome,
-              );
-            }
-            unawaited(
-              context.router.replace(const OnboardingCalibrationRoute()),
-            );
-          }
-        } else if (state.isAuthenticated) {
-          if (!isChatMode) {
-            context.showSnackBar(message: l10n.authSuccessMessage);
-
-            // 1. Fast path: check if server-verified profile says user is onboarded
-            final serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;
-
-            // 2. Local pref key set by CalibrationLocalDataSourceImpl.saveCalibrationProfile
-            var localSaysOnboarded = false;
-            try {
-              final storage = locator<LocalStorageService>();
-              localSaysOnboarded =
-                  storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
-                  'true';
-            } on Object catch (_) {}
-
-            // 3. Fallback: read calibration profile from local storage
-            var calibSaysOnboarded = false;
-            if (!serverSaysOnboarded && !localSaysOnboarded) {
-              final calibRepo = locator<CalibrationRepository>();
-              final calibResult = await calibRepo.getCalibrationProfile();
-              calibSaysOnboarded = calibResult.fold(
-                (_) => false,
-                (profile) => profile?.isCalibrated ?? false,
-              );
-            }
-
-            // 4. Remote/local curated courses check for new device logins
-            var coursesSayOnboarded = false;
-            if (!serverSaysOnboarded &&
-                !localSaysOnboarded &&
-                !calibSaysOnboarded) {
-              try {
-                final storage = locator<LocalStorageService>();
-                final rawCourses = storage.getPreference(
-                  key: PrefKeys.userCuratedCourses,
-                );
-                if (rawCourses != null && rawCourses.isNotEmpty) {
-                  final list = jsonDecode(rawCourses) as List<dynamic>;
-                  if (list.isNotEmpty) coursesSayOnboarded = true;
-                }
-              } on Object catch (_) {}
-
-              if (!coursesSayOnboarded &&
-                  locator.isRegistered<DashboardRepository>()) {
-                try {
-                  final dashRepo = locator<DashboardRepository>();
-                  final coursesRes = await dashRepo.getUserCuratedCourses();
-                  coursesSayOnboarded = coursesRes.fold(
-                    (_) => false,
-                    (courses) => courses.isNotEmpty,
-                  );
-                } on Object catch (_) {}
-              }
-            }
-
-            final shouldGoToMain =
-                serverSaysOnboarded ||
-                localSaysOnboarded ||
-                calibSaysOnboarded ||
-                coursesSayOnboarded;
-
-            if (shouldGoToMain) {
-              try {
-                final storage = locator<LocalStorageService>();
-                unawaited(
-                  storage.savePreference(
-                    key: PrefKeys.hasCompletedOnboarding,
-                    data: 'true',
-                  ),
-                );
-              } on Object catch (_) {}
-            }
-
-            if (context.mounted) {
-              if (shouldGoToMain) {
-                unawaited(context.router.replaceAll([const MainRoute()]));
-              } else {
-                unawaited(
-                  context.router.replace(const OnboardingCalibrationRoute()),
-                );
-              }
-            }
-          }
-        } else if (state.status == AuthStatus.needsEmailVerification) {
-          final email = state.user?.email ?? '';
-          if (email.isNotEmpty) {
-            unawaited(
-              context.router.push(OtpVerificationRoute(email: email)),
-            );
-          }
-        } else if (state.isResetSent) {
-          if (!isChatMode) {
-            context.showSnackBar(
-              message: l10n.authPasswordResetSuccess,
-            );
-          }
-        } else if (state.status == AuthStatus.error &&
-            state.errorMessage != null) {
-          if (!isChatMode) {
-            context.showSnackBar(
-              message: state.errorMessage!,
-              type: SnackBarType.error,
-            );
-          }
-        }
-      },
+    return AuthNavigationListener(
       child: Scaffold(
         backgroundColor: colors.surfacePrimary,
         body: Stack(
@@ -260,9 +75,7 @@ class _AuthView extends HookWidget {
                     constraints.maxWidth >= 600 && constraints.maxWidth < 1024;
 
                 if (isDesktop) {
-                  return _DesktopSplitLayout(
-                    isChatMode: isChatMode,
-                  );
+                  return const _DesktopSplitLayout();
                 }
 
                 // Mobile & Tablet Layout
@@ -286,32 +99,22 @@ class _AuthView extends HookWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Brand Logo
-                                Row(
-                                  children: [
-                                    AppAssets.svgs.kortexLogo.svg(
-                                      width: 26,
-                                      height: 26,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      l10n.appName,
-                                      style: typography.caption.bold.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 1.4,
-                                        fontSize: 14,
-                                        color: colors.textPrimary,
-                                      ),
-                                    ),
-                                  ],
+                                // Brand lockup
+                                const RevealOnMount(
+                                  child: AuthBrandLockup(),
                                 ),
 
                                 // Dual Mode Switch Button
-                                ModeSwitchButton(
-                                  isChatMode: isChatMode,
-                                  onToggle: () {
-                                    context.read<AuthModeCubit>().toggleMode();
-                                  },
+                                RevealOnMount(
+                                  delayMs: 90,
+                                  child: ModeSwitchButton(
+                                    isChatMode: isChatMode,
+                                    onToggle: () {
+                                      context
+                                          .read<AuthModeCubit>()
+                                          .toggleMode();
+                                    },
+                                  ),
                                 ),
                               ],
                             ),
@@ -322,34 +125,41 @@ class _AuthView extends HookWidget {
                           // Preserves Chat History Across Modes
                           // ==========================================
                           Expanded(
-                            child: IndexedStack(
-                              index: isChatMode ? 0 : 1,
-                              children: [
-                                AuthChatView(
-                                  key: const ValueKey<String>('auth_chat_view'),
-                                  onGooglePressed: () =>
-                                      _handleGoogleSignIn(context),
-                                  onApplePressed: () =>
-                                      _handleAppleSignIn(context),
-                                  onForgotPassword: () {
-                                    unawaited(
-                                      context.router.push(
-                                        const ForgotPasswordRoute(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                AuthFormView(
-                                  key: const ValueKey<String>('auth_form_view'),
-                                  onForgotPassword: () {
-                                    unawaited(
-                                      context.router.push(
-                                        const ForgotPasswordRoute(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                            child: RevealOnMount(
+                              delayMs: 150,
+                              child: IndexedStack(
+                                index: isChatMode ? 0 : 1,
+                                children: [
+                                  AuthChatView(
+                                    key: const ValueKey<String>(
+                                      'auth_chat_view',
+                                    ),
+                                    onGooglePressed: () =>
+                                        authGoogleSignIn(context),
+                                    onApplePressed: () =>
+                                        authAppleSignIn(context),
+                                    onForgotPassword: () {
+                                      unawaited(
+                                        context.router.push(
+                                          const ForgotPasswordRoute(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  AuthFormView(
+                                    key: const ValueKey<String>(
+                                      'auth_form_view',
+                                    ),
+                                    onForgotPassword: () {
+                                      unawaited(
+                                        context.router.push(
+                                          const ForgotPasswordRoute(),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -357,17 +167,25 @@ class _AuthView extends HookWidget {
                           // 3. BOTTOM SOCIAL AUTH BAR (Form Mode Only)
                           // ==========================================
                           if (!isChatMode)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                              child: SocialAuthBar(
-                                isLoading: context
-                                    .watch<AuthBloc>()
-                                    .state
-                                    .isLoading,
-                                onGooglePressed: () =>
-                                    _handleGoogleSignIn(context),
-                                onApplePressed: () =>
-                                    _handleAppleSignIn(context),
+                            RevealOnMount(
+                              delayMs: 230,
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  8,
+                                  24,
+                                  16,
+                                ),
+                                child: SocialAuthBar(
+                                  isLoading: context
+                                      .watch<AuthBloc>()
+                                      .state
+                                      .isLoading,
+                                  onGooglePressed: () =>
+                                      authGoogleSignIn(context),
+                                  onApplePressed: () =>
+                                      authAppleSignIn(context),
+                                ),
                               ),
                             ),
                         ],
@@ -386,11 +204,7 @@ class _AuthView extends HookWidget {
 
 /// Two-column split layout for expanded screen sizes (Desktop / Web / 4K).
 class _DesktopSplitLayout extends StatelessWidget {
-  const _DesktopSplitLayout({
-    required this.isChatMode,
-  });
-
-  final bool isChatMode;
+  const _DesktopSplitLayout();
 
   @override
   Widget build(BuildContext context) {
@@ -408,9 +222,11 @@ class _DesktopSplitLayout extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Animated Breathing Campus Background
+              // Animated Breathing Campus Background (white hero copy sits
+              // on top, so use the dark cinematic veil).
               const BreathingCampusBackground(
-                baseOpacity: 0.55,
+                baseOpacity: 0.8,
+                foregroundIsLight: true,
               ),
 
               // Hero Copy & Badges
@@ -421,22 +237,9 @@ class _DesktopSplitLayout extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Brand Logo
-                    Row(
-                      children: [
-                        AppAssets.svgs.kortexLogo.svg(
-                          width: 32,
-                          height: 32,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          l10n.appName,
-                          style: typography.headline.bold.copyWith(
-                            letterSpacing: 2,
-                            color: colors.white,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
+                    const AuthBrandLockup(
+                      size: BrandLockupSize.large,
+                      onLightSurface: true,
                     ),
 
                     // Value Propositions
@@ -501,80 +304,7 @@ class _DesktopSplitLayout extends StatelessWidget {
           child: Container(
             color: colors.surfacePrimary,
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Column(
-                  children: [
-                    // Mode Switch Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            isChatMode
-                                ? l10n.authSyllabotAssistantTitle
-                                : l10n.authAccountSignInTitle,
-                            style: typography.headline.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ModeSwitchButton(
-                          isChatMode: isChatMode,
-                          onToggle: () {
-                            context.read<AuthModeCubit>().toggleMode();
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Active Auth Body
-                    // (Preserves state and conversation across modes)
-                    Expanded(
-                      child: IndexedStack(
-                        index: isChatMode ? 0 : 1,
-                        children: [
-                          AuthChatView(
-                            key: const ValueKey<String>('chat_desktop'),
-                            onGooglePressed: () => _handleGoogleSignIn(context),
-                            onApplePressed: () => _handleAppleSignIn(context),
-                            onForgotPassword: () {
-                              unawaited(
-                                context.router.push(
-                                  const ForgotPasswordRoute(),
-                                ),
-                              );
-                            },
-                          ),
-                          AuthFormView(
-                            key: const ValueKey<String>('form_desktop'),
-                            onForgotPassword: () {
-                              unawaited(
-                                context.router.push(
-                                  const ForgotPasswordRoute(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Social Auth Dock
-                    SocialAuthBar(
-                      isLoading: context.watch<AuthBloc>().state.isLoading,
-                      onGooglePressed: () => _handleGoogleSignIn(context),
-                      onApplePressed: () => _handleAppleSignIn(context),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: const AuthWorkspacePanel(),
           ),
         ),
       ],

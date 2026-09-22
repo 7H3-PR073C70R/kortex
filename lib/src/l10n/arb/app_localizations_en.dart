@@ -36,6 +36,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingNextSemantics => 'Continue to next onboarding slide';
 
   @override
+  String get onboardingPreviousSlide => 'Previous';
+
+  @override
+  String get onboardingPreviousSlideSemantics =>
+      'Go back to previous onboarding slide';
+
+  @override
   String get onboardingGetStartedSemantics =>
       'Get Started with Kortexify and finish onboarding';
 
@@ -3096,4 +3103,110 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whiteboardTabLabel => 'Whiteboard';
+
+  @override
+  String get deckTileUpToDate => 'Up to date';
+
+  @override
+  String get deckTileDueLabel => 'due';
+
+  @override
+  String get deckTileOptionsMenu => 'Deck options';
+
+  @override
+  String get decksMenuDetails => 'Deck details';
+
+  @override
+  String get decksMenuMillionaire => 'Practice: Millionaire mode';
+
+  @override
+  String get decksMenuExport => 'Export deck';
+
+  @override
+  String get decksMenuDelete => 'Delete deck';
+
+  @override
+  String get decksSprintLabel => 'Change the pace';
+
+  @override
+  String get decksSprintQuick10 => 'Quick 10';
+
+  @override
+  String get decksSprintPower20 => 'Power 20';
+
+  @override
+  String get decksSprintSpeedRun => 'Speed Run (3m)';
+
+  @override
+  String get decksSprintHyperdrive => 'Hyperdrive';
+
+  @override
+  String get decksClearSearch => 'Clear search';
+
+  @override
+  String decksHeroWaitingTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cards are waiting',
+      one: '1 card is waiting',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String decksHeroEstimate(int minutes) {
+    return 'about $minutes min';
+  }
+
+  @override
+  String decksHeroReviewCta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Review $count due cards',
+      one: 'Review 1 due card',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get decksHeroAllCaughtUp => 'All caught up';
+
+  @override
+  String get decksHeroAllCaughtUpSubtitle =>
+      'Nothing due right now — take the win.';
+
+  @override
+  String get decksHeroBrowseDecks => 'Browse your decks';
+
+  @override
+  String studyRatingSemantics(String label, String preview) {
+    return '$label, review again in about $preview';
+  }
+
+  @override
+  String studyMilestoneCrushed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cards down — keep rolling',
+      one: '1 card down — keep rolling',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get studyMilestoneFinish => 'Finish sprint';
+
+  @override
+  String sessionSummaryNextReview(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return 'Next review batch in about $_temp0';
+  }
 }

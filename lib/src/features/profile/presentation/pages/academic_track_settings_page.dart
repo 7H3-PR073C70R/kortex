@@ -158,15 +158,17 @@ class AcademicTrackSettingsPage extends HookWidget {
                       ),
                       const SizedBox(height: 18),
 
-                      // 1. Academic Focus Track Header & Interactive Selector Card
-                      Text(
-                        'Target Exam & Curriculum',
-                        style: typography.body.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 14.5,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6, bottom: 8),
+                        child: Text(
+                          'TARGET EXAM & CURRICULUM',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textSecondary.withAlpha(170),
+                            fontSize: 11,
+                            letterSpacing: 0.8,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 10),
                       _buildInteractiveTrackCard(
                         context,
                         activeTrack,
@@ -178,14 +180,17 @@ class AcademicTrackSettingsPage extends HookWidget {
                       const SizedBox(height: 24),
 
                       // 2. Daily Goal & Retention Benchmark
-                      Text(
-                        'Daily Review & Retention Goal',
-                        style: typography.body.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 14.5,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6, bottom: 8),
+                        child: Text(
+                          'DAILY REVIEW & RETENTION GOAL',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textSecondary.withAlpha(170),
+                            fontSize: 11,
+                            letterSpacing: 0.8,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
                       GoalCalibrationSlider(
                         dailyTarget: dailyTarget.value,
                         retentionBenchmark: retentionBenchmark.value,

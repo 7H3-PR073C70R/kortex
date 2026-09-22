@@ -75,8 +75,12 @@ void main() {
       mockCardSyncQueue = MockCardSyncQueue();
       mockDecksRepository = MockDecksRepository();
 
-      when(() => mockCardSyncQueue.enqueueReview(any(), flushImmediately: any(named: 'flushImmediately')))
-          .thenAnswer((_) async {});
+      when(
+        () => mockCardSyncQueue.enqueueReview(
+          any(),
+          flushImmediately: any(named: 'flushImmediately'),
+        ),
+      ).thenAnswer((_) async {});
 
       cubit = QuizSessionCubit(
         generateQuizUseCase: mockGenerateUseCase,
@@ -156,7 +160,7 @@ void main() {
     );
 
     blocTest<QuizSessionCubit, QuizSessionState>(
-      'selectOption marks question as answered and determines correctness',
+      'selectOption in discovery mode stages a pending answer without grading',
       build: () {
         when(
           () => mockGenerateUseCase(
@@ -176,6 +180,47 @@ void main() {
             .having(
               (s) => s.status,
               'status',
+              QuizSessionStatus.inProgress,
+            )
+            .having(
+              (s) => s.pendingAnswer,
+              'pendingAnswer',
+              '9.8 m/s^2',
+            )
+            .having(
+              (s) => s.questions[0].isAnswered,
+              'isAnswered',
+              isFalse,
+            ),
+      ],
+    );
+
+    blocTest<QuizSessionCubit, QuizSessionState>(
+      'checkAnswer grades the staged discovery answer and reveals correctness',
+      build: () {
+        when(
+          () => mockGenerateUseCase(
+            deckId: 'deck-1',
+            deckTitle: 'Physics Deck',
+          ),
+        ).thenAnswer((_) async => const Right(tQuestions));
+        return cubit;
+      },
+      seed: () => const QuizSessionState(
+        status: QuizSessionStatus.inProgress,
+        questions: tQuestions,
+      ),
+      act: (cubit) {
+        cubit
+          ..selectOption('9.8 m/s^2')
+          ..checkAnswer();
+      },
+      expect: () => [
+        isA<QuizSessionState>(),
+        isA<QuizSessionState>()
+            .having(
+              (s) => s.status,
+              'status',
               QuizSessionStatus.questionAnswered,
             )
             .having(
@@ -187,6 +232,11 @@ void main() {
               (s) => s.questions[0].userSelectedAnswer,
               'userSelectedAnswer',
               '9.8 m/s^2',
+            )
+            .having(
+              (s) => s.pendingAnswer,
+              'pendingAnswer',
+              isNull,
             ),
       ],
     );
@@ -223,33 +273,51 @@ void main() {
     );
 
     group('Millionaire Ascent Mode (ADHD Gamified Quiz)', () {
-      test('startMillionaireQuiz sets up millionaire mode, 3 lifelines, and Tier 1', () {
-        cubit.startMillionaireQuiz(
-          title: 'Physics Ascent',
-          questions: tQuestions,
-        );
-
-        expect(cubit.state.assessmentMode, equals(AssessmentMode.millionaireMode));
-        expect(cubit.state.currentTier, equals(1));
-        expect(cubit.state.bankedTier, equals(0));
-        expect(cubit.state.isLifelineAvailable(LifelineType.fiftyFifty), isTrue);
-        expect(cubit.state.isLifelineAvailable(LifelineType.aiClue), isTrue);
-        expect(cubit.state.isLifelineAvailable(LifelineType.skipSwap), isTrue);
-        expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
-      });
-
-      test('useLifeline(fiftyFifty) eliminates exactly 2 incorrect options', () {
-        cubit
-          ..startMillionaireQuiz(
+      test(
+        'startMillionaireQuiz sets up millionaire mode, 3 lifelines, and Tier 1',
+        () {
+          cubit.startMillionaireQuiz(
             title: 'Physics Ascent',
             questions: tQuestions,
-          )
-          ..useLifeline(LifelineType.fiftyFifty);
+          );
 
-        expect(cubit.state.isLifelineAvailable(LifelineType.fiftyFifty), isFalse);
-        expect(cubit.state.eliminatedOptionIndices.length, equals(2));
-        expect(cubit.state.eliminatedOptionIndices.contains(0), isFalse);
-      });
+          expect(
+            cubit.state.assessmentMode,
+            equals(AssessmentMode.millionaireMode),
+          );
+          expect(cubit.state.currentTier, equals(1));
+          expect(cubit.state.bankedTier, equals(0));
+          expect(
+            cubit.state.isLifelineAvailable(LifelineType.fiftyFifty),
+            isTrue,
+          );
+          expect(cubit.state.isLifelineAvailable(LifelineType.aiClue), isTrue);
+          expect(
+            cubit.state.isLifelineAvailable(LifelineType.skipSwap),
+            isTrue,
+          );
+          expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
+        },
+      );
+
+      test(
+        'useLifeline(fiftyFifty) eliminates exactly 2 incorrect options',
+        () {
+          cubit
+            ..startMillionaireQuiz(
+              title: 'Physics Ascent',
+              questions: tQuestions,
+            )
+            ..useLifeline(LifelineType.fiftyFifty);
+
+          expect(
+            cubit.state.isLifelineAvailable(LifelineType.fiftyFifty),
+            isFalse,
+          );
+          expect(cubit.state.eliminatedOptionIndices.length, equals(2));
+          expect(cubit.state.eliminatedOptionIndices.contains(0), isFalse);
+        },
+      );
 
       test('useLifeline(aiClue) sets activeClueText from explanation', () {
         cubit
@@ -263,31 +331,47 @@ void main() {
         expect(cubit.state.activeClueText, isNotEmpty);
       });
 
-      test('useLifeline(askAudience) computes distribution and disables lifeline', () {
-        cubit
-          ..startMillionaireQuiz(
-            title: 'Physics Ascent',
-            questions: tQuestions,
-          )
-          ..useLifeline(LifelineType.askAudience);
+      test(
+        'useLifeline(askAudience) computes distribution and disables lifeline',
+        () {
+          cubit
+            ..startMillionaireQuiz(
+              title: 'Physics Ascent',
+              questions: tQuestions,
+            )
+            ..useLifeline(LifelineType.askAudience);
 
-        expect(cubit.state.isLifelineAvailable(LifelineType.askAudience), isFalse);
-        expect(cubit.state.audienceDistribution, isNotNull);
-        expect(cubit.state.audienceDistribution!.containsKey('A'), isTrue);
-        expect(cubit.state.audienceDistribution!['A'], greaterThan(30));
-      });
+          expect(
+            cubit.state.isLifelineAvailable(LifelineType.askAudience),
+            isFalse,
+          );
+          expect(cubit.state.audienceDistribution, isNotNull);
+          expect(cubit.state.audienceDistribution!.containsKey('A'), isTrue);
+          expect(cubit.state.audienceDistribution!['A'], greaterThan(30));
+        },
+      );
 
-      test('startMillionaireArcade initializes arcade mode with global scope', () async {
-        when(() => mockDecksRepository.getUserDecks())
-            .thenAnswer((_) async => const Right([]));
+      test(
+        'startMillionaireArcade initializes arcade mode with global scope',
+        () async {
+          when(
+            () => mockDecksRepository.getUserDecks(),
+          ).thenAnswer((_) async => const Right([]));
 
-        await cubit.startMillionaireArcade();
+          await cubit.startMillionaireArcade();
 
-        expect(cubit.state.assessmentMode, equals(AssessmentMode.millionaireMode));
-        expect(cubit.state.millionaireScope, equals(MillionaireScope.globalArcade));
-        expect(cubit.state.questions.length, equals(12));
-        expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
-      });
+          expect(
+            cubit.state.assessmentMode,
+            equals(AssessmentMode.millionaireMode),
+          );
+          expect(
+            cubit.state.millionaireScope,
+            equals(MillionaireScope.globalArcade),
+          );
+          expect(cubit.state.questions.length, equals(12));
+          expect(cubit.state.status, equals(QuizSessionStatus.inProgress));
+        },
+      );
 
       test('startMillionaireQuiz sets courseTied scope by default', () {
         cubit.startMillionaireQuiz(
@@ -295,7 +379,10 @@ void main() {
           questions: tQuestions,
         );
 
-        expect(cubit.state.millionaireScope, equals(MillionaireScope.courseTied));
+        expect(
+          cubit.state.millionaireScope,
+          equals(MillionaireScope.courseTied),
+        );
         expect(cubit.state.quizTitle, equals('Unit 1 Mastery'));
       });
 
@@ -364,77 +451,92 @@ void main() {
         ).called(1);
       });
 
-      test('useSecondChance resets question answering state, eliminates mistake, and allows retry', () {
-        cubit.startMillionaireQuiz(
-          title: 'Physics Ascent',
-          questions: tQuestions,
-        );
-
-        expect(cubit.state.hasSecondChance, isTrue);
-
-        // Select an incorrect option from tQuestions
-        cubit.selectOption('8.9 m/s^2');
-        expect(cubit.state.isSecondChanceActive, isTrue);
-        expect(cubit.state.currentQuestion!.isAnswered, isTrue);
-
-        // Consume second chance
-        cubit.useSecondChance();
-
-        expect(cubit.state.hasSecondChance, isFalse);
-        expect(cubit.state.isSecondChanceActive, isFalse);
-        expect(cubit.state.status, QuizSessionStatus.inProgress);
-        expect(cubit.state.currentQuestion!.isAnswered, isFalse);
-        expect(cubit.state.currentQuestion!.userSelectedAnswer, isNull);
-        expect(cubit.state.eliminatedOptionIndices, contains(1)); // '8.9 m/s^2' is index 1
-
-        // Now select the correct answer
-        cubit.selectOption('9.8 m/s^2');
-        expect(cubit.state.currentQuestion!.isAnswered, isTrue);
-        expect(cubit.state.currentQuestion!.isCorrect, isTrue);
-      });
-
-      test('useLifeline(skipSwap) replaces current question while preserving current tier and resetting options', () {
-        cubit.startMillionaireQuiz(
-          title: 'Physics Ascent',
-          questions: tQuestions,
-        );
-
-        final initialQuestionId = cubit.state.currentQuestion!.id;
-        final initialTier = cubit.state.currentTier;
-
-        cubit.useLifeline(LifelineType.skipSwap);
-
-        expect(cubit.state.isLifelineAvailable(LifelineType.skipSwap), isFalse);
-        expect(cubit.state.currentTier, initialTier);
-        expect(cubit.state.currentQuestion!.id, isNot(initialQuestionId));
-        expect(cubit.state.currentQuestion!.isAnswered, isFalse);
-        expect(cubit.state.eliminatedOptionIndices, isEmpty);
-        expect(cubit.state.status, QuizSessionStatus.inProgress);
-      });
-
-      test('incorrect answer with no second chance sets isSoftFailed and blocks jumping ahead', () {
-        cubit
-          ..startMillionaireQuiz(
+      test(
+        'useSecondChance resets question answering state, eliminates mistake, and allows retry',
+        () {
+          cubit.startMillionaireQuiz(
             title: 'Physics Ascent',
             questions: tQuestions,
-          )
-          ..selectOption('8.9 m/s^2');
-        expect(cubit.state.isSecondChanceActive, isTrue);
-        cubit.useSecondChance();
-        expect(cubit.state.hasSecondChance, isFalse);
+          );
 
-        // Fail second time: soft-fail locks in banked tier
-        cubit.selectOption('10.2 m/s^2');
-        expect(cubit.state.isSoftFailed, isTrue);
-        expect(cubit.state.currentTier, cubit.state.bankedTier);
+          expect(cubit.state.hasSecondChance, isTrue);
 
-        // Navigation forward is blocked
-        cubit.nextQuestion();
-        expect(cubit.state.currentIndex, 0);
+          // Select an incorrect option from tQuestions
+          cubit.selectOption('8.9 m/s^2');
+          expect(cubit.state.isSecondChanceActive, isTrue);
+          expect(cubit.state.currentQuestion!.isAnswered, isTrue);
 
-        cubit.jumpToQuestion(1);
-        expect(cubit.state.currentIndex, 0);
-      });
+          // Consume second chance
+          cubit.useSecondChance();
+
+          expect(cubit.state.hasSecondChance, isFalse);
+          expect(cubit.state.isSecondChanceActive, isFalse);
+          expect(cubit.state.status, QuizSessionStatus.inProgress);
+          expect(cubit.state.currentQuestion!.isAnswered, isFalse);
+          expect(cubit.state.currentQuestion!.userSelectedAnswer, isNull);
+          expect(
+            cubit.state.eliminatedOptionIndices,
+            contains(1),
+          ); // '8.9 m/s^2' is index 1
+
+          // Now select the correct answer
+          cubit.selectOption('9.8 m/s^2');
+          expect(cubit.state.currentQuestion!.isAnswered, isTrue);
+          expect(cubit.state.currentQuestion!.isCorrect, isTrue);
+        },
+      );
+
+      test(
+        'useLifeline(skipSwap) replaces current question while preserving current tier and resetting options',
+        () {
+          cubit.startMillionaireQuiz(
+            title: 'Physics Ascent',
+            questions: tQuestions,
+          );
+
+          final initialQuestionId = cubit.state.currentQuestion!.id;
+          final initialTier = cubit.state.currentTier;
+
+          cubit.useLifeline(LifelineType.skipSwap);
+
+          expect(
+            cubit.state.isLifelineAvailable(LifelineType.skipSwap),
+            isFalse,
+          );
+          expect(cubit.state.currentTier, initialTier);
+          expect(cubit.state.currentQuestion!.id, isNot(initialQuestionId));
+          expect(cubit.state.currentQuestion!.isAnswered, isFalse);
+          expect(cubit.state.eliminatedOptionIndices, isEmpty);
+          expect(cubit.state.status, QuizSessionStatus.inProgress);
+        },
+      );
+
+      test(
+        'incorrect answer with no second chance sets isSoftFailed and blocks jumping ahead',
+        () {
+          cubit
+            ..startMillionaireQuiz(
+              title: 'Physics Ascent',
+              questions: tQuestions,
+            )
+            ..selectOption('8.9 m/s^2');
+          expect(cubit.state.isSecondChanceActive, isTrue);
+          cubit.useSecondChance();
+          expect(cubit.state.hasSecondChance, isFalse);
+
+          // Fail second time: soft-fail locks in banked tier
+          cubit.selectOption('10.2 m/s^2');
+          expect(cubit.state.isSoftFailed, isTrue);
+          expect(cubit.state.currentTier, cubit.state.bankedTier);
+
+          // Navigation forward is blocked
+          cubit.nextQuestion();
+          expect(cubit.state.currentIndex, 0);
+
+          cubit.jumpToQuestion(1);
+          expect(cubit.state.currentIndex, 0);
+        },
+      );
     });
   });
 }

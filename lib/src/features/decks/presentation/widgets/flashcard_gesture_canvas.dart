@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -241,38 +240,43 @@ class FlashcardGestureCanvas extends HookWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              Transform(
-                alignment: Alignment.center,
-                transform: transformMatrix,
-                child: isUnder
-                    ? Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity()..rotateY(math.pi),
-                        child: _CardFace(
-                          badgeText: l10n.studySessionBackBadge,
-                          badgeColor: colors.success,
-                          mainText: resolvedBack,
-                          latexFormula: card.backLatex,
-                          isBackFace: true,
+              // Each incoming card rises from the deck: scale 0.96 + fade,
+              // keyed by card id so only genuine card changes replay it.
+              _CardEntrance(
+                key: ValueKey(card.id),
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: transformMatrix,
+                  child: isUnder
+                      ? Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()..rotateY(math.pi),
+                          child: _CardFace(
+                            badgeText: l10n.studySessionBackBadge,
+                            badgeColor: colors.success,
+                            mainText: resolvedBack,
+                            latexFormula: card.backLatex,
+                            isBackFace: true,
+                            colors: colors,
+                            typography: typography,
+                            isDark: isDark,
+                            card: card,
+                            enableBionicReading: enableBionicReading,
+                          ),
+                        )
+                      : _CardFace(
+                          badgeText: l10n.studySessionFrontBadge,
+                          badgeColor: colors.primary,
+                          mainText: resolvedFront,
+                          latexFormula: card.frontLatex,
+                          isBackFace: false,
                           colors: colors,
                           typography: typography,
                           isDark: isDark,
                           card: card,
                           enableBionicReading: enableBionicReading,
                         ),
-                      )
-                    : _CardFace(
-                        badgeText: l10n.studySessionFrontBadge,
-                        badgeColor: colors.primary,
-                        mainText: resolvedFront,
-                        latexFormula: card.frontLatex,
-                        isBackFace: false,
-                        colors: colors,
-                        typography: typography,
-                        isDark: isDark,
-                        card: card,
-                        enableBionicReading: enableBionicReading,
-                      ),
+                ),
               ),
 
               // Visual Drag Direction Route Indicator Overlay
@@ -435,11 +439,38 @@ class _CardFace extends StatelessWidget {
       label: isBackFace
           ? 'Back of card: $mainText. Rate recall or tap to flip.'
           : 'Front of card: $mainText. Tap or spacebar to reveal answer.',
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.dialog),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          // Faint deck edges peeking behind the active card — layered
+          // solid surfaces instead of blur, cheap during long sessions.
+          Positioned(
+            left: 20,
+            right: 20,
+            top: 16,
+            bottom: -10,
+            child: Container(
+              decoration: BoxDecoration(
+                color: colors.surfaceSecondary.withAlpha(isDark ? 110 : 150),
+                borderRadius: BorderRadius.circular(AppRadius.panel),
+                border: Border.all(color: colors.surfaceBorder.withAlpha(70)),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 36,
+            right: 36,
+            top: 26,
+            bottom: -20,
+            child: Container(
+              decoration: BoxDecoration(
+                color: colors.surfaceSecondary.withAlpha(isDark ? 60 : 90),
+                borderRadius: BorderRadius.circular(AppRadius.panel),
+              ),
+            ),
+          ),
+          Container(
             constraints: const BoxConstraints(minHeight: 340, maxWidth: 640),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             decoration: BoxDecoration(
@@ -525,7 +556,7 @@ class _CardFace extends StatelessWidget {
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       child: LatexCardContentViewer(
                         text: mainText,
                         latexFormula: latexFormula,
@@ -565,7 +596,59 @@ class _CardFace extends StatelessWidget {
               ],
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Brief "rising from the deck" entrance (scale 0.96 + fade), replayed
+/// whenever the parent hands in a new card via [ValueKey].
+class _CardEntrance extends StatefulWidget {
+  const _CardEntrance({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<_CardEntrance> createState() => _CardEntranceState();
+}
+
+class _CardEntranceState extends State<_CardEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+    value: 1,
+  );
+  bool _entranceQueued = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_entranceQueued) return;
+    _entranceQueued = true;
+    if (!context.reduceMotion) {
+      unawaited(_controller.forward(from: 0));
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutQuint,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+        child: widget.child,
       ),
     );
   }

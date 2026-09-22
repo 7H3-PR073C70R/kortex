@@ -5,6 +5,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/document_chunk_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class RagReferenceBadge extends StatelessWidget {
   const RagReferenceBadge({
@@ -38,14 +39,11 @@ class RagReferenceBadge extends StatelessWidget {
       hint: 'Tap to inspect source reference snippet',
       child: PlatformHoverBuilder(
         builder: (context, isHovered, child) {
-          return Material(
-            color: colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: AppRadius.radiusCard,
-              child: AnimatedContainer(
-                duration: AppMotion.snappy,
-                curve: AppMotion.snappyCurve,
+          return ShrinkableButton(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 6,
@@ -99,9 +97,8 @@ class RagReferenceBadge extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
       ),
     );
   }

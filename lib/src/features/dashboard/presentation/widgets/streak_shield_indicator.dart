@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class StreakShieldIndicator extends StatelessWidget {
   const StreakShieldIndicator({
@@ -54,111 +55,120 @@ class StreakShieldIndicator extends StatelessWidget {
           ),
         ),
         child: Column(
-          children: [
-            Row(
-              children: [
-                // Flame & Streak Count
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.warning.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                  ),
-                  child: Icon(
-                    Icons.local_fire_department_rounded,
-                    color: colors.warning,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            '$streakDays Days Streak',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colors.textPrimary,
+          children:
+              <Widget>[
+                    Row(
+                      children: [
+                        // Flame & Streak Count
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                          ),
+                          child: Icon(
+                            Icons.local_fire_department_rounded,
+                            color: colors.warning,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    '$streakDays Days Streak',
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: colors.textPrimary,
+                                        ),
+                                  ),
+                                  if (hasStreakFreeze) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.info.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.badge,
+                                        ),
+                                        border: Border.all(
+                                          color: colors.info.withValues(
+                                            alpha: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'SHIELD ACTIVE',
+                                        style: typography.caption.bold.copyWith(
+                                          fontSize: 10,
+                                          color: colors.info,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                hasStreakFreeze
+                                    ? l10n.streakFreezeActiveDesc
+                                    : 'Study daily to build momentum and earn XP!',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!hasStreakFreeze && onPurchaseFreeze != null) ...[
+                      const SizedBox(height: 14),
+                      Divider(height: 1, color: colors.surfaceBorder),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          icon: Icon(
+                            Icons.shield_rounded,
+                            color: colors.info,
+                            size: 18,
+                          ),
+                          label: Text(
+                            l10n.buyStreakFreezeButton,
+                            style: typography.body.bold.copyWith(
+                              color: colors.info,
                             ),
                           ),
-                          if (hasStreakFreeze) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.info.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.badge,
-                                ),
-                                border: Border.all(
-                                  color: colors.info.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                'SHIELD ACTIVE',
-                                style: typography.caption.bold.copyWith(
-                                  fontSize: 10,
-                                  color: colors.info,
-                                ),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: colors.info.withValues(alpha: 0.5),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
                               ),
                             ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        hasStreakFreeze
-                            ? l10n.streakFreezeActiveDesc
-                            : 'Study daily to build momentum and earn XP!',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: onPurchaseFreeze,
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ],
-            ),
-            if (!hasStreakFreeze && onPurchaseFreeze != null) ...[
-              const SizedBox(height: 14),
-              Divider(height: 1, color: colors.surfaceBorder),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: Icon(
-                    Icons.shield_rounded,
-                    color: colors.info,
-                    size: 18,
-                  ),
-                  label: Text(
-                    l10n.buyStreakFreezeButton,
-                    style: typography.body.bold.copyWith(
-                      color: colors.info,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: colors.info.withValues(alpha: 0.5),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onPressed: onPurchaseFreeze,
-                ),
-              ),
-            ],
-          ],
+                  ]
+                  .animate(interval: 50.ms)
+                  .fadeIn(duration: 350.ms)
+                  .slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
         ),
       ),
     );

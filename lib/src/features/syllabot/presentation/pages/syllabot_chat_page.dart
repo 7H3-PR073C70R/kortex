@@ -1125,7 +1125,7 @@ class _SyllabotChatView extends HookWidget {
       },
       child: ListView.builder(
         controller: scrollController,
-        physics: const BouncingScrollPhysics(
+        physics: const ClampingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
         ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

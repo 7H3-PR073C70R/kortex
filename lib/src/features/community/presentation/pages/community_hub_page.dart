@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -317,80 +318,80 @@ class _CommunityHubView extends HookWidget {
         ),
         body: Column(
           children: [
-            // Collapsible Search Field
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 220),
-              crossFadeState: isSearchExpanded.value
-                  ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
-              firstChild: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.surfaceSecondary
-                            : colors.surfaceSecondary.withAlpha(120),
-                        borderRadius: AppRadius.radiusCard,
-                        border: Border.all(
-                          color: colors.primary.withAlpha(isDark ? 60 : 40),
-                        ),
-                      ),
-                      child: TextField(
-                        controller: searchController,
-                        autofocus: true,
-                        style: typography.body.regular.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                        onChanged: (val) {
-                          searchQuery.value = val.trim();
-                          debounceTimer.value?.cancel();
-                          debounceTimer.value = Timer(
-                            const Duration(milliseconds: 350),
-                            () {
-                              context.read<CommunityHubBloc>().add(
-                                SearchForumPostsEvent(val.trim()),
-                              );
-                            },
-                          );
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search forum threads & topics...',
-                          hintStyle: typography.body.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                          border: InputBorder.none,
-                          icon: Icon(
-                            Icons.search_rounded,
-                            size: 18,
-                            color: colors.textSecondary,
-                          ),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear_rounded,
-                                    size: 18,
-                                  ),
-                                  onPressed: () {
-                                    searchController.clear();
-                                    searchQuery.value = '';
-                                    debounceTimer.value?.cancel();
+            // Collapsible Search Field with Fluid Animation
+            AnimatedSize(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: isSearchExpanded.value
+                  ? Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 860),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary
+                                  : colors.surfaceSecondary.withAlpha(120),
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: colors.primary.withAlpha(isDark ? 60 : 40),
+                              ),
+                            ),
+                            child: TextField(
+                              controller: searchController,
+                              autofocus: true,
+                              style: typography.body.regular.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                              onChanged: (val) {
+                                searchQuery.value = val.trim();
+                                debounceTimer.value?.cancel();
+                                debounceTimer.value = Timer(
+                                  const Duration(milliseconds: 350),
+                                  () {
                                     context.read<CommunityHubBloc>().add(
-                                      const SearchForumPostsEvent(''),
+                                      SearchForumPostsEvent(val.trim()),
                                     );
                                   },
-                                )
-                              : null,
+                                );
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Search forum threads & topics...',
+                                hintStyle: typography.body.regular.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                                border: InputBorder.none,
+                                icon: Icon(
+                                  Icons.search_rounded,
+                                  size: 18,
+                                  color: colors.textSecondary,
+                                ),
+                                suffixIcon: searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(
+                                          Icons.clear_rounded,
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          searchController.clear();
+                                          searchQuery.value = '';
+                                          debounceTimer.value?.cancel();
+                                          context.read<CommunityHubBloc>().add(
+                                            const SearchForumPostsEvent(''),
+                                          );
+                                        },
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-              ),
-              secondChild: const SizedBox.shrink(),
+                    )
+                  : const SizedBox.shrink(),
             ),
 
             // Auto-Community Spinoff Banner (Appears when community is provisioned)
@@ -1103,7 +1104,7 @@ class _ForumPostsList extends HookWidget {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final post = filteredPosts[index];
-                    return TrackForumPostCard(
+                    final postCard = TrackForumPostCard(
                       post: post,
                       onTap: () {
                         unawaited(
@@ -1142,6 +1143,22 @@ class _ForumPostsList extends HookWidget {
                         );
                       },
                     );
+
+                    if (index < 5) {
+                      return postCard
+                          .animate(delay: (index * 60).ms)
+                          .fadeIn(
+                            duration: 220.ms,
+                            curve: Curves.easeOut,
+                          )
+                          .slideY(
+                            begin: 0.04,
+                            end: 0,
+                            duration: 220.ms,
+                            curve: Curves.easeOutCubic,
+                          );
+                    }
+                    return postCard;
                   },
                   childCount: filteredPosts.length,
                 ),

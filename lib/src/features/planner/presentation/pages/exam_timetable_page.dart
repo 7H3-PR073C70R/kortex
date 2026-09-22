@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -244,11 +245,12 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                         const SizedBox(height: 12),
 
                         // Chronological Exam Cards
-                        ...exams.map(
-                          (exam) => _buildExamRowCard(
+                        ...exams.asMap().entries.map(
+                          (entry) => _buildExamRowCard(
                             context,
-                            exam: exam,
-                            isSelected: exam.id == primaryExam?.id,
+                            exam: entry.value,
+                            index: entry.key,
+                            isSelected: entry.value.id == primaryExam?.id,
                           ),
                         ),
 
@@ -375,7 +377,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           ),
         ],
       ),
-    );
+    ).animate()
+      .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+      .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), duration: 400.ms, curve: Curves.easeOutQuint);
   }
 
   Widget _buildTimeDigit(
@@ -417,6 +421,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
   Widget _buildExamRowCard(
     BuildContext context, {
     required ExamEventEntity exam,
+    required int index,
     required bool isSelected,
   }) {
     final colors = context.colors;
@@ -430,8 +435,8 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     return PlatformHoverBuilder(
       builder: (context, isHovered, child) {
         return AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: Curves.easeOutCubic,
+          duration: 160.ms,
+          curve: Curves.easeOutQuint,
           transform: Matrix4.translationValues(0, isHovered ? -2 : 0, 0),
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -608,7 +613,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           ),
         ],
       ),
-    );
+    ).animate(delay: (index * 80).ms)
+      .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+      .slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutQuint);
   }
 
   Widget _buildNotificationPreferencesCard(
@@ -700,7 +707,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           ),
         ],
       ),
-    );
+    ).animate(delay: 200.ms)
+      .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+      .slideY(begin: 0.05, end: 0, duration: 400.ms, curve: Curves.easeOutQuint);
   }
 
   Widget _buildEmptyState(BuildContext context) {

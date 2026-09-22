@@ -31,8 +31,7 @@
     <path d="M14,180 L14,196 L30,196" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
     <path d="M286,180 L286,196 L270,196" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
 
-    <!-- Laser Scanning Beam -->
-    <rect x="20" y="55" width="260" height="2.5" fill="#38BDF8"/>
+    <!-- Scan Beam Wash (live sweep is rendered in-app) -->
     <rect x="20" y="57.5" width="260" height="45" fill="url(#scanBeam2)"/>
 
     <!-- LaTeX Equation -->

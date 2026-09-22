@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -420,11 +422,11 @@ class _CompactDashboardLayout extends StatelessWidget {
         .firstOrNull;
 
     return ListView(
-      physics: const BouncingScrollPhysics(
+      physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      children: [
+      children: <Widget>[
         // 1. Header Profile & Streak Bar (Identity & Retention Anchor)
         HeaderProfileBar(
           analytics: feed.analyticsSummary,
@@ -499,7 +501,7 @@ class _CompactDashboardLayout extends StatelessWidget {
                 height: 205,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   itemCount: feed.dueStudyDecks.length - 1,
                   separatorBuilder: (_, _) => const SizedBox(width: 14),
                   itemBuilder: (context, index) {
@@ -537,7 +539,7 @@ class _CompactDashboardLayout extends StatelessWidget {
 
         // 9. Retention Heat Map & Mastery Stats (Long-Term Proof of Progress)
         RetentionHeatMapWidget(analytics: feed.analyticsSummary),
-      ],
+      ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
     );
   }
 }
@@ -561,9 +563,7 @@ class _EmptyStudyDecksCard extends StatelessWidget {
               ? colors.surfaceSecondary.withAlpha(140)
               : colors.surfacePrimary.withAlpha(210),
           borderRadius: AppRadius.radiusPanel,
-          border: Border.all(
-            color: colors.surfaceBorder,
-          ),
+          // Removed border for premium UI
         ),
         child: Row(
           children: [
@@ -634,9 +634,6 @@ class _EmptyCoursesCard extends StatelessWidget {
                 ? colors.surfaceSecondary.withAlpha(140)
                 : colors.surfacePrimary.withAlpha(210),
             borderRadius: AppRadius.radiusPanel,
-            border: Border.all(
-              color: colors.surfaceBorder,
-            ),
           ),
           child: Row(
             children: [
@@ -708,11 +705,11 @@ class _MediumDashboardLayout extends StatelessWidget {
         .firstOrNull;
 
     return ListView(
-      physics: const BouncingScrollPhysics(
+      physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
-      children: [
+      children: <Widget>[
         HeaderProfileBar(
           analytics: feed.analyticsSummary,
           isProfileUncalibrated: feed.isProfileUncalibrated,
@@ -767,7 +764,7 @@ class _MediumDashboardLayout extends StatelessWidget {
                         height: 205,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
+                          physics: const ClampingScrollPhysics(),
                           itemCount: feed.dueStudyDecks.length - 1,
                           separatorBuilder: (_, _) => const SizedBox(width: 14),
                           itemBuilder: (context, index) {
@@ -800,12 +797,12 @@ class _MediumDashboardLayout extends StatelessWidget {
                   _StudyCirclePodPulseCard(targetTrack: targetTrack),
                   const SizedBox(height: 20),
                   RetentionHeatMapWidget(analytics: feed.analyticsSummary),
-                ],
+                ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
               ),
             ),
           ],
         ),
-      ],
+      ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
     );
   }
 }
@@ -834,11 +831,11 @@ class _ExpandedDashboardLayout extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1320),
         child: ListView(
-          physics: const BouncingScrollPhysics(
+          physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
           padding: const EdgeInsets.fromLTRB(32, 28, 32, 100),
-          children: [
+          children: <Widget>[
             // 1. Identity & Retention Anchor Header
             HeaderProfileBar(
               analytics: feed.analyticsSummary,
@@ -909,7 +906,7 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                         CuratedCourseCarousel(courses: feed.curatedCourses)
                       else
                         _EmptyCoursesCard(l10n: context.l10n),
-                    ],
+                    ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
                   ),
                 ),
                 const SizedBox(width: 24),
@@ -930,12 +927,12 @@ class _ExpandedDashboardLayout extends StatelessWidget {
 
                       // Speed Dial / Action Toolbox
                       const QuickActionSpeedDial(),
-                    ],
+                    ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
                   ),
                 ),
               ],
             ),
-          ],
+          ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
         ),
       ),
     );
@@ -991,7 +988,10 @@ class _DesktopSpacedRepetitionGrid extends StatelessWidget {
           ),
           itemCount: decks.length,
           itemBuilder: (context, index) {
-            return FsrsReviewDeckCard(deck: decks[index]);
+            return FsrsReviewDeckCard(deck: decks[index])
+                .animate(delay: (index * 80).ms)
+                .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
+                .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint);
           },
         ),
       ],
@@ -1044,11 +1044,7 @@ class _NextBestActionCard extends StatelessWidget {
                 ],
               ),
               borderRadius: AppRadius.radiusPanel,
-              border: Border.all(
-                color: isHovered
-                    ? colors.primary.withAlpha(isDark ? 140 : 100)
-                    : colors.primary.withAlpha(isDark ? 90 : 60),
-              ),
+              // Removed border
               boxShadow: [
                 BoxShadow(
                   color: colors.black.withAlpha(
@@ -1183,11 +1179,7 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                   ? colors.surfaceSecondary.withAlpha(isHovered ? 180 : 150)
                   : colors.surfacePrimary,
               borderRadius: AppRadius.radiusPanel,
-              border: Border.all(
-                color: isHovered
-                    ? colors.syllabotAccent.withAlpha(isDark ? 120 : 80)
-                    : colors.surfaceBorder,
-              ),
+              // Removed border
               boxShadow: [
                 BoxShadow(
                   color: colors.black.withAlpha(isDark ? 30 : 10),
@@ -1296,7 +1288,7 @@ class _PodMetricChip extends StatelessWidget {
             ? colors.surfacePrimary.withAlpha(180)
             : colors.surfaceSecondary.withAlpha(130),
         borderRadius: AppRadius.radiusCard,
-        border: Border.all(color: colors.surfaceBorder),
+        // Removed border for premium UI
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1355,9 +1347,7 @@ class _StudyDebtTriageBanner extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: AppRadius.radiusPanel,
-        border: Border.all(
-          color: colors.warning.withAlpha(isDark ? 90 : 60),
-        ),
+        // Removed border
       ),
       child: Row(
         children: [

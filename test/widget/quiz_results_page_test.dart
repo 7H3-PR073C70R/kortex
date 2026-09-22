@@ -37,8 +37,14 @@ void main() {
     );
 
     testWidgets(
-      'renders score percentage, sub-topic weaknesses, and practice button',
+      'renders score arc, sub-topic weaknesses, and the primary action',
       (tester) async {
+        // This page is content-rich; use a tall surface so the score arc,
+        // stats row, and topic breakdown all lay out on-stage.
+        tester.view.physicalSize = const Size(1000, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
         await tester.pumpWidget(
           createTestApp(
             const QuizResultsPage(
@@ -51,13 +57,16 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('WAEC Thermodynamics Mock'), findsOneWidget);
-        expect(find.text('Your Score: 80%'), findsOneWidget);
+        expect(find.text('80%'), findsOneWidget);
+        expect(find.text('You scored 80%'), findsOneWidget);
         expect(find.text('8 of 10 questions correct'), findsOneWidget);
         expect(find.text('Entropy & 2nd Law'), findsOneWidget);
         expect(find.text('Calorimetry'), findsOneWidget);
         expect(find.text('50%'), findsOneWidget);
         expect(find.text('100%'), findsOneWidget);
-        expect(find.text('Practice Weak Flashcards'), findsOneWidget);
+        // No question bodies were supplied, so the review action falls back
+        // to the dashboard CTA.
+        expect(find.text('Back to dashboard'), findsOneWidget);
       },
     );
   });

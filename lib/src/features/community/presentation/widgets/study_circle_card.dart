@@ -7,6 +7,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -52,6 +53,15 @@ class StudyCircleCard extends StatelessWidget {
                         : colors.primary.withAlpha(isDark ? 40 : 25)),
               width: (isJoined || isHovered) ? 1.5 : 1.0,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.black.withAlpha(
+                  isDark ? (isHovered ? 45 : 20) : (isHovered ? 15 : 6),
+                ),
+                blurRadius: isHovered ? 12 : 6,
+                offset: Offset(0, isHovered ? 4 : 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,18 +269,13 @@ class StudyCircleCard extends StatelessWidget {
                       for (var i = 0; i < circle.members.take(4).length; i++)
                         Align(
                           widthFactor: 0.7,
-                          child: CircleAvatar(
-                            radius: 13,
-                            backgroundColor: colors.primary,
-                            child: Text(
-                              circle.members[i].userName.isNotEmpty
-                                  ? circle.members[i].userName[0].toUpperCase()
-                                  : 'P',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.white,
-                                fontSize: 10,
-                              ),
-                            ),
+                          child: AppAvatar(
+                            name: circle.members[i].userName,
+                            size: AppAvatarSize.small,
+                            customDimension: 26,
+                            borderColor: isDark
+                                ? colors.surfaceSecondary
+                                : colors.surfacePrimary,
                           ),
                         ),
                       if (circle.members.isEmpty)

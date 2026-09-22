@@ -25,4 +25,8 @@ extension ThemeExtension on BuildContext {
 
   /// Whether current theme is dark brightness.
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+
+  /// Whether the user has requested reduced motion at the OS level.
+  /// Gate decorative entrances, celebrations, and looping pulses on this.
+  bool get reduceMotion => MediaQuery.disableAnimationsOf(this);
 }

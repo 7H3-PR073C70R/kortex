@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -89,7 +90,7 @@ class PromoCodeBottomSheet extends HookWidget {
             border: Border.all(color: colors.surfaceBorder.withAlpha(80)),
           ),
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +204,7 @@ class PromoCodeBottomSheet extends HookWidget {
                   isLoading: isValidating.value,
                   onPressed: isValidating.value ? null : redeemCode,
                 ),
-              ],
+              ].animate(interval: 80.ms).fadeIn(duration: 250.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint),
             ),
           ),
         ),

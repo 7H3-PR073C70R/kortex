@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -355,7 +356,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 680),
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       padding: EdgeInsets.symmetric(
                         horizontal: 20.w,
                         vertical: 4.h,
@@ -390,7 +391,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           SizedBox(height: 16.h),
                           _buildFooter(colors, typography, l10n),
                           SizedBox(height: 16.h),
-                        ],
+                        ].animate(interval: 80.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
                       ),
                     ),
                   ),

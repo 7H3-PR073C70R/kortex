@@ -107,10 +107,14 @@ class AppEmptyState extends StatelessWidget {
                         size: 18,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        primaryActionLabel!,
-                        style: typography.callout.bold.copyWith(
-                          color: colors.white,
+                      Flexible(
+                        child: Text(
+                          primaryActionLabel!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.callout.bold.copyWith(
+                            color: colors.white,
+                          ),
                         ),
                       ),
                     ],

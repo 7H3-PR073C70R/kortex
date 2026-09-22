@@ -340,7 +340,7 @@ class _CourseModuleView extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 860),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

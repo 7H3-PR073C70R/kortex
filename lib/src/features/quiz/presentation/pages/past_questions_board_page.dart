@@ -20,6 +20,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/add_past_question_
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_filter_bar.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_test_config_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -109,6 +110,7 @@ class _PastQuestionsBoardView extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
     final l10n = context.l10n;
+    final reduceMotion = quizReduceMotion(context);
     final searchController = useTextEditingController();
     final debounceTimer = useRef<Timer?>(null);
 
@@ -135,7 +137,7 @@ class _PastQuestionsBoardView extends HookWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Q-Bank & CBT Drills',
+          'Past Questions & Practice',
           style: typography.title2.bold.copyWith(
             color: colors.textPrimary,
             fontSize: 18,
@@ -218,7 +220,7 @@ class _PastQuestionsBoardView extends HookWidget {
                       Expanded(
                         child: AppTextField(
                           controller: searchController,
-                          hintText: 'Search courses, subjects, topics...',
+                          hintText: 'Search subjects and topics',
                           prefixIcon: Icon(
                             Icons.search_rounded,
                             color: colors.textSecondary,
@@ -274,66 +276,35 @@ class _PastQuestionsBoardView extends HookWidget {
                       );
 
                       if (courses.isEmpty) {
-                        return Center(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 32,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(18),
-                                  decoration: BoxDecoration(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 35 : 18,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.auto_stories_outlined,
-                                    size: 38,
-                                    color: colors.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No Courses Found',
-                                  textAlign: TextAlign.center,
-                                  style: typography.title3.bold.copyWith(
-                                    color: colors.textPrimary,
-                                    fontSize: 16.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Try adjusting your search query, filter criteria, or switch the exam year.',
-                                  textAlign: TextAlign.center,
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 12.5,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        return const QuizEmptyState(
+                          icon: Icons.search_off_rounded,
+                          headline: 'No subjects match your filters',
+                          message:
+                              'Try a different search, clear the subject filter, or change the exam year.',
                         );
                       }
 
                       return ListView.separated(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         itemCount: courses.length,
                         separatorBuilder: (_, index) =>
                             const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final course = courses[index];
-                          return _CourseOverviewCard(
+                          final card = _CourseOverviewCard(
                             courseSummary: course,
                             examCategory: state.selectedExam,
                             selectedYear: state.selectedYear,
+                          );
+                          // Only the first screenful animates in; recycled
+                          // cards while scrolling stay put.
+                          if (index >= 10) return card;
+                          return QuizStaggeredFade(
+                            index: index,
+                            distance: 10,
+                            reduceMotion: reduceMotion,
+                            child: card,
                           );
                         },
                       );
@@ -344,6 +315,62 @@ class _PastQuestionsBoardView extends HookWidget {
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: BlocBuilder<PastQuestionsBloc, PastQuestionsState>(
+        builder: (context, state) {
+          if (state.status == PastQuestionsStatus.loading ||
+              state.totalQuestions == 0) {
+            return const SizedBox.shrink();
+          }
+          return SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 960),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: ShrinkableButton(
+                    onTap: () {
+                      AppFeedback.medium();
+                      showPastQuestionsTestConfigSheet(context, state);
+                    },
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.black.withAlpha(isDark ? 50 : 20),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.play_arrow_rounded,
+                            color: colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Start practice test',
+                            style: typography.callout.bold.copyWith(
+                              color: colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -735,7 +762,7 @@ class _HeroTrackBanner extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${state.totalQuestions} Questions Available',
+                        '${state.totalQuestions} questions available',
                         style: typography.caption.medium.copyWith(
                           color: colors.textSecondary,
                           fontSize: 11,
@@ -745,7 +772,7 @@ class _HeroTrackBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '${exam.displayName} Official Question Bank',
+                    '${exam.displayName} Question Bank',
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                       letterSpacing: -0.2,
@@ -754,7 +781,7 @@ class _HeroTrackBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Select a course below to drill questions, practice by year, or simulate full CBT timed exams.',
+                    'Pick a subject to practice questions, filter by year, or run a full timed exam.',
                     style: typography.caption.regular.copyWith(
                       color: colors.textSecondary,
                       fontSize: 11.5,
@@ -763,49 +790,6 @@ class _HeroTrackBanner extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
-                        child: ShrinkableButton(
-                          onTap: () =>
-                              showPastQuestionsTestConfigSheet(context, state),
-                          child: Container(
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.black.withAlpha(
-                                    isDark ? 50 : 20,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.play_circle_filled_rounded,
-                                  color: colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'CBT Test',
-                                  style: typography.callout.bold.copyWith(
-                                    color: colors.white,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
                       Expanded(
                         child: ShrinkableButton(
                           onTap: () async {
@@ -847,7 +831,7 @@ class _HeroTrackBanner extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  '1v1 Duel ⚡',
+                                  'Duel a classmate',
                                   style: typography.callout.bold.copyWith(
                                     color: colors.white,
                                     fontSize: 13,

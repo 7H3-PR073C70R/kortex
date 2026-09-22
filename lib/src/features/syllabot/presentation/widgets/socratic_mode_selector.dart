@@ -58,7 +58,7 @@ class SocraticModeSelector extends StatelessWidget {
     return SizedBox(
       height: 38,
       child: ListView.separated(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: modes.length,
@@ -80,7 +80,7 @@ class SocraticModeSelector extends StatelessWidget {
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: AnimatedContainer(
                       duration: AppMotion.snappy,
-                      curve: AppMotion.snappyCurve,
+                      curve: AppMotion.easeOutCubic,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,

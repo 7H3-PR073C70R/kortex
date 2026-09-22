@@ -12,6 +12,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -44,69 +45,79 @@ class QuickActionSpeedDial extends StatelessWidget {
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  _ActionItem(
-                    icon: Icons.upload_file_rounded,
-                    label: l10n.dashboardUploadNotes,
-                    color: colors.primary,
-                    onTap: () {
-                      AppFeedback.light();
-                      _showUploadBottomSheet(context);
-                    },
-                  ),
-                  _buildDivider(colors, isDark),
-                  _ActionItem(
-                    icon: Icons.quiz_rounded,
-                    label: l10n.dashboardQBankAction,
-                    color: colors.warning,
-                    onTap: () {
-                      AppFeedback.light();
-                      String? trackCode;
-                      try {
-                        final track = context
-                            .read<AuthBloc>()
-                            .state
-                            .userProfile
-                            ?.targetTrack;
-                        if (track != null && track.isNotEmpty) {
-                          trackCode = track;
-                        }
-                      } on Object catch (_) {}
-                      unawaited(
-                        context.router.push(
-                          PastQuestionsBoardRoute(initialExamCode: trackCode),
+                children:
+                    <Widget>[
+                          _ActionItem(
+                            icon: Icons.upload_file_rounded,
+                            label: l10n.dashboardUploadNotes,
+                            color: colors.primary,
+                            onTap: () {
+                              AppFeedback.light();
+                              _showUploadBottomSheet(context);
+                            },
+                          ),
+                          _buildDivider(colors, isDark),
+                          _ActionItem(
+                            icon: Icons.quiz_rounded,
+                            label: l10n.dashboardQBankAction,
+                            color: colors.warning,
+                            onTap: () {
+                              AppFeedback.light();
+                              String? trackCode;
+                              try {
+                                final track = context
+                                    .read<AuthBloc>()
+                                    .state
+                                    .userProfile
+                                    ?.targetTrack;
+                                if (track != null && track.isNotEmpty) {
+                                  trackCode = track;
+                                }
+                              } on Object catch (_) {}
+                              unawaited(
+                                context.router.push(
+                                  PastQuestionsBoardRoute(
+                                    initialExamCode: trackCode,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDivider(colors, isDark),
+                          _ActionItem(
+                            icon: Icons.flash_on_rounded,
+                            label: '1v1 Duel',
+                            color: colors.primary,
+                            onTap: () {
+                              AppFeedback.light();
+                              unawaited(QuizDuelMatchmakingSheet.show(context));
+                            },
+                          ),
+                          _buildDivider(colors, isDark),
+                          _ActionItem(
+                            icon: Icons.add_to_photos_rounded,
+                            label: l10n.dashboardNewDeck,
+                            color: colors.secondary,
+                            onTap: () {
+                              AppFeedback.light();
+                              unawaited(
+                                context.navigateTo(
+                                  const MainRoute(children: [DecksRoute()]),
+                                ),
+                              );
+                            },
+                          ),
+                        ]
+                        .animate(interval: 30.ms)
+                        .fadeIn(duration: 250.ms)
+                        .scaleXY(
+                          begin: 0.8,
+                          end: 1.0,
+                          curve: Curves.easeOutCubic,
                         ),
-                      );
-                    },
-                  ),
-                  _buildDivider(colors, isDark),
-                  _ActionItem(
-                    icon: Icons.flash_on_rounded,
-                    label: '1v1 Duel',
-                    color: colors.primary,
-                    onTap: () {
-                      AppFeedback.light();
-                      unawaited(QuizDuelMatchmakingSheet.show(context));
-                    },
-                  ),
-                  _buildDivider(colors, isDark),
-                  _ActionItem(
-                    icon: Icons.add_to_photos_rounded,
-                    label: l10n.dashboardNewDeck,
-                    color: colors.secondary,
-                    onTap: () {
-                      AppFeedback.light();
-                      unawaited(
-                        context.navigateTo(
-                          const MainRoute(children: [DecksRoute()]),
-                        ),
-                      );
-                    },
-                  ),
-                ],
               ),
             ),
           ),

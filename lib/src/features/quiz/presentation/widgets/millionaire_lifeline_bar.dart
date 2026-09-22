@@ -44,6 +44,14 @@ class MillionaireLifelineBar extends StatelessWidget {
       LifelineType.skipSwap,
     );
 
+    // After the first lifeline is spent, the bar collapses to icons only.
+    // The question area keeps the space it needs for the rest of the climb.
+    final anyLifelineUsed =
+        !isFiftyFiftyAvailable ||
+        !isAiClueAvailable ||
+        !isAskAudienceAvailable ||
+        !isSkipSwapAvailable;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -112,7 +120,7 @@ class MillionaireLifelineBar extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -121,6 +129,7 @@ class MillionaireLifelineBar extends StatelessWidget {
                     label: '50:50',
                     icon: Icons.filter_2_rounded,
                     isAvailable: isFiftyFiftyAvailable,
+                    showLabel: !anyLifelineUsed,
                     onTap: isFiftyFiftyAvailable ? onUseFiftyFifty : null,
                   ),
                   const SizedBox(width: 6),
@@ -130,6 +139,7 @@ class MillionaireLifelineBar extends StatelessWidget {
                     label: 'AI Clue',
                     icon: Icons.auto_awesome_rounded,
                     isAvailable: isAiClueAvailable,
+                    showLabel: !anyLifelineUsed,
                     onTap: isAiClueAvailable ? onUseAiClue : null,
                   ),
                   const SizedBox(width: 6),
@@ -140,6 +150,7 @@ class MillionaireLifelineBar extends StatelessWidget {
                       label: 'Crowd',
                       icon: Icons.groups_rounded,
                       isAvailable: isAskAudienceAvailable,
+                      showLabel: !anyLifelineUsed,
                       onTap: isAskAudienceAvailable ? onUseAskAudience : null,
                     ),
                     const SizedBox(width: 6),
@@ -150,6 +161,7 @@ class MillionaireLifelineBar extends StatelessWidget {
                     label: 'Skip',
                     icon: Icons.skip_next_rounded,
                     isAvailable: isSkipSwapAvailable,
+                    showLabel: !anyLifelineUsed,
                     onTap: isSkipSwapAvailable ? onUseSkipSwap : null,
                   ),
                   const SizedBox(width: 8),
@@ -218,12 +230,14 @@ class _LifelinePill extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.isAvailable,
+    required this.showLabel,
     required this.onTap,
   });
 
   final String label;
   final IconData icon;
   final bool isAvailable;
+  final bool showLabel;
   final VoidCallback? onTap;
 
   @override
@@ -238,6 +252,7 @@ class _LifelinePill extends StatelessWidget {
         builder: (context, isHovered, _) {
           return ShrinkableButton(
             onTap: onTap,
+            semanticLabel: isAvailable ? 'Use $label' : '$label used',
             child: AnimatedContainer(
               duration: AppMotion.standard,
               curve: AppMotion.easeOutCubic,
@@ -265,13 +280,21 @@ class _LifelinePill extends StatelessWidget {
                     color: isAvailable ? colors.primary : colors.textMuted,
                     size: 14,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    label,
-                    style: typography.footnote.bold.copyWith(
-                      color: isAvailable ? colors.primary : colors.textMuted,
+                  if (showLabel) ...[
+                    const SizedBox(width: 4),
+                    // A spent lifeline stays visible with a line through it,
+                    // so it is clear what was used, not what vanished.
+                    Text(
+                      label,
+                      style: typography.footnote.bold.copyWith(
+                        color: isAvailable ? colors.primary : colors.textMuted,
+                        decoration: isAvailable
+                            ? null
+                            : TextDecoration.lineThrough,
+                        decorationColor: colors.textMuted,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

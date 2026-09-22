@@ -321,7 +321,7 @@ void llama_generate_stream_init(
             g_stream_tokens.push_back(piece);
         }
         
-        batch = llama_batch_get_one(&new_token, 1);
+       llama_batch batch = llama_batch_get_one(&new_token, 1);
         n_pos++;
         
         if (llama_decode(g_context, batch) != 0) {

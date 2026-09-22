@@ -17,6 +17,7 @@ import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 class HeaderProfileBar extends StatelessWidget {
@@ -77,233 +78,263 @@ class HeaderProfileBar extends StatelessWidget {
                   );
                 },
                 child: Row(
-                  children: [
-                    Semantics(
-                      label: l10n.dashboardHeyUser(displayName),
-                      image: true,
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 160 : 200),
-                            width: 1.8,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.black.withAlpha(isDark ? 50 : 20),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: AppAvatar(
-                          customDimension: 42,
-                          imageUrl: effectivePhoto,
-                          name: effectiveName ?? displayName,
-                          borderWidth: 0,
-                          backgroundColor: colors.primary.withAlpha(25),
-                          foregroundColor: colors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.dashboardHeyUser(displayName),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.headline.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
+                  children:
+                      <Widget>[
+                            Semantics(
+                              label: l10n.dashboardHeyUser(displayName),
+                              image: true,
+                              child: Container(
+                                width: 46,
+                                height: 46,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: colors.success,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  analytics.academicRank,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: typography.footnote.medium.copyWith(
-                                    color: isDark
-                                        ? colors.textSecondary
-                                        : colors.textPrimary.withAlpha(190),
-                                    fontSize: 12,
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 160 : 200,
+                                    ),
+                                    width: 1.8,
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.black.withAlpha(
+                                        isDark ? 50 : 20,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: AppAvatar(
+                                  customDimension: 42,
+                                  imageUrl: effectivePhoto,
+                                  name: effectiveName ?? displayName,
+                                  borderWidth: 0,
+                                  backgroundColor: colors.primary.withAlpha(25),
+                                  foregroundColor: colors.primary,
                                 ),
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.dashboardHeyUser(displayName),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: typography.headline.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: colors.success,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          analytics.academicRank,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.footnote.medium
+                                              .copyWith(
+                                                color: isDark
+                                                    ? colors.textSecondary
+                                                    : colors.textPrimary
+                                                          .withAlpha(190),
+                                                fontSize: 12,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ]
+                          .animate(interval: 60.ms)
+                          .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic)
+                          .slideX(begin: -0.05, end: 0),
                 ),
               ),
             ),
 
             // Right: Streak Counter & Analytics Shortcut
             Row(
-              children: [
-                // Study Streak Pill
-                Semantics(
-                  label: l10n.dashboardStreakTooltip(
-                    effectiveStreak,
-                  ),
-                  button: true,
-                  child: PlatformHoverBuilder(
-                    builder: (context, isHovered, child) {
-                      return ShrinkableButton(
-                        onTap: () {
-                          unawaited(HapticFeedback.lightImpact());
-                          unawaited(
-                            context.router.push(const AnalyticsDetailRoute()),
-                          );
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.panel),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: AnimatedContainer(
-                              duration: AppMotion.snappy,
-                              curve: AppMotion.easeOutCubic,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.panel,
-                                ),
-                                color: isDark
-                                    ? (isHovered
-                                          ? colors.surfaceSecondary.withAlpha(
-                                              200,
-                                            )
-                                          : colors.surfaceSecondary.withAlpha(
-                                              150,
-                                            ))
-                                    : (isHovered
-                                          ? colors.surfacePrimary
-                                          : colors.surfacePrimary.withAlpha(
-                                              210,
-                                            )),
-                                border: Border.all(
-                                  color: isHovered
-                                      ? colors.warning.withAlpha(
-                                          isDark ? 120 : 90,
-                                        )
-                                      : colors.surfaceBorder.withAlpha(
-                                          isDark ? 60 : 35,
-                                        ),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.local_fire_department_rounded,
-                                    size: 18,
-                                    color: colors.warning,
+              children:
+                  <Widget>[
+                        // Study Streak Pill
+                        Semantics(
+                          label: l10n.dashboardStreakTooltip(
+                            effectiveStreak,
+                          ),
+                          button: true,
+                          child: PlatformHoverBuilder(
+                            builder: (context, isHovered, child) {
+                              return ShrinkableButton(
+                                onTap: () {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  unawaited(
+                                    context.router.push(
+                                      const AnalyticsDetailRoute(),
+                                    ),
+                                  );
+                                },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.panel,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '$effectiveStreak',
-                                    style: typography.callout.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 13.5,
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 12,
+                                      sigmaY: 12,
+                                    ),
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.panel,
+                                        ),
+                                        color: isDark
+                                            ? (isHovered
+                                                  ? colors.surfaceSecondary
+                                                        .withAlpha(
+                                                          200,
+                                                        )
+                                                  : colors.surfaceSecondary
+                                                        .withAlpha(
+                                                          150,
+                                                        ))
+                                            : (isHovered
+                                                  ? colors.surfacePrimary
+                                                  : colors.surfacePrimary
+                                                        .withAlpha(
+                                                          210,
+                                                        )),
+                                        border: Border.all(
+                                          color: isHovered
+                                              ? colors.warning.withAlpha(
+                                                  isDark ? 120 : 90,
+                                                )
+                                              : colors.surfaceBorder.withAlpha(
+                                                  isDark ? 60 : 35,
+                                                ),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.local_fire_department_rounded,
+                                            size: 18,
+                                            color: colors.warning,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '$effectiveStreak',
+                                            style: typography.callout.bold
+                                                .copyWith(
+                                                  color: colors.textPrimary,
+                                                  fontSize: 13.5,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // Millionaire Ascent Arcade Shortcut
-                _HeaderIconButton(
-                  icon: Icons.military_tech_rounded,
-                  color: colors.warning,
-                  tooltip: 'Millionaire Ascent Arcade',
-                  borderHighlightColor: colors.warning,
-                  onTap: () {
-                    unawaited(HapticFeedback.mediumImpact());
-                    unawaited(
-                      context.router.push(
-                        QuizWorkspaceRoute(
-                          deckId: 'arcade_global',
-                          deckTitle: 'Daily Dopamine Arcade',
-                          assessmentMode: AssessmentMode.millionaireMode,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-
-                // Walkthrough Tour Shortcut
-                _HeaderIconButton(
-                  icon: Icons.explore_rounded,
-                  color: colors.syllabotAccent,
-                  tooltip: 'Feature Walkthrough',
-                  borderHighlightColor: colors.syllabotAccent,
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    unawaited(
-                      showDialog<void>(
-                        context: context,
-                        builder: (_) => WelcomeWalkthroughDialog(
-                          onEnterWorkspace: () {
-                            if (context.mounted) {
-                              unawaited(
-                                AppGuidedTourOverlay.start(
-                                  context,
-                                  force: true,
                                 ),
                               );
-                            }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Millionaire Ascent Arcade Shortcut
+                        _HeaderIconButton(
+                          icon: Icons.military_tech_rounded,
+                          color: colors.warning,
+                          tooltip: 'Millionaire Ascent Arcade',
+                          borderHighlightColor: colors.warning,
+                          onTap: () {
+                            unawaited(HapticFeedback.mediumImpact());
+                            unawaited(
+                              context.router.push(
+                                QuizWorkspaceRoute(
+                                  deckId: 'arcade_global',
+                                  deckTitle: 'Daily Dopamine Arcade',
+                                  assessmentMode:
+                                      AssessmentMode.millionaireMode,
+                                ),
+                              ),
+                            );
                           },
                         ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
+                        const SizedBox(width: 8),
 
-                // Analytics Shortcut
-                _HeaderIconButton(
-                  icon: Icons.insights_rounded,
-                  color: colors.primary,
-                  tooltip: l10n.dashboardViewAnalyticsSemantics,
-                  borderHighlightColor: colors.primary,
-                  onTap: () {
-                    unawaited(HapticFeedback.lightImpact());
-                    unawaited(
-                      context.router.push(const AnalyticsDetailRoute()),
-                    );
-                  },
-                ),
-              ],
+                        // Walkthrough Tour Shortcut
+                        _HeaderIconButton(
+                          icon: Icons.explore_rounded,
+                          color: colors.syllabotAccent,
+                          tooltip: 'Feature Walkthrough',
+                          borderHighlightColor: colors.syllabotAccent,
+                          onTap: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            unawaited(
+                              showDialog<void>(
+                                context: context,
+                                builder: (_) => WelcomeWalkthroughDialog(
+                                  onEnterWorkspace: () {
+                                    if (context.mounted) {
+                                      unawaited(
+                                        AppGuidedTourOverlay.start(
+                                          context,
+                                          force: true,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Analytics Shortcut
+                        _HeaderIconButton(
+                          icon: Icons.insights_rounded,
+                          color: colors.primary,
+                          tooltip: l10n.dashboardViewAnalyticsSemantics,
+                          borderHighlightColor: colors.primary,
+                          onTap: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            unawaited(
+                              context.router.push(const AnalyticsDetailRoute()),
+                            );
+                          },
+                        ),
+                      ]
+                      .animate(interval: 50.ms)
+                      .fadeIn(duration: 300.ms)
+                      .scaleXY(
+                        begin: 0.9,
+                        end: 1.0,
+                        curve: Curves.easeOutCubic,
+                      ),
             ),
           ],
         ),
@@ -314,86 +345,97 @@ class HeaderProfileBar extends StatelessWidget {
           Semantics(
             container: true,
             label: l10n.dashboardUncalibratedSemantics,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.panel),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.panel),
-                    gradient: LinearGradient(
-                      colors: [
-                        colors.primary.withAlpha(isDark ? 55 : 30),
-                        colors.syllabotAccent.withAlpha(isDark ? 35 : 18),
-                      ],
-                    ),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 100 : 70),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const SyllabotAvatar(size: 36),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.dashboardUncalibratedTitle,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              l10n.dashboardUncalibratedSubtitle,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11.5,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ShrinkableButton(
-                        onTap: () {
-                          unawaited(HapticFeedback.lightImpact());
-                          unawaited(
-                            context.router.push(
-                              const OnboardingCalibrationRoute(),
-                            ),
-                          );
-                        },
+            child:
+                ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.panel),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
-                          ),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: colors.primary,
                             borderRadius: BorderRadius.circular(
-                              AppRadius.badge,
+                              AppRadius.panel,
+                            ),
+                            gradient: LinearGradient(
+                              colors: [
+                                colors.primary.withAlpha(isDark ? 55 : 30),
+                                colors.syllabotAccent.withAlpha(
+                                  isDark ? 35 : 18,
+                                ),
+                              ],
+                            ),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(
+                                isDark ? 100 : 70,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            l10n.dashboardCalibrateButton,
-                            style: typography.caption.bold.copyWith(
-                              color: colors.white,
-                              fontSize: 12,
-                            ),
+                          child: Row(
+                            children: [
+                              const SyllabotAvatar(size: 36),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.dashboardUncalibratedTitle,
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      l10n.dashboardUncalibratedSubtitle,
+                                      style: typography.footnote.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 11.5,
+                                            height: 1.3,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ShrinkableButton(
+                                onTap: () {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  unawaited(
+                                    context.router.push(
+                                      const OnboardingCalibrationRoute(),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.badge,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    l10n.dashboardCalibrateButton,
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+                    )
+                    .animate(delay: 200.ms)
+                    .fadeIn(duration: 400.ms)
+                    .slideY(begin: -0.1, end: 0, curve: Curves.easeOutQuint),
           ),
         ],
       ],

@@ -45,7 +45,7 @@ class CalibrationOptionChip extends StatelessWidget {
       child: PlatformHoverBuilder(
         builder: (context, isHovered, child) {
           return ShrinkableButton(
-            shrinkScale: 0.985,
+            shrinkScale: 0.97,
             onTap: () {
               unawaited(HapticFeedback.lightImpact());
               onTap();

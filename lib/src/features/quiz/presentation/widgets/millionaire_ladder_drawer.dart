@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Modal bottom sheet visualizing the 12-tier Millionaire prize ascent ladder.
@@ -35,6 +37,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final reduceMotion = quizReduceMotion(context);
 
     final tiersReversed = List.generate(
       QuizSessionState.millionaireTiersXp.length,
@@ -96,13 +99,14 @@ class MillionaireLadderDrawer extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Millionaire Prize Ladder',
+                            'Your prize ladder',
                             style: typography.title3.bold.copyWith(
                               color: colors.textPrimary,
                             ),
                           ),
                           Text(
-                            'Guaranteed Safe Checkpoints at Tier 4 & 8',
+                            'Tiers 4 and 8 are safe: what you bank there '
+                            'stays yours.',
                             style: typography.caption.regular.copyWith(
                               color: colors.textSecondary,
                             ),
@@ -130,7 +134,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _SummaryCard(
-                        title: 'Current Tier Prize',
+                        title: 'Prize at this tier',
                         value: '${state.currentTierPrizeXp} XP',
                         color: colors.warning,
                       ),
@@ -138,7 +142,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _SummaryCard(
-                        title: 'Banked Safety Net',
+                        title: 'Already banked',
                         value: '${state.bankedTierPrizeXp} XP',
                         color: colors.success,
                       ),
@@ -147,7 +151,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _SummaryCard(
-                          title: 'Speed Bonus',
+                          title: 'Speed bonus',
                           value: '+${state.speedBonusXp} XP',
                           color: colors.syllabotAccent,
                         ),
@@ -175,7 +179,9 @@ class MillionaireLadderDrawer extends StatelessWidget {
                     final isSafe = QuizSessionState.safeCheckpointTiers
                         .contains(tier);
 
-                    return Container(
+                    // Each rung settles in one after another, and the rung
+                    // you are on glows once so the eye lands on it.
+                    final row = Container(
                       margin: const EdgeInsets.only(bottom: 6),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -263,7 +269,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                           ],
 
                           Text(
-                            tier == 12 ? '🏆 GRAND PRIZE' : 'Tier $tier',
+                            tier == 12 ? 'Top prize' : 'Tier $tier',
                             style: typography.body.medium.copyWith(
                               color: isCurrent
                                   ? colors.warning
@@ -272,6 +278,14 @@ class MillionaireLadderDrawer extends StatelessWidget {
                                         : colors.textSecondary),
                             ),
                           ),
+                          if (isPassed) ...[
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 14,
+                              color: colors.success,
+                            ),
+                          ],
 
                           const Spacer(),
 
@@ -290,6 +304,19 @@ class MillionaireLadderDrawer extends StatelessWidget {
                           ),
                         ],
                       ),
+                    );
+
+                    return QuizStaggeredFade(
+                      index: index % 8,
+                      distance: 8,
+                      reduceMotion: reduceMotion,
+                      child: isCurrent
+                          ? _PulseGlow(
+                              color: colors.warning,
+                              reduceMotion: reduceMotion,
+                              child: row,
+                            )
+                          : row,
                     );
                   },
                 ),
@@ -320,7 +347,7 @@ class MillionaireLadderDrawer extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      'Continue Ascent',
+                      'Keep climbing',
                       style: typography.headline.bold.copyWith(
                         color: colors.white,
                       ),
@@ -332,6 +359,47 @@ class MillionaireLadderDrawer extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A single soft glow that swells and settles once, never looping.
+/// It marks "you are here" without creating a permanent distraction.
+class _PulseGlow extends StatelessWidget {
+  const _PulseGlow({
+    required this.color,
+    required this.reduceMotion,
+    required this.child,
+  });
+
+  final Color color;
+  final bool reduceMotion;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reduceMotion) return child;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, inner) => Container(
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.radiusCard,
+          boxShadow: [
+            BoxShadow(
+              color: color.withAlpha(
+                (math.sin(t * math.pi) * 110).round().clamp(0, 110),
+              ),
+              blurRadius: 20,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: inner,
+      ),
+      child: child,
     );
   }
 }

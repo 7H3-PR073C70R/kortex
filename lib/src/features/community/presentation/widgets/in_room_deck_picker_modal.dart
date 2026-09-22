@@ -327,7 +327,7 @@ class _InRoomDeckPickerModalState extends State<InRoomDeckPickerModal> {
                     },
                     child: ListView.separated(
                       physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
+                        parent: ClampingScrollPhysics(),
                       ),
                       itemCount: filteredDecks.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),

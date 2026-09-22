@@ -205,15 +205,10 @@ class _ReactionCanvasPainter extends CustomPainter {
       final progress = p.controller.value;
       if (progress <= 0.0 || progress >= 1.0) continue;
 
-      // Vertical movement: ease-out cubic rising
+      // Vertical movement: ease-out cubic rising with zero paint-loop allocation
       final riseDist = size.height * 0.42;
-      final currentY =
-          p.startY -
-          (CurvedAnimation(
-                parent: p.controller,
-                curve: Curves.easeOutCubic,
-              ).value *
-              riseDist);
+      final curvedProgress = Curves.easeOutCubic.transform(progress);
+      final currentY = p.startY - (curvedProgress * riseDist);
 
       // Horizontal movement: drift + sinusoidal wave
       final sway = math.sin(progress * p.frequency * math.pi) * p.amplitude;

@@ -23,6 +23,7 @@ import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_ty
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -965,113 +966,103 @@ class CreateForumDiscussionPage extends HookWidget {
                       // Author Info Row with Anonymous Switch
                       Row(
                         children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor: isAnonymous.value
-                                    ? (isDark
-                                          ? colors.surfaceSecondary
-                                          : colors.surfaceTertiary)
-                                    : colors.primary.withAlpha(
-                                        isDark ? 40 : 25,
-                                      ),
-                                child: isAnonymous.value
-                                    ? Icon(
-                                        Icons.masks_rounded,
-                                        size: 18,
-                                        color: colors.textSecondary,
-                                      )
-                                    : Text(
-                                        userDisplayName.isNotEmpty
-                                            ? userDisplayName[0].toUpperCase()
-                                            : 'U',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.primary,
-                                          fontSize: 14,
-                                        ),
-                                      ),
+                          AnimatedSwitcher(
+                            duration: AppMotion.standard,
+                            switchInCurve: AppMotion.easeOutCubic,
+                            switchOutCurve: AppMotion.easeOutCubic,
+                            transitionBuilder: (child, animation) =>
+                                ScaleTransition(
+                              scale: animation,
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
                               ),
-                              Positioned(
-                                bottom: -1,
-                                right: -1,
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isAnonymous.value
-                                        ? colors.textSecondary
-                                        : colors.success,
-                                    border: Border.all(
-                                      color: isDark
-                                          ? colors.surfacePrimary
-                                          : colors.surfaceSecondary,
-                                      width: 1.5,
+                            ),
+                            child: isAnonymous.value
+                                ? AppAvatar(
+                                    key: const ValueKey('anon_avatar'),
+                                    customDimension: 36,
+                                    fallbackIcon: Icon(
+                                      Icons.masks_rounded,
+                                      size: 18,
+                                      color: colors.textSecondary,
                                     ),
+                                    backgroundColor: isDark
+                                        ? colors.surfaceSecondary
+                                        : colors.surfaceTertiary,
+                                    showBadge: true,
+                                    badgeColor: colors.textSecondary,
+                                  )
+                                : AppAvatar(
+                                    key: const ValueKey('public_avatar'),
+                                    customDimension: 36,
+                                    name: userDisplayName,
+                                    showBadge: true,
+                                    badgeColor: colors.success,
                                   ),
-                                ),
-                              ),
-                            ],
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                RichText(
-                                  text: TextSpan(
-                                    children: isAnonymous.value
-                                        ? [
-                                            TextSpan(
-                                              text: 'Anonymous Scholar ',
-                                              style: typography.body.bold
-                                                  .copyWith(
-                                                    color: colors.textPrimary,
-                                                    fontSize: 13.5,
-                                                  ),
-                                            ),
-                                            TextSpan(
-                                              text: '@incognito',
-                                              style: typography.caption.regular
-                                                  .copyWith(
-                                                    color: colors.textSecondary,
-                                                    fontSize: 12,
-                                                  ),
-                                            ),
-                                          ]
-                                        : [
-                                            TextSpan(
-                                              text: '$userDisplayName ',
-                                              style: typography.body.bold
-                                                  .copyWith(
-                                                    color: colors.textPrimary,
-                                                    fontSize: 13.5,
-                                                  ),
-                                            ),
-                                            TextSpan(
-                                              text: '@$userHandle',
-                                              style: typography.caption.regular
-                                                  .copyWith(
-                                                    color: colors.textSecondary,
-                                                    fontSize: 12,
-                                                  ),
-                                            ),
-                                          ],
+                            child: AnimatedSwitcher(
+                              duration: AppMotion.standard,
+                              switchInCurve: AppMotion.easeOutCubic,
+                              child: Column(
+                                key: ValueKey(isAnonymous.value),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  RichText(
+                                    text: TextSpan(
+                                      children: isAnonymous.value
+                                          ? [
+                                              TextSpan(
+                                                text: 'Anonymous Scholar ',
+                                                style: typography.body.bold
+                                                    .copyWith(
+                                                      color: colors.textPrimary,
+                                                      fontSize: 13.5,
+                                                    ),
+                                              ),
+                                              TextSpan(
+                                                text: '@incognito',
+                                                style: typography.caption.regular
+                                                    .copyWith(
+                                                      color: colors.textSecondary,
+                                                      fontSize: 12,
+                                                    ),
+                                              ),
+                                            ]
+                                          : [
+                                              TextSpan(
+                                                text: '$userDisplayName ',
+                                                style: typography.body.bold
+                                                    .copyWith(
+                                                      color: colors.textPrimary,
+                                                      fontSize: 13.5,
+                                                    ),
+                                              ),
+                                              TextSpan(
+                                                text: '@$userHandle',
+                                                style: typography.caption.regular
+                                                    .copyWith(
+                                                      color: colors.textSecondary,
+                                                      fontSize: 12,
+                                                    ),
+                                              ),
+                                            ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  isAnonymous.value
-                                      ? 'Incognito • Identity hidden'
-                                      : 'Author & Peer Scholar',
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 11,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isAnonymous.value
+                                        ? 'Incognito • Identity hidden'
+                                        : 'Author & Peer Scholar',
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                           // Quick Anonymous Mode Toggle
@@ -1087,9 +1078,8 @@ class CreateForumDiscussionPage extends HookWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: isAnonymous.value
-                                    ? const Color(
-                                        0xFF6366F1,
-                                      ).withAlpha(isDark ? 40 : 25)
+                                    ? colors.primary
+                                        .withAlpha(isDark ? 40 : 25)
                                     : (isDark
                                           ? colors.surfaceSecondary
                                           : colors.surfaceSecondary.withAlpha(
@@ -1532,40 +1522,51 @@ class CreateForumDiscussionPage extends HookWidget {
                               decoration: BoxDecoration(
                                 color: isRecordingVoice.value
                                     ? colors.error
-                                    : const Color(
-                                        0xFF6366F1,
-                                      ).withAlpha(isDark ? 30 : 15),
+                                    : colors.primary
+                                        .withAlpha(isDark ? 30 : 15),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isRecordingVoice.value
                                       ? colors.error
-                                      : const Color(
-                                          0xFF6366F1,
-                                        ).withAlpha(isDark ? 50 : 30),
+                                      : colors.primary
+                                          .withAlpha(isDark ? 50 : 30),
                                 ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    isRecordingVoice.value
-                                        ? Icons.stop_rounded
-                                        : Icons.mic_rounded,
-                                    size: 16,
-                                    color: isRecordingVoice.value
-                                        ? colors.white
-                                        : colors.primary,
+                                  AnimatedSwitcher(
+                                    duration: AppMotion.snappy,
+                                    switchInCurve: AppMotion.easeOutCubic,
+                                    child: isRecordingVoice.value
+                                        ? _LiveAudioWaveVisualizer(
+                                            key: const ValueKey('recording_wave'),
+                                            color: colors.white,
+                                          )
+                                        : Icon(
+                                            Icons.mic_rounded,
+                                            key: const ValueKey('idle_mic'),
+                                            size: 16,
+                                            color: colors.primary,
+                                          ),
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    isRecordingVoice.value
-                                        ? 'Listening (${voiceNoteDurationSeconds.value}s)...'
-                                        : 'Voice Note & STT',
-                                    style: typography.caption.bold.copyWith(
-                                      color: isRecordingVoice.value
-                                          ? colors.white
-                                          : colors.primary,
-                                      fontSize: 12,
+                                  AnimatedSwitcher(
+                                    duration: AppMotion.snappy,
+                                    switchInCurve: AppMotion.easeOutCubic,
+                                    child: Text(
+                                      isRecordingVoice.value
+                                          ? 'Listening (${voiceNoteDurationSeconds.value}s)...'
+                                          : 'Voice Note & STT',
+                                      key: ValueKey(
+                                        '${isRecordingVoice.value}_${voiceNoteDurationSeconds.value}',
+                                      ),
+                                      style: typography.caption.bold.copyWith(
+                                        color: isRecordingVoice.value
+                                            ? colors.white
+                                            : colors.primary,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1715,6 +1716,7 @@ class CreateForumDiscussionPage extends HookWidget {
                                     const SizedBox(width: 6),
                                     GestureDetector(
                                       onTap: () {
+                                        unawaited(HapticFeedback.lightImpact());
                                         tags.value = tags.value
                                             .where((t) => t != tag)
                                             .toList();
@@ -2116,6 +2118,68 @@ class CreateForumDiscussionPage extends HookWidget {
       height: 16,
       margin: const EdgeInsets.symmetric(horizontal: 4),
       color: colors.primary.withAlpha(30),
+    );
+  }
+}
+
+class _LiveAudioWaveVisualizer extends StatefulWidget {
+  const _LiveAudioWaveVisualizer({required this.color, super.key});
+
+  final Color color;
+
+  @override
+  State<_LiveAudioWaveVisualizer> createState() =>
+      _LiveAudioWaveVisualizerState();
+}
+
+class _LiveAudioWaveVisualizerState extends State<_LiveAudioWaveVisualizer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+      // ignore: discarded_futures — TickerFuture from repeat() is intentionally not awaited per Flutter convention
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final val = _controller.value;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBar(4 + val * 8),
+            const SizedBox(width: 2),
+            _buildBar(12 - val * 7),
+            const SizedBox(width: 2),
+            _buildBar(6 + val * 6),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBar(double height) {
+    return Container(
+      width: 2.5,
+      height: height.clamp(3, 14),
+      decoration: BoxDecoration(
+        color: widget.color,
+        borderRadius: BorderRadius.circular(2),
+      ),
     );
   }
 }

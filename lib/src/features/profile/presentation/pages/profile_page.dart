@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:ui';
+import 'dart:math' as math;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -66,184 +69,346 @@ class _ProfileView extends HookWidget {
         final dailyTarget = profile?.dailyCardTarget ?? 20;
 
         return Scaffold(
-          backgroundColor: colors.backgroundPrimary,
-          appBar: AppBar(
-            backgroundColor: colors.backgroundPrimary,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            title: Text(
-              l10n.userProfileTitle,
-              style: typography.title2.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 20,
-              ),
+          backgroundColor: const Color.fromRGBO(3, 5, 8, 1.0),
+          floatingActionButton: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(168, 85, 247, 0.28), // purple glow
+                  blurRadius: 18,
+                  spreadRadius: -2,
+                ),
+              ],
             ),
-            actions: [
-              // Pro Upgrade / Status Pill
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.03 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: Curves.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: ShrinkableButton(
-                    onTap: () {
-                      AppFeedback.selection();
-                      unawaited(
-                        context.router.push(PaywallRoute()),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: profile?.isPro == true
-                              ? [
-                                  colors.warning,
-                                  colors.warning.withAlpha(200),
-                                ]
-                              : [
-                                  colors.primary,
-                                  colors.syllabotAccent,
-                                ],
-                        ),
-                        borderRadius: AppRadius.radiusCard,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            profile?.isPro == true
-                                ? Icons.verified_rounded
-                                : Icons.auto_awesome_rounded,
-                            color: colors.white,
-                            size: 13,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            profile?.isPro == true ? 'Pro Active' : 'Go Pro',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                AppFeedback.selection();
+                locator<AuthModeCubit>().resetToAiChat();
+                unawaited(context.router.root.replaceAll([const AuthRoute()]));
+              },
+              backgroundColor: const Color.fromRGBO(24, 24, 27, 0.9), // zinc-900/90
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+                side: const BorderSide(
+                  color: Color.fromRGBO(63, 63, 70, 0.8), // zinc-700/80
+                  width: 1,
+                ),
+              ),
+            label: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomLeft,
+                      end: Alignment.topRight,
+                      colors: [
+                        Color.fromRGBO(99, 102, 241, 1.0), // indigo-500
+                        Color.fromRGBO(168, 85, 247, 1.0), // purple-500
+                        Color.fromRGBO(244, 114, 182, 1.0), // pink-400
+                      ],
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(1),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.black,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text('🤖', style: TextStyle(fontSize: 12)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Ask Syllabot',
+                  style: typography.body.bold.copyWith(
+                    color: Colors.white,
+                    fontSize: 12,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 14,
+                  color: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
+                ).animate(onPlay: (controller) => controller.repeat(reverse: true)).fade(begin: 0.5, end: 1.0),
+              ],
+            ),
+            ),
+          ),
+          body: Stack(
+            children: [
+              // Subtle ambient mesh glows
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 400,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(0, -0.7),
+                      radius: 0.8,
+                      colors: [
+                        Color.fromRGBO(200, 160, 90, 0.1),
+                        Colors.transparent,
+                      ],
+                      stops: [0.0, 0.9],
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(18, 4, 18, 136),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Unified Scholar Hub Card (Identity + Quick Metrics)
-                    ScholarHubCard(
-                      state: state,
-                      profile: profile,
-                      onEditName: () => _showEditProfileDialog(
-                        context,
-                        profile?.displayName ??
-                            state.user?.displayName ??
-                            'Kortexify Scholar',
+              Positioned(
+                top: 100,
+                left: -150,
+                width: 400,
+                height: 400,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 0.8,
+                      colors: [
+                        Color.fromRGBO(56, 189, 248, 0.04),
+                        Colors.transparent,
+                      ],
+                      stops: [0.0, 0.9],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 400,
+                right: -100,
+                width: 400,
+                height: 400,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 0.8,
+                      colors: [
+                        Color.fromRGBO(139, 92, 246, 0.05),
+                        Colors.transparent,
+                      ],
+                      stops: [0.0, 0.9],
+                    ),
+                  ),
+                ),
+              ),
+              // Glassmorphism Blur Layer
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+                  child: const SizedBox(),
+                ),
+              ),
+
+              // 2. Main Scroll Content
+              CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
+                slivers: [
+                  SliverAppBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    pinned: true,
+                    centerTitle: false,
+                    title: Text(
+                      'Profile & Settings',
+                      style: typography.title2.bold.copyWith(
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                        fontSize: 22,
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    // 2. Settings & Feature Management Menu
-                    Text(
-                      'Settings & Preferences',
-                      style: typography.body.bold.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 14.5,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ProfileNavigationMenu(
-                      targetTrack: targetTrack,
-                      dailyTarget: dailyTarget,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // 3. Sign Out Button
-                    Center(
-                      child: PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return AnimatedContainer(
-                            duration: AppMotion.snappy,
-                            curve: Curves.easeOutCubic,
-                            transform: isHovered
-                                ? Matrix4.translationValues(0, -2, 0)
-                                : Matrix4.identity(),
-                            child: child,
-                          );
-                        },
-                        child: ShrinkableButton(
-                          onTap: () =>
-                              _confirmSignOut(context, colors, typography),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 11,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.error.withAlpha(isDark ? 30 : 15),
-                              borderRadius: AppRadius.radiusCard,
-                              border: Border.all(
-                                color: colors.error.withAlpha(isDark ? 80 : 50),
+                    actions: [
+                      // Pro Upgrade / Status Pill
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: PlatformHoverBuilder(
+                          builder: (context, isHovered, child) {
+                            return AnimatedScale(
+                              scale: isHovered ? 1.03 : 1.0,
+                              duration: AppMotion.snappy,
+                              curve: Curves.easeOutCubic,
+                              child: child,
+                            );
+                          },
+                          child: ShrinkableButton(
+                            onTap: () {
+                              AppFeedback.selection();
+                              unawaited(
+                                context.router.push(PaywallRoute()),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.logout_rounded,
-                                  color: colors.error,
-                                  size: 17,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color.fromRGBO(217, 119, 6, 0.3), // amber-600/30
+                                    Color.fromRGBO(234, 179, 8, 0.2), // yellow-500/20
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  l10n.signOutButton,
-                                  style: typography.footnote.bold.copyWith(
-                                    color: colors.error,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color.fromRGBO(245, 158, 11, 0.4), // amber-500/40
+                                  width: 1,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color.fromRGBO(245, 158, 11, 0.25),
+                                    blurRadius: 20,
+                                    spreadRadius: -3,
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    profile?.isPro == true
+                                        ? Icons.verified_rounded
+                                        : Icons.auto_awesome_rounded,
+                                    color: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    profile?.isPro == true
+                                        ? 'Pro Active'
+                                        : 'Go Pro',
+                                    style: typography.caption.bold.copyWith(
+                                      color: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
+                    ],
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                    sliver: SliverToBoxAdapter(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 680),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children:
+                                [
+                                      // 1. Identity Block (Scholar Hub Card)
+                                      ScholarHubCard(
+                                        state: state,
+                                        profile: profile,
+                                        onEditName: () =>
+                                            _showEditProfileDialog(
+                                              context,
+                                              profile?.displayName ??
+                                                  state.user?.displayName ??
+                                                  'toxicbishop01',
+                                            ),
+                                      ),
+                                      const SizedBox(height: 16),
 
-                    // 4. App Version Footer
-                    Center(
-                      child: Text(
-                        'Kortexify v1.2.0 • Neural Study AI',
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary.withAlpha(120),
-                          fontSize: 11,
+                                      // 2. Navigation Block (Grouped Settings)
+                                      ProfileNavigationMenu(
+                                        targetTrack: targetTrack,
+                                        dailyTarget: dailyTarget,
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // 3. Danger Zone (Sign Out)
+                                      ShrinkableButton(
+                                        onTap: () => _confirmSignOut(
+                                          context,
+                                          colors,
+                                          typography,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color.fromRGBO(18, 21, 28, 0.9), // cardBg/90
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color: const Color.fromRGBO(136, 19, 55, 0.4), // rose-900/40
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.logout_rounded,
+                                                color: const Color.fromRGBO(251, 113, 133, 1.0), // rose-400
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Sign Out',
+                                                style: typography.body.bold
+                                                    .copyWith(
+                                                      color: const Color.fromRGBO(251, 113, 133, 1.0), // rose-400
+                                                      fontSize: 14,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // 4. App Version Footer
+                                      Center(
+                                        child: Text(
+                                          'Kortexify v1.2.0 • Neural Study AI',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: const Color.fromRGBO(161, 161, 170, 1.0), // zinc-400
+                                                fontSize: 11,
+                                                letterSpacing: -0.2,
+                                              ),
+                                        ),
+                                      ),
+                                    ]
+                                    .animate(interval: 60.ms)
+                                    .fadeIn(
+                                      duration: 250.ms,
+                                      curve: Curves.easeOut,
+                                    )
+                                    .slideY(
+                                      begin: 0.04,
+                                      end: 0,
+                                      duration: 350.ms,
+                                      curve: Curves.easeOutQuint,
+                                    ),
+                          ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
+            ],
           ),
         );
       },

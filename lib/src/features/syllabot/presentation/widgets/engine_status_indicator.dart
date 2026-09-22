@@ -49,7 +49,7 @@ class EngineStatusIndicator extends StatelessWidget {
           },
           child: AnimatedContainer(
             duration: AppMotion.snappy,
-            curve: AppMotion.snappyCurve,
+            curve: AppMotion.easeOutCubic,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: isCloud

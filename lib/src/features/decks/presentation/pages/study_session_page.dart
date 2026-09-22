@@ -8,7 +8,6 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
-import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -21,6 +20,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.
 import 'package:kortex/src/features/decks/presentation/pages/focus_workspace_page.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture_canvas.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/sprint_milestone_banner.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -110,6 +110,9 @@ class _StudySessionView extends HookWidget {
     final focusNode = useFocusNode();
     final lastMilestoneIndex = useRef<int>(0);
     final isBionicEnabled = useState<bool>(false);
+    // Non-blocking milestone check-in: holds the card count of the last
+    // banner shown; null while no banner is on screen.
+    final milestoneTick = useState<int?>(null);
 
     useEffect(
       () {
@@ -134,6 +137,9 @@ class _StudySessionView extends HookWidget {
                     cardsReviewed: state.cards.length,
                     durationSeconds: state.elapsedSeconds,
                     retentionScore: state.retentionScore,
+                    nextReviewInDays: context
+                        .read<StudySessionCubit>()
+                        .nextReviewInDays,
                   ),
                 ),
               );
@@ -144,7 +150,7 @@ class _StudySessionView extends HookWidget {
                 !state.isLastCard) {
               lastMilestoneIndex.value = state.currentIndex;
               unawaited(HapticFeedback.mediumImpact());
-              _showSprintMilestoneSheet(context, state.currentIndex);
+              milestoneTick.value = state.currentIndex;
             }
           },
           builder: (context, state) {
@@ -467,6 +473,22 @@ class _StudySessionView extends HookWidget {
                         ),
                         const SizedBox(height: 10),
 
+                        // Milestone check-in — informative, never blocking.
+                        if (milestoneTick.value != null) ...[
+                          SprintMilestoneBanner(
+                            key: ValueKey('milestone-${milestoneTick.value}'),
+                            cardsCrushed: milestoneTick.value!,
+                            onFinishSprint: () {
+                              milestoneTick.value = null;
+                              unawaited(
+                                context.read<StudySessionCubit>().finishEarly(),
+                              );
+                            },
+                            onDismiss: () => milestoneTick.value = null,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+
                         // Study Buddy Pulse Indicator & Bionic Focus Accommodation
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -490,14 +512,7 @@ class _StudySessionView extends HookWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: colors.success,
-                                    ),
-                                  ),
+                                  const _LiveDot(),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Studying with cohort',
@@ -509,54 +524,60 @@ class _StudySessionView extends HookWidget {
                                 ],
                               ),
                             ),
-                            ShrinkableButton(
-                              onTap: () {
-                                AppFeedback.selection();
-                                isBionicEnabled.value = !isBionicEnabled.value;
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isBionicEnabled.value
-                                      ? colors.primary.withAlpha(
-                                          isDark ? 60 : 35,
-                                        )
-                                      : colors.surfaceSecondary.withAlpha(
-                                          isDark ? 90 : 130,
-                                        ),
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.card,
+                            Semantics(
+                              button: true,
+                              toggled: isBionicEnabled.value,
+                              label: 'Bionic Focus',
+                              child: ShrinkableButton(
+                                onTap: () {
+                                  AppFeedback.selection();
+                                  isBionicEnabled.value =
+                                      !isBionicEnabled.value;
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
                                   ),
-                                  border: Border.all(
+                                  decoration: BoxDecoration(
                                     color: isBionicEnabled.value
-                                        ? colors.primary
-                                        : colors.surfaceBorder.withAlpha(60),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.auto_stories_rounded,
-                                      size: 13,
+                                        ? colors.primary.withAlpha(
+                                            isDark ? 60 : 35,
+                                          )
+                                        : colors.surfaceSecondary.withAlpha(
+                                            isDark ? 90 : 130,
+                                          ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.card,
+                                    ),
+                                    border: Border.all(
                                       color: isBionicEnabled.value
                                           ? colors.primary
-                                          : colors.textSecondary,
+                                          : colors.surfaceBorder.withAlpha(60),
                                     ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      'Bionic Focus',
-                                      style: typography.caption.bold.copyWith(
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.auto_stories_rounded,
+                                        size: 13,
                                         color: isBionicEnabled.value
                                             ? colors.primary
                                             : colors.textSecondary,
-                                        fontSize: 10.5,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'Bionic Focus',
+                                        style: typography.caption.bold.copyWith(
+                                          color: isBionicEnabled.value
+                                              ? colors.primary
+                                              : colors.textSecondary,
+                                          fontSize: 10.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -608,148 +629,185 @@ class _StudySessionView extends HookWidget {
                         const SizedBox(height: 16),
 
                         // 3. FSRS-6 Rating Controls (Revealed when card is flipped)
-                        AnimatedCrossFade(
-                          duration: const Duration(milliseconds: 250),
-                          crossFadeState: state.isFlipped
-                              ? CrossFadeState.showSecond
-                              : CrossFadeState.showFirst,
-                          firstChild: Container(
-                            height: 52,
-                            alignment: Alignment.center,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  l10n.studySessionSwipeHint,
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textMuted,
-                                    fontSize: 12,
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutQuint,
+                          alignment: Alignment.topCenter,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            switchInCurve: Curves.easeOutQuint,
+                            switchOutCurve: Curves.easeOut,
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween(
+                                      begin: const Offset(0, 0.02),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
                                   ),
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 210 : 170,
-                                    ),
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          secondChild: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              FsrsRatingActionBar(
-                                onRateRating: (rating) {
-                                  unawaited(
-                                    context.read<StudySessionCubit>().rateCard(
-                                      rating,
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 6),
-                              ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  final firstLinePrompt = currentCard.front
-                                      .split('\n')
-                                      .first
-                                      .trim();
-                                  final topicName =
-                                      currentCard.sourceTopic
-                                              ?.trim()
-                                              .isNotEmpty ==
-                                          true
-                                      ? currentCard.sourceTopic!.trim()
-                                      : 'Flashcard';
-
-                                  unawaited(
-                                    CreatePostBottomSheet.show(
-                                      context,
-                                      lockedTrack:
-                                          (currentCard
-                                                  .sourceTopic
-                                                  ?.isNotEmpty ??
-                                              false)
-                                          ? currentCard.sourceTopic
-                                          : null,
-                                      initialTitle:
-                                          '[$topicName] Question on: $firstLinePrompt',
-                                      initialContent:
-                                          '${currentCard.front}\n\n'
-                                          '💡 I am reviewing this flashcard and need help understanding the underlying concept. '
-                                          'Could someone in the cohort explain the step-by-step reasoning or formula derivation?',
-                                      initialLatex:
-                                          currentCard.frontLatex ??
-                                          currentCard.backLatex,
-                                      initialSyllabusTag: topicName,
-                                      initialIsQuestion: true,
-                                      contextBadge:
-                                          'Flashcard Bounty • $topicName',
-                                      onSubmit:
-                                          ({
-                                            required title,
-                                            required content,
-                                            required track,
-                                            latexContent,
-                                            isQuestion = true,
-                                            syllabusTag = 'Flashcards',
-                                            isAnonymous = false,
-                                          }) {
-                                            if (locator
-                                                .isRegistered<
-                                                  CommunityHubBloc
-                                                >()) {
-                                              locator<CommunityHubBloc>().add(
-                                                CreateForumPostEvent(
-                                                  title: title,
-                                                  content: content,
-                                                  track: track,
-                                                  latexContent: latexContent,
-                                                  isQuestion: true,
-                                                  syllabusTag: syllabusTag,
-                                                  isAnonymous: isAnonymous,
+                            child: !state.isFlipped
+                                ? Container(
+                                    key: const ValueKey('study-hint'),
+                                    height: 52,
+                                    alignment: Alignment.center,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          l10n.studySessionSwipeHint,
+                                          style: typography.footnote.regular
+                                              .copyWith(
+                                                color: colors.textMuted,
+                                                fontSize: 12,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
+                                          style: typography.caption.regular
+                                              .copyWith(
+                                                color: colors.primary.withAlpha(
+                                                  isDark ? 210 : 170,
                                                 ),
-                                              );
-                                              context.showSnackBar(
-                                                message:
-                                                    'Question bounty posted to class cohort! 🎯',
-                                              );
-                                            }
-                                          },
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                  )
+                                : Column(
+                                    key: const ValueKey('study-ratings'),
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(
-                                        Icons.help_outline_rounded,
-                                        size: 13,
-                                        color: colors.warning,
+                                      FsrsRatingActionBar(
+                                        intervalPreviews: context
+                                            .read<StudySessionCubit>()
+                                            .ratingIntervalPreviews,
+                                        onRateRating: (rating) {
+                                          unawaited(
+                                            context
+                                                .read<StudySessionCubit>()
+                                                .rateCard(
+                                                  rating,
+                                                ),
+                                          );
+                                        },
                                       ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Stuck on this card? Post Bounty to Cohort',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.warning,
-                                          fontSize: 11,
+                                      const SizedBox(height: 6),
+                                      ShrinkableButton(
+                                        onTap: () {
+                                          unawaited(
+                                            HapticFeedback.lightImpact(),
+                                          );
+                                          final firstLinePrompt = currentCard
+                                              .front
+                                              .split('\n')
+                                              .first
+                                              .trim();
+                                          final topicName =
+                                              currentCard.sourceTopic
+                                                      ?.trim()
+                                                      .isNotEmpty ==
+                                                  true
+                                              ? currentCard.sourceTopic!.trim()
+                                              : 'Flashcard';
+
+                                          unawaited(
+                                            CreatePostBottomSheet.show(
+                                              context,
+                                              lockedTrack:
+                                                  (currentCard
+                                                          .sourceTopic
+                                                          ?.isNotEmpty ??
+                                                      false)
+                                                  ? currentCard.sourceTopic
+                                                  : null,
+                                              initialTitle:
+                                                  '[$topicName] Question on: $firstLinePrompt',
+                                              initialContent:
+                                                  '${currentCard.front}\n\n'
+                                                  '💡 I am reviewing this flashcard and need help understanding the underlying concept. '
+                                                  'Could someone in the cohort explain the step-by-step reasoning or formula derivation?',
+                                              initialLatex:
+                                                  currentCard.frontLatex ??
+                                                  currentCard.backLatex,
+                                              initialSyllabusTag: topicName,
+                                              initialIsQuestion: true,
+                                              contextBadge:
+                                                  'Flashcard Bounty • $topicName',
+                                              onSubmit:
+                                                  ({
+                                                    required title,
+                                                    required content,
+                                                    required track,
+                                                    latexContent,
+                                                    isQuestion = true,
+                                                    syllabusTag = 'Flashcards',
+                                                    isAnonymous = false,
+                                                  }) {
+                                                    if (locator
+                                                        .isRegistered<
+                                                          CommunityHubBloc
+                                                        >()) {
+                                                      locator<
+                                                            CommunityHubBloc
+                                                          >()
+                                                          .add(
+                                                            CreateForumPostEvent(
+                                                              title: title,
+                                                              content: content,
+                                                              track: track,
+                                                              latexContent:
+                                                                  latexContent,
+                                                              isQuestion: true,
+                                                              syllabusTag:
+                                                                  syllabusTag,
+                                                              isAnonymous:
+                                                                  isAnonymous,
+                                                            ),
+                                                          );
+                                                      context.showSnackBar(
+                                                        message:
+                                                            'Question bounty posted to class cohort! 🎯',
+                                                      );
+                                                    }
+                                                  },
+                                            ),
+                                          );
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.help_outline_rounded,
+                                                size: 13,
+                                                color: colors.warning,
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                'Stuck on this card? Post Bounty to Cohort',
+                                                style: typography.caption.bold
+                                                    .copyWith(
+                                                      color: colors.warning,
+                                                      fontSize: 11,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                       ],
@@ -857,205 +915,54 @@ class _StudySessionView extends HookWidget {
       ),
     );
   }
+}
 
-  void _showSprintMilestoneSheet(BuildContext context, int cardsCount) {
+/// Slow breathing dot for the "studying with cohort" presence pill —
+/// a quiet liveness signal, frozen under reduced motion.
+class _LiveDot extends StatefulWidget {
+  const _LiveDot();
+
+  @override
+  State<_LiveDot> createState() => _LiveDotState();
+}
+
+class _LiveDotState extends State<_LiveDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (context.reduceMotion) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      unawaited(_controller.repeat(reverse: true));
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: colors.transparent,
-        isScrollControlled: true,
-        builder: (sheetContext) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 580),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.surfaceSecondary
-                      : colors.surfacePrimary,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.dialog),
-                  ),
-                  border: Border.all(
-                    color: isDark
-                        ? colors.surfaceBorderHighlight.withAlpha(70)
-                        : colors.surfaceBorder.withAlpha(80),
-                  ),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: colors.surfaceBorder,
-                          borderRadius: BorderRadius.circular(AppRadius.micro),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colors.warning.withAlpha(25),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.local_fire_department_rounded,
-                          color: colors.warning,
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        '$cardsCount Cards Crushed! 🔥',
-                        style: typography.title2.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Sprint round complete. Take a 30-second breather or keep blazing through your deck!',
-                        textAlign: TextAlign.center,
-                        style: typography.body.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            unawaited(HapticFeedback.lightImpact());
-                            Navigator.of(sheetContext).pop();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colors.primary,
-                            foregroundColor: colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            'Keep Blazing 🔥',
-                            style: typography.callout.bold.copyWith(
-                              color: colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton.icon(
-                          icon: Icon(
-                            Icons.share_rounded,
-                            size: 16,
-                            color: colors.syllabotAccent,
-                          ),
-                          label: Text(
-                            'Share Milestone to Pod (+25 Pod Karma)',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.syllabotAccent,
-                            ),
-                          ),
-                          onPressed: () {
-                            unawaited(HapticFeedback.mediumImpact());
-                            Navigator.of(sheetContext).pop();
-
-                            final studyCubit = context
-                                .read<StudySessionCubit>();
-                            final cardsCrushed = studyCubit.state.currentIndex;
-                            final deckTitle = studyCubit.state.deckId;
-
-                            if (locator.isRegistered<CommunityHubBloc>()) {
-                              locator<CommunityHubBloc>().add(
-                                CreateForumPostEvent(
-                                  title:
-                                      '🔥 Smashed a $cardsCrushed-Card Sprint Milestone!',
-                                  content:
-                                      'Crushed $cardsCrushed cards in a focused study sprint ($deckTitle)! Studying with cohort on Kortex. 🚀',
-                                  track: 'General',
-                                  syllabusTag: 'Sprint Milestone',
-                                ),
-                              );
-                            }
-
-                            if (locator.isRegistered<UserActivityService>()) {
-                              unawaited(
-                                locator<UserActivityService>().addBonusKarma(
-                                  25,
-                                ),
-                              );
-                            }
-
-                            context.showSnackBar(
-                              message:
-                                  'Milestone shared with your Study Circle! 🎉 +25 Pod Karma',
-                              type: SnackBarType.success,
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: colors.syllabotAccent.withAlpha(100),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.of(sheetContext).pop();
-                            unawaited(
-                              context.read<StudySessionCubit>().finishEarly(),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colors.textSecondary,
-                            side: BorderSide(
-                              color: colors.surfaceBorder,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            'Take a Breather & Finish Sprint',
-                            style: typography.subhead.medium.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.55, end: 1).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      ),
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colors.success,
+        ),
       ),
     );
   }

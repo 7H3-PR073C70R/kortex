@@ -148,7 +148,7 @@ class _AnalyticsDetailView extends HookWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1040),
               child: ListView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 60),
                 children: [
                   // 1. Reusable Liquid Glass Tab Bar

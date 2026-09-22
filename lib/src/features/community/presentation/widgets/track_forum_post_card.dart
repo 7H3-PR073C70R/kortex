@@ -359,44 +359,41 @@ class TrackForumPostCard extends HookWidget {
     return Semantics(
       label: semanticsLabel,
       button: true,
-      child: PlatformHoverBuilder(
-        builder: (context, isHovered, child) => AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: AppMotion.easeOutCubic,
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: AppRadius.radiusPanel,
-            border: Border.all(
-              color: post.isVerifiedSolution
-                  ? colors.success.withAlpha(
-                      isDark ? (isHovered ? 120 : 60) : (isHovered ? 80 : 40),
-                    )
-                  : isHovered
-                  ? colors.primary.withAlpha(isDark ? 80 : 60)
-                  : (isDark
-                        ? colors.surfaceBorder.withAlpha(30)
-                        : colors.surfaceBorder.withAlpha(15)),
-              width: isHovered ? 1.5 : 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: colors.black.withAlpha(
-                  isDark ? (isHovered ? 50 : 25) : (isHovered ? 16 : 6),
-                ),
-                blurRadius: isHovered ? 14 : 8,
-                offset: Offset(0, isHovered ? 4 : 2),
-              ),
-            ],
-          ),
-          child: Material(
-            color: colors.transparent,
-            borderRadius: AppRadius.radiusPanel,
-            child: InkWell(
-              onTap: onTap,
+      child: ShrinkableButton(
+        onTap: onTap,
+        shrinkScale: 0.985,
+        child: PlatformHoverBuilder(
+          builder: (context, isHovered, child) => AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
               borderRadius: AppRadius.radiusPanel,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              border: Border.all(
+                color: post.isVerifiedSolution
+                    ? colors.success.withAlpha(
+                        isDark ? (isHovered ? 120 : 60) : (isHovered ? 80 : 40),
+                      )
+                    : isHovered
+                    ? colors.primary.withAlpha(isDark ? 80 : 60)
+                    : (isDark
+                          ? colors.surfaceBorder.withAlpha(30)
+                          : colors.surfaceBorder.withAlpha(15)),
+                width: isHovered ? 1.5 : 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.black.withAlpha(
+                    isDark ? (isHovered ? 50 : 25) : (isHovered ? 16 : 6),
+                  ),
+                  blurRadius: isHovered ? 14 : 8,
+                  offset: Offset(0, isHovered ? 4 : 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -874,12 +871,34 @@ class TrackForumPostCard extends HookWidget {
                                         horizontal: 6,
                                         vertical: 4,
                                       ),
-                                      child: Icon(
-                                        Icons.keyboard_arrow_up_rounded,
-                                        size: 18,
-                                        color: isUpvoted
-                                            ? colors.primary
-                                            : colors.textSecondary,
+                                      child: AnimatedSwitcher(
+                                        duration: AppMotion.snappy,
+                                        transitionBuilder:
+                                            (child, anim) => ScaleTransition(
+                                              scale: Tween<double>(
+                                                begin: 0.8,
+                                                end: 1,
+                                              ).animate(
+                                                CurvedAnimation(
+                                                  parent: anim,
+                                                  curve: AppMotion.easeOutCubic,
+                                                ),
+                                              ),
+                                              child: FadeTransition(
+                                                opacity: anim,
+                                                child: child,
+                                              ),
+                                            ),
+                                        child: Icon(
+                                          isUpvoted
+                                              ? Icons.arrow_circle_up_rounded
+                                              : Icons.keyboard_arrow_up_rounded,
+                                          key: ValueKey<bool>(isUpvoted),
+                                          size: 18,
+                                          color: isUpvoted
+                                              ? colors.primary
+                                              : colors.textSecondary,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -887,8 +906,9 @@ class TrackForumPostCard extends HookWidget {
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 2,
                                     ),
-                                    child: Text(
-                                      '${post.netVotes}',
+                                    child: AnimatedDefaultTextStyle(
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
                                       style: typography.caption.bold.copyWith(
                                         color: isUpvoted
                                             ? colors.primary
@@ -897,6 +917,7 @@ class TrackForumPostCard extends HookWidget {
                                             : colors.textPrimary,
                                         fontSize: 12,
                                       ),
+                                      child: Text('${post.netVotes}'),
                                     ),
                                   ),
                                   ShrinkableButton(
@@ -913,12 +934,34 @@ class TrackForumPostCard extends HookWidget {
                                         horizontal: 6,
                                         vertical: 4,
                                       ),
-                                      child: Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        size: 18,
-                                        color: isDownvoted
-                                            ? colors.error
-                                            : colors.textSecondary,
+                                      child: AnimatedSwitcher(
+                                        duration: AppMotion.snappy,
+                                        transitionBuilder:
+                                            (child, anim) => ScaleTransition(
+                                              scale: Tween<double>(
+                                                begin: 0.8,
+                                                end: 1,
+                                              ).animate(
+                                                CurvedAnimation(
+                                                  parent: anim,
+                                                  curve: AppMotion.easeOutCubic,
+                                                ),
+                                              ),
+                                              child: FadeTransition(
+                                                opacity: anim,
+                                                child: child,
+                                              ),
+                                            ),
+                                        child: Icon(
+                                          isDownvoted
+                                              ? Icons.arrow_circle_down_rounded
+                                              : Icons.keyboard_arrow_down_rounded,
+                                          key: ValueKey<bool>(isDownvoted),
+                                          size: 18,
+                                          color: isDownvoted
+                                              ? colors.error
+                                              : colors.textSecondary,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1062,17 +1105,43 @@ class TrackForumPostCard extends HookWidget {
                                             }
                                           },
                                           child: Center(
-                                            child: Icon(
-                                              isBookmarked
-                                                  ? Icons.bookmark_rounded
-                                                  : Icons
-                                                        .bookmark_border_rounded,
-                                              size: 19,
-                                              color: isBookmarked
-                                                  ? colors.primary
-                                                  : (isBmHovered
-                                                        ? colors.primary
-                                                        : colors.textSecondary),
+                                            child: AnimatedSwitcher(
+                                              duration: AppMotion.snappy,
+                                              transitionBuilder:
+                                                  (child, anim) =>
+                                                      ScaleTransition(
+                                                        scale: Tween<double>(
+                                                          begin: 0.75,
+                                                          end: 1,
+                                                        ).animate(
+                                                          CurvedAnimation(
+                                                            parent: anim,
+                                                            curve:
+                                                                AppMotion
+                                                                    .easeOutCubic,
+                                                          ),
+                                                        ),
+                                                        child: FadeTransition(
+                                                          opacity: anim,
+                                                          child: child,
+                                                        ),
+                                                      ),
+                                              child: Icon(
+                                                isBookmarked
+                                                    ? Icons.bookmark_rounded
+                                                    : Icons
+                                                          .bookmark_border_rounded,
+                                                key: ValueKey<bool>(
+                                                  isBookmarked,
+                                                ),
+                                                size: 19,
+                                                color: isBookmarked
+                                                    ? colors.primary
+                                                    : (isBmHovered
+                                                          ? colors.primary
+                                                          : colors
+                                                              .textSecondary),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -1090,7 +1159,6 @@ class TrackForumPostCard extends HookWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

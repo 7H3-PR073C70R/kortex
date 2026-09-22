@@ -117,7 +117,7 @@ class StudyActivityHeatmap extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             reverse: true, // Scroll to end (today) by default
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             child: Row(
               children: weeks.map((weekDays) {
                 return Column(

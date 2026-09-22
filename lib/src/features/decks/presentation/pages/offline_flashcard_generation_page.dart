@@ -142,7 +142,7 @@ class _OfflineFlashcardGenerationPageState
                   bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
                 ),
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 28.h),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

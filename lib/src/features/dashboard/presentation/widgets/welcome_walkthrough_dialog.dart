@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class _WalkthroughSlide {
@@ -251,80 +252,89 @@ class _WelcomeWalkthroughDialogState extends State<WelcomeWalkthroughDialog> {
                         padding: const EdgeInsets.fromLTRB(28, 24, 28, 12),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Glowing Icon Container
-                            Container(
-                              width: 68,
-                              height: 68,
-                              decoration: BoxDecoration(
-                                color: slide.badgeColor.withAlpha(
-                                  isDark ? 45 : 30,
-                                ),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: slide.badgeColor.withAlpha(
-                                    isDark ? 120 : 80,
+                          children:
+                              <Widget>[
+                                    // Glowing Icon Container
+                                    Container(
+                                      width: 68,
+                                      height: 68,
+                                      decoration: BoxDecoration(
+                                        color: slide.badgeColor.withAlpha(
+                                          isDark ? 45 : 30,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: slide.badgeColor.withAlpha(
+                                            isDark ? 120 : 80,
+                                          ),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        slide.icon,
+                                        color: slide.badgeColor,
+                                        size: 32,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    // Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: slide.badgeColor.withAlpha(25),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.badge,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        slide.badge,
+                                        style: typography.caption.bold.copyWith(
+                                          color: slide.badgeColor,
+                                          fontSize: 10.5,
+                                          letterSpacing: 1.1,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    // Slide Title
+                                    Text(
+                                      slide.title,
+                                      textAlign: TextAlign.center,
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    // Slide Description
+                                    Text(
+                                      slide.description,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: typography.footnote.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            height: 1.4,
+                                            fontSize: 13,
+                                          ),
+                                    ),
+                                  ]
+                                  .animate(interval: 40.ms)
+                                  .fadeIn(duration: 350.ms)
+                                  .slideY(
+                                    begin: 0.05,
+                                    end: 0,
+                                    curve: Curves.easeOutCubic,
                                   ),
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Icon(
-                                slide.icon,
-                                color: slide.badgeColor,
-                                size: 32,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: slide.badgeColor.withAlpha(25),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.badge,
-                                ),
-                              ),
-                              child: Text(
-                                slide.badge,
-                                style: typography.caption.bold.copyWith(
-                                  color: slide.badgeColor,
-                                  fontSize: 10.5,
-                                  letterSpacing: 1.1,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-
-                            // Slide Title
-                            Text(
-                              slide.title,
-                              textAlign: TextAlign.center,
-                              style: typography.body.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Slide Description
-                            Text(
-                              slide.description,
-                              textAlign: TextAlign.center,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary,
-                                height: 1.4,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
                         ),
                       );
                     },

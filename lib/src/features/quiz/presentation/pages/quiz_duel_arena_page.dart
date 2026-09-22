@@ -5,11 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
@@ -23,6 +26,7 @@ class QuizDuelArenaPage extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final reduceMotion = quizReduceMotion(context);
 
     final floatingEmotes = useState<List<String>>([]);
 
@@ -118,7 +122,7 @@ class QuizDuelArenaPage extends HookWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'MATCH FOUND • 1v1 DUEL',
+                                'RIVAL FOUND • 1v1 DUEL',
                                 style: typography.caption.bold.copyWith(
                                   color: colors.primary,
                                   letterSpacing: 1.2,
@@ -140,180 +144,188 @@ class QuizDuelArenaPage extends HookWidget {
                         ),
                         const SizedBox(height: 36),
 
-                        // VS Battle Ring Cards
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 24,
-                            horizontal: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? colors.surfaceTertiary.withAlpha(180)
-                                : colors.surfaceSecondary.withAlpha(200),
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.dialog,
+                        // VS Battle Ring Cards: they arrive together in one
+                        // scale-in beat, the "found my rival" moment.
+                        _MomentScale(
+                          reduceMotion: reduceMotion,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 24,
+                              horizontal: 16,
                             ),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(isDark ? 80 : 40),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.black.withAlpha(isDark ? 50 : 20),
-                                blurRadius: 24,
-                                offset: const Offset(0, 8),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceTertiary.withAlpha(180)
+                                  : colors.surfaceSecondary.withAlpha(200),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.dialog,
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              // Player 1 (You)
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: colors.primary,
-                                        width: 2.5,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colors.black.withAlpha(
-                                            isDark ? 50 : 20,
-                                          ),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 3),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(
+                                  isDark ? 80 : 40,
+                                ),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.black.withAlpha(
+                                    isDark ? 50 : 20,
+                                  ),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                // Player 1 (You)
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: colors.primary,
+                                          width: 2.5,
                                         ),
-                                      ],
-                                    ),
-                                    child: AppAvatar(
-                                      name: myPlayer.displayName,
-                                      customDimension: 68,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    myPlayer.displayName,
-                                    style: typography.body.bold.copyWith(
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.primary.withAlpha(35),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.micro,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: colors.black.withAlpha(
+                                              isDark ? 50 : 20,
+                                            ),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: AppAvatar(
+                                        name: myPlayer.displayName,
+                                        customDimension: 68,
                                       ),
                                     ),
-                                    child: Text(
-                                      '${myPlayer.eloRating} ELO',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 11,
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      myPlayer.displayName,
+                                      style: typography.body.bold.copyWith(
+                                        fontSize: 15,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-
-                              // Glowing VS Emblem
-                              Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      colors.error,
-                                      colors.warning,
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.black.withAlpha(
-                                        isDark ? 60 : 30,
+                                    const SizedBox(height: 3),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
                                       ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
+                                      decoration: BoxDecoration(
+                                        color: colors.primary.withAlpha(35),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.micro,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${myPlayer.eloRating} ELO',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                                child: Text(
-                                  'VS',
-                                  style: typography.title2.bold.copyWith(
-                                    color: colors.white,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
 
-                              // Opponent (Rival)
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: colors.secondary,
-                                        width: 2.5,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: colors.black.withAlpha(
-                                            isDark ? 50 : 20,
-                                          ),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 3),
-                                        ),
+                                // Glowing VS Emblem
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colors.error,
+                                        colors.warning,
                                       ],
                                     ),
-                                    child: AppAvatar(
-                                      name: opponent.displayName,
-                                      customDimension: 68,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: colors.black.withAlpha(
+                                          isDark ? 60 : 30,
+                                        ),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    'VS',
+                                    style: typography.title2.bold.copyWith(
+                                      color: colors.white,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    opponent.displayName,
-                                    style: typography.body.bold.copyWith(
-                                      fontSize: 15,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.secondary.withAlpha(35),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.micro,
+                                ),
+
+                                // Opponent (Rival)
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: colors.secondary,
+                                          width: 2.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: colors.black.withAlpha(
+                                              isDark ? 50 : 20,
+                                            ),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: AppAvatar(
+                                        name: opponent.displayName,
+                                        customDimension: 68,
                                       ),
                                     ),
-                                    child: Text(
-                                      '${opponent.eloRating} ELO',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.secondary,
-                                        fontSize: 11,
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      opponent.displayName,
+                                      style: typography.body.bold.copyWith(
+                                        fontSize: 15,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.secondary.withAlpha(35),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.micro,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${opponent.eloRating} ELO',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.secondary,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 40),
@@ -348,7 +360,7 @@ class QuizDuelArenaPage extends HookWidget {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Battle Starting in 3s...',
+                                'Starting in 3 seconds...',
                                 style: typography.body.bold.copyWith(
                                   color: colors.primary,
                                   fontSize: 14,
@@ -385,10 +397,10 @@ class QuizDuelArenaPage extends HookWidget {
                       children: [
                         Text(
                           isDraw
-                              ? '🤝 DRAW MATCH!'
+                              ? 'Even match'
                               : isWinner
-                              ? '🏆 VICTORY!'
-                              : '💥 DEFEAT',
+                              ? 'You won this one'
+                              : 'Rival took this one',
                           style: typography.largeTitle.bold.copyWith(
                             color: isDraw
                                 ? colors.warning
@@ -400,8 +412,8 @@ class QuizDuelArenaPage extends HookWidget {
                         const SizedBox(height: 12),
                         Text(
                           isWinner
-                              ? 'Outstanding speed and accuracy! +35 XP earned.'
-                              : 'Great effort! Practice more to climb the leaderboard.',
+                              ? 'Fast and accurate. The bonus XP is on its way.'
+                              : 'Close one. Every round makes the next one easier.',
                           textAlign: TextAlign.center,
                           style: typography.body.regular.copyWith(
                             color: colors.textSecondary,
@@ -483,7 +495,7 @@ class QuizDuelArenaPage extends HookWidget {
                         const SizedBox(height: 40),
 
                         AppButton(
-                          text: 'Rematch ⚡',
+                          text: 'Rematch',
                           onPressed: () async {
                             await context
                                 .read<QuizDuelCubit>()
@@ -498,7 +510,7 @@ class QuizDuelArenaPage extends HookWidget {
                         ),
                         const SizedBox(height: 12),
                         AppButton(
-                          text: 'Exit Arena',
+                          text: 'Leave arena',
                           variant: AppButtonVariant.secondary,
                           onPressed: () {
                             Navigator.of(context).pop();
@@ -515,11 +527,12 @@ class QuizDuelArenaPage extends HookWidget {
 
         // Active Duel Round & Summary View
         final progress = (state.remainingSeconds / 15.0).clamp(0.0, 1.0);
-        final timerColor = state.remainingSeconds <= 3
+        final timerColor = state.remainingSeconds <= 5
             ? colors.error
-            : state.remainingSeconds <= 6
+            : state.remainingSeconds <= 8
             ? colors.warning
             : colors.primary;
+        final rivalLocked = opponent.selectedOptionIndex != null;
 
         return Scaffold(
           backgroundColor: isDark
@@ -665,45 +678,71 @@ class QuizDuelArenaPage extends HookWidget {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
+
+                          // A calm presence line: you can tell the rival is
+                          // still in it without watching a number tick.
+                          if (state.status == QuizDuelStatus.inRound)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: rivalLocked
+                                        ? colors.success
+                                        : colors.warning,
+                                  ),
+                                ),
+                                const SizedBox(width: 7),
+                                Text(
+                                  rivalLocked
+                                      ? 'Rival has locked their answer'
+                                      : 'Rival is thinking…',
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          const SizedBox(height: 10),
 
                           // Countdown Timer Progress Bar
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.micro,
-                            ),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 6,
-                              backgroundColor: colors.surfaceSecondary,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                timerColor,
-                              ),
-                            ),
+                          QuizProgressBar(
+                            value: progress,
+                            color: timerColor,
+                            height: 6,
+                            reduceMotion: reduceMotion,
                           ),
                           const SizedBox(height: 16),
 
                           // Question Card
                           if (currentQuestion != null) ...[
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: colors.surfacePrimary,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.panel,
-                                ),
-                                border: Border.all(
-                                  color: colors.surfaceBorder.withValues(
-                                    alpha: 0.4,
+                            QuizStaggeredFade(
+                              distance: 10,
+                              reduceMotion: reduceMotion,
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: colors.surfacePrimary,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.panel,
+                                  ),
+                                  border: Border.all(
+                                    color: colors.surfaceBorder.withValues(
+                                      alpha: 0.4,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              child: LatexRichViewer(
-                                text: currentQuestion.prompt,
-                                style: typography.body.regular.copyWith(
-                                  fontSize: 16,
-                                  height: 1.4,
-                                  color: colors.textPrimary,
+                                child: LatexRichViewer(
+                                  text: currentQuestion.prompt,
+                                  style: typography.body.regular.copyWith(
+                                    fontSize: 16,
+                                    height: 1.4,
+                                    color: colors.textPrimary,
+                                  ),
                                 ),
                               ),
                             ),
@@ -722,96 +761,41 @@ class QuizDuelArenaPage extends HookWidget {
                                   final isRoundSummary =
                                       state.status ==
                                       QuizDuelStatus.roundSummary;
-                                  final isCorrect =
-                                      option == currentQuestion.correctAnswer;
 
-                                  Color? cardColor = colors.surfacePrimary;
-                                  var borderColor = colors.surfaceBorder
-                                      .withValues(alpha: 0.5);
+                                  // Round summary reuses the shared verdict
+                                  // states: the right answer pops green, your
+                                  // wrong pick shakes red, the rest dim out.
+                                  final optionState = isRoundSummary
+                                      ? McqOptionCard.resolveState(
+                                          isSelected: isSelected,
+                                          isAnswered: true,
+                                          isCorrect:
+                                              option ==
+                                              currentQuestion.correctAnswer,
+                                        )
+                                      : (isSelected
+                                            ? McqOptionState.selected
+                                            : McqOptionState.idle);
 
-                                  if (isRoundSummary) {
-                                    if (isCorrect) {
-                                      cardColor = colors.success.withValues(
-                                        alpha: 0.18,
-                                      );
-                                      borderColor = colors.success;
-                                    } else if (isSelected) {
-                                      cardColor = colors.error.withValues(
-                                        alpha: 0.18,
-                                      );
-                                      borderColor = colors.error;
-                                    }
-                                  } else if (isSelected) {
-                                    cardColor = colors.primary.withValues(
-                                      alpha: 0.15,
-                                    );
-                                    borderColor = colors.primary;
-                                  }
-
-                                  return Material(
-                                    color: cardColor,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.card,
+                                  return QuizStaggeredFade(
+                                    key: ValueKey(
+                                      'duel-opt-${match?.currentQuestionIndex}-$index',
                                     ),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.card,
-                                      ),
-                                      onTap:
-                                          (state.isMyAnswerLocked ||
-                                              isRoundSummary)
-                                          ? null
-                                          : () => onSelectOption(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(14),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.card,
-                                          ),
-                                          border: Border.all(
-                                            color: borderColor,
-                                            width: isSelected ? 2 : 1,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 28,
-                                              height: 28,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: isSelected
-                                                    ? colors.primary
-                                                    : colors.surfaceSecondary,
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  String.fromCharCode(
-                                                    65 + index,
-                                                  ),
-                                                  style: TextStyle(
-                                                    color: isSelected
-                                                        ? colors.white
-                                                        : colors.textPrimary,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: LatexRichViewer(
-                                                text: option,
-                                                style: typography.body.regular
-                                                    .copyWith(
-                                                      color: colors.textPrimary,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                    index: index,
+                                    distance: 10,
+                                    reduceMotion: reduceMotion,
+                                    child: McqOptionCard(
+                                      optionText: option,
+                                      index: index,
+                                      state: optionState,
+                                      reduceMotion: reduceMotion,
+                                      onTap: () {
+                                        if (state.isMyAnswerLocked ||
+                                            isRoundSummary) {
+                                          return;
+                                        }
+                                        onSelectOption(index);
+                                      },
                                     ),
                                   );
                                 },
@@ -884,6 +868,29 @@ class QuizDuelArenaPage extends HookWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// One-shot scale-in used for the "rival found" moment, so both player cards
+/// arrive together in a single beat instead of popping in instantly.
+class _MomentScale extends StatelessWidget {
+  const _MomentScale({required this.reduceMotion, required this.child});
+
+  final bool reduceMotion;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reduceMotion) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: AppMotion.expressive,
+      curve: AppMotion.easeOutCubic,
+      builder: (context, t, _) => Opacity(
+        opacity: t,
+        child: Transform.scale(scale: 0.92 + 0.08 * t, child: child),
+      ),
     );
   }
 }

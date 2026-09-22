@@ -8,6 +8,7 @@ import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.da
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Bottom modal sheet allowing students to configure and start a timed CBT practice test.
@@ -71,7 +72,7 @@ void showPastQuestionsTestConfigSheet(
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Configure ${state.selectedExam.displayName} Test',
+                            'Practice ${state.selectedExam.displayName}',
                             style: typography.title3.bold.copyWith(
                               color: colors.textPrimary,
                               fontSize: 17,
@@ -79,7 +80,7 @@ void showPastQuestionsTestConfigSheet(
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            'Practice a specific past paper year or generate a randomized mock test.',
+                            'Pick your questions and how the quiz should run.',
                             style: typography.footnote.regular.copyWith(
                               color: colors.textSecondary,
                               fontSize: 11.5,
@@ -87,22 +88,16 @@ void showPastQuestionsTestConfigSheet(
                           ),
                           const SizedBox(height: 16),
 
-                          // 1. Question Source: Random vs Exam Year
-                          Text(
-                            'Question Selection Mode',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+                          // 1. Question Source: mix every year, or one paper
+                          const QuizSectionLabel(label: 'Questions'),
                           Row(
                             children: [
                               Expanded(
-                                child: ModeOptionCard(
-                                  title: 'Random Mock',
-                                  subtitle: 'Shuffle across all years',
+                                child: QuizChoiceCard(
+                                  title: 'Mix of all years',
+                                  subtitle: 'Shuffled across every past paper',
                                   icon: Icons.shuffle_rounded,
-                                  isSelected: isRandomSelection,
+                                  selected: isRandomSelection,
                                   onTap: () => setSheetState(
                                     () => isRandomSelection = true,
                                   ),
@@ -110,11 +105,11 @@ void showPastQuestionsTestConfigSheet(
                               ),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: ModeOptionCard(
-                                  title: 'Specific Year',
-                                  subtitle: 'Target an official paper',
+                                child: QuizChoiceCard(
+                                  title: 'One paper year',
+                                  subtitle: 'Questions from a single exam year',
                                   icon: Icons.calendar_today_rounded,
-                                  isSelected: !isRandomSelection,
+                                  selected: !isRandomSelection,
                                   onTap: () => setSheetState(
                                     () => isRandomSelection = false,
                                   ),
@@ -127,7 +122,7 @@ void showPastQuestionsTestConfigSheet(
                           if (!isRandomSelection) ...[
                             const SizedBox(height: 12),
                             Text(
-                              'Select Exam Year',
+                              'Which year?',
                               style: typography.caption.bold.copyWith(
                                 color: colors.textSecondary,
                               ),
@@ -167,36 +162,18 @@ void showPastQuestionsTestConfigSheet(
 
                           const SizedBox(height: 16),
 
-                          // 2. Simulation Mode
-                          Text(
-                            'Test Simulation Mode',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+                          // 2. How the quiz runs
+                          const SizedBox(height: 16),
+                          const QuizSectionLabel(label: 'How it runs'),
                           Row(
                             children: [
                               Expanded(
-                                child: ModeOptionCard(
-                                  title: 'Timed CBT',
-                                  subtitle: 'Strict countdown',
-                                  icon: Icons.timer_outlined,
-                                  isSelected: isTimedMode && !isMillionaireMode,
-                                  onTap: () => setSheetState(() {
-                                    isTimedMode = true;
-                                    isMillionaireMode = false;
-                                  }),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: ModeOptionCard(
-                                  title: 'Self-Paced',
-                                  subtitle: 'Instant reveal',
+                                child: QuizChoiceCard(
+                                  title: 'Practice',
+                                  subtitle: 'Hints and feedback as you go',
                                   icon: Icons.school_outlined,
-                                  isSelected:
-                                      !isTimedMode && !isMillionaireMode,
+                                  accentColor: colors.syllabotAccent,
+                                  selected: !isTimedMode && !isMillionaireMode,
                                   onTap: () => setSheetState(() {
                                     isTimedMode = false;
                                     isMillionaireMode = false;
@@ -205,11 +182,25 @@ void showPastQuestionsTestConfigSheet(
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: ModeOptionCard(
+                                child: QuizChoiceCard(
+                                  title: 'Exam',
+                                  subtitle: 'Timed, results at the end',
+                                  icon: Icons.timer_outlined,
+                                  selected: isTimedMode && !isMillionaireMode,
+                                  onTap: () => setSheetState(() {
+                                    isTimedMode = true;
+                                    isMillionaireMode = false;
+                                  }),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: QuizChoiceCard(
                                   title: 'Millionaire',
-                                  subtitle: 'Arcade ladder',
+                                  subtitle: 'Climb 12 tiers, bank your prize',
                                   icon: Icons.military_tech_rounded,
-                                  isSelected: isMillionaireMode,
+                                  accentColor: colors.warning,
+                                  selected: isMillionaireMode,
                                   onTap: () => setSheetState(() {
                                     isMillionaireMode = true;
                                     selectedCount = 12;
@@ -221,13 +212,7 @@ void showPastQuestionsTestConfigSheet(
                           const SizedBox(height: 16),
 
                           // 3. Question Count Pills
-                          Text(
-                            'Question Count',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+                          const QuizSectionLabel(label: 'Question count'),
                           Row(
                             children:
                                 (isMillionaireMode ? [12] : [5, 10, 20, 40])
@@ -241,8 +226,8 @@ void showPastQuestionsTestConfigSheet(
                                         child: ChoiceChip(
                                           label: Text(
                                             isMillionaireMode
-                                                ? '12 Rungs (Millionaire)'
-                                                : '$count Qs',
+                                                ? '12 questions'
+                                                : '$count questions',
                                           ),
                                           selected: isSelected,
                                           onSelected: (_) => setSheetState(
@@ -299,7 +284,7 @@ void showPastQuestionsTestConfigSheet(
                               final testTitle = isMillionaireMode
                                   ? '${state.selectedExam.displayName} Millionaire Challenge'
                                   : (isRandomSelection
-                                        ? '${state.selectedExam.displayName} Random CBT Mock'
+                                        ? '${state.selectedExam.displayName} Mixed Past Papers'
                                         : '${state.selectedExam.displayName} $selectedYear Past Paper');
 
                               Navigator.of(context).pop();
@@ -348,10 +333,10 @@ void showPastQuestionsTestConfigSheet(
                               child: Center(
                                 child: Text(
                                   isMillionaireMode
-                                      ? 'Start Millionaire Ascent Challenge (12 Rungs 🏆)'
-                                      : (isRandomSelection
-                                            ? 'Start Random CBT ($selectedCount Questions)'
-                                            : 'Start $selectedYear Past Paper ($selectedCount Qs)'),
+                                      ? 'Start 12 tiers · Millionaire'
+                                      : (isTimedMode
+                                            ? 'Start $selectedCount questions • $selectedCount min'
+                                            : 'Start $selectedCount questions'),
                                   style: typography.callout.bold.copyWith(
                                     color: colors.white,
                                   ),

@@ -20,6 +20,7 @@ import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart'
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -154,7 +155,7 @@ class DeckMarketplaceDetailPage extends HookWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: PlatformHoverBuilder(
                 builder: (context, isHovered, child) => AnimatedScale(
-                  scale: isHovered ? 1.01 : 1.0,
+                  scale: isHovered ? 1.01 : 1,
                   duration: AppMotion.snappy,
                   curve: AppMotion.easeOutCubic,
                   child: ShrinkableButton(
@@ -180,14 +181,17 @@ class DeckMarketplaceDetailPage extends HookWidget {
                           ),
                         ],
                       ),
-                      child: Center(
+                      child: AnimatedSwitcher(
+                        duration: AppMotion.snappy,
                         child: isCloning.value
                             ? AppLogoLoader(
+                                key: const ValueKey('cloning_loader'),
                                 size: 20,
                                 color: colors.white,
                                 showMessage: false,
                               )
                             : Row(
+                                key: const ValueKey('cloning_action'),
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
@@ -317,9 +321,10 @@ class DeckMarketplaceDetailPage extends HookWidget {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text(
+                                        Text(
                                           '📚',
-                                          style: TextStyle(fontSize: 10),
+                                          style: typography.caption.regular
+                                              .copyWith(fontSize: 10),
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -362,11 +367,24 @@ class DeckMarketplaceDetailPage extends HookWidget {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          '${deck.subject} • Created by ${deck.ownerName}',
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textSecondary,
-                          ),
+                        Row(
+                          children: [
+                            AppAvatar(
+                              customDimension: 22,
+                              name: deck.ownerName,
+                              backgroundColor: colors.primary.withAlpha(
+                                isDark ? 50 : 35,
+                              ),
+                              foregroundColor: colors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${deck.subject} • Created by ${deck.ownerName}',
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 10),
                         Container(
@@ -386,7 +404,12 @@ class DeckMarketplaceDetailPage extends HookWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('✨', style: TextStyle(fontSize: 12)),
+                              Text(
+                                '✨',
+                                style: typography.caption.regular.copyWith(
+                                  fontSize: 12,
+                                ),
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 'Cloning awards +25 XP to ${deck.ownerName}',
@@ -585,15 +608,35 @@ class _InteractiveCardPreviewCarousel extends HookWidget {
                           ],
                         ),
                         const Spacer(),
-                        Text(
-                          showingBack ? card.back : card.front,
-                          style: typography.footnote.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 14,
-                            height: 1.4,
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: ScaleTransition(
+                                scale: Tween<double>(
+                                  begin: 0.96,
+                                  end: 1,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Text(
+                            showingBack ? card.back : card.front,
+                            key: ValueKey(
+                              showingBack
+                                  ? 'back_${card.id}'
+                                  : 'front_${card.id}',
+                            ),
+                            style: typography.footnote.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const Spacer(),
                       ],

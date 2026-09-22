@@ -17,7 +17,7 @@ class ShrinkableButton extends StatefulWidget {
     required this.onTap,
     super.key,
     this.onLongPress,
-    this.shrinkScale = 0.96,
+    this.shrinkScale = 0.97,
     this.duration = const Duration(milliseconds: 100),
     this.enableHaptics = true,
     this.semanticLabel,

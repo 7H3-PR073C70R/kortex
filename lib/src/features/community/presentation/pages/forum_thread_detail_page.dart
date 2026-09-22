@@ -6,6 +6,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -28,6 +29,7 @@ import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_re
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -461,7 +463,9 @@ class ForumThreadDetailPage extends HookWidget {
               onPressed: () => Navigator.of(dialogCtx).pop(false),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: colors.textSecondary),
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             ElevatedButton(
@@ -945,11 +949,7 @@ class ForumThreadDetailPage extends HookWidget {
                                       ? colors.surfaceSecondary
                                       : colors.surfacePrimary,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: colors.surfaceBorder.withAlpha(
-                                      isDark ? 50 : 30,
-                                    ),
-                                  ),
+                                  // Removed border
                                   boxShadow: [
                                     BoxShadow(
                                       color: colors.black.withAlpha(
@@ -1044,54 +1044,17 @@ class ForumThreadDetailPage extends HookWidget {
                                     // Author Profile Row
                                     Row(
                                       children: [
-                                        Stack(
-                                          clipBehavior: Clip.none,
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 20,
-                                              backgroundColor: colors.primary
-                                                  .withAlpha(isDark ? 50 : 35),
-                                              child: Text(
-                                                currentPost
-                                                        .value
-                                                        .authorName
-                                                        .isNotEmpty
-                                                    ? currentPost
-                                                          .value
-                                                          .authorName[0]
-                                                          .toUpperCase()
-                                                    : '?',
-                                                style: typography.footnote.bold
-                                                    .copyWith(
-                                                      color: colors.primary,
-                                                    ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              bottom: -1,
-                                              right: -1,
-                                              child: Container(
-                                                width: 14,
-                                                height: 14,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: colors.success,
-                                                  border: Border.all(
-                                                    color: isDark
-                                                        ? colors
-                                                              .surfaceSecondary
-                                                        : colors.surfacePrimary,
-                                                    width: 1.5,
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  Icons.check,
-                                                  size: 8,
-                                                  color: colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                        AppAvatar(
+                                          customDimension: 40,
+                                          name: currentPost.value.authorName,
+                                          backgroundColor: colors.primary
+                                              .withAlpha(isDark ? 50 : 35),
+                                          foregroundColor: colors.primary,
+                                          showBadge: true,
+                                          badgeColor: colors.success,
+                                          badgeBorderColor: isDark
+                                              ? colors.surfaceSecondary
+                                              : colors.surfacePrimary,
                                         ),
                                         const SizedBox(width: 10),
                                         Expanded(
@@ -1133,11 +1096,9 @@ class ForumThreadDetailPage extends HookWidget {
                                                     ),
                                                     child: Text(
                                                       'OP',
-                                                      style: TextStyle(
+                                                      style: typography.caption.bold.copyWith(
                                                         color: colors.white,
                                                         fontSize: 9.5,
-                                                        fontWeight:
-                                                            FontWeight.bold,
                                                       ),
                                                     ),
                                                   ),
@@ -1734,41 +1695,50 @@ class ForumThreadDetailPage extends HookWidget {
                                               12,
                                             ),
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              if (isGeneratingAiHint.value)
-                                                SizedBox(
-                                                  width: 15,
-                                                  height: 15,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(
-                                                          colors.white,
-                                                        ),
-                                                  ),
-                                                )
-                                              else
-                                                Icon(
-                                                  Icons.auto_awesome_rounded,
-                                                  size: 16,
-                                                  color: colors.white,
-                                                ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                isGeneratingAiHint.value
-                                                    ? 'Consulting Syllabot...'
-                                                    : 'Ask Syllabot for Socratic Hint 🤖',
-                                                style: typography.caption.bold
-                                                    .copyWith(
-                                                      color: colors.white,
-                                                      letterSpacing: 0.2,
-                                                    ),
+                                          child: AnimatedSwitcher(
+                                            duration: AppMotion.snappy,
+                                            switchInCurve:
+                                                AppMotion.easeOutCubic,
+                                            child: Row(
+                                              key: ValueKey(
+                                                isGeneratingAiHint.value,
                                               ),
-                                            ],
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (isGeneratingAiHint.value)
+                                                  SizedBox(
+                                                    width: 15,
+                                                    height: 15,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(colors.white),
+                                                    ),
+                                                  )
+                                                else
+                                                  Icon(
+                                                    Icons.auto_awesome_rounded,
+                                                    size: 16,
+                                                    color: colors.white,
+                                                  ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  isGeneratingAiHint.value
+                                                      ? 'Consulting Syllabot...'
+                                                      : 'Ask Syllabot for Socratic Hint 🤖',
+                                                  style: typography
+                                                      .caption
+                                                      .bold
+                                                      .copyWith(
+                                                        color: colors.white,
+                                                        letterSpacing: 0.2,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -1873,7 +1843,7 @@ class ForumThreadDetailPage extends HookWidget {
                                       );
                                     },
                                   ),
-                                );
+                                ).animate(delay: (index.clamp(0, 5) * 80).ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic);
                               },
                               childCount: topLevelReplies.length,
                             ),
@@ -2477,7 +2447,7 @@ class ForumThreadDetailPage extends HookWidget {
                               PlatformHoverBuilder(
                                 builder: (context, isHovered, child) {
                                   return AnimatedScale(
-                                    scale: isHovered ? 1.06 : 1.0,
+                                    scale: isHovered ? 1.06 : 1,
                                     duration: AppMotion.snappy,
                                     curve: AppMotion.easeOutCubic,
                                     child: child,
@@ -2583,17 +2553,27 @@ class ForumThreadDetailPage extends HookWidget {
                                       color: colors.primary,
                                     ),
                                     alignment: Alignment.center,
-                                    child: isSubmitting.value
-                                        ? AppLogoLoader(
-                                            size: 16,
-                                            color: colors.white,
-                                            showMessage: false,
-                                          )
-                                        : Icon(
-                                            Icons.send_rounded,
-                                            color: colors.white,
-                                            size: 18,
-                                          ),
+                                    child: AnimatedSwitcher(
+                                      duration: AppMotion.snappy,
+                                      switchInCurve: AppMotion.easeOutCubic,
+                                      child: isSubmitting.value
+                                          ? AppLogoLoader(
+                                              key: const ValueKey(
+                                                'submitting_loader',
+                                              ),
+                                              size: 16,
+                                              color: colors.white,
+                                              showMessage: false,
+                                            )
+                                          : Icon(
+                                              Icons.send_rounded,
+                                              key: const ValueKey(
+                                                'send_icon',
+                                              ),
+                                              color: colors.white,
+                                              size: 18,
+                                            ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -3081,9 +3061,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: colors.surfaceBorder.withAlpha(isDark ? 40 : 25),
-            ),
+            // Removed border
             boxShadow: [
               BoxShadow(
                 color: colors.black.withAlpha(isDark ? 25 : 8),
@@ -3124,20 +3102,13 @@ class _DiscussionThreadGroupCard extends HookWidget {
                       ),
                     )
                   else
-                    CircleAvatar(
-                      radius: 14,
+                    AppAvatar(
+                      customDimension: 28,
+                      name: parentReply.authorName,
                       backgroundColor: colors.primary.withAlpha(
                         isDark ? 40 : 25,
                       ),
-                      child: Text(
-                        parentReply.authorName.isNotEmpty
-                            ? parentReply.authorName[0].toUpperCase()
-                            : '?',
-                        style: typography.caption.bold.copyWith(
-                          fontSize: 11,
-                          color: colors.primary,
-                        ),
-                      ),
+                      foregroundColor: colors.primary,
                     ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -3192,10 +3163,9 @@ class _DiscussionThreadGroupCard extends HookWidget {
                                 ),
                                 child: Text(
                                   'OP',
-                                  style: TextStyle(
+                                  style: typography.caption.bold.copyWith(
                                     color: colors.white,
                                     fontSize: 9,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               )
@@ -3836,20 +3806,13 @@ class _Level2ChildReplyCard extends HookWidget {
                   // Author Info & Collapse Toggle
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 11,
+                      AppAvatar(
+                        customDimension: 22,
+                        name: childReply.authorName,
                         backgroundColor: colors.primary.withAlpha(
                           isDark ? 40 : 25,
                         ),
-                        child: Text(
-                          childReply.authorName.isNotEmpty
-                              ? childReply.authorName[0].toUpperCase()
-                              : '?',
-                          style: typography.caption.bold.copyWith(
-                            fontSize: 9.5,
-                            color: colors.primary,
-                          ),
-                        ),
+                        foregroundColor: colors.primary,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -3874,10 +3837,9 @@ class _Level2ChildReplyCard extends HookWidget {
                           ),
                           child: Text(
                             'OP',
-                            style: TextStyle(
+                            style: typography.caption.bold.copyWith(
                               color: colors.white,
                               fontSize: 8.5,
-                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),

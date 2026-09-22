@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,13 +11,33 @@ import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Tactile review rating bar powered by the FSRS-6 spaced repetition algorithm.
+///
+/// Shows a predicted next interval per rating (when [intervalPreviews] is
+/// provided) so the learner can feel the cost of each choice — the same
+/// "what will this do to my future queue" legibility that makes Anki's
+/// rating bar effective.
 class FsrsRatingActionBar extends StatelessWidget {
   const FsrsRatingActionBar({
     required this.onRateRating,
+    this.intervalPreviews = const {},
     super.key,
   });
 
   final void Function(FsrsRating rating) onRateRating;
+
+  /// Predicted days-to-next-review per rating for the CURRENT card.
+  /// Empty while unknown — the buttons then render without a preview line.
+  final Map<FsrsRating, int> intervalPreviews;
+
+  /// Formats a predicted interval compactly under the "days" idiom the
+  /// existing interval labels establish ("< 10m", "1d", "6d", "12d").
+  static String formatPreview(int days) {
+    if (days <= 0) return '<10m';
+    if (days == 1) return '1d';
+    if (days < 30) return '${days}d';
+    if (days < 365) return '${(days / 30).round()}mo';
+    return '${(days / 365).floor()}y';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +50,6 @@ class FsrsRatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingAgain,
         rating: FsrsRating.again,
-        quality: 0,
         color: colors.recallAgain,
         icon: Icons.replay_rounded,
         shortcut: '1',
@@ -39,7 +57,6 @@ class FsrsRatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingHard,
         rating: FsrsRating.hard,
-        quality: 3,
         color: colors.recallHard,
         icon: Icons.bolt_rounded,
         shortcut: '2',
@@ -47,7 +64,6 @@ class FsrsRatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingGood,
         rating: FsrsRating.good,
-        quality: 4,
         color: colors.recallGood,
         icon: Icons.thumb_up_rounded,
         shortcut: '3',
@@ -55,7 +71,6 @@ class FsrsRatingActionBar extends StatelessWidget {
       (
         label: l10n.studyRatingEasy,
         rating: FsrsRating.easy,
-        quality: 5,
         color: colors.recallEasy,
         icon: Icons.rocket_launch_rounded,
         shortcut: '4',
@@ -68,15 +83,20 @@ class FsrsRatingActionBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 4 Modern Tactile Rating Cards with generous breathing room
             Row(
               children: buttons.map((b) {
+                final previewDays = intervalPreviews[b.rating];
+                final preview = previewDays == null
+                    ? null
+                    : formatPreview(previewDays);
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: Semantics(
                       button: true,
-                      label: b.label,
+                      label: preview == null
+                          ? b.label
+                          : l10n.studyRatingSemantics(b.label, preview),
                       child: PlatformHoverBuilder(
                         builder: (context, isHovered, child) {
                           return ShrinkableButton(
@@ -85,84 +105,72 @@ class FsrsRatingActionBar extends StatelessWidget {
                               unawaited(HapticFeedback.mediumImpact());
                               onRateRating(b.rating);
                             },
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
+                            child: AnimatedContainer(
+                              duration: AppMotion.snappy,
+                              curve: AppMotion.snappyCurve,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 6,
                               ),
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(
-                                  sigmaX: 12,
-                                  sigmaY: 12,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.card,
                                 ),
-                                child: AnimatedContainer(
-                                  duration: AppMotion.snappy,
-                                  curve: AppMotion.snappyCurve,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 6,
+                                color: isHovered
+                                    ? b.color.withAlpha(isDark ? 65 : 45)
+                                    : (isDark
+                                          ? b.color.withAlpha(35)
+                                          : b.color.withAlpha(22)),
+                                border: Border.all(
+                                  color: b.color.withAlpha(
+                                    isHovered ? 180 : (isDark ? 110 : 85),
                                   ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.card,
-                                    ),
-                                    color: isHovered
-                                        ? b.color.withAlpha(isDark ? 65 : 45)
-                                        : (isDark
-                                              ? b.color.withAlpha(35)
-                                              : b.color.withAlpha(22)),
-                                    border: Border.all(
-                                      color: b.color.withAlpha(
-                                        isHovered ? 180 : (isDark ? 110 : 85),
-                                      ),
-                                      width: isHovered ? 1.5 : 1.2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.black.withAlpha(
-                                          isHovered
-                                              ? (isDark ? 50 : 20)
-                                              : (isDark ? 30 : 8),
-                                        ),
-                                        blurRadius: isHovered ? 14 : 8,
-                                        offset: Offset(0, isHovered ? 4 : 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Icon indicator
-                                      Icon(
-                                        b.icon,
-                                        color: b.color,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(height: 8),
-
-                                      // Button Label
-                                      Text(
-                                        b.label,
-                                        style: typography.body.bold.copyWith(
-                                          color: isDark
-                                              ? colors.white
-                                              : colors.textPrimary,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-
-                                      // Keyboard Key Hint
-                                      Text(
-                                        l10n.studyRatingKeyShortcut(b.shortcut),
-                                        style: typography.caption.regular
-                                            .copyWith(
-                                              color: colors.textMuted,
-                                              fontSize: 10,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
+                                  width: isHovered ? 1.5 : 1.2,
                                 ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Icon indicator
+                                  Icon(b.icon, color: b.color, size: 20),
+                                  const SizedBox(height: 6),
+
+                                  // Button Label
+                                  Text(
+                                    b.label,
+                                    style: typography.body.bold.copyWith(
+                                      color: isDark
+                                          ? colors.white
+                                          : colors.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+
+                                  // Predicted next interval — state-driven,
+                                  // falls back to the static default labels.
+                                  Text(
+                                    preview ??
+                                        _fallbackPreview(context, b.rating),
+                                    style: typography.caption.bold.copyWith(
+                                      color: b.color,
+                                      fontSize: 11,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+
+                                  // Keyboard Key Hint
+                                  Text(
+                                    l10n.studyRatingKeyShortcut(b.shortcut),
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textMuted,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           );
@@ -189,5 +197,15 @@ class FsrsRatingActionBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _fallbackPreview(BuildContext context, FsrsRating rating) {
+    final l10n = context.l10n;
+    return switch (rating) {
+      FsrsRating.again => l10n.studyRatingAgainInterval,
+      FsrsRating.hard => l10n.studyRatingHardInterval,
+      FsrsRating.good => l10n.studyRatingGoodInterval,
+      FsrsRating.easy => l10n.studyRatingEasyInterval,
+    };
   }
 }

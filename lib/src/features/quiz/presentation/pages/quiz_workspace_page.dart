@@ -7,23 +7,24 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
-import 'package:kortex/src/features/quiz/presentation/widgets/explanation_accordion.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_audience_poll_dialog.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_ladder_drawer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_lifeline_bar.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
@@ -40,6 +41,7 @@ class QuizWorkspacePage extends StatelessWidget {
     this.courseId,
     this.courseCode,
     this.assessmentMode = AssessmentMode.discoveryMode,
+    this.reviewMode = false,
     super.key,
   });
 
@@ -52,6 +54,10 @@ class QuizWorkspacePage extends StatelessWidget {
   final String? courseCode;
   final AssessmentMode assessmentMode;
 
+  /// Read-only walkthrough of already answered questions.
+  /// Answers and verdicts stay exactly as they were during the session.
+  final bool reviewMode;
+
   @override
   Widget build(BuildContext context) {
     final view = _QuizWorkspaceView(
@@ -59,10 +65,12 @@ class QuizWorkspacePage extends StatelessWidget {
       deckTitle: deckTitle ?? subject,
       courseId: courseId,
       courseCode: courseCode,
+      reviewMode: reviewMode,
     );
     try {
       final existing = context.read<QuizSessionCubit>();
-      if (existing.state.status == QuizSessionStatus.inProgress &&
+      if (!reviewMode &&
+          existing.state.status == QuizSessionStatus.inProgress &&
           existing.state.questions.isNotEmpty) {
         return view;
       }
@@ -73,7 +81,12 @@ class QuizWorkspacePage extends StatelessWidget {
     return BlocProvider<QuizSessionCubit>(
       create: (_) {
         final cubit = locator<QuizSessionCubit>();
-        if (initialQuestions != null && initialQuestions!.isNotEmpty) {
+        if (reviewMode) {
+          cubit.startReview(
+            title: deckTitle ?? 'Review your answers',
+            questions: initialQuestions ?? const [],
+          );
+        } else if (initialQuestions != null && initialQuestions!.isNotEmpty) {
           if (assessmentMode == AssessmentMode.millionaireMode) {
             cubit.startMillionaireQuiz(
               title: deckTitle ?? subject ?? 'Millionaire Challenge',
@@ -113,12 +126,14 @@ class _QuizWorkspaceView extends HookWidget {
     this.deckTitle,
     this.courseId,
     this.courseCode,
+    this.reviewMode = false,
   });
 
   final String deckId;
   final String? deckTitle;
   final String? courseId;
   final String? courseCode;
+  final bool reviewMode;
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +188,8 @@ class _QuizWorkspaceView extends HookWidget {
           );
         }
         if (state.status == QuizSessionStatus.completed &&
-            state.result != null) {
+            state.result != null &&
+            !reviewMode) {
           unawaited(
             context.router.replace(
               QuizResultsRoute(
@@ -212,49 +228,20 @@ class _QuizWorkspaceView extends HookWidget {
               backgroundColor: colors.transparent,
               elevation: 0,
             ),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      color: colors.error,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.errorMessage ?? l10n.quizFailedToLoad,
-                      textAlign: TextAlign.center,
-                      style: typography.body.regular.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        unawaited(
-                          context.read<QuizSessionCubit>().startQuizFromDeck(
-                            deckId: deckId,
-                            deckTitle: deckTitle,
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: colors.white,
-                      ),
-                      child: Text(
-                        l10n.retryAction,
-                        style: typography.body.bold.copyWith(
-                          color: colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            body: QuizEmptyState(
+              icon: Icons.cloud_off_rounded,
+              headline: 'We could not load this quiz',
+              message: state.errorMessage ?? l10n.quizFailedToLoad,
+              actionLabel: l10n.retryAction,
+              tone: QuizBannerTone.warning,
+              onAction: () {
+                unawaited(
+                  context.read<QuizSessionCubit>().startQuizFromDeck(
+                    deckId: deckId,
+                    deckTitle: deckTitle,
+                  ),
+                );
+              },
             ),
           );
         }
@@ -279,56 +266,28 @@ class _QuizWorkspaceView extends HookWidget {
                 ),
               ),
             ),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.quiz_outlined,
-                      color: colors.textSecondary,
-                      size: 56,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No Quiz Questions Available',
-                      style: typography.title2.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'There are no flashcards or questions available to generate a quiz for this session.',
-                      textAlign: TextAlign.center,
-                      style: typography.body.regular.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: colors.white,
-                      ),
-                      child: Text(
-                        l10n.cancelAction,
-                        style: typography.body.bold.copyWith(
-                          color: colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            body: QuizEmptyState(
+              icon: Icons.quiz_outlined,
+              headline: 'Nothing to practice yet',
+              message:
+                  'This deck does not have enough cards to build a quiz '
+                  'yet. Add a few cards and come back.',
+              actionLabel: 'Back',
+              onAction: () => Navigator.of(context).pop(),
             ),
           );
         }
 
+        final isPractice = state.assessmentMode == AssessmentMode.discoveryMode;
+        final isExam =
+            state.assessmentMode == AssessmentMode.examSimulationMode;
+        final isMillionaire =
+            state.assessmentMode == AssessmentMode.millionaireMode;
+        final reduceMotion = quizReduceMotion(context);
         final progress = state.totalQuestions == 0
             ? 0.0
             : (state.currentIndex + 1) / state.totalQuestions;
+        final showVerdict = current.isAnswered && !isExam;
 
         return Scaffold(
           backgroundColor: isDark
@@ -339,7 +298,13 @@ class _QuizWorkspaceView extends HookWidget {
             elevation: 0,
             leading: IconButton(
               icon: Icon(Icons.close_rounded, color: colors.textPrimary),
-              onPressed: () => _confirmExit(context, state),
+              onPressed: () {
+                if (reviewMode) {
+                  Navigator.of(context).pop();
+                  return;
+                }
+                _confirmExit(context, state);
+              },
             ),
             title: Text(
               state.quizTitle,
@@ -349,21 +314,22 @@ class _QuizWorkspaceView extends HookWidget {
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
-              // Flag toggle action
-              IconButton(
-                icon: Icon(
-                  state.isCurrentQuestionFlagged
-                      ? Icons.bookmark_rounded
-                      : Icons.bookmark_border_rounded,
-                  color: state.isCurrentQuestionFlagged
-                      ? colors.warning
-                      : colors.textSecondary,
+              // Flag toggle action (answering aids are hidden in review).
+              if (!reviewMode)
+                IconButton(
+                  icon: Icon(
+                    state.isCurrentQuestionFlagged
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    color: state.isCurrentQuestionFlagged
+                        ? colors.warning
+                        : colors.textSecondary,
+                  ),
+                  tooltip: 'Flag Question for Review',
+                  onPressed: () => context
+                      .read<QuizSessionCubit>()
+                      .toggleFlagCurrentQuestion(),
                 ),
-                tooltip: 'Flag Question for Review',
-                onPressed: () => context
-                    .read<QuizSessionCubit>()
-                    .toggleFlagCurrentQuestion(),
-              ),
               // Question Navigation Palette
               IconButton(
                 icon: Icon(Icons.grid_view_rounded, color: colors.textPrimary),
@@ -375,190 +341,74 @@ class _QuizWorkspaceView extends HookWidget {
                 ),
               ),
               // Live Session Timer Badge (with time running low warning)
-              const _QuizTimerBadge(),
+              if (!reviewMode) const _QuizTimerBadge(),
             ],
           ),
           body: Column(
             children: [
-              // Progress Bar
-              LinearProgressIndicator(
+              QuizProgressBar(
                 value: progress,
-                backgroundColor: colors.surfaceBorder,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  colors.primary,
-                ),
+                color: isMillionaire ? colors.warning : colors.primary,
+                reduceMotion: reduceMotion,
               ),
               Expanded(
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 820),
                     child: ListView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                      key: ValueKey('quiz-question-${state.currentIndex}'),
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
                       children: [
-                        // Assessment Mode Selector Pill
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                unawaited(HapticFeedback.lightImpact());
-                                final newMode =
-                                    state.assessmentMode ==
-                                        AssessmentMode.discoveryMode
-                                    ? AssessmentMode.examSimulationMode
-                                    : AssessmentMode.discoveryMode;
-                                context
-                                    .read<QuizSessionCubit>()
-                                    .setAssessmentMode(newMode);
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
+                        // Where you are, and what this question covers.
+                        QuizStaggeredFade(
+                          reduceMotion: reduceMotion,
+                          child: Row(
+                            children: [
+                              Text(
+                                l10n.quizQuestionProgress(
+                                  state.currentIndex + 1,
+                                  state.totalQuestions,
                                 ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      state.assessmentMode ==
-                                          AssessmentMode.discoveryMode
-                                      ? colors.primary.withAlpha(
-                                          isDark ? 50 : 25,
-                                        )
-                                      : colors.warning.withAlpha(
-                                          isDark ? 50 : 25,
-                                        ),
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.badge,
-                                  ),
-                                  border: Border.all(
-                                    color:
-                                        state.assessmentMode ==
-                                            AssessmentMode.discoveryMode
-                                        ? colors.primary.withAlpha(90)
-                                        : colors.warning.withAlpha(90),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      state.assessmentMode ==
-                                              AssessmentMode.discoveryMode
-                                          ? Icons.lightbulb_outline_rounded
-                                          : Icons.timer_outlined,
-                                      size: 13,
-                                      color:
-                                          state.assessmentMode ==
-                                              AssessmentMode.discoveryMode
-                                          ? colors.primary
-                                          : colors.warning,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      state.assessmentMode ==
-                                              AssessmentMode.discoveryMode
-                                          ? 'Discovery Mode (Hints Available)'
-                                          : 'Exam Simulation (Strict)',
-                                      style: typography.caption.bold.copyWith(
-                                        color:
-                                            state.assessmentMode ==
-                                                AssessmentMode.discoveryMode
-                                            ? colors.primary
-                                            : colors.warning,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
+                                style: typography.footnote.bold.copyWith(
+                                  color: colors.textSecondary,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-
-                        // Question Counter & Sub-Topic with Flag indicator
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  l10n.quizQuestionProgress(
-                                    state.currentIndex + 1,
-                                    state.totalQuestions,
-                                  ),
-                                  style: typography.footnote.bold.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
+                              if (state.isCurrentQuestionFlagged) ...[
+                                const SizedBox(width: 8),
+                                QuizTagPill(
+                                  label: 'Flagged',
+                                  color: colors.warning,
+                                  icon: Icons.bookmark_rounded,
                                 ),
-                                if (state.isCurrentQuestionFlagged) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.warning.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.micro,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.bookmark_rounded,
-                                          size: 12,
-                                          color: colors.warning,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          'Flagged',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.warning,
-                                                fontSize: 10,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
                               ],
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colors.primary.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.badge,
-                                  ),
-                                ),
-                                child: Text(
-                                  current.subTopic,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                  ),
-                                ),
+                              const Spacer(),
+                              QuizTagPill(
+                                label: current.subTopic,
+                                color: colors.primary,
+                                maxWidth: 200,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 6),
+                        // The rules for this session, stated once in plain
+                        // words instead of a toggle that can be tapped by
+                        // mistake mid-quiz.
+                        QuizStaggeredFade(
+                          reduceMotion: reduceMotion,
+                          index: 1,
+                          child: Text(
+                            reviewMode
+                                ? 'Review mode. Answers are locked while you '
+                                      'look back.'
+                                : _sessionModeCaption(state),
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textMuted,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
 
                         // Millionaire Mode Lifeline Bar
                         if (state.assessmentMode ==
@@ -599,367 +449,43 @@ class _QuizWorkspaceView extends HookWidget {
                           const SizedBox(height: 14),
                         ],
 
-                        // Active AI Clue (Millionaire Mode)
-                        if (state.assessmentMode ==
-                                AssessmentMode.millionaireMode &&
-                            state.activeClueText != null) ...[
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: colors.syllabotAccent.withValues(
-                                alpha: isDark ? 0.2 : 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                              border: Border.all(
-                                color: colors.syllabotAccent.withValues(
-                                  alpha: 0.4,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.auto_awesome_rounded,
-                                  color: colors.syllabotAccent,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'AI Tutor Clue',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.syllabotAccent,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        state.activeClueText!,
-                                        style: typography.footnote.regular
-                                            .copyWith(
-                                              color: colors.textPrimary,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // Second Chance Shield Notice
-                        if (state.assessmentMode ==
-                                AssessmentMode.millionaireMode &&
-                            state.isSecondChanceActive) ...[
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: colors.success.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                              border: Border.all(
-                                color: colors.success.withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.shield_rounded,
-                                  color: colors.success,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Second Chance Shield Active!',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.success,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Review and try another option without losing your banked progress.',
-                                        style: typography.footnote.regular
-                                            .copyWith(
-                                              color: colors.textPrimary,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ShrinkableButton(
-                                  onTap: () {
-                                    context
-                                        .read<QuizSessionCubit>()
-                                        .useSecondChance();
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.success,
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.badge,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Try Again',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                        ],
-
-                        // Soft-Fail Banked Checkpoint Notice (Millionaire Mode)
-                        if (state.assessmentMode ==
-                                AssessmentMode.millionaireMode &&
-                            state.isSoftFailed) ...[
-                          Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: colors.warning.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                              border: Border.all(
-                                color: colors.warning.withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.verified_user_rounded,
-                                  color: colors.warning,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Safe Checkpoint Secured! 🛡️',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.warning,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Your progress is safely locked at Tier ${state.bankedTier} (+${state.bankedTierPrizeXp} XP). No score reset to zero!',
-                                        style: typography.footnote.regular
-                                            .copyWith(
-                                              color: colors.textPrimary,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ShrinkableButton(
-                                  onTap: () {
-                                    unawaited(
-                                      context
-                                          .read<QuizSessionCubit>()
-                                          .submitQuiz(),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.warning,
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.badge,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Collect XP',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                        ],
+                        // One contextual banner slot: the most urgent message
+                        // wins, so notices never stack over each other.
+                        ?_contextualBanner(context, state),
 
                         // Prompt Card
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfacePrimary,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.panel,
-                            ),
-                            border: Border.all(
-                              color: colors.surfaceBorder,
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.black.withAlpha(isDark ? 30 : 6),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              LatexRichViewer(
-                                text: current.prompt,
-                                style: typography.title3.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  height: 1.4,
-                                ),
-                              ),
-                              if (current.imageUrl != null &&
-                                  current.imageUrl!.trim().isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                AppMultimodalImage(
-                                  imageUrl: current.imageUrl!,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.card,
-                                  ),
-                                ),
-                              ],
-                              if (current.latexFormula != null &&
-                                  current.latexFormula!.trim().isNotEmpty) ...[
-                                const SizedBox(height: 12),
-                                LatexFormulaBlock(
-                                  formula: current.latexFormula!,
-                                ),
-                              ],
-                            ],
-                          ),
+                        QuizStaggeredFade(
+                          index: 2,
+                          reduceMotion: reduceMotion,
+                          child: _QuizPromptCard(question: current),
                         ),
 
-                        // Socratic Hint Feature (Discovery Mode only)
-                        if (state.assessmentMode ==
-                                AssessmentMode.discoveryMode &&
-                            !current.isAnswered) ...[
+                        // A hint is offered before the answer, never after it,
+                        // so it supports thinking instead of replacing it.
+                        if (isPractice &&
+                            !current.isAnswered &&
+                            !reviewMode) ...[
                           const SizedBox(height: 12),
                           if (!state.isHintRevealed)
                             Center(
-                              child: ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  context.read<QuizSessionCubit>().revealHint();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 40 : 20,
-                                    ),
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.card,
-                                    ),
-                                    border: Border.all(
-                                      color: colors.primary.withAlpha(60),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.lightbulb_outline_rounded,
-                                        size: 16,
-                                        color: colors.primary,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'Need a Socratic Hint? (Discovery Mode)',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              child: _GhostButton(
+                                icon: Icons.lightbulb_outline_rounded,
+                                label: 'Need a hint?',
+                                color: colors.primary,
+                                reduceMotion: reduceMotion,
+                                onTap: () => context
+                                    .read<QuizSessionCubit>()
+                                    .revealHint(),
                               ),
                             )
                           else
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: colors.warning.withAlpha(
-                                  isDark ? 30 : 20,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.card,
-                                ),
-                                border: Border.all(
-                                  color: colors.warning.withAlpha(60),
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.psychology_rounded,
-                                    color: colors.warning,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Socratic Clue',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: colors.warning,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Focus on the relationship between ${current.subTopic.isNotEmpty ? current.subTopic : "the core concepts"} and eliminate options with extreme claims.',
-                                          style: typography.footnote.regular
-                                              .copyWith(
-                                                color: colors.textPrimary,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            QuizInlineBanner(
+                              icon: Icons.psychology_rounded,
+                              tone: QuizBannerTone.warning,
+                              title: 'A nudge',
+                              message: _hintText(current),
+                              reduceMotion: reduceMotion,
                             ),
-                          const SizedBox(height: 12),
                         ],
 
                         const SizedBox(height: 16),
@@ -969,136 +495,63 @@ class _QuizWorkspaceView extends HookWidget {
                           final idx = entry.key;
                           final opt = entry.value;
 
-                          // 50:50 Lifeline Masking
-                          if (state.assessmentMode ==
-                                  AssessmentMode.millionaireMode &&
-                              state.isOptionEliminated(idx)) {
+                          // 50:50 takes two wrong options out of play.
+                          if (isMillionaire && state.isOptionEliminated(idx)) {
                             return const SizedBox.shrink();
                           }
 
-                          final isSelected = current.userSelectedAnswer == opt;
-                          final isCorrectOption =
-                              opt.trim().toLowerCase() ==
-                              current.correctAnswer.trim().toLowerCase();
-
-                          return McqOptionCard(
-                            optionText: opt,
-                            index: idx,
-                            isSelected: isSelected,
-                            isAnswered: current.isAnswered,
-                            isCorrect: isCorrectOption,
-                            onTap: () {
-                              context.read<QuizSessionCubit>().selectOption(
-                                opt,
-                              );
-                            },
+                          return QuizStaggeredFade(
+                            index: 3 + idx,
+                            distance: 10,
+                            reduceMotion: reduceMotion,
+                            child: McqOptionCard(
+                              optionText: opt,
+                              index: idx,
+                              reduceMotion: reduceMotion,
+                              state: McqOptionCard.resolveState(
+                                isSelected: isPractice
+                                    ? state.pendingAnswer == opt
+                                    : current.userSelectedAnswer == opt,
+                                isAnswered: current.isAnswered,
+                                isCorrect: _isSameAnswer(
+                                  opt,
+                                  current.correctAnswer,
+                                ),
+                              ),
+                              onTap: () {
+                                // Review is read-only: taps do nothing.
+                                if (reviewMode) return;
+                                context.read<QuizSessionCubit>().selectOption(
+                                  opt,
+                                );
+                              },
+                            ),
                           );
                         }),
 
-                        // Solution Accordion (Appears after answering)
-                        if (current.isAnswered) ...[
-                          ExplanationAccordion(
-                            explanation: current.explanation,
-                            latexFormula: current.latexFormula,
-                          ),
-                          const SizedBox(height: 8),
-                          ShrinkableButton(
-                            onTap: () {
-                              unawaited(HapticFeedback.lightImpact());
-                              final topicTag =
-                                  current.subTopic.trim().isNotEmpty
-                                  ? current.subTopic.trim()
-                                  : (effectiveCourseCode ?? 'Quiz Solution');
-
-                              final contentBuf = StringBuffer(
-                                current.prompt.replaceAll('**', ''),
-                              );
-                              if (current.options.isNotEmpty) {
-                                contentBuf.writeln('\n\nOptions:');
-                                for (final opt in current.options) {
-                                  contentBuf.writeln(
-                                    '• ${opt.replaceAll('**', '')}',
-                                  );
-                                }
-                              }
-                              contentBuf.writeln(
-                                '\nCorrect Answer: ${current.correctAnswer}',
-                              );
-                              if (current.explanation.isNotEmpty) {
-                                contentBuf.writeln(
-                                  '\nExplanation:\n${current.explanation.replaceAll('**', '')}',
-                                );
-                              }
-                              contentBuf.writeln(
-                                '\n💡 Seeking additional insights or alternative solution steps from the cohort.',
-                              );
-
-                              unawaited(
-                                CreatePostBottomSheet.show(
-                                  context,
-                                  lockedTrack: effectiveCourseCode ?? deckTitle,
-                                  initialTitle:
-                                      '[$topicTag] Question Discussion',
-                                  initialContent: contentBuf.toString().trim(),
-                                  initialLatex: current.latexFormula,
-                                  initialSyllabusTag: topicTag,
-                                  initialIsQuestion: true,
-                                  contextBadge: 'CBT Solution • $topicTag',
-                                  onSubmit:
-                                      ({
-                                        required title,
-                                        required content,
-                                        required track,
-                                        latexContent,
-                                        isQuestion = true,
-                                        syllabusTag = 'Quiz Solution',
-                                        isAnonymous = false,
-                                      }) {
-                                        if (locator
-                                            .isRegistered<CommunityHubBloc>()) {
-                                          locator<CommunityHubBloc>().add(
-                                            CreateForumPostEvent(
-                                              title: title,
-                                              content: content,
-                                              track: track,
-                                              latexContent: latexContent,
-                                              isQuestion: true,
-                                              syllabusTag: syllabusTag,
-                                              isAnonymous: isAnonymous,
-                                            ),
-                                          );
-                                          context.showSnackBar(
-                                            message:
-                                                'Question bounty posted to class cohort! 🎯',
-                                          );
-                                        }
-                                      },
-                                ),
-                              );
-                            },
+                        // The verdict stays on the page. A miss explains
+                        // itself and offers one quiet route to the class.
+                        if (showVerdict)
+                          QuizStaggeredFade(
+                            reduceMotion: reduceMotion,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.help_outline_rounded,
-                                    size: 13,
-                                    color: colors.warning,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Confused by this solution? Ask Class Cohort',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.warning,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
+                              padding: const EdgeInsets.only(top: 12),
+                              child: QuizVerdictPanel(
+                                verdict: current.isCorrect
+                                    ? QuizVerdict.correct
+                                    : QuizVerdict.incorrect,
+                                question: current,
+                                hintText: _hintText(current),
+                                askClassLabel: 'Ask the class about this',
+                                onAskClass: () => _askClassAbout(
+                                  context,
+                                  current,
+                                  effectiveCourseCode,
+                                ),
+                                reduceMotion: reduceMotion,
                               ),
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ),
@@ -1106,150 +559,154 @@ class _QuizWorkspaceView extends HookWidget {
               ),
             ],
           ),
-          bottomNavigationBar: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-            decoration: BoxDecoration(
-              color: isDark ? colors.surfacePrimary : colors.surfacePrimary,
-              border: Border(
-                top: BorderSide(
-                  color: colors.surfaceBorder,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 30 : 6),
-                  blurRadius: 10,
-                  offset: const Offset(0, -3),
-                ),
-              ],
+          bottomNavigationBar: _QuizActionBar(
+            state: state,
+            reduceMotion: reduceMotion,
+            reviewMode: reviewMode,
+            onOpenPalette: () => _showQuestionPalette(
+              context,
+              context.read<QuizSessionCubit>(),
+              state,
             ),
-            child: SafeArea(
-              top: false,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 820),
-                  child: Row(
-                    children: [
-                      // Previous Question (Disabled in Millionaire mode as ascent is forward-only)
-                      if (state.assessmentMode !=
-                          AssessmentMode.millionaireMode) ...[
-                        IconButton.outlined(
-                          onPressed: state.canGoPrevious
-                              ? () => context
-                                    .read<QuizSessionCubit>()
-                                    .previousQuestion()
-                              : null,
-                          icon: Icon(
-                            Icons.arrow_back_rounded,
-                            color: state.canGoPrevious
-                                ? colors.textPrimary
-                                : colors.textMuted,
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: colors.surfaceBorder),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                            ),
-                          ),
-                          tooltip: 'Previous Question',
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      // Question Palette / Ladder Drawer in Millionaire mode
-                      IconButton.outlined(
-                        onPressed:
-                            state.assessmentMode ==
-                                AssessmentMode.millionaireMode
-                            ? () => MillionaireLadderDrawer.show(context, state)
-                            : () => _showQuestionPalette(
-                                context,
-                                context.read<QuizSessionCubit>(),
-                                state,
-                              ),
-                        icon: Icon(
-                          state.assessmentMode == AssessmentMode.millionaireMode
-                              ? Icons.military_tech_rounded
-                              : Icons.grid_view_rounded,
-                          color:
-                              state.assessmentMode ==
-                                  AssessmentMode.millionaireMode
-                              ? colors.warning
-                              : colors.textPrimary,
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: colors.surfaceBorder),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.card),
-                          ),
-                        ),
-                        tooltip:
-                            state.assessmentMode ==
-                                AssessmentMode.millionaireMode
-                            ? 'Millionaire Ascent Ladder'
-                            : 'Question Palette',
-                      ),
-                      const SizedBox(width: 12),
-                      // Next / Submit primary action
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (state.assessmentMode ==
-                                      AssessmentMode.millionaireMode &&
-                                  state.isSoftFailed) {
-                                unawaited(
-                                  context.read<QuizSessionCubit>().submitQuiz(),
-                                );
-                              } else if (state.isLastQuestion) {
-                                _confirmSubmit(context, state);
-                              } else {
-                                context.read<QuizSessionCubit>().nextQuestion();
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  (state.assessmentMode ==
-                                          AssessmentMode.millionaireMode &&
-                                      state.isSoftFailed)
-                                  ? colors.warning
-                                  : (state.isLastQuestion
-                                        ? colors.success
-                                        : colors.primary),
-                              foregroundColor: colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.card,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              (state.assessmentMode ==
-                                          AssessmentMode.millionaireMode &&
-                                      state.isSoftFailed)
-                                  ? 'Bank & View Results'
-                                  : (state.isLastQuestion
-                                        ? l10n.submitQuizButton
-                                        : l10n.nextQuestionButton),
-                              style: typography.callout.bold.copyWith(
-                                color: colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            onOpenLadder: () => MillionaireLadderDrawer.show(context, state),
+            onReviewAndSubmit: () => _showQuestionPalette(
+              context,
+              context.read<QuizSessionCubit>(),
+              state,
             ),
+            onExit: () => Navigator.of(context).pop(),
           ),
         );
       },
+    );
+  }
+
+  /// Plain-language description of the session rules, shown once.
+  String _sessionModeCaption(QuizSessionState state) {
+    return switch (state.assessmentMode) {
+      AssessmentMode.discoveryMode => 'Practice mode. Check answers as you go.',
+      AssessmentMode.examSimulationMode =>
+        'Exam mode. Timed, and marks show at the end.',
+      AssessmentMode.millionaireMode =>
+        'Climb mode. Milestones you reach stay banked.',
+    };
+  }
+
+  /// One contextual banner slot: the most urgent message wins.
+  Widget? _contextualBanner(BuildContext context, QuizSessionState state) {
+    if (state.assessmentMode != AssessmentMode.millionaireMode) return null;
+    final cubit = context.read<QuizSessionCubit>();
+
+    if (state.isSoftFailed) {
+      return QuizInlineBanner(
+        icon: Icons.verified_user_rounded,
+        tone: QuizBannerTone.warning,
+        title: 'Tier ${state.bankedTier} is secured',
+        message: '+${state.bankedTierPrizeXp} XP is banked and stays yours.',
+        actionLabel: 'Collect XP',
+        onAction: () => unawaited(cubit.submitQuiz()),
+      );
+    }
+    if (state.isSecondChanceActive) {
+      return QuizInlineBanner(
+        icon: Icons.shield_outlined,
+        tone: QuizBannerTone.success,
+        title: 'Second chance open',
+        message: 'Try another option. Your banked progress is not at risk.',
+        actionLabel: 'Try again',
+        onAction: cubit.useSecondChance,
+      );
+    }
+    final clue = state.activeClueText;
+    if (clue != null) {
+      return QuizInlineBanner(
+        icon: Icons.auto_awesome_rounded,
+        tone: QuizBannerTone.tutor,
+        title: 'Tutor clue',
+        message: clue,
+      );
+    }
+    return null;
+  }
+
+  /// The nudge offered before an answer, and repeated after a miss.
+  String _hintText(QuizQuestionEntity question) {
+    final topic = question.subTopic.trim().isNotEmpty
+        ? question.subTopic.trim()
+        : 'the core idea';
+    return 'Start with $topic, then rule out the options that sound absolute.';
+  }
+
+  /// Opens the class discussion sheet pre-filled with this question.
+  void _askClassAbout(
+    BuildContext context,
+    QuizQuestionEntity question,
+    String? courseCode,
+  ) {
+    unawaited(HapticFeedback.lightImpact());
+    final topicTag = question.subTopic.trim().isNotEmpty
+        ? question.subTopic.trim()
+        : (courseCode ?? 'Quiz question');
+
+    final buffer = StringBuffer(question.prompt.replaceAll('**', ''));
+    if (question.options.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln()
+        ..writeln('Options:');
+      for (final opt in question.options) {
+        buffer.writeln('• ${opt.replaceAll('**', '')}');
+      }
+    }
+    buffer
+      ..writeln()
+      ..writeln('Correct answer: ${question.correctAnswer}');
+    if (question.explanation.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Explanation:')
+        ..writeln(question.explanation.replaceAll('**', ''));
+    }
+    buffer
+      ..writeln()
+      ..writeln('Would like a second explanation or another method.');
+
+    unawaited(
+      CreatePostBottomSheet.show(
+        context,
+        lockedTrack: courseCode ?? deckTitle,
+        initialTitle: '[$topicTag] Question discussion',
+        initialContent: buffer.toString().trim(),
+        initialLatex: question.latexFormula,
+        initialSyllabusTag: topicTag,
+        initialIsQuestion: true,
+        contextBadge: 'Practice question • $topicTag',
+        onSubmit:
+            ({
+              required title,
+              required content,
+              required track,
+              latexContent,
+              isQuestion = true,
+              syllabusTag = 'Quiz question',
+              isAnonymous = false,
+            }) {
+              if (locator.isRegistered<CommunityHubBloc>()) {
+                locator<CommunityHubBloc>().add(
+                  CreateForumPostEvent(
+                    title: title,
+                    content: content,
+                    track: track,
+                    latexContent: latexContent,
+                    isQuestion: true,
+                    syllabusTag: syllabusTag,
+                    isAnonymous: isAnonymous,
+                  ),
+                );
+                context.showSnackBar(message: 'Posted to your class.');
+              }
+            },
+      ),
     );
   }
 
@@ -1263,15 +720,15 @@ class _QuizWorkspaceView extends HookWidget {
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          title: const Text('Exit CBT Exam?'),
+          title: const Text('Leave this quiz?'),
           content: Text(
-            'You have answered ${state.answeredCount} of ${state.totalQuestions} questions.\n\n'
-            'Exiting now will discard your ongoing CBT simulator progress.',
+            'You have answered ${state.answeredCount} of ${state.totalQuestions}.\n\n'
+            'If you come back to this deck later you can start again in a minute.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Resume'),
+              child: const Text('Keep going'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1282,7 +739,7 @@ class _QuizWorkspaceView extends HookWidget {
                 backgroundColor: context.colors.error,
                 foregroundColor: context.colors.white,
               ),
-              child: const Text('Exit Exam'),
+              child: Text(isExamSession(state) ? 'Leave exam' : 'Leave quiz'),
             ),
           ],
         ),
@@ -1295,27 +752,25 @@ class _QuizWorkspaceView extends HookWidget {
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          title: const Text('Submit CBT Mock Exam?'),
+          title: const Text('Finish and mark your answers?'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Are you sure you want to finalize and grade your test answers?',
-              ),
+              const Text('Here is where you stand.'),
               const SizedBox(height: 14),
               Text(
-                '• Answered: ${state.answeredCount} / ${state.totalQuestions}',
+                '• Answered: ${state.answeredCount} of ${state.totalQuestions}',
               ),
-              Text('• Unanswered: ${state.unansweredCount}'),
+              Text('• Left blank: ${state.unansweredCount}'),
               if (state.flaggedCount > 0)
-                Text('• Flagged for review: ${state.flaggedCount}'),
+                Text('• Flagged to look at again: ${state.flaggedCount}'),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Review Questions'),
+              child: const Text('Go back'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -1326,7 +781,7 @@ class _QuizWorkspaceView extends HookWidget {
                 backgroundColor: context.colors.primary,
                 foregroundColor: context.colors.white,
               ),
-              child: const Text('Submit Now'),
+              child: const Text('See results'),
             ),
           ],
         ),
@@ -1334,20 +789,19 @@ class _QuizWorkspaceView extends HookWidget {
     );
   }
 
+  /// Question navigator: counts first, the grid next, one way out.
   void _showQuestionPalette(
     BuildContext context,
     QuizSessionCubit cubit,
     QuizSessionState state,
   ) {
     final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
 
     unawaited(
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: isDark
+        backgroundColor: context.isDarkMode
             ? colors.backgroundPrimary
             : colors.surfacePrimary,
         shape: const RoundedRectangleBorder(
@@ -1355,226 +809,602 @@ class _QuizWorkspaceView extends HookWidget {
             top: Radius.circular(AppRadius.dialog),
           ),
         ),
-        builder: (sheetCtx) {
-          return Align(
-            alignment: Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: colors.surfaceBorder,
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.micro,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Question Navigation Palette',
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: colors.textSecondary,
-                            ),
-                            onPressed: () => Navigator.of(sheetCtx).pop(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _legendIndicator(
-                            label: 'Answered (${state.answeredCount})',
-                            color: colors.primary,
-                            colors: colors,
-                            typography: typography,
-                          ),
-                          _legendIndicator(
-                            label: 'Flagged (${state.flaggedCount})',
-                            color: colors.warning,
-                            colors: colors,
-                            typography: typography,
-                          ),
-                          _legendIndicator(
-                            label: 'Pending (${state.unansweredCount})',
-                            color: colors.surfaceBorder,
-                            colors: colors,
-                            typography: typography,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxHeight: MediaQuery.sizeOf(sheetCtx).height * 0.45,
-                        ),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          itemCount: state.totalQuestions,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 5,
-                                mainAxisSpacing: 10,
-                                crossAxisSpacing: 10,
-                                childAspectRatio: 1.15,
-                              ),
-                          itemBuilder: (gridCtx, index) {
-                            final q = state.questions[index];
-                            final isCurrent = index == state.currentIndex;
-                            final isAnswered = q.isAnswered;
-                            final isFlagged = state.isQuestionFlagged(q.id);
+        builder: (sheetCtx) => _QuestionPaletteSheet(
+          state: state,
+          onJump: (index) {
+            Navigator.of(sheetCtx).pop();
+            cubit.jumpToQuestion(index);
+          },
+          onSubmit: reviewMode
+              ? null
+              : () {
+                  Navigator.of(sheetCtx).pop();
+                  _confirmSubmit(context, state);
+                },
+        ),
+      ),
+    );
+  }
+}
 
-                            Color bgColor;
-                            Color textColor;
-                            Border? border;
+/// True when the session behaves like a real paper: no marks until the end.
+bool isExamSession(QuizSessionState state) =>
+    state.assessmentMode == AssessmentMode.examSimulationMode;
 
-                            if (isCurrent) {
-                              bgColor = colors.primary.withValues(alpha: 0.2);
-                              textColor = colors.primary;
-                              border = Border.all(
-                                color: colors.primary,
-                                width: 2,
-                              );
-                            } else if (isFlagged) {
-                              bgColor = colors.warning.withValues(alpha: 0.15);
-                              textColor = colors.warning;
-                              border = Border.all(
-                                color: colors.warning.withValues(alpha: 0.5),
-                              );
-                            } else if (isAnswered) {
-                              bgColor = colors.primary;
-                              textColor = colors.white;
-                            } else {
-                              bgColor = colors.surfaceSecondary;
-                              textColor = colors.textPrimary;
-                              border = Border.all(color: colors.surfaceBorder);
-                            }
+/// Answer comparison that ignores decoration and case.
+bool _isSameAnswer(String option, String correctAnswer) {
+  final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+    correctAnswer,
+  ).toLowerCase();
+  final cleanOption = QuizContentSanitizer.cleanOptionText(
+    option,
+  ).toLowerCase();
+  if (cleanCorrect.isEmpty) return false;
+  return cleanCorrect == cleanOption ||
+      option.trim().toLowerCase() == correctAnswer.trim().toLowerCase();
+}
 
-                            return InkWell(
-                              onTap: () {
-                                Navigator.of(sheetCtx).pop();
-                                cubit.jumpToQuestion(index);
-                              },
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.badge,
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: bgColor,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.badge,
-                                  ),
-                                  border: border,
-                                ),
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Text(
-                                      '${index + 1}',
-                                      style: typography.callout.bold.copyWith(
-                                        color: textColor,
-                                      ),
-                                    ),
-                                    if (isFlagged)
-                                      Positioned(
-                                        top: 3,
-                                        right: 3,
-                                        child: Icon(
-                                          Icons.bookmark_rounded,
-                                          size: 11,
-                                          color: isCurrent
-                                              ? colors.warning
-                                              : textColor,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+/// The question itself, with its figure and working, on one calm card.
+class _QuizPromptCard extends StatelessWidget {
+  const _QuizPromptCard({required this.question});
+
+  final QuizQuestionEntity question;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        borderRadius: AppRadius.radiusPanel,
+        border: Border.all(color: colors.surfaceBorder, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: colors.black.withAlpha(isDark ? 30 : 6),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LatexRichViewer(
+            text: question.prompt,
+            style: typography.title3.bold.copyWith(
+              color: colors.textPrimary,
+              height: 1.4,
+            ),
+          ),
+          if (question.imageUrl != null &&
+              question.imageUrl!.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            AppMultimodalImage(
+              imageUrl: question.imageUrl!,
+              borderRadius: AppRadius.radiusCard,
+            ),
+          ],
+          if (question.latexFormula != null &&
+              question.latexFormula!.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            LatexFormulaBlock(formula: question.latexFormula!),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Low-weight outlined button for optional offers such as hints.
+class _GhostButton extends StatelessWidget {
+  const _GhostButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    required this.reduceMotion,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  final bool reduceMotion;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return ShrinkableButton(
+      onTap: onTap,
+      semanticLabel: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: color.withAlpha(isDark ? 40 : 20),
+          borderRadius: AppRadius.radiusCard,
+          border: Border.all(color: color.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: typography.caption.bold.copyWith(color: color),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Single primary action for the quiz, pinned where thumbs already are.
+class _QuizActionBar extends StatelessWidget {
+  const _QuizActionBar({
+    required this.state,
+    required this.reduceMotion,
+    required this.reviewMode,
+    required this.onOpenPalette,
+    required this.onOpenLadder,
+    required this.onReviewAndSubmit,
+    required this.onExit,
+  });
+
+  final QuizSessionState state;
+  final bool reduceMotion;
+  final bool reviewMode;
+  final VoidCallback onOpenPalette;
+  final VoidCallback onOpenLadder;
+  final VoidCallback onReviewAndSubmit;
+  final VoidCallback onExit;
+
+  /// Next step for the current mode: Check, Continue, Review or Bank.
+  ({Color color, String label, VoidCallback? onPressed}) _resolveAction(
+    AppThemeColorsExtension colors,
+    QuizSessionCubit cubit,
+  ) {
+    final question = state.currentQuestion;
+    final isAnswered = question?.isAnswered ?? false;
+
+    if (reviewMode) {
+      if (state.isLastQuestion) {
+        return (
+          color: colors.primary,
+          label: 'Back to results',
+          onPressed: onExit,
+        );
+      }
+      return (
+        color: colors.primary,
+        label: 'Next question',
+        onPressed: cubit.nextQuestion,
+      );
+    }
+
+    if (state.assessmentMode == AssessmentMode.millionaireMode) {
+      if (state.isSoftFailed) {
+        return (
+          color: colors.warning,
+          label: 'Bank and see results',
+          onPressed: () => unawaited(cubit.submitQuiz()),
+        );
+      }
+      if (!isAnswered) {
+        return (
+          color: colors.primary,
+          label: 'Pick an answer',
+          onPressed: null,
+        );
+      }
+      return state.isLastQuestion
+          ? (
+              color: colors.success,
+              label: 'See results',
+              onPressed: () => unawaited(cubit.submitQuiz()),
+            )
+          : (
+              color: colors.primary,
+              label: 'Next tier',
+              onPressed: cubit.nextQuestion,
+            );
+    }
+
+    if (isExamSession(state)) {
+      if (state.answeredCount == 0) {
+        return (
+          color: colors.primary,
+          label: 'Answer or flag a question',
+          onPressed: null,
+        );
+      }
+      return (
+        color: colors.primary,
+        label: state.unansweredCount == 0
+            ? 'Review and finish'
+            : 'Review ${state.unansweredCount} left blank',
+        onPressed: onReviewAndSubmit,
+      );
+    }
+
+    if (isAnswered) {
+      return state.isLastQuestion
+          ? (
+              color: colors.success,
+              label: 'See results',
+              onPressed: () => unawaited(cubit.submitQuiz()),
+            )
+          : (
+              color: colors.primary,
+              label: 'Continue',
+              onPressed: cubit.nextQuestion,
+            );
+    }
+
+    return (
+      color: colors.primary,
+      label: 'Check',
+      onPressed: state.hasPendingAnswer ? cubit.checkAnswer : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final cubit = context.read<QuizSessionCubit>();
+    final action = _resolveAction(colors, cubit);
+    final isMillionaire =
+        state.assessmentMode == AssessmentMode.millionaireMode;
+    final canStepBack = !isMillionaire && state.canGoPrevious;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      decoration: BoxDecoration(
+        color: colors.surfacePrimary,
+        border: Border(top: BorderSide(color: colors.surfaceBorder)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.black.withAlpha(context.isDarkMode ? 30 : 6),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: Row(
+              children: [
+                if (!isMillionaire) ...[
+                  IconButton.outlined(
+                    onPressed: canStepBack ? cubit.previousQuestion : null,
+                    icon: Icon(
+                      Icons.arrow_back_rounded,
+                      color: canStepBack
+                          ? colors.textPrimary
+                          : colors.textMuted,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: colors.surfaceBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                    ),
+                    tooltip: 'Previous question',
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                IconButton.outlined(
+                  onPressed: isMillionaire ? onOpenLadder : onOpenPalette,
+                  icon: Icon(
+                    isMillionaire
+                        ? Icons.military_tech_rounded
+                        : Icons.grid_view_rounded,
+                    color: isMillionaire ? colors.warning : colors.textPrimary,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: colors.surfaceBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppRadius.radiusCard,
+                    ),
+                  ),
+                  tooltip: isMillionaire ? 'Your climb' : 'All questions',
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: reduceMotion ? Duration.zero : AppMotion.standard,
+                    switchInCurve: AppMotion.easeOutCubic,
+                    switchOutCurve: AppMotion.exitCurve,
+                    child: SizedBox(
+                      key: ValueKey(action.label),
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: action.onPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: action.color,
+                          foregroundColor: colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppRadius.radiusCard,
+                          ),
+                        ),
+                        child: Text(
+                          action.label,
+                          style: typography.callout.bold.copyWith(
+                            color: colors.white,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(sheetCtx).pop();
-                            _confirmSubmit(context, state);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colors.primary,
-                            foregroundColor: colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.card,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            'Submit Mock Exam (${state.answeredCount}/${state.totalQuestions} Answered)',
-                            style: typography.callout.bold.copyWith(
-                              color: colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet listing every question and how far along it is.
+class _QuestionPaletteSheet extends StatelessWidget {
+  const _QuestionPaletteSheet({
+    required this.state,
+    required this.onJump,
+    this.onSubmit,
+  });
+
+  final QuizSessionState state;
+  final ValueChanged<int> onJump;
+
+  /// Null in review mode: there is nothing left to submit.
+  final VoidCallback? onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final reduceMotion = quizReduceMotion(context);
+    final isExam = isExamSession(state);
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.surfaceBorder,
+                      borderRadius: AppRadius.radiusMicro,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'All questions',
+                      style: typography.title3.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colors.textSecondary,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: QuizStatChip(
+                        label: 'Answered',
+                        value: '${state.answeredCount}',
+                        color: colors.primary,
+                        reduceMotion: reduceMotion,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: QuizStatChip(
+                        label: 'Flagged',
+                        value: '${state.flaggedCount}',
+                        color: colors.warning,
+                        reduceMotion: reduceMotion,
+                        staggerIndex: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: QuizStatChip(
+                        label: 'Left blank',
+                        value: '${state.unansweredCount}',
+                        color: colors.textMuted,
+                        reduceMotion: reduceMotion,
+                        staggerIndex: 2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.4,
+                  ),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.only(top: 4),
+                    itemCount: state.totalQuestions,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 5,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 1.15,
+                        ),
+                    itemBuilder: (gridCtx, index) {
+                      return QuizStaggeredFade(
+                        distance: 8,
+                        index: (index % 10) ~/ 2,
+                        reduceMotion: reduceMotion,
+                        child: _PaletteTile(
+                          number: index + 1,
+                          status: _tileStatus(state, index),
+                          onTap: () => onJump(index),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (onSubmit != null)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: onSubmit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.radiusCard,
+                        ),
+                      ),
+                      child: Text(
+                        isExam
+                            ? 'Submit mock exam (${state.answeredCount} of '
+                                  '${state.totalQuestions} answered)'
+                            : 'Finish practice quiz (${state.answeredCount} '
+                                  'of ${state.totalQuestions} answered)',
+                        style: typography.callout.bold.copyWith(
+                          color: colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _legendIndicator({
-    required String label,
-    required Color color,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+  _PaletteTileStatus _tileStatus(QuizSessionState state, int index) {
+    final question = state.questions[index];
+    if (index == state.currentIndex) return _PaletteTileStatus.current;
+    if (state.isQuestionFlagged(question.id)) {
+      return _PaletteTileStatus.flagged;
+    }
+    return question.isAnswered
+        ? _PaletteTileStatus.answered
+        : _PaletteTileStatus.blank;
+  }
+}
+
+enum _PaletteTileStatus { current, flagged, answered, blank }
+
+class _PaletteTile extends StatelessWidget {
+  const _PaletteTile({
+    required this.number,
+    required this.status,
+    required this.onTap,
+  });
+
+  final int number;
+  final _PaletteTileStatus status;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    final decoration = switch (status) {
+      _PaletteTileStatus.current => BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.2),
+        borderRadius: AppRadius.radiusBadge,
+        border: Border.all(color: colors.primary, width: 2),
+      ),
+      _PaletteTileStatus.flagged => BoxDecoration(
+        color: colors.warning.withValues(alpha: 0.15),
+        borderRadius: AppRadius.radiusBadge,
+        border: Border.all(color: colors.warning.withValues(alpha: 0.5)),
+      ),
+      _PaletteTileStatus.answered => BoxDecoration(
+        color: colors.primary,
+        borderRadius: AppRadius.radiusBadge,
+      ),
+      _PaletteTileStatus.blank => BoxDecoration(
+        color: colors.surfaceSecondary,
+        borderRadius: AppRadius.radiusBadge,
+        border: Border.all(color: colors.surfaceBorder),
+      ),
+    };
+    final textColor = switch (status) {
+      _PaletteTileStatus.current => colors.primary,
+      _PaletteTileStatus.flagged => colors.warning,
+      _PaletteTileStatus.answered => colors.white,
+      _PaletteTileStatus.blank => colors.textPrimary,
+    };
+
+    return Semantics(
+      button: true,
+      label: 'Question $number',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.radiusBadge,
+        child: AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
+          decoration: decoration,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Text(
+                '$number',
+                style: typography.callout.bold.copyWith(color: textColor),
+              ),
+              if (status == _PaletteTileStatus.flagged)
+                Positioned(
+                  top: 3,
+                  right: 3,
+                  child: Icon(
+                    Icons.bookmark_rounded,
+                    size: 11,
+                    color: textColor,
+                  ),
+                ),
+            ],
           ),
         ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: typography.caption.regular.copyWith(
-            color: colors.textSecondary,
-            fontSize: 11,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

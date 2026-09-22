@@ -248,7 +248,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               },
               child: Text(
                 'Dismiss',
-                style: TextStyle(color: colors.textSecondary),
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -413,7 +415,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               onPressed: () => Navigator.of(dialogCtx).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: colors.textSecondary),
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             ShrinkableButton(
@@ -559,7 +563,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               onPressed: () => Navigator.of(dialogCtx).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: colors.textSecondary),
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
           ],
@@ -858,10 +864,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                             child: Center(
                               child: Text(
                                 '${state.unreadChatCount}',
-                                style: TextStyle(
+                                style: typography.caption.bold.copyWith(
                                   color: colors.white,
                                   fontSize: 9,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -1756,6 +1761,7 @@ class _FocusParticipantTile extends StatelessWidget {
               size: 56,
               isGlowing: !participant.isAway,
               isDark: cIsDark,
+              glowColor: statusColor,
             ),
             if (isVoicePodEnabled &&
                 !participant.isMuted &&
@@ -2022,17 +2028,8 @@ class _ActiveSpeakersBanner extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: colors.recallEasy,
-            ),
-          ),
+          _InRoomEqualizerVisualizer(color: colors.recallEasy),
           const SizedBox(width: 8),
-          Icon(Icons.volume_up_rounded, size: 14, color: colors.recallEasy),
-          const SizedBox(width: 6),
           Flexible(
             child: Text(
               '$names speaking',
@@ -2060,6 +2057,7 @@ class _GlowAvatar extends StatefulWidget {
     required this.size,
     required this.isGlowing,
     required this.isDark,
+    this.glowColor,
   });
 
   final String name;
@@ -2068,6 +2066,7 @@ class _GlowAvatar extends StatefulWidget {
   final double size;
   final bool isGlowing;
   final bool isDark;
+  final Color? glowColor;
 
   @override
   State<_GlowAvatar> createState() => _GlowAvatarState();
@@ -2100,13 +2099,14 @@ class _GlowAvatarState extends State<_GlowAvatar>
   @override
   Widget build(BuildContext context) {
     final cColors = context.colors;
+    final effectiveGlowColor = widget.glowColor ?? cColors.primary;
 
     if (!widget.isGlowing) {
       return AppAvatar(
         customDimension: widget.size,
         name: widget.name,
-        backgroundColor: cColors.primary.withAlpha(50),
-        foregroundColor: cColors.primary,
+        backgroundColor: effectiveGlowColor.withAlpha(50),
+        foregroundColor: effectiveGlowColor,
       );
     }
 
@@ -2119,8 +2119,8 @@ class _GlowAvatarState extends State<_GlowAvatar>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: cColors.primary.withValues(
-                alpha: _pulse.value.clamp(0.2, 1.0),
+              color: effectiveGlowColor.withValues(
+                alpha: _pulse.value.clamp(0.2, 1),
               ),
               width: 2,
             ),
@@ -2131,9 +2131,71 @@ class _GlowAvatarState extends State<_GlowAvatar>
       child: AppAvatar(
         customDimension: widget.size,
         name: widget.name,
-        backgroundColor: cColors.primary.withAlpha(60),
-        foregroundColor: cColors.primary,
-        borderColor: cColors.primary.withAlpha(150),
+        backgroundColor: effectiveGlowColor.withAlpha(60),
+        foregroundColor: effectiveGlowColor,
+        borderColor: effectiveGlowColor.withAlpha(150),
+      ),
+    );
+  }
+}
+
+class _InRoomEqualizerVisualizer extends StatefulWidget {
+  const _InRoomEqualizerVisualizer({required this.color});
+
+  final Color color;
+
+  @override
+  State<_InRoomEqualizerVisualizer> createState() =>
+      _InRoomEqualizerVisualizerState();
+}
+
+class _InRoomEqualizerVisualizerState extends State<_InRoomEqualizerVisualizer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+      // ignore: discarded_futures — TickerFuture from repeat() is intentionally not awaited per Flutter convention
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final val = _controller.value;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBar(3 + val * 7),
+            const SizedBox(width: 2),
+            _buildBar(10 - val * 6),
+            const SizedBox(width: 2),
+            _buildBar(5 + val * 5),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBar(double height) {
+    return Container(
+      width: 2.5,
+      height: height.clamp(3, 11),
+      decoration: BoxDecoration(
+        color: widget.color,
+        borderRadius: BorderRadius.circular(2),
       ),
     );
   }
@@ -2650,7 +2712,7 @@ class _RoomControlDrawer extends StatelessWidget {
             // Scrollable Content
             Expanded(
               child: ListView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
                   // Mode Switcher Section

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -97,7 +98,7 @@ class _StudyHubView extends HookWidget {
               child: tabController.index == 0
                   ? PlatformHoverBuilder(
                       builder: (context, isHovered, child) => AnimatedScale(
-                        scale: isHovered ? 1.03 : 1.0,
+                        scale: isHovered ? 1.03 : 1,
                         duration: AppMotion.snappy,
                         curve: AppMotion.easeOutCubic,
                         child: ShrinkableButton(
@@ -175,7 +176,7 @@ class _StudyHubView extends HookWidget {
                     )
                   : PlatformHoverBuilder(
                       builder: (context, isHovered, child) => AnimatedScale(
-                        scale: isHovered ? 1.03 : 1.0,
+                        scale: isHovered ? 1.03 : 1,
                         duration: AppMotion.snappy,
                         curve: AppMotion.easeOutCubic,
                         child: ShrinkableButton(
@@ -359,7 +360,10 @@ class _LiveRoomsTab extends StatelessWidget {
                           shape: BoxShape.circle,
                           color: colors.error,
                         ),
-                      ),
+                      )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .fadeIn(duration: 800.ms)
+                          .scaleXY(begin: 0.85, end: 1, duration: 800.ms),
                       const SizedBox(width: 8),
                       Text(
                         'Live Focus Rooms',
@@ -425,7 +429,16 @@ class _LiveRoomsTab extends StatelessWidget {
                               );
                             },
                           ),
-                        );
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
                       },
                       childCount: state.studyRooms.length,
                     ),
@@ -447,7 +460,7 @@ class _LiveRoomsTab extends StatelessWidget {
                       ),
                       PlatformHoverBuilder(
                         builder: (context, isHovered, child) => AnimatedScale(
-                          scale: isHovered ? 1.05 : 1.0,
+                          scale: isHovered ? 1.05 : 1,
                           duration: AppMotion.snappy,
                           curve: AppMotion.easeOutCubic,
                           child: ShrinkableButton(
@@ -523,7 +536,16 @@ class _LiveRoomsTab extends StatelessWidget {
                               );
                             },
                           ),
-                        );
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
                       },
                       childCount: state.studyCircles.length,
                     ),
@@ -631,7 +653,16 @@ class _DeckMarketplaceTab extends StatelessWidget {
                               );
                             },
                           ),
-                        );
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
                       },
                       childCount: state.sharedDecks.length,
                     ),

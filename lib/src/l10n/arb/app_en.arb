@@ -36,6 +36,14 @@
     "@onboardingNextSemantics": {
         "description": "Accessibility label for next slide button"
     },
+    "onboardingPreviousSlide": "Previous",
+    "@onboardingPreviousSlide": {
+        "description": "Back button label shown on wide-screen onboarding"
+    },
+    "onboardingPreviousSlideSemantics": "Go back to previous onboarding slide",
+    "@onboardingPreviousSlideSemantics": {
+        "description": "Accessibility label for previous slide button"
+    },
     "onboardingGetStartedSemantics": "Get Started with Kortexify and finish onboarding",
     "@onboardingGetStartedSemantics": {
         "description": "Accessibility label for get started button"
@@ -4308,5 +4316,135 @@
     "whiteboardTabLabel": "Whiteboard",
     "@whiteboardTabLabel": {
         "description": "Label for whiteboard tab in live study room"
+    },
+    "deckTileUpToDate": "Up to date",
+    "@deckTileUpToDate": {
+        "description": "Calm state shown on a deck tile when nothing is due"
+    },
+    "deckTileDueLabel": "due",
+    "@deckTileDueLabel": {
+        "description": "Small label under the due-count number on a deck tile"
+    },
+    "deckTileOptionsMenu": "Deck options",
+    "@deckTileOptionsMenu": {
+        "description": "Tooltip for the deck tile overflow menu button"
+    },
+    "decksMenuDetails": "Deck details",
+    "@decksMenuDetails": {
+        "description": "Overflow menu item opening deck details"
+    },
+    "decksMenuMillionaire": "Practice: Millionaire mode",
+    "@decksMenuMillionaire": {
+        "description": "Overflow menu item to start Millionaire-mode practice"
+    },
+    "decksMenuExport": "Export deck",
+    "@decksMenuExport": {
+        "description": "Overflow menu export action"
+    },
+    "decksMenuDelete": "Delete deck",
+    "@decksMenuDelete": {
+        "description": "Overflow menu destructive delete action"
+    },
+    "decksSprintLabel": "Change the pace",
+    "@decksSprintLabel": {
+        "description": "Muted label above the sprint shortcut chips"
+    },
+    "decksSprintQuick10": "Quick 10",
+    "@decksSprintQuick10": {
+        "description": "Sprint chip for a 10-card session"
+    },
+    "decksSprintPower20": "Power 20",
+    "@decksSprintPower20": {
+        "description": "Sprint chip for a 20-card session"
+    },
+    "decksSprintSpeedRun": "Speed Run (3m)",
+    "@decksSprintSpeedRun": {
+        "description": "Sprint chip for a timed 3-minute run"
+    },
+    "decksSprintHyperdrive": "Hyperdrive",
+    "@decksSprintHyperdrive": {
+        "description": "Sprint chip for deep-focus hyperdrive mode"
+    },
+    "decksClearSearch": "Clear search",
+    "@decksClearSearch": {
+        "description": "Accessibility label for the search field clear button"
+    },
+    "decksHeroWaitingTitle": "{count, plural, =1{1 card is waiting} other{{count} cards are waiting}}",
+    "@decksHeroWaitingTitle": {
+        "description": "Headline of the Today hero card when cards are due",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "decksHeroEstimate": "about {minutes} min",
+    "@decksHeroEstimate": {
+        "description": "Estimated effort line on the Today hero card",
+        "placeholders": {
+            "minutes": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "decksHeroReviewCta": "{count, plural, =1{Review 1 due card} other{Review {count} due cards}}",
+    "@decksHeroReviewCta": {
+        "description": "Primary call-to-action on the Today hero card",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "decksHeroAllCaughtUp": "All caught up",
+    "@decksHeroAllCaughtUp": {
+        "description": "Hero card headline when nothing is due"
+    },
+    "decksHeroAllCaughtUpSubtitle": "Nothing due right now — take the win.",
+    "@decksHeroAllCaughtUpSubtitle": {
+        "description": "Hero card subtitle when nothing is due"
+    },
+    "decksHeroBrowseDecks": "Browse your decks",
+    "@decksHeroBrowseDecks": {
+        "description": "Secondary action on the calm hero card"
+    },
+    "studyRatingSemantics": "{label}, review again in about {preview}",
+    "@studyRatingSemantics": {
+        "description": "Screen-reader label for a rating button with interval preview",
+        "placeholders": {
+            "label": {
+                "type": "String"
+            },
+            "preview": {
+                "type": "String"
+            }
+        }
+    },
+    "studyMilestoneCrushed": "{count, plural, =1{1 card down — keep rolling} other{{count} cards down — keep rolling}}",
+    "@studyMilestoneCrushed": {
+        "description": "Non-blocking milestone banner text during sprints",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "10"
+            }
+        }
+    },
+    "studyMilestoneFinish": "Finish sprint",
+    "@studyMilestoneFinish": {
+        "description": "Action link on the milestone banner to end the sprint early"
+    },
+    "sessionSummaryNextReview": "Next review batch in about {days, plural, =1{1 day} other{{days} days}}",
+    "@sessionSummaryNextReview": {
+        "description": "Forward-looking line on the session summary",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
     }
 }

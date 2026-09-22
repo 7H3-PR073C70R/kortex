@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -133,9 +135,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
               color: isDark
                   ? colors.surfaceSecondary.withAlpha(160)
                   : colors.surfacePrimary.withAlpha(215),
-              border: Border.all(
-                color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
-              ),
+              // Removed border
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,7 +268,9 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: rowDays.map((day) {
+                              children: rowDays.asMap().entries.map((entry) {
+                                final colIdx = entry.key;
+                                final day = entry.value;
                                 final isSelected =
                                     _selectedDay != null &&
                                     _isSameDay(_selectedDay!.date, day.date);
@@ -279,45 +281,59 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                                 );
 
                                 return Semantics(
-                                  label:
-                                      '${day.date.day}/${day.date.month}: '
-                                      '${day.cardsReviewed} cards',
-                                  child: InkWell(
-                                    onTap: () {
-                                      unawaited(
-                                        HapticFeedback.selectionClick(),
-                                      );
-                                      setState(() {
-                                        _selectedDay = isSelected ? null : day;
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.micro,
-                                    ),
-                                    child: AnimatedContainer(
-                                      duration: AppMotion.snappy,
-                                      curve: AppMotion.easeOutCubic,
-                                      width: cellWidth,
-                                      height: cellWidth,
-                                      decoration: BoxDecoration(
-                                        color: color,
+                                      label:
+                                          '${day.date.day}/${day.date.month}: '
+                                          '${day.cardsReviewed} cards',
+                                      child: InkWell(
+                                        onTap: () {
+                                          unawaited(
+                                            HapticFeedback.selectionClick(),
+                                          );
+                                          setState(() {
+                                            _selectedDay = isSelected
+                                                ? null
+                                                : day;
+                                          });
+                                        },
                                         borderRadius: BorderRadius.circular(
                                           AppRadius.micro,
                                         ),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? colors.textPrimary
-                                              : (day.intensityLevel > 0
-                                                    ? colors.primary.withAlpha(
-                                                        isDark ? 90 : 50,
-                                                      )
-                                                    : colors.transparent),
-                                          width: isSelected ? 1.8 : 0.8,
+                                        child: AnimatedContainer(
+                                          duration: AppMotion.snappy,
+                                          curve: AppMotion.easeOutCubic,
+                                          width: cellWidth,
+                                          height: cellWidth,
+                                          decoration: BoxDecoration(
+                                            color: color,
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.micro,
+                                            ),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? colors.textPrimary
+                                                  : (day.intensityLevel > 0
+                                                        ? colors.primary
+                                                              .withAlpha(
+                                                                isDark
+                                                                    ? 90
+                                                                    : 50,
+                                                              )
+                                                        : colors.transparent),
+                                              width: isSelected ? 1.8 : 0.8,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                );
+                                    )
+                                    .animate(
+                                      delay: (rowIdx * 30 + colIdx * 30).ms,
+                                    )
+                                    .fadeIn(duration: 350.ms)
+                                    .scaleXY(
+                                      begin: 0.6,
+                                      end: 1,
+                                      curve: Curves.easeOutCubic,
+                                    );
                               }).toList(),
                             ),
                           );
@@ -437,42 +453,50 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
 
                 // 3 Metrics Chips Row
                 Row(
-                  children: [
-                    Expanded(
-                      child: _MetricChip(
-                        label: l10n.dashboardRetentionChip,
-                        value: '$overallRetention%',
-                        icon: Icons.psychology_rounded,
-                        color: colors.success,
-                        colors: colors,
-                        isDark: isDark,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _MetricChip(
-                        label: l10n.dashboardMasteredChip,
-                        value: '${widget.analytics.totalCardsMastered}',
-                        icon: Icons.check_circle_outline_rounded,
-                        color: colors.primary,
-                        colors: colors,
-                        isDark: isDark,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _MetricChip(
-                        label: l10n.dashboardStudyTimeChip,
-                        value: l10n.dashboardStudyTimeMinutes(
-                          widget.analytics.weeklyMinutesStudied,
-                        ),
-                        icon: Icons.schedule_rounded,
-                        color: colors.syllabotAccent,
-                        colors: colors,
-                        isDark: isDark,
-                      ),
-                    ),
-                  ],
+                  children:
+                      <Widget>[
+                            Expanded(
+                              child: _MetricChip(
+                                label: l10n.dashboardRetentionChip,
+                                value: '$overallRetention%',
+                                icon: Icons.psychology_rounded,
+                                color: colors.success,
+                                colors: colors,
+                                isDark: isDark,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MetricChip(
+                                label: l10n.dashboardMasteredChip,
+                                value: '${widget.analytics.totalCardsMastered}',
+                                icon: Icons.check_circle_outline_rounded,
+                                color: colors.primary,
+                                colors: colors,
+                                isDark: isDark,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MetricChip(
+                                label: l10n.dashboardStudyTimeChip,
+                                value: l10n.dashboardStudyTimeMinutes(
+                                  widget.analytics.weeklyMinutesStudied,
+                                ),
+                                icon: Icons.schedule_rounded,
+                                color: colors.syllabotAccent,
+                                colors: colors,
+                                isDark: isDark,
+                              ),
+                            ),
+                          ]
+                          .animate(interval: 50.ms, delay: 200.ms)
+                          .fadeIn(duration: 350.ms)
+                          .slideY(
+                            begin: 0.1,
+                            end: 0,
+                            curve: Curves.easeOutCubic,
+                          ),
                 ),
               ],
             ),

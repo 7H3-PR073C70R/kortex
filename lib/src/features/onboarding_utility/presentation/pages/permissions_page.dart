@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -164,7 +165,7 @@ class _PermissionsView extends StatelessWidget {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 480),
                       child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 16,
@@ -180,7 +181,7 @@ class _PermissionsView extends StatelessWidget {
                             _StoragePermissionCard(l10n: l10n),
                             const SizedBox(height: 32),
                             _PermissionsFooter(l10n: l10n),
-                          ],
+                          ].animate(interval: 80.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
                         ),
                       ),
                     ),

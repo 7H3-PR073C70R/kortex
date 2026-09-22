@@ -2,6 +2,11 @@ import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 
+/// Score percentage at or above which a quiz attempt counts as a pass.
+/// Shared by the workspace, results hero and celebration logic so the
+/// verdict a student sees never disagrees with the badge they get.
+const int kQuizPassScore = 65;
+
 enum QuizSessionStatus {
   initial,
   loading,
@@ -41,6 +46,7 @@ class QuizSessionState extends Equatable {
     this.assessmentMode = AssessmentMode.discoveryMode,
     this.isHintRevealed = false,
     this.hintsUsedCount = 0,
+    this.pendingAnswer,
     this.result,
     this.errorMessage,
     this.currentTier = 1,
@@ -73,6 +79,10 @@ class QuizSessionState extends Equatable {
   final AssessmentMode assessmentMode;
   final bool isHintRevealed;
   final int hintsUsedCount;
+
+  /// Option tapped in practice mode before the student presses Check.
+  /// It carries no grading weight until it is committed.
+  final String? pendingAnswer;
   final QuizResultEntity? result;
   final String? errorMessage;
 
@@ -114,6 +124,8 @@ class QuizSessionState extends Equatable {
     if (questionId == null) return false;
     return flaggedQuestionIds.contains(questionId);
   }
+
+  bool get hasPendingAnswer => pendingAnswer != null;
 
   bool get isCurrentQuestionFlagged => isQuestionFlagged(currentQuestion?.id);
 
@@ -187,10 +199,13 @@ class QuizSessionState extends Equatable {
     int? currentIndex,
     int? elapsedSeconds,
     int? durationMinutes,
+    bool clearDurationMinutes = false,
     Set<String>? flaggedQuestionIds,
     AssessmentMode? assessmentMode,
     bool? isHintRevealed,
     int? hintsUsedCount,
+    String? pendingAnswer,
+    bool clearPendingAnswer = false,
     QuizResultEntity? result,
     String? errorMessage,
     int? currentTier,
@@ -215,11 +230,16 @@ class QuizSessionState extends Equatable {
       questions: questions ?? this.questions,
       currentIndex: currentIndex ?? this.currentIndex,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
-      durationMinutes: durationMinutes ?? this.durationMinutes,
+      durationMinutes: clearDurationMinutes
+          ? null
+          : (durationMinutes ?? this.durationMinutes),
       flaggedQuestionIds: flaggedQuestionIds ?? this.flaggedQuestionIds,
       assessmentMode: assessmentMode ?? this.assessmentMode,
       isHintRevealed: isHintRevealed ?? this.isHintRevealed,
       hintsUsedCount: hintsUsedCount ?? this.hintsUsedCount,
+      pendingAnswer: clearPendingAnswer
+          ? null
+          : (pendingAnswer ?? this.pendingAnswer),
       result: result ?? this.result,
       errorMessage: errorMessage,
       currentTier: currentTier ?? this.currentTier,
@@ -256,6 +276,7 @@ class QuizSessionState extends Equatable {
     assessmentMode,
     isHintRevealed,
     hintsUsedCount,
+    pendingAnswer,
     result,
     errorMessage,
     currentTier,

@@ -184,7 +184,7 @@ class AddPastQuestionModalSheet extends HookWidget {
         debugPrint('[AddPastQuestion] Extraction error: $e');
         if (context.mounted) {
           context.showSnackBar(
-            message: 'Calibration notice: $e',
+            message: 'We could not read this file. Try again, or enter the questions manually.',
             type: SnackBarType.error,
           );
         }

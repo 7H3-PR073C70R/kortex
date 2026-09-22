@@ -33,26 +33,38 @@ class MarketplaceDeckCard extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       button: true,
-      child: PlatformHoverBuilder(
-        builder: (context, isHovered, child) {
-          return AnimatedContainer(
-            duration: AppMotion.snappy,
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: isHovered
-                  ? (isDark
-                        ? colors.surfaceSecondary.withAlpha(220)
-                        : colors.surfacePrimary)
-                  : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
-              borderRadius: AppRadius.radiusPanel,
-              border: Border.all(
+      child: ShrinkableButton(
+        onTap: onTap,
+        shrinkScale: 0.985,
+        child: PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return AnimatedContainer(
+              duration: AppMotion.snappy,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
                 color: isHovered
-                    ? colors.primary.withAlpha(isDark ? 140 : 100)
-                    : colors.primary.withAlpha(isDark ? 40 : 25),
-                width: isHovered ? 1.5 : 1.0,
+                    ? (isDark
+                          ? colors.surfaceSecondary.withAlpha(220)
+                          : colors.surfacePrimary)
+                    : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
+                borderRadius: AppRadius.radiusPanel,
+                border: Border.all(
+                  color: isHovered
+                      ? colors.primary.withAlpha(isDark ? 140 : 100)
+                      : colors.primary.withAlpha(isDark ? 40 : 25),
+                  width: isHovered ? 1.5 : 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.black.withAlpha(
+                      isDark ? (isHovered ? 45 : 20) : (isHovered ? 15 : 6),
+                    ),
+                    blurRadius: isHovered ? 12 : 6,
+                    offset: Offset(0, isHovered ? 4 : 2),
+                  ),
+                ],
               ),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -275,6 +287,7 @@ class MarketplaceDeckCard extends StatelessWidget {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 }

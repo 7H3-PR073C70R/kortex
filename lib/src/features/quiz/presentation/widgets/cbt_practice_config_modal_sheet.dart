@@ -10,6 +10,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -78,6 +79,10 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     final selectedYear = useState<int?>(null);
     final isMillionaire = useState<bool>(false);
 
+    // The page opens in the mode its trigger implied, but the student can
+    // still switch between practice and exam here before starting.
+    final isExam = useState<bool>(isMockExam);
+
     // Recommended default counts
     final recommendedCount = isMockExam ? 40 : 20;
     final availableCountForSelection = useMemoized(() {
@@ -95,6 +100,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     );
 
     final isStarting = useState<bool>(false);
+    final reduceMotion = quizReduceMotion(context);
 
     // Available count options
     final countOptions = [
@@ -138,7 +144,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
 
       final durationMinutes = isMillionaire.value
           ? null
-          : (isMockExam ? quizQuestions.length : null);
+          : (isExam.value ? quizQuestions.length : null);
 
       Navigator.of(context).pop();
 
@@ -156,7 +162,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
             courseCode: courseCode,
             assessmentMode: isMillionaire.value
                 ? AssessmentMode.millionaireMode
-                : (isMockExam
+                : (isExam.value
                       ? AssessmentMode.examSimulationMode
                       : AssessmentMode.discoveryMode),
           ),
@@ -237,118 +243,67 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Practice Mode Info Card
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isMockExam
-                          ? colors.primary.withAlpha(isDark ? 30 : 15)
-                          : colors.syllabotAccent.withAlpha(isDark ? 30 : 15),
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(
-                        color: isMockExam
-                            ? colors.primary.withAlpha(isDark ? 70 : 40)
-                            : colors.syllabotAccent.withAlpha(isDark ? 70 : 40),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isMockExam
-                              ? Icons.timer_outlined
-                              : Icons.bolt_rounded,
-                          color: isMockExam
-                              ? colors.primary
-                              : colors.syllabotAccent,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isMockExam
-                                    ? 'Timed Examination Mode'
-                                    : 'Interactive Drill Mode',
-                                style: typography.caption.bold.copyWith(
-                                  color: isMockExam
-                                      ? colors.primary
-                                      : colors.syllabotAccent,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                isMockExam
-                                    ? 'Simulates official CBT conditions (1 min per question) with score analysis.'
-                                    : 'Untimed drill with instant answer checks and step-by-step solutions.',
-                                style: typography.footnote.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Practice Mode Selector
-                  Text(
-                    'Practice Mode',
-                    style: typography.callout.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  // How the quiz runs: practice gets feedback as you go,
+                  // exam holds everything back, millionaire is the ladder.
+                  const QuizSectionLabel(label: 'How it runs'),
                   Row(
                     children: [
                       Expanded(
-                        child: _ChoiceChip(
-                          label: isMockExam ? 'Timed Mock' : 'Standard CBT',
-                          isSelected: !isMillionaire.value,
+                        child: QuizChoiceCard(
+                          title: 'Practice',
+                          subtitle: 'Hints and feedback as you go',
+                          icon: Icons.school_outlined,
+                          accentColor: colors.syllabotAccent,
+                          selected: !isExam.value && !isMillionaire.value,
+                          reduceMotion: reduceMotion,
                           onTap: () {
                             AppFeedback.light();
+                            isExam.value = false;
                             isMillionaire.value = false;
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Expanded(
-                        child: _ChoiceChip(
-                          label: 'Millionaire Arcade',
-                          badge: '12 Tiers',
-                          isSelected: isMillionaire.value,
+                        child: QuizChoiceCard(
+                          title: 'Exam',
+                          subtitle: 'Timed, results at the end',
+                          icon: Icons.timer_outlined,
+                          selected: isExam.value && !isMillionaire.value,
+                          reduceMotion: reduceMotion,
                           onTap: () {
                             AppFeedback.light();
-                            isMillionaire.value = true;
+                            isExam.value = true;
+                            isMillionaire.value = false;
                           },
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  QuizChoiceCard(
+                    title: 'Millionaire',
+                    subtitle: 'Climb 12 tiers, bank your prize',
+                    icon: Icons.military_tech_rounded,
+                    accentColor: colors.warning,
+                    selected: isMillionaire.value,
+                    reduceMotion: reduceMotion,
+                    onTap: () {
+                      AppFeedback.light();
+                      isMillionaire.value = true;
+                    },
+                  ),
                   const SizedBox(height: 20),
 
                   // 1. Choose Year
-                  Text(
-                    'Select Year',
-                    style: typography.callout.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const QuizSectionLabel(label: 'Question source'),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     child: Row(
                       children: [
                         _ChoiceChip(
-                          label: 'Random (All Years)',
+                          label: 'Mix of all years',
                           isSelected: selectedYear.value == null,
                           badge: 'Recommended',
                           onTap: () {
@@ -379,7 +334,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Number of Questions',
+                        'Question count',
                         style: typography.callout.bold.copyWith(
                           color: colors.textPrimary,
                           fontSize: 14,
@@ -401,7 +356,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                     children: countOptions.map((count) {
                       final isRecommended = count == recommendedCount;
                       return _ChoiceChip(
-                        label: '$count Questions',
+                        label: '$count questions',
                         isSelected: selectedCount.value == count,
                         badge: isRecommended ? 'Recommended' : null,
                         onTap: () {
@@ -413,13 +368,13 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // Start Action Button
+                  // Start Action Button: echoes the plan being started
                   AppButton(
                     text: isMillionaire.value
-                        ? 'Start Millionaire Arcade (12 Tiers 🏆)'
-                        : (isMockExam
-                              ? 'Start Mock Exam (${selectedCount.value} Questions)'
-                              : 'Start Practice Drill (${selectedCount.value} Questions)'),
+                        ? 'Start 12 tiers, one question at a time'
+                        : (isExam.value
+                              ? 'Start ${selectedCount.value} questions • ${selectedCount.value} min'
+                              : 'Start ${selectedCount.value} questions'),
                     isLoading: isStarting.value,
                     onPressed: isStarting.value ? null : handleStart,
                   ),

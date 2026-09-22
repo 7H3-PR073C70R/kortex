@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -376,7 +378,7 @@ class AllCuratedCoursesPage extends HookWidget {
                                       course,
                                       courseDecks.length,
                                     ),
-                                  );
+                                  ).animate(delay: (index < 10 ? index * 60 : 0).ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint);
                                 },
                               ),
                       ),

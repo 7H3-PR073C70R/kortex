@@ -182,7 +182,7 @@ class RagSourceInspectionSheet extends StatelessWidget {
                     ),
                   ),
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     child: Text(
                       chunk.content,
                       style: typography.body.regular.copyWith(

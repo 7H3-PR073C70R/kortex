@@ -12,6 +12,7 @@ import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
@@ -154,366 +155,282 @@ class CreateCourseDeckModalSheet extends HookWidget {
       }
     }
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 640,
-            maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+    return DeckSheetScaffold(
+      title: 'New Study Deck',
+      subtitle: '$courseCode • $courseTitle',
+      maxWidth: 640,
+      children: [
+        // Deck Title
+        Text(
+          'Deck Title',
+          style: typography.footnote.bold.copyWith(
+            color: colors.textPrimary,
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: colors.surfacePrimary,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.dialog),
-              ),
-              border: Border.all(
-                color: isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(70)
-                    : colors.surfaceBorder,
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: titleController,
+          style: typography.body.medium.copyWith(
+            color: colors.textPrimary,
+            fontSize: 14,
+          ),
+          decoration: InputDecoration(
+            hintText: 'e.g. $courseCode Key Formulas',
+            filled: true,
+            fillColor: isDark
+                ? colors.surfaceSecondary.withAlpha(140)
+                : colors.surfaceSecondary.withAlpha(60),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              borderSide: BorderSide(color: colors.surfaceBorder),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Deck Description
+        Text(
+          'Description (Optional)',
+          style: typography.footnote.bold.copyWith(
+            color: colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: descController,
+          style: typography.body.medium.copyWith(
+            color: colors.textPrimary,
+            fontSize: 14,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Brief summary of topics covered',
+            filled: true,
+            fillColor: isDark
+                ? colors.surfaceSecondary.withAlpha(140)
+                : colors.surfaceSecondary.withAlpha(60),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              borderSide: BorderSide(color: colors.surfaceBorder),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Add Flashcards Section
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Flashcards (${addedCards.value.length})',
+              style: typography.callout.bold.copyWith(
+                color: colors.textPrimary,
+                fontSize: 15,
               ),
             ),
-            child: SafeArea(
-              top: false,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
+            if (addedCards.value.isNotEmpty)
+              Text(
+                r'LaTeX supported \(...\)',
+                style: typography.caption.regular.copyWith(
+                  color: colors.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Added Cards Preview List
+        if (addedCards.value.isNotEmpty) ...[
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 180),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const ClampingScrollPhysics(),
+              itemCount: addedCards.value.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (ctx, index) {
+                final card = addedCards.value[index];
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary.withAlpha(150)
+                        : colors.surfaceSecondary.withAlpha(80),
+                    borderRadius: BorderRadius.circular(
+                      AppRadius.card,
+                    ),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withAlpha(100),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
                         decoration: BoxDecoration(
-                          color: colors.surfaceBorder,
-                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                          color: colors.primary.withAlpha(30),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${index + 1}',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'New Study Deck',
-                              style: typography.title2.bold.copyWith(
+                            LatexRichViewer(
+                              text: card['front']!,
+                              style: typography.footnote.bold.copyWith(
                                 color: colors.textPrimary,
-                                fontSize: 19,
+                                fontSize: 12.5,
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              '$courseCode • $courseTitle',
+                            LatexRichViewer(
+                              text: card['back']!,
                               style: typography.caption.regular.copyWith(
-                                color: colors.primary,
-                                fontSize: 12,
+                                color: colors.textSecondary,
+                                fontSize: 11.5,
                               ),
                             ),
                           ],
                         ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.close_rounded,
-                            color: colors.textSecondary,
-                            size: 20,
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Deck Title
-                    Text(
-                      'Deck Title',
-                      style: typography.footnote.bold.copyWith(
-                        color: colors.textPrimary,
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: titleController,
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. $courseCode Key Formulas',
-                        filled: true,
-                        fillColor: isDark
-                            ? colors.surfaceSecondary.withAlpha(140)
-                            : colors.surfaceSecondary.withAlpha(60),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          borderSide: BorderSide(color: colors.surfaceBorder),
+                      IconButton(
+                        icon: Icon(
+                          Icons.remove_circle_outline_rounded,
+                          size: 18,
+                          color: colors.error.withAlpha(180),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
+                        onPressed: () {
+                          addedCards.value = List<Map<String, String>>.from(
+                            addedCards.value,
+                          )..removeAt(index);
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Deck Description
-                    Text(
-                      'Description (Optional)',
-                      style: typography.footnote.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: descController,
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 14,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Brief summary of topics covered',
-                        filled: true,
-                        fillColor: isDark
-                            ? colors.surfaceSecondary.withAlpha(140)
-                            : colors.surfaceSecondary.withAlpha(60),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                          borderSide: BorderSide(color: colors.surfaceBorder),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Add Flashcards Section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Flashcards (${addedCards.value.length})',
-                          style: typography.callout.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 15,
-                          ),
-                        ),
-                        if (addedCards.value.isNotEmpty)
-                          Text(
-                            r'LaTeX supported \(...\)',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Added Cards Preview List
-                    if (addedCards.value.isNotEmpty) ...[
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 180),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: addedCards.value.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 8),
-                          itemBuilder: (ctx, index) {
-                            final card = addedCards.value[index];
-                            return Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary.withAlpha(150)
-                                    : colors.surfaceSecondary.withAlpha(80),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.card,
-                                ),
-                                border: Border.all(
-                                  color: colors.surfaceBorder.withAlpha(100),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: colors.primary.withAlpha(30),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: typography.caption.bold.copyWith(
-                                          color: colors.primary,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        LatexRichViewer(
-                                          text: card['front']!,
-                                          style: typography.footnote.bold
-                                              .copyWith(
-                                                color: colors.textPrimary,
-                                                fontSize: 12.5,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        LatexRichViewer(
-                                          text: card['back']!,
-                                          style: typography.caption.regular
-                                              .copyWith(
-                                                color: colors.textSecondary,
-                                                fontSize: 11.5,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.remove_circle_outline_rounded,
-                                      size: 18,
-                                      color: colors.error.withAlpha(180),
-                                    ),
-                                    onPressed: () {
-                                      addedCards.value =
-                                          List<Map<String, String>>.from(
-                                            addedCards.value,
-                                          )..removeAt(index);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 14),
                     ],
-
-                    // New Card Input Box
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.surfaceSecondary.withAlpha(80)
-                            : colors.surfaceSecondary.withAlpha(40),
-                        borderRadius: BorderRadius.circular(AppRadius.panel),
-                        border: Border.all(
-                          color: colors.primary.withAlpha(isDark ? 60 : 35),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Front (Question / Concept)',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          TextField(
-                            controller: frontController,
-                            style: typography.body.medium.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 13.5,
-                            ),
-                            decoration: InputDecoration(
-                              hintText:
-                                  'e.g. What is the formula for quadratic roots?',
-                              isDense: true,
-                              filled: true,
-                              fillColor: colors.surfacePrimary,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.card,
-                                ),
-                                borderSide: BorderSide(
-                                  color: colors.surfaceBorder,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Back (Answer / Derivation)',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          TextField(
-                            controller: backController,
-                            style: typography.body.medium.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 13.5,
-                            ),
-                            decoration: InputDecoration(
-                              hintText:
-                                  r'e.g. \(x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\)',
-                              isDense: true,
-                              filled: true,
-                              fillColor: colors.surfacePrimary,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.card,
-                                ),
-                                borderSide: BorderSide(
-                                  color: colors.surfaceBorder,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              onPressed: addFlashcard,
-                              icon: const Icon(Icons.add_rounded, size: 16),
-                              label: const Text('Add Card to Deck'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: colors.primary,
-                                textStyle: typography.caption.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-
-                    // Save Action Button
-                    AppButton(
-                      text: 'Create Study Deck',
-                      isLoading: isSubmitting.value,
-                      onPressed: isSubmitting.value ? null : saveDeck,
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ),
+          const SizedBox(height: 14),
+        ],
+
+        // New Card Input Box
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colors.surfaceSecondary.withAlpha(80)
+                : colors.surfaceSecondary.withAlpha(40),
+            borderRadius: BorderRadius.circular(AppRadius.panel),
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 60 : 35),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Front (Question / Concept)',
+                style: typography.caption.bold.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              TextField(
+                controller: frontController,
+                style: typography.body.medium.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 13.5,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'e.g. What is the formula for quadratic roots?',
+                  isDense: true,
+                  filled: true,
+                  fillColor: colors.surfacePrimary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppRadius.card,
+                    ),
+                    borderSide: BorderSide(
+                      color: colors.surfaceBorder,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Back (Answer / Derivation)',
+                style: typography.caption.bold.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              TextField(
+                controller: backController,
+                style: typography.body.medium.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 13.5,
+                ),
+                decoration: InputDecoration(
+                  hintText: r'e.g. \(x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\)',
+                  isDense: true,
+                  filled: true,
+                  fillColor: colors.surfacePrimary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                      AppRadius.card,
+                    ),
+                    borderSide: BorderSide(
+                      color: colors.surfaceBorder,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: addFlashcard,
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('Add Card to Deck'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.primary,
+                    textStyle: typography.caption.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 22),
+
+        // Save Action Button
+        AppButton(
+          text: 'Create Study Deck',
+          isLoading: isSubmitting.value,
+          onPressed: isSubmitting.value ? null : saveDeck,
+        ),
+      ],
     );
   }
 }

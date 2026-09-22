@@ -17,6 +17,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -69,9 +70,7 @@ class CuratedCourseCarousel extends StatelessWidget {
                         ? colors.surfaceSecondary.withAlpha(140)
                         : colors.surfacePrimary.withAlpha(210),
                     borderRadius: BorderRadius.circular(AppRadius.panel),
-                    border: Border.all(
-                      color: colors.surfaceBorder.withAlpha(isDark ? 60 : 40),
-                    ),
+                    // Removed border
                   ),
                   child: Row(
                     children: [
@@ -265,7 +264,7 @@ class CuratedCourseCarousel extends StatelessWidget {
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               itemCount: courses.length,
               separatorBuilder: (context, index) => const SizedBox(width: 14),
               itemBuilder: (context, index) {
@@ -361,136 +360,151 @@ class _CourseCard extends StatelessWidget {
                         : (isHovered
                               ? colors.surfacePrimary
                               : colors.surfacePrimary.withAlpha(210)),
-                    border: Border.all(
-                      color: isHovered
-                          ? colors.primary.withAlpha(isDark ? 120 : 90)
-                          : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
-                    ),
+                    border: isHovered
+                        ? Border.all(
+                            color: colors.primary.withAlpha(isDark ? 120 : 90),
+                          )
+                        : null,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Top Code Pill & Past paper indicator
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 50 : 25),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.micro,
-                              ),
-                            ),
-                            child: Text(
-                              course.courseCode,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                          if (course.hasActivePastPapers)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.success.withAlpha(
-                                  isDark ? 35 : 20,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.micro,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                    children:
+                        <Widget>[
+                              // Top Code Pill & Past paper indicator
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Icon(
-                                    Icons.verified_rounded,
-                                    size: 12,
-                                    color: colors.success,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 50 : 25,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.micro,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      course.courseCode,
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    'Q-Bank',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.success,
-                                      fontSize: 9.5,
+                                  if (course.hasActivePastPapers)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.success.withAlpha(
+                                          isDark ? 35 : 20,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.micro,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.verified_rounded,
+                                            size: 12,
+                                            color: colors.success,
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            'Q-Bank',
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.success,
+                                                  fontSize: 9.5,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+
+                              // Title
+                              Text(
+                                course.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 13.5,
+                                  height: 1.25,
+                                ),
+                              ),
+
+                              // Bottom Coverage & Deck/Card Count
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        deckCountText,
+                                        style: typography.footnote.medium
+                                            .copyWith(
+                                              color: isDark
+                                                  ? colors.textSecondary
+                                                  : colors.textPrimary
+                                                        .withAlpha(180),
+                                              fontSize: 10.5,
+                                            ),
+                                      ),
+                                      Text(
+                                        '$coveragePercent%',
+                                        style: typography.footnote.bold
+                                            .copyWith(
+                                              color: colors.primary,
+                                              fontSize: 11,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.micro,
+                                    ),
+                                    child: Container(
+                                      height: 4,
+                                      color: colors.surfaceBorder.withAlpha(
+                                        isDark ? 50 : 80,
+                                      ),
+                                      child: FractionallySizedBox(
+                                        widthFactor: realCoverage.clamp(
+                                          0.0,
+                                          1.0,
+                                        ),
+                                        child: Container(
+                                          color: colors.primary,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                        ],
-                      ),
-
-                      // Title
-                      Text(
-                        course.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: typography.caption.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 13.5,
-                          height: 1.25,
-                        ),
-                      ),
-
-                      // Bottom Coverage & Deck/Card Count
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                deckCountText,
-                                style: typography.footnote.medium.copyWith(
-                                  color: isDark
-                                      ? colors.textSecondary
-                                      : colors.textPrimary.withAlpha(180),
-                                  fontSize: 10.5,
-                                ),
-                              ),
-                              Text(
-                                '$coveragePercent%',
-                                style: typography.footnote.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.micro,
-                            ),
-                            child: Container(
-                              height: 4,
-                              color: colors.surfaceBorder.withAlpha(
-                                isDark ? 50 : 80,
-                              ),
-                              child: FractionallySizedBox(
-                                widthFactor: realCoverage.clamp(
-                                  0.0,
-                                  1.0,
-                                ),
-                                child: Container(
-                                  color: colors.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            ]
+                            .animate(interval: 50.ms)
+                            .fadeIn(
+                              duration: 350.ms,
+                              curve: Curves.easeOutCubic,
+                            )
+                            .slideX(begin: -0.05, end: 0),
                   ),
                 ),
               ),

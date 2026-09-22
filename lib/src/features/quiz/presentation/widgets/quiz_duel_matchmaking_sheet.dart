@@ -228,13 +228,13 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '1v1 Real-Time Quiz Duel',
+                              'Quiz Duel',
                               style: typography.title2.bold.copyWith(
                                 color: colors.textPrimary,
                               ),
                             ),
                             Text(
-                              'Fastest correct answers earn speed bonus points!',
+                              'Answer quickly and correctly to earn bonus points.',
                               style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
                               ),
@@ -243,7 +243,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                         ),
                       ),
                       const AppBadge(
-                        label: 'P2P Live',
+                        label: 'Live 1v1',
                         variant: AppBadgeVariant.success,
                       ),
                     ],
@@ -314,14 +314,14 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                             ),
                             const SizedBox(height: 24),
                             Text(
-                              'Finding Real Rival... (${(searchSeconds.value ~/ 60).toString().padLeft(2, '0')}:${(searchSeconds.value % 60).toString().padLeft(2, '0')} / 02:00)',
+                              'Looking for a classmate… (${((searchSeconds.value ~/ 60) + 1).toString().padLeft(2, '0')}:${(searchSeconds.value % 60).toString().padLeft(2, '0')} of 02:00)',
                               style: typography.title3.bold.copyWith(
                                 color: colors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Searching live peers in ${selectedSubject.value} ($resolvedExamBoard)\nMatching with AI after 2 minutes if no rival joins',
+                              'Searching classmates studying $selectedSubject ($resolvedExamBoard)\nIf nobody joins within 2 minutes, you will practice with AI',
                               textAlign: TextAlign.center,
                               style: typography.body.regular.copyWith(
                                 color: colors.textSecondary,
@@ -334,7 +334,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                     ),
                     const SizedBox(height: 8),
                     AppButton(
-                      text: 'Practice with AI Now ⚡',
+                      text: 'Practice with AI now',
                       onPressed: () async {
                         AppFeedback.light();
                         await context
@@ -344,7 +344,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                     ),
                     const SizedBox(height: 10),
                     AppButton(
-                      text: 'Cancel Matchmaking',
+                      text: 'Cancel search',
                       variant: AppButtonVariant.secondary,
                       onPressed: () async {
                         isSearching.value = false;
@@ -354,7 +354,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                   ] else ...[
                     // Subject Selector
                     Text(
-                      'Select Subject',
+                      'Subject',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -402,7 +402,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
 
                     // Question Count Selector
                     Text(
-                      'Questions per Duel',
+                      'Questions',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -416,7 +416,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                         final isSelected = selectedQuestionCount.value == count;
                         return ChoiceChip(
                           label: Text(
-                            '$count Questions${count == 10 ? ' (Standard)' : ''}',
+                            '$count questions${count == 10 ? ' (default)' : ''}',
                           ),
                           selected: isSelected,
                           selectedColor: colors.primary.withValues(alpha: 0.2),
@@ -470,7 +470,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              '${selectedQuestionCount.value} Questions • 15s per Question • Max 150 pts/round with Speed Bonus',
+                              '${selectedQuestionCount.value} questions • 15 seconds each • Answer faster to earn more points',
                               style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
                               ),
@@ -482,7 +482,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                     const SizedBox(height: 24),
 
                     AppButton(
-                      text: 'Find Opponent ⚡',
+                      text: 'Find a classmate',
                       onPressed: startMatchmaking,
                     ),
                   ],

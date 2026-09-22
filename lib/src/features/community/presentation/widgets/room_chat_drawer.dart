@@ -256,7 +256,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
 
                 return ListView.separated(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   itemCount: state.chatMessages.length,
                   separatorBuilder: (context, index) =>

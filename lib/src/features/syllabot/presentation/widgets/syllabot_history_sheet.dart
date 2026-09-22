@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -259,7 +260,7 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
   ) {
     if (_isLoading) {
       return ListView.builder(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.all(16),
         itemCount: 4,
         itemBuilder: (_, index) => const Padding(
@@ -342,7 +343,7 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
     }
 
     return ListView.builder(
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       itemCount: _sessions.length,
       itemBuilder: (context, index) {
@@ -444,7 +445,7 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
               );
             },
           ),
-        );
+        ).animate(delay: (index * 80).ms).fadeIn(duration: 250.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint);
       },
     );
   }

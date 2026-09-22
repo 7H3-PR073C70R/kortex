@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +18,7 @@ class SessionSummaryPage extends StatefulWidget {
     required this.cardsReviewed,
     required this.durationSeconds,
     required this.retentionScore,
+    this.nextReviewInDays = 0,
     super.key,
   });
 
@@ -27,21 +27,37 @@ class SessionSummaryPage extends StatefulWidget {
   final int durationSeconds;
   final double retentionScore;
 
+  /// Days until the next scheduled review batch across the session's cards;
+  /// 0 when unknown — the forward-looking line is then omitted.
+  final int nextReviewInDays;
+
   @override
   State<SessionSummaryPage> createState() => _SessionSummaryPageState();
 }
 
 class _SessionSummaryPageState extends State<SessionSummaryPage> {
-  late ConfettiController _confettiController;
+  final ConfettiController _confettiController = ConfettiController(
+    duration: const Duration(seconds: 3),
+  );
+  bool _celebrationStarted = false;
+
+  /// Celebration is earned, not default: confetti and heavy haptics only for
+  /// a real body of work, so the reward keeps its value.
+  bool get _shouldCelebrate =>
+      widget.cardsReviewed >= 10 || widget.retentionScore >= 0.9;
 
   @override
-  void initState() {
-    super.initState();
-    _confettiController = ConfettiController(
-      duration: const Duration(seconds: 3),
-    );
-    _confettiController.play();
-    unawaited(HapticFeedback.heavyImpact());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_celebrationStarted) return;
+    _celebrationStarted = true;
+    final celebrate = _shouldCelebrate && !context.reduceMotion;
+    if (celebrate) {
+      _confettiController.play();
+      unawaited(HapticFeedback.heavyImpact());
+    } else {
+      unawaited(HapticFeedback.lightImpact());
+    }
   }
 
   @override
@@ -56,6 +72,7 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+    final reduceMotion = context.reduceMotion;
 
     final deckId = widget.deckId;
     final cardsReviewed = widget.cardsReviewed;
@@ -67,6 +84,8 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
     final seconds = (durationSeconds % 60).toString().padLeft(2, '0');
     final durationFormatted = '$minutes:$seconds';
 
+    final celebrate = _shouldCelebrate;
+
     return Scaffold(
       backgroundColor: isDark
           ? colors.backgroundPrimary
@@ -74,31 +93,32 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
       body: Stack(
         alignment: Alignment.topCenter,
         children: [
-          Positioned(
-            top: 0,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirection: math.pi / 2,
-              maxBlastForce: 25,
-              minBlastForce: 10,
-              emissionFrequency: 0.05,
-              numberOfParticles: 35,
-              gravity: 0.15,
-              colors: [
-                colors.primary,
-                colors.success,
-                colors.warning,
-                colors.secondary,
-                colors.deepBronze,
-                colors.quartzCyan,
-              ],
+          if (celebrate && !reduceMotion)
+            Positioned(
+              top: 0,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirection: math.pi / 2,
+                maxBlastForce: 25,
+                minBlastForce: 10,
+                emissionFrequency: 0.05,
+                numberOfParticles: 35,
+                gravity: 0.15,
+                colors: [
+                  colors.primary,
+                  colors.success,
+                  colors.warning,
+                  colors.secondary,
+                  colors.deepBronze,
+                  colors.quartzCyan,
+                ],
+              ),
             ),
-          ),
           SafeArea(
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 580),
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 20,
@@ -106,32 +126,45 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Spacer(),
+                      const SizedBox(height: 24),
 
-                      // Celebration Glow Orb
-                      Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              colors.success,
-                              colors.syllabotAccent,
+                      // Result Orb — enters from 0.9 scale, never from zero.
+                      _OrbEntrance(
+                        reduceMotion: reduceMotion,
+                        child: Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: celebrate
+                                  ? [colors.success, colors.syllabotAccent]
+                                  : [
+                                      colors.primary.withAlpha(
+                                        isDark ? 170 : 140,
+                                      ),
+                                      colors.syllabotAccent.withAlpha(
+                                        isDark ? 170 : 140,
+                                      ),
+                                    ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(
+                                  isDark ? 50 : 20,
+                                ),
+                                blurRadius: celebrate ? 28 : 18,
+                                offset: const Offset(0, 8),
+                              ),
                             ],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.black.withAlpha(isDark ? 50 : 20),
-                              blurRadius: 28,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.check_rounded,
-                          color: colors.white,
-                          size: 48,
+                          child: Icon(
+                            celebrate
+                                ? Icons.check_rounded
+                                : Icons.task_alt_rounded,
+                            color: colors.white,
+                            size: 48,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -157,7 +190,8 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                       ),
                       const SizedBox(height: 28),
 
-                      // XP & Streak Announcement Pill
+                      // XP Announcement Pill — base session XP is always
+                      // awarded by UserActivityService (+50 per session).
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -179,11 +213,14 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                               size: 18,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              l10n.sessionSummaryStreakBonus(50),
-                              style: typography.caption.bold.copyWith(
-                                color: colors.warning,
-                                fontSize: 12.5,
+                            Flexible(
+                              child: Text(
+                                l10n.sessionSummaryStreakBonus(50),
+                                textAlign: TextAlign.center,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.warning,
+                                  fontSize: 12.5,
+                                ),
                               ),
                             ),
                           ],
@@ -191,66 +228,96 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Stats Cards Row
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.dialog),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary.withAlpha(160)
-                                  : colors.surfacePrimary.withAlpha(220),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.dialog,
-                              ),
-                              border: Border.all(
-                                color: isDark
-                                    ? colors.surfaceBorderHighlight.withAlpha(
-                                        70,
-                                      )
-                                    : colors.surfaceBorder.withAlpha(130),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _StatItem(
-                                  label: l10n.sessionSummaryCardsReviewed,
-                                  value: '$cardsReviewed',
-                                  color: colors.primary,
-                                  colors: colors,
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 36,
-                                  color: colors.surfaceBorder,
-                                ),
-                                _StatItem(
-                                  label: l10n.sessionSummaryRetentionRate,
-                                  value: '$scorePercent%',
-                                  color: colors.success,
-                                  colors: colors,
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 36,
-                                  color: colors.surfaceBorder,
-                                ),
-                                _StatItem(
-                                  label: l10n.sessionSummaryTimeSpent,
-                                  value: durationFormatted,
-                                  color: colors.syllabotAccent,
-                                  colors: colors,
-                                ),
-                              ],
-                            ),
+                      // Stats Cards Row — values count up, staggered.
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(160)
+                              : colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(AppRadius.dialog),
+                          border: Border.all(
+                            color: isDark
+                                ? colors.surfaceBorderHighlight.withAlpha(70)
+                                : colors.surfaceBorder.withAlpha(130),
                           ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _StatItem(
+                                label: l10n.sessionSummaryCardsReviewed,
+                                countTo: cardsReviewed,
+                                format: (value) => '$value',
+                                color: colors.primary,
+                                colors: colors,
+                                reduceMotion: reduceMotion,
+                                staggerIndex: 0,
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 36,
+                              color: colors.surfaceBorder,
+                            ),
+                            Expanded(
+                              child: _StatItem(
+                                label: l10n.sessionSummaryRetentionRate,
+                                countTo: scorePercent,
+                                format: (value) => '$value%',
+                                color: colors.success,
+                                colors: colors,
+                                reduceMotion: reduceMotion,
+                                staggerIndex: 1,
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 36,
+                              color: colors.surfaceBorder,
+                            ),
+                            Expanded(
+                              child: _StatItem(
+                                label: l10n.sessionSummaryTimeSpent,
+                                display: durationFormatted,
+                                color: colors.syllabotAccent,
+                                colors: colors,
+                                reduceMotion: reduceMotion,
+                                staggerIndex: 2,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
-                      const Spacer(),
+                      // Forward-looking line: what the effort buys later.
+                      if (widget.nextReviewInDays > 0) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 14,
+                              color: colors.textMuted,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                l10n.sessionSummaryNextReview(
+                                  widget.nextReviewInDays,
+                                ),
+                                textAlign: TextAlign.center,
+                                style: typography.footnote.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 40),
 
                       // Action Buttons
                       if (deckId.startsWith('sprint:')) ...[
@@ -308,41 +375,137 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
   }
 }
 
+/// Scale-in entrance for the orb; skipped entirely under reduced motion.
+class _OrbEntrance extends StatelessWidget {
+  const _OrbEntrance({
+    required this.reduceMotion,
+    required this.child,
+  });
+
+  final bool reduceMotion;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reduceMotion) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutQuint,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.scale(scale: 0.9 + 0.1 * t, child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
 class _StatItem extends StatelessWidget {
   const _StatItem({
     required this.label,
-    required this.value,
     required this.color,
     required this.colors,
-  });
+    required this.reduceMotion,
+    required this.staggerIndex,
+    this.countTo,
+    this.format,
+    this.display,
+  }) : assert(
+         (countTo != null) == (format != null),
+         'countTo and format must be provided together',
+       ),
+       assert(
+         countTo != null || display != null,
+         'provide either countTo or display',
+       );
 
   final String label;
-  final String value;
   final Color color;
   final AppThemeColorsExtension colors;
+  final bool reduceMotion;
+  final int staggerIndex;
+
+  /// When set, the value animates 0 -> [countTo] through [format].
+  final int? countTo;
+  final String Function(int value)? format;
+
+  /// Static value for stats that should not count up (e.g. mm:ss time).
+  final String? display;
+
+  static const _tabular = [FontFeature.tabularFigures()];
 
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
+    final countTarget = countTo;
 
-    return Column(
-      children: [
-        Text(
-          value,
-          style: typography.title3.bold.copyWith(
-            color: color,
-            fontSize: 20,
+    final valueText = display ?? '$countTo';
+
+    return _StaggeredFade(
+      reduceMotion: reduceMotion,
+      staggerIndex: staggerIndex,
+      child: Column(
+        children: [
+          if (countTarget != null && !reduceMotion)
+            TweenAnimationBuilder<int>(
+              tween: IntTween(begin: 0, end: countTarget),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutQuint,
+              builder: (context, value, _) => Text(
+                format!(value),
+                style: typography.title3.bold.copyWith(
+                  color: color,
+                  fontSize: 20,
+                  fontFeatures: _tabular,
+                ),
+              ),
+            )
+          else
+            Text(
+              valueText,
+              style: typography.title3.bold.copyWith(
+                color: color,
+                fontSize: 20,
+                fontFeatures: _tabular,
+              ),
+            ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: typography.footnote.regular.copyWith(
+              color: colors.textMuted,
+              fontSize: 11,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: typography.footnote.regular.copyWith(
-            color: colors.textMuted,
-            fontSize: 11,
-          ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Soft fade-in offset per stat so the three numbers don't land at once.
+class _StaggeredFade extends StatelessWidget {
+  const _StaggeredFade({
+    required this.reduceMotion,
+    required this.staggerIndex,
+    required this.child,
+  });
+
+  final bool reduceMotion;
+  final int staggerIndex;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reduceMotion) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 250 + staggerIndex * 100),
+      curve: Curves.easeOut,
+      builder: (context, t, child) => Opacity(opacity: t, child: child),
+      child: child,
     );
   }
 }
