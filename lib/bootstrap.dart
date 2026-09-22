@@ -86,14 +86,20 @@ Future<void> bootstrap({
 
   // Initialize notifications
   try {
-    await locator<NotificationService>().initialize();
+    await locator<NotificationService>().initialize().timeout(const Duration(seconds: 5), onTimeout: () {
+    });
   } on Object catch (e) {
     log('Failed to initialize NotificationService: $e');
   }
 
   // ! For envs
   await dotenv.load(fileName: environment.envFileName);
+  
   await locator<LocalStorageService>().initDB();
-  await locator<UserStorageService>().initStorage();
-  runApp(await builder());
+  
+  await locator<UserStorageService>().initStorage().timeout(const Duration(seconds: 5), onTimeout: () {
+  });
+  
+  final app = await builder();
+  runApp(app);
 }
