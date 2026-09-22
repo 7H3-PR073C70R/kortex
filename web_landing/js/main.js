@@ -290,4 +290,47 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
+
+  // --------------------------------------------------------------------------
+  // 7. Landing Page Newsletter Subscription Handler
+  // --------------------------------------------------------------------------
+  const landingNewsletterForm = document.getElementById('landingNewsletterForm');
+  const landingNewsletterEmail = document.getElementById('landingNewsletterEmail');
+  const landingNewsletterStatus = document.getElementById('landingNewsletterStatus');
+  const landingNewsletterBtn = document.getElementById('landingNewsletterBtn');
+
+  if (landingNewsletterForm) {
+    landingNewsletterForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = landingNewsletterEmail.value;
+
+      if (!window.KortexStorage) {
+        return;
+      }
+
+      landingNewsletterBtn.disabled = true;
+      const originalText = landingNewsletterBtn.innerHTML;
+      landingNewsletterBtn.innerHTML = '<span>Joining...</span>';
+
+      try {
+        const res = window.KortexStorage.saveNewsletterEmail(email, 'landing_page');
+        setTimeout(() => {
+          landingNewsletterBtn.disabled = false;
+          landingNewsletterBtn.innerHTML = originalText;
+          landingNewsletterEmail.value = '';
+          landingNewsletterStatus.className = 'newsletter-status-box success';
+          if (res.status === 'already_subscribed') {
+            landingNewsletterStatus.textContent = '✓ You are already on the dispatch list! Thank you.';
+          } else {
+            landingNewsletterStatus.textContent = '✓ Welcome to Kortex Dispatches! We will notify you of major algorithm and syllabus drops.';
+          }
+        }, 300);
+      } catch (err) {
+        landingNewsletterBtn.disabled = false;
+        landingNewsletterBtn.innerHTML = originalText;
+        landingNewsletterStatus.className = 'newsletter-status-box error';
+        landingNewsletterStatus.textContent = err.message || 'Please enter a valid email address.';
+      }
+    });
+  }
 });

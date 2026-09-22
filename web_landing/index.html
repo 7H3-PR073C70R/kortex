@@ -553,6 +553,32 @@
       </div>
     </section>
 
+    <!-- Development Dispatches & Newsletter -->
+    <section class="newsletter-section" id="newsletter">
+      <div class="container">
+        <div class="newsletter-card reveal-on-scroll">
+          <span class="section-badge">Engineering Dispatches</span>
+          <h2 class="newsletter-title">Follow the development journey.</h2>
+          <p class="newsletter-desc">
+            Get bi-weekly technical notes on our on-device AI pipeline, FSRS-6 spaced repetition benchmarks, CBT question drops, and early feature builds. Zero spam.
+          </p>
+          <form id="landingNewsletterForm" class="newsletter-form-row">
+            <input type="email" id="landingNewsletterEmail" class="text-input" placeholder="Your student or personal email" required autocomplete="email">
+            <button type="submit" class="btn-primary-cta" id="landingNewsletterBtn">
+              <span>Subscribe</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </form>
+          <div id="landingNewsletterStatus" class="newsletter-status-box"></div>
+          <div class="newsletter-privacy-note">
+            🛡️ 100% privacy guarantee. We never share or sell your email. Unsubscribe anytime with a single click.
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Frequently Asked Questions -->
     <section class="section" id="faq">
       <div class="container">
@@ -656,7 +682,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 
   <!-- Scripts -->
-  <script src="js/animations.js?v=5.0"></script>
-  <script src="js/main.js?v=5.0"></script>
+  <script src="js/storage.js?v=5.1"></script>
+  <script src="js/animations.js?v=5.1"></script>
+  <script src="js/main.js?v=5.1"></script>
 </body>
 </html>
