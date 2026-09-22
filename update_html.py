@@ -1,119 +1,11 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="dark" data-accent="sage">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Master complex exams in half the time with local AI and FSRS-6 spaced repetition. Drop in messy lecture slides, textbook PDFs, or camera photos of math formulas. 100% offline-first privacy.">
-  <meta name="keywords" content="FSRS spaced repetition, offline study app, KaTeX math OCR, JAMB CBT, WAEC past questions, active recall flashcards, Bionic reading, Socratic AI tutor, Kortex">
-  <meta name="author" content="Kortex Technologies">
+import re
 
-  <!-- Open Graph / Social Sharing -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://kortex-study-app-2026.web.app/">
-  <meta property="og:title" content="Kortex | Master Complex Exams in Half the Time">
-  <meta property="og:description" content="Master complex exams with local AI and FSRS-6 spaced repetition. Offline PDF parsing, camera math OCR, 3D active recall, and CBT practice.">
-  <meta property="og:image" content="assets/kortexify_logo.svg">
+with open('web_landing/index.html', 'r') as f:
+    content = f.read()
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Kortex | Master Complex Exams in Half the Time">
-  <meta name="twitter:description" content="Master complex exams with local AI and FSRS-6 spaced repetition. Offline PDF parsing, camera math OCR, 3D active recall, and CBT practice.">
-  <meta name="twitter:image" content="assets/kortexify_logo.svg">
-
-  <title>Kortex | Master Complex Exams in Half the Time</title>
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="assets/kortexify_logo.svg">
-  <link rel="alternate icon" href="assets/favicon.ico">
-
-  <!-- Google Fonts: Plus Jakarta Sans, Inter, JetBrains Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-
-  <!-- KaTeX CSS for LaTeX Math Formula Rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
-
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/variables.css?v=5.4">
-  <link rel="stylesheet" href="css/animations.css?v=5.4">
-  <link rel="stylesheet" href="css/styles.css?v=5.4">
-
-  <!-- Structured Data JSON-LD -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Kortex",
-    "applicationCategory": "EducationalApplication",
-    "operatingSystem": "iOS, Android, Web, macOS, Windows",
-    "offers": {
-      "@type": "Offer",
-      "price": "0.00",
-      "priceCurrency": "USD"
-    },
-    "description": "Tactile, low-fatigue cognitive study engine with offline PDF and OCR parsing, KaTeX math rendering, FSRS-6 adaptive spaced repetition, Socratic AI tutoring, and CBT exam practice."
-  }
-  </script>
-</head>
-<body>
-
-  <!-- Site Header -->
-  <header class="site-header">
-    <div class="container nav-content">
-      <a href="/" class="brand-logo" aria-label="Kortex Home">
-        <img src="assets/kortexify_logo.svg" alt="Kortex Logo" width="32" height="32">
-        <span class="brand-name">KORTEX</span>
-      </a>
-
-      <nav aria-label="Primary Navigation">
-        <ul class="nav-links">
-          <li><a href="#pillars" class="nav-link">How It Works</a></li>
-          <li><a href="#differentiators" class="nav-link">Privacy & Access</a></li>
-          <li><a href="#newsletter" class="nav-link">Updates</a></li>
-          <li><a href="#faq" class="nav-link">FAQ</a></li>
-          <li><a href="contact.html" class="nav-link">Contact</a></li>
-        </ul>
-      </nav>
-
-      <div class="nav-actions">
-        <!-- Interactive Boutique Preset Accent Switcher -->
-        <div class="accent-picker" title="Switch Theme Palette Accent" role="group" aria-label="Theme Palette Accents">
-          <button class="accent-dot active" data-set-accent="sage" type="button" aria-label="Muted Sage Focus"></button>
-          <button class="accent-dot" data-set-accent="ochre" type="button" aria-label="Warm Ochre Academic"></button>
-          <button class="accent-dot" data-set-accent="moss" type="button" aria-label="Alpine Moss STEM"></button>
-          <button class="accent-dot" data-set-accent="bronze" type="button" aria-label="Deep Bronze Editorial"></button>
-          <button class="accent-dot" data-set-accent="terracotta" type="button" aria-label="Slate Terracotta"></button>
-          <button class="accent-dot" data-set-accent="quartz" type="button" aria-label="Quartz Cyan LaTeX"></button>
-        </div>
-
-        <!-- Light / Dark Mode Toggle -->
-        <button id="themeToggleBtn" class="theme-toggle-btn" type="button" aria-label="Toggle dark or light theme">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"></circle>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
-          </svg>
-        </button>
-
-        <a href="#try-free" class="nav-cta">Try Free: No Login</a>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main id="main-content">
-
-    <!-- Hero Section -->
-    <section class="hero-section" id="try-free">
-      <div class="container">
-        
-        <!-- Badge -->
-        <div class="hero-badge reveal-on-scroll">
-          <span class="pulse-dot"></span>
-          <span>Low-Fatigue Cognitive Study Engine</span>
-        </div>
-
-        <!-- Outcome-Driven Headline -->
+# 1. Hero Section & Interactive Card Demo
+hero_pattern = re.compile(r'<!-- Outcome-Driven Headline -->.*?<!-- FSRS-6 Rating Calibration Bar -->', re.DOTALL)
+hero_replacement = """<!-- Outcome-Driven Headline -->
         <h1 class="hero-title reveal-on-scroll delay-1">
           Pass your hardest exams in half the time without losing sleep.
         </h1>
@@ -190,7 +82,6 @@
                       <p class="card-question-title" id="cardQuestionText">
                         Why do you forget things after reading them?
                       </p>
-                      <div class="card-formula-block" id="katexFrontFormula"></div>
                     </div>
 
                     <div class="card-meta-bar" style="margin-bottom: 0;">
@@ -212,7 +103,6 @@
                       <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px;" id="cardAnswerText">
                         Because reading isn't testing. Your brain only keeps information when you practice bringing it back out. Kortexify builds that exact practice for you.
                       </p>
-                      <div class="card-formula-block" id="katexBackFormula"></div>
                     </div>
 
                     <div style="font-size: 0.78rem; color: var(--color-recall-easy); font-weight: 600;">
@@ -223,70 +113,12 @@
                 </div>
               </div>
 
-              <!-- FSRS-6 Rating Calibration Bar -->
-              <div class="fsrs-rating-container">
-                <div>
-                  <div class="fsrs-rating-label">How well did you remember this?</div>
-                  <div style="font-size: 0.78rem; color: var(--text-muted);">We'll use this to schedule your next review automatically.</div>
-                </div>
+              <!-- FSRS-6 Rating Calibration Bar -->"""
+content = hero_pattern.sub(hero_replacement, content)
 
-                <div class="fsrs-button-group">
-                  <button class="rating-pill-btn again" data-rating="again" type="button">
-                    Again
-                  </button>
-                  <button class="rating-pill-btn hard" data-rating="hard" type="button">
-                    Hard
-                  </button>
-                  <button class="rating-pill-btn good" data-rating="good" type="button">
-                    Good
-                  </button>
-                  <button class="rating-pill-btn easy" data-rating="easy" type="button">
-                    Easy
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tab 2: Ingest (OCR & Document Drop Simulation) -->
-            <div class="tab-panel" id="panel-ingest">
-              <div class="dropzone-simulation">
-                <div class="dropzone-icon">📥</div>
-                <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
-                  Drop Lecture PDFs, Slides, or Past Papers
-                </h4>
-                <p style="font-size: 0.88rem; color: var(--text-secondary); max-width: 500px; margin: 0 auto 16px;">
-                  Kortex runs on-device OCR and table extraction to isolate formulas, definitions, and high-yield test points with zero manual typing.
-                </p>
-                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                  <span class="diff-chip">PDF & EPUB Parsing</span>
-                  <span class="diff-chip">Camera Math OCR</span>
-                  <span class="diff-chip">Voice Lecture Memos</span>
-                  <span class="diff-chip">Anki .apkg Export</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tab 3: Test (Socratic Syllabot Simulation) -->
-            <div class="tab-panel" id="panel-test">
-              <div class="chat-dialogue-simulation">
-                <div class="chat-bubble chat-bubble-user">
-                  <strong>Student:</strong> "I always get stuck on when to use Integration by Parts versus Substitution on exam questions."
-                </div>
-                <div class="chat-bubble chat-bubble-ai">
-                  <strong>Syllabot AI (Socratic Tutor):</strong><br>
-                  "Look at the structure of the integrand. If one factor is the derivative of another, $u$-substitution is faster. But if you have a product like $\int x e^{2x} dx$, what happens when you differentiate $x$?"
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-    </section>
-
-    <!-- Core Value Pillars (3 Scannable Sections: Ingest, Retain, Test) -->
+# 2. Pillars Section
+pillars_pattern = re.compile(r'<!-- Core Value Pillars.*?<!-- Key Differentiators', re.DOTALL)
+pillars_replacement = """<!-- Core Value Pillars (3 Scannable Sections: Ingest, Retain, Test) -->
     <section class="section" id="pillars">
       <div class="container">
         
@@ -307,7 +139,7 @@
               </p>
             </div>
             <div class="pillar-visual">
-              <div class="pillar-visual-card float-animated">
+              <div class="pillar-visual-card">
                 <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-primary); margin-bottom: 12px; letter-spacing: 0.04em;">INPUTS ACCEPTED</div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                   <div class="diff-chip" style="padding: 10px; justify-content: center;">📑 PDFs & Slides</div>
@@ -328,7 +160,7 @@
               </p>
             </div>
             <div class="pillar-visual">
-              <div class="pillar-visual-card float-animated">
+              <div class="pillar-visual-card">
                 <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-recall-easy); margin-bottom: 12px; letter-spacing: 0.04em;">SMART REMINDERS</div>
                 <div style="padding: 16px; background: var(--color-primary-tint); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
                   <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">Study exactly when you need to, saving hours of wasted time.</p>
@@ -347,7 +179,7 @@
               </p>
             </div>
             <div class="pillar-visual">
-              <div class="pillar-visual-card float-animated">
+              <div class="pillar-visual-card">
                 <div style="font-size: 0.8rem; font-weight: 700; color: var(--color-secondary); margin-bottom: 12px; letter-spacing: 0.04em;">EXAM PRACTICE</div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                   <span class="diff-chip">JAMB</span>
@@ -364,7 +196,12 @@
       </div>
     </section>
 
-    <!-- Key Differentiators -->
+    <!-- Key Differentiators -->"""
+content = pillars_pattern.sub(pillars_replacement, content)
+
+# 3. Differentiators
+diff_pattern = re.compile(r'<!-- Key Differentiators.*?<!-- Comparison Matrix Table -->', re.DOTALL)
+diff_replacement = """<!-- Key Differentiators -->
     <section class="section" id="differentiators" style="background: var(--bg-surface-elevated1);">
       <div class="container">
         
@@ -376,7 +213,7 @@
         <div class="differentiators-grid">
           
           <!-- Differentiator 1 -->
-          <div class="differentiator-card reveal-on-scroll delay-1 float-animated">
+          <div class="differentiator-card reveal-on-scroll delay-1">
             <div>
               <span class="diff-badge">🛡️ Works 100% Offline</span>
               <h3 class="diff-title">Study in lecture basements, on the bus, or anywhere without internet.</h3>
@@ -391,7 +228,7 @@
           </div>
 
           <!-- Differentiator 2 -->
-          <div class="differentiator-card reveal-on-scroll delay-2 float-animated">
+          <div class="differentiator-card reveal-on-scroll delay-2">
             <div>
               <span class="diff-badge diff-badge-secondary">🧠 Designed For Every Type Of Brain</span>
               <h3 class="diff-title">Focus better, read easier.</h3>
@@ -411,7 +248,12 @@
       </div>
     </section>
 
-    <!-- Comparison Matrix Table -->
+    <!-- Comparison Matrix Table -->"""
+content = diff_pattern.sub(diff_replacement, content)
+
+# 4. Comparison Table
+comp_pattern = re.compile(r'<!-- Comparison Matrix Table -->.*?<!-- Founder\'s Note -->', re.DOTALL)
+comp_replacement = """<!-- Comparison Matrix Table -->
     <section class="section" id="comparison">
       <div class="container">
         
@@ -452,7 +294,12 @@
       </div>
     </section>
 
-    <!-- Founder's Note -->
+    <!-- Founder's Note -->"""
+content = comp_pattern.sub(comp_replacement, content)
+
+# 5. Founder's Note & Remove Newsletter & FAQs & Final CTA
+rest_pattern = re.compile(r'<!-- Founder\'s Note -->.*?</main>', re.DOTALL)
+rest_replacement = """<!-- Founder's Note -->
     <section class="section" id="founder">
       <div class="container">
         <div class="founder-card reveal-on-scroll">
@@ -547,34 +394,8 @@
       </div>
     </section>
 
-  </main>
+  </main>"""
+content = rest_pattern.sub(rest_replacement, content)
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="container footer-content">
-      <div class="brand-logo">
-        <img src="assets/kortexify_logo.svg" alt="Kortex Logo" width="26" height="26">
-        <span class="brand-name" style="font-size: 0.95rem;">KORTEX</span>
-      </div>
-
-      <div class="footer-copyright">
-        © 2026 Kortex Inc. All rights reserved.
-      </div>
-
-      <div class="footer-legal-links">
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="terms.html">Terms of Service</a>
-        <a href="contact.html">Contact</a>
-      </div>
-    </div>
-  </footer>
-
-  <!-- KaTeX Core Library for Math Formula Rendering -->
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
-
-  <!-- Scripts -->
-  <script src="js/storage.js?v=5.4"></script>
-  <script src="js/animations.js?v=5.4"></script>
-  <script src="js/main.js?v=5.5"></script>
-</body>
-</html>
+with open('web_landing/index.html', 'w') as f:
+    f.write(content)

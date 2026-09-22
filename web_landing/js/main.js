@@ -118,7 +118,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const demoCards = [
     {
-      topic: 'Physics & Electromagnetism',
+      topic: 'Quick Question',
+      question: 'Why do you forget things after reading them?',
+      frontFormula: '',
+      backExplanation: "Because reading isn't testing. Your brain only keeps information when you practice bringing it back out. Kortexify builds that exact practice for you.",
+      backFormula: '',
+      difficulty: 'General'
+    },
+    {
+      topic: 'Physics',
       question: 'Calculate the induced electromotive force (EMF) generated across a coil when magnetic flux changes with time:',
       frontFormula: '\\mathcal{E} = -\\frac{d\\Phi_B}{dt}',
       backExplanation: 'By Faraday-Lenz Law of Electromagnetic Induction, the induced EMF opposes the rate of magnetic flux change through the closed circuit.',
@@ -126,20 +134,36 @@ document.addEventListener('DOMContentLoaded', () => {
       difficulty: 'High Yield'
     },
     {
-      topic: 'Calculus & Kinematics',
-      question: 'Derive position from uniform acceleration assuming initial speed $u$ and acceleration $a$:',
-      frontFormula: 's(t) = \\int (u + at) \\, dt',
-      backExplanation: 'Integrating velocity with respect to time over the interval $[0, t]$ gives displacement.',
-      backFormula: 's = ut + \\frac{1}{2}at^2',
+      topic: 'Mathematics',
+      question: 'Find the roots of a quadratic equation:',
+      frontFormula: 'ax^2 + bx + c = 0',
+      backExplanation: 'The quadratic formula computes the solutions by completing the square.',
+      backFormula: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}',
       difficulty: 'Core Foundation'
     },
     {
-      topic: 'Chemistry & Thermodynamics',
+      topic: 'Medicine',
+      question: 'What is the primary function of the SA (sinoatrial) node in the heart?',
+      frontFormula: '',
+      backExplanation: 'The SA node acts as the natural pacemaker of the heart, generating electrical impulses that dictate the heart rate.',
+      backFormula: '',
+      difficulty: 'High Yield'
+    },
+    {
+      topic: 'Chemistry',
       question: 'Determine the standard Gibbs free energy change and reaction spontaneity condition:',
       frontFormula: '\\Delta G^\\circ = \\Delta H^\\circ - T\\Delta S^\\circ',
       backExplanation: 'A chemical reaction is thermodynamically spontaneous at constant temperature and pressure when Gibbs free energy is strictly negative.',
-      backFormula: '\\Delta G < 0 \\implies K_{eq} = \\exp\\left(-\\frac{\\Delta G^\\circ}{RT}\\right) > 1',
-      difficulty: 'WAEC / SAT'
+      backFormula: '\\Delta G < 0',
+      difficulty: 'High Yield'
+    },
+    {
+      topic: 'Criminal Law',
+      question: 'What are the two fundamental elements required to establish criminal liability?',
+      frontFormula: '',
+      backExplanation: 'Criminal liability typically requires both Actus Reus (the guilty act) and Mens Rea (the guilty mind or intent).',
+      backFormula: '',
+      difficulty: 'Core Foundation'
     }
   ];
 
@@ -156,20 +180,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (topicBadgeEl) topicBadgeEl.textContent = card.topic;
 
     // KaTeX LaTeX rendering
-    if (window.katex) {
-      if (formulaFrontEl) {
-        try {
-          window.katex.render(card.frontFormula, formulaFrontEl, { displayMode: true, throwOnError: false });
-        } catch (e) {
-          formulaFrontEl.textContent = card.frontFormula;
+    if (formulaFrontEl) {
+      if (card.frontFormula) {
+        formulaFrontEl.style.display = 'flex';
+        if (window.katex) {
+          try {
+            window.katex.render(card.frontFormula, formulaFrontEl, { displayMode: true, throwOnError: false });
+          } catch (e) {
+            formulaFrontEl.textContent = card.frontFormula;
+          }
         }
+      } else {
+        formulaFrontEl.style.display = 'none';
       }
-      if (formulaBackEl) {
-        try {
-          window.katex.render(card.backFormula, formulaBackEl, { displayMode: true, throwOnError: false });
-        } catch (e) {
-          formulaBackEl.textContent = card.backFormula;
+    }
+    
+    if (formulaBackEl) {
+      if (card.backFormula) {
+        formulaBackEl.style.display = 'flex';
+        if (window.katex) {
+          try {
+            window.katex.render(card.backFormula, formulaBackEl, { displayMode: true, throwOnError: false });
+          } catch (e) {
+            formulaBackEl.textContent = card.backFormula;
+          }
         }
+      } else {
+        formulaBackEl.style.display = 'none';
       }
     }
   }

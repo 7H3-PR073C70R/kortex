@@ -350,10 +350,14 @@ button {
   color: #FFFFFF;
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform, box-shadow;
 }
 
 .btn-primary-cta:hover {
   background-color: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .btn-secondary-cta {
@@ -369,11 +373,15 @@ button {
   color: var(--text-primary);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-xs);
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform, box-shadow;
 }
 
 .btn-secondary-cta:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-highlight);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* Trust Badges Bar */
@@ -468,11 +476,13 @@ button {
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
+  transition: all var(--duration-fast) ease;
 }
 
 .tab-btn:hover {
   color: var(--text-primary);
   background: var(--bg-card-hover);
+  transform: translateY(-1px);
 }
 
 .tab-btn.active {
