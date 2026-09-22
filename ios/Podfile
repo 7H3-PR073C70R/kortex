@@ -45,30 +45,11 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  # Pods that ship without an arm64 simulator slice.
-  # iOS 26+ simulators on Apple Silicon require arm64, so we exclude it only
-  # for these specific pods on the simulator SDK. Physical device builds are
-  # completely unaffected.
-  mlkit_pods_without_simulator_arm64 = %w[
-    GoogleMLKit
-    MLImage
-    MLKitCommon
-    MLKitVision
-    MLKitTextRecognition
-    MLKitTextRecognitionCommon
-    google_mlkit_commons
-    google_mlkit_text_recognition
-  ].freeze
-
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
-
-      if mlkit_pods_without_simulator_arm64.include?(target.name)
-        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-      end
     end
   end
 end
