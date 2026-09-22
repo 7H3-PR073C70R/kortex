@@ -1,23 +1,14 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: PURGE GENERIC PAST QUESTIONS & SYNC UNIFIED SUBJECTS
--- Standardize subject names and codes (MTH, ENG, PHY, CHM, etc.) across WAEC, JAMB, and NECO
--- ==============================================================================
 
--- 1. Purge all generic past questions that were previously curated without headway
 DELETE FROM public.past_questions;
 
--- Ensure image_url column is present for questions with diagrams/figures
 ALTER TABLE public.past_questions ADD COLUMN IF NOT EXISTS image_url TEXT;
 
--- 2. Remove legacy high school course entries with W- or J- prefixes
 DELETE FROM public.curated_courses 
 WHERE course_code LIKE 'W-%' 
    OR course_code LIKE 'J-%'
    OR id::text LIKE 'waec-%'
    OR id::text LIKE 'jamb-%';
 
--- 3. Upsert unified subjects across WAEC, JAMB, and NECO
--- Every exam shares the EXACT same courseCode (e.g. MTH, ENG, PHY) and title.
 DO $$
 DECLARE
     exams TEXT[] := ARRAY['WAEC', 'JAMB', 'NECO'];
@@ -28,7 +19,6 @@ BEGIN
     LOOP
         exam_lower := lower(e);
 
-        -- Core
         INSERT INTO public.curated_courses (id, course_code, title, department, total_materials, has_active_past_papers, icon_name, color_hex, syllabus_coverage, academic_level, field_category)
         VALUES 
         (md5(exam_lower || '-mth')::uuid, 'MTH', 'Mathematics', e || ' - Core', 48, true, 'calculate', '#6366F1', 0.95, 'high_school', 'Exam Prep'),
@@ -41,7 +31,6 @@ BEGIN
             title = EXCLUDED.title,
             department = EXCLUDED.department;
 
-        -- Sciences
         INSERT INTO public.curated_courses (id, course_code, title, department, total_materials, has_active_past_papers, icon_name, color_hex, syllabus_coverage, academic_level, field_category)
         VALUES 
         (md5(exam_lower || '-phy')::uuid, 'PHY', 'Physics', e || ' - Sciences', 44, true, 'bolt', '#06B6D4', 0.90, 'high_school', 'Exam Prep'),
@@ -57,7 +46,6 @@ BEGIN
             title = EXCLUDED.title,
             department = EXCLUDED.department;
 
-        -- Commercial
         INSERT INTO public.curated_courses (id, course_code, title, department, total_materials, has_active_past_papers, icon_name, color_hex, syllabus_coverage, academic_level, field_category)
         VALUES 
         (md5(exam_lower || '-ecn')::uuid, 'ECN', 'Economics', e || ' - Commercial', 38, true, 'trending_up', '#3B82F6', 0.87, 'high_school', 'Exam Prep'),
@@ -72,7 +60,6 @@ BEGIN
             title = EXCLUDED.title,
             department = EXCLUDED.department;
 
-        -- Arts & Humanities
         INSERT INTO public.curated_courses (id, course_code, title, department, total_materials, has_active_past_papers, icon_name, color_hex, syllabus_coverage, academic_level, field_category)
         VALUES 
         (md5(exam_lower || '-lit')::uuid, 'LIT', 'Literature in English', e || ' - Arts', 36, true, 'menu_book', '#D97706', 0.89, 'high_school', 'Exam Prep'),
@@ -100,7 +87,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- 4. Update auto_curate_exam_courses RPC function to match clean unified course codes & titles
 CREATE OR REPLACE FUNCTION public.auto_curate_exam_courses(
     p_exam_name TEXT,
     p_subjects TEXT[]
@@ -120,7 +106,6 @@ BEGIN
     LOOP
         v_matched_id := NULL;
 
-        -- 1. Try finding matching course specifically for this exam track
         SELECT id INTO v_matched_id
         FROM public.curated_courses
         WHERE (academic_level = 'high_school' OR field_category = 'Exam Prep')
@@ -134,7 +119,6 @@ BEGIN
         ORDER BY total_materials DESC
         LIMIT 1;
 
-        -- 2. Fallback to generic subject match across all exam preps if not found
         IF v_matched_id IS NULL THEN
             SELECT id INTO v_matched_id
             FROM public.curated_courses

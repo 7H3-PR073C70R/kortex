@@ -33,7 +33,6 @@ export async function checkAndEnforceQuota(
       "authorization, x-client-info, apikey, content-type",
   }
 ): Promise<QuotaGuardResult> {
-  // 1. Fetch user subscription tier from profiles
   const { data: profile, error: profileErr } = await supabaseClient
     .from("profiles")
     .select("subscription_tier")
@@ -48,9 +47,7 @@ export async function checkAndEnforceQuota(
     now.getTime() - 24 * 60 * 60 * 1000
   ).toISOString();
 
-  // 2. Pro Tier: Bypass caps & record audit metric
   if (tier === "pro") {
-    // Record to usage_logs asynchronously
     supabaseClient
       .from("usage_logs")
       .insert({
@@ -73,7 +70,6 @@ export async function checkAndEnforceQuota(
     };
   }
 
-  // 3. Free Tier: Query 24-hour rolling usage
   const maxLimit = FREE_TIER_LIMITS[actionType];
 
   const { count: usageCount, error: countErr } = await supabaseClient
@@ -116,7 +112,6 @@ export async function checkAndEnforceQuota(
     };
   }
 
-  // Record allowed usage event
   await supabaseClient.from("usage_logs").insert({
     user_id: userId,
     action_type: actionType,

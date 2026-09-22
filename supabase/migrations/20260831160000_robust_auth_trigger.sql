@@ -1,9 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 020 - Robust User Profile & Auth Trigger
--- Ensures seamless, fault-tolerant account creation on auth.users INSERT
--- ==============================================================================
 
--- 1. Ensure all columns exist on public.profiles
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
@@ -32,7 +27,6 @@ ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS photo_url TEXT,
     ADD COLUMN IF NOT EXISTS academic_institution TEXT;
 
--- 2. Ensure RLS is enabled on public.profiles with comprehensive policies
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
@@ -51,7 +45,6 @@ CREATE POLICY "Users can update own profile"
     USING (auth.uid() = id OR auth.role() = 'service_role')
     WITH CHECK (auth.uid() = id OR auth.role() = 'service_role');
 
--- 3. Ensure public.user_calibrations exists with policies
 CREATE TABLE IF NOT EXISTS public.user_calibrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -86,11 +79,9 @@ CREATE POLICY "Users can update own calibration"
     USING (auth.uid() = user_id OR auth.role() = 'service_role')
     WITH CHECK (auth.uid() = user_id OR auth.role() = 'service_role');
 
--- 4. Grant table access
 GRANT ALL ON public.profiles TO postgres, service_role, authenticated, anon;
 GRANT ALL ON public.user_calibrations TO postgres, service_role, authenticated, anon;
 
--- 5. Fault-Tolerant handle_new_user trigger function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -122,7 +113,6 @@ BEGIN
         v_retention := 0.85;
     END;
 
-    -- Insert into public.profiles
     INSERT INTO public.profiles (
         id,
         email,
@@ -153,20 +143,17 @@ BEGIN
         display_name = COALESCE(EXCLUDED.display_name, public.profiles.display_name),
         photo_url = COALESCE(EXCLUDED.photo_url, public.profiles.photo_url);
 
-    -- Insert into public.user_calibrations
     INSERT INTO public.user_calibrations (user_id, focus, is_calibrated)
     VALUES (NEW.id, 'higherEducation', false)
     ON CONFLICT (user_id) DO NOTHING;
 
     RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
-    -- Log warning but never abort user registration
     RAISE WARNING 'handle_new_user error for user %: %', NEW.id, SQLERRM;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, pg_temp;
 
--- Rebind trigger to auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users

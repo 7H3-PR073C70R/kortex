@@ -19,7 +19,6 @@ interface PresenceHeartbeatPayload {
   timerState?: Record<string, unknown>;
 }
 
-// In-memory Redis simulation fallback if Upstash credentials are not set
 const memoryPresenceStore = new Map<
   string,
   { payload: Record<string, unknown>; expiresAt: number }
@@ -96,7 +95,6 @@ serve(async (req: Request) => {
       const key = `user:${userId}:presence:room:${roomId}`;
 
       if (upstashUrl && upstashToken) {
-        // Set key with 30s sliding TTL in Upstash Redis
         await fetch(`${upstashUrl}/pipeline`, {
           method: "POST",
           headers: {
@@ -109,7 +107,6 @@ serve(async (req: Request) => {
           ]),
         });
       } else {
-        // Local in-memory sliding TTL (30 seconds)
         memoryPresenceStore.set(key, {
           payload: presenceData,
           expiresAt: Date.now() + 30000,
@@ -156,7 +153,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Query active room presence
     const activeMembers: Record<string, unknown>[] = [];
 
     if (upstashUrl && upstashToken) {

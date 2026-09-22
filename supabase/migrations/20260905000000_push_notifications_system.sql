@@ -1,8 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 024 - Phone Push Notifications & Notification System
--- ==============================================================================
 
--- 1. Create user_devices table for storing FCM registration tokens
 CREATE TABLE IF NOT EXISTS public.user_devices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -18,7 +14,6 @@ CREATE TABLE IF NOT EXISTS public.user_devices (
 CREATE INDEX IF NOT EXISTS idx_user_devices_user_id ON public.user_devices(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_devices_active_token ON public.user_devices(user_id, is_active);
 
--- Enable RLS on user_devices
 ALTER TABLE public.user_devices ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own devices" ON public.user_devices;
@@ -53,7 +48,6 @@ CREATE POLICY "Service role manages all user devices"
     USING (true)
     WITH CHECK (true);
 
--- 2. Create notification_preferences table
 CREATE TABLE IF NOT EXISTS public.notification_preferences (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     study_reminders BOOLEAN NOT NULL DEFAULT true,
@@ -91,7 +85,6 @@ CREATE POLICY "Service role manages all notification preferences"
     USING (true)
     WITH CHECK (true);
 
--- 3. Create in-app notifications inbox table
 CREATE TABLE IF NOT EXISTS public.notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -139,7 +132,6 @@ CREATE POLICY "Service role manages all notifications"
     USING (true)
     WITH CHECK (true);
 
--- 4. Stored Procedure: Register Device Token
 CREATE OR REPLACE FUNCTION public.register_device_token(
     p_fcm_token TEXT,
     p_platform TEXT,
@@ -154,7 +146,6 @@ BEGIN
         RAISE EXCEPTION 'User must be authenticated to register device token';
     END IF;
 
-    -- Upsert the token for this user
     INSERT INTO public.user_devices (user_id, fcm_token, platform, device_name, is_active, updated_at)
     VALUES (v_user_id, p_fcm_token, p_platform, p_device_name, true, now())
     ON CONFLICT (fcm_token) DO UPDATE SET
@@ -165,7 +156,6 @@ BEGIN
         updated_at = now()
     RETURNING id INTO v_device_id;
 
-    -- Ensure default notification preferences exist for user
     INSERT INTO public.notification_preferences (user_id)
     VALUES (v_user_id)
     ON CONFLICT (user_id) DO NOTHING;
@@ -180,7 +170,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 GRANT EXECUTE ON FUNCTION public.register_device_token(TEXT, TEXT, TEXT) TO authenticated, service_role;
 
--- 5. Trigger: Unread notification count sync on user_analytics
 CREATE OR REPLACE FUNCTION public.sync_unread_notifications_count()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -213,11 +202,9 @@ CREATE TRIGGER trg_sync_unread_notifications
     AFTER INSERT OR UPDATE OF read OR DELETE ON public.notifications
     FOR EACH ROW EXECUTE FUNCTION public.sync_unread_notifications_count();
 
--- 6. Trigger: Notify user when document ingestion completes
 CREATE OR REPLACE FUNCTION public.trg_notify_on_document_ingestion_completed()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Only trigger when transitioning into 'completed'
     IF NEW.processing_status = 'completed' AND (OLD.processing_status IS NULL OR OLD.processing_status != 'completed') THEN
         INSERT INTO public.notifications (
             user_id,
@@ -246,7 +233,6 @@ CREATE TRIGGER trg_document_completed_notification
     AFTER UPDATE OF processing_status ON public.documents
     FOR EACH ROW EXECUTE FUNCTION public.trg_notify_on_document_ingestion_completed();
 
--- 7. Trigger: Notify deck author when their shared deck is downloaded/cloned
 CREATE OR REPLACE FUNCTION public.trg_notify_on_shared_deck_cloned()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -278,13 +264,11 @@ CREATE TRIGGER trg_shared_deck_cloned_notification
     AFTER UPDATE OF downloads_count ON public.shared_decks
     FOR EACH ROW EXECUTE FUNCTION public.trg_notify_on_shared_deck_cloned();
 
--- 8. Scheduled Check: Daily Study Streak Protection
 CREATE OR REPLACE FUNCTION public.check_daily_streaks_and_notify()
 RETURNS void AS $$
 DECLARE
     r RECORD;
 BEGIN
-    -- Find users with active streak >= 2 who have NOT studied today
     FOR r IN
         SELECT 
             p.id AS user_id,
@@ -301,7 +285,6 @@ BEGIN
                 AND (cards_reviewed > 0 OR minutes_studied > 0)
           )
     LOOP
-        -- Avoid spamming if a streak warning was already sent today
         IF NOT EXISTS (
             SELECT 1 FROM public.notifications
             WHERE user_id = r.user_id
@@ -329,13 +312,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 9. Scheduled Check: Spaced Repetition Due Queue
 CREATE OR REPLACE FUNCTION public.check_spaced_repetition_due_and_notify()
 RETURNS void AS $$
 DECLARE
     r RECORD;
 BEGIN
-    -- Batch review due alerts by deck and user
     FOR r IN
         SELECT 
             f.user_id,
@@ -350,7 +331,6 @@ BEGIN
         GROUP BY f.user_id, d.title, d.id
         HAVING COUNT(*) >= 5
     LOOP
-        -- Avoid duplicate due alerts for the same deck on the same day
         IF NOT EXISTS (
             SELECT 1 FROM public.notifications
             WHERE user_id = r.user_id
@@ -381,7 +361,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 10. Scheduled Check: Exam Countdown Milestones
 CREATE OR REPLACE FUNCTION public.check_exam_milestones_and_notify()
 RETURNS void AS $$
 DECLARE
@@ -434,11 +413,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
--- 11. Register pg_cron jobs if available
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
-        -- Daily Streak Loss Warning: 19:30 UTC daily (30 19 * * *)
         PERFORM cron.unschedule('check-daily-streaks-and-notify')
         WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-daily-streaks-and-notify');
 
@@ -448,7 +425,6 @@ BEGIN
             'SELECT public.check_daily_streaks_and_notify();'
         );
 
-        -- Spaced Repetition Due Queue: 08:30 UTC daily (30 8 * * *)
         PERFORM cron.unschedule('check-spaced-repetition-due-and-notify')
         WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-spaced-repetition-due-and-notify');
 
@@ -458,7 +434,6 @@ BEGIN
             'SELECT public.check_spaced_repetition_due_and_notify();'
         );
 
-        -- Exam Countdown Milestones: 09:00 UTC daily (0 9 * * *)
         PERFORM cron.unschedule('check-exam-milestones-and-notify')
         WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'check-exam-milestones-and-notify');
 

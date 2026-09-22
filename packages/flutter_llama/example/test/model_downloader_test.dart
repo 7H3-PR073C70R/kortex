@@ -36,7 +36,6 @@ void main() {
       
       final modelPath = await ModelDownloader.getModelPath(modelId, fileName);
       
-      // Путь может быть null, если модель не скачана
       expect(modelPath, anyOf(isNull, isA<String>()));
     });
 

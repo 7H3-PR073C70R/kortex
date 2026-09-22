@@ -45,7 +45,6 @@ serve(async (req) => {
       );
     }
 
-    // 1. Check if study_communities record exists
     const { data: existingCommunity, error: checkError } = await supabase
       .from("study_communities")
       .select("*, study_rooms(id, title, active_participants_count)")
@@ -60,7 +59,6 @@ serve(async (req) => {
     let isFoundingMember = false;
 
     if (!communityRecord) {
-      // 2. Create the study_communities record
       const { data: newCommunity, error: insertError } = await supabase
         .from("study_communities")
         .insert({
@@ -80,7 +78,6 @@ serve(async (req) => {
       communityRecord = newCommunity;
       isFoundingMember = true;
 
-      // 3. Create default focus room
       const { data: defaultRoom } = await supabase
         .from("study_rooms")
         .insert({
@@ -96,7 +93,6 @@ serve(async (req) => {
         .select()
         .single();
 
-      // 4. Create default forum channels / threads
       await supabase.from("forum_posts").insert([
         {
           title: `Welcome to ${title}!`,
@@ -130,14 +126,12 @@ serve(async (req) => {
         communityRecord.active_room_title = defaultRoom.title;
       }
     } else {
-      // Increment member count if joining existing
       await supabase
         .from("study_communities")
         .update({ member_count: (communityRecord.member_count || 1) + 1 })
         .eq("id", communityRecord.id);
     }
 
-    // 5. Enroll the user into community_members table if user is present
     if (userId && communityRecord?.id) {
       await supabase.from("community_members").upsert(
         {

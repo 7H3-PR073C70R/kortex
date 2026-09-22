@@ -1,8 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 018 - Idempotent FSRS Sync & Out-of-Order Resolution
--- ==============================================================================
 
--- 1. Alter Flashcards table to add FSRS vector columns and epoch timestamp tracking
 ALTER TABLE public.flashcards
 ADD COLUMN IF NOT EXISTS stability DOUBLE PRECISION DEFAULT 0.0,
 ADD COLUMN IF NOT EXISTS difficulty DOUBLE PRECISION DEFAULT 0.0,
@@ -13,7 +9,6 @@ ADD COLUMN IF NOT EXISTS state INT DEFAULT 0,
 ADD COLUMN IF NOT EXISTS last_reviewed_epoch BIGINT DEFAULT 0,
 ADD COLUMN IF NOT EXISTS last_transaction_id UUID;
 
--- 2. Create Study Review Logs table for granular audit trails & multi-device sync
 CREATE TABLE IF NOT EXISTS public.study_review_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -35,7 +30,6 @@ CREATE INDEX IF NOT EXISTS idx_study_review_logs_user_id ON public.study_review_
 CREATE INDEX IF NOT EXISTS idx_study_review_logs_card_id ON public.study_review_logs(card_id);
 CREATE INDEX IF NOT EXISTS idx_study_review_logs_reviewed_at ON public.study_review_logs(reviewed_at_utc);
 
--- Enable RLS on study_review_logs
 ALTER TABLE public.study_review_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own review logs"
@@ -48,7 +42,6 @@ CREATE POLICY "Users can insert own review logs"
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
--- 3. RPC Function: Idempotent Batch FSRS Review Sync with Last-Write-Wins
 CREATE OR REPLACE FUNCTION public.upsert_fsrs_review_batch(
     reviews JSONB
 )
@@ -108,7 +101,6 @@ BEGIN
         v_reviewed_utc := v_review.reviewed_at_utc::TIMESTAMPTZ;
         v_reviewed_epoch := COALESCE(v_review.reviewed_at_epoch, (EXTRACT(EPOCH FROM v_reviewed_utc) * 1000)::BIGINT);
 
-        -- Check for duplicate transaction UUID (idempotency guard)
         IF EXISTS (
             SELECT 1 FROM public.study_review_logs 
             WHERE user_id = v_user_id AND transaction_uuid = v_trans_uuid
@@ -117,7 +109,6 @@ BEGIN
             CONTINUE;
         END IF;
 
-        -- Record the review in the immutable audit log
         INSERT INTO public.study_review_logs (
             user_id,
             transaction_uuid,
@@ -144,13 +135,11 @@ BEGIN
             v_reviewed_epoch
         );
 
-        -- Fetch current card state
         SELECT * INTO v_card
         FROM public.flashcards
         WHERE id = v_card_id AND user_id = v_user_id;
 
         IF FOUND THEN
-            -- Check Last-Write-Wins policy based on reviewed_at_epoch
             IF v_card.last_reviewed_epoch IS NULL OR v_reviewed_epoch >= v_card.last_reviewed_epoch THEN
                 v_next_due := v_reviewed_utc + (v_scheduled_days || ' days')::INTERVAL;
 
@@ -168,7 +157,6 @@ BEGIN
                     updated_at = now()
                 WHERE id = v_card_id;
             ELSE
-                -- Out-of-order review: logged into audit trail, but card state is preserved
                 v_out_of_order_count := v_out_of_order_count + 1;
             END IF;
         END IF;

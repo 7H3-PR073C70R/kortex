@@ -95,7 +95,6 @@ serve(async (req) => {
       );
     }
 
-    // Zero-Trust BOLA Guard: Verify the document belongs to caller if caller is a standard user
     if (effectiveUserId) {
       const { data: existingDocRecord } = await supabase
         .from("documents")
@@ -112,7 +111,6 @@ serve(async (req) => {
     }
 
     const cacheKey = `doc_embeddings:${documentId}:${rawText?.length ?? chunks?.length ?? 0}`;
-    // 1. Check Semantic Cache for pre-computed document embeddings
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       supabase,
       cacheKey,
@@ -138,7 +136,6 @@ serve(async (req) => {
       );
     }
 
-    // Verify document exists in documents table before inserting foreign key
     let validDocumentId: string | null = null;
     const isUuid =
       documentId &&
@@ -245,7 +242,6 @@ serve(async (req) => {
       }
     }
 
-    // Cache precomputed embedding records
     await SemanticCacheProvider.setCachedResponse(
       supabase,
       cacheKey,

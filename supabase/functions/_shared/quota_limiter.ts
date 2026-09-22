@@ -59,7 +59,6 @@ export async function enforceDailyQuota(
 
   if (upstashUrl && upstashToken) {
     try {
-      // INCR and EXPIRE in pipeline
       const pipelineRes = await fetch(`${upstashUrl}/pipeline`, {
         method: "POST",
         headers: {

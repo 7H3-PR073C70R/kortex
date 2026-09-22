@@ -126,7 +126,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     if (modelId != null) {
-      // Пользователь выбрал модель из менеджера
       await _loadDownloadedModel(modelId);
     }
   }
@@ -139,7 +138,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
 
     if (model != null) {
-      // Модель уже загружена через ModelPickerScreen
       setState(() {
         _isModelLoaded = true;
         _addSystemMessage(
@@ -158,7 +156,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _addSystemMessage('Поиск модели $modelId...');
       });
 
-      // Получаем путь к модели
       final modelPath = await ModelDownloader.getModelPath(
         modelId,
         'adapter_model.safetensors',
@@ -185,7 +182,6 @@ class _ChatScreenState extends State<ChatScreen> {
         '${documentsDir.path}/shridhar_8k_multimodal.gguf',
       );
 
-      // Копируем модель из assets, если её нет
       if (!await modelFile.exists()) {
         setState(() {
           _addSystemMessage('Копирую модель из assets...');
@@ -306,7 +302,6 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    // Добавляем сообщение пользователя
     final userMessage = Message(
       text: text.isEmpty ? '[Изображение]' : text,
       isUser: true,
@@ -324,7 +319,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _scrollToBottom();
 
-    // Формируем промпт с учётом мультимодальности
     String prompt = text;
     if (_selectedImages.isNotEmpty) {
       prompt = '[IMAGE] $text';
@@ -340,7 +334,6 @@ class _ChatScreenState extends State<ChatScreen> {
         repeatPenalty: 1.1,
       );
 
-      // Генерация с потоковым выводом
       final assistantMessage = Message(text: '', isUser: false);
       setState(() {
         _messages.add(assistantMessage);
@@ -451,7 +444,6 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: Column(
         children: [
-          // Список сообщений
           Expanded(
             child: _messages.isEmpty
                 ? Center(
@@ -524,7 +516,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
           ),
 
-          // Предпросмотр выбранных изображений
           if (_selectedImages.isNotEmpty)
             Container(
               height: 100,
@@ -578,7 +569,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ),
 
-          // Поле ввода
           Container(
             decoration: BoxDecoration(
               color: bgColor,
@@ -589,7 +579,6 @@ class _ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                // Кнопка добавления изображения
                 IconButton(
                   icon: const Icon(Icons.add_photo_alternate),
                   onPressed: _isGenerating ? null : _pickImages,
@@ -597,7 +586,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 const SizedBox(width: 8),
 
-                // Текстовое поле
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -622,7 +610,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 const SizedBox(width: 8),
 
-                // Кнопка отправки
                 Container(
                   decoration: BoxDecoration(
                     color: _isGenerating

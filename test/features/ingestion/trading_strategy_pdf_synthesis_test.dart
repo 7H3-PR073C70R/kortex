@@ -1,4 +1,3 @@
-// ignore_for_file: avoid_print // Diagnostic ignored for local test inspection.
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
@@ -27,16 +26,10 @@ void main() {
       filename: "The Only 1 Minute Trading Strategy You'll Ever Need.pdf",
     );
 
-    print('\n==================== LOCAL SYNTHESIZED CARDS (${snippets.length}) ====================');
     for (var i = 0; i < snippets.length; i++) {
-      print('\nCARD #${i + 1}');
-      print('QUESTION: ${snippets[i].topic}');
-      print('ANSWER:   ${snippets[i].rawText}');
       if (snippets[i].latexContent != null) {
-        print('LATEX:    ${snippets[i].latexContent}');
       }
     }
-    print('=================================================================\n');
 
     // Assertions:
     // 1. Must produce a healthy number of high-yield cards (at least 8)

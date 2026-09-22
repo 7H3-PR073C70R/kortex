@@ -1,17 +1,10 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 041 - Sanitize User Metadata & Prevent JWT Bloat
--- Strips large base64 data URIs from auth.users.raw_user_meta_data to prevent
--- 400 Request Header Or Cookie Too Large (Cloudflare header limits).
--- ==============================================================================
 
--- 1. One-time immediate cleanup of bloated metadata for all existing users
 UPDATE auth.users
 SET raw_user_meta_data = raw_user_meta_data - 'avatar_url' - 'photo_url'
 WHERE (raw_user_meta_data->>'avatar_url' LIKE 'data:image%'
        OR raw_user_meta_data->>'photo_url' LIKE 'data:image%'
        OR length(raw_user_meta_data::text) > 1000);
 
--- 2. Stored procedure to sanitize user metadata on demand
 CREATE OR REPLACE FUNCTION public.sanitize_user_metadata(p_user_id UUID DEFAULT NULL)
 RETURNS void AS $$
 BEGIN
@@ -34,7 +27,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, pg_temp;
 
 GRANT EXECUTE ON FUNCTION public.sanitize_user_metadata(UUID) TO anon, authenticated, service_role;
 
--- 3. Update handle_new_user to ensure base64 image strings never stay in raw_user_meta_data
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -54,7 +46,6 @@ BEGIN
     v_target_track := COALESCE(NEW.raw_user_meta_data->>'target_track', 'WAEC');
     v_avatar_url := NEW.raw_user_meta_data->>'avatar_url';
 
-    -- If avatar is a data URI, do not retain it in raw_user_meta_data to prevent JWT header bloat
     IF v_avatar_url LIKE 'data:image%' OR length(v_avatar_url) > 1000 THEN
         NEW.raw_user_meta_data := NEW.raw_user_meta_data - 'avatar_url' - 'photo_url';
     END IF;
@@ -71,7 +62,6 @@ BEGIN
         v_retention := 0.85;
     END;
 
-    -- Insert into public.profiles
     INSERT INTO public.profiles (
         id,
         email,
@@ -102,7 +92,6 @@ BEGIN
         display_name = COALESCE(EXCLUDED.display_name, public.profiles.display_name),
         photo_url = COALESCE(EXCLUDED.photo_url, public.profiles.photo_url);
 
-    -- Insert into public.user_calibrations
     INSERT INTO public.user_calibrations (user_id, focus, is_calibrated)
     VALUES (NEW.id, 'higherEducation', false)
     ON CONFLICT (user_id) DO NOTHING;

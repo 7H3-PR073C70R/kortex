@@ -1,5 +1,3 @@
--- Migration: Create content_reports table for community moderation & safety
--- Allows students and scholars to flag inappropriate, spam, or misleading content
 
 CREATE TABLE IF NOT EXISTS public.content_reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -14,21 +12,17 @@ CREATE TABLE IF NOT EXISTS public.content_reports (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Indices for performance
 CREATE INDEX IF NOT EXISTS idx_content_reports_content_id ON public.content_reports(content_id);
 CREATE INDEX IF NOT EXISTS idx_content_reports_status ON public.content_reports(status);
 CREATE INDEX IF NOT EXISTS idx_content_reports_reporter_id ON public.content_reports(reporter_id);
 
--- Enable RLS
 ALTER TABLE public.content_reports ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated users to submit content reports
 CREATE POLICY "Authenticated users can submit content reports"
     ON public.content_reports FOR INSERT
     TO authenticated
     WITH CHECK (auth.uid() = reporter_id OR reporter_id IS NULL);
 
--- Allow service_role and authenticated users to select their own reports
 CREATE POLICY "Users can view their own submitted reports"
     ON public.content_reports FOR SELECT
     TO authenticated

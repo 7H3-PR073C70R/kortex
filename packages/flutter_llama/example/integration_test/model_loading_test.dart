@@ -15,7 +15,6 @@ void main() {
     });
 
     tearDown(() async {
-      // Cleanup: unload model after each test
       try {
         if (llama.isModelLoaded) {
           await llama.unloadModel();
@@ -30,7 +29,6 @@ void main() {
     ) async {
       print('Starting model download test...');
 
-      // Download model if not already present
       String? modelPath = await ModelDownloader.getModelPath('braindler-q2_k');
 
       if (modelPath == null) {
@@ -48,7 +46,6 @@ void main() {
       expect(modelPath, isNotNull);
       expect(File(modelPath!).existsSync(), isTrue);
 
-      // Load model
       print('Loading model...');
       final config = LlamaConfig(
         modelPath: modelPath,
@@ -84,7 +81,6 @@ void main() {
       expect(info, isNotNull);
       print('Model info: $info');
 
-      // Verify info contains expected fields
       if (info != null) {
         expect(info.containsKey('modelPath') || info.isNotEmpty, isTrue);
       }
@@ -102,7 +98,6 @@ void main() {
 
       final config = LlamaConfig(modelPath: modelPath!);
 
-      // Load and unload 3 times
       for (int i = 0; i < 3; i++) {
         print('Cycle ${i + 1}/3: Loading model...');
         final loaded = await llama.loadModel(config);
@@ -142,7 +137,6 @@ void main() {
         modelPath = await ModelDownloader.downloadModel('braindler-q2_k');
       }
 
-      // Test with minimal config
       print('Testing minimal config...');
       var config = LlamaConfig(
         modelPath: modelPath!,
@@ -154,7 +148,6 @@ void main() {
       expect(result, isTrue);
       await llama.unloadModel();
 
-      // Test with maximal config
       print('Testing maximal config...');
       config = LlamaConfig(
         modelPath: modelPath,
@@ -218,7 +211,6 @@ void main() {
     ) async {
       print('Testing download with progress tracking...');
 
-      // Check if already downloaded
       final existingPath = await ModelDownloader.getModelPath('braindler-q2_k');
       if (existingPath != null) {
         print('Model already downloaded, skipping download test');

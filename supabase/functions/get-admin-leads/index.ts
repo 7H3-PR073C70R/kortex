@@ -52,7 +52,6 @@ async function hashToken(token: string): Promise<string> {
 /** Escape a single CSV field (RFC 4180) */
 function csvEscape(val: unknown): string {
   const s = String(val ?? "");
-  // Block CSV injection (A03) - prefix dangerous chars
   if (/^[=+\-@\t\r]/.test(s)) return `"'${s.replace(/"/g, '""')}"`;
   if (s.includes(",") || s.includes('"') || s.includes("\n")) {
     return `"${s.replace(/"/g, '""')}"`;
@@ -71,7 +70,6 @@ serve(async (req: Request) => {
     return json({ error: "Method not allowed" }, 405, origin);
   }
 
-  // ── Token extraction ────────────────────────────────────────────────────────
   const rawToken = req.headers.get("X-Admin-Token")?.trim() ?? "";
   if (!rawToken || rawToken.length < 64) {
     return json({ error: "Unauthorized" }, 401, origin);
@@ -85,7 +83,6 @@ serve(async (req: Request) => {
     { auth: { persistSession: false } }
   );
 
-  // ── Validate session ────────────────────────────────────────────────────────
   const { data: isValid, error: sessionErr } = await supabase.rpc("verify_admin_session", {
     input_token_hash: tokenHash,
   });
@@ -94,7 +91,6 @@ serve(async (req: Request) => {
     return json({ error: "Unauthorized" }, 401, origin);
   }
 
-  // ── Parse query params (validated, never interpolated into SQL) ─────────────
   const url    = new URL(req.url);
   const type   = url.searchParams.get("type") ?? "newsletter";   // 'newsletter' | 'contact'
   const format = url.searchParams.get("format") ?? "json";        // 'json' | 'csv'
@@ -109,7 +105,6 @@ serve(async (req: Request) => {
     return json({ error: "Invalid format parameter" }, 400, origin);
   }
 
-  // ── Fetch data ──────────────────────────────────────────────────────────────
   if (type === "newsletter") {
     const { data, error, count } = await supabase
       .from("newsletter_subscribers")
@@ -141,7 +136,6 @@ serve(async (req: Request) => {
     return json({ data, total: count, page, limit }, 200, origin);
   }
 
-  // type === 'contact'
   const { data, error, count } = await supabase
     .from("contact_inquiries")
     .select("id, name, email, topic, message, newsletter_optin, submitted_at", { count: "exact" })

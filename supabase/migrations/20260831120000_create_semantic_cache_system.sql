@@ -1,9 +1,6 @@
--- Migration: Semantic Response Caching System & Vector RPC Optimizer
--- Caches embeddings, LLM chat responses, and generated quiz JSONs to eliminate redundant AI calls.
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- 1. Semantic AI Cache Table
 CREATE TABLE IF NOT EXISTS public.semantic_ai_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     cache_key TEXT NOT NULL,
@@ -19,17 +16,14 @@ CREATE TABLE IF NOT EXISTS public.semantic_ai_cache (
     CONSTRAINT uq_semantic_cache_key UNIQUE (cache_key)
 );
 
--- 2. Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_semantic_cache_type ON public.semantic_ai_cache(response_type);
 CREATE INDEX IF NOT EXISTS idx_semantic_cache_expires_at ON public.semantic_ai_cache(expires_at);
 
--- HNSW Vector Index for Semantic Approximate Nearest Neighbor Lookup
 CREATE INDEX IF NOT EXISTS idx_semantic_cache_embedding_hnsw 
     ON public.semantic_ai_cache 
     USING hnsw (prompt_embedding vector_cosine_ops)
     WITH (m = 16, ef_construction = 64);
 
--- 3. Row Level Security
 ALTER TABLE public.semantic_ai_cache ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow authenticated and service role cache access" ON public.semantic_ai_cache;
@@ -39,7 +33,6 @@ CREATE POLICY "Allow authenticated and service role cache access"
     USING (true)
     WITH CHECK (true);
 
--- 4. RPC: Get Semantic Cache Match (Cosine similarity search >= threshold)
 CREATE OR REPLACE FUNCTION public.get_semantic_cache_match(
     p_embedding vector(1536),
     p_response_type TEXT,
@@ -80,7 +73,6 @@ BEGIN
     FROM candidate
     WHERE candidate.sim >= p_similarity_threshold;
 
-    -- Increment hit count on matched entry
     UPDATE public.semantic_ai_cache
     SET hit_count = hit_count + 1,
         updated_at = now()
@@ -90,7 +82,6 @@ BEGIN
 END;
 $$;
 
--- 5. RPC: Put Semantic Cache Entry
 CREATE OR REPLACE FUNCTION public.put_semantic_cache(
     p_cache_key TEXT,
     p_prompt_text TEXT,
@@ -136,7 +127,6 @@ BEGIN
 END;
 $$;
 
--- 6. RPC: Purge Expired Cache
 CREATE OR REPLACE FUNCTION public.purge_expired_semantic_cache()
 RETURNS INT
 LANGUAGE plpgsql
@@ -153,7 +143,6 @@ BEGIN
 END;
 $$;
 
--- 7. Optimized Vector Matching RPC for Document Chunks with Index Tuning
 CREATE OR REPLACE FUNCTION public.match_document_chunks_optimized(
     query_embedding vector(1536),
     match_threshold FLOAT DEFAULT 0.65,
@@ -171,7 +160,6 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-    -- Set HNSW search parameter dynamically for high precision & speed
     PERFORM set_config('hnsw.ef_search', '40', true);
 
     RETURN QUERY

@@ -51,7 +51,6 @@ class _MultimodalDemoState extends State<MultimodalDemo> {
     });
 
     try {
-      // Симуляция анализа изображения
       final input = MultimodalInput.image(
         '/path/to/spiritual_image.jpg',
         text: 'Опиши духовное значение этого изображения',
@@ -83,7 +82,6 @@ class _MultimodalDemoState extends State<MultimodalDemo> {
     });
 
     try {
-      // Симуляция обработки аудио
       final input = MultimodalInput.audio(
         '/path/to/mantra.mp3',
         text: 'Проанализируй эту мантру',
@@ -115,7 +113,6 @@ class _MultimodalDemoState extends State<MultimodalDemo> {
     });
 
     try {
-      // Симуляция смешанного ввода
       final input = MultimodalInput.mixed(
         text: 'Проанализируй все модальности',
         imagePath: '/path/to/temple.jpg',
@@ -184,7 +181,6 @@ class _MultimodalDemoState extends State<MultimodalDemo> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Кнопки демонстрации
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -219,12 +215,10 @@ class _MultimodalDemoState extends State<MultimodalDemo> {
 
             const SizedBox(height: 16),
 
-            // Индикатор загрузки
             if (_isLoading) const LinearProgressIndicator(),
 
             const SizedBox(height: 16),
 
-            // Вывод
             Expanded(
               child: Card(
                 child: Padding(

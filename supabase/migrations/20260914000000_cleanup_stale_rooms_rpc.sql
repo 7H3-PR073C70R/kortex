@@ -1,5 +1,3 @@
--- Migration: Stale Study Room Cleanup & Maintenance RPC
--- Archives or removes inactive non-default study rooms with 0 participants older than 24 hours
 
 CREATE OR REPLACE FUNCTION cleanup_inactive_study_rooms()
 RETURNS JSONB
@@ -9,10 +7,6 @@ AS $$
 DECLARE
     v_deleted_count INT := 0;
 BEGIN
-    -- Delete ad-hoc study rooms that:
-    -- 1. Have active_participants_count = 0 (or null)
-    -- 2. Were created more than 24 hours ago
-    -- 3. Are NOT the designated active_room_id for any auto-provisioned study community
     WITH deleted_rooms AS (
         DELETE FROM public.study_rooms
         WHERE (active_participants_count <= 0 OR active_participants_count IS NULL)
@@ -26,7 +20,6 @@ BEGIN
     )
     SELECT COUNT(*) INTO v_deleted_count FROM deleted_rooms;
 
-    -- Update active_rooms_count on study_communities based on surviving rooms
     UPDATE public.study_communities sc
     SET active_rooms_count = (
         SELECT COUNT(*)

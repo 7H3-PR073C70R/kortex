@@ -150,16 +150,13 @@ class FlutterLlamaMultimodal {
         print('[FlutterLlamaMultimodal] Generation params: $params');
       }
 
-      // Set up event channel for streaming
       final eventChannel = EventChannel('flutter_llama_multimodal/stream');
 
-      // Send generation request
       await _channel.invokeMethod('generateMultimodalStream', {
         'input': input.toMap(),
         'params': params.toMap(),
       });
 
-      // Listen to response stream
       await for (final responseData in eventChannel.receiveBroadcastStream()) {
         if (responseData is Map) {
           final response = MultimodalResponse.fromMap(

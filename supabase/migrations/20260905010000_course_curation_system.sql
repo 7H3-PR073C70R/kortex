@@ -1,9 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: COURSE CURATION SYSTEM
--- Multi-disciplinary Catalog, Smart Course Syncing, and Exam Auto-Curation
--- ==============================================================================
 
--- 1. Ensure RLS DELETE policy exists on public.user_curated_courses
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -18,7 +13,6 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Insert Multi-Disciplinary Seed Catalog Courses (All fields: Arts, Law, Business, Med, STEM, Prep)
 INSERT INTO public.curated_courses (
     id,
     course_code,
@@ -34,7 +28,6 @@ INSERT INTO public.curated_courses (
     field_category
 )
 VALUES
--- Arts & Humanities
 (
     '00000000-0000-0000-0001-000000000001',
     'ENG 101',
@@ -64,7 +57,6 @@ VALUES
     'Arts & Humanities'
 ),
 
--- Social Sciences
 (
     '00000000-0000-0000-0002-000000000001',
     'ECN 101',
@@ -108,7 +100,6 @@ VALUES
     'Social Sciences'
 ),
 
--- Law & Legal Studies
 (
     '00000000-0000-0000-0003-000000000001',
     'LAW 101',
@@ -138,7 +129,6 @@ VALUES
     'Law & Legal Studies'
 ),
 
--- Business, Finance & Accounting
 (
     '00000000-0000-0000-0004-000000000001',
     'ACC 101',
@@ -168,7 +158,6 @@ VALUES
     'Business & Management'
 ),
 
--- Medicine & Health Sciences
 (
     '00000000-0000-0000-0005-000000000001',
     'ANAT 201',
@@ -198,7 +187,6 @@ VALUES
     'Medicine & Health'
 ),
 
--- Standardized Lower Exams (WAEC / JAMB / NECO / GCE / SAT)
 (
     '00000000-0000-0000-0006-000000000001',
     'W-MATH',
@@ -313,9 +301,6 @@ VALUES
 )
 ON CONFLICT (id) DO NOTHING;
 
--- 3. Smart Course Normalization and Enrollment RPC
--- Intelligently matches course codes and titles, provisions new courses dynamically,
--- and updates the student's enrollments.
 CREATE OR REPLACE FUNCTION public.sync_or_create_user_courses(
     p_courses JSONB
 )
@@ -336,7 +321,6 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated.';
     END IF;
 
-    -- Loop through each submitted course
     FOR v_course IN SELECT * FROM jsonb_array_elements(p_courses)
     LOOP
         v_course_id := NULL;
@@ -345,17 +329,14 @@ BEGIN
         v_department := trim(COALESCE(v_course->>'department', 'General Academics'));
         v_field_category := trim(COALESCE(v_course->>'fieldCategory', 'General'));
 
-        -- Normalized code: uppercase, remove spaces, dashes, dots (e.g. "ECN 101" -> "ECN101")
         v_norm_code := regexp_replace(upper(v_raw_code), '[^A-Z0-9]', '', 'g');
 
-        -- 1. If explicit UUID is provided, verify it exists
         IF (v_course->>'id') IS NOT NULL AND (v_course->>'id') ~ '^[0-9a-fA-F-]{36}$' THEN
             SELECT id INTO v_course_id
             FROM public.curated_courses
             WHERE id = (v_course->>'id')::UUID;
         END IF;
 
-        -- 2. If not matched, try matching normalized course_code
         IF v_course_id IS NULL AND length(v_norm_code) >= 3 THEN
             SELECT id INTO v_course_id
             FROM public.curated_courses
@@ -363,7 +344,6 @@ BEGIN
             LIMIT 1;
         END IF;
 
-        -- 3. If not matched, try matching normalized course title
         IF v_course_id IS NULL AND length(v_title) >= 4 THEN
             SELECT id INTO v_course_id
             FROM public.curated_courses
@@ -372,7 +352,6 @@ BEGIN
             LIMIT 1;
         END IF;
 
-        -- 4. If still not found, dynamically insert into curated_courses catalog
         IF v_course_id IS NULL AND (length(v_raw_code) > 0 OR length(v_title) > 0) THEN
             INSERT INTO public.curated_courses (
                 course_code,
@@ -399,7 +378,6 @@ BEGIN
             RETURNING id INTO v_course_id;
         END IF;
 
-        -- Enroll the user in this course if valid
         IF v_course_id IS NOT NULL THEN
             INSERT INTO public.user_curated_courses (user_id, course_id, syllabus_coverage)
             VALUES (v_user_id, v_course_id, 0.0)
@@ -409,12 +387,10 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- Remove any courses no longer selected by the user
     DELETE FROM public.user_curated_courses
     WHERE user_id = v_user_id
       AND NOT (course_id = ANY(v_enrolled_ids));
 
-    -- Return the updated list of enrolled courses
     SELECT jsonb_build_object(
         'success', true,
         'enrolledCount', coalesce(cardinality(v_enrolled_ids), 0),
@@ -443,7 +419,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. Auto-Curation RPC for Lower Standardized Exams (WAEC, JAMB, NECO, GCE, SAT)
 CREATE OR REPLACE FUNCTION public.auto_curate_exam_courses(
     p_exam_name TEXT,
     p_subjects TEXT[]
@@ -459,7 +434,6 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated.';
     END IF;
 
-    -- Map each selected subject to standardized catalog courses
     FOREACH v_subject IN ARRAY p_subjects
     LOOP
         v_matched_id := NULL;
@@ -491,7 +465,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. Updated get_dashboard_feed() that accurately queries user's enrolled courses
 CREATE OR REPLACE FUNCTION public.get_dashboard_feed()
 RETURNS JSONB AS $$
 DECLARE
@@ -508,7 +481,6 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated.';
     END IF;
 
-    -- Analytics Summary & Heatmap
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'dateIso', to_char(activity_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
@@ -570,7 +542,6 @@ BEGIN
         );
     END IF;
 
-    -- Due Flashcard Decks for Review
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'id', d.id,
@@ -603,7 +574,6 @@ BEGIN
         LIMIT 5
     ) d;
 
-    -- Enrolled Curated Courses for this User
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'id', c.id,
@@ -624,7 +594,6 @@ BEGIN
     WHERE uc.user_id = v_user_id
     ORDER BY uc.enrolled_at DESC;
 
-    -- Target Exam Countdown
     SELECT jsonb_build_object(
         'id', e.id,
         'examTitle', e.exam_title,
@@ -639,7 +608,6 @@ BEGIN
     WHERE e.user_id = v_user_id
     LIMIT 1;
 
-    -- Unread Notifications Count
     SELECT COUNT(*) INTO v_unread_count
     FROM public.notifications
     WHERE user_id = v_user_id AND is_read = false;

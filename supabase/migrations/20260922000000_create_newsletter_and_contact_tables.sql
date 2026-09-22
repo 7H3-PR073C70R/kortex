@@ -1,6 +1,3 @@
--- =============================================================================
--- Migration: Create newsletter_subscribers table for landing page signups
--- =============================================================================
 
 CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
   id              uuid        NOT NULL DEFAULT gen_random_uuid(),
@@ -21,39 +18,26 @@ CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
   )
 );
 
--- Indexes
 CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_email       ON public.newsletter_subscribers (email);
 CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_active      ON public.newsletter_subscribers (is_active) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_subscribed  ON public.newsletter_subscribers (subscribed_at DESC);
 
--- Comment
 COMMENT ON TABLE public.newsletter_subscribers IS
   'Landing page and in-app newsletter signups. One unique record per email.';
 
--- =============================================================================
--- Row-Level Security
--- =============================================================================
 ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 
--- Public cannot SELECT any rows (no data leakage)
--- Only the service_role (Edge Functions) can read/write
 CREATE POLICY "newsletter_subscribers_no_public_read"
   ON public.newsletter_subscribers
   FOR SELECT
   USING (false);
 
--- The anon role is blocked from direct INSERT. Writes go through the Edge Function
--- (which uses the service_role key internally, never exposed to the client).
 CREATE POLICY "newsletter_subscribers_no_public_write"
   ON public.newsletter_subscribers
   FOR INSERT
   WITH CHECK (false);
 
--- Service role bypasses RLS by design – no extra policy needed.
 
--- =============================================================================
--- Also create contact_inquiries table (if not already present)
--- =============================================================================
 CREATE TABLE IF NOT EXISTS public.contact_inquiries (
   id              uuid        NOT NULL DEFAULT gen_random_uuid(),
   name            text        NOT NULL,

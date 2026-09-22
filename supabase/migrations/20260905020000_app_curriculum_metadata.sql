@@ -1,9 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: APP CURRICULUM METADATA
--- Dynamic Backend-Driven Curriculum System for Academic Onboarding & Calibration
--- ==============================================================================
 
--- 1. Create table app_curriculum_metadata
 CREATE TABLE IF NOT EXISTS public.app_curriculum_metadata (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     category TEXT NOT NULL,
@@ -15,17 +10,14 @@ CREATE TABLE IF NOT EXISTS public.app_curriculum_metadata (
     CONSTRAINT uq_curriculum_category_key UNIQUE (category, key)
 );
 
--- Indexing for category lookups and active items
 CREATE INDEX IF NOT EXISTS idx_curriculum_metadata_category_active 
     ON public.app_curriculum_metadata(category, is_active);
 
 CREATE INDEX IF NOT EXISTS idx_curriculum_metadata_key 
     ON public.app_curriculum_metadata(key);
 
--- Enable Row Level Security
 ALTER TABLE public.app_curriculum_metadata ENABLE ROW LEVEL SECURITY;
 
--- 2. Allow public and authenticated read access for active curriculum items
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -40,7 +32,6 @@ BEGIN
     END IF;
 END $$;
 
--- 3. Seed Standardized Exams (category = 'standardized_exam')
 INSERT INTO public.app_curriculum_metadata (category, key, display_name, metadata, is_active)
 VALUES
 (
@@ -90,7 +81,6 @@ ON CONFLICT (category, key) DO UPDATE SET
     metadata = EXCLUDED.metadata,
     is_active = EXCLUDED.is_active;
 
--- 4. Seed Faculty Tracks / Higher Ed Fields (category = 'faculty_track')
 INSERT INTO public.app_curriculum_metadata (category, key, display_name, metadata, is_active)
 VALUES
 (
@@ -168,7 +158,6 @@ ON CONFLICT (category, key) DO UPDATE SET
     metadata = EXCLUDED.metadata,
     is_active = EXCLUDED.is_active;
 
--- 5. Seed Higher Ed Degree Levels (category = 'higher_ed_level')
 INSERT INTO public.app_curriculum_metadata (category, key, display_name, metadata, is_active)
 VALUES
 (
@@ -211,7 +200,6 @@ ON CONFLICT (category, key) DO UPDATE SET
     metadata = EXCLUDED.metadata,
     is_active = EXCLUDED.is_active;
 
--- 6. Seed Academic Study Goals (category = 'study_goal')
 INSERT INTO public.app_curriculum_metadata (category, key, display_name, metadata, is_active)
 VALUES
 (
@@ -261,7 +249,6 @@ ON CONFLICT (category, key) DO UPDATE SET
     metadata = EXCLUDED.metadata,
     is_active = EXCLUDED.is_active;
 
--- 7. Seed High School Subject Modules (category = 'high_school_subject')
 INSERT INTO public.app_curriculum_metadata (category, key, display_name, metadata, is_active)
 VALUES
 (

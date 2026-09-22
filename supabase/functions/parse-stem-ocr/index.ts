@@ -100,7 +100,6 @@ serve(async (req) => {
       });
     }
 
-    // Zero-Trust Ownership Verification
     const { data: documentRecord } = await supabase
       .from("documents")
       .select("id, user_id, filename, content_hash")
@@ -124,7 +123,6 @@ serve(async (req) => {
       courseTitle ||
       resolvedFilename.replace(/\.[a-zA-Z0-9]+$/, "").trim();
 
-    // Stage 1: Document Download & Loading (15%)
     await broadcastProgress(supabase, documentId, {
       status: "parsingOcr",
       progress: 0.15,
@@ -136,7 +134,6 @@ serve(async (req) => {
       .update({ processing_status: "parsingOcr" })
       .eq("id", documentId);
 
-    // Fetch document bytes from Storage bucket if text is not pre-provided
     let fileBytes: Uint8Array | null = null;
     if (storagePath) {
       try {
@@ -155,7 +152,6 @@ serve(async (req) => {
       }
     }
 
-    // Stage 2: Server-Side Compute Extraction (35%)
     await broadcastProgress(supabase, documentId, {
       status: "parsingOcr",
       progress: 0.35,
@@ -194,8 +190,6 @@ serve(async (req) => {
       parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
-    // When the PDF is scanned/image-only, build a single image-aware section so
-    // Luna receives proper visual context rather than hitting the structural fallback.
     if (
       parsedDoc.sections.length === 0 &&
       parsedDoc.isScannedOrImage &&
@@ -214,7 +208,6 @@ serve(async (req) => {
       console.log(`[parse-stem-ocr] Scanned doc with ${parsedDoc.images.length} image(s): built image-aware section for Luna.`);
     }
 
-    // Stage 3: OCR processing verification (55%)
     await broadcastProgress(supabase, documentId, {
       status: "parsingOcr",
       progress: 0.55,
@@ -223,7 +216,6 @@ serve(async (req) => {
         : `Extracted ${parsedDoc.fullText.length > 0 ? `${parsedDoc.sections.length} document sections` : "empty content"} and ${parsedDoc.images.length} diagrams...`,
     });
 
-    // Stage 4: Semantic Mapping via Luna (75%)
     await broadcastProgress(supabase, documentId, {
       status: "generatingCards",
       progress: 0.75,
@@ -241,9 +233,6 @@ serve(async (req) => {
       tags: string[];
     }> = [];
 
-    // Synthesize cards with Luna:
-    // When text fits within optimal reasoning context (<= 45,000 chars), synthesize a cohesive
-    // high-yield deck in a single unified pass with all diagrams in context.
     if (parsedDoc.fullText.trim().length > 0 && parsedDoc.fullText.length <= 45000) {
       try {
         console.log(
@@ -274,7 +263,6 @@ serve(async (req) => {
       }
     }
 
-    // If unified pass was skipped (long doc) or yielded no cards, synthesize across sections in parallel
     if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
       console.log(`[parse-stem-ocr] Synthesizing across ${parsedDoc.sections.length} sections in parallel...`);
       const sectionPromises = parsedDoc.sections.slice(0, 8).map(async (section) => {
@@ -309,17 +297,12 @@ serve(async (req) => {
       }
     }
 
-    // Structural fallback: Luna was unreachable or returned 0 cards.
-    // Generate one meaningful card per distinct paragraph block, ensuring
-    // the back always has real content (never garbage glyph sequences).
     if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
       console.warn("[parse-stem-ocr] Luna returned 0 cards; generating structured fallback cards from extracted sections...");
 
       for (const sec of parsedDoc.sections) {
-        // Skip sections that appear to be raw scanned-PDF descriptors or are too short
         const isDescriptorSection = sec.text.startsWith("[Scanned") || sec.text.startsWith("[Visual");
 
-        // Split into substantive paragraphs (≥ 40 chars each)
         const paragraphs = sec.text
           .split(/\n\n+/)
           .map((p) => p.trim())
@@ -328,11 +311,9 @@ serve(async (req) => {
         if (paragraphs.length > 0 && !isDescriptorSection) {
           for (let pIdx = 0; pIdx < paragraphs.length; pIdx++) {
             const p = paragraphs[pIdx];
-            // Use full lines as the back content
             const lines = p.split("\n").map((l) => l.trim()).filter((l) => l.length > 5);
             if (lines.length === 0) continue;
 
-            // Derive a clean front question from the first non-trivial line
             const firstLine = lines[0];
             const isSentence = firstLine.includes(".") || firstLine.length > 80;
             const front = isSentence
@@ -354,7 +335,6 @@ serve(async (req) => {
             });
           }
         } else if (isDescriptorSection && parsedDoc.images.length > 0) {
-          // For scanned docs with images, create one card per image
           for (let imgIdx = 0; imgIdx < parsedDoc.images.length; imgIdx++) {
             const img = parsedDoc.images[imgIdx];
             generatedCards.push({
@@ -371,8 +351,6 @@ serve(async (req) => {
       }
     }
 
-    // Ultimate fallback: document had no extractable content at all.
-    // Produce ONE well-formed card that instructs the user rather than showing garbage.
     if (generatedCards.length === 0) {
       const hasImages = parsedDoc.images.length > 0;
       generatedCards.push({
@@ -389,7 +367,6 @@ serve(async (req) => {
       console.warn(`[parse-stem-ocr] Ultimate fallback activated for '${cleanDeckTitle}' — document had no usable content.`);
     }
 
-    // Stage 5: Database Persistence (90%)
     await broadcastProgress(supabase, documentId, {
       status: "syncingDb",
       progress: 0.90,
@@ -399,7 +376,6 @@ serve(async (req) => {
     const deckId = crypto.randomUUID();
     const nowIso = new Date().toISOString();
 
-    // Canonical Deck & Cards population for Content-Addressed Storage
     let canonicalDeckId: string | null = null;
     if (contentHash) {
       const { data: canonicalDoc } = await supabase
@@ -450,7 +426,6 @@ serve(async (req) => {
           }
         }
 
-        // Mark canonical document completed
         await supabase
           .from("canonical_documents")
           .update({
@@ -459,7 +434,6 @@ serve(async (req) => {
           })
           .eq("id", canonicalDocId);
 
-        // Broadcast to any concurrent listeners on canonical channel
         try {
           const canonicalChannel = supabase.channel(`canonical_synthesis:${canonicalDocId}`);
           await canonicalChannel.send({
@@ -477,7 +451,6 @@ serve(async (req) => {
       }
     }
 
-    // 1. Create User Deck Record in public.decks
     const deckRecord = {
       id: deckId,
       user_id: userId,
@@ -504,7 +477,6 @@ serve(async (req) => {
       console.warn("[parse-stem-ocr] Deck insert notice:", deckInsertErr.message);
     }
 
-    // 2. Insert Flashcards in public.flashcards
     const flashcardInserts = generatedCards.map((c, idx) => ({
       id: c.id,
       deck_id: deckId,
@@ -530,7 +502,6 @@ serve(async (req) => {
       }
     }
 
-    // 3. Insert into extracted_snippets for compatibility
     const snippetInserts = generatedCards.map((c) => ({
       id: c.id,
       document_id: documentId,
@@ -546,7 +517,6 @@ serve(async (req) => {
       await supabase.from("extracted_snippets").insert(snippetInserts);
     } catch (_) {}
 
-    // 4. Update Document Status to Completed
     await supabase
       .from("documents")
       .update({
@@ -555,7 +525,6 @@ serve(async (req) => {
       })
       .eq("id", documentId);
 
-    // Stage 6: Completion (100%)
     await broadcastProgress(supabase, documentId, {
       status: "completed",
       progress: 1.0,
@@ -592,7 +561,6 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("[parse-stem-ocr] Fatal error:", error);
 
-    // If canonical doc exists, mark it failed to allow clean retries
     try {
       const payload: OcrRequestPayload = await req.clone().json().catch(() => ({}));
       if (payload.documentId) {

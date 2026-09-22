@@ -1,7 +1,4 @@
--- Migration: 20260915000000_forum_phase2_scalability.sql
--- Description: Phase 2 Forum Scalability: Keyset cursor-based pagination, Socratic AI hint caching, hierarchical thread-tree RPC, and high-concurrency indexes.
 
--- 1. Add Socratic AI hint persistent caching columns on forum_posts
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -16,7 +13,6 @@ BEGIN
     END IF;
 END $$;
 
--- 2. Create Keyset-Optimized Compound B-Tree Indexes
 CREATE INDEX IF NOT EXISTS idx_forum_posts_keyset_track_created
 ON public.forum_posts(track, created_at DESC, id DESC);
 
@@ -32,7 +28,6 @@ ON public.forum_replies(post_id, parent_reply_id, created_at ASC, id ASC);
 CREATE INDEX IF NOT EXISTS idx_forum_replies_keyset_top
 ON public.forum_replies(post_id, upvotes DESC, created_at ASC, id ASC);
 
--- 3. High-Performance Keyset Pagination Stored Procedure
 CREATE OR REPLACE FUNCTION public.fetch_forum_posts_keyset(
     p_track TEXT DEFAULT NULL,
     p_cursor_created_at TIMESTAMPTZ DEFAULT NULL,
@@ -85,18 +80,14 @@ BEGIN
         LEFT JOIN public.forum_post_votes pv 
             ON pv.post_id = p.id AND pv.user_id = v_user_id
         WHERE
-            -- Track filter
             (p_track IS NULL OR p_track = '' OR p_track = 'All' OR p.track = p_track)
-            -- Questions only filter
             AND (NOT p_questions_only OR p.is_question = TRUE)
-            -- Full text search query
             AND (
                 p_search_query IS NULL OR trim(p_search_query) = '' OR
                 p.search_tsv @@ websearch_to_tsquery('english', p_search_query) OR
                 p.title ILIKE '%' || p_search_query || '%' OR
                 p.content ILIKE '%' || p_search_query || '%'
             )
-            -- Keyset Cursor Condition
             AND (
                 p_cursor_created_at IS NULL OR
                 (p.created_at < p_cursor_created_at) OR
@@ -117,7 +108,6 @@ BEGIN
 END;
 $$;
 
--- 4. Hierarchical Thread Tree RPC for Single-Roundtrip Thread Loading
 CREATE OR REPLACE FUNCTION public.fetch_forum_thread_tree(
     p_post_id UUID,
     p_limit INT DEFAULT 20,
@@ -135,7 +125,6 @@ DECLARE
 BEGIN
     v_user_id := auth.uid();
 
-    -- 1. Fetch Post with User State
     SELECT to_jsonb(p) || jsonb_build_object(
         'userVote', COALESCE(pv.vote_direction, 0),
         'isSubscribed', EXISTS(
@@ -153,7 +142,6 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    -- 2. Fetch Top-Level Replies with immediate sub-replies pre-nested
     WITH top_replies AS (
         SELECT 
             r.id,
@@ -237,7 +225,6 @@ BEGIN
 END;
 $$;
 
--- 5. Stored Procedure to Persist Socratic Hint
 CREATE OR REPLACE FUNCTION public.save_forum_socratic_hint(
     p_post_id UUID,
     p_hint TEXT
@@ -261,7 +248,6 @@ BEGIN
 END;
 $$;
 
--- 6. Grant Permissions
 GRANT EXECUTE ON FUNCTION public.fetch_forum_posts_keyset TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION public.fetch_forum_thread_tree TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION public.save_forum_socratic_hint TO authenticated, service_role;

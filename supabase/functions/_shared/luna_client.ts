@@ -83,7 +83,6 @@ export class LunaClient {
       store: true,
     };
 
-    // Note: gpt-5.6-luna reasoning models reject the 'temperature' parameter.
     if (options.temperature !== undefined && !this.model.includes("gpt-5")) {
       payload["temperature"] = options.temperature;
     }

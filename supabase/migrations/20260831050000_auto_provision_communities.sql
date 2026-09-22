@@ -1,8 +1,4 @@
--- Migration: Auto-Community Provisioning Engine & Triggers
--- Creates study_communities, community_members, RPC functions, and automated database triggers
--- (Document ingestion trigger removed to prevent ghost towns)
 
--- 1. Study Communities table
 CREATE TABLE IF NOT EXISTS study_communities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     course_code TEXT NOT NULL UNIQUE,
@@ -17,7 +13,6 @@ CREATE TABLE IF NOT EXISTS study_communities (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. Community Members junction table
 CREATE TABLE IF NOT EXISTS community_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     community_id UUID NOT NULL REFERENCES study_communities(id) ON DELETE CASCADE,
@@ -27,20 +22,16 @@ CREATE TABLE IF NOT EXISTS community_members (
     UNIQUE (community_id, user_id)
 );
 
--- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_study_communities_course_code ON study_communities(course_code);
 CREATE INDEX IF NOT EXISTS idx_study_communities_department ON study_communities(department);
 CREATE INDEX IF NOT EXISTS idx_community_members_user_id ON community_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_community_members_community_id ON community_members(community_id);
 
--- Enable RLS
 ALTER TABLE study_communities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE community_members ENABLE ROW LEVEL SECURITY;
 
--- Enable Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE study_communities, community_members;
 
--- RLS Policies for study_communities
 DROP POLICY IF EXISTS "Anyone can view study communities" ON study_communities;
 DROP POLICY IF EXISTS "Users can create study communities" ON study_communities;
 DROP POLICY IF EXISTS "Service role or functions can update study communities" ON study_communities;
@@ -61,7 +52,6 @@ CREATE POLICY "Service role or functions can update study communities"
     USING (true)
     WITH CHECK (true);
 
--- RLS Policies for community_members
 DROP POLICY IF EXISTS "Anyone can view community memberships" ON community_members;
 DROP POLICY IF EXISTS "Users can join communities" ON community_members;
 DROP POLICY IF EXISTS "Users can leave communities" ON community_members;
@@ -81,7 +71,6 @@ CREATE POLICY "Users can leave communities"
     TO authenticated
     USING (auth.uid() = user_id);
 
--- 3. Idempotent Stored Function for Curriculum Track Provisioning
 CREATE OR REPLACE FUNCTION auto_provision_community_rpc(
     p_course_code TEXT,
     p_title TEXT,
@@ -102,11 +91,9 @@ BEGIN
     v_user_id := auth.uid();
     v_normalized_code := upper(trim(p_course_code));
 
-    -- Check if community exists
     SELECT * INTO v_community FROM study_communities WHERE course_code = v_normalized_code;
 
     IF v_community.id IS NULL THEN
-        -- Create new community
         INSERT INTO study_communities (
             course_code,
             title,
@@ -125,7 +112,6 @@ BEGIN
 
         v_is_founding := true;
 
-        -- Create default 25m Silent Focus Pomodoro room
         INSERT INTO study_rooms (
             title,
             description,
@@ -157,14 +143,12 @@ BEGIN
 
     ELSE
         v_community_id := v_community.id;
-        -- Increment member count
         UPDATE study_communities
         SET member_count = member_count + 1,
             updated_at = now()
         WHERE id = v_community_id;
     END IF;
 
-    -- Add user to community_members if logged in
     IF v_user_id IS NOT NULL THEN
         INSERT INTO community_members (
             community_id,
@@ -195,7 +179,6 @@ BEGIN
 END;
 $$;
 
--- 4. Database Trigger on Onboarding Track Selection
 CREATE OR REPLACE FUNCTION trigger_onboarding_track_provision()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -219,7 +202,6 @@ CREATE TRIGGER tr_user_profile_track_provision
     FOR EACH ROW
     EXECUTE FUNCTION trigger_onboarding_track_provision();
 
--- Seed initial core curriculum hubs
 DO $$
 BEGIN
     PERFORM auto_provision_community_rpc('WAEC-STUDY-HUB', 'WAEC National Scholar Hub', 'WAEC');

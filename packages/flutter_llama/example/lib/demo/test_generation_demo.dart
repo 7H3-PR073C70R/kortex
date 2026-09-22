@@ -9,7 +9,6 @@ void main() async {
   print('╚════════════════════════════════════════════════════╝\n');
 
   try {
-    // 1. Проверка/загрузка модели
     print('📦 Шаг 1: Проверка модели...');
     String? modelPath = await ModelDownloader.getModelPath('braindler-q2_k');
 
@@ -31,7 +30,6 @@ void main() async {
       print('✅ Модель найдена: $modelPath\n');
     }
 
-    // 2. Инициализация FlutterLlama
     print('🔧 Шаг 2: Инициализация FlutterLlama...');
     final llama = FlutterLlama.instance;
 
@@ -50,7 +48,6 @@ void main() async {
     }
     print('✅ Модель инициализирована\n');
 
-    // 3. Информация о модели
     final info = await llama.getModelInfo();
     if (info != null) {
       print('ℹ️  Информация о модели:');
@@ -60,12 +57,10 @@ void main() async {
       print('');
     }
 
-    // 4. Демонстрация генерации
     print('═══════════════════════════════════════════════════');
     print('🎭 ДЕМОНСТРАЦИЯ ГЕНЕРАЦИИ');
     print('═══════════════════════════════════════════════════\n');
 
-    // Тест 1: Махамантра
     await _testGeneration(
       llama,
       prompt: 'Харе Кришна Харе Кришна',
@@ -75,7 +70,6 @@ void main() async {
 
     print('\n' + '─' * 50 + '\n');
 
-    // Тест 2: Простой вопрос
     await _testGeneration(
       llama,
       prompt: 'Что такое искусственный интеллект?',
@@ -85,7 +79,6 @@ void main() async {
 
     print('\n' + '─' * 50 + '\n');
 
-    // Тест 3: Творческая задача
     await _testGeneration(
       llama,
       prompt: 'Напиши короткое стихотворение о природе',
@@ -93,7 +86,6 @@ void main() async {
       maxTokens: 80,
     );
 
-    // 5. Демонстрация streaming (если поддерживается)
     print('\n═══════════════════════════════════════════════════');
     print('🌊 ДЕМОНСТРАЦИЯ STREAMING');
     print('═══════════════════════════════════════════════════\n');
@@ -128,7 +120,6 @@ void main() async {
       print('⚠️  Streaming не поддерживается или не реализован: $e');
     }
 
-    // 6. Выгрузка модели
     print('\n═══════════════════════════════════════════════════');
     print('🧹 Завершение работы...');
     await llama.unloadModel();

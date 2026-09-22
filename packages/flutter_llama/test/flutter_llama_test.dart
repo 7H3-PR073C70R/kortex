@@ -138,7 +138,6 @@ void main() {
     test('generate calls platform method with correct arguments', () async {
       methodCallLog.clear();
 
-      // Load model first
       await llama.loadModel(const LlamaConfig(modelPath: '/test.gguf'));
       methodCallLog.clear();
 
@@ -228,7 +227,6 @@ void main() {
 
   group('FlutterLlama getModelInfo', () {
     test('getModelInfo returns null when no model loaded', () async {
-      // Ensure model is unloaded
       if (llama.isModelLoaded) {
         await llama.unloadModel();
       }
@@ -293,7 +291,6 @@ void main() {
         return null;
       });
 
-      // Should not throw
       await llama.stopGeneration();
     });
   });

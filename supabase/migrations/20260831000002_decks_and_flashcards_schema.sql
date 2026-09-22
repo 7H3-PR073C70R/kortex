@@ -1,8 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 002 - Decks, Flashcards & SM-2 Spaced Repetition
--- ==============================================================================
 
--- 1. Decks Table
 CREATE TABLE IF NOT EXISTS public.decks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -26,7 +22,6 @@ CREATE TABLE IF NOT EXISTS public.decks (
 CREATE INDEX IF NOT EXISTS idx_decks_user_id ON public.decks(user_id);
 CREATE INDEX IF NOT EXISTS idx_decks_category ON public.decks(category);
 
--- Enable RLS on decks
 ALTER TABLE public.decks ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own decks"
@@ -55,7 +50,6 @@ CREATE TRIGGER set_decks_updated_at
     BEFORE UPDATE ON public.decks
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- 2. Flashcards Table (with LaTeX & Vector Embedding)
 CREATE TABLE IF NOT EXISTS public.flashcards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     deck_id UUID NOT NULL REFERENCES public.decks(id) ON DELETE CASCADE,
@@ -79,13 +73,11 @@ CREATE INDEX IF NOT EXISTS idx_flashcards_deck_id ON public.flashcards(deck_id);
 CREATE INDEX IF NOT EXISTS idx_flashcards_user_id ON public.flashcards(user_id);
 CREATE INDEX IF NOT EXISTS idx_flashcards_next_due_date ON public.flashcards(next_due_date);
 
--- HNSW Vector Index for Semantic Flashcard Search
 CREATE INDEX IF NOT EXISTS idx_flashcards_embedding_hnsw 
     ON public.flashcards 
     USING hnsw (embedding vector_cosine_ops)
     WITH (m = 16, ef_construction = 64);
 
--- Enable RLS on flashcards
 ALTER TABLE public.flashcards ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own flashcards"
@@ -114,7 +106,6 @@ CREATE TRIGGER set_flashcards_updated_at
     BEFORE UPDATE ON public.flashcards
     FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- 3. Session Results Table
 CREATE TABLE IF NOT EXISTS public.session_results (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     deck_id UUID NOT NULL REFERENCES public.decks(id) ON DELETE CASCADE,
@@ -129,7 +120,6 @@ CREATE TABLE IF NOT EXISTS public.session_results (
 CREATE INDEX IF NOT EXISTS idx_session_results_user_id ON public.session_results(user_id);
 CREATE INDEX IF NOT EXISTS idx_session_results_deck_id ON public.session_results(deck_id);
 
--- Enable RLS on session_results
 ALTER TABLE public.session_results ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own session results"
@@ -142,7 +132,6 @@ CREATE POLICY "Users can insert own session results"
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
--- 4. RPC Function: Process SM-2 Card Review
 CREATE OR REPLACE FUNCTION public.process_card_sm2_review(
     p_card_id UUID,
     p_quality INT
@@ -156,7 +145,6 @@ DECLARE
     v_next_due_date TIMESTAMPTZ;
     v_now TIMESTAMPTZ := now();
 BEGIN
-    -- Fetch card and verify ownership
     SELECT * INTO v_card
     FROM public.flashcards
     WHERE id = p_card_id AND user_id = auth.uid();
@@ -165,19 +153,15 @@ BEGIN
         RAISE EXCEPTION 'Card not found or access denied.';
     END IF;
 
-    -- SM-2 Ease Factor Calculation: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
     v_new_ease_factor := v_card.ease_factor + (0.1 - (5 - p_quality) * (0.08 + (5 - p_quality) * 0.02));
     IF v_new_ease_factor < 1.3 THEN
         v_new_ease_factor := 1.3;
     END IF;
 
-    -- SM-2 Repetitions and Interval Calculation
     IF p_quality < 3 THEN
-        -- Failure (Again)
         v_new_repetitions := 0;
         v_new_interval := 1;
     ELSE
-        -- Success (Hard, Good, Easy)
         IF v_card.repetitions = 0 THEN
             v_new_interval := 1;
         ELSIF v_card.repetitions = 1 THEN
@@ -190,7 +174,6 @@ BEGIN
 
     v_next_due_date := v_now + (v_new_interval || ' days')::INTERVAL;
 
-    -- Update Flashcard
     UPDATE public.flashcards
     SET interval = v_new_interval,
         repetitions = v_new_repetitions,
@@ -200,7 +183,6 @@ BEGIN
         updated_at = v_now
     WHERE id = p_card_id;
 
-    -- Refresh Deck Due Cards & Mastery
     UPDATE public.decks
     SET due_cards = (
             SELECT COUNT(*)
@@ -230,7 +212,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. RPC Function: Semantic Vector Search on Flashcards
 CREATE OR REPLACE FUNCTION public.search_flashcards_semantic(
     p_query_embedding vector(1536),
     p_match_threshold FLOAT DEFAULT 0.65,

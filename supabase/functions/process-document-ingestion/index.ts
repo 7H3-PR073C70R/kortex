@@ -85,7 +85,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Zero-Trust Ownership Check: If authenticated user, verify they own the document
     if (!isServiceRole && authenticatedUserId) {
       const { data: docRecord, error: docErr } = await supabase
         .from("documents")
@@ -101,7 +100,6 @@ serve(async (req: Request) => {
       }
     }
 
-    // 1. Asynchronous Layout-Aware Parsing on Server Compute
     let structuredMarkdown = rawText ?? "";
 
     if (fileUrl && (!structuredMarkdown || structuredMarkdown.length === 0)) {
@@ -130,7 +128,6 @@ serve(async (req: Request) => {
         `# Document Summary: ${courseCode ?? "General STEM"}\n\nProcessed document without structured text.`;
     }
 
-    // 2. Layout-Aware Hierarchical Markdown Chunking
     const chunks = chunkMarkdown(structuredMarkdown, {
       maxChunkWords: 400,
       minChunkWords: 40,
@@ -140,7 +137,6 @@ serve(async (req: Request) => {
       `[IngestionWorker] Generated ${chunks.length} layout-aware chunks for document ${documentId}`
     );
 
-    // 3. Generate Vector Embeddings and Persist to Supabase pgvector
     const embeddingInserts = [];
     for (const chunk of chunks) {
       const embedding = generateDeterministicVector(chunk.content);
@@ -178,7 +174,6 @@ serve(async (req: Request) => {
       }
     }
 
-    // 4. Update Document Status in Database
     try {
       await supabase
         .from("documents")
@@ -189,10 +184,8 @@ serve(async (req: Request) => {
         })
         .eq("id", documentId);
     } catch (_) {
-      // Non-blocking status update
     }
 
-    // 5. Broadcast Real-Time Completion via WebSocket Realtime Channel
     try {
       const channel = supabase.channel(`document_ingestion:${documentId}`);
       await channel.send({
@@ -212,7 +205,6 @@ serve(async (req: Request) => {
       console.warn("[IngestionWorker] Realtime broadcast error:", wsErr);
     }
 
-    // 6. Trigger Push Notification to User's Phone
     try {
       const pushUrl = `${supabaseUrl}/functions/v1/send-push-notification`;
       await fetch(pushUrl, {

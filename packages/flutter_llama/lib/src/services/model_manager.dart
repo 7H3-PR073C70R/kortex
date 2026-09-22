@@ -82,7 +82,6 @@ class ModelManager {
     required DownloadProgressCallback onProgress,
     bool autoDownload = true,
   }) async {
-    // 1. Проверяем локально
     final localPath = await getModelPath();
     
     if (localPath != null) {
@@ -98,12 +97,10 @@ class ModelManager {
       return localPath;
     }
     
-    // 2. Если нет и разрешена автозагрузка - скачиваем
     if (autoDownload) {
       return await downloadModel(onProgress: onProgress);
     }
     
-    // 3. Иначе выбрасываем исключение
     throw ModelNotFoundException(
       fullModelName,
       'Model not found locally and autoDownload is disabled',
@@ -154,7 +151,6 @@ class ModelManager {
           return await _huggingFaceDownloader.deleteModel(modelId);
           
         case ModelSource.ollama:
-          // Для Ollama удаляем экспортированный GGUF файл
           final modelPath = await _getOllamaModelPath();
           if (modelPath != null) {
             final file = File(modelPath);
@@ -166,7 +162,6 @@ class ModelManager {
           return false;
           
         case ModelSource.local:
-          // Локальные файлы не удаляем
           return false;
       }
     } catch (e) {
@@ -205,7 +200,6 @@ class ModelManager {
   Future<SourceStatus> checkSourceStatus() async {
     switch (source) {
       case ModelSource.huggingFace:
-        // Всегда доступен (если есть интернет)
         return SourceStatus(
           isAvailable: true,
           message: 'HuggingFace Hub доступен',
@@ -228,14 +222,12 @@ class ModelManager {
     }
   }
   
-  // Private методы
   
   Future<String?> _getHuggingFaceModelPath() async {
     if (specificFile != null) {
       return await _huggingFaceDownloader.getModelPath(modelId, specificFile!);
     }
     
-    // Ищем любой GGUF или SafeTensors файл
     final appDir = await getApplicationDocumentsDirectory();
     final modelDir = Directory(path.join(
       appDir.path,
@@ -261,7 +253,6 @@ class ModelManager {
   }
   
   Future<String?> _getOllamaModelPath() async {
-    // Проверяем экспортированный GGUF файл
     final appDir = await getApplicationDocumentsDirectory();
     final modelsDir = Directory(path.join(appDir.path, 'models', 'ollama'));
     
@@ -277,7 +268,6 @@ class ModelManager {
       return filePath;
     }
     
-    // Альтернативно: попробовать получить путь из Ollama хранилища
     return await _ollamaDownloader.getModelPath(fullModelName);
   }
   
@@ -290,7 +280,6 @@ class ModelManager {
       );
     }
     
-    // Автоматически найти и скачать GGUF файл
     return await _huggingFaceDownloader.downloadGGUFModel(
       modelId: modelId,
       onProgress: onProgress,
@@ -298,7 +287,6 @@ class ModelManager {
   }
   
   Future<String> _downloadFromOllama(DownloadProgressCallback onProgress) async {
-    // Проверяем доступность Ollama
     final status = await checkSourceStatus();
     
     if (!status.isAvailable) {
@@ -308,14 +296,12 @@ class ModelManager {
       );
     }
     
-    // Pull и экспорт модели
     return await _ollamaDownloader.downloadAndExport(
       modelName: fullModelName,
       onProgress: onProgress,
     );
   }
   
-  // Статические методы для общего управления
   
   /// Получить список всех скачанных моделей
   static Future<List<DownloadedModelInfo>> getAllDownloadedModels() async {
@@ -329,7 +315,6 @@ class ModelManager {
         return models;
       }
       
-      // Проход по источникам
       for (final sourceDir in ['huggingface', 'ollama']) {
         final dir = Directory(path.join(modelsRootDir.path, sourceDir));
         

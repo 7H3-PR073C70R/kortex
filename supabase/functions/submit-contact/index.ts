@@ -81,12 +81,10 @@ serve(async (req: Request) => {
     return json({ error: "Invalid request body" }, 400, origin);
   }
 
-  // ── Honeypot ────────────────────────────────────────────────────────────────
   if (sanitize(body.hp, 10).length > 0) {
     return json({ status: "received" }, 200, origin);
   }
 
-  // ── Input validation ────────────────────────────────────────────────────────
   const name    = sanitize(body.name, 100);
   const email   = sanitize(body.email, 254).toLowerCase();
   const topic   = sanitize(body.topic, 50);
@@ -104,7 +102,6 @@ serve(async (req: Request) => {
 
   const cleanTopic = ALLOWED_TOPICS.has(topic) ? topic : "other";
 
-  // ── Rate limit: 3 submissions per hour per IP ───────────────────────────────
   const rawIp  = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const ipHash = await anonymiseIp(rawIp);
 
@@ -128,7 +125,6 @@ serve(async (req: Request) => {
     );
   }
 
-  // ── Insert contact inquiry (parameterised) ──────────────────────────────────
   const { error: insertErr } = await supabase
     .from("contact_inquiries")
     .insert({ name, email, topic: cleanTopic, message, newsletter_optin: optIn });
@@ -138,7 +134,6 @@ serve(async (req: Request) => {
     return json({ error: "Failed to submit. Please try again." }, 500, origin);
   }
 
-  // ── Auto-enroll newsletter opt-in ───────────────────────────────────────────
   if (optIn) {
     await supabase
       .from("newsletter_subscribers")

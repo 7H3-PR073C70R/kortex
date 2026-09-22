@@ -31,7 +31,6 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const authHeader = req.headers.get("Authorization");
 
-    // A. Security & Auth Verification
     let userId = "anon-guest";
     if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
       const token = authHeader.replace(/^Bearer\s+/i, "").trim();
@@ -53,7 +52,6 @@ serve(async (req: Request) => {
       supabaseServiceKey || supabaseAnonKey
     );
 
-    // B. Parse Request Payload
     const body: RequestPayload = await req.json().catch(() => ({}));
     const socraticMode = body.socraticMode ?? "stepByStep";
     const courseCode = body.courseCode;
@@ -90,14 +88,12 @@ serve(async (req: Request) => {
       );
     }
 
-    // C. Automated Backend Intent Analyzer & Dynamic Model Selection
     const routing = selectModelAndParams(messages, {
       forceModel: body.forceModel,
     });
     const selectedModel = routing.model;
     const reasoningEffort = routing.reasoning_effort;
 
-    // 1. Semantic Cache Optimization (sub-15ms latency)
     const cachePrompt = `syllabot:${selectedModel}:${socraticMode}:${rawPrompt.trim().toLowerCase()}`;
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       dbClient,
@@ -114,10 +110,8 @@ serve(async (req: Request) => {
       ? (cacheResult.data?.tokens as string[])
       : null;
 
-    // D. Luna Unified LLM Client Configuration
     const luna = new LunaClient();
 
-    // 2. Server-Sent Events (SSE) Streaming Pipeline
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -144,7 +138,6 @@ serve(async (req: Request) => {
         const providerErrors: string[] = [];
 
         if (isCacheHit && cachedTokens) {
-          // 1. Instant sub-15ms semantic cache serving
           for (const token of cachedTokens) {
             fullResponse += token;
             recordedTokens.push(token);
@@ -153,7 +146,6 @@ serve(async (req: Request) => {
           }
           providerSuccess = true;
         } else if (luna.isConfigured()) {
-          // 2. Stream directly from Luna LLM
           try {
             console.log(
               `[syllabot-stream] Streaming response from Luna (${luna.modelName})...`
@@ -200,7 +192,6 @@ serve(async (req: Request) => {
                       sendEvent("token", { text: deltaText });
                     }
                   } catch {
-                    // Skip non-JSON ping/keepalive chunks
                   }
                 }
               }
@@ -219,7 +210,6 @@ serve(async (req: Request) => {
           }
         }
 
-        // 3. Error Handling - No fallback synthesis. Directly emit error to client
         if (!providerSuccess) {
           const detailMsg =
             providerErrors.length > 0
@@ -237,7 +227,6 @@ serve(async (req: Request) => {
           return;
         }
 
-        // Asynchronously persist completion to semantic cache ONLY if real provider succeeded
         if (!isCacheHit && recordedTokens.length > 0 && providerSuccess) {
           await SemanticCacheProvider.setCachedResponse(
             dbClient,
@@ -252,7 +241,6 @@ serve(async (req: Request) => {
           ).catch((err) => console.error("Semantic cache error:", err));
         }
 
-        // Asynchronously record conversation turn in chat_messages table
         const isUuid = (str?: string) =>
           Boolean(
             str &&
@@ -270,7 +258,6 @@ serve(async (req: Request) => {
           fullResponse
         ) {
           try {
-            // Ensure chat session exists before inserting messages
             await dbClient.from("chat_sessions").upsert(
               {
                 id: sessionId,
@@ -355,7 +342,6 @@ function isCorruptedOrMismatchCache(rawPrompt: string, cachedTokens: string[]): 
   const fullCached = cachedTokens.join(" ").toLowerCase();
   const lowerPrompt = rawPrompt.toLowerCase();
 
-  // If cached contains Hamiltonian / Noether but prompt is about grammar, biology, code, or general query
   if (
     (fullCached.includes("noether") || fullCached.includes("hamiltonian") || fullCached.includes("\\mathcal{h}")) &&
     !lowerPrompt.includes("noether") &&
@@ -365,7 +351,6 @@ function isCorruptedOrMismatchCache(rawPrompt: string, cachedTokens: string[]): 
     return true;
   }
 
-  // If cached contains Noun definition but prompt is asking for Adverb, Adjective, Verb, etc.
   if (
     fullCached.includes("a **noun** is a fundamental part of speech") &&
     (lowerPrompt.includes("adverb") ||
@@ -377,7 +362,6 @@ function isCorruptedOrMismatchCache(rawPrompt: string, cachedTokens: string[]): 
     return true;
   }
 
-  // If cached contains the generic fallback template
   if (
     fullCached.includes("represents a foundational concept in its respective domain") ||
     fullCached.includes("curiosity led the researcher to a breakthrough")
@@ -399,7 +383,6 @@ function getFallbackTokens(
     .map((c) => c.text.toLowerCase())
     .join(" ");
 
-  // 1. Detailed 8 Parts of Speech with Examples
   if (
     lower.includes("all 8") ||
     lower.includes("8 of them") ||
@@ -447,7 +430,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 2. Parts of speech overview
   if (
     lower.includes("parts of speech") ||
     lower.includes("part of speech") ||
@@ -469,7 +451,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 3. Adverbs (checked before verbs because 'adverb' contains 'verb')
   if (lower.includes("adverb")) {
     return [
       "An **adverb** is a part of speech that modifies or qualifies a **verb**, an **adjective**, or **another adverb**.",
@@ -487,7 +468,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 3. Adjectives
   if (lower.includes("adjective")) {
     return [
       "An **adjective** is a part of speech that modifies, describes, or quantifies a **noun** or **pronoun**.",
@@ -503,7 +483,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 4. Verbs
   if (/\b(verbs?|action words?)\b/i.test(lower)) {
     return [
       "A **verb** is the essential grammatical part of speech that expresses an **action**, an **occurrence**, or a **state of being**.",
@@ -516,7 +495,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 5. Nouns
   if (/\b(nouns?)\b/i.test(lower)) {
     return [
       "A **noun** is a fundamental part of speech that names a **person**, **place**, **thing**, or **idea**.",
@@ -535,7 +513,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 2. Circle Geometry & Inscribed Angle Theorems
   if (
     lower.includes("circle") ||
     lower.includes("angle at center") ||
@@ -564,7 +541,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 6. Computing & Shell Utilities: whoami
   if (
     lower === "whoami" ||
     lower.includes("what is whoami") ||
@@ -582,7 +558,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 7. Identity / Assistant queries
   if (
     lower.includes("who are you") ||
     lower.includes("what are you") ||
@@ -600,7 +575,6 @@ function getFallbackTokens(
     ];
   }
 
-  // 8. General Socratic Academic Reasoning tailored to the user's prompt
   return [
     `Let's break down **"${cleanPrompt}"** from first principles:`,
     "\n\n### 1. Definition & Core Meaning",

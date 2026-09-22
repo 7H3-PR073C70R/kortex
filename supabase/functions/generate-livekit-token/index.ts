@@ -57,7 +57,6 @@ serve(async (req: Request) => {
     const roomId = body.room_id || body.roomId;
     const requestedUserId = body.user_id || body.userId;
 
-    // Zero-Trust IDOR Guard: Prevent impersonating other users
     if (requestedUserId && requestedUserId !== authenticatedUserId) {
       return new Response(
         JSON.stringify({ error: "Forbidden: Cannot generate token for another user identity" }),
@@ -97,7 +96,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Determine audio publishing permissions:
     const isVoicePod = body.isVoicePodEnabled === true || body.is_voice_pod === true;
     const canPublishAudio = body.canPublish ?? isVoicePod;
 

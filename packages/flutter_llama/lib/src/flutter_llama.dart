@@ -124,7 +124,6 @@ class FlutterLlama {
         print('[FlutterLlama] Streaming generation with params: $params');
       }
 
-      // 1. Set up event channel for streaming and subscribe FIRST so onListen initializes eventSink
       const eventChannel = EventChannel('flutter_llama/stream');
       final controller = StreamController<String>();
       
@@ -146,7 +145,6 @@ class FlutterLlama {
         },
       );
 
-      // 2. Send generation request now that event sink is verified active
       try {
         await _channel.invokeMethod('generateStream', params.toMap());
       } catch (e) {
@@ -243,7 +241,6 @@ class FlutterLlama {
         print('[FlutterLlama] Loading model with auto-download: $modelId');
       }
       
-      // Create model manager
       final manager = ModelManager(
         modelId: modelId,
         source: source,
@@ -251,7 +248,6 @@ class FlutterLlama {
         specificFile: specificFile,
       );
       
-      // Ensure model is loaded (with auto-download if needed)
       final modelPath = await manager.ensureModelLoaded(
         onProgress: onProgress,
         autoDownload: autoDownload,
@@ -261,7 +257,6 @@ class FlutterLlama {
         print('[FlutterLlama] Model path: $modelPath');
       }
       
-      // Create config or use provided one
       final llamaConfig = config ?? LlamaConfig(
         modelPath: modelPath,
         nThreads: 8,
@@ -272,7 +267,6 @@ class FlutterLlama {
         verbose: false,
       );
       
-      // Load model into llama.cpp
       return await loadModel(llamaConfig.copyWith(modelPath: modelPath));
     } catch (e) {
       if (kDebugMode) {

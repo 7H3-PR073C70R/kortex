@@ -1,9 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 008 - Master Row Level Security (RLS) Audit
--- Modules: Auth, Dashboard, Decks & SM-2/FSRS, Syllabot RAG, Ingestion, Community
--- ==============================================================================
 
--- 1. Enable RLS unconditionally on all user and study tables
 ALTER TABLE IF EXISTS public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.user_calibrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.user_analytics ENABLE ROW LEVEL SECURITY;
@@ -21,11 +16,7 @@ ALTER TABLE IF EXISTS public.forum_replies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.shared_decks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.leaderboards ENABLE ROW LEVEL SECURITY;
 
--- ==============================================================================
--- 2. Audit & Enforce User Isolation Policies (Private Tables)
--- ==============================================================================
 
--- Profiles Policy Audit
 DO $$
 BEGIN
     DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
@@ -49,7 +40,6 @@ BEGIN
         WITH CHECK (auth.uid() = id);
 END $$;
 
--- Document Chunks & Vector Search Policy Audit
 DO $$
 BEGIN
     DROP POLICY IF EXISTS "Users can query their own document chunks" ON public.document_chunks;
@@ -72,7 +62,6 @@ BEGIN
         USING (auth.uid() = user_id);
 END $$;
 
--- Decks & Flashcards Policy Audit
 DO $$
 BEGIN
     DROP POLICY IF EXISTS "Users can manage their own decks" ON public.decks;
@@ -91,11 +80,7 @@ BEGIN
         WITH CHECK (auth.uid() = user_id);
 END $$;
 
--- ==============================================================================
--- 3. Audit & Enforce Community Public-Read / Owner-Write Policies
--- ==============================================================================
 
--- Forum Posts Policy Audit
 DO $$
 BEGIN
     DROP POLICY IF EXISTS "Anyone can view forum posts" ON public.forum_posts;
@@ -103,13 +88,11 @@ BEGIN
     DROP POLICY IF EXISTS "Authors can update their forum posts" ON public.forum_posts;
     DROP POLICY IF EXISTS "Authors can delete their forum posts" ON public.forum_posts;
 
-    -- Public Read
     CREATE POLICY "Anyone can view forum posts"
         ON public.forum_posts FOR SELECT
         TO authenticated
         USING (true);
 
-    -- Owner Write
     CREATE POLICY "Authenticated users can create forum posts"
         ON public.forum_posts FOR INSERT
         TO authenticated
@@ -127,7 +110,6 @@ BEGIN
         USING (auth.uid() = author_id);
 END $$;
 
--- Shared Decks Marketplace Policy Audit
 DO $$
 BEGIN
     DROP POLICY IF EXISTS "Anyone can view shared decks" ON public.shared_decks;
@@ -135,13 +117,11 @@ BEGIN
     DROP POLICY IF EXISTS "Owners can update shared decks" ON public.shared_decks;
     DROP POLICY IF EXISTS "Owners can delete shared decks" ON public.shared_decks;
 
-    -- Public Read
     CREATE POLICY "Anyone can view shared decks"
         ON public.shared_decks FOR SELECT
         TO authenticated
         USING (true);
 
-    -- Owner Write
     CREATE POLICY "Authenticated users can publish shared decks"
         ON public.shared_decks FOR INSERT
         TO authenticated
@@ -159,7 +139,6 @@ BEGIN
         USING (auth.uid() = owner_id);
 END $$;
 
--- Leaderboards Policy Audit
 DO $$
 BEGIN
     DROP POLICY IF EXISTS "Anyone can view leaderboard standings" ON public.leaderboards;

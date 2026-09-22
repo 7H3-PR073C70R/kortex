@@ -1,8 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 003 - Dashboard Feed, Analytics & Curated Courses
--- ==============================================================================
 
--- 1. User Analytics Summary Table
 CREATE TABLE IF NOT EXISTS public.user_analytics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -36,7 +32,6 @@ CREATE POLICY "Users can update own analytics"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- 2. Daily HeatMap Activity Matrix Table
 CREATE TABLE IF NOT EXISTS public.heatmap_activity (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -71,7 +66,6 @@ CREATE POLICY "Users can update own heatmap activity"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- 3. Curated Courses Catalog Table
 CREATE TABLE IF NOT EXISTS public.curated_courses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     course_code TEXT NOT NULL,
@@ -93,7 +87,6 @@ ALTER TABLE public.curated_courses ADD COLUMN IF NOT EXISTS embedding vector(153
 
 CREATE INDEX IF NOT EXISTS idx_curated_courses_code ON public.curated_courses(course_code);
 
--- HNSW Vector Index for Semantic Course Recommendations
 CREATE INDEX IF NOT EXISTS idx_curated_courses_embedding_hnsw 
     ON public.curated_courses 
     USING hnsw (embedding vector_cosine_ops)
@@ -101,7 +94,6 @@ CREATE INDEX IF NOT EXISTS idx_curated_courses_embedding_hnsw
 
 ALTER TABLE public.curated_courses ENABLE ROW LEVEL SECURITY;
 
--- Curated courses can be viewed by all authenticated users
 DROP POLICY IF EXISTS "Authenticated users can view curated courses" ON public.curated_courses;
 CREATE POLICY "Authenticated users can view curated courses"
     ON public.curated_courses
@@ -109,7 +101,6 @@ CREATE POLICY "Authenticated users can view curated courses"
     TO authenticated
     USING (true);
 
--- 4. User Curated Course Enrollments Table
 CREATE TABLE IF NOT EXISTS public.user_curated_courses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -142,7 +133,6 @@ CREATE POLICY "Users can update own enrolled courses"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- 5. Target Exam Countdowns Table
 CREATE TABLE IF NOT EXISTS public.target_exam_countdowns (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -172,11 +162,9 @@ CREATE POLICY "Users can insert/update own exam countdown"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- 6. Trigger: Extend handle_new_user to Initialize user_analytics
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Create public.profiles
     INSERT INTO public.profiles (id, email, display_name, photo_url)
     VALUES (
         NEW.id,
@@ -186,12 +174,10 @@ BEGIN
     )
     ON CONFLICT (id) DO NOTHING;
 
-    -- Create public.user_calibrations
     INSERT INTO public.user_calibrations (user_id, focus, is_calibrated)
     VALUES (NEW.id, 'higherEducation', false)
     ON CONFLICT (user_id) DO NOTHING;
 
-    -- Create public.user_analytics
     INSERT INTO public.user_analytics (user_id, current_streak_days, xp_points, academic_rank)
     VALUES (NEW.id, 0, 0, 'Novice Scholar')
     ON CONFLICT (user_id) DO NOTHING;
@@ -200,7 +186,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 7. RPC Function: Record Study Session & Update Gamification
 CREATE OR REPLACE FUNCTION public.record_study_session(
     p_deck_id UUID,
     p_cards_reviewed INT,
@@ -221,7 +206,6 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated.';
     END IF;
 
-    -- 1. Insert Session Result
     INSERT INTO public.session_results (
         deck_id,
         user_id,
@@ -239,7 +223,6 @@ BEGIN
         v_xp_earned
     );
 
-    -- 2. Upsert Daily Heatmap Activity
     INSERT INTO public.heatmap_activity (
         user_id,
         activity_date,
@@ -259,7 +242,6 @@ BEGIN
         minutes_studied = public.heatmap_activity.minutes_studied + EXCLUDED.minutes_studied,
         intensity_level = LEAST(4, 1 + (public.heatmap_activity.cards_reviewed + EXCLUDED.cards_reviewed) / 10);
 
-    -- 3. Calculate Academic Rank
     SELECT COALESCE(xp_points, 0) + v_xp_earned INTO v_total_xp
     FROM public.user_analytics
     WHERE user_id = v_user_id;
@@ -276,7 +258,6 @@ BEGIN
         v_new_rank := 'Novice Scholar';
     END IF;
 
-    -- 4. Update User Analytics Summary
     UPDATE public.user_analytics
     SET xp_points = v_total_xp,
         academic_rank = v_new_rank,
@@ -300,7 +281,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 8. RPC Function: Aggregated Dashboard Feed for Mobile App
 CREATE OR REPLACE FUNCTION public.get_dashboard_feed()
 RETURNS JSONB AS $$
 DECLARE
@@ -317,7 +297,6 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated.';
     END IF;
 
-    -- Analytics Summary & Heatmap
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'dateIso', to_char(activity_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
@@ -349,7 +328,6 @@ BEGIN
     FROM public.user_analytics a
     WHERE a.user_id = v_user_id;
 
-    -- Due Study Decks
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'id', d.id,
@@ -374,7 +352,6 @@ BEGIN
         LIMIT 5
     ) d;
 
-    -- Curated Courses (User Enrolled or Catalog Top)
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'id', c.id,
@@ -395,7 +372,6 @@ BEGIN
       ON uc.course_id = c.id AND uc.user_id = v_user_id
     LIMIT 6;
 
-    -- Target Exam Countdown
     SELECT jsonb_build_object(
         'id', e.id,
         'examTitle', e.exam_title,

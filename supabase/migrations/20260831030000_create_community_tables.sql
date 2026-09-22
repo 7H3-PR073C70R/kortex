@@ -1,7 +1,4 @@
--- Migration: Create Community & Peer Study Hub Tables, RLS, and RPCs
--- Modernized for Silent Focus, Study Circles, Peer Bounties, and League Gamification
 
--- 1. Live Study Rooms table (Silent Body Doubling + Focus Cockpit)
 CREATE TABLE IF NOT EXISTS study_rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
@@ -21,7 +18,6 @@ CREATE TABLE IF NOT EXISTS study_rooms (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. Forum Posts table (Discussions, Notes & Question Bounties)
 CREATE TABLE IF NOT EXISTS forum_posts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     author_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -41,7 +37,6 @@ CREATE TABLE IF NOT EXISTS forum_posts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 3. Forum Replies table (Answers with Verification)
 CREATE TABLE IF NOT EXISTS forum_replies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     post_id UUID REFERENCES forum_posts(id) ON DELETE CASCADE,
@@ -55,7 +50,6 @@ CREATE TABLE IF NOT EXISTS forum_replies (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 4. Study Circles (Micro-Accountability Pods: 3-6 students)
 CREATE TABLE IF NOT EXISTS study_circles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -69,7 +63,6 @@ CREATE TABLE IF NOT EXISTS study_circles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 5. Study Circle Members junction table
 CREATE TABLE IF NOT EXISTS study_circle_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     circle_id UUID NOT NULL REFERENCES study_circles(id) ON DELETE CASCADE,
@@ -82,7 +75,6 @@ CREATE TABLE IF NOT EXISTS study_circle_members (
     UNIQUE (circle_id, user_id)
 );
 
--- 6. Shared Decks (Community Marketplace) table
 CREATE TABLE IF NOT EXISTS shared_decks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -101,7 +93,6 @@ CREATE TABLE IF NOT EXISTS shared_decks (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 7. Leaderboard Standings table (Tiered League System)
 CREATE TABLE IF NOT EXISTS leaderboards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -116,7 +107,6 @@ CREATE TABLE IF NOT EXISTS leaderboards (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_study_rooms_category ON study_rooms(category);
 CREATE INDEX IF NOT EXISTS idx_forum_posts_track ON forum_posts(track);
 CREATE INDEX IF NOT EXISTS idx_forum_posts_is_question ON forum_posts(is_question);
@@ -127,7 +117,6 @@ CREATE INDEX IF NOT EXISTS idx_study_circle_members_circle_id ON study_circle_me
 CREATE INDEX IF NOT EXISTS idx_shared_decks_subject ON shared_decks(subject);
 CREATE INDEX IF NOT EXISTS idx_leaderboards_track_xp ON leaderboards(track, weekly_xp DESC);
 
--- Enable RLS
 ALTER TABLE study_rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE forum_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE forum_replies ENABLE ROW LEVEL SECURITY;
@@ -136,10 +125,8 @@ ALTER TABLE study_circle_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shared_decks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leaderboards ENABLE ROW LEVEL SECURITY;
 
--- Realtime publication
 ALTER PUBLICATION supabase_realtime ADD TABLE study_rooms, forum_posts, forum_replies, study_circles, study_circle_members, leaderboards;
 
--- Study Rooms RLS
 CREATE POLICY "Anyone can view study rooms"
     ON study_rooms FOR SELECT
     TO authenticated
@@ -160,7 +147,6 @@ CREATE POLICY "Room owners can delete their rooms"
     TO authenticated
     USING (auth.uid() = created_by);
 
--- Forum Posts RLS
 CREATE POLICY "Anyone can view forum posts"
     ON forum_posts FOR SELECT
     TO authenticated
@@ -176,7 +162,6 @@ CREATE POLICY "Authors can update own posts"
     TO authenticated
     USING (auth.uid() = author_id);
 
--- Forum Replies RLS
 CREATE POLICY "Anyone can view forum replies"
     ON forum_replies FOR SELECT
     TO authenticated
@@ -187,7 +172,6 @@ CREATE POLICY "Authenticated users can create replies"
     TO authenticated
     WITH CHECK (auth.uid() = author_id);
 
--- Study Circles RLS
 CREATE POLICY "Anyone can view study circles"
     ON study_circles FOR SELECT
     TO authenticated
@@ -203,7 +187,6 @@ CREATE POLICY "Circle creators can update circles"
     TO authenticated
     USING (auth.uid() = creator_id);
 
--- Study Circle Members RLS
 CREATE POLICY "Anyone can view circle memberships"
     ON study_circle_members FOR SELECT
     TO authenticated
@@ -219,7 +202,6 @@ CREATE POLICY "Users can leave circles"
     TO authenticated
     USING (auth.uid() = user_id);
 
--- Shared Decks RLS
 CREATE POLICY "Anyone can view shared decks"
     ON shared_decks FOR SELECT
     TO authenticated
@@ -230,13 +212,11 @@ CREATE POLICY "Authenticated users can publish shared decks"
     TO authenticated
     WITH CHECK (auth.uid() = owner_id);
 
--- Leaderboards RLS
 CREATE POLICY "Anyone can view leaderboards"
     ON leaderboards FOR SELECT
     TO authenticated
     USING (true);
 
--- RPC: Verify Forum Reply (Awards +100 XP to solver and marks solution)
 CREATE OR REPLACE FUNCTION verify_forum_reply(
     p_post_id UUID,
     p_reply_id UUID
@@ -255,41 +235,34 @@ BEGIN
         RAISE EXCEPTION 'Unauthorized';
     END IF;
 
-    -- Fetch post
     SELECT * INTO v_post FROM forum_posts WHERE id = p_post_id;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Post not found';
     END IF;
 
-    -- Only author can mark verified solution
     IF v_post.author_id <> v_user_id THEN
         RAISE EXCEPTION 'Only the post author can verify a solution';
     END IF;
 
-    -- Fetch reply
     SELECT * INTO v_reply FROM forum_replies WHERE id = p_reply_id AND post_id = p_post_id;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Reply not found';
     END IF;
 
-    -- Unmark any previously verified replies for this post
     UPDATE forum_replies
     SET is_verified_solution = false
     WHERE post_id = p_post_id;
 
-    -- Mark this reply as verified
     UPDATE forum_replies
     SET is_verified_solution = true
     WHERE id = p_reply_id;
 
-    -- Update post status
     UPDATE forum_posts
     SET is_verified_solution = true,
         verified_by = v_user_id,
         updated_at = now()
     WHERE id = p_post_id;
 
-    -- Award +100 XP to solver
     UPDATE public.profiles
     SET xp_points = xp_points + 100
     WHERE id = v_reply.author_id;
@@ -309,7 +282,6 @@ BEGIN
 END;
 $$;
 
--- RPC: Clone shared deck into user's private decks and flashcards
 CREATE OR REPLACE FUNCTION clone_shared_deck(
     p_shared_deck_id UUID
 )
@@ -337,7 +309,6 @@ BEGIN
         RAISE EXCEPTION 'Shared deck not found';
     END IF;
 
-    -- 1. Create personal deck for user
     INSERT INTO decks (
         user_id,
         title,
@@ -360,7 +331,6 @@ BEGIN
     )
     RETURNING id INTO v_new_deck_id;
 
-    -- 2. Clone flashcards
     FOR v_card IN SELECT * FROM jsonb_array_elements(v_shared_deck.cards)
     LOOP
         INSERT INTO flashcards (
@@ -390,12 +360,10 @@ BEGIN
         v_cards_inserted := v_cards_inserted + 1;
     END LOOP;
 
-    -- 3. Increment downloads count on the shared deck
     UPDATE shared_decks
     SET downloads_count = downloads_count + 1
     WHERE id = p_shared_deck_id;
 
-    -- Award creator 25 XP for sharing a deck that was cloned
     UPDATE public.profiles
     SET xp_points = xp_points + 25
     WHERE id = v_shared_deck.owner_id;

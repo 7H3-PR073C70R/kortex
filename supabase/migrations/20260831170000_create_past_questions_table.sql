@@ -1,5 +1,3 @@
--- Migration: Past Questions & CBT Question Bank Schema
--- Table for storing deduplicated 5-year past examination questions across WAEC, JAMB, SAT, TOEFL, IELTS, and University departments.
 
 CREATE TABLE IF NOT EXISTS public.past_questions (
     id TEXT PRIMARY KEY,
@@ -23,18 +21,15 @@ CREATE TABLE IF NOT EXISTS public.past_questions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Indexes for high-speed multi-attribute filtering & full-text search
 CREATE INDEX IF NOT EXISTS idx_past_questions_exam_type ON public.past_questions(exam_type);
 CREATE INDEX IF NOT EXISTS idx_past_questions_subject ON public.past_questions(subject);
 CREATE INDEX IF NOT EXISTS idx_past_questions_year ON public.past_questions(year);
 CREATE INDEX IF NOT EXISTS idx_past_questions_fingerprint ON public.past_questions(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_past_questions_lookup ON public.past_questions(exam_type, subject, year);
 
--- Enable RLS and Realtime
 ALTER TABLE public.past_questions ENABLE ROW LEVEL SECURITY;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.past_questions;
 
--- RLS Policies: Allow read access to authenticated and anonymous users
 DROP POLICY IF EXISTS "Public can read past questions" ON public.past_questions;
 DROP POLICY IF EXISTS "Service role can insert/update past questions" ON public.past_questions;
 

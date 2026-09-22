@@ -159,7 +159,6 @@ function splitIntoAtomicBlocks(text: string): string[] {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Code block detection
     if (trimmed.startsWith("```")) {
       inCodeBlock = !inCodeBlock;
       currentBlock.push(line);
@@ -170,7 +169,6 @@ function splitIntoAtomicBlocks(text: string): string[] {
       continue;
     }
 
-    // LaTeX block detection
     if (trimmed.startsWith("$$")) {
       if (inMathBlock || trimmed.endsWith("$$") && trimmed.length > 2) {
         currentBlock.push(line);
@@ -185,7 +183,6 @@ function splitIntoAtomicBlocks(text: string): string[] {
       }
     }
 
-    // Markdown Table detection
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       inTable = true;
       currentBlock.push(line);

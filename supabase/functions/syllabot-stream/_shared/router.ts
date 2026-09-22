@@ -16,7 +16,6 @@ export interface RouterOptions {
   proModel?: string;
 }
 
-// 1. Math / LaTeX patterns
 const LATEX_PATTERNS = [
   /\$\$/,
   /\\begin\{/,
@@ -60,7 +59,6 @@ const STEM_KEYWORDS = [
   "quantum mechanics",
 ];
 
-// 2. Programming / Code Syntax patterns
 const CODE_SNIPPET_PATTERNS = [
   /```[\s\S]*?```/,
   /\bdef\s+[a-zA-Z_]\w*\s*\(/,
@@ -103,7 +101,6 @@ export function selectModelAndParams(
     Deno.env.get("DEFAULT_MODEL") ||
     "luna";
 
-  // 1. Check for manual caller override
   if (options?.forceModel) {
     const isPro = options.forceModel.includes("pro") || options.forceModel.includes("reasoner") || options.forceModel.includes("r1");
     return {
@@ -132,7 +129,6 @@ export function selectModelAndParams(
 
   const matchedCriteria: string[] = [];
 
-  // A. Check Math / LaTeX indicators
   for (const regex of LATEX_PATTERNS) {
     if (regex.test(lastUserMessage) || regex.test(userContextText)) {
       matchedCriteria.push(`latex_pattern:${regex.source}`);
@@ -147,7 +143,6 @@ export function selectModelAndParams(
     }
   }
 
-  // B. Check Code / Programming indicators
   for (const regex of CODE_SNIPPET_PATTERNS) {
     if (regex.test(lastUserMessage) || regex.test(fullContextText)) {
       matchedCriteria.push(`code_syntax:${regex.source}`);
@@ -162,13 +157,11 @@ export function selectModelAndParams(
     }
   }
 
-  // C. Check Word / Token scale (> 3,500 words or length > 18,000 chars)
   const totalWordCount = fullContextText.trim().split(/\s+/).length;
   if (totalWordCount > 3500 || fullContextText.length > 18000) {
     matchedCriteria.push(`high_token_volume:${totalWordCount}_words`);
   }
 
-  // Determine routing
   const reasoningDetected = matchedCriteria.length > 0;
 
   return {

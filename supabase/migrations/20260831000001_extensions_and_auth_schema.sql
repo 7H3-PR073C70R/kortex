@@ -1,13 +1,8 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 001 - Extensions, Auth Profiles & Calibration
--- ==============================================================================
 
--- 1. Enable Required PostgreSQL Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "vector";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. User Profiles Table (Mirrors Supabase auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
@@ -18,27 +13,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Index on email
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 
--- Enable RLS on profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Profiles RLS Policies:
--- Users can read their own profile
 CREATE POLICY "Users can view own profile"
     ON public.profiles
     FOR SELECT
     USING (auth.uid() = id);
 
--- Users can update their own profile
 CREATE POLICY "Users can update own profile"
     ON public.profiles
     FOR UPDATE
     USING (auth.uid() = id)
     WITH CHECK (auth.uid() = id);
 
--- 3. Onboarding User Calibration Table
 CREATE TABLE IF NOT EXISTS public.user_calibrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -55,13 +44,10 @@ CREATE TABLE IF NOT EXISTS public.user_calibrations (
     CONSTRAINT uq_user_calibration UNIQUE(user_id)
 );
 
--- Index on user_id
 CREATE INDEX IF NOT EXISTS idx_user_calibrations_user_id ON public.user_calibrations(user_id);
 
--- Enable RLS on user_calibrations
 ALTER TABLE public.user_calibrations ENABLE ROW LEVEL SECURITY;
 
--- User Calibrations RLS Policies:
 CREATE POLICY "Users can view own calibration"
     ON public.user_calibrations
     FOR SELECT
@@ -78,11 +64,9 @@ CREATE POLICY "Users can update own calibration"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- 4. Automatic User Profile Initialization Trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Create public.profiles record
     INSERT INTO public.profiles (id, email, display_name, photo_url)
     VALUES (
         NEW.id,
@@ -92,7 +76,6 @@ BEGIN
     )
     ON CONFLICT (id) DO NOTHING;
 
-    -- Create initial public.user_calibrations record
     INSERT INTO public.user_calibrations (user_id, focus, is_calibrated)
     VALUES (NEW.id, 'higherEducation', false)
     ON CONFLICT (user_id) DO NOTHING;
@@ -101,13 +84,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Bind trigger to auth.users table
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 5. Updated Timestamp Trigger Function
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN

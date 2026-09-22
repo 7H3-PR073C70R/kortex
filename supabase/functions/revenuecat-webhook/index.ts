@@ -33,7 +33,6 @@ interface RevenueCatEvent {
 }
 
 Deno.serve(async (req: Request) => {
-  // 1. CORS Preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -46,7 +45,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // 2. Cryptographic Constant-Time Authentication of RevenueCat Webhook Secret
     const authHeader = req.headers.get("Authorization") ?? "";
     const webhookSecret = Deno.env.get("REVENUECAT_WEBHOOK_SECRET");
 
@@ -76,7 +74,6 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 3. Parse Inbound RevenueCat Event
     const body: RevenueCatEvent = await req.json();
     const event = body?.event;
 
@@ -91,7 +88,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 4. Mandatory Replay Attack Defense (Check timestamp within 300 seconds)
     const timestampToCheck =
       event.event_timestamp_ms ?? event.purchased_at_ms;
 
@@ -118,7 +114,6 @@ Deno.serve(async (req: Request) => {
       `[RevenueCat Webhook] Authenticated ${event.type} for user: ${event.app_user_id}`
     );
 
-    // 5. Initialize Supabase Admin Client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey =
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -139,7 +134,6 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const userId = event.app_user_id;
 
-    // 6. Subscription Lifecycle State Machine
     let targetTier: "pro" | "free" | null = null;
 
     switch (event.type) {
@@ -169,7 +163,6 @@ Deno.serve(async (req: Request) => {
         );
     }
 
-    // 7. Update user profile in Supabase Postgres via Service Role
     if (targetTier !== null) {
       const { error: updateErr } = await supabase
         .from("profiles")

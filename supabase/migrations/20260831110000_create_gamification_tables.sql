@@ -1,6 +1,4 @@
--- Migration: Gamified Study Activity Heatmap, Streak Shield, and Achievement Badges
 
--- 1. Alter user_analytics and profiles to support streak freezes
 ALTER TABLE public.user_analytics
 ADD COLUMN IF NOT EXISTS streak_freezes_available INT NOT NULL DEFAULT 0,
 ADD COLUMN IF NOT EXISTS streak_freeze_active BOOLEAN NOT NULL DEFAULT false;
@@ -9,7 +7,6 @@ ALTER TABLE public.profiles
 ADD COLUMN IF NOT EXISTS streak_freezes_available INT NOT NULL DEFAULT 0,
 ADD COLUMN IF NOT EXISTS streak_freeze_active BOOLEAN NOT NULL DEFAULT false;
 
--- 2. Create user_activity_logs for annual 365-day heatmap density
 CREATE TABLE IF NOT EXISTS public.user_activity_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -24,7 +21,6 @@ CREATE TABLE IF NOT EXISTS public.user_activity_logs (
 CREATE INDEX IF NOT EXISTS idx_user_activity_logs_user_date 
 ON public.user_activity_logs(user_id, activity_date DESC);
 
--- 3. Create user_achievements table
 CREATE TABLE IF NOT EXISTS public.user_achievements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -40,14 +36,12 @@ CREATE TABLE IF NOT EXISTS public.user_achievements (
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user 
 ON public.user_achievements(user_id);
 
--- Enable RLS and Realtime
 ALTER TABLE public.user_activity_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_activity_logs;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.user_achievements;
 
--- RLS Policies
 DROP POLICY IF EXISTS "Users can view own activity logs" ON public.user_activity_logs;
 DROP POLICY IF EXISTS "Users can insert own activity logs" ON public.user_activity_logs;
 DROP POLICY IF EXISTS "Users can update own activity logs" ON public.user_activity_logs;
@@ -82,7 +76,6 @@ CREATE POLICY "Users can manage own achievements"
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- RPC: Purchase Streak Freeze using 200 XP
 CREATE OR REPLACE FUNCTION public.purchase_streak_freeze(p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql

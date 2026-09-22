@@ -69,7 +69,6 @@ class PresetModel {
 
 /// Список предустановленных моделей
 class PresetModels {
-  // HuggingFace GGUF models for on-device inference
   static const smolLM2Q4K = PresetModel(
     id: 'Segilmez06/SmolLM2-135M-Instruct-Q4_K_M-GGUF',
     name: 'SmolLM2 135M Instruct (Q4_K_M)',
@@ -114,7 +113,6 @@ class PresetModels {
     contextSize: 8192,
   );
   
-  // Ollama модели - Braindler
   static const braindlerQ2K = PresetModel(
     id: 'nativemind/braindler',
     name: 'Braindler Q2_K',

@@ -240,7 +240,6 @@ void main() {
 
       test('should throw error when model not loaded', () async {
         final newLlama = FlutterLlama.instance;
-        // Reset state
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(
           channel,

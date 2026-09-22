@@ -1,15 +1,8 @@
--- ==============================================================================
--- Migration: 20260921000000_canonical_cas_deduplication.sql
--- Description: Canonical Content-Addressed Storage (CAS), Multi-Tenant Preflight RPC with
---              Advisory Locking, Deck Projection Isolation, Poisoned Retry, and Storage GC.
--- ==============================================================================
 
--- 1. Ensure flashcards has explanation and image_url columns
 ALTER TABLE public.flashcards 
     ADD COLUMN IF NOT EXISTS explanation TEXT,
     ADD COLUMN IF NOT EXISTS image_url TEXT;
 
--- 2. Canonical Documents (Global Master Binaries & Pipeline Status)
 CREATE TABLE IF NOT EXISTS public.canonical_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     content_hash TEXT UNIQUE NOT NULL,       -- SHA-256 of raw file
@@ -27,7 +20,6 @@ CREATE TABLE IF NOT EXISTS public.canonical_documents (
 CREATE INDEX IF NOT EXISTS idx_canonical_docs_hash ON public.canonical_documents(content_hash);
 CREATE INDEX IF NOT EXISTS idx_canonical_docs_text_hash ON public.canonical_documents(text_stream_hash);
 
--- 3. Canonical Decks & Cards (Master Flashcard Templates from Luna Synthesis)
 CREATE TABLE IF NOT EXISTS public.canonical_decks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     canonical_document_id UUID UNIQUE NOT NULL REFERENCES public.canonical_documents(id) ON DELETE CASCADE,
@@ -54,7 +46,6 @@ CREATE TABLE IF NOT EXISTS public.canonical_cards (
 
 CREATE INDEX IF NOT EXISTS idx_canonical_cards_deck ON public.canonical_cards(canonical_deck_id);
 
--- 4. Storage Binary Cleanup Queue
 CREATE TABLE IF NOT EXISTS public.storage_cleanup_queue (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     bucket_id TEXT NOT NULL,
@@ -67,20 +58,17 @@ CREATE INDEX IF NOT EXISTS idx_storage_cleanup_unprocessed
     ON public.storage_cleanup_queue(processed_at) 
     WHERE processed_at IS NULL;
 
--- 5. Add Canonical Reference & Fork Flag to User Decks
 ALTER TABLE public.decks 
     ADD COLUMN IF NOT EXISTS canonical_deck_id UUID REFERENCES public.canonical_decks(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS is_forked BOOLEAN NOT NULL DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_decks_canonical_deck_id ON public.decks(canonical_deck_id);
 
--- 6. Enable Row Level Security (RLS) on Canonical & Cleanup Tables
 ALTER TABLE public.canonical_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.canonical_decks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.canonical_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.storage_cleanup_queue ENABLE ROW LEVEL SECURITY;
 
--- Read policies for authenticated users
 DROP POLICY IF EXISTS "Authenticated users can read canonical documents" ON public.canonical_documents;
 CREATE POLICY "Authenticated users can read canonical documents"
     ON public.canonical_documents FOR SELECT TO authenticated USING (true);
@@ -93,7 +81,6 @@ DROP POLICY IF EXISTS "Authenticated users can read canonical cards" ON public.c
 CREATE POLICY "Authenticated users can read canonical cards"
     ON public.canonical_cards FOR SELECT TO authenticated USING (true);
 
--- 7. Multi-Tenant Preflight RPC with Transactional Advisory Locking & User Title Override
 CREATE OR REPLACE FUNCTION claim_or_create_document_preflight(
     p_content_hash TEXT,
     p_filename TEXT,
@@ -123,7 +110,6 @@ BEGIN
         RAISE EXCEPTION 'Unauthorized: User session required';
     END IF;
 
-    -- Generate a deterministic 64-bit signed integer from first 16 hex characters of hash
     v_lock_key := ('x' || substr(p_content_hash, 1, 16))::bit(64)::bigint;
     PERFORM pg_advisory_xact_lock(v_lock_key);
 
@@ -135,13 +121,11 @@ BEGIN
     v_clean_title := COALESCE(NULLIF(TRIM(p_deck_title), ''), regexp_replace(p_filename, '\.[^.]+$', ''));
     v_canonical_storage := 'canonical/' || p_content_hash || '.' || v_ext;
 
-    -- 1. Check if canonical record exists
     SELECT * INTO v_canonical
     FROM canonical_documents
     WHERE content_hash = p_content_hash;
 
     IF FOUND THEN
-        -- Ensure user document row exists in documents table
         SELECT * INTO v_existing_user_doc
         FROM documents
         WHERE user_id = v_user_id AND content_hash = p_content_hash
@@ -158,15 +142,12 @@ BEGIN
             )
             RETURNING * INTO v_existing_user_doc;
 
-            -- Increment reference count
             UPDATE canonical_documents 
             SET reference_count = reference_count + 1,
                 updated_at = now()
             WHERE id = v_canonical.id;
         END IF;
 
-        -- CASE A: Stuck or Failed Synthesis Recovery
-        -- If status is 'failed' OR stuck in 'processing' for > 15 minutes (unhandled crash/reboot)
         IF v_canonical.processing_status = 'failed' OR 
            (v_canonical.processing_status = 'processing' AND v_canonical.updated_at < (now() - INTERVAL '15 minutes')) THEN
             UPDATE canonical_documents
@@ -184,7 +165,6 @@ BEGIN
             );
         END IF;
 
-        -- CASE B: In-Flight Processing (active within last 15 minutes)
         IF v_canonical.processing_status = 'processing' THEN
             RETURN jsonb_build_object(
                 'status', 'in_progress',
@@ -196,20 +176,17 @@ BEGIN
             );
         END IF;
 
-        -- CASE C: Synthesis Completed -> Instant Provisioning
         IF v_canonical.processing_status = 'completed' THEN
             SELECT * INTO v_canonical_deck 
             FROM canonical_decks 
             WHERE canonical_document_id = v_canonical.id;
 
             IF FOUND THEN
-                -- Check if user already has a deck for this canonical deck
                 SELECT * INTO v_user_deck 
                 FROM decks 
                 WHERE user_id = v_user_id AND canonical_deck_id = v_canonical_deck.id;
 
                 IF NOT FOUND THEN
-                    -- Provision personal deck projection with user's custom title (if provided)
                     INSERT INTO decks (
                         user_id, canonical_deck_id, title, subject, category, 
                         total_cards, due_cards, course_id, course_code, is_forked
@@ -228,7 +205,6 @@ BEGIN
                     )
                     RETURNING * INTO v_user_deck;
 
-                    -- Instantiate isolated flashcards with fresh SRS states
                     INSERT INTO flashcards (
                         deck_id, user_id, front, back, front_latex, back_latex, 
                         explanation, image_url, source_topic, state, difficulty, 
@@ -241,7 +217,6 @@ BEGIN
                     FROM canonical_cards c
                     WHERE c.canonical_deck_id = v_canonical_deck.id;
 
-                    -- Assign extracted snippets to this user's document for RAG search
                     INSERT INTO extracted_snippets (
                         document_id, user_id, raw_text, latex_content, topic, confidence_score
                     )
@@ -262,7 +237,6 @@ BEGIN
                     'message', 'Instant match found! Deck added to your library.'
                 );
             ELSE
-                -- Canonical doc marked completed but canonical_deck missing -> reprocess
                 UPDATE canonical_documents
                 SET processing_status = 'processing', updated_at = now()
                 WHERE id = v_canonical.id;
@@ -278,7 +252,6 @@ BEGIN
         END IF;
     END IF;
 
-    -- 2. Novel Document: Reserve slot in canonical_documents
     INSERT INTO canonical_documents (
         content_hash, storage_path, file_size_bytes, file_type, processing_status, reference_count
     )
@@ -307,7 +280,6 @@ BEGIN
 END;
 $$;
 
--- 8. Safe Garbage Collection (Trigger on User Document Deletion)
 CREATE OR REPLACE FUNCTION handle_document_ref_decrement()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -325,19 +297,15 @@ BEGIN
     WHERE content_hash = v_content_hash
     RETURNING reference_count, storage_path INTO v_rem_refs, v_storage_path;
 
-    -- If 0 active references across all users, queue storage deletion
     IF v_rem_refs IS NOT NULL AND v_rem_refs <= 0 THEN
-        -- Queue primary PDF file for deletion from study-documents
         IF v_storage_path IS NOT NULL THEN
             INSERT INTO storage_cleanup_queue (bucket_id, storage_path)
             VALUES ('study-documents', v_storage_path);
         END IF;
 
-        -- Queue extracted diagram assets folder
         INSERT INTO storage_cleanup_queue (bucket_id, storage_path)
         VALUES ('card-assets', 'canonical/' || v_content_hash);
 
-        -- Delete canonical record (cascades to canonical_decks and canonical_cards)
         DELETE FROM canonical_documents WHERE content_hash = v_content_hash;
     END IF;
 
@@ -350,7 +318,6 @@ CREATE TRIGGER trg_decrement_doc_ref
 AFTER DELETE ON public.documents
 FOR EACH ROW EXECUTE FUNCTION handle_document_ref_decrement();
 
--- 9. Storage Cleanup Purge Function
 CREATE OR REPLACE FUNCTION purge_orphaned_storage_files(p_batch_limit INT DEFAULT 50)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -369,7 +336,6 @@ BEGIN
         LIMIT p_batch_limit 
         FOR UPDATE SKIP LOCKED
     LOOP
-        -- Delete objects from storage.objects
         DELETE FROM storage.objects
         WHERE bucket_id = v_item.bucket_id
           AND (name = v_item.storage_path OR name LIKE v_item.storage_path || '/%');

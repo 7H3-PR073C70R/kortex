@@ -7,12 +7,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const htmlRoot = document.documentElement;
 
-  // --------------------------------------------------------------------------
-  // 1. Dark / Light Theme Toggle Engine
-  // --------------------------------------------------------------------------
   const themeToggleBtn = document.getElementById('themeToggleBtn');
 
-  // Retrieve saved preference or system preference
   const savedTheme = localStorage.getItem('kortex_theme') ||
     (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
 
@@ -37,9 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --------------------------------------------------------------------------
-  // 2. Boutique Theme Preset Accent Switcher
-  // --------------------------------------------------------------------------
   const accentDots = document.querySelectorAll('.accent-dot');
   const savedAccent = localStorage.getItem('kortex_accent') || 'sage';
 
@@ -81,9 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --------------------------------------------------------------------------
-  // 3. Multi-Modal Workstation Tab Switcher
-  // --------------------------------------------------------------------------
   const tabButtons = document.querySelectorAll('.workstation-tabs .tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
 
@@ -106,9 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --------------------------------------------------------------------------
-  // 4. Interactive 3D Flashcard & KaTeX Render Engine
-  // --------------------------------------------------------------------------
   const flashcardElement = document.getElementById('interactiveFlashcard');
   const flipTriggerBtn = document.getElementById('flipCardTrigger');
   const formulaFrontEl = document.getElementById('katexFrontFormula');
@@ -179,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (answerTextEl) answerTextEl.textContent = card.backExplanation;
     if (topicBadgeEl) topicBadgeEl.textContent = card.topic;
 
-    // KaTeX LaTeX rendering
     if (formulaFrontEl) {
       if (card.frontFormula) {
         formulaFrontEl.style.display = 'flex';
@@ -211,7 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initial KaTeX render
   if (window.katex) {
     renderCurrentCard();
   } else {
@@ -234,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Keyboard navigation for card flip
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Space' && document.activeElement === flashcardElement) {
       e.preventDefault();
@@ -242,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // FSRS-6 Interactive Rating Buttons
   const ratingButtons = document.querySelectorAll('.rating-pill-btn');
   ratingButtons.forEach((btn) => {
     btn.addEventListener('click', (e) => {
@@ -269,10 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (statIntervalEl) statIntervalEl.textContent = nextInterval;
       if (statStabilityEl) statStabilityEl.textContent = stability;
 
-      // Cycle to next demo card
       currentCardIndex = (currentCardIndex + 1) % demoCards.length;
 
-      // Reset card flip and render new content
       if (flashcardElement) {
         flashcardElement.classList.remove('flipped');
       }
@@ -280,9 +261,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --------------------------------------------------------------------------
-  // 5. Dynamic Active User Counter
-  // --------------------------------------------------------------------------
   const baseCount = 25420;
   const countElements = document.querySelectorAll('.social-proof-count');
 
@@ -306,9 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 16000);
 
-  // --------------------------------------------------------------------------
-  // 6. FAQ Accordion Interaction
-  // --------------------------------------------------------------------------
   const faqItems = document.querySelectorAll('.faq-item');
   faqItems.forEach((item) => {
     const questionBtn = item.querySelector('.faq-question');
@@ -328,9 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --------------------------------------------------------------------------
-  // 7. Landing Page Newsletter Subscription – Supabase Edge Function
-  // --------------------------------------------------------------------------
   const SUPABASE_URL    = 'https://mongizqfijuhycdxltpw.supabase.co';
   const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg';
   const NEWSLETTER_URL  = `${SUPABASE_URL}/functions/v1/subscribe-newsletter`;
@@ -342,7 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const landingNewsletterBtnTxt = document.getElementById('landingNewsletterBtnText');
 
   function setNewsletterBtn(state) {
-    // state: 'idle' | 'loading' | 'done'
     if (!landingNewsletterBtn) return;
     if (state === 'loading') {
       landingNewsletterBtn.disabled = true;
@@ -393,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(data.error || `Submission failed (${res.status}). Please try again.`);
         }
 
-        // Also save locally as offline cache / backup
         try {
           window.KortexSecurityEngine?.saveNewsletterEmail(email, 'landing_page');
         } catch (_) { /* ignore localStorage errors */ }
@@ -409,11 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --------------------------------------------------------------------------
-  // 6. Interactive Pillar Experiences (Pillars 1, 2, 3)
-  // --------------------------------------------------------------------------
   
-  // Pillar 1: Ingest Tabs & Flashcard Flip
   const intTabs = document.querySelectorAll('.int-tab');
   const docBadge = document.querySelector('.doc-badge');
   const formulaCode = document.querySelector('.formula-code');
@@ -464,7 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Pillar 2: FSRS Spaced-Repetition Simulator
   const fsrsButtons = document.querySelectorAll('.fsrs-rate-btn');
   const retentionVal = document.getElementById('retentionVal');
   const fsrsStatusMsg = document.getElementById('fsrsStatusMsg');
@@ -501,7 +466,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Pillar 3: CBT Exam Question Simulator
   const examOptBtns = document.querySelectorAll('.exam-opt-btn');
   const examFeedbackBox = document.getElementById('examFeedbackBox');
   const feedbackStatus = document.getElementById('feedbackStatus');
@@ -538,7 +502,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         btn.classList.add('wrong');
-        // also highlight the correct option
         const correctBtn = document.querySelector('.exam-opt-btn[data-correct="true"]');
         if (correctBtn) correctBtn.classList.add('correct');
         if (feedbackStatus) {

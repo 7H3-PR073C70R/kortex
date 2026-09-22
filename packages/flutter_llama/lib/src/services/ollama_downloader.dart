@@ -132,7 +132,6 @@ class OllamaDownloader {
       var lastProgress = 0.0;
       
       await for (var chunk in streamedResponse.stream.transform(utf8.decoder)) {
-        // Каждая строка - это JSON объект
         final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
         
         for (var line in lines) {
@@ -140,7 +139,6 @@ class OllamaDownloader {
             final json = jsonDecode(line) as Map<String, dynamic>;
             final status = json['status'] as String? ?? 'Загрузка...';
             
-            // Вычисляем прогресс
             double progress = 0.0;
             int? completed;
             int? total;
@@ -156,7 +154,6 @@ class OllamaDownloader {
               progress = 1.0;
             }
             
-            // Обновляем прогресс только если изменился
             if (progress != lastProgress || progress == 1.0) {
               lastProgress = progress;
               
@@ -196,7 +193,6 @@ class OllamaDownloader {
     String? outputPath,
   }) async {
     try {
-      // Определяем путь для сохранения
       final appDir = await getApplicationDocumentsDirectory();
       final modelsDir = Directory(path.join(appDir.path, 'models', 'ollama'));
       
@@ -211,13 +207,11 @@ class OllamaDownloader {
         print('[OllamaDownloader] Exporting model to: $finalPath');
       }
       
-      // Проверяем наличие Ollama CLI
       final whichResult = await Process.run('which', ['ollama']);
       if (whichResult.exitCode != 0) {
         throw Exception('Ollama CLI not found. Please install from https://ollama.com');
       }
       
-      // Экспортируем модель
       final result = await Process.run('ollama', [
         'export',
         modelName,
@@ -234,7 +228,6 @@ class OllamaDownloader {
         print(result.stdout);
       }
       
-      // Проверяем, что файл создан
       final file = File(finalPath);
       if (!await file.exists()) {
         throw Exception('Exported file not found at: $finalPath');
@@ -252,7 +245,6 @@ class OllamaDownloader {
   /// Получить путь к модели из Ollama хранилища
   Future<String?> getModelPath(String modelName) async {
     try {
-      // Ollama хранит модели в ~/.ollama/models
       final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
       if (home == null) return null;
       
@@ -263,14 +255,12 @@ class OllamaDownloader {
         return null;
       }
       
-      // Получаем информацию о модели через API
       final models = await listModels();
       final model = models.firstWhere(
         (m) => m.name == modelName,
         orElse: () => throw ModelNotFoundException(modelName),
       );
       
-      // Извлекаем digest (SHA256 хеш)
       if (model.digest != null) {
         final blobPath = path.join(ollamaDir, model.digest!.replaceFirst('sha256:', 'sha256-'));
         final file = File(blobPath);
@@ -283,7 +273,6 @@ class OllamaDownloader {
         }
       }
       
-      // Альтернативный поиск GGUF файлов
       await for (final entity in directory.list()) {
         if (entity is File && await _isValidGGUFFile(entity.path)) {
           if (kDebugMode) {
@@ -308,16 +297,13 @@ class OllamaDownloader {
     DownloadProgressCallback? onProgress,
   }) async {
     try {
-      // Проверяем доступность Ollama
       if (!await isAvailable()) {
         throw Exception('Ollama is not running. Please start Ollama.');
       }
       
-      // Проверяем, установлена ли модель
       final installed = await isModelInstalled(modelName);
       
       if (!installed) {
-        // Pull модель
         onProgress?.call(const DownloadProgress(
           progress: 0.0,
           status: 'Загрузка модели через Ollama...',
@@ -326,7 +312,6 @@ class OllamaDownloader {
         await pullModel(
           modelName: modelName,
           onProgress: (progress) {
-            // Масштабируем прогресс: 0-80% для pull, 80-100% для export
             final scaledProgress = DownloadProgress(
               progress: progress.progress * 0.8,
               status: progress.status,
@@ -338,7 +323,6 @@ class OllamaDownloader {
         );
       }
       
-      // Экспортируем в GGUF
       onProgress?.call(const DownloadProgress(
         progress: 0.8,
         status: 'Экспорт модели в GGUF...',
@@ -366,11 +350,9 @@ class OllamaDownloader {
       final file = File(filePath);
       if (!await file.exists()) return false;
       
-      // Проверяем размер (должен быть больше 1MB)
       final size = await file.length();
       if (size < 1024 * 1024) return false;
       
-      // Проверяем magic number "GGUF"
       final bytes = await file.openRead(0, 4).first;
       final magic = String.fromCharCodes(bytes);
       

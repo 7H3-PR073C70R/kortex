@@ -84,7 +84,6 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
         _isDownloading = false;
       });
 
-      // Автоматически загрузить модель
       await _loadModel();
     } catch (e) {
       _addLog('Ошибка загрузки: $e');
@@ -271,7 +270,6 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
       ),
       body: Column(
         children: [
-          // Status bar
           Container(
             padding: const EdgeInsets.all(12),
             color: Theme.of(context).primaryColor.withOpacity(0.1),
@@ -294,7 +292,6 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
             ),
           ),
 
-          // Model selection
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -339,7 +336,6 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
 
           const Divider(),
 
-          // Generation controls
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -383,7 +379,6 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
 
           const Divider(),
 
-          // Output
           Expanded(
             child: DefaultTabController(
               length: 2,
@@ -398,7 +393,6 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
                   Expanded(
                     child: TabBarView(
                       children: [
-                        // Output tab
                         SingleChildScrollView(
                           padding: const EdgeInsets.all(12),
                           child: Text(
@@ -407,7 +401,6 @@ class _ModelTestScreenState extends State<ModelTestScreen> {
                                 : _output,
                           ),
                         ),
-                        // Logs tab
                         ListView.builder(
                           padding: const EdgeInsets.all(8),
                           itemCount: _logs.length,

@@ -3,7 +3,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Scroll-Triggered Reveal Animations with Safari Resilience
   const revealElements = document.querySelectorAll('.reveal-on-scroll');
 
   function revealVisibleElements() {
@@ -16,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Immediate check on load so hero content is immediately visible
   revealVisibleElements();
 
   if ('IntersectionObserver' in window) {
@@ -38,18 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     revealElements.forEach((el) => revealObserver.observe(el));
 
-    // Fallback safety for Safari or quick scrolls
     window.addEventListener('scroll', revealVisibleElements, { passive: true });
 
     setTimeout(() => {
       revealElements.forEach((el) => el.classList.add('is-revealed'));
     }, 1200);
   } else {
-    // Fallback for older browsers
     revealElements.forEach((el) => el.classList.add('is-revealed'));
   }
 
-  // 2. Sticky Glassmorphism Header Scroll State
   const header = document.querySelector('.site-header');
   let lastScrollY = window.scrollY;
 
@@ -67,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
     { passive: true }
   );
 
-  // 3. 3D Perspective Tilt on Product Mockup Card (Desktop Only - Disabled on Touch/Mobile)
   const mockupCard = document.querySelector('.product-mockup-card');
   const mockupWrapper = document.querySelector('.hero-mockup-wrapper');
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -96,14 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4. FAQ Accordion Interaction (Accessible with touch support)
   const faqItems = document.querySelectorAll('.faq-item');
   faqItems.forEach((item) => {
     const questionBtn = item.querySelector('.faq-question');
     questionBtn?.addEventListener('click', () => {
       const isOpen = item.classList.contains('is-open');
 
-      // Close all other accordion items
       faqItems.forEach((other) => {
         if (other !== item) {
           other.classList.remove('is-open');

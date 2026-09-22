@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-// import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
 /// Helper class for downloading GGUF models from Ollama
@@ -46,13 +45,11 @@ class OllamaModelDownloader {
       print('[OllamaDownloader] To: $outputFile');
     }
 
-    // Create directory if it doesn't exist
     final dir = Directory(destinationPath);
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
 
-    // Check if file already exists
     final file = File(outputFile);
     if (await file.exists()) {
       if (kDebugMode) {
@@ -62,7 +59,6 @@ class OllamaModelDownloader {
     }
 
     try {
-      // Download the model using HttpClient
       final httpClient = HttpClient();
       final request = await httpClient.getUrl(Uri.parse(modelUrl));
       final response = await request.close();
@@ -103,7 +99,6 @@ class OllamaModelDownloader {
         print('[OllamaDownloader] Download failed: $e');
       }
 
-      // Clean up partial download
       if (await file.exists()) {
         await file.delete();
       }
@@ -114,9 +109,6 @@ class OllamaModelDownloader {
 
   /// Get the download URL for a specific model variant
   static String _getModelDownloadUrl(String variant) {
-    // This is a placeholder URL structure
-    // In reality, you would need to query Ollama API to get the actual download URL
-    // For now, we'll construct a hypothetical URL
     return '$ollamaBaseUrl/api/blobs/sha256-$variant';
   }
 
@@ -132,14 +124,12 @@ class OllamaModelDownloader {
     }
 
     try {
-      // Check if Ollama is installed
       final which = await Process.run('which', ['ollama']);
       if (which.exitCode != 0) {
         throw Exception(
             'Ollama CLI not found. Please install Ollama from https://ollama.com');
       }
 
-      // Pull the model
       if (kDebugMode) {
         print('[OllamaDownloader] Running: ollama pull $model');
       }
@@ -155,17 +145,14 @@ class OllamaModelDownloader {
         print(result.stdout);
       }
 
-      // Get model path from Ollama
       final showResult =
           await Process.run('ollama', ['show', model, '--modelfile']);
       if (showResult.exitCode != 0) {
         throw Exception('Failed to get model info: ${showResult.stderr}');
       }
 
-      // Parse model path (this is platform-specific)
       final modelPath = _parseModelPath(showResult.stdout.toString(), model);
 
-      // Copy to destination if needed
       if (modelPath != null && modelPath != destinationPath) {
         final sourceFile = File(modelPath);
         if (await sourceFile.exists()) {
@@ -193,7 +180,6 @@ class OllamaModelDownloader {
   /// Extract GGUF model path from Ollama's stored models
   static Future<String?> getOllamaModelPath(String model) async {
     try {
-      // Ollama stores models in ~/.ollama/models on Unix-like systems
       final home =
           Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
       if (home == null) return null;
@@ -205,7 +191,6 @@ class OllamaModelDownloader {
         return null;
       }
 
-      // Search for GGUF files
       await for (final entity in ollamaDirectory.list(recursive: true)) {
         if (entity is File && entity.path.toLowerCase().endsWith('.gguf')) {
           if (kDebugMode) {
@@ -225,13 +210,10 @@ class OllamaModelDownloader {
   }
 
   static String? _parseModelPath(String output, String model) {
-    // Try to extract model path from Ollama output
-    // This is a simplified version and might need adjustment based on actual output
     final lines = output.split('\n');
     for (final line in lines) {
       if (line.toLowerCase().contains('from') ||
           line.toLowerCase().contains('model')) {
-        // Extract path-like string
         final pathRegex = RegExp(r'([/~][\w\-./]+\.gguf)');
         final match = pathRegex.firstMatch(line);
         if (match != null) {
@@ -248,11 +230,9 @@ class OllamaModelDownloader {
       final file = File(filePath);
       if (!await file.exists()) return false;
 
-      // Check file size (GGUF files should be reasonably large)
       final size = await file.length();
       if (size < 1024 * 1024) return false; // Less than 1MB is suspicious
 
-      // Check GGUF magic number (first 4 bytes should be "GGUF")
       final bytes = await file.openRead(0, 4).first;
       final magic = String.fromCharCodes(bytes);
 

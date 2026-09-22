@@ -43,12 +43,10 @@ class ModelDownloader {
     final url = modelUrls[modelName]!;
     final fileName = '$modelName.gguf';
 
-    // Получаем директорию для хранения моделей
     final directory = await _getModelsDirectory();
     final filePath = path.join(directory.path, fileName);
     final file = File(filePath);
 
-    // Проверяем, не загружена ли уже модель
     if (await file.exists()) {
       print('Model already exists: $filePath');
       return filePath;
@@ -58,7 +56,6 @@ class ModelDownloader {
     print('Saving to: $filePath');
 
     try {
-      // Создаем HTTP запрос
       final request = http.Request('GET', Uri.parse(url));
       final response = await http.Client().send(request);
 
@@ -68,11 +65,9 @@ class ModelDownloader {
         );
       }
 
-      // Получаем общий размер файла
       final contentLength = response.contentLength ?? 0;
       print('File size: ${_formatBytes(contentLength)}');
 
-      // Загружаем файл с отслеживанием прогресса
       final bytes = <int>[];
       int downloaded = 0;
       int lastReportedMB = 0;
@@ -95,14 +90,12 @@ class ModelDownloader {
         }
       }
 
-      // Сохраняем файл
       await file.writeAsBytes(bytes);
       print('Model downloaded successfully: $filePath');
 
       return filePath;
     } catch (e) {
       print('Error downloading model: $e');
-      // Удаляем частично загруженный файл
       if (await file.exists()) {
         await file.delete();
       }

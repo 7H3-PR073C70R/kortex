@@ -37,7 +37,6 @@ serve(async (req: Request) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const authHeader = req.headers.get("Authorization");
 
-    // 1. Auth Validation
     if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: Missing Bearer token" }),
@@ -67,12 +66,10 @@ serve(async (req: Request) => {
 
     const userId = user.id;
 
-    // 2. Parse and validate request payload
     const body: GenerateFlashcardsRequest = await req.json().catch(() => ({}));
     const rawTopic = body.topic?.trim() || "Academic Foundations";
     const rawSourceText = body.sourceText?.trim();
 
-    // 3. Enforce Daily AI Quota (Free tier: 50 AI questions/day)
     const quotaCheck = await enforceDailyQuota(
       userId,
       "ai_question",
@@ -98,7 +95,6 @@ serve(async (req: Request) => {
     const topic = rawTopic;
     const sourceText = rawSourceText;
 
-    // 3. Genuine LLM Streaming Server-Sent Events (SSE) Pipeline
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -119,7 +115,6 @@ serve(async (req: Request) => {
 
         const generatedCards: Record<string, unknown>[] = [];
 
-        // PHASE 1: Immediate First 3 Seed Flashcards (< 3 seconds time-to-value killer loop)
         const initialCards = getSeedFlashcards(topic, difficulty);
         const seedCount = Math.min(3, totalCount, initialCards.length);
         for (let i = 0; i < seedCount; i++) {
@@ -147,7 +142,6 @@ serve(async (req: Request) => {
           await new Promise((r) => setTimeout(r, 60));
         }
 
-        // PHASE 2: Genuine LLM Streaming for Remaining Cards
         const remainingCount = totalCount - generatedCards.length;
         if (remainingCount > 0) {
           const luna = new LunaClient();
@@ -210,7 +204,6 @@ CRITICAL OUTPUT INSTRUCTIONS:
                     if (deltaText) {
                       cardJsonBuffer += deltaText;
 
-                      // Process any complete lines in cardJsonBuffer
                       while (cardJsonBuffer.includes("\n")) {
                         const newlineIdx = cardJsonBuffer.indexOf("\n");
                         const rawLine = cardJsonBuffer.slice(0, newlineIdx).trim();
@@ -263,12 +256,10 @@ CRITICAL OUTPUT INSTRUCTIONS:
                             }
                           }
                         } catch {
-                          // Non-parsable line chunk, continue
                         }
                       }
                     }
                   } catch {
-                    // Non-json ping chunk
                   }
                 }
               }
@@ -278,7 +269,6 @@ CRITICAL OUTPUT INSTRUCTIONS:
               }
             }
 
-            // Parse any trailing JSON block left in cardJsonBuffer
             if (cardJsonBuffer.trim() && generatedCards.length < totalCount) {
               const cleanedTrailing = cardJsonBuffer
                 .trim()
@@ -317,7 +307,6 @@ CRITICAL OUTPUT INSTRUCTIONS:
                   });
                 }
               } catch {
-                // Trailing snippet wasn't complete JSON
               }
             }
 
@@ -328,7 +317,6 @@ CRITICAL OUTPUT INSTRUCTIONS:
             console.warn("[generate-flashcards-stream] Luna stream error:", err);
           }
 
-          // Dev/Offline Fallback: If LLM failed or no keys configured, synthesize topic-aligned cards
           if (!streamSuccess && generatedCards.length < totalCount) {
             console.log("[generate-flashcards-stream] Using topic-aligned fallback cards for remaining stream.");
             const fallbackRemainder = getTopicFallbacks(topic, difficulty);
@@ -363,7 +351,6 @@ CRITICAL OUTPUT INSTRUCTIONS:
           }
         }
 
-        // Emit final completion event
         sendEvent("done", {
           status: "completed",
           deckId,

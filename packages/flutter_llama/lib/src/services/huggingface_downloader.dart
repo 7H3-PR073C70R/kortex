@@ -96,7 +96,6 @@ class HuggingFaceDownloader {
         print('[HuggingFaceDownloader] Downloading: $modelId/$fileName');
       }
       
-      // Получаем директорию для хранения моделей
       final appDir = await getApplicationDocumentsDirectory();
       final modelsDir = Directory(path.join(appDir.path, 'models', 'huggingface'));
       
@@ -104,7 +103,6 @@ class HuggingFaceDownloader {
         await modelsDir.create(recursive: true);
       }
       
-      // Создаем поддиректорию для конкретной модели
       final modelDir = Directory(
         path.join(modelsDir.path, modelId.replaceAll('/', '_')),
       );
@@ -116,7 +114,6 @@ class HuggingFaceDownloader {
       final filePath = path.join(modelDir.path, fileName);
       final file = File(filePath);
       
-      // Проверяем, не скачан ли уже файл
       if (await file.exists() && !force) {
         final size = await file.length();
         
@@ -134,7 +131,6 @@ class HuggingFaceDownloader {
         return filePath;
       }
       
-      // Формируем URL для скачивания
       final url = '$baseUrl/$modelId/resolve/$branch/$fileName';
       
       if (kDebugMode) {
@@ -194,7 +190,6 @@ class HuggingFaceDownloader {
         client.close();
       }
       
-      // Проверяем размер скачанного файла
       final fileSize = await file.length();
       
       if (contentLength > 0 && fileSize != contentLength) {
@@ -231,7 +226,6 @@ class HuggingFaceDownloader {
     DownloadProgressCallback? onProgress,
   }) async {
     try {
-      // Если указан конкретный файл, скачиваем его
       if (specificFile != null) {
         return await downloadFile(
           modelId: modelId,
@@ -240,7 +234,6 @@ class HuggingFaceDownloader {
         );
       }
       
-      // Иначе ищем GGUF файлы
       onProgress?.call(const DownloadProgress(
         progress: 0.0,
         status: 'Поиск GGUF файлов...',
@@ -249,7 +242,6 @@ class HuggingFaceDownloader {
       final ggufFiles = await findGGUFFiles(modelId);
       
       if (ggufFiles.isEmpty) {
-        // Пробуем распространённые имена
         final commonNames = [
           'model.gguf',
           'ggml-model-q4_0.gguf',
@@ -269,7 +261,6 @@ class HuggingFaceDownloader {
               onProgress: onProgress,
             );
           } catch (e) {
-            // Продолжаем поиск
             continue;
           }
         }
@@ -277,7 +268,6 @@ class HuggingFaceDownloader {
         throw ModelNotFoundException(modelId, 'No GGUF files found');
       }
       
-      // Скачиваем первый найденный GGUF файл
       final firstGGUF = ggufFiles.first;
       
       if (kDebugMode) {

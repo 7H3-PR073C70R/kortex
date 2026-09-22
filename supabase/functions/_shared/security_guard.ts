@@ -20,7 +20,6 @@ export async function timingSafeEqualString(
     return false;
   }
 
-  // Use crypto.subtle.timingSafeEqual or XOR comparison
   let result = 0;
   for (let i = 0; i < aBuf.byteLength; i++) {
     result |= aBuf[i] ^ bBuf[i];
@@ -50,14 +49,12 @@ export function isSafeOutboundUrl(targetUrl: string): boolean {
   try {
     const parsed = new URL(targetUrl);
 
-    // Protocol must strictly be HTTPS (or HTTP in local dev if explicitly configured)
     if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
       return false;
     }
 
     const hostname = parsed.hostname.toLowerCase();
 
-    // Block localhost, loopback, and local domain variants
     if (
       hostname === "localhost" ||
       hostname === "127.0.0.1" ||
@@ -68,26 +65,19 @@ export function isSafeOutboundUrl(targetUrl: string): boolean {
       return false;
     }
 
-    // Block Cloud Metadata Endpoints (AWS, GCP, Azure, DigitalOcean)
     if (hostname === "169.254.169.254" || hostname.startsWith("169.254.")) {
       return false;
     }
 
-    // Check IPv4 private subnets
     const ipv4Match = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
     if (ipv4Match) {
       const octet1 = parseInt(ipv4Match[1], 10);
       const octet2 = parseInt(ipv4Match[2], 10);
 
-      // 10.0.0.0/8
       if (octet1 === 10) return false;
-      // 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
       if (octet1 === 172 && octet2 >= 16 && octet2 <= 31) return false;
-      // 192.168.0.0/16
       if (octet1 === 192 && octet2 === 168) return false;
-      // 127.0.0.0/8
       if (octet1 === 127) return false;
-      // 0.0.0.0/8
       if (octet1 === 0) return false;
     }
 
@@ -107,10 +97,8 @@ export function sanitizePromptInput(rawText: string): string {
 
   let cleaned = rawText;
 
-  // 1. Strip zero-width control / obfuscation characters
   cleaned = cleaned.replace(/[\u200B-\u200D\u2060\uFEFF]/g, "");
 
-  // 2. Neutralize role-boundary injection markers
   const dangerousMarkers = [
     /<\|im_start\|>/gi,
     /<\|im_end\|>/gi,
@@ -128,7 +116,6 @@ export function sanitizePromptInput(rawText: string): string {
     cleaned = cleaned.replace(marker, "[SANITIZED_PROMPT_BOUNDARY]");
   }
 
-  // 3. Prevent system prompt overrides
   const overridePatterns = [
     /ignore all previous instructions/gi,
     /disregard all previous instructions/gi,

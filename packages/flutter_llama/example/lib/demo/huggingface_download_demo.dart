@@ -43,7 +43,6 @@ class _HuggingFaceDownloadDemoState extends State<HuggingFaceDownloadDemo> {
     _addLog('');
 
     try {
-      // Скачиваем все файлы модели
       for (var i = 0; i < PresetModels.shridharMultimodal.ggufFiles.length; i++) {
         final fileName = PresetModels.shridharMultimodal.ggufFiles[i];
         
@@ -71,7 +70,6 @@ class _HuggingFaceDownloadDemoState extends State<HuggingFaceDownloadDemo> {
       _addLog('=== Загрузка завершена успешно! ===');
       _addLog('Модель готова к использованию');
 
-      // Проверяем размер скачанной модели
       final modelSize = await ModelDownloader.getModelSize(
         PresetModels.shridharMultimodal.id,
       );
@@ -84,7 +82,6 @@ class _HuggingFaceDownloadDemoState extends State<HuggingFaceDownloadDemo> {
         _downloadStatus = 'Загрузка завершена';
       });
 
-      // Показываем диалог с результатом
       if (mounted) {
         showDialog(
           context: context,
@@ -160,7 +157,6 @@ class _HuggingFaceDownloadDemoState extends State<HuggingFaceDownloadDemo> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Информация о модели
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -226,7 +222,6 @@ class _HuggingFaceDownloadDemoState extends State<HuggingFaceDownloadDemo> {
 
             const SizedBox(height: 24),
 
-            // Кнопка загрузки
             ElevatedButton.icon(
               onPressed: _isDownloading ? null : _demonstrateDownload,
               icon: const Icon(Icons.download),
@@ -240,7 +235,6 @@ class _HuggingFaceDownloadDemoState extends State<HuggingFaceDownloadDemo> {
 
             const SizedBox(height: 24),
 
-            // Прогресс
             if (_isDownloading || _downloadProgress > 0) ...[
               Card(
                 child: Padding(
@@ -284,7 +278,6 @@ class _HuggingFaceDownloadDemoState extends State<HuggingFaceDownloadDemo> {
               const SizedBox(height: 16),
             ],
 
-            // Логи
             const Text(
               'Логи загрузки:',
               style: TextStyle(fontWeight: FontWeight.bold),

@@ -1,7 +1,3 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: Fix get_dashboard_feed RPC Analytics & Decks Queries
--- Resolves code 42703 (column p.weekly_minutes_studied does not exist)
--- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.get_dashboard_feed()
 RETURNS JSONB AS $$
@@ -19,7 +15,6 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated.';
     END IF;
 
-    -- 1. Analytics Summary & Heatmap
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'dateIso', to_char(activity_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
@@ -37,7 +32,6 @@ BEGIN
         ORDER BY activity_date ASC
     ) h;
 
-    -- Query analytics joining profiles with user_analytics
     SELECT jsonb_build_object(
         'currentStreakDays', COALESCE(a.current_streak_days, p.streak_days, 0),
         'longestStreakDays', GREATEST(COALESCE(a.longest_streak_days, p.streak_days, 0), 1),
@@ -53,7 +47,6 @@ BEGIN
     LEFT JOIN public.user_analytics a ON a.user_id = p.id
     WHERE p.id = v_user_id;
 
-    -- Fallback if profile row is not yet initialized but user_analytics exists
     IF v_analytics IS NULL THEN
         SELECT jsonb_build_object(
             'currentStreakDays', COALESCE(a.current_streak_days, 0),
@@ -70,7 +63,6 @@ BEGIN
         WHERE a.user_id = v_user_id;
     END IF;
 
-    -- Absolute fallback if neither row exists yet
     IF v_analytics IS NULL THEN
         v_analytics := jsonb_build_object(
             'currentStreakDays', 0,
@@ -84,7 +76,6 @@ BEGIN
         );
     END IF;
 
-    -- 2. Due Study Decks (formatted strictly for StudyDeckModel)
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'id', d.id,
@@ -109,7 +100,6 @@ BEGIN
         LIMIT 5
     ) d;
 
-    -- 3. Enrolled Curated Courses (falling back to top catalog if user has none enrolled)
     SELECT COALESCE(jsonb_agg(
         jsonb_build_object(
             'id', c.id,
@@ -154,7 +144,6 @@ BEGIN
         ) c;
     END IF;
 
-    -- 4. Target Exam Countdown (formatted for ExamCountdownModel)
     SELECT jsonb_build_object(
         'id', e.id,
         'examName', e.exam_title,
@@ -170,7 +159,6 @@ BEGIN
     WHERE e.user_id = v_user_id
     LIMIT 1;
 
-    -- 5. Unread Notifications Count
     SELECT COUNT(*) INTO v_unread_count
     FROM public.notifications
     WHERE user_id = v_user_id AND is_read = false;

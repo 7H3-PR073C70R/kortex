@@ -1,9 +1,6 @@
--- Migration: Semantic Response Cache Table & Vector Similarity Matcher
--- Caches RAG embeddings, Syllabot chat completions, and AI quiz outputs
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- 1. Create semantic_response_cache table
 CREATE TABLE IF NOT EXISTS public.semantic_response_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     prompt_hash TEXT NOT NULL,
@@ -15,7 +12,6 @@ CREATE TABLE IF NOT EXISTS public.semantic_response_cache (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. Indexes for exact hash lookup and HNSW cosine similarity search
 CREATE INDEX IF NOT EXISTS idx_semantic_resp_cache_hash ON public.semantic_response_cache(prompt_hash);
 CREATE INDEX IF NOT EXISTS idx_semantic_resp_cache_course ON public.semantic_response_cache(course_code);
 CREATE INDEX IF NOT EXISTS idx_semantic_resp_cache_expires ON public.semantic_response_cache(expires_at);
@@ -25,7 +21,6 @@ CREATE INDEX IF NOT EXISTS idx_semantic_resp_cache_vector_hnsw
     USING hnsw (prompt_vector vector_cosine_ops)
     WITH (m = 16, ef_construction = 64);
 
--- 3. Row Level Security
 ALTER TABLE public.semantic_response_cache ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow cache access for all authenticated and service role" ON public.semantic_response_cache;
@@ -35,7 +30,6 @@ CREATE POLICY "Allow cache access for all authenticated and service role"
     USING (true)
     WITH CHECK (true);
 
--- 4. RPC: find_cached_response (Cosine Similarity >= 0.95)
 CREATE OR REPLACE FUNCTION public.find_cached_response(
     query_vector vector(1536),
     similarity_threshold FLOAT DEFAULT 0.95,
@@ -76,7 +70,6 @@ BEGIN
     FROM candidate
     WHERE candidate.sim >= similarity_threshold;
 
-    -- Increment hit count on matched entry
     UPDATE public.semantic_response_cache
     SET hit_count = hit_count + 1
     WHERE id IN (
@@ -95,7 +88,6 @@ BEGIN
 END;
 $$;
 
--- 5. RPC: store_cached_response
 CREATE OR REPLACE FUNCTION public.store_cached_response(
     p_prompt_hash TEXT,
     p_response_json JSONB,

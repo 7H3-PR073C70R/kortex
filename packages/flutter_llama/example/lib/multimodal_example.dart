@@ -32,11 +32,9 @@ class _MultimodalExampleState extends State<MultimodalExample> {
     });
 
     try {
-      // Получаем путь к assets
       final documentsDir = await getApplicationDocumentsDirectory();
       final modelPath = '${documentsDir.path}/shridhar_multimodal_gguf';
 
-      // Создаем конфигурацию для мультимодальной модели
       final config = MultimodalConfig.full(
         textModelPath: '$modelPath/text_model',
         mmprojPath: '$modelPath/mmproj-shridhar_multimodal.gguf',
@@ -217,7 +215,6 @@ class _MultimodalExampleState extends State<MultimodalExample> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Статус
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -236,7 +233,6 @@ class _MultimodalExampleState extends State<MultimodalExample> {
 
             const SizedBox(height: 16),
 
-            // Кнопки для тестирования
             if (_isModelLoaded) ...[
               const Text(
                 'Тестирование мультимодальности:',
@@ -244,7 +240,6 @@ class _MultimodalExampleState extends State<MultimodalExample> {
               ),
               const SizedBox(height: 8),
 
-              // Текстовые тесты
               ElevatedButton.icon(
                 onPressed: () =>
                     _generateText('Расскажи о философии вайшнавизма'),
@@ -254,7 +249,6 @@ class _MultimodalExampleState extends State<MultimodalExample> {
 
               const SizedBox(height: 8),
 
-              // Тест изображения
               ElevatedButton.icon(
                 onPressed: () => _analyzeImage(
                   '/path/to/image.jpg',
@@ -266,7 +260,6 @@ class _MultimodalExampleState extends State<MultimodalExample> {
 
               const SizedBox(height: 8),
 
-              // Тест аудио
               ElevatedButton.icon(
                 onPressed: () => _processAudio(
                   '/path/to/audio.mp3',
@@ -278,7 +271,6 @@ class _MultimodalExampleState extends State<MultimodalExample> {
 
               const SizedBox(height: 8),
 
-              // Смешанный тест
               ElevatedButton.icon(
                 onPressed: () => _processMixedInput(
                   text: 'Проанализируй все модальности',
@@ -292,7 +284,6 @@ class _MultimodalExampleState extends State<MultimodalExample> {
 
             const SizedBox(height: 16),
 
-            // Вывод
             Expanded(
               child: Card(
                 child: Padding(

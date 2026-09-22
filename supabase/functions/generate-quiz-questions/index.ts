@@ -70,7 +70,6 @@ Deno.serve(async (req: Request) => {
     const targetId = deck_id ?? document_id ?? "default";
     const cachePrompt = `quiz:${targetId}:${finalQuestionCount}:${difficulty}`;
 
-    // 1. Check Semantic Cache
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       supabaseClient,
       cachePrompt,
@@ -88,7 +87,6 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 2. Fetch context if deck_id or document_id is provided
     let deckTitle = "Practice Quiz";
     let contextText = "";
 
@@ -137,7 +135,6 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 3. LLM Generation via Luna
     const luna = new LunaClient();
     let generatedQuestions: RawQuizQuestion[] | null = null;
 
@@ -200,7 +197,6 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
       console.warn("[generate-quiz-questions] Luna call failed:", err);
     }
 
-    // 4. Fallback mock response if LLM keys are missing or calls fail in dev environments
     if (!generatedQuestions || generatedQuestions.length === 0) {
       console.log(
         "[generate-quiz-questions] Using graceful fallback mock response (dev/offline mode)"
@@ -208,8 +204,6 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
       generatedQuestions = getFallbackQuestions(deckTitle);
     }
 
-    // Format and sanitize questions ensuring required fields:
-    // id, question, options, correct_index, explanation, latex_formula (plus prompt, correct_answer for client compat)
     const formattedQuestions = generatedQuestions.slice(0, finalQuestionCount).map((q, idx) => {
       const qText = q.question || q.prompt || `Question ${idx + 1}`;
       const options = Array.isArray(q.options) && q.options.length > 0
@@ -244,7 +238,6 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
       questions: formattedQuestions,
     };
 
-    // Cache generated quiz
     await SemanticCacheProvider.setCachedResponse(
       supabaseClient,
       cachePrompt,

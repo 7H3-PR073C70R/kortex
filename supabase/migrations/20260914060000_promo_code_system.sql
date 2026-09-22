@@ -1,10 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: Promo Code System & Dynamic Pro Entitlements
--- Backend-managed promo codes with customizable duration_days, tracking,
--- and instant 1-year Pro activation for 'ori0n_pr073c7'
--- ==============================================================================
 
--- 1. Create Promo Codes Master Table
 CREATE TABLE IF NOT EXISTS public.promo_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code TEXT UNIQUE NOT NULL,
@@ -17,11 +11,9 @@ CREATE TABLE IF NOT EXISTS public.promo_codes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Index for instant lookup on code
 CREATE INDEX IF NOT EXISTS idx_promo_codes_code ON public.promo_codes (lower(trim(code)));
 CREATE INDEX IF NOT EXISTS idx_promo_codes_is_active ON public.promo_codes (is_active);
 
--- 2. Create Promo Code Redemptions Table
 CREATE TABLE IF NOT EXISTS public.promo_code_redemptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     promo_code_id UUID NOT NULL REFERENCES public.promo_codes(id) ON DELETE CASCADE,
@@ -31,21 +23,17 @@ CREATE TABLE IF NOT EXISTS public.promo_code_redemptions (
     CONSTRAINT uq_promo_user UNIQUE (promo_code_id, user_id)
 );
 
--- Index for looking up user redemptions
 CREATE INDEX IF NOT EXISTS idx_promo_redemptions_user_id ON public.promo_code_redemptions (user_id);
 CREATE INDEX IF NOT EXISTS idx_promo_redemptions_promo_id ON public.promo_code_redemptions (promo_code_id);
 
--- 3. Ensure Pro Subscription Columns Exist on Profiles
 ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS is_pro BOOLEAN NOT NULL DEFAULT false,
     ADD COLUMN IF NOT EXISTS pro_until TIMESTAMPTZ DEFAULT NULL,
     ADD COLUMN IF NOT EXISTS subscription_tier TEXT NOT NULL DEFAULT 'free';
 
--- 4. Enable Row Level Security
 ALTER TABLE public.promo_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.promo_code_redemptions ENABLE ROW LEVEL SECURITY;
 
--- Promo Codes RLS Policies:
 DROP POLICY IF EXISTS "Service role has full access to promo codes" ON public.promo_codes;
 CREATE POLICY "Service role has full access to promo codes"
     ON public.promo_codes
@@ -59,7 +47,6 @@ CREATE POLICY "Authenticated users can read active promo codes metadata"
     TO authenticated
     USING (is_active = true);
 
--- Redemptions RLS Policies:
 DROP POLICY IF EXISTS "Users can view own promo redemptions" ON public.promo_code_redemptions;
 CREATE POLICY "Users can view own promo redemptions"
     ON public.promo_code_redemptions
@@ -67,13 +54,11 @@ CREATE POLICY "Users can view own promo redemptions"
     TO authenticated
     USING (auth.uid() = user_id OR auth.role() = 'service_role');
 
--- Grants
 GRANT ALL ON public.promo_codes TO postgres, service_role;
 GRANT SELECT ON public.promo_codes TO authenticated;
 GRANT ALL ON public.promo_code_redemptions TO postgres, service_role;
 GRANT SELECT ON public.promo_code_redemptions TO authenticated;
 
--- 5. Atomic RPC Function to Validate and Redeem Promo Code
 CREATE OR REPLACE FUNCTION public.redeem_promo_code(code_input text)
 RETURNS JSONB AS $$
 DECLARE
@@ -85,7 +70,6 @@ DECLARE
     v_new_pro_until TIMESTAMPTZ;
     v_already_redeemed BOOLEAN;
 BEGIN
-    -- Ensure caller is authenticated
     v_user_id := auth.uid();
     IF v_user_id IS NULL THEN
         RETURN jsonb_build_object(
@@ -95,7 +79,6 @@ BEGIN
         );
     END IF;
 
-    -- Clean code input
     v_clean_code := lower(trim(code_input));
     IF v_clean_code IS NULL OR v_clean_code = '' THEN
         RETURN jsonb_build_object(
@@ -105,7 +88,6 @@ BEGIN
         );
     END IF;
 
-    -- Find matching promo code (locking the row for atomic update)
     SELECT * INTO v_promo
     FROM public.promo_codes
     WHERE lower(trim(code)) = v_clean_code
@@ -119,7 +101,6 @@ BEGIN
         );
     END IF;
 
-    -- Check if active
     IF NOT v_promo.is_active THEN
         RETURN jsonb_build_object(
             'success', false,
@@ -128,7 +109,6 @@ BEGIN
         );
     END IF;
 
-    -- Check expiration
     IF v_promo.expires_at IS NOT NULL AND v_promo.expires_at < now() THEN
         RETURN jsonb_build_object(
             'success', false,
@@ -137,7 +117,6 @@ BEGIN
         );
     END IF;
 
-    -- Check max redemptions
     IF v_promo.max_redemptions IS NOT NULL AND v_promo.redemption_count >= v_promo.max_redemptions THEN
         RETURN jsonb_build_object(
             'success', false,
@@ -146,7 +125,6 @@ BEGIN
         );
     END IF;
 
-    -- Check if user already redeemed this promo code
     SELECT EXISTS (
         SELECT 1
         FROM public.promo_code_redemptions
@@ -161,7 +139,6 @@ BEGIN
         );
     END IF;
 
-    -- Calculate new Pro expiration timestamp
     SELECT pro_until INTO v_current_pro_until
     FROM public.profiles
     WHERE id = v_user_id;
@@ -169,7 +146,6 @@ BEGIN
     v_base_time := GREATEST(COALESCE(v_current_pro_until, now()), now());
     v_new_pro_until := v_base_time + (v_promo.duration_days || ' days')::interval;
 
-    -- 1. Insert redemption record
     INSERT INTO public.promo_code_redemptions (
         promo_code_id,
         user_id,
@@ -182,14 +158,12 @@ BEGIN
         now()
     );
 
-    -- 2. Increment redemption count on promo_codes
     UPDATE public.promo_codes
     SET
         redemption_count = redemption_count + 1,
         updated_at = now()
     WHERE id = v_promo.id;
 
-    -- 3. Update profiles table
     UPDATE public.profiles
     SET
         is_pro = true,
@@ -198,7 +172,6 @@ BEGIN
         updated_at = now()
     WHERE id = v_user_id;
 
-    -- 4. Update raw_user_meta_data in auth.users for JWT/session reflection
     BEGIN
         UPDATE auth.users
         SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
@@ -208,11 +181,9 @@ BEGIN
         )
         WHERE id = v_user_id;
     EXCEPTION WHEN OTHERS THEN
-        -- Non-blocking in case auth.users permission restricts direct update
         RAISE WARNING 'Could not update auth.users metadata: %', SQLERRM;
     END;
 
-    -- Return success payload
     RETURN jsonb_build_object(
         'success', true,
         'code', v_promo.code,
@@ -223,10 +194,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, pg_temp;
 
--- Grant execution to authenticated users
 GRANT EXECUTE ON FUNCTION public.redeem_promo_code(text) TO authenticated, service_role;
 
--- 6. Seed Initial Promo Code 'ori0n_pr073c7' with 365 Days (1 Year) Pro Access
 INSERT INTO public.promo_codes (
     code,
     duration_days,

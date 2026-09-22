@@ -48,7 +48,6 @@ serve(async (req: Request) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
 
-    // Zero-Trust Guard: Only internal service_role or authenticated cron schedulers can trigger bulk notifications
     const isServiceRole =
       supabaseServiceKey &&
       authHeader.replace(/^Bearer\s+/i, "").trim() === supabaseServiceKey;
@@ -84,7 +83,6 @@ serve(async (req: Request) => {
     };
 
     switch (action) {
-      // 1. Daily Study Streak Loss Prevention
       case "daily_streak_reminder": {
         const { data: usersAtRisk } = await supabase
           .from("profiles")
@@ -94,7 +92,6 @@ serve(async (req: Request) => {
         if (usersAtRisk && usersAtRisk.length > 0) {
           const today = new Date().toISOString().split("T")[0];
 
-          // Check who has already studied today
           const { data: activeToday } = await supabase
             .from("heatmap_activity")
             .select("user_id")
@@ -126,7 +123,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 2. Spaced Repetition Due Queue
       case "spaced_repetition_due": {
         const nowIso = new Date().toISOString();
         const { data: dueCards } = await supabase
@@ -135,7 +131,6 @@ serve(async (req: Request) => {
           .lte("next_due_date", nowIso);
 
         if (dueCards && dueCards.length > 0) {
-          // Group by user and deck
           const deckMap = new Map<string, { userId: string; title: string; count: number; deckId: string }>();
 
           for (const card of dueCards) {
@@ -172,7 +167,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 3. Exam Countdown Milestones
       case "exam_milestones": {
         const { data: upcomingExams } = await supabase
           .from("exam_events")
@@ -211,7 +205,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 4. Document Ingestion Completed Hook
       case "document_completed": {
         if (documentId) {
           const { data: doc } = await supabase
@@ -241,7 +234,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 5. Live Study Room Started Hook
       case "room_started": {
         if (roomId) {
           const { data: room } = await supabase
@@ -251,11 +243,9 @@ serve(async (req: Request) => {
             .single();
 
           if (room) {
-            // Target peers matching this academic track or enrolled in this course community
             const categoryFilter = room.category || room.subject;
             let peerIds: string[] = [];
 
-            // 1. Query members enrolled in the associated study community
             const { data: community } = await supabase
               .from("study_communities")
               .select("id")
@@ -273,7 +263,6 @@ serve(async (req: Request) => {
               peerIds = (members ?? []).map((m: any) => m.user_id);
             }
 
-            // 2. Supplement with peers whose academic track matches this subject/category
             if (peerIds.length < 15 && categoryFilter) {
               const { data: trackPeers } = await supabase
                 .from("profiles")
@@ -308,7 +297,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 6. Memory Decay Alert
       case "memory_decay_alert": {
         const { data: decayingDecks } = await supabase
           .from("decks")
@@ -339,7 +327,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 7. Welcome New User
       case "welcome_user": {
         if (userId) {
           const { data: profile } = await supabase
@@ -368,7 +355,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 8. Forum Solution Verified
       case "forum_solution_verified": {
         if (userId) {
           await fetch(sendPushUrl, {
@@ -392,7 +378,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 9. Process Notification Outbox Queue (SKIP LOCKED High-Concurrency Worker)
       case "process_outbox": {
         const batchSize = Math.min(body.batchSize ?? 100, 500);
         const { data: outboxItems, error: outboxErr } = await supabase.rpc(
@@ -438,7 +423,6 @@ serve(async (req: Request) => {
             }
           }
 
-          // Complete batch state update in database
           await supabase.rpc("complete_notification_outbox_batch", {
             p_success_ids: successIds,
             p_failed_ids: failedIds,
@@ -448,7 +432,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 10. Quiz Duel Challenge — notify the challenged peer
       case "quiz_duel_challenge": {
         if (body.userId && body.challengerId) {
           const { data: challenger } = await supabase
@@ -482,7 +465,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 11. Quiz Duel Result — notify both players
       case "quiz_duel_result": {
         if (body.duelId) {
           const { data: duel } = await supabase
@@ -520,7 +502,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 12. Streak Milestone — server-side celebration push (complements local notification)
       case "streak_milestone": {
         if (body.userId && body.streakDays) {
           const streakEmoji = body.streakDays >= 100 ? "🏆"
@@ -548,7 +529,6 @@ serve(async (req: Request) => {
         break;
       }
 
-      // 13. Subscription Expiry alert — notifies users whose Pro subscription expires in 3 days or 1 day
       case "subscription_expiry": {
         const now = new Date();
         const inThreeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();

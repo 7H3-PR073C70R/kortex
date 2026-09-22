@@ -1,14 +1,5 @@
--- ==============================================================================
--- KORTEX ENTERPRISE SCALABILITY & CONCURRENCY HARDENING MIGRATION
--- Migration: 20260916000000_enterprise_scalability_indexes.sql
--- Scale Target: 1,000,000+ Users, 50,000+ Peak CCU, 25,000+ QPS
--- ==============================================================================
 
--- ------------------------------------------------------------------------------
--- 1. High-Concurrency Composite & Covering B-Tree Indexes
--- ------------------------------------------------------------------------------
 
--- Flashcards: Optimize due card scans, deck card lookups, and review queues
 CREATE INDEX IF NOT EXISTS idx_flashcards_user_due_covering 
     ON public.flashcards(user_id, next_due_date, state) 
     INCLUDE (id, deck_id, stability, difficulty, interval, repetitions);
@@ -16,7 +7,6 @@ CREATE INDEX IF NOT EXISTS idx_flashcards_user_due_covering
 CREATE INDEX IF NOT EXISTS idx_flashcards_deck_user 
     ON public.flashcards(deck_id, user_id);
 
--- Forum: High-concurrency community feed listings and nested replies
 CREATE INDEX IF NOT EXISTS idx_forum_posts_track_feed 
     ON public.forum_posts(track, created_at DESC)
     INCLUDE (id, author_id, title, upvotes, replies_count);
@@ -25,7 +15,6 @@ CREATE INDEX IF NOT EXISTS idx_forum_replies_post_tree
     ON public.forum_replies(post_id, parent_reply_id, created_at ASC)
     INCLUDE (id, author_id, is_verified_solution, upvotes);
 
--- Dashboard & Analytics: Ultra-fast user stats and streak aggregations
 CREATE INDEX IF NOT EXISTS idx_heatmap_activity_user_activity_date 
     ON public.heatmap_activity(user_id, activity_date DESC);
 
@@ -33,18 +22,13 @@ CREATE INDEX IF NOT EXISTS idx_user_curated_courses_covering
     ON public.user_curated_courses(user_id, course_id) 
     INCLUDE (syllabus_coverage, enrolled_at);
 
--- Past Questions: Fast deterministic indexed filtering
 CREATE INDEX IF NOT EXISTS idx_past_questions_subject_exam_year 
     ON public.past_questions(subject, exam_type, year)
     INCLUDE (id, prompt, correct_option_label);
 
--- Study Review Logs: Idempotent checkpointing index
 CREATE INDEX IF NOT EXISTS idx_study_review_logs_sync_lookup 
     ON public.study_review_logs(user_id, reviewed_at_epoch DESC);
 
--- ------------------------------------------------------------------------------
--- 2. Notification Outbox Queue (Decoupled Push Engine with SKIP LOCKED)
--- ------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.notification_outbox (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -62,7 +46,6 @@ CREATE TABLE IF NOT EXISTS public.notification_outbox (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Partial index for active outbox worker polling
 CREATE INDEX IF NOT EXISTS idx_notification_outbox_pending_queue 
     ON public.notification_outbox(scheduled_for, retry_count) 
     WHERE status = 'pending';
@@ -70,7 +53,6 @@ CREATE INDEX IF NOT EXISTS idx_notification_outbox_pending_queue
 CREATE INDEX IF NOT EXISTS idx_notification_outbox_user_history 
     ON public.notification_outbox(user_id, created_at DESC);
 
--- RLS: Service role and admin only
 ALTER TABLE public.notification_outbox ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Service role manages notification outbox" ON public.notification_outbox;
@@ -86,7 +68,6 @@ CREATE POLICY "Users can view own outbox status"
     TO authenticated
     USING (auth.uid() = user_id);
 
--- RPC: Dequeue pending notifications with concurrent safety (FOR UPDATE SKIP LOCKED)
 CREATE OR REPLACE FUNCTION public.dequeue_notification_outbox(
     p_batch_size INT DEFAULT 100
 )
@@ -130,7 +111,6 @@ BEGIN
 END;
 $$;
 
--- RPC: Complete notification processing batch
 CREATE OR REPLACE FUNCTION public.complete_notification_outbox_batch(
     p_success_ids UUID[],
     p_failed_ids UUID[],
@@ -141,7 +121,6 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-    -- Mark successful items as sent
     IF p_success_ids IS NOT NULL AND array_length(p_success_ids, 1) > 0 THEN
         UPDATE public.notification_outbox
         SET status = 'sent',
@@ -149,7 +128,6 @@ BEGIN
         WHERE id = ANY(p_success_ids);
     END IF;
 
-    -- Update failed items: retry or mark permanently failed
     IF p_failed_ids IS NOT NULL AND array_length(p_failed_ids, 1) > 0 THEN
         UPDATE public.notification_outbox
         SET retry_count = retry_count + 1,
@@ -165,9 +143,6 @@ BEGIN
 END;
 $$;
 
--- ------------------------------------------------------------------------------
--- 3. High-Throughput Idempotent Quiz Submission Batch RPC
--- ------------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS public.quiz_submissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -201,7 +176,6 @@ CREATE POLICY "Users insert own quiz submissions"
     TO authenticated
     WITH CHECK (auth.uid() = user_id);
 
--- Batch submission RPC
 CREATE OR REPLACE FUNCTION public.sync_quiz_submissions_batch(
     submissions JSONB
 )
@@ -231,7 +205,6 @@ BEGIN
         submitted_at TEXT
     )
     LOOP
-        -- Idempotency check
         IF EXISTS (
             SELECT 1 FROM public.quiz_submissions 
             WHERE user_id = v_user_id AND transaction_uuid = v_sub.transaction_uuid
@@ -262,7 +235,6 @@ BEGIN
             COALESCE(v_sub.submitted_at::TIMESTAMPTZ, now())
         );
 
-        -- Record activity log for gamification asynchronously
         INSERT INTO public.user_activity_logs (
             user_id,
             activity_type,
@@ -288,9 +260,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- ------------------------------------------------------------------------------
--- 4. Fast Deterministic Past Questions Sampling RPC (No ORDER BY RANDOM())
--- ------------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION public.get_past_questions_fast(
     p_subject TEXT DEFAULT NULL,
@@ -331,7 +300,6 @@ BEGIN
     FROM public.past_questions pq
     WHERE (p_subject IS NULL OR pq.subject ILIKE '%' || p_subject || '%')
       AND (p_exam_type IS NULL OR pq.exam_type ILIKE '%' || p_exam_type || '%')
-    -- Deterministic hash-based distribution provides pseudorandom sampling using indexes
     ORDER BY md5(pq.id || p_random_seed::text)
     LIMIT p_limit;
 END;

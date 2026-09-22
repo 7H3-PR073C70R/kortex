@@ -91,7 +91,6 @@ export class ServerDocumentParser {
         label: `Main Figure: ${filename}`,
       });
     } else {
-      // Plain text or markdown
       try {
         rawText = new TextDecoder("utf-8").decode(bytes);
       } catch (_) {
@@ -99,7 +98,6 @@ export class ServerDocumentParser {
       }
     }
 
-    // Upload extracted diagram images to `card-assets` bucket in Supabase Storage
     const uploadedImages: Array<{ url: string; label: string }> = [];
     for (let i = 0; i < extractedMedia.length; i++) {
       const media = extractedMedia[i];
@@ -134,7 +132,6 @@ export class ServerDocumentParser {
       }
     }
 
-    // Clean and segment text into cohesive chapter / section windows
     const cleanText = this.cleanEducationalText(rawText);
     const sections = this.segmentIntoSections(cleanText, filename);
 
@@ -164,12 +161,10 @@ export class ServerDocumentParser {
     let fullText = "";
     const images: ExtractedMediaAttachment[] = [];
 
-    // ─── 1. Text Extraction via unpdf (CIDFont / ToUnicode aware) ────────────
     try {
       const pdf = await getDocumentProxy(bytes);
       const { text } = await extractText(pdf, { mergePages: false });
 
-      // `text` is a string[] when mergePages=false (one entry per page)
       const pageTexts: string[] = Array.isArray(text) ? text : [text];
       const pageParts: string[] = [];
 
@@ -184,13 +179,10 @@ export class ServerDocumentParser {
       console.log(`[ServerDocumentParser] unpdf extracted ${fullText.length} chars from ${filename}`);
     } catch (unpdfErr) {
       console.warn(`[ServerDocumentParser] unpdf extraction failed for ${filename}:`, unpdfErr);
-      // Fall through — image extraction and scanned detection still proceed
     }
 
-    // ─── 2. Image Extraction — byte-level scan (all images, no cap) ──────────
     await this.extractImagesFromBytes(bytes, filename, images);
 
-    // ─── 3. Scanned / Image-only PDF detection ───────────────────────────────
     const isScanned = fullText.length < 100 && bytes.byteLength > 20_000;
 
     if (isScanned) {
@@ -227,7 +219,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
     channels: number = 3
   ): Uint8Array {
     const rowBytes = width * channels;
-    // Each scanline in PNG requires a 1-byte filter prefix (0 = None)
     const scanlines = new Uint8Array(height * (rowBytes + 1));
     let dest = 0;
     for (let y = 0; y < height; y++) {
@@ -245,11 +236,9 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
     const view = new DataView(png.buffer);
     let offset = 0;
 
-    // 1. Signature
     png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], offset);
     offset += 8;
 
-    // 2. IHDR Chunk
     const ihdrPayload = new Uint8Array(17);
     ihdrPayload.set(new TextEncoder().encode("IHDR"), 0);
     const ihdrView = new DataView(ihdrPayload.buffer, 4, 13);
@@ -268,7 +257,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
     view.setUint32(offset, crc32(ihdrPayload), false);
     offset += 4;
 
-    // 3. IDAT Chunk
     const idatChunk = new Uint8Array(4 + idatCompressed.length);
     idatChunk.set(new TextEncoder().encode("IDAT"), 0);
     idatChunk.set(idatCompressed, 4);
@@ -279,7 +267,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
     view.setUint32(offset, crc32(idatChunk), false);
     offset += 4;
 
-    // 4. IEND Chunk
     const iendChunk = new TextEncoder().encode("IEND");
     view.setUint32(offset, 0, false);
     offset += 4;
@@ -301,7 +288,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
     filename: string,
     images: ExtractedMediaAttachment[]
   ): Promise<void> {
-    // ── 1. PDF Image XObject Parsing (FlateDecode & DCTDecode) ──────────────
     const latinDecoder = new TextDecoder("latin1");
     const pdfText = latinDecoder.decode(bytes);
 
@@ -320,7 +306,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
       const height = hMatch ? parseInt(hMatch[1], 10) : 0;
       const declaredLength = lMatch ? parseInt(lMatch[1], 10) : 0;
 
-      // Filter out non-content micro-icons or masks (< 50px)
       if (width < 50 || height < 50) continue;
 
       const isFlate = dictStr.includes("/FlateDecode");
@@ -358,7 +343,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
           } else if (decompressed.length === expectedRgba) {
             channels = 4;
           } else if (decompressed.length === height * (width * 3 + 1)) {
-            // Predictor byte present per row: strip leading predictor byte
             channels = 3;
             const stripped = new Uint8Array(width * height * 3);
             const rowLen = width * 3;
@@ -367,7 +351,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
             }
             rawData = stripped;
           } else {
-            // Check if stream was an embedded PNG container directly
             const isDirectPng = [0x89, 0x50, 0x4e, 0x47].every((b, i) => decompressed[i] === b);
             if (isDirectPng) {
               images.push({
@@ -403,7 +386,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
       }
     }
 
-    // ── 2. Scan for any standalone inline JPEGs (SOI ... EOI) ───────────────
     if (images.length === 0) {
       const JPEG_SOI = [0xff, 0xd8, 0xff];
       const JPEG_EOI = [0xff, 0xd9];
@@ -460,11 +442,9 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
     const images: ExtractedMediaAttachment[] = [];
 
     try {
-      // PPTX is a zip archive. We parse slide text and media.
       const textDecoder = new TextDecoder("utf-8");
       const rawString = textDecoder.decode(bytes);
 
-      // Extract text inside XML tags <a:t>Slide Text</a:t>
       const textMatches = Array.from(rawString.matchAll(/<a:t>([^<]+)<\/a:t>/g));
       let currentSlideLines: string[] = [];
       let slideCount = 1;
@@ -485,7 +465,6 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
         textBuffer.push(`### Slide ${slideCount}\n${currentSlideLines.join("\n")}`);
       }
 
-      // Extract all JPEG images embedded in the PPTX package
       await this.extractImagesFromBytes(bytes, filename, images);
     } catch (pptxErr) {
       console.warn("[ServerDocumentParser] PPTX parsing notice:", pptxErr);
@@ -534,7 +513,6 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
     const MAX_SECTION_LENGTH = 3000;
     const MIN_SECTION_LENGTH = 150;
 
-    // Check for explicit structural headings, page markers, or markdown headers
     const sectionDelimiterRegex =
       /(?:^|\n)(?:(?:CHAPTER|Chapter|MODULE|Module|UNIT|Unit|SECTION|Section|LECTURE|Lecture|PAGE|Page|SLIDE|Slide)\s+(?:\d+|[IVXLCDM]+|[A-Z])\b[^\n]*|#{1,3}\s+[^\n]+|---+\s*(?:Page|Slide)?\s*\d*\s*---+)/gi;
 
@@ -557,7 +535,6 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
             index: sections.length + 1,
           });
         } else {
-          // Subdivide long chapter on paragraph boundaries
           const subParagraphs = body.split(/\n\n+/);
           let currentSub = "";
           let subIdx = 1;
@@ -583,14 +560,12 @@ Contains study material, diagram, or formula sheet. Synthesize active-recall fla
         }
       }
     } else {
-      // Split on double newlines / paragraph boundaries
       const paragraphs = fullText.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
       let current = "";
       let secIdx = 1;
 
       for (const p of paragraphs) {
         if (current.length + p.length > MAX_SECTION_LENGTH && current.length > 400) {
-          // Find first meaningful line for title
           const firstLine = current.split("\n")[0]?.trim().slice(0, 50) || `Section ${secIdx}`;
           sections.push({
             title: firstLine.length > 5 ? firstLine : `Section ${secIdx}`,

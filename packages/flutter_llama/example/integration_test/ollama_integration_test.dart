@@ -5,7 +5,6 @@ import 'package:flutter_llama/flutter_llama.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
-// Import the downloader helper
 import '../../test/helpers/ollama_model_downloader.dart';
 
 void main() {
@@ -17,7 +16,6 @@ void main() {
     final FlutterLlama llama = FlutterLlama.instance;
 
     setUpAll(() async {
-      // Get temporary directory for test models
       tempDir = await getTemporaryDirectory();
       final modelsDir = Directory(path.join(tempDir.path, 'test_models'));
       if (!await modelsDir.exists()) {
@@ -26,7 +24,6 @@ void main() {
 
       print('[Test] Models directory: ${modelsDir.path}');
 
-      // Try to get model from Ollama installation first
       print('[Test] Checking for Ollama installation...');
       final ollamaModelPath = await OllamaModelDownloader.getOllamaModelPath(
         'braindler',
@@ -36,7 +33,6 @@ void main() {
         print('[Test] Found existing Ollama model: $ollamaModelPath');
         testModelPath = ollamaModelPath;
       } else {
-        // Try to pull using Ollama CLI
         print('[Test] Attempting to pull model using Ollama CLI...');
         try {
           testModelPath = await OllamaModelDownloader.pullModelWithOllama(
@@ -53,7 +49,6 @@ void main() {
     });
 
     tearDownAll(() async {
-      // Cleanup: unload model
       try {
         await llama.unloadModel();
       } catch (e) {
@@ -64,7 +59,6 @@ void main() {
     testWidgets('downloads and validates GGUF model', (
       WidgetTester tester,
     ) async {
-      // Skip if no model available
       if (testModelPath.isEmpty) {
         print('[Test] Skipping - no model available');
         return;
@@ -111,7 +105,6 @@ void main() {
           return;
         }
 
-        // Ensure model is loaded
         if (!llama.isModelLoaded) {
           final config = LlamaConfig(
             modelPath: testModelPath,
@@ -161,7 +154,6 @@ void main() {
         return;
       }
 
-      // Ensure model is loaded
       if (!llama.isModelLoaded) {
         final config = LlamaConfig(
           modelPath: testModelPath,
@@ -185,7 +177,6 @@ void main() {
           return;
         }
 
-        // Ensure model is loaded
         if (!llama.isModelLoaded) {
           final config = LlamaConfig(
             modelPath: testModelPath,
@@ -228,7 +219,6 @@ void main() {
           return;
         }
 
-        // Ensure model is loaded
         if (!llama.isModelLoaded) {
           final config = LlamaConfig(
             modelPath: testModelPath,
@@ -238,7 +228,6 @@ void main() {
           await llama.loadModel(config);
         }
 
-        // Test with different temperatures
         final temps = [0.1, 0.5, 0.9];
 
         for (final temp in temps) {
@@ -265,7 +254,6 @@ void main() {
         return;
       }
 
-      // Ensure model is loaded
       if (!llama.isModelLoaded) {
         final config = LlamaConfig(
           modelPath: testModelPath,
@@ -289,7 +277,6 @@ void main() {
         return;
       }
 
-      // Ensure model is unloaded
       if (llama.isModelLoaded) {
         await llama.unloadModel();
       }
@@ -335,7 +322,6 @@ void main() {
     });
 
     test('validates GGUF file format check', () async {
-      // Test with non-existent file
       final isValid = await OllamaModelDownloader.isValidGGUFFile(
         '/nonexistent/model.gguf',
       );

@@ -84,8 +84,6 @@ void main() {
         nThreads: 4,
       );
 
-      // Note: Since LlamaConfig doesn't override == operator,
-      // this tests that configs are created consistently
       expect(config1.toMap().toString(), config2.toMap().toString());
     });
 

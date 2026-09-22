@@ -34,7 +34,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
         _downloadStatus[model.id] = 'Начало загрузки...';
       });
 
-      // Скачиваем все файлы модели
       for (final fileName in model.ggufFiles) {
         await ModelDownloader.downloadModel(
           modelId: model.id,
@@ -131,7 +130,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Заголовок
           Text(
             'Доступные модели',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -147,7 +145,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Список моделей
           ...PresetModels.all.map((model) {
             final isDownloaded = _downloadedModels.contains(
               model.id.replaceAll('/', '_'),
@@ -163,7 +160,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Заголовок модели
                     Row(
                       children: [
                         Container(
@@ -241,7 +237,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Описание
                     Text(
                       model.description,
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -249,7 +244,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Языки
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -278,7 +272,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Размер
                     Row(
                       children: [
                         Icon(
@@ -297,7 +290,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
                       ],
                     ),
 
-                    // Прогресс загрузки
                     if (isDownloading) ...[
                       const SizedBox(height: 16),
                       Column(
@@ -333,7 +325,6 @@ class _ModelManagerScreenState extends State<ModelManagerScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Кнопки действий
                     Row(
                       children: [
                         if (!isDownloaded && !isDownloading)

@@ -1,8 +1,3 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 042 - Fix Welcome Push Notification on Returning Logins
--- Ensures that the "Welcome to Kortex" push notification is ONLY dispatched
--- on brand new registrations (within 5 minutes of account creation), never on logins.
--- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.register_device_token(
     p_fcm_token TEXT,
@@ -20,7 +15,6 @@ BEGIN
         RAISE EXCEPTION 'User must be authenticated to register device token';
     END IF;
 
-    -- Upsert the token for this user
     INSERT INTO public.user_devices (user_id, fcm_token, platform, device_name, is_active, updated_at)
     VALUES (v_user_id, p_fcm_token, p_platform, p_device_name, true, now())
     ON CONFLICT (fcm_token) DO UPDATE SET
@@ -31,12 +25,10 @@ BEGIN
         updated_at = now()
     RETURNING id INTO v_device_id;
 
-    -- Ensure default notification preferences exist for user
     INSERT INTO public.notification_preferences (user_id)
     VALUES (v_user_id)
     ON CONFLICT (user_id) DO NOTHING;
 
-    -- Check if a fresh welcome notification exists that was created within the last 5 minutes (new registration only)
     SELECT id, title, body, category, data INTO v_welcome_notif
     FROM public.notifications
     WHERE user_id = v_user_id 
@@ -46,7 +38,6 @@ BEGIN
     ORDER BY created_at DESC
     LIMIT 1;
 
-    -- Mark any older unpushed welcome notifications as pushed so they are never sent on returning logins
     UPDATE public.notifications
     SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{pushed}', 'true'::jsonb)
     WHERE user_id = v_user_id 
@@ -55,12 +46,10 @@ BEGIN
       AND created_at < (now() - INTERVAL '5 minutes');
 
     IF v_welcome_notif.id IS NOT NULL THEN
-        -- Mark as pushed to avoid duplicate deliveries
         UPDATE public.notifications
         SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{pushed}', 'true'::jsonb)
         WHERE id = v_welcome_notif.id;
 
-        -- Dispatch through Edge Function via pg_net if available
         IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_net') THEN
             BEGIN
                 PERFORM net.http_post(
@@ -75,7 +64,6 @@ BEGIN
                     )
                 );
             EXCEPTION WHEN OTHERS THEN
-                -- Graceful fallback if pg_net is unavailable in test environment
                 NULL;
             END;
         END IF;

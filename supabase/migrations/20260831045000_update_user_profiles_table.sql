@@ -1,8 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 005 - User Profiles, Course Tracks & Goal Sync
--- ==============================================================================
 
--- 1. Enhance profiles table with track, daily targets, and onboarding status
 ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS target_track TEXT NOT NULL DEFAULT 'WAEC',
     ADD COLUMN IF NOT EXISTS daily_card_target INT NOT NULL DEFAULT 20,
@@ -11,7 +7,6 @@ ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS streak_days INT NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS is_onboarded BOOLEAN NOT NULL DEFAULT false;
 
--- 2. Create Course Tracks Metadata Table for reference & syllabus scopes
 CREATE TABLE IF NOT EXISTS public.course_tracks (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -22,7 +17,6 @@ CREATE TABLE IF NOT EXISTS public.course_tracks (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Seed standard STEM tracks
 INSERT INTO public.course_tracks (id, name, description, icon_name, default_daily_target, exam_countdown_days)
 VALUES
     ('WAEC', 'West African Senior School Certificate', 'Senior secondary core curriculum with heavy math & physics focus', 'school', 20, 68),
@@ -36,14 +30,12 @@ ON CONFLICT (id) DO UPDATE SET
     default_daily_target = EXCLUDED.default_daily_target,
     exam_countdown_days = EXCLUDED.exam_countdown_days;
 
--- Enable RLS on course_tracks
 ALTER TABLE public.course_tracks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public read course tracks" ON public.course_tracks;
 CREATE POLICY "Public read course tracks"
     ON public.course_tracks FOR SELECT
     USING (true);
 
--- 3. Automatic User Profile Initialization Trigger on auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -75,7 +67,6 @@ BEGIN
         display_name = COALESCE(EXCLUDED.display_name, public.profiles.display_name),
         photo_url = COALESCE(EXCLUDED.photo_url, public.profiles.photo_url);
 
-    -- Ensure initial user_calibrations
     INSERT INTO public.user_calibrations (user_id, focus, is_calibrated)
     VALUES (NEW.id, 'higherEducation', false)
     ON CONFLICT (user_id) DO NOTHING;
@@ -84,13 +75,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Recreate trigger on auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 4. RPC to Update User Course Track and Daily Goal
 CREATE OR REPLACE FUNCTION public.update_user_profile_track_and_goal(
     p_target_track TEXT,
     p_daily_card_target INT,

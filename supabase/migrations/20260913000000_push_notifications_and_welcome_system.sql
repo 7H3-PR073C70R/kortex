@@ -1,16 +1,9 @@
--- ==============================================================================
--- KORTEX SUPABASE MIGRATION: 031 - Push Notifications, Key Event Triggers & Welcome System
--- Extensions: pg_net, pg_cron
--- Listeners: New User Welcome, Verified Forum Solutions, Live Study Rooms, Document Ingestion
--- ==============================================================================
 
--- 1. Ensure required extensions exist
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "pg_net";
 CREATE EXTENSION IF NOT EXISTS "pg_cron";
 
--- 2. Enhanced handle_new_user() trigger with automated welcome notification
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -42,7 +35,6 @@ BEGIN
         v_retention := 0.85;
     END;
 
-    -- Insert or update public.profiles
     INSERT INTO public.profiles (
         id,
         email,
@@ -73,12 +65,10 @@ BEGIN
         display_name = COALESCE(EXCLUDED.display_name, public.profiles.display_name),
         photo_url = COALESCE(EXCLUDED.photo_url, public.profiles.photo_url);
 
-    -- Ensure initial user calibration exists
     INSERT INTO public.user_calibrations (user_id, focus, is_calibrated)
     VALUES (NEW.id, 'higherEducation', false)
     ON CONFLICT (user_id) DO NOTHING;
 
-    -- Ensure default notification preferences exist for user
     INSERT INTO public.notification_preferences (
         user_id,
         study_reminders,
@@ -97,7 +87,6 @@ BEGIN
     )
     ON CONFLICT (user_id) DO NOTHING;
 
-    -- Insert tailored Welcome Notification into notifications inbox
     INSERT INTO public.notifications (
         user_id,
         title,
@@ -118,28 +107,22 @@ BEGIN
 
     RETURN NEW;
 EXCEPTION WHEN OTHERS THEN
-    -- Log warning but never abort user registration
     RAISE WARNING 'handle_new_user error for user %: %', NEW.id, SQLERRM;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, pg_temp;
 
--- Rebind trigger to auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- ==============================================================================
--- 3. Trigger: Notify user when their forum reply is verified as the solution
--- ==============================================================================
 CREATE OR REPLACE FUNCTION public.trg_notify_on_forum_solution_verified()
 RETURNS TRIGGER AS $$
 DECLARE
     v_topic_title TEXT;
 BEGIN
     IF NEW.is_verified_solution = true AND (OLD.is_verified_solution IS NULL OR OLD.is_verified_solution = false) THEN
-        -- Get the topic title
         SELECT title INTO v_topic_title
         FROM public.forum_topics
         WHERE id = NEW.topic_id;
@@ -171,9 +154,6 @@ CREATE TRIGGER trg_forum_solution_verified_notification
     AFTER UPDATE OF is_verified_solution ON public.forum_replies
     FOR EACH ROW EXECUTE FUNCTION public.trg_notify_on_forum_solution_verified();
 
--- ==============================================================================
--- 4. Trigger: Notify peers when a live study room starts in their track/subject
--- ==============================================================================
 CREATE OR REPLACE FUNCTION public.trg_notify_on_study_room_created()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -184,7 +164,6 @@ BEGIN
     FROM public.profiles
     WHERE id = NEW.created_by;
 
-    -- Notify active peers (limit to 25 to avoid broadcast floods)
     FOR r IN
         SELECT p.id AS user_id
         FROM public.profiles p
@@ -222,9 +201,6 @@ CREATE TRIGGER trg_study_room_created_notification
     AFTER INSERT ON public.study_rooms
     FOR EACH ROW EXECUTE FUNCTION public.trg_notify_on_study_room_created();
 
--- ==============================================================================
--- 5. Stored Procedure: Send Tailored Notification RPC
--- ==============================================================================
 CREATE OR REPLACE FUNCTION public.send_tailored_notification(
     p_target_user_id UUID,
     p_title TEXT,
@@ -237,7 +213,6 @@ DECLARE
     v_notif_id UUID;
     v_pref_allowed BOOLEAN := true;
 BEGIN
-    -- Check user notification preferences
     IF p_category = 'spaced_repetition' THEN
         SELECT study_reminders INTO v_pref_allowed FROM public.notification_preferences WHERE user_id = p_target_user_id;
     ELSIF p_category = 'streak_protection' THEN
@@ -279,9 +254,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 GRANT EXECUTE ON FUNCTION public.send_tailored_notification(UUID, TEXT, TEXT, TEXT, JSONB) TO authenticated, service_role;
 
--- ==============================================================================
--- 6. Trigger: Automatically notify user when an exam is scheduled/calibrated
--- ==============================================================================
 CREATE OR REPLACE FUNCTION public.trg_notify_on_exam_event_created()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -321,9 +293,6 @@ CREATE TRIGGER trg_exam_event_created_notification
     AFTER INSERT ON public.exam_events
     FOR EACH ROW EXECUTE FUNCTION public.trg_notify_on_exam_event_created();
 
--- ==============================================================================
--- 7. Automated Welcome Push Dispatch on Device Token Registration
--- ==============================================================================
 CREATE OR REPLACE FUNCTION public.register_device_token(
     p_fcm_token TEXT,
     p_platform TEXT,
@@ -340,7 +309,6 @@ BEGIN
         RAISE EXCEPTION 'User must be authenticated to register device token';
     END IF;
 
-    -- Upsert the token for this user
     INSERT INTO public.user_devices (user_id, fcm_token, platform, device_name, is_active, updated_at)
     VALUES (v_user_id, p_fcm_token, p_platform, p_device_name, true, now())
     ON CONFLICT (fcm_token) DO UPDATE SET
@@ -351,12 +319,10 @@ BEGIN
         updated_at = now()
     RETURNING id INTO v_device_id;
 
-    -- Ensure default notification preferences exist for user
     INSERT INTO public.notification_preferences (user_id)
     VALUES (v_user_id)
     ON CONFLICT (user_id) DO NOTHING;
 
-    -- Check if a welcome notification exists that has not been pushed yet
     SELECT id, title, body, category, data INTO v_welcome_notif
     FROM public.notifications
     WHERE user_id = v_user_id 
@@ -366,12 +332,10 @@ BEGIN
     LIMIT 1;
 
     IF v_welcome_notif.id IS NOT NULL THEN
-        -- Mark as pushed to avoid duplicate deliveries
         UPDATE public.notifications
         SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{pushed}', 'true'::jsonb)
         WHERE id = v_welcome_notif.id;
 
-        -- Dispatch through Edge Function via pg_net if available
         IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_net') THEN
             BEGIN
                 PERFORM net.http_post(
@@ -386,7 +350,6 @@ BEGIN
                     )
                 );
             EXCEPTION WHEN OTHERS THEN
-                -- Non-blocking pg_net dispatch error
                 RAISE WARNING 'pg_net welcome push dispatch failed: %', SQLERRM;
             END;
         END IF;

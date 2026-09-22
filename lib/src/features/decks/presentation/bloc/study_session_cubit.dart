@@ -490,11 +490,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     );
 
     // Retrievability score calculation
-    // ignore: unused_local_variable
-    final retrievabilityScore = _fsrsScheduler.retrievability(
-      reviewResult.card.elapsedDays.toDouble(),
-      reviewResult.card.stability,
-    );
 
     // 4. Enqueue into CardSyncQueue for robust local persistence (batched to remote on deck completion)
     unawaited(_cardSyncQueue.enqueueReview(reviewResult.log));

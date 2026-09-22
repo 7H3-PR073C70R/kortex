@@ -12,7 +12,6 @@
   const RATE_LIMIT_KEY = 'kortex_last_submission_ts';
   const RATE_LIMIT_COOLDOWN_MS = 10000; // 10 seconds cooldown between submissions
 
-  // Whitelist of valid contact topics
   const ALLOWED_TOPICS = new Set([
     'early_access',
     'exam_past_questions',
@@ -22,9 +21,6 @@
     'other'
   ]);
 
-  // --------------------------------------------------------------------------
-  // 1. Bulletproof Sanitization & Security Filters
-  // --------------------------------------------------------------------------
 
   /**
    * Strips all HTML/XML tags and neutralizes potential XSS vectors.
@@ -45,7 +41,6 @@
   function sanitizeForCSV(input) {
     const clean = stripHtml(input).trim();
     if (!clean) return '';
-    // If field begins with dangerous formula characters, prefix with single quote to force text interpretation
     if (/^[=+\-@\t\r%|]/.test(clean)) {
       return "'" + clean;
     }
@@ -81,38 +76,29 @@
     }
   }
 
-  // --------------------------------------------------------------------------
-  // 2. Contact Message Submission Handler (Sanitized & Rate-Limited)
-  // --------------------------------------------------------------------------
   function saveContactMessage({ name, email, topic, message, newsletterOptIn, honeypot }) {
-    // 1. Honeypot check: If bot filled the hidden honeypot, silently reject
     if (honeypot && String(honeypot).trim().length > 0) {
       return { status: 'dropped', id: 'null' };
     }
 
-    // 2. Client-side rate-limiting
     const now = Date.now();
     const lastSubmission = parseInt(localStorage.getItem(RATE_LIMIT_KEY) || '0', 10);
     if (now - lastSubmission < RATE_LIMIT_COOLDOWN_MS) {
       throw new Error('Please wait a few seconds before sending another message.');
     }
 
-    // 3. Name sanitization and boundary check
     const cleanName = sanitizeForCSV(name);
     if (cleanName.length < 2 || cleanName.length > 100) {
       throw new Error('Please provide a valid name between 2 and 100 characters.');
     }
 
-    // 4. Email sanitization and validation
     const cleanEmail = stripHtml(email).trim().toLowerCase();
     if (!isValidEmail(cleanEmail)) {
       throw new Error('Please provide a valid student or personal email address.');
     }
 
-    // 5. Topic whitelist check
     const cleanTopic = ALLOWED_TOPICS.has(topic) ? topic : 'other';
 
-    // 6. Message sanitization and boundary check
     const cleanMessage = sanitizeForCSV(message);
     if (cleanMessage.length < 5 || cleanMessage.length > 3000) {
       throw new Error('Message must be between 5 and 3,000 characters.');
@@ -133,7 +119,6 @@
     setStoredItems(STORAGE_KEY_CONTACT, submissions);
     localStorage.setItem(RATE_LIMIT_KEY, String(now));
 
-    // If opted into newsletter, automatically enroll safely
     if (newsletterOptIn) {
       saveNewsletterEmail(cleanEmail, 'contact_form_optin');
     }
@@ -141,9 +126,6 @@
     return { status: 'success', id: newEntry.id };
   }
 
-  // --------------------------------------------------------------------------
-  // 3. Newsletter Email Subscription Handler
-  // --------------------------------------------------------------------------
   function saveNewsletterEmail(email, source = 'website') {
     const cleanEmail = stripHtml(email).trim().toLowerCase();
     if (!isValidEmail(cleanEmail)) {
@@ -180,9 +162,6 @@
     };
   }
 
-  // --------------------------------------------------------------------------
-  // 4. RFC 4180 CSV Exporter (Internal Tooling)
-  // --------------------------------------------------------------------------
   function escapeCSVCell(field) {
     if (field === null || field === undefined) return '""';
     const str = String(field);
@@ -299,7 +278,6 @@
     return getStoredItems(STORAGE_KEY_NEWSLETTER);
   }
 
-  // Scoped to window.KortexSecurityEngine with KortexStorage alias
   const securityEngine = {
     saveContactMessage,
     saveNewsletterEmail,

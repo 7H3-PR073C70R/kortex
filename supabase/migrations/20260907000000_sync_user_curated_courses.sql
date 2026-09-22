@@ -1,7 +1,4 @@
--- Migration: Sync user curated courses & expose get_user_curated_courses RPC
--- Ensures curated courses are linked with onboarding status and retrievable on fresh devices
 
--- 1. Create get_user_curated_courses RPC
 CREATE OR REPLACE FUNCTION public.get_user_curated_courses()
 RETURNS JSONB AS $$
 DECLARE
@@ -38,7 +35,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.get_user_curated_courses() TO authenticated;
 
--- 2. Update sync_or_create_user_courses to also mark user profile as onboarded
 CREATE OR REPLACE FUNCTION public.sync_or_create_user_courses(
     p_courses JSONB
 )
@@ -59,7 +55,6 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated.';
     END IF;
 
-    -- Loop through each submitted course
     FOR v_course IN SELECT * FROM jsonb_array_elements(p_courses)
     LOOP
         v_course_id := NULL;
@@ -68,17 +63,14 @@ BEGIN
         v_department := trim(COALESCE(v_course->>'department', 'General Academics'));
         v_field_category := trim(COALESCE(v_course->>'fieldCategory', 'General'));
 
-        -- Normalized code: uppercase, remove spaces, dashes, dots (e.g. "ECN 101" -> "ECN101")
         v_norm_code := regexp_replace(upper(v_raw_code), '[^A-Z0-9]', '', 'g');
 
-        -- 1. If explicit UUID is provided, verify it exists
         IF (v_course->>'id') IS NOT NULL AND (v_course->>'id') ~ '^[0-9a-fA-F-]{36}$' THEN
             SELECT id INTO v_course_id
             FROM public.curated_courses
             WHERE id = (v_course->>'id')::UUID;
         END IF;
 
-        -- 2. If not matched, try matching normalized course_code
         IF v_course_id IS NULL AND length(v_norm_code) >= 3 THEN
             SELECT id INTO v_course_id
             FROM public.curated_courses
@@ -86,7 +78,6 @@ BEGIN
             LIMIT 1;
         END IF;
 
-        -- 3. If not matched, try matching normalized course title
         IF v_course_id IS NULL AND length(v_title) >= 4 THEN
             SELECT id INTO v_course_id
             FROM public.curated_courses
@@ -95,7 +86,6 @@ BEGIN
             LIMIT 1;
         END IF;
 
-        -- 4. If still not found, dynamically insert into curated_courses catalog
         IF v_course_id IS NULL AND (length(v_raw_code) > 0 OR length(v_title) > 0) THEN
             INSERT INTO public.curated_courses (
                 course_code,
@@ -122,7 +112,6 @@ BEGIN
             RETURNING id INTO v_course_id;
         END IF;
 
-        -- Enroll the user in this course if valid
         IF v_course_id IS NOT NULL THEN
             INSERT INTO public.user_curated_courses (user_id, course_id, syllabus_coverage)
             VALUES (v_user_id, v_course_id, 0.0)
@@ -132,12 +121,10 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- Remove any courses no longer selected by the user
     DELETE FROM public.user_curated_courses
     WHERE user_id = v_user_id
       AND NOT (course_id = ANY(v_enrolled_ids));
 
-    -- Mark user profile as onboarded if enrolled in at least one course
     IF coalesce(cardinality(v_enrolled_ids), 0) > 0 THEN
         UPDATE public.profiles
         SET is_onboarded = true,
@@ -145,7 +132,6 @@ BEGIN
         WHERE id = v_user_id;
     END IF;
 
-    -- Return the updated list of enrolled courses
     SELECT jsonb_build_object(
         'success', true,
         'enrolledCount', coalesce(cardinality(v_enrolled_ids), 0),
@@ -176,7 +162,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.sync_or_create_user_courses(JSONB) TO authenticated;
 
--- 3. Update auto_curate_exam_courses to also mark user profile as onboarded
 CREATE OR REPLACE FUNCTION public.auto_curate_exam_courses(
     p_exam_name TEXT,
     p_subjects TEXT[]
@@ -196,7 +181,6 @@ BEGIN
     LOOP
         v_matched_id := NULL;
 
-        -- 1. Try finding matching course specifically for this exam track
         SELECT id INTO v_matched_id
         FROM public.curated_courses
         WHERE (academic_level = 'high_school' OR field_category = 'Exam Prep')
@@ -210,7 +194,6 @@ BEGIN
         ORDER BY total_materials DESC
         LIMIT 1;
 
-        -- 2. Fallback to generic subject match across all exam preps if not found
         IF v_matched_id IS NULL THEN
             SELECT id INTO v_matched_id
             FROM public.curated_courses
@@ -234,7 +217,6 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- Mark user profile as onboarded if enrolled in at least one course
     IF v_enrolled_count > 0 THEN
         UPDATE public.profiles
         SET is_onboarded = true,

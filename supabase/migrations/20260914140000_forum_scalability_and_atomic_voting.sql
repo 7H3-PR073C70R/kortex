@@ -1,7 +1,4 @@
--- Migration: 20260914140000_forum_scalability_and_atomic_voting.sql
--- Description: Implement normalized atomic voting, full-text search indexing, performance indexes, and asynchronous notification queuing for Forum & Community scaling
 
--- 1. Create Normalized Votes Tables
 CREATE TABLE IF NOT EXISTS public.forum_post_votes (
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     post_id UUID NOT NULL REFERENCES public.forum_posts(id) ON DELETE CASCADE,
@@ -86,7 +83,6 @@ BEGIN
         USING (auth.uid() = user_id);
 END $$;
 
--- 2. Atomic Stored Procedure: Vote on Forum Post
 CREATE OR REPLACE FUNCTION public.vote_forum_post_atomic(
     p_post_id UUID,
     p_vote_direction INT
@@ -114,7 +110,6 @@ BEGIN
         RAISE EXCEPTION 'Invalid vote direction: %', p_vote_direction;
     END IF;
 
-    -- Fetch existing vote
     SELECT vote_direction INTO v_old_vote
     FROM public.forum_post_votes
     WHERE user_id = v_user_id AND post_id = p_post_id;
@@ -123,26 +118,22 @@ BEGIN
         v_old_vote := 0;
     END IF;
 
-    -- Toggle behavior: if clicking the same vote again, reset to 0
     IF v_old_vote = p_vote_direction THEN
         v_new_vote := 0;
     ELSE
         v_new_vote := p_vote_direction;
     END IF;
 
-    -- Compute atomic deltas
     IF v_old_vote = 1 THEN v_delta_up := v_delta_up - 1; END IF;
     IF v_old_vote = -1 THEN v_delta_down := v_delta_down - 1; END IF;
     IF v_new_vote = 1 THEN v_delta_up := v_delta_up + 1; END IF;
     IF v_new_vote = -1 THEN v_delta_down := v_delta_down + 1; END IF;
 
-    -- Upsert vote record
     INSERT INTO public.forum_post_votes (user_id, post_id, vote_direction, created_at)
     VALUES (v_user_id, p_post_id, v_new_vote, now())
     ON CONFLICT (user_id, post_id)
     DO UPDATE SET vote_direction = v_new_vote, created_at = now();
 
-    -- Atomically update counts on forum_posts
     UPDATE public.forum_posts
     SET 
         upvotes = GREATEST(0, upvotes + v_delta_up),
@@ -164,7 +155,6 @@ BEGIN
 END;
 $$;
 
--- 3. Atomic Stored Procedure: Vote on Forum Reply
 CREATE OR REPLACE FUNCTION public.vote_forum_reply_atomic(
     p_post_id UUID,
     p_reply_id UUID,
@@ -193,7 +183,6 @@ BEGIN
         RAISE EXCEPTION 'Invalid vote direction: %', p_vote_direction;
     END IF;
 
-    -- Fetch existing vote
     SELECT vote_direction INTO v_old_vote
     FROM public.forum_reply_votes
     WHERE user_id = v_user_id AND reply_id = p_reply_id;
@@ -202,26 +191,22 @@ BEGIN
         v_old_vote := 0;
     END IF;
 
-    -- Toggle behavior
     IF v_old_vote = p_vote_direction THEN
         v_new_vote := 0;
     ELSE
         v_new_vote := p_vote_direction;
     END IF;
 
-    -- Compute atomic deltas
     IF v_old_vote = 1 THEN v_delta_up := v_delta_up - 1; END IF;
     IF v_old_vote = -1 THEN v_delta_down := v_delta_down - 1; END IF;
     IF v_new_vote = 1 THEN v_delta_up := v_delta_up + 1; END IF;
     IF v_new_vote = -1 THEN v_delta_down := v_delta_down + 1; END IF;
 
-    -- Upsert vote record
     INSERT INTO public.forum_reply_votes (user_id, reply_id, post_id, vote_direction, created_at)
     VALUES (v_user_id, p_reply_id, p_post_id, v_new_vote, now())
     ON CONFLICT (user_id, reply_id)
     DO UPDATE SET vote_direction = v_new_vote, created_at = now();
 
-    -- Atomically update counts on forum_replies
     UPDATE public.forum_replies
     SET 
         upvotes = GREATEST(0, upvotes + v_delta_up),
@@ -243,7 +228,6 @@ BEGIN
 END;
 $$;
 
--- 4. Full-Text Search (FTS) with GIN Index on forum_posts
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -265,7 +249,6 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_forum_posts_search_tsv 
 ON public.forum_posts USING GIN(search_tsv);
 
--- 5. High-Performance Compound Indexes for Sorting & Keyset Queries
 CREATE INDEX IF NOT EXISTS idx_forum_posts_track_created 
 ON public.forum_posts(track, created_at DESC);
 
@@ -284,7 +267,6 @@ ON public.forum_replies(post_id, created_at ASC);
 CREATE INDEX IF NOT EXISTS idx_forum_replies_post_upvotes 
 ON public.forum_replies(post_id, upvotes DESC, created_at ASC);
 
--- 6. Rate Limiting Protection on Creation
 CREATE OR REPLACE FUNCTION public.check_forum_post_rate_limit()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -308,5 +290,4 @@ CREATE TRIGGER trg_check_forum_post_rate_limit
     BEFORE INSERT ON public.forum_posts
     FOR EACH ROW EXECUTE FUNCTION public.check_forum_post_rate_limit();
 
--- 7. Notify PostgREST to reload schema
 NOTIFY pgrst, 'reload schema';

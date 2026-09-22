@@ -1,5 +1,3 @@
--- Migration: AI Practice Quiz & Mock Exam Tables
--- Creates quizzes and quiz_results tables with Row Level Security.
 
 CREATE TABLE IF NOT EXISTS public.quizzes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -16,15 +14,12 @@ CREATE TABLE IF NOT EXISTS public.quizzes (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Indexes for querying by user and deck
 CREATE INDEX IF NOT EXISTS idx_quizzes_user_id ON public.quizzes(user_id);
 CREATE INDEX IF NOT EXISTS idx_quizzes_deck_id ON public.quizzes(deck_id);
 
--- Enable RLS and Realtime
 ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.quizzes;
 
--- RLS Policies
 DROP POLICY IF EXISTS "Users can view own quizzes" ON public.quizzes;
 DROP POLICY IF EXISTS "Users can insert own quizzes" ON public.quizzes;
 DROP POLICY IF EXISTS "Users can update own quizzes" ON public.quizzes;

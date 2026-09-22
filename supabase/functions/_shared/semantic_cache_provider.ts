@@ -34,7 +34,6 @@ export class SemanticCacheProvider {
     const { courseCode, promptVector, similarityThreshold = 0.95 } = options;
     const promptHash = await this.computeHash(prompt);
 
-    // 1. Fast exact-match hash query
     try {
       let query = supabase
         .from("semantic_response_cache")
@@ -51,7 +50,6 @@ export class SemanticCacheProvider {
       const { data: exactMatch, error: exactErr } = await query.maybeSingle();
 
       if (!exactErr && exactMatch && exactMatch.response_json) {
-        // Increment hit count asynchronously
         supabase
           .from("semantic_response_cache")
           .update({ hit_count: (exactMatch.hit_count ?? 1) + 1 })
@@ -69,7 +67,6 @@ export class SemanticCacheProvider {
       console.error("Exact cache lookup error:", e);
     }
 
-    // 2. Vector cosine similarity lookup if vector is available
     if (promptVector && promptVector.length > 0) {
       try {
         const { data: vectorMatches, error: vecErr } = await supabase.rpc(

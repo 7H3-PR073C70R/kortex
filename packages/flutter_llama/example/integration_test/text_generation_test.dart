@@ -14,7 +14,6 @@ void main() {
     setUpAll(() async {
       print('Setting up tests - downloading/loading model...');
 
-      // Download model if needed
       String? path = await ModelDownloader.getModelPath('braindler-q2_k');
       if (path == null) {
         print('Downloading model...');
@@ -35,7 +34,6 @@ void main() {
     setUp(() async {
       llama = FlutterLlama.instance;
 
-      // Load model if not already loaded
       if (!llama.isModelLoaded) {
         print('Loading model...');
         final config = LlamaConfig(
@@ -51,7 +49,6 @@ void main() {
     });
 
     tearDownAll(() async {
-      // Final cleanup
       try {
         if (llama.isModelLoaded) {
           await llama.unloadModel();
@@ -189,7 +186,6 @@ void main() {
 
       final prompt = 'The cat';
 
-      // Low repeat penalty (may repeat more)
       print('\\nWith low repeat penalty (1.0):');
       var params = GenerationParams(
         prompt: prompt,
@@ -199,7 +195,6 @@ void main() {
       var response = await llama.generate(params);
       print('Response: ${response.text}');
 
-      // High repeat penalty (should repeat less)
       print('\\nWith high repeat penalty (1.5):');
       params = GenerationParams(
         prompt: prompt,
@@ -270,7 +265,6 @@ void main() {
       try {
         final response = await llama.generate(params);
         print('Response with empty prompt: ${response.text}');
-        // Some models might handle empty prompts, others might not
         expect(response, isNotNull);
       } catch (e) {
         print('Empty prompt handled with error: $e');
@@ -301,7 +295,6 @@ void main() {
     ) async {
       print('Testing different model quantizations...');
 
-      // This test compares responses from different model versions
       final modelsToTest = ['braindler-q2_k', 'braindler-q4_k_s'];
       final prompt = 'Hello, how are you?';
       final responses = <String, LlamaResponse>{};
@@ -316,12 +309,10 @@ void main() {
 
         print('\\nTesting with $modelName...');
 
-        // Unload current model
         if (llama.isModelLoaded) {
           await llama.unloadModel();
         }
 
-        // Load new model
         final config = LlamaConfig(
           modelPath: path,
           nThreads: 4,
@@ -334,7 +325,6 @@ void main() {
           continue;
         }
 
-        // Generate response
         final params = GenerationParams(
           prompt: prompt,
           maxTokens: 50,

@@ -15,7 +15,6 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const ALLOWED_ORIGINS = [
   "https://kortex-study-app-2026.web.app",
@@ -66,7 +65,6 @@ async function hashToken(token: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
   const origin = req.headers.get("origin");
@@ -79,7 +77,6 @@ serve(async (req: Request) => {
     return json({ error: "Method not allowed" }, 405, origin);
   }
 
-  // ── Parse body ──────────────────────────────────────────────────────────────
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -92,20 +89,17 @@ serve(async (req: Request) => {
     return json({ error: "Passcode required" }, 400, origin);
   }
 
-  // ── IP extraction & anonymisation ───────────────────────────────────────────
   const rawIp  = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     || req.headers.get("x-real-ip")
     || "unknown";
   const ipHash = await anonymiseIp(rawIp);
 
-  // ── Service-role Supabase client ────────────────────────────────────────────
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } }
   );
 
-  // ── Rate limit: max 5 attempts per 15 minutes per IP ────────────────────────
   const { data: withinLimit, error: rlErr } = await supabase.rpc("check_and_record_rate_limit", {
     p_ip_hash:        ipHash,
     p_endpoint:       "verify-admin-token",
@@ -118,13 +112,10 @@ serve(async (req: Request) => {
   }
 
   if (withinLimit === false) {
-    // Use the same delay as a valid attempt to prevent timing oracle attacks
     await new Promise(r => setTimeout(r, 300 + Math.random() * 200));
     return json({ error: "Too many attempts. Please wait 15 minutes before trying again." }, 429, origin);
   }
 
-  // ── Verify passcode via bcrypt RPC ─────────────────────────────────────────
-  // Uses pgcrypto crypt() which is timing-safe by design
   const { data: isValid, error: authErr } = await supabase.rpc("verify_admin_passcode", {
     input_passcode: passcode,
   });
@@ -135,12 +126,10 @@ serve(async (req: Request) => {
   }
 
   if (!isValid) {
-    // Constant-time delay prevents timing attacks
     await new Promise(r => setTimeout(r, 400 + Math.random() * 200));
     return json({ error: "Invalid passcode." }, 401, origin);
   }
 
-  // ── Generate and persist session token ─────────────────────────────────────
   const rawToken   = generateSessionToken();
   const tokenHash  = await hashToken(rawToken);
 
@@ -153,6 +142,5 @@ serve(async (req: Request) => {
     return json({ error: "Failed to create session." }, 500, origin);
   }
 
-  // Return ONLY the raw token (hash stored, raw token travels once over HTTPS)
   return json({ token: rawToken, expiresIn: 3600 }, 200, origin);
 });

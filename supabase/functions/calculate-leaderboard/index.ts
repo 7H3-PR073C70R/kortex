@@ -38,13 +38,11 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Execute true PostgreSQL weighted weekly leaderboard aggregation RPC
     const { error: rpcError } = await supabase.rpc("aggregate_weekly_leaderboards");
     if (rpcError) {
       throw rpcError;
     }
 
-    // Retrieve summary of updated leaderboards
     const { count, error: countError } = await supabase
       .from("leaderboards")
       .select("*", { count: "exact", head: true });

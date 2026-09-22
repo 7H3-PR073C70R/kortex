@@ -179,7 +179,6 @@ class _ModelPickerScreenState extends State<ModelPickerScreen>
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              // TODO: Implement file picker
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Функция в разработке'),

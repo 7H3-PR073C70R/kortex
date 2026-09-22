@@ -1,21 +1,16 @@
--- Cleanup auto-provisioned hash rooms and guard auto_provision_community_rpc
 
--- 1. Delete study rooms created from document hashes
 DELETE FROM study_rooms
 WHERE title ~* '^[0-9a-f]{16,}'
    OR title ~* '^[0-9a-f]{8}-[0-9a-f]{4}'
    OR subject ~* '^[0-9a-f]{16,}';
 
--- 2. Delete study communities created from document hashes
 DELETE FROM study_communities
 WHERE course_code ~* '^[0-9a-f]{16,}'
    OR course_code ~* '^[0-9a-f]{8}-[0-9a-f]{4}'
    OR title ~* '^[0-9a-f]{16,}';
 
--- 3. Ensure role column exists on community_members
 ALTER TABLE community_members ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
 
--- 4. Update auto_provision_community_rpc to ignore document hash-like codes
 CREATE OR REPLACE FUNCTION auto_provision_community_rpc(
     p_course_code TEXT,
     p_title TEXT,
@@ -36,16 +31,13 @@ BEGIN
     v_user_id := auth.uid();
     v_normalized_code := upper(trim(p_course_code));
 
-    -- Do not provision for raw file hashes / object IDs
     IF v_normalized_code ~ '^[0-9A-F]{16,}$' OR v_normalized_code ~ '^[0-9A-F]{8}-[0-9A-F]{4}' THEN
         RETURN jsonb_build_object('success', false, 'reason', 'Ignored hash identifier');
     END IF;
 
-    -- Check if community exists
     SELECT * INTO v_community FROM study_communities WHERE course_code = v_normalized_code;
 
     IF v_community.id IS NULL THEN
-        -- Create new community
         INSERT INTO study_communities (
             course_code,
             title,
@@ -64,7 +56,6 @@ BEGIN
 
         v_is_founding := true;
 
-        -- Create default 25m Silent Focus Pomodoro room
         INSERT INTO study_rooms (
             title,
             description,
@@ -96,13 +87,11 @@ BEGIN
 
     ELSE
         v_community_id := v_community.id;
-        -- Increment member count
         UPDATE study_communities
         SET member_count = member_count + 1
         WHERE id = v_community_id;
     END IF;
 
-    -- Ensure user is a member of this community
     IF v_user_id IS NOT NULL THEN
         INSERT INTO community_members (
             community_id,

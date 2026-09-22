@@ -15,7 +15,6 @@ void main() {
     setUpAll(() async {
       print('Setting up streaming tests - downloading/loading model...');
 
-      // Download model if needed
       String? path = await ModelDownloader.getModelPath('braindler-q2_k');
       if (path == null) {
         print('Downloading model...');
@@ -36,7 +35,6 @@ void main() {
     setUp(() async {
       llama = FlutterLlama.instance;
 
-      // Load model if not already loaded
       if (!llama.isModelLoaded) {
         print('Loading model...');
         final config = LlamaConfig(
@@ -52,7 +50,6 @@ void main() {
     });
 
     tearDownAll(() async {
-      // Final cleanup
       try {
         if (llama.isModelLoaded) {
           await llama.unloadModel();
@@ -81,8 +78,6 @@ void main() {
         }
       } catch (e) {
         print('Streaming error (may not be implemented yet): $e');
-        // Streaming might not be fully implemented in native code yet
-        // This is expected and we just log it
       }
 
       stopwatch.stop();
@@ -174,7 +169,6 @@ void main() {
               },
             );
 
-        // Wait for completion or cancellation
         await subscription.asFuture();
 
         print('\\nReceived ${tokens.length} tokens before cancellation');
@@ -238,7 +232,6 @@ void main() {
         stopwatch.stop();
 
         if (tokens.isNotEmpty) {
-          // Calculate metrics
           final totalTime = stopwatch.elapsedMilliseconds;
           final avgTokenTime = totalTime / tokens.length;
           final tokensPerSecond = tokens.length / (totalTime / 1000.0);
@@ -250,7 +243,6 @@ void main() {
           print('Tokens per second: ${tokensPerSecond.toStringAsFixed(2)}');
           print('\\nFull text: ${tokens.join()}');
 
-          // Calculate time to first token (TTFT)
           if (tokenTimestamps.isNotEmpty) {
             print('Time to first token: ${tokenTimestamps[0]}ms');
           }
@@ -268,7 +260,6 @@ void main() {
     ) async {
       print('Testing error handling in streaming...');
 
-      // First, unload model to cause error
       await llama.unloadModel();
 
       final params = GenerationParams(
@@ -290,7 +281,6 @@ void main() {
 
       expect(errorOccurred, isTrue);
 
-      // Reload model for subsequent tests
       final config = LlamaConfig(modelPath: modelPath);
       await llama.loadModel(config);
     });
@@ -340,7 +330,6 @@ void main() {
         temperature: 0.7,
       );
 
-      // Non-streaming generation
       print('\\nNon-streaming generation:');
       final stopwatch1 = Stopwatch()..start();
       final response = await llama.generate(params);
@@ -350,7 +339,6 @@ void main() {
       print('Time: ${stopwatch1.elapsedMilliseconds}ms');
       print('Tokens: ${response.tokensGenerated}');
 
-      // Streaming generation
       print('\\nStreaming generation:');
       final tokens = <String>[];
       final stopwatch2 = Stopwatch()..start();
@@ -366,7 +354,6 @@ void main() {
         print('Time: ${stopwatch2.elapsedMilliseconds}ms');
         print('Tokens: ${tokens.length}');
 
-        // Both should generate something
         expect(response.text, isNotEmpty);
         if (tokens.isNotEmpty) {
           expect(streamedText, isNotEmpty);
@@ -398,7 +385,6 @@ void main() {
           print('Test $i: $e');
         }
 
-        // Small delay between attempts
         await Future.delayed(Duration(milliseconds: 100));
       }
     });

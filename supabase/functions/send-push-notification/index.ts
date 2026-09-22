@@ -45,7 +45,6 @@ async function getGoogleAccessToken(
     iat: now,
   };
 
-  // Base64URL encode header and payload
   const b64Header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
@@ -56,7 +55,6 @@ async function getGoogleAccessToken(
     .replace(/=+$/, "");
   const signatureInput = `${b64Header}.${b64Payload}`;
 
-  // Clean PEM private key
   const pemHeader = "-----BEGIN PRIVATE KEY-----";
   const pemFooter = "-----END PRIVATE KEY-----";
   const pemContents = privateKey
@@ -164,7 +162,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Determine target recipient IDs
     const targetUserIds: string[] = [];
     if (userId) targetUserIds.push(userId);
     if (userIds && Array.isArray(userIds)) {
@@ -180,7 +177,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // Zero-Trust BOLA Guard: Normal authenticated users can ONLY send notifications to themselves
     if (!isServiceRole && authenticatedUserId) {
       const isTargetingOthers = targetUserIds.some((id) => id !== authenticatedUserId);
       if (isTargetingOthers) {
@@ -191,7 +187,6 @@ serve(async (req: Request) => {
       }
     }
 
-    // 1. Check user notification preferences
     const { data: preferences } = await supabase
       .from("notification_preferences")
       .select("*")
@@ -237,7 +232,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // 2. Fetch active FCM tokens for eligible users
     const { data: devices, error: deviceError } = await supabase
       .from("user_devices")
       .select("id, user_id, fcm_token, platform")
@@ -248,7 +242,6 @@ serve(async (req: Request) => {
       console.warn("[PushService] Device lookup error:", deviceError.message);
     }
 
-    // 3. Record in public.notifications inbox
     const notificationInserts = filteredUserIds.map((uid) => ({
       user_id: uid,
       title,
@@ -264,13 +257,11 @@ serve(async (req: Request) => {
       console.warn("[PushService] Failed to insert in-app notifications:", inboxErr);
     }
 
-    // 4. Dispatch FCM push notifications to active device tokens
     const tokens = (devices ?? []).map((d) => d.fcm_token).filter(Boolean);
 
     let fcmSentCount = 0;
     const invalidTokenIds: string[] = [];
 
-    // Check FCM Configuration: Firebase Service Account or Legacy Server Key
     const serviceAccountRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
     const fcmServerKey = Deno.env.get("FCM_SERVER_KEY");
 
@@ -284,7 +275,6 @@ serve(async (req: Request) => {
             sa.private_key
           );
 
-          // Send FCM v1 messages
           for (const dev of devices ?? []) {
             try {
               const res = await fetch(
@@ -342,7 +332,6 @@ serve(async (req: Request) => {
           console.error("[PushService] Service Account OAuth error:", authErr);
         }
       } else if (fcmServerKey) {
-        // Legacy FCM HTTP API
         for (const dev of devices ?? []) {
           try {
             const res = await fetch("https://fcm.googleapis.com/fcm/send", {
@@ -360,11 +349,9 @@ serve(async (req: Request) => {
             });
             if (res.ok) fcmSentCount++;
           } catch (_) {
-            // Non-blocking single failure
           }
         }
       } else {
-        // Telemetry mode when secrets are not yet configured in local/staging environment
         console.log(
           `[PushService:Simulated] Dispatched notification to ${tokens.length} devices:`,
           { title, body, category, targetUserCount: filteredUserIds.length }
@@ -372,7 +359,6 @@ serve(async (req: Request) => {
         fcmSentCount = tokens.length;
       }
 
-      // Deactivate stale device tokens if any were reported unregistered
       if (invalidTokenIds.length > 0) {
         try {
           await supabase
@@ -380,7 +366,6 @@ serve(async (req: Request) => {
             .update({ is_active: false, updated_at: new Date().toISOString() })
             .in("id", invalidTokenIds);
         } catch (_) {
-          // Non-blocking cleanup
         }
       }
     }

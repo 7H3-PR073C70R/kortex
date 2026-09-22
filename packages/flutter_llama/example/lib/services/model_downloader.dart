@@ -24,16 +24,13 @@ class ModelDownloader {
     ProgressCallback? onProgress,
   }) async {
     try {
-      // Получаем директорию для хранения моделей
       final appDir = await getApplicationDocumentsDirectory();
       final modelsDir = Directory(path.join(appDir.path, 'models'));
       
-      // Создаем директорию, если её нет
       if (!await modelsDir.exists()) {
         await modelsDir.create(recursive: true);
       }
 
-      // Создаем поддиректорию для конкретной модели
       final modelDir = Directory(path.join(modelsDir.path, modelId.replaceAll('/', '_')));
       if (!await modelDir.exists()) {
         await modelDir.create(recursive: true);
@@ -42,18 +39,15 @@ class ModelDownloader {
       final filePath = path.join(modelDir.path, fileName);
       final file = File(filePath);
 
-      // Проверяем, не скачан ли уже файл
       if (await file.exists()) {
         onProgress?.call(1.0, 'Файл уже существует');
         return filePath;
       }
 
-      // Формируем URL для скачивания
       final url = '$_baseUrl/$modelId/resolve/main/$fileName';
       
       onProgress?.call(0.0, 'Подключение к Hugging Face...');
       
-      // Создаем запрос
       final request = http.Request('GET', Uri.parse(url));
       final response = await request.send();
 
@@ -61,11 +55,9 @@ class ModelDownloader {
         throw Exception('Ошибка загрузки: ${response.statusCode}');
       }
 
-      // Получаем размер файла
       final contentLength = response.contentLength ?? 0;
       var receivedBytes = 0;
 
-      // Открываем файл для записи
       final sink = file.openWrite();
 
       try {
@@ -73,7 +65,6 @@ class ModelDownloader {
           sink.add(chunk);
           receivedBytes += chunk.length;
 
-          // Обновляем прогресс
           if (contentLength > 0) {
             final progress = receivedBytes / contentLength;
             final mb = (receivedBytes / 1024 / 1024).toStringAsFixed(1);
@@ -104,7 +95,6 @@ class ModelDownloader {
     String? specificFile,
     ProgressCallback? onProgress,
   }) async {
-    // Если указан конкретный файл, скачиваем его
     if (specificFile != null) {
       return downloadModel(
         modelId: modelId,
@@ -113,11 +103,9 @@ class ModelDownloader {
       );
     }
 
-    // Иначе ищем GGUF файлы
     try {
       onProgress?.call(0.0, 'Поиск GGUF файлов...');
       
-      // Пробуем распространённые имена GGUF файлов
       final commonNames = [
         'model.gguf',
         'ggml-model-q4_0.gguf',
@@ -129,7 +117,6 @@ class ModelDownloader {
         '${modelId.split('/').last}.gguf',
       ];
 
-      // Пробуем скачать первый найденный файл
       for (final name in commonNames) {
         try {
           final filePath = await downloadModel(
@@ -139,7 +126,6 @@ class ModelDownloader {
           );
           return filePath;
         } catch (e) {
-          // Продолжаем поиск
           continue;
         }
       }
@@ -244,6 +230,4 @@ class ModelDownloader {
   }
 }
 
-// NOTE: PresetModel and PresetModels are now in flutter_llama library
-// Import them from 'package:flutter_llama/flutter_llama.dart'
 

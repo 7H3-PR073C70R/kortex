@@ -1,8 +1,4 @@
--- ==============================================================================
--- KORTEX SUPABASE SEED DATA (Curated Courses & Standard Catalog)
--- ==============================================================================
 
--- 1. Insert Curated Courses (STEM & Examination Catalog)
 INSERT INTO public.curated_courses (
     id,
     course_code,
