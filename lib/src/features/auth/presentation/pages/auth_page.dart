@@ -138,56 +138,22 @@ class _AuthView extends HookWidget {
                                         authGoogleSignIn(context),
                                     onApplePressed: () =>
                                         authAppleSignIn(context),
-                                    onForgotPassword: () {
-                                      unawaited(
-                                        context.router.push(
-                                          const ForgotPasswordRoute(),
-                                        ),
-                                      );
-                                    },
+                                    onForgotPassword: () { context.router.push(const ForgotPasswordRoute()); },
                                   ),
                                   AuthFormView(
                                     key: const ValueKey<String>(
                                       'auth_form_view',
                                     ),
-                                    onForgotPassword: () {
-                                      unawaited(
-                                        context.router.push(
-                                          const ForgotPasswordRoute(),
-                                        ),
-                                      );
-                                    },
+                                    onForgotPassword: () { context.router.push(const ForgotPasswordRoute()); },
+                                    onGooglePressed: () => authGoogleSignIn(context),
+                                    onApplePressed: () => authAppleSignIn(context),
                                   ),
                                 ],
                               ),
                             ),
                           ),
 
-                          // ==========================================
-                          // 3. BOTTOM SOCIAL AUTH BAR (Form Mode Only)
-                          // ==========================================
-                          if (!isChatMode)
-                            RevealOnMount(
-                              delayMs: 230,
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  24,
-                                  8,
-                                  24,
-                                  16,
-                                ),
-                                child: SocialAuthBar(
-                                  isLoading: context
-                                      .watch<AuthBloc>()
-                                      .state
-                                      .isLoading,
-                                  onGooglePressed: () =>
-                                      authGoogleSignIn(context),
-                                  onApplePressed: () =>
-                                      authAppleSignIn(context),
-                                ),
-                              ),
-                            ),
+
                         ],
                       ),
                     ),

@@ -81,6 +81,7 @@ class AuthRouteGuard extends AutoRouteGuard {
           );
           if (currentRouteName == AuthRoute.name ||
               currentRouteName == OnboardingRoute.name ||
+          currentRouteName == ForgotPasswordRoute.name ||
               currentRouteName == OnboardingCalibrationRoute.name) {
             resolver.next(false);
             unawaited(router.replace(const MainRoute()));

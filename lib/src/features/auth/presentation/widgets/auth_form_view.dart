@@ -20,10 +20,14 @@ import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 class AuthFormView extends HookWidget {
   const AuthFormView({
     required this.onForgotPassword,
+    required this.onGooglePressed,
+    required this.onApplePressed,
     super.key,
   });
 
   final VoidCallback onForgotPassword;
+  final VoidCallback onGooglePressed;
+  final VoidCallback onApplePressed;
 
   @override
   Widget build(BuildContext context) {

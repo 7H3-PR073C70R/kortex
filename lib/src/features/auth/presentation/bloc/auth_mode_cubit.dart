@@ -14,7 +14,7 @@ enum AuthFormType {
 /// State representing active auth presentation mode and form tab.
 class AuthModeState extends Equatable {
   const AuthModeState({
-    this.mode = AuthMode.chat,
+    this.mode = AuthMode.form,
     this.formType = AuthFormType.login,
   });
 

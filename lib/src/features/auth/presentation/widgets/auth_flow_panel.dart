@@ -291,18 +291,16 @@ class AuthWorkspacePanel extends StatelessWidget {
                     onGooglePressed: () => authGoogleSignIn(context),
                     onApplePressed: () => authAppleSignIn(context),
                     onForgotPassword: () {
-                      unawaited(
-                        context.router.push(const ForgotPasswordRoute()),
-                      );
+                      context.router.push(const ForgotPasswordRoute());
                     },
                   ),
                   AuthFormView(
                     key: const ValueKey<String>('auth_workspace_form'),
                     onForgotPassword: () {
-                      unawaited(
-                        context.router.push(const ForgotPasswordRoute()),
-                      );
+                      context.router.push(const ForgotPasswordRoute());
                     },
+                    onGooglePressed: () => authGoogleSignIn(context),
+                    onApplePressed: () => authAppleSignIn(context),
                   ),
                 ],
               ),
