@@ -8,8 +8,6 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -17,9 +15,21 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+
+/// Repository card accent pair (base + chip text + label text).
+class _RepoAccent {
+  const _RepoAccent({
+    required this.base,
+    required this.chip,
+    required this.text,
+  });
+
+  final Color base;
+  final Color chip;
+  final Color text;
+}
 
 class CuratedCourseCarousel extends StatelessWidget {
   const CuratedCourseCarousel({
@@ -31,46 +41,40 @@ class CuratedCourseCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final neural = context.neural;
     final typography = context.typography;
     final l10n = context.l10n;
-    final isDark = context.isDarkMode;
 
     if (courses.isEmpty) {
-      return Padding(
-        padding: EdgeInsets.zero,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                l10n.dashboardCuratedCourses,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 16.5,
-                  letterSpacing: -0.2,
-                ),
-              ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.dashboardCuratedCourses,
+            style: typography.callout.bold.copyWith(
+              color: neural.slate100,
+              fontSize: 14,
+              letterSpacing: -0.1,
             ),
-            const SizedBox(height: 12),
-            ShrinkableButton(
-              onTap: () async {
-                final result = await context.router.push(CurateCoursesRoute());
-                if (result == true && context.mounted) {
-                  context.read<DashboardBloc>().add(const DashboardRefreshed());
-                }
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.panel),
+          ),
+          const SizedBox(height: 12),
+          ShrinkableButton(
+            onTap: () async {
+              final result = await context.router.push(CurateCoursesRoute());
+              if (result == true && context.mounted) {
+                context.read<DashboardBloc>().add(const DashboardRefreshed());
+              }
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                 child: Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary.withAlpha(140)
-                        : colors.surfacePrimary.withAlpha(210),
-                    borderRadius: BorderRadius.circular(AppRadius.panel),
-                    // Removed border
+                    color: neural.glassPanel,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: neural.hairline),
                   ),
                   child: Row(
                     children: [
@@ -79,11 +83,11 @@ class CuratedCourseCarousel extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: colors.primary.withAlpha(isDark ? 35 : 18),
+                          color: neural.emerald.withAlpha(26),
                         ),
                         child: Icon(
                           Icons.school_outlined,
-                          color: colors.primary,
+                          color: neural.emerald400,
                           size: 24,
                         ),
                       ),
@@ -95,14 +99,14 @@ class CuratedCourseCarousel extends StatelessWidget {
                             Text(
                               l10n.curateCoursesTitle,
                               style: typography.callout.bold.copyWith(
-                                color: colors.textPrimary,
+                                color: neural.slate100,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               l10n.curateCoursesSubtitle,
                               style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary,
+                                color: neural.slate400,
                                 fontSize: 12,
                               ),
                             ),
@@ -110,173 +114,146 @@ class CuratedCourseCarousel extends StatelessWidget {
                         ),
                       ),
                       Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: colors.primary,
-                        size: 14,
+                        Icons.chevron_right_rounded,
+                        color: neural.slate400,
+                        size: 18,
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header: aligned with 4px padding relative to parent ListView
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
+        // Section header: title + See All link + Manage button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(
                 l10n.dashboardCuratedCourses,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 16.5,
-                  letterSpacing: -0.2,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.callout.bold.copyWith(
+                  color: neural.slate100,
+                  fontSize: 14,
+                  letterSpacing: -0.1,
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // "See All" button
-                  ShrinkableButton(
-                    onTap: () {
-                      AppFeedback.light();
-                      unawaited(
-                        context.router.push(const AllCuratedCoursesRoute()),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(20),
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                        border: Border.all(
-                          color: colors.primary.withAlpha(35),
+            ),
+            const SizedBox(width: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // "See All (N)" — plain emerald text link per design
+                ShrinkableButton(
+                  onTap: () {
+                    AppFeedback.light();
+                    unawaited(
+                      context.router.push(const AllCuratedCoursesRoute()),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'See All (${courses.length})',
+                        style: typography.caption.semiBold.copyWith(
+                          color: neural.emerald400,
+                          fontSize: 12,
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'See All (${courses.length})',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(width: 3),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 9,
-                            color: colors.primary,
-                          ),
-                        ],
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 14,
+                        color: neural.emerald400,
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // "Manage" — obsidian-850 bordered chip
+                ShrinkableButton(
+                  onTap: () async {
+                    AppFeedback.light();
+                    final result = await context.router.push(
+                      CurateCoursesRoute(
+                        initialEnrolledIds: courses.map((c) => c.id).toList(),
+                      ),
+                    );
+                    if (result == true && context.mounted) {
+                      context.read<DashboardBloc>().add(
+                        const DashboardRefreshed(),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: neural.obsidian850,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: neural.hairlineStrong),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 12,
+                          color: neural.slate400,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Manage',
+                          style: typography.caption.medium.copyWith(
+                            color: neural.slate300,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // "Manage" button
-                  ShrinkableButton(
-                    onTap: () async {
-                      AppFeedback.light();
-                      final result = await context.router.push(
-                        CurateCoursesRoute(
-                          initialEnrolledIds: courses.map((c) => c.id).toList(),
-                        ),
-                      );
-                      if (result == true && context.mounted) {
-                        context.read<DashboardBloc>().add(
-                          const DashboardRefreshed(),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.surfaceSecondary.withAlpha(140)
-                            : colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(AppRadius.badge),
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(
-                            isDark ? 60 : 35,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.tune_rounded,
-                            size: 12,
-                            color: colors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Manage',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 12),
 
-        // Carousel List: If single course, span full width; else horizontal scroll list
-        if (courses.length == 1)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: SizedBox(
-              width: double.infinity,
-              height: 165,
-              child: _CourseCard(
-                course: courses.first,
-                colors: colors,
-                isDark: isDark,
-                isFullWidth: true,
+        // Single horizontally scrollable row of repository cards
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cardWidth = ((constraints.maxWidth - 12) / 2).clamp(
+              150.0,
+              200.0,
+            );
+            return SizedBox(
+              height: 172,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                itemCount: courses.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                itemBuilder: (context, index) => SizedBox(
+                  width: cardWidth,
+                  child: _CourseCard(
+                    course: courses[index],
+                    accentIndex: index,
+                  ),
+                ),
               ),
-            ),
-          )
-        else
-          SizedBox(
-            height: 165,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              scrollDirection: Axis.horizontal,
-              physics: const ClampingScrollPhysics(),
-              itemCount: courses.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 14),
-              itemBuilder: (context, index) {
-                final course = courses[index];
-                return _CourseCard(
-                  course: course,
-                  colors: colors,
-                  isDark: isDark,
-                );
-              },
-            ),
-          ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -285,19 +262,30 @@ class CuratedCourseCarousel extends StatelessWidget {
 class _CourseCard extends StatelessWidget {
   const _CourseCard({
     required this.course,
-    required this.colors,
-    required this.isDark,
-    this.isFullWidth = false,
+    required this.accentIndex,
   });
 
   final CuratedCourseEntity course;
-  final AppThemeColorsExtension colors;
-  final bool isDark;
-  final bool isFullWidth;
+  final int accentIndex;
 
   @override
   Widget build(BuildContext context) {
+    final neural = context.neural;
     final typography = context.typography;
+    final accents = [
+      _RepoAccent(
+        base: neural.cyan,
+        chip: neural.cyan300,
+        text: neural.cyan400,
+      ),
+      _RepoAccent(
+        base: neural.emerald,
+        chip: neural.emerald300,
+        text: neural.emerald400,
+      ),
+    ];
+    final accent = accents[accentIndex % accents.length];
+
     // Query matching decks from DecksBloc if registered
     final allDecks = locator.isRegistered<DecksBloc>()
         ? locator<DecksBloc>().state.allDecks
@@ -343,168 +331,159 @@ class _CourseCard extends StatelessWidget {
               );
             },
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.panel),
+              borderRadius: BorderRadius.circular(16),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                 child: AnimatedContainer(
                   duration: AppMotion.snappy,
                   curve: AppMotion.easeOutCubic,
-                  width: isFullWidth ? double.infinity : 220,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.panel),
-                    color: isDark
-                        ? (isHovered
-                              ? colors.surfaceSecondary.withAlpha(190)
-                              : colors.surfaceSecondary.withAlpha(150))
-                        : (isHovered
-                              ? colors.surfacePrimary
-                              : colors.surfacePrimary.withAlpha(210)),
-                    border: isHovered
-                        ? Border.all(
-                            color: colors.primary.withAlpha(isDark ? 120 : 90),
-                          )
-                        : null,
+                    color: neural.glassPanel,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isHovered
+                          ? accent.base.withAlpha(102)
+                          : neural.hairline,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children:
-                        <Widget>[
-                              // Top Code Pill & Past paper indicator
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3.5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colors.primary.withAlpha(
-                                        isDark ? 50 : 25,
-                                      ),
-                                      borderRadius: BorderRadius.circular(
-                                        AppRadius.micro,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      course.courseCode,
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ),
-                                  if (course.hasActivePastPapers)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colors.success.withAlpha(
-                                          isDark ? 35 : 20,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          AppRadius.micro,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.verified_rounded,
-                                            size: 12,
-                                            color: colors.success,
-                                          ),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            'Q-Bank',
-                                            style: typography.caption.bold
-                                                .copyWith(
-                                                  color: colors.success,
-                                                  fontSize: 9.5,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
+                    children: [
+                      // Code chip + Q-Bank badge
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
                               ),
-
-                              // Title
-                              Text(
-                                course.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 13.5,
-                                  height: 1.25,
+                              decoration: BoxDecoration(
+                                color: neural.obsidian800,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: accent.base.withAlpha(51),
                                 ),
                               ),
-
-                              // Bottom Coverage & Deck/Card Count
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Text(
+                                course.courseCode,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.code.bold.copyWith(
+                                  color: accent.chip,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (course.hasActivePastPapers) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: neural.emerald.withAlpha(26),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: neural.emerald.withAlpha(51),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        deckCountText,
-                                        style: typography.footnote.medium
-                                            .copyWith(
-                                              color: isDark
-                                                  ? colors.textSecondary
-                                                  : colors.textPrimary
-                                                        .withAlpha(180),
-                                              fontSize: 10.5,
-                                            ),
-                                      ),
-                                      Text(
-                                        '$coveragePercent%',
-                                        style: typography.footnote.bold
-                                            .copyWith(
-                                              color: colors.primary,
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                    ],
+                                  Icon(
+                                    Icons.check_rounded,
+                                    size: 10,
+                                    color: neural.emerald400,
                                   ),
-                                  const SizedBox(height: 4),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.micro,
-                                    ),
-                                    child: Container(
-                                      height: 4,
-                                      color: colors.surfaceBorder.withAlpha(
-                                        isDark ? 50 : 80,
-                                      ),
-                                      child: FractionallySizedBox(
-                                        widthFactor: realCoverage.clamp(
-                                          0.0,
-                                          1.0,
-                                        ),
-                                        child: Container(
-                                          color: colors.primary,
-                                        ),
-                                      ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Q-Bank',
+                                    style: typography.caption.medium.copyWith(
+                                      color: neural.emerald400,
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ],
                               ),
-                            ]
-                            .animate(interval: 50.ms)
-                            .fadeIn(
-                              duration: 350.ms,
-                              curve: Curves.easeOutCubic,
-                            )
-                            .slideX(begin: -0.05, end: 0),
+                            ),
+                          ],
+                        ],
+                      ),
+
+                      // Course title
+                      Text(
+                        course.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.callout.bold.copyWith(
+                          color: neural.slate100,
+                          fontSize: 14,
+                          height: 1.25,
+                        ),
+                      ),
+
+                      // Footer: deck count + coverage % over a hairline divider
+                      Container(
+                        padding: const EdgeInsets.only(top: 12),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: neural.hairlineSoft),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    deckCountText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: typography.caption.regular.copyWith(
+                                      color: neural.slate400,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$coveragePercent%',
+                                  style: typography.code.bold.copyWith(
+                                    color: accent.text,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(99),
+                              child: SizedBox(
+                                height: 4,
+                                child: ColoredBox(
+                                  color: neural.obsidian800,
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: FractionallySizedBox(
+                                      widthFactor: realCoverage,
+                                      child: ColoredBox(color: accent.base),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

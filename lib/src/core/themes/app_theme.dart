@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/enums/theme_preset.dart';
+import 'package:kortex/src/core/themes/neural_palette.dart';
 import 'package:kortex/src/core/themes/typography/typography.dart';
 
 /// Central theme configuration for Kortex (Engine: Syllabot).
@@ -281,6 +282,7 @@ class AppTheme {
       extensions: [
         typography,
         colors,
+        if (isDark) NeuralPalette.dark else NeuralPalette.light,
       ],
     );
   }

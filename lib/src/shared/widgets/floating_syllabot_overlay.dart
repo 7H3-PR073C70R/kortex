@@ -7,7 +7,6 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/features/syllabot/presentation/pages/syllabot_chat_page.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 /// A global floating expandable & collapsible Syllabot AI overlay.
 ///
@@ -82,9 +81,9 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final neural = context.neural;
     final colors = context.colors;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     final defaultBottom = math.max(84, (bottomInset + 72).toInt()).toDouble();
@@ -98,7 +97,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
         // 2. Collapsed Floating Syllabot Action Pill (When not expanded)
         if (!_isExpanded || _expandAnimation.value < 1.0)
           Positioned(
-            right: 18,
+            right: 16,
             bottom: bottomPosition,
             child: FadeTransition(
               opacity: Tween<double>(begin: 1, end: 0).animate(
@@ -130,39 +129,71 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                       child: ShrinkableButton(
                         onTap: _expand,
                         child: Container(
-                          padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
+                          padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
                               colors: [
-                                colors.surfacePrimary,
-                                colors.surfaceSecondary,
+                                neural.obsidian850,
+                                neural.obsidian800,
+                                neural.obsidian850,
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(isDark ? 90 : 70),
-                              width: 1.2,
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(99),
+                            ),
+                            border: Border.fromBorderSide(
+                              BorderSide(
+                                color: neural.purple500.withAlpha(102),
+                              ),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: colors.black.withAlpha(isDark ? 80 : 20),
-                                blurRadius: 12,
-                                offset: const Offset(0, 3),
+                                color: neural.glowCyan,
+                                blurRadius: 20,
+                                spreadRadius: -5,
                               ),
                             ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const SyllabotAvatar(size: 32),
-                              const SizedBox(width: 8),
+                              // Bot avatar with neon cyan→indigo→fuchsia ring
+                              Container(
+                                width: 32,
+                                height: 32,
+                                padding: const EdgeInsets.all(1.5),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.bottomLeft,
+                                    end: Alignment.topRight,
+                                    colors: [
+                                      neural.cyan,
+                                      neural.indigo500,
+                                      neural.fuchsia500,
+                                    ],
+                                  ),
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: neural.obsidian950,
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.smart_toy_rounded,
+                                      size: 16,
+                                      color: neural.cyan300,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
                               Text(
                                 'Ask Syllabot',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 12.5,
+                                style: typography.caption.semiBold.copyWith(
+                                  color: neural.slate100,
+                                  fontSize: 12,
                                   letterSpacing: 0.2,
                                   decoration: TextDecoration.none,
                                 ),
@@ -170,8 +201,8 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                               const SizedBox(width: 4),
                               Icon(
                                 Icons.auto_awesome_rounded,
-                                color: colors.syllabotAccent,
-                                size: 14,
+                                color: neural.amber400,
+                                size: 12,
                               ),
                             ],
                           ),

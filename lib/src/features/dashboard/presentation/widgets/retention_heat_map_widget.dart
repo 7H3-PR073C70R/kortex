@@ -9,8 +9,6 @@ import 'package:intl/intl.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -104,12 +102,43 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
     }
   }
 
+  /// Cell fill/border per Tailwind intensity level in the design.
+  ({Color fill, Color border, bool glow}) _cellStyle(int level) {
+    final neural = context.neural;
+    return switch (level) {
+      <= 0 => (
+        fill: neural.obsidian800.withAlpha(230),
+        border: neural.hairlineSoft,
+        glow: false,
+      ),
+      1 => (
+        fill: neural.emerald.withAlpha(51),
+        border: neural.emerald.withAlpha(77),
+        glow: false,
+      ),
+      2 => (
+        fill: neural.emerald.withAlpha(77),
+        border: neural.emerald.withAlpha(77),
+        glow: false,
+      ),
+      3 => (
+        fill: neural.emerald.withAlpha(102),
+        border: neural.emerald.withAlpha(102),
+        glow: false,
+      ),
+      _ => (
+        fill: neural.emerald.withAlpha(153),
+        border: neural.emerald400,
+        glow: true,
+      ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final neural = context.neural;
     final typography = context.typography;
     final l10n = context.l10n;
-    final isDark = context.isDarkMode;
 
     final overallRetention = (widget.analytics.overallRetentionRate * 100)
         .toInt();
@@ -125,63 +154,70 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
           '${l10n.dashboardMasteredChip}: '
           '${widget.analytics.totalCardsMastered}.',
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.panel),
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.panel),
-              color: isDark
-                  ? colors.surfaceSecondary.withAlpha(160)
-                  : colors.surfacePrimary.withAlpha(215),
-              // Removed border
+              color: neural.glassPanel,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: neural.hairline),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with Detailed Analytics link
+                // Header: icon box + title + Full Stats button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(isDark ? 50 : 25),
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.badge,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.grid_view_rounded,
-                            size: 15,
-                            color: colors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.dashboardRetentionMatrix,
-                              style: typography.title3.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 14.5,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: neural.obsidian800,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: neural.hairlineStrong,
                               ),
                             ),
-                            Text(
-                              l10n.dashboardHeatmapSubtitle,
-                              style: typography.footnote.medium.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
+                            child: Icon(
+                              Icons.grid_view_rounded,
+                              size: 16,
+                              color: neural.emerald400,
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.dashboardRetentionMatrix,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: typography.callout.bold.copyWith(
+                                    color: neural.slate100,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  l10n.dashboardHeatmapSubtitle,
+                                  style: typography.caption.regular.copyWith(
+                                    color: neural.slate400,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     ShrinkableButton(
                       onTap: () {
                         unawaited(HapticFeedback.lightImpact());
@@ -192,14 +228,13 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
-                          vertical: 5,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 40 : 20),
-                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          color: neural.obsidian800.withAlpha(204),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: colors.primary.withAlpha(isDark ? 80 : 40),
-                            width: 0.8,
+                            color: neural.hairlineSoft,
                           ),
                         ),
                         child: Row(
@@ -207,16 +242,15 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                           children: [
                             Text(
                               l10n.dashboardFullStats,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 11.5,
+                              style: typography.caption.medium.copyWith(
+                                color: neural.slate300,
+                                fontSize: 12,
                               ),
                             ),
-                            const SizedBox(width: 2),
                             Icon(
                               Icons.chevron_right_rounded,
-                              size: 14,
-                              color: colors.primary,
+                              size: 12,
+                              color: neural.slate400,
                             ),
                           ],
                         ),
@@ -224,279 +258,216 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                // Weekday Headers & 4-Week Heat Map Matrix
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final cellWidth = ((constraints.maxWidth - (6 * 6)) / 7)
-                        .clamp(14.0, 38.0);
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Weekday labels (Mon..Sun)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: weekdayLabels.map((day) {
-                            return SizedBox(
-                              width: cellWidth,
+                // Heatmap matrix container
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: neural.obsidian900.withAlpha(230),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: neural.hairlineSoft),
+                  ),
+                  child: Column(
+                    children: [
+                      // Weekday labels (Mon..Sun)
+                      Row(
+                        children: [
+                          for (final label in weekdayLabels)
+                            Expanded(
                               child: Text(
-                                day,
+                                label,
                                 textAlign: TextAlign.center,
                                 style: typography.footnote.bold.copyWith(
-                                  color: colors.textSecondary.withAlpha(160),
+                                  color: neural.slate400,
                                   fontSize: 10,
                                 ),
                               ),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 6),
-
-                        // Heat Map Matrix: exactly 4 rows of 7 days (Monday..Sunday)
-                        ...List.generate(4, (rowIdx) {
-                          final startIdx = rowIdx * 7;
-                          final rowDays = normalizedDays.sublist(
-                            startIdx,
-                            startIdx + 7,
-                          );
-
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: rowIdx < 3 ? 6.0 : 0.0,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: rowDays.asMap().entries.map((entry) {
-                                final colIdx = entry.key;
-                                final day = entry.value;
-                                final isSelected =
-                                    _selectedDay != null &&
-                                    _isSameDay(_selectedDay!.date, day.date);
-                                final color = _getIntensityColor(
-                                  day.intensityLevel,
-                                  colors,
-                                  isDark,
-                                );
+                        ],
+                      ),
+                      const SizedBox(height: 8),
 
-                                return Semantics(
-                                      label:
-                                          '${day.date.day}/${day.date.month}: '
-                                          '${day.cardsReviewed} cards',
-                                      child: InkWell(
-                                        onTap: () {
-                                          unawaited(
-                                            HapticFeedback.selectionClick(),
-                                          );
-                                          setState(() {
-                                            _selectedDay = isSelected
-                                                ? null
-                                                : day;
-                                          });
-                                        },
-                                        borderRadius: BorderRadius.circular(
-                                          AppRadius.micro,
-                                        ),
-                                        child: AnimatedContainer(
-                                          duration: AppMotion.snappy,
-                                          curve: AppMotion.easeOutCubic,
-                                          width: cellWidth,
-                                          height: cellWidth,
-                                          decoration: BoxDecoration(
-                                            color: color,
-                                            borderRadius: BorderRadius.circular(
-                                              AppRadius.micro,
+                      // 4 rows x 7 days with gap-1.5 (6px)
+                      ...List.generate(4, (rowIdx) {
+                        final startIdx = rowIdx * 7;
+                        final rowDays = normalizedDays.sublist(
+                          startIdx,
+                          startIdx + 7,
+                        );
+
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: rowIdx < 3 ? 6.0 : 0.0,
+                          ),
+                          child: Row(
+                            children: [
+                              for (var colIdx = 0; colIdx < 7; colIdx++)
+                                Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      right: colIdx < 6 ? 6.0 : 0.0,
+                                    ),
+                                    child:
+                                        _HeatMapCell(
+                                              day: rowDays[colIdx],
+                                              isSelected:
+                                                  _selectedDay != null &&
+                                                  _isSameDay(
+                                                    _selectedDay!.date,
+                                                    rowDays[colIdx].date,
+                                                  ),
+                                              style: _cellStyle(
+                                                rowDays[colIdx].intensityLevel,
+                                              ),
+                                              onTap: () {
+                                                unawaited(
+                                                  HapticFeedback.selectionClick(),
+                                                );
+                                                setState(() {
+                                                  _selectedDay =
+                                                      _selectedDay != null &&
+                                                          _isSameDay(
+                                                            _selectedDay!.date,
+                                                            rowDays[colIdx]
+                                                                .date,
+                                                          )
+                                                      ? null
+                                                      : rowDays[colIdx];
+                                                });
+                                              },
+                                            )
+                                            .animate(
+                                              delay: (rowIdx * 30 + colIdx * 30)
+                                                  .ms,
+                                            )
+                                            .fadeIn(duration: 350.ms)
+                                            .scaleXY(
+                                              begin: 0.6,
+                                              end: 1,
+                                              curve: Curves.easeOutCubic,
                                             ),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? colors.textPrimary
-                                                  : (day.intensityLevel > 0
-                                                        ? colors.primary
-                                                              .withAlpha(
-                                                                isDark
-                                                                    ? 90
-                                                                    : 50,
-                                                              )
-                                                        : colors.transparent),
-                                              width: isSelected ? 1.8 : 0.8,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .animate(
-                                      delay: (rowIdx * 30 + colIdx * 30).ms,
-                                    )
-                                    .fadeIn(duration: 350.ms)
-                                    .scaleXY(
-                                      begin: 0.6,
-                                      end: 1,
-                                      curve: Curves.easeOutCubic,
-                                    );
-                              }).toList(),
-                            ),
-                          );
-                        }),
-                      ],
-                    );
-                  },
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
 
-                // Selected Day Inspector Tooltip / Summary Banner
-                AnimatedContainer(
-                  duration: AppMotion.standard,
-                  curve: AppMotion.easeOutCubic,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
-                  ),
+                // Selected date inspector with KPI breakdown
+                Container(
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _selectedDay != null
-                        ? colors.primary.withAlpha(isDark ? 35 : 15)
-                        : (isDark
-                              ? colors.surfacePrimary.withAlpha(80)
-                              : colors.surfaceSecondary.withAlpha(90)),
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
-                    border: Border.all(
-                      color: _selectedDay != null
-                          ? colors.primary.withAlpha(isDark ? 80 : 40)
-                          : colors.surfaceBorder.withAlpha(isDark ? 40 : 80),
-                      width: 0.8,
-                    ),
+                    color: neural.obsidian900.withAlpha(242),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: neural.hairlineStrong),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
                     children: [
-                      if (_selectedDay != null) ...[
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_rounded,
-                              size: 12,
-                              color: colors.primary,
+                      Container(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: neural.hairlineSoft,
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              DateFormat('EEE, MMM d').format(
-                                _selectedDay!.date,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today_rounded,
+                                    size: 14,
+                                    color: _selectedDay != null
+                                        ? neural.emerald400
+                                        : neural.slate400,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      _selectedDay != null
+                                          ? DateFormat(
+                                              'EEE, MMM d',
+                                            ).format(_selectedDay!.date)
+                                          : l10n.dashboardHeatmapTapHint,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: typography.caption.semiBold
+                                          .copyWith(
+                                            color: neural.slate300,
+                                            fontSize: 12,
+                                          ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              style: typography.footnote.bold.copyWith(
-                                color: colors.textPrimary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _selectedDay != null
+                                  ? '${_selectedDay!.cardsReviewed} cards • '
+                                        '${_selectedDay!.minutesStudied} mins'
+                                  : l10n.dashboardHeatmapSubtitle,
+                              style: typography.code.regular.copyWith(
+                                color: neural.slate400,
                                 fontSize: 11,
                               ),
                             ),
                           ],
                         ),
-                        Text(
-                          '${_selectedDay!.cardsReviewed} cards • '
-                          '${_selectedDay!.minutesStudied} mins',
-                          style: typography.footnote.medium.copyWith(
-                            color: colors.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ] else ...[
-                        Text(
-                          l10n.dashboardHeatmapTapHint,
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                        // Intensity scale indicator
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              l10n.dashboardHeatmapLess,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary.withAlpha(160),
-                                fontSize: 9.5,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            ...List.generate(5, (lvl) {
-                              return Container(
-                                width: 8,
-                                height: 8,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 1.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: _getIntensityColor(
-                                    lvl,
-                                    colors,
-                                    isDark,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children:
+                            <Widget>[
+                                  Expanded(
+                                    child: _InspectorTile(
+                                      icon: Icons.psychology_rounded,
+                                      iconColor: neural.pink400,
+                                      label: l10n.dashboardRetentionChip,
+                                      value: '$overallRetention%',
+                                    ),
                                   ),
-                                  borderRadius: BorderRadius.circular(2),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _InspectorTile(
+                                      icon: Icons.check_circle_outline_rounded,
+                                      iconColor: neural.emerald400,
+                                      label: l10n.dashboardMasteredChip,
+                                      value:
+                                          '${widget.analytics.totalCardsMastered}',
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _InspectorTile(
+                                      icon: Icons.schedule_rounded,
+                                      iconColor: neural.amber400,
+                                      label: l10n.dashboardStudyTimeChip,
+                                      value: l10n.dashboardStudyTimeMinutes(
+                                        widget.analytics.weeklyMinutesStudied,
+                                      ),
+                                    ),
+                                  ),
+                                ]
+                                .animate(interval: 50.ms, delay: 200.ms)
+                                .fadeIn(duration: 350.ms)
+                                .slideY(
+                                  begin: 0.1,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
                                 ),
-                              );
-                            }),
-                            const SizedBox(width: 4),
-                            Text(
-                              l10n.dashboardHeatmapMore,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textSecondary.withAlpha(160),
-                                fontSize: 9.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 14),
-
-                // 3 Metrics Chips Row
-                Row(
-                  children:
-                      <Widget>[
-                            Expanded(
-                              child: _MetricChip(
-                                label: l10n.dashboardRetentionChip,
-                                value: '$overallRetention%',
-                                icon: Icons.psychology_rounded,
-                                color: colors.success,
-                                colors: colors,
-                                isDark: isDark,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _MetricChip(
-                                label: l10n.dashboardMasteredChip,
-                                value: '${widget.analytics.totalCardsMastered}',
-                                icon: Icons.check_circle_outline_rounded,
-                                color: colors.primary,
-                                colors: colors,
-                                isDark: isDark,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _MetricChip(
-                                label: l10n.dashboardStudyTimeChip,
-                                value: l10n.dashboardStudyTimeMinutes(
-                                  widget.analytics.weeklyMinutesStudied,
-                                ),
-                                icon: Icons.schedule_rounded,
-                                color: colors.syllabotAccent,
-                                colors: colors,
-                                isDark: isDark,
-                              ),
-                            ),
-                          ]
-                          .animate(interval: 50.ms, delay: 200.ms)
-                          .fadeIn(duration: 350.ms)
-                          .slideY(
-                            begin: 0.1,
-                            end: 0,
-                            curve: Curves.easeOutCubic,
-                          ),
                 ),
               ],
             ),
@@ -505,89 +476,116 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
       ),
     );
   }
-
-  Color _getIntensityColor(
-    int level,
-    AppThemeColorsExtension colors,
-    bool isDark,
-  ) {
-    switch (level) {
-      case 0:
-        return isDark
-            ? colors.surfaceBorderHighlight.withAlpha(30)
-            : colors.surfaceBorder.withAlpha(60);
-      case 1:
-        return colors.primary.withAlpha(isDark ? 60 : 45);
-      case 2:
-        return colors.primary.withAlpha(isDark ? 120 : 90);
-      case 3:
-        return colors.primary.withAlpha(isDark ? 190 : 160);
-      case 4:
-      default:
-        return colors.primary;
-    }
-  }
 }
 
-class _MetricChip extends StatelessWidget {
-  const _MetricChip({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    required this.colors,
-    required this.isDark,
+class _HeatMapCell extends StatelessWidget {
+  const _HeatMapCell({
+    required this.day,
+    required this.isSelected,
+    required this.style,
+    required this.onTap,
   });
 
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final AppThemeColorsExtension colors;
-  final bool isDark;
+  final HeatMapDayEntity day;
+  final bool isSelected;
+  final ({Color fill, Color border, bool glow}) style;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final neural = context.neural;
+
+    return Semantics(
+      label: '${day.date.day}/${day.date.month}: ${day.cardsReviewed} cards',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? neural.obsidian700.withAlpha(204)
+                  : style.fill,
+              borderRadius: BorderRadius.circular(6),
+              border: isSelected
+                  ? Border.all(color: neural.slate100, width: 2)
+                  : Border.all(color: style.border),
+              boxShadow: [
+                if (isSelected)
+                  BoxShadow(
+                    // ring-2 ring-emerald-500/50 approximation
+                    color: neural.emerald.withAlpha(128),
+                    spreadRadius: 1,
+                  )
+                else if (style.glow)
+                  BoxShadow(
+                    color: neural.glowMatrixActive,
+                    blurRadius: 10,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InspectorTile extends StatelessWidget {
+  const _InspectorTile({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final neural = context.neural;
     final typography = context.typography;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: isDark
-            ? colors.surfacePrimary.withAlpha(120)
-            : colors.surfaceSecondary.withAlpha(140),
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(
-          color: colors.surfaceBorder.withAlpha(isDark ? 50 : 25),
-        ),
+        color: neural.obsidian850,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: neural.hairlineSoft),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 13, color: color),
+              Icon(icon, size: 12, color: iconColor),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: typography.footnote.medium.copyWith(
-                    color: isDark
-                        ? colors.textSecondary
-                        : colors.textPrimary.withAlpha(180),
-                    fontSize: 10.5,
+                  style: typography.caption.regular.copyWith(
+                    color: neural.slate400,
+                    fontSize: 10,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             value,
-            style: typography.callout.bold.copyWith(
-              color: colors.textPrimary,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.code.bold.copyWith(
+              color: neural.slate100,
               fontSize: 14,
             ),
           ),

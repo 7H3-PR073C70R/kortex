@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -12,7 +13,6 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -115,7 +115,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                         .fadeIn(duration: 250.ms)
                         .scaleXY(
                           begin: 0.8,
-                          end: 1.0,
+                          end: 1,
                           curve: Curves.easeOutCubic,
                         ),
               ),

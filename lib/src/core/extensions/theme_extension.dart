@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/neural_palette.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 
 extension ThemeExtension on BuildContext {
@@ -22,6 +23,10 @@ extension ThemeExtension on BuildContext {
 
   /// Alias for [colors].
   AppThemeColorsExtension get appColors => colors;
+
+  /// Custom [NeuralPalette] providing the Neural Interface design tokens,
+  /// resolved for the active theme brightness.
+  NeuralPalette get neural => Theme.of(this).extension<NeuralPalette>()!;
 
   /// Whether current theme is dark brightness.
   bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;

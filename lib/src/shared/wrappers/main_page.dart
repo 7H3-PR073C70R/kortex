@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -11,8 +10,6 @@ import 'package:kortex/src/core/extensions/num_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -24,7 +21,6 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// Navigation item definition for Kortex main tabs.
 class _MainNavItem {
@@ -44,26 +40,26 @@ class _MainNavItem {
 final List<_MainNavItem> _kNavItems = [
   const _MainNavItem(
     route: DashboardRoute(),
-    icon: Icons.dashboard_outlined,
-    activeIcon: Icons.dashboard_rounded,
+    icon: Icons.grid_view_rounded,
+    activeIcon: Icons.grid_view_rounded,
     labelBuilder: _getHomeLabel,
   ),
   const _MainNavItem(
     route: DecksRoute(),
-    icon: Icons.style_outlined,
-    activeIcon: Icons.style_rounded,
+    icon: Icons.layers_outlined,
+    activeIcon: Icons.layers_rounded,
     labelBuilder: _getDecksLabel,
   ),
   const _MainNavItem(
     route: CommunityHubRoute(),
-    icon: Icons.forum_outlined,
-    activeIcon: Icons.forum_rounded,
+    icon: Icons.chat_bubble_outline,
+    activeIcon: Icons.chat_bubble,
     labelBuilder: _getForumLabel,
   ),
   const _MainNavItem(
     route: StudyHubRoute(),
-    icon: Icons.hub_outlined,
-    activeIcon: Icons.hub_rounded,
+    icon: Icons.device_hub,
+    activeIcon: Icons.device_hub_rounded,
     labelBuilder: _getStudyHubLabel,
   ),
   const _MainNavItem(
@@ -162,7 +158,7 @@ class MainPage extends HookWidget {
               if (width >= desktopBreakpoint) {
                 return const SizedBox.shrink();
               }
-              return _AdaptiveBottomNavDock(
+              return _NeuralBottomNavDock(
                 tabsRouter: tabsRouter,
               );
             },
@@ -420,11 +416,11 @@ class _DesktopNavRailItem extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Adaptive Platform Bottom Navigation Dock (< 1024dp)
+// Neural Interface Glass Bottom Navigation Dock (< 1024dp)
 // ---------------------------------------------------------------------------
 
-class _AdaptiveBottomNavDock extends StatelessWidget {
-  const _AdaptiveBottomNavDock({
+class _NeuralBottomNavDock extends StatelessWidget {
+  const _NeuralBottomNavDock({
     required this.tabsRouter,
   });
 
@@ -432,147 +428,24 @@ class _AdaptiveBottomNavDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
-    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
-
-    if (isIOS) {
-      return _IOSLiquidGlassDock(tabsRouter: tabsRouter);
-    } else if (isAndroid) {
-      return _AndroidMaterial3NavBar(tabsRouter: tabsRouter);
-    } else {
-      // Fallback for macOS, Linux, Windows, Web viewport on smaller screens
-      return _IOSLiquidGlassDock(tabsRouter: tabsRouter);
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// iOS Liquid Glass Floating Dock (using GlassTabBar.bottom)
-// ---------------------------------------------------------------------------
-
-class _IOSLiquidGlassDock extends StatelessWidget {
-  const _IOSLiquidGlassDock({
-    required this.tabsRouter,
-  });
-
-  final TabsRouter tabsRouter;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
+    final neural = context.neural;
     final l10n = context.l10n;
-    final isDark = context.isDarkMode;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-
-    final tabs = _kNavItems.map((item) {
-      final label = item.labelBuilder(l10n);
-      return GlassTab(
-        icon: Icon(item.icon, size: 22),
-        activeIcon: Icon(item.activeIcon, size: 22),
-        label: label,
-        semanticLabel: label,
-      );
-    }).toList();
-
-    final glassSettings = LiquidGlassSettings(
-      thickness: 24,
-      blur: 24,
-      glassColor: isDark
-          ? colors.surfaceSecondary.withAlpha(53)
-          : colors.white.withAlpha(117),
-      lightIntensity: isDark ? 0.4 : 0.85,
-      refractiveIndex: 1.25,
-    );
-
-    final indicatorGlassSettings = LiquidGlassSettings(
-      thickness: 14,
-      blur: 10,
-      glassColor: isDark
-          ? colors.white.withAlpha(64)
-          : colors.white.withAlpha(240),
-      lightIntensity: isDark ? 0.6 : 0.95,
-      refractiveIndex: 1.15,
-    );
-
-    return GlassTabBar.bottom(
-      tabs: tabs,
-      selectedIndex: tabsRouter.activeIndex,
-      onTabSelected: (index) {
-        final label = _kNavItems[index].labelBuilder(l10n);
-        _handleTabTap(context, tabsRouter, index, label);
-      },
-      settings: glassSettings,
-      indicatorSettings: indicatorGlassSettings,
-      indicatorColor: isDark
-          ? colors.white.withAlpha(48)
-          : colors.white.withAlpha(235),
-      selectedIconColor: colors.primary,
-      unselectedIconColor: colors.textSecondary,
-      selectedLabelColor: colors.primary,
-      unselectedLabelColor: colors.textSecondary,
-      selectedLabelStyle: typography.caption.bold.copyWith(
-        color: colors.primary,
-        fontSize: 10,
-        height: 1.1,
-      ),
-      unselectedLabelStyle: typography.caption.medium.copyWith(
-        color: colors.textSecondary,
-        fontSize: 10,
-        height: 1.1,
-      ),
-      horizontalPadding: 16,
-      verticalPadding: math.max(10, bottomInset > 0 ? bottomInset : 14),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Android Material 3 Grounded Navigation Bar
-// ---------------------------------------------------------------------------
-
-class _AndroidMaterial3NavBar extends StatelessWidget {
-  const _AndroidMaterial3NavBar({
-    required this.tabsRouter,
-  });
-
-  final TabsRouter tabsRouter;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
-    final theme = Theme.of(context);
-    final surfaceContainerColor = theme.colorScheme.surfaceContainer;
 
     return Semantics(
       container: true,
       label: l10n.navBarSemanticsLabel,
-      child: Container(
-        decoration: BoxDecoration(
-          color: surfaceContainerColor,
-          border: Border(
-            top: BorderSide(
-              color: isDark
-                  ? colors.surfaceBorderHighlight.withAlpha(40)
-                  : colors.surfaceBorder.withAlpha(80),
-              width: 0.8,
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + bottomInset),
+            decoration: BoxDecoration(
+              color: neural.obsidian950.withAlpha(230),
+              border: Border(
+                top: BorderSide(color: neural.hairlineStrong),
+              ),
             ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.black.withAlpha(isDark ? 60 : 15),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 72,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(_kNavItems.length, (index) {
@@ -581,15 +454,12 @@ class _AndroidMaterial3NavBar extends StatelessWidget {
                 final label = item.labelBuilder(l10n);
 
                 return Expanded(
-                  child: _AndroidNavBarItem(
+                  child: _NeuralNavItem(
                     icon: isSelected ? item.activeIcon : item.icon,
                     label: label,
                     isSelected: isSelected,
                     itemIndex: index,
                     totalItems: _kNavItems.length,
-                    colors: colors,
-                    typography: typography,
-                    isDark: isDark,
                     onTap: () => _handleTabTap(
                       context,
                       tabsRouter,
@@ -607,16 +477,13 @@ class _AndroidMaterial3NavBar extends StatelessWidget {
   }
 }
 
-class _AndroidNavBarItem extends StatelessWidget {
-  const _AndroidNavBarItem({
+class _NeuralNavItem extends StatelessWidget {
+  const _NeuralNavItem({
     required this.icon,
     required this.label,
     required this.isSelected,
     required this.itemIndex,
     required this.totalItems,
-    required this.colors,
-    required this.typography,
-    required this.isDark,
     required this.onTap,
   });
 
@@ -625,66 +492,66 @@ class _AndroidNavBarItem extends StatelessWidget {
   final bool isSelected;
   final int itemIndex;
   final int totalItems;
-  final AppThemeColorsExtension colors;
-  final TypographyThemeExtension typography;
-  final bool isDark;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final neural = context.neural;
+    final typography = context.typography;
     final l10n = context.l10n;
 
     return Semantics(
       button: true,
       selected: isSelected,
       label: l10n.navTabSemantics(label, itemIndex + 1, totalItems),
-      child: InkResponse(
+      child: ShrinkableButton(
         onTap: onTap,
-        radius: 28,
-        containedInkWell: true,
-        highlightShape: BoxShape.rectangle,
-        borderRadius: BorderRadius.circular(16),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // M3 Active Indicator Pill
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Center(
+            child: AnimatedContainer(
+              duration: AppMotion.snappy,
+              curve: AppMotion.easeOutCubic,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? neural.emerald.withAlpha(26)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
                   color: isSelected
-                      ? colors.primary.withAlpha(isDark ? 55 : 30)
-                      : colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  icon,
-                  size: 24,
-                  color: isSelected ? colors.primary : colors.textSecondary,
+                      ? neural.emerald.withAlpha(51)
+                      : Colors.transparent,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: isSelected
-                    ? typography.caption.semiBold.copyWith(
-                        color: colors.primary,
-                        fontSize: 11,
-                      )
-                    : typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11,
-                      ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected ? neural.emerald400 : neural.slate400,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.caption.medium.copyWith(
+                      fontSize: 10,
+                      height: 1.2,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected ? neural.emerald400 : neural.slate400,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

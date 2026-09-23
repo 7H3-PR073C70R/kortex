@@ -949,7 +949,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dashboardHeyUser(String name) {
-    return 'Hey, $name 👋';
+    return 'Hey, $name';
   }
 
   @override
@@ -1028,6 +1028,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboardAskSyllabotHint =>
       'Ask Syllabot anything (e.g. Solve PDE #3)...';
+
+  @override
+  String get dashboardAskSyllabotCta => 'Ask Syllabot';
 
   @override
   String get dashboardSendPromptSemantics => 'Send prompt to Syllabot AI';
@@ -1165,7 +1168,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allCaughtUpSubtitle =>
-      'No active-recall cards due for review today. Keep it up!';
+      'No active-recall cards due for review today. Keep it up and maintain retention!';
 
   @override
   String get curateCoursesTitle => 'Curate Your Courses';
@@ -2224,6 +2227,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addExamTitle => 'Add Exam Countdown';
+
+  @override
+  String examTargetInDays(String exam, int days) {
+    return 'Target $exam in $days days';
+  }
 
   @override
   String get examNameLabel => 'Exam Name';

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 class AchievementBadgeItem {
   const AchievementBadgeItem({
@@ -127,7 +127,7 @@ class AchievementBadgeGrid extends StatelessWidget {
               return _BadgeCard(badge: badge)
                   .animate(delay: (index * 50).ms)
                   .fadeIn(duration: 350.ms)
-                  .scaleXY(begin: 0.9, end: 1.0, curve: Curves.easeOutCubic);
+                  .scaleXY(begin: 0.9, end: 1, curve: Curves.easeOutCubic);
             },
           ),
         ],

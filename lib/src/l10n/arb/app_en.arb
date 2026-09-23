@@ -1337,7 +1337,7 @@
             }
         }
     },
-    "dashboardHeyUser": "Hey, {name} 👋",
+    "dashboardHeyUser": "Hey, {name}",
     "@dashboardHeyUser": {
         "description": "User greeting in dashboard header",
         "placeholders": {
@@ -1462,6 +1462,10 @@
     "dashboardAskSyllabotHint": "Ask Syllabot anything (e.g. Solve PDE #3)...",
     "@dashboardAskSyllabotHint": {
         "description": "Hint in quick AI prompt bar"
+    },
+    "dashboardAskSyllabotCta": "Ask Syllabot",
+    "@dashboardAskSyllabotCta": {
+        "description": "Label for the floating Ask Syllabot pill on the dashboard"
     },
     "dashboardSendPromptSemantics": "Send prompt to Syllabot AI",
     "@dashboardSendPromptSemantics": {
@@ -1665,7 +1669,7 @@
     "@allCaughtUpTitle": {
         "description": "Celebratory title when user has 0 cards due for review"
     },
-    "allCaughtUpSubtitle": "No active-recall cards due for review today. Keep it up!",
+    "allCaughtUpSubtitle": "No active-recall cards due for review today. Keep it up and maintain retention!",
     "@allCaughtUpSubtitle": {
         "description": "Subtitle explaining no active recall cards are currently due"
     },
@@ -3161,6 +3165,20 @@
     "addExamTitle": "Add Exam Countdown",
     "@addExamTitle": {
         "description": "Header title for adding an exam countdown"
+    },
+    "examTargetInDays": "Target {exam} in {days} days",
+    "@examTargetInDays": {
+        "description": "Subtitle on the exam countdown banner showing the target exam and days remaining",
+        "placeholders": {
+            "exam": {
+                "type": "String",
+                "example": "WAEC / GCE"
+            },
+            "days": {
+                "type": "int",
+                "example": "84"
+            }
+        }
     },
     "examNameLabel": "Exam Name",
     "@examNameLabel": {

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Kortexify - Neural Interface</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: {
+              950: '#07080a',
+              900: '#0c0e12',
+              850: '#11141a',
+              800: '#161922',
+              700: '#202533',
+              600: '#2d3345'
+            },
+            neural: {
+              emerald: '#10b981',
+              cyan: '#06b6d4',
+              violet: '#8b5cf6',
+              amber: '#f59e0b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          },
+          boxShadow: {
+            'glow-emerald': '0 0 20px -5px rgba(16, 185, 129, 0.3)',
+            'glow-cyan': '0 0 20px -5px rgba(6, 182, 212, 0.35)',
+            'glow-amber': '0 0 20px -5px rgba(245, 158, 11, 0.3)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Typography & Micro-styles -->
+<style data-purpose="base-styling">
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #07080a;
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style data-purpose="glass-effects">
+    .glass-panel {
+      background: rgba(17, 20, 26, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    
+    .glass-panel-subtle {
+      background: rgba(22, 25, 34, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .matrix-active-glow {
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+    }
+  </style>
+</head>
+<body class="bg-obsidian-950 text-slate-100 min-h-screen flex justify-center selection:bg-emerald-500/30 selection:text-emerald-300">
+<!-- Mobile Container Wrapper -->
+<div class="w-full max-w-[440px] min-h-screen flex flex-col bg-obsidian-950 relative border-x border-obsidian-800/40 shadow-2xl overflow-x-hidden pb-28">
+<!-- BEGIN: TopStatusBar -->
+<header class="sticky top-0 z-40 bg-obsidian-950/85 backdrop-blur-md pt-3 pb-2 px-6 flex justify-between items-center text-xs text-slate-300 select-none">
+<!-- Device Clock -->
+<span class="font-semibold text-sm tracking-tight text-slate-200">22:42</span>
+<!-- Dynamic Island simulated pill for iOS aesthetic -->
+<div class="w-24 h-4 bg-black rounded-full border border-white/5 flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-emerald-500/80 animate-pulse"></span>
+</div>
+<!-- Battery, Signal, and Wifi Indicators -->
+<div class="flex items-center space-x-2 text-slate-300">
+<i class="w-3.5 h-3.5" data-lucide="signal"></i>
+<i class="w-3.5 h-3.5" data-lucide="wifi"></i>
+<div class="flex items-center gap-0.5">
+<div class="w-5 h-2.5 border border-slate-400 rounded-sm p-0.5 flex items-center">
+<div class="h-full w-3.5 bg-slate-200 rounded-[1px]"></div>
+</div>
+</div>
+</div>
+</header>
+<!-- END: TopStatusBar -->
+<!-- Main Scrollable Content Area -->
+<main class="px-4 pt-2 space-y-4">
+<!-- BEGIN: UserProfileHeader -->
+<section class="flex items-center justify-between pt-1" data-purpose="user-header">
+<!-- Identity Chip & Name -->
+<div class="flex items-center space-x-3">
+<div class="relative">
+<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-200/20 via-emerald-500/10 to-transparent p-[1.5px] shadow-glow-emerald">
+<div class="w-full h-full rounded-[14px] bg-obsidian-850 flex items-center justify-center font-bold text-amber-300 text-sm tracking-wide border border-white/10">
+                TO
+              </div>
+</div>
+<!-- Online Indicator -->
+<span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-obsidian-950 rounded-full"></span>
+</div>
+<div>
+<h1 class="text-base font-bold text-slate-100 flex items-center gap-1.5 leading-tight">
+              Hey, toxicbishop01
+              <i class="w-3.5 h-3.5 text-amber-400 fill-amber-400/40" data-lucide="sparkles"></i>
+</h1>
+<p class="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+              Neural Scholar I
+              <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">LVL 12</span>
+</p>
+</div>
+</div>
+<!-- Quick Status Metrics Chips -->
+<div class="flex items-center space-x-1.5">
+<!-- Streak Badge -->
+<div class="flex items-center gap-1 bg-obsidian-850/90 border border-amber-500/30 px-2.5 py-1.5 rounded-xl shadow-glow-amber">
+<i class="w-4 h-4 text-amber-400 fill-amber-400" data-lucide="flame"></i>
+<span class="text-xs font-bold text-amber-300">0</span>
+</div>
+<!-- Compass / Radar Action -->
+<button class="w-9 h-9 rounded-xl bg-obsidian-850 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white hover:border-cyan-500/40 transition">
+<i class="w-4 h-4 text-cyan-400" data-lucide="compass"></i>
+</button>
+<!-- Analytics Icon -->
+<button class="w-9 h-9 rounded-xl bg-obsidian-850 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition">
+<i class="w-4 h-4 text-emerald-400" data-lucide="activity"></i>
+</button>
+</div>
+</section>
+<!-- END: UserProfileHeader -->
+<!-- BEGIN: CountdownBanner -->
+<section class="group cursor-pointer" data-purpose="exam-countdown">
+<div class="glass-panel hover:border-emerald-500/40 transition-all duration-300 p-3.5 rounded-2xl flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-sm">
+<i class="w-4 h-4" data-lucide="alarm-clock"></i>
+</div>
+<div>
+<span class="text-sm font-semibold text-slate-200 group-hover:text-emerald-300 transition-colors">Add Exam Countdown</span>
+<p class="text-[11px] text-slate-400">Target WAEC / GCE in 84 days</p>
+</div>
+</div>
+<div class="w-7 h-7 rounded-lg bg-obsidian-800 flex items-center justify-center text-slate-400 group-hover:text-white group-hover:translate-x-0.5 transition-all">
+<i class="w-4 h-4" data-lucide="chevron-right"></i>
+</div>
+</div>
+</section>
+<!-- END: CountdownBanner -->
+<!-- BEGIN: DailyStatusRecallBanner -->
+<section class="relative overflow-hidden glass-panel border-emerald-500/30 rounded-2xl p-4 shadow-glow-emerald" data-purpose="daily-status">
+<!-- Ambient emerald lighting glow -->
+<div class="absolute -right-8 -top-8 w-24 h-24 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-start space-x-3.5 relative z-10">
+<div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0">
+<i class="w-5 h-5 text-emerald-400" data-lucide="check-circle-2"></i>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<h2 class="text-sm font-bold text-white tracking-wide">All caught up!</h2>
+<span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Synced</span>
+</div>
+<p class="text-xs text-slate-300/80 leading-relaxed">
+              No active-recall cards due for review today. Keep it up and maintain retention!
+            </p>
+</div>
+</div>
+</section>
+<!-- END: DailyStatusRecallBanner -->
+<!-- BEGIN: QuickActionsRow -->
+<section class="glass-panel p-2 rounded-2xl" data-purpose="quick-actions">
+<div class="grid grid-cols-4 gap-2 text-center">
+<!-- Upload Notes -->
+<button class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-obsidian-850/80 hover:bg-obsidian-800 border border-white/5 hover:border-emerald-500/30 transition group">
+<div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-1 text-emerald-400 group-hover:scale-105 transition-transform">
+<i class="w-4 h-4" data-lucide="file-up"></i>
+</div>
+<span class="text-[11px] font-medium text-slate-200">Upload Notes</span>
+</button>
+<!-- Q-Bank -->
+<button class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-obsidian-850/80 hover:bg-obsidian-800 border border-white/5 hover:border-amber-500/30 transition group">
+<div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center mb-1 text-amber-400 group-hover:scale-105 transition-transform">
+<i class="w-4 h-4" data-lucide="help-circle"></i>
+</div>
+<span class="text-[11px] font-medium text-slate-200">Q-Bank</span>
+</button>
+<!-- 1v1 Duel -->
+<button class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-obsidian-850/80 hover:bg-obsidian-800 border border-white/5 hover:border-cyan-500/30 transition group">
+<div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-1 text-cyan-400 group-hover:scale-105 transition-transform">
+<i class="w-4 h-4" data-lucide="zap"></i>
+</div>
+<span class="text-[11px] font-medium text-slate-200">1v1 Duel</span>
+</button>
+<!-- New Deck -->
+<button class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-obsidian-850/80 hover:bg-obsidian-800 border border-white/5 hover:border-violet-500/30 transition group">
+<div class="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center mb-1 text-violet-400 group-hover:scale-105 transition-transform">
+<i class="w-4 h-4" data-lucide="folder-plus"></i>
+</div>
+<span class="text-[11px] font-medium text-slate-200">New Deck</span>
+</button>
+</div>
+</section>
+<!-- END: QuickActionsRow -->
+<!-- BEGIN: CuratedCourseRepositories -->
+<section class="space-y-3 pt-1" data-purpose="course-repositories">
+<!-- Section Title and Header Controls -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<h2 class="text-sm font-bold tracking-tight text-slate-100">Curated Course Repositories</h2>
+</div>
+<div class="flex items-center space-x-2">
+<a class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-0.5" href="#">
+              See All (15) <i class="w-3 h-3" data-lucide="chevron-right"></i>
+</a>
+<button class="flex items-center gap-1 text-[11px] bg-obsidian-850 hover:bg-obsidian-800 border border-white/10 px-2.5 py-1 rounded-lg text-slate-300 font-medium transition">
+<i class="w-3 h-3 text-slate-400" data-lucide="sliders-horizontal"></i>
+              Manage
+            </button>
+</div>
+</div>
+<!-- Horizontal Scrollable Repository Cards -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Mathematics Card -->
+<div class="glass-panel p-3.5 rounded-2xl relative overflow-hidden group hover:border-cyan-500/40 transition">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-obsidian-800 text-cyan-300 border border-cyan-500/20">
+                MTH
+              </span>
+<span class="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-medium">
+<i class="w-2.5 h-2.5" data-lucide="check"></i> Q-Bank
+              </span>
+</div>
+<h3 class="font-bold text-sm text-slate-100 group-hover:text-cyan-300 transition-colors">Mathematics</h3>
+<div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+<span>No study decks yet</span>
+<span class="font-mono text-cyan-400 font-semibold">0%</span>
+</div>
+<!-- Progress Bar Line -->
+<div class="w-full bg-obsidian-800 h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-cyan-500 h-full w-[0%]"></div>
+</div>
+</div>
+<!-- Chemistry Card -->
+<div class="glass-panel p-3.5 rounded-2xl relative overflow-hidden group hover:border-emerald-500/40 transition">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-obsidian-800 text-emerald-300 border border-emerald-500/20">
+                CHM
+              </span>
+<span class="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-medium">
+<i class="w-2.5 h-2.5" data-lucide="check"></i> Verified
+              </span>
+</div>
+<h3 class="font-bold text-sm text-slate-100 group-hover:text-emerald-300 transition-colors">Chemistry</h3>
+<div class="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
+<span>No study decks yet</span>
+<span class="font-mono text-emerald-400 font-semibold">0%</span>
+</div>
+<!-- Progress Bar Line -->
+<div class="w-full bg-obsidian-800 h-1 rounded-full mt-2 overflow-hidden">
+<div class="bg-emerald-500 h-full w-[0%]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: CuratedCourseRepositories -->
+<!-- BEGIN: PodPulseSection -->
+<section class="glass-panel rounded-2xl p-4 relative overflow-hidden" data-purpose="pod-pulse">
+<div class="flex items-center justify-between border-b border-white/5 pb-3">
+<div class="flex items-center space-x-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-xs font-black tracking-widest text-emerald-400 uppercase">POD PULSE</span>
+</div>
+<a class="text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1" href="#">
+            WAEC / GCE Pod
+            <i class="w-3.5 h-3.5 text-slate-400" data-lucide="chevron-right"></i>
+</a>
+</div>
+<!-- Pod Metrics Grid -->
+<div class="grid grid-cols-3 gap-2 pt-3 text-center">
+<div class="bg-obsidian-850/60 p-2.5 rounded-xl border border-white/5">
+<div class="flex items-center justify-center gap-1 text-slate-300 mb-0.5">
+<i class="w-3.5 h-3.5 text-emerald-400" data-lucide="users"></i>
+<span class="text-xs font-bold">4/6</span>
+</div>
+<p class="text-[10px] text-slate-400">Active Today</p>
+</div>
+<div class="bg-obsidian-850/60 p-2.5 rounded-xl border border-white/5">
+<div class="flex items-center justify-center gap-1 text-slate-300 mb-0.5">
+<i class="w-3.5 h-3.5 text-amber-400" data-lucide="timer"></i>
+<span class="text-xs font-bold">185m</span>
+</div>
+<p class="text-[10px] text-slate-400">Group Focus</p>
+</div>
+<div class="bg-obsidian-850/60 p-2.5 rounded-xl border border-white/5">
+<div class="flex items-center justify-center gap-1 text-slate-300 mb-0.5">
+<i class="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" data-lucide="zap"></i>
+<span class="text-xs font-bold text-cyan-300">+250</span>
+</div>
+<p class="text-[10px] text-slate-400">Pod Karma</p>
+</div>
+</div>
+</section>
+<!-- END: PodPulseSection -->
+<!-- BEGIN: RetentionStudyMatrix -->
+<section class="glass-panel rounded-2xl p-4 space-y-4" data-purpose="retention-study-matrix">
+<!-- Matrix Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2.5">
+<div class="w-8 h-8 rounded-xl bg-obsidian-800 border border-white/10 flex items-center justify-center text-emerald-400">
+<i class="w-4 h-4" data-lucide="layout-grid"></i>
+</div>
+<div>
+<h2 class="text-sm font-bold text-slate-100">Retention &amp; Study Matrix</h2>
+<p class="text-[11px] text-slate-400">Activity • Past 28 Days</p>
+</div>
+</div>
+<button class="flex items-center gap-1 text-xs font-medium text-slate-300 bg-obsidian-800/80 hover:bg-obsidian-800 px-2.5 py-1 rounded-lg border border-white/5 transition">
+            Full Stats <i class="w-3 h-3 text-slate-400" data-lucide="chevron-right"></i>
+</button>
+</div>
+<!-- Heatmap Grid (7 columns Monday through Sunday) -->
+<div class="bg-obsidian-900/90 rounded-xl p-3 border border-white/5">
+<!-- Weekday Labels -->
+<div class="grid grid-cols-7 text-center text-[10px] font-semibold text-slate-400 mb-2">
+<span>M</span>
+<span>T</span>
+<span>W</span>
+<span>T</span>
+<span>F</span>
+<span>S</span>
+<span>S</span>
+</div>
+<!-- Heatmap Activity Blocks (4 weeks x 7 days) -->
+<div class="grid grid-cols-7 gap-1.5" id="studyMatrixGrid">
+<!-- Row 1 -->
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-emerald-500/20 border border-emerald-500/30"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-emerald-500/40 border border-emerald-500/40"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<!-- Row 2 -->
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-emerald-500/30 border border-emerald-500/30"></div>
+<div class="aspect-square rounded-md bg-emerald-500/60 border border-emerald-400 matrix-active-glow"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<!-- Row 3 -->
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-emerald-500/20 border border-emerald-500/30"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<!-- Row 4 (Selected day highlighted) -->
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-700/80 border-2 border-slate-100 ring-2 ring-emerald-500/50"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+<div class="aspect-square rounded-md bg-obsidian-800/90 border border-white/5"></div>
+</div>
+</div>
+<!-- Selected Date Inspector Banner -->
+<div class="bg-obsidian-900/95 border border-white/10 rounded-xl p-3 space-y-2.5">
+<div class="flex items-center justify-between text-xs font-medium border-b border-white/5 pb-2">
+<span class="text-slate-300 flex items-center gap-1.5 font-semibold">
+<i class="w-3.5 h-3.5 text-emerald-400" data-lucide="calendar"></i>
+              Tue, Sep 22
+            </span>
+<span class="text-slate-400 text-[11px] font-mono">0 cards • 0 mins</span>
+</div>
+<!-- 3-Column Key Performance Breakdown -->
+<div class="grid grid-cols-3 gap-2 text-left">
+<div class="bg-obsidian-850 p-2 rounded-lg border border-white/5">
+<div class="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
+<i class="w-3 h-3 text-pink-400" data-lucide="brain"></i> Retention
+              </div>
+<span class="text-sm font-bold text-slate-100 font-mono">85%</span>
+</div>
+<div class="bg-obsidian-850 p-2 rounded-lg border border-white/5">
+<div class="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
+<i class="w-3 h-3 text-emerald-400" data-lucide="check-circle"></i> Mastered
+              </div>
+<span class="text-sm font-bold text-slate-100 font-mono">0</span>
+</div>
+<div class="bg-obsidian-850 p-2 rounded-lg border border-white/5">
+<div class="flex items-center gap-1 text-[10px] text-slate-400 mb-0.5">
+<i class="w-3 h-3 text-amber-400" data-lucide="clock"></i> Study Time
+              </div>
+<span class="text-sm font-bold text-slate-100 font-mono">0m</span>
+</div>
+</div>
+</div>
+</section>
+<!-- END: RetentionStudyMatrix -->
+</main>
+<!-- BEGIN: FloatingSyllabotButton -->
+<!-- Floating AI Prompt Pill anchored gracefully above the bottom navigation -->
+<div class="fixed bottom-20 right-4 z-40">
+<button class="flex items-center space-x-2.5 bg-gradient-to-r from-obsidian-850 via-obsidian-800 to-obsidian-850 text-white pl-1.5 pr-4 py-1.5 rounded-full border border-purple-500/40 shadow-glow-cyan hover:scale-[1.03] active:scale-95 transition-all duration-200">
+<!-- Robot Avatar with Neon Aura -->
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 via-indigo-500 to-fuchsia-500 p-[1.5px] flex items-center justify-center shadow-lg">
+<div class="w-full h-full bg-obsidian-950 rounded-full flex items-center justify-center">
+<i class="w-4 h-4 text-cyan-300" data-lucide="bot"></i>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<span class="text-xs font-semibold text-slate-100">Ask Syllabot</span>
+<i class="w-3 h-3 text-amber-400 fill-amber-400 animate-pulse" data-lucide="sparkles"></i>
+</div>
+</button>
+</div>
+<!-- END: FloatingSyllabotButton -->
+<!-- BEGIN: BottomNavigationBar -->
+<nav class="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto z-50 glass-panel bg-obsidian-950/90 border-t border-white/10 px-3 py-2 flex items-center justify-around select-none">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center py-1 px-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 transition" href="#">
+<i class="w-4 h-4 mb-0.5" data-lucide="layout-grid"></i>
+<span class="text-[10px] font-bold">Home</span>
+</a>
+<!-- Study Decks -->
+<a class="flex flex-col items-center justify-center py-1 px-2.5 text-slate-400 hover:text-slate-200 transition" href="#">
+<i class="w-4 h-4 mb-0.5" data-lucide="layers"></i>
+<span class="text-[10px] font-medium">Study Decks</span>
+</a>
+<!-- Forum -->
+<a class="flex flex-col items-center justify-center py-1 px-2.5 text-slate-400 hover:text-slate-200 transition" href="#">
+<i class="w-4 h-4 mb-0.5" data-lucide="message-square"></i>
+<span class="text-[10px] font-medium">Forum</span>
+</a>
+<!-- Study Hub -->
+<a class="flex flex-col items-center justify-center py-1 px-2.5 text-slate-400 hover:text-slate-200 transition" href="#">
+<i class="w-4 h-4 mb-0.5" data-lucide="network"></i>
+<span class="text-[10px] font-medium">Study Hub</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center py-1 px-2.5 text-slate-400 hover:text-slate-200 transition" href="#">
+<i class="w-4 h-4 mb-0.5" data-lucide="user"></i>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</nav>
+<!-- END: BottomNavigationBar -->
+</div>
+<!-- Lucide Script Initialization -->
+<script data-purpose="lucide-icons-init">
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
+</body></html>

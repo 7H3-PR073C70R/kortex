@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class _WalkthroughSlide {

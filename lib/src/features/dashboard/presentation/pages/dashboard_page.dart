@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:auto_route/auto_route.dart';
 import 'package:confetti/confetti.dart';
@@ -29,6 +30,7 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/retention_hea
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -152,7 +154,7 @@ class _DashboardView extends HookWidget {
     }, const []);
 
     return Scaffold(
-      backgroundColor: colors.transparent,
+      backgroundColor: colors.backgroundPrimary,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -398,7 +400,7 @@ class _DashboardShimmerLoading extends StatelessWidget {
   }
 }
 
-/// Compact Viewport (< 600dp) Single-Column Scroll
+/// Compact Viewport (< 600dp) Single-Column Scroll — Stitch-aligned layout
 class _CompactDashboardLayout extends StatelessWidget {
   const _CompactDashboardLayout({
     required this.feed,
@@ -414,8 +416,6 @@ class _CompactDashboardLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
     final l10n = context.l10n;
     final heavyDebtDeck = feed.dueStudyDecks
         .where((d) => d.dueCards >= 30)
@@ -425,121 +425,493 @@ class _CompactDashboardLayout extends StatelessWidget {
       physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-      children: <Widget>[
-        // 1. Header Profile & Streak Bar (Identity & Retention Anchor)
-        HeaderProfileBar(
-          analytics: feed.analyticsSummary,
-          isProfileUncalibrated: feed.isProfileUncalibrated,
-          userName: userName,
-          userPhotoUrl: userPhotoUrl,
-        ),
-        const SizedBox(height: 20),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      children:
+          <Widget>[
+                // 1. User Profile Header (Identity & Streak Anchor)
+                HeaderProfileBar(
+                  analytics: feed.analyticsSummary,
+                  isProfileUncalibrated: feed.isProfileUncalibrated,
+                  userName: userName,
+                  userPhotoUrl: userPhotoUrl,
+                ),
+                const SizedBox(height: 16),
 
-        // 2 & 3. Exam Countdown & Backlog Debt Triage (AnimatedSize for stability)
-        AnimatedSize(
-          alignment: Alignment.topCenter,
-          duration: AppMotion.standard,
-          curve: AppMotion.easeOutCubic,
-          child: Column(
-            children: [
-              if (feed.curatedCourses.isNotEmpty) ...[
-                const ExamCountdownBanner(),
-                const SizedBox(height: 20),
-              ],
-              if (heavyDebtDeck != null) ...[
-                _StudyDebtTriageBanner(deck: heavyDebtDeck),
-                const SizedBox(height: 20),
-              ],
-            ],
-          ),
-        ),
+                // 2. Exam Countdown Banner + Backlog Debt Triage
+                AnimatedSize(
+                  alignment: Alignment.topCenter,
+                  duration: AppMotion.standard,
+                  curve: AppMotion.easeOutCubic,
+                  child: Column(
+                    children: [
+                      if (feed.curatedCourses.isNotEmpty) ...[
+                        const ExamCountdownBanner(),
+                        const SizedBox(height: 16),
+                      ],
+                      if (heavyDebtDeck != null) ...[
+                        _StudyDebtTriageBanner(deck: heavyDebtDeck),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                  ),
+                ),
 
-        // 4. Next Best Action (Single-Tap Focus Sprint - Overcomes Decision Fatigue)
-        if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
-          _NextBestActionCard(
-            topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
-          ),
-          const SizedBox(height: 20),
-        ],
+                // 3. Daily Recall Status Banner ("All caught up!" / due-cards state)
+                _DailyRecallStatusBanner(feed: feed),
+                const SizedBox(height: 16),
 
-        // 5. Active Recall FSRS-6 Review Engine (Hero Deck + Spaced Repetition Queue)
-        if (feed.dueStudyDecks.isNotEmpty) ...[
-          FsrsReviewDeckCard(
-            deck: feed.dueStudyDecks.first,
-            isHero: true,
-          ),
-          if (feed.dueStudyDecks.length > 1) ...[
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+                // 4. Quick Actions Grid (Upload Notes | Q-Bank | 1v1 Duel | New Deck)
+                const _QuickActionsGrid(),
+                const SizedBox(height: 16),
+
+                // 5. Curated Course Repositories
+                if (feed.curatedCourses.isNotEmpty) ...[
+                  CuratedCourseCarousel(courses: feed.curatedCourses),
+                  const SizedBox(height: 16),
+                ] else ...[
+                  _EmptyCoursesCard(l10n: l10n),
+                  const SizedBox(height: 16),
+                ],
+
+                // 6. Pod Pulse — Study Circle Co-presence
+                _StudyCirclePodPulseCard(targetTrack: targetTrack),
+                const SizedBox(height: 16),
+
+                // 7. Retention Heat Map & Mastery Stats
+                RetentionHeatMapWidget(analytics: feed.analyticsSummary),
+              ]
+              .animate(interval: 80.ms)
+              .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+    );
+  }
+}
+
+/// Glass "All caught up! SYNCED" banner — mirrors the Stitch DailyStatusRecallBanner.
+/// Shows due-card count + deck title when reviews are pending.
+class _DailyRecallStatusBanner extends StatelessWidget {
+  const _DailyRecallStatusBanner({required this.feed});
+
+  final DashboardFeedEntity feed;
+
+  @override
+  Widget build(BuildContext context) {
+    final neural = context.neural;
+    final typography = context.typography;
+    final l10n = context.l10n;
+
+    final hasDueCards = feed.dueStudyDecks.any((d) => d.dueCards > 0);
+    final topDueDeck = hasDueCards
+        ? feed.dueStudyDecks.firstWhere((d) => d.dueCards > 0)
+        : null;
+
+    // Design uses emerald for the synced state; amber mirrors it for due cards.
+    final accent = hasDueCards ? neural.amber : neural.emerald;
+    final accent400 = hasDueCards ? neural.amber400 : neural.emerald400;
+    final accent300 = hasDueCards ? neural.amber300 : neural.emerald300;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: neural.glassPanel,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: accent.withAlpha(77)),
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    l10n.dashboardSpacedRepetitionQueue,
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 16.5,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: accent.withAlpha(51),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: accent400.withAlpha(77)),
+                    ),
+                    child: Icon(
+                      hasDueCards
+                          ? Icons.hourglass_top_rounded
+                          : Icons.check_circle_rounded,
+                      color: accent400,
+                      size: 20,
                     ),
                   ),
-                  Text(
-                    l10n.dashboardDecksCount(feed.dueStudyDecks.length),
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 11,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                hasDueCards
+                                    ? l10n.dashboardDueCount(
+                                        topDueDeck!.dueCards,
+                                      )
+                                    : l10n.allCaughtUpTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.callout.bold.copyWith(
+                                  color: neural.slate100,
+                                  fontSize: 14,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: accent.withAlpha(51),
+                                borderRadius: BorderRadius.circular(99),
+                                border: Border.all(
+                                  color: accent.withAlpha(77),
+                                ),
+                              ),
+                              child: Text(
+                                hasDueCards
+                                    ? l10n.dashboardReviewDeck.toUpperCase()
+                                    : 'SYNCED',
+                                style: typography.caption.bold.copyWith(
+                                  color: accent300,
+                                  fontSize: 10,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          hasDueCards
+                              ? topDueDeck!.title
+                              : l10n.allCaughtUpSubtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.caption.regular.copyWith(
+                            color: neural.slate300.withAlpha(204),
+                            fontSize: 12,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            if (feed.dueStudyDecks.length - 1 == 1)
-              FsrsReviewDeckCard(deck: feed.dueStudyDecks[1])
-            else
-              SizedBox(
-                height: 205,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const ClampingScrollPhysics(),
-                  itemCount: feed.dueStudyDecks.length - 1,
-                  separatorBuilder: (_, _) => const SizedBox(width: 14),
-                  itemBuilder: (context, index) {
-                    final deck = feed.dueStudyDecks[index + 1];
-                    return SizedBox(
-                      width: 300,
-                      child: FsrsReviewDeckCard(deck: deck),
-                    );
-                  },
+            // Ambient accent lighting glow (top-right, clipped by panel)
+            Positioned(
+              right: -32,
+              top: -32,
+              child: IgnorePointer(
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [accent.withAlpha(38), accent.withAlpha(0)],
+                    ),
+                  ),
                 ),
               ),
+            ),
           ],
-          const SizedBox(height: 20),
-        ] else ...[
-          _EmptyStudyDecksCard(l10n: l10n),
-          const SizedBox(height: 20),
-        ],
+        ),
+      ),
+    );
+  }
+}
 
-        // 6. Curated Courses Carousel (Subject Progress & Syllabus)
-        if (feed.curatedCourses.isNotEmpty) ...[
-          CuratedCourseCarousel(courses: feed.curatedCourses),
-          const SizedBox(height: 20),
-        ] else ...[
-          _EmptyCoursesCard(l10n: l10n),
-          const SizedBox(height: 20),
-        ],
+/// 4-column quick actions glass grid — mirrors the Stitch QuickActionsRow.
+/// Upload Notes | Q-Bank | 1v1 Duel | New Deck
+class _QuickActionsGrid extends StatelessWidget {
+  const _QuickActionsGrid();
 
-        // 7. Quick Action Speed Dial Bar (Scan Document, Add Question, Create Deck, Live Pod)
-        const QuickActionSpeedDial(),
-        const SizedBox(height: 20),
+  @override
+  Widget build(BuildContext context) {
+    final neural = context.neural;
+    final l10n = context.l10n;
 
-        // 8. Study Circle Pod & Cohort Pulse (Social Proof & Live Co-Working)
-        _StudyCirclePodPulseCard(targetTrack: targetTrack),
-        const SizedBox(height: 20),
+    String? getTrackCode() {
+      try {
+        final track = context.read<AuthBloc>().state.userProfile?.targetTrack;
+        if (track != null && track.isNotEmpty) return track;
+      } on Object catch (_) {}
+      return null;
+    }
 
-        // 9. Retention Heat Map & Mastery Stats (Long-Term Proof of Progress)
-        RetentionHeatMapWidget(analytics: feed.analyticsSummary),
-      ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: neural.glassPanel,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: neural.hairline),
+          ),
+          child: SizedBox(
+            height: 124,
+            width: double.infinity,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Upload Notes
+                Expanded(
+                  child: _QuickActionCell(
+                    icon: Icons.upload_file_rounded,
+                    label: l10n.dashboardUploadNotes,
+                    accent: neural.emerald400,
+                    onTap: () {
+                      AppFeedback.light();
+                      _showUploadSheet(context);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Q-Bank
+                Expanded(
+                  child: _QuickActionCell(
+                    icon: Icons.quiz_rounded,
+                    label: l10n.dashboardQBankAction,
+                    accent: neural.amber400,
+                    onTap: () {
+                      AppFeedback.light();
+                      final trackCode = getTrackCode();
+                      unawaited(
+                        context.router.push(
+                          PastQuestionsBoardRoute(initialExamCode: trackCode),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 1v1 Duel
+                Expanded(
+                  child: _QuickActionCell(
+                    icon: Icons.flash_on_rounded,
+                    label: '1v1 Duel',
+                    accent: neural.cyan400,
+                    onTap: () {
+                      AppFeedback.light();
+                      unawaited(QuizDuelMatchmakingSheet.show(context));
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // New Deck
+                Expanded(
+                  child: _QuickActionCell(
+                    icon: Icons.create_new_folder_outlined,
+                    label: l10n.dashboardNewDeck,
+                    accent: neural.violet,
+                    onTap: () {
+                      AppFeedback.light();
+                      unawaited(
+                        context.navigateTo(
+                          const MainRoute(children: [DecksRoute()]),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showUploadSheet(BuildContext context) {
+    // Delegates to QuickActionSpeedDial's upload sheet logic via same bottom sheet
+    final colors = context.colors;
+    final typography = context.typography;
+    final l10n = context.l10n;
+    final isDark = context.isDarkMode;
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: colors.transparent,
+        isScrollControlled: true,
+        builder: (context) {
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.dialog),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.surfaceSecondary.withAlpha(240)
+                      : colors.surfacePrimary.withAlpha(245),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
+                  border: Border.all(
+                    color: colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.textMuted.withAlpha(100),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      l10n.dashboardIngestTitle,
+                      style: typography.title3.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.dashboardIngestSubtitle,
+                      textAlign: TextAlign.center,
+                      style: typography.footnote.regular.copyWith(
+                        color: colors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ShrinkableButton(
+                      onTap: () {
+                        Navigator.pop(context);
+                        unawaited(
+                          context.router.push(DocumentIngestionRoute()),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: colors.primary,
+                          borderRadius: AppRadius.radiusCard,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          l10n.dashboardUploadNotes,
+                          style: typography.callout.bold.copyWith(
+                            color: colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ShrinkableButton(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: colors.surfacePrimary.withAlpha(
+                            isDark ? 180 : 230,
+                          ),
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: colors.surfaceBorder.withAlpha(
+                              isDark ? 50 : 30,
+                            ),
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          l10n.cancelAction,
+                          style: typography.callout.medium.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _QuickActionCell extends StatelessWidget {
+  const _QuickActionCell({
+    required this.icon,
+    required this.label,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final neural = context.neural;
+    final typography = context.typography;
+
+    return ShrinkableButton(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+        decoration: BoxDecoration(
+          color: neural.obsidian850.withAlpha(204),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: neural.hairlineSoft),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: accent.withAlpha(26),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: accent, size: 22),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: typography.caption.medium.copyWith(
+                color: neural.slate200,
+                fontSize: 13.5,
+                height: 1.25,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -709,100 +1081,122 @@ class _MediumDashboardLayout extends StatelessWidget {
         parent: AlwaysScrollableScrollPhysics(),
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
-      children: <Widget>[
-        HeaderProfileBar(
-          analytics: feed.analyticsSummary,
-          isProfileUncalibrated: feed.isProfileUncalibrated,
-          userName: userName,
-          userPhotoUrl: userPhotoUrl,
-        ),
-        const SizedBox(height: 20),
-        AnimatedSize(
-          alignment: Alignment.topCenter,
-          duration: AppMotion.standard,
-          curve: AppMotion.easeOutCubic,
-          child: Column(
-            children: [
-              if (feed.curatedCourses.isNotEmpty) ...[
-                const ExamCountdownBanner(),
+      children:
+          <Widget>[
+                HeaderProfileBar(
+                  analytics: feed.analyticsSummary,
+                  isProfileUncalibrated: feed.isProfileUncalibrated,
+                  userName: userName,
+                  userPhotoUrl: userPhotoUrl,
+                ),
                 const SizedBox(height: 20),
-              ],
-              if (heavyDebtDeck != null) ...[
-                _StudyDebtTriageBanner(deck: heavyDebtDeck),
-                const SizedBox(height: 20),
-              ],
-            ],
-          ),
-        ),
-        if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
-          _NextBestActionCard(
-            topDeck: feed.dueStudyDecks.firstWhere((d) => d.totalCards > 0),
-          ),
-          const SizedBox(height: 20),
-        ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left Column (Core Learning & Curriculum - flex 6)
-            Expanded(
-              flex: 6,
-              child: Column(
-                children: [
-                  if (feed.dueStudyDecks.isNotEmpty)
-                    FsrsReviewDeckCard(
-                      deck: feed.dueStudyDecks.first,
-                      isHero: true,
-                    )
-                  else
-                    _EmptyStudyDecksCard(l10n: context.l10n),
+                AnimatedSize(
+                  alignment: Alignment.topCenter,
+                  duration: AppMotion.standard,
+                  curve: AppMotion.easeOutCubic,
+                  child: Column(
+                    children: [
+                      if (feed.curatedCourses.isNotEmpty) ...[
+                        const ExamCountdownBanner(),
+                        const SizedBox(height: 20),
+                      ],
+                      if (heavyDebtDeck != null) ...[
+                        _StudyDebtTriageBanner(deck: heavyDebtDeck),
+                        const SizedBox(height: 20),
+                      ],
+                    ],
+                  ),
+                ),
+                if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
+                  _NextBestActionCard(
+                    topDeck: feed.dueStudyDecks.firstWhere(
+                      (d) => d.totalCards > 0,
+                    ),
+                  ),
                   const SizedBox(height: 20),
-                  if (feed.dueStudyDecks.length > 1) ...[
-                    if (feed.dueStudyDecks.length - 1 == 1)
-                      FsrsReviewDeckCard(deck: feed.dueStudyDecks[1])
-                    else
-                      SizedBox(
-                        height: 205,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          physics: const ClampingScrollPhysics(),
-                          itemCount: feed.dueStudyDecks.length - 1,
-                          separatorBuilder: (_, _) => const SizedBox(width: 14),
-                          itemBuilder: (context, index) {
-                            final deck = feed.dueStudyDecks[index + 1];
-                            return SizedBox(
-                              width: 300,
-                              child: FsrsReviewDeckCard(deck: deck),
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 20),
-                  ],
-                  if (feed.curatedCourses.isNotEmpty)
-                    CuratedCourseCarousel(courses: feed.curatedCourses)
-                  else
-                    _EmptyCoursesCard(l10n: context.l10n),
-                  const SizedBox(height: 20),
-                  const QuickActionSpeedDial(),
                 ],
-              ),
-            ),
-            const SizedBox(width: 20),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left Column (Core Learning & Curriculum - flex 6)
+                    Expanded(
+                      flex: 6,
+                      child: Column(
+                        children: [
+                          if (feed.dueStudyDecks.isNotEmpty)
+                            FsrsReviewDeckCard(
+                              deck: feed.dueStudyDecks.first,
+                              isHero: true,
+                            )
+                          else
+                            _EmptyStudyDecksCard(l10n: context.l10n),
+                          const SizedBox(height: 20),
+                          if (feed.dueStudyDecks.length > 1) ...[
+                            if (feed.dueStudyDecks.length - 1 == 1)
+                              FsrsReviewDeckCard(deck: feed.dueStudyDecks[1])
+                            else
+                              SizedBox(
+                                height: 205,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const ClampingScrollPhysics(),
+                                  itemCount: feed.dueStudyDecks.length - 1,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(width: 14),
+                                  itemBuilder: (context, index) {
+                                    final deck = feed.dueStudyDecks[index + 1];
+                                    return SizedBox(
+                                      width: 300,
+                                      child: FsrsReviewDeckCard(deck: deck),
+                                    );
+                                  },
+                                ),
+                              ),
+                            const SizedBox(height: 20),
+                          ],
+                          if (feed.curatedCourses.isNotEmpty)
+                            CuratedCourseCarousel(courses: feed.curatedCourses)
+                          else
+                            _EmptyCoursesCard(l10n: context.l10n),
+                          const SizedBox(height: 20),
+                          const QuickActionSpeedDial(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 20),
 
-            // Right Column (Social Cohort & Analytics - flex 4)
-            Expanded(
-              flex: 4,
-              child: Column(
-                children: [
-                  _StudyCirclePodPulseCard(targetTrack: targetTrack),
-                  const SizedBox(height: 20),
-                  RetentionHeatMapWidget(analytics: feed.analyticsSummary),
-                ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
-              ),
-            ),
-          ],
-        ),
-      ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+                    // Right Column (Social Cohort & Analytics - flex 4)
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        children:
+                            [
+                                  _StudyCirclePodPulseCard(
+                                    targetTrack: targetTrack,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  RetentionHeatMapWidget(
+                                    analytics: feed.analyticsSummary,
+                                  ),
+                                ]
+                                .animate(interval: 80.ms)
+                                .fadeIn(
+                                  duration: 400.ms,
+                                  curve: Curves.easeOutCubic,
+                                )
+                                .slideY(
+                                  begin: 0.05,
+                                  end: 0,
+                                  curve: Curves.easeOutQuint,
+                                ),
+                      ),
+                    ),
+                  ],
+                ),
+              ]
+              .animate(interval: 80.ms)
+              .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
     );
   }
 }
@@ -835,104 +1229,143 @@ class _ExpandedDashboardLayout extends StatelessWidget {
             parent: AlwaysScrollableScrollPhysics(),
           ),
           padding: const EdgeInsets.fromLTRB(32, 28, 32, 100),
-          children: <Widget>[
-            // 1. Identity & Retention Anchor Header
-            HeaderProfileBar(
-              analytics: feed.analyticsSummary,
-              isProfileUncalibrated: feed.isProfileUncalibrated,
-              userName: userName,
-              userPhotoUrl: userPhotoUrl,
-            ),
-            const SizedBox(height: 24),
+          children:
+              <Widget>[
+                    // 1. Identity & Retention Anchor Header
+                    HeaderProfileBar(
+                      analytics: feed.analyticsSummary,
+                      isProfileUncalibrated: feed.isProfileUncalibrated,
+                      userName: userName,
+                      userPhotoUrl: userPhotoUrl,
+                    ),
+                    const SizedBox(height: 24),
 
-            // 2. Urgent Callouts (with AnimatedSize for layout stability)
-            AnimatedSize(
-              alignment: Alignment.topCenter,
-              duration: AppMotion.standard,
-              curve: AppMotion.easeOutCubic,
-              child: Column(
-                children: [
-                  if (feed.curatedCourses.isNotEmpty) ...[
-                    const ExamCountdownBanner(),
-                    const SizedBox(height: 20),
-                  ],
-                  if (heavyDebtDeck != null) ...[
-                    _StudyDebtTriageBanner(deck: heavyDebtDeck),
-                    const SizedBox(height: 20),
-                  ],
-                ],
-              ),
-            ),
-
-            // 3. Asymmetric Bento Grid Workstation
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Primary Focus Workstation Column (flex: 7)
-                Expanded(
-                  flex: 7,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 1-Tap Sprint Tile
-                      if (feed.dueStudyDecks.any((d) => d.totalCards > 0)) ...[
-                        _NextBestActionCard(
-                          topDeck: feed.dueStudyDecks.firstWhere(
-                            (d) => d.totalCards > 0,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // Hero FSRS Active Recall Card
-                      if (feed.dueStudyDecks.isNotEmpty) ...[
-                        FsrsReviewDeckCard(
-                          deck: feed.dueStudyDecks.first,
-                          isHero: true,
-                        ),
-                        if (feed.dueStudyDecks.length > 1) ...[
-                          const SizedBox(height: 20),
-                          _DesktopSpacedRepetitionGrid(
-                            decks: feed.dueStudyDecks.skip(1).toList(),
-                          ),
+                    // 2. Urgent Callouts (with AnimatedSize for layout stability)
+                    AnimatedSize(
+                      alignment: Alignment.topCenter,
+                      duration: AppMotion.standard,
+                      curve: AppMotion.easeOutCubic,
+                      child: Column(
+                        children: [
+                          if (feed.curatedCourses.isNotEmpty) ...[
+                            const ExamCountdownBanner(),
+                            const SizedBox(height: 20),
+                          ],
+                          if (heavyDebtDeck != null) ...[
+                            _StudyDebtTriageBanner(deck: heavyDebtDeck),
+                            const SizedBox(height: 20),
+                          ],
                         ],
-                      ] else ...[
-                        _EmptyStudyDecksCard(l10n: context.l10n),
+                      ),
+                    ),
+
+                    // 3. Asymmetric Bento Grid Workstation
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Primary Focus Workstation Column (flex: 7)
+                        Expanded(
+                          flex: 7,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children:
+                                [
+                                      // 1-Tap Sprint Tile
+                                      if (feed.dueStudyDecks.any(
+                                        (d) => d.totalCards > 0,
+                                      )) ...[
+                                        _NextBestActionCard(
+                                          topDeck: feed.dueStudyDecks
+                                              .firstWhere(
+                                                (d) => d.totalCards > 0,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                      ],
+
+                                      // Hero FSRS Active Recall Card
+                                      if (feed.dueStudyDecks.isNotEmpty) ...[
+                                        FsrsReviewDeckCard(
+                                          deck: feed.dueStudyDecks.first,
+                                          isHero: true,
+                                        ),
+                                        if (feed.dueStudyDecks.length > 1) ...[
+                                          const SizedBox(height: 20),
+                                          _DesktopSpacedRepetitionGrid(
+                                            decks: feed.dueStudyDecks
+                                                .skip(1)
+                                                .toList(),
+                                          ),
+                                        ],
+                                      ] else ...[
+                                        _EmptyStudyDecksCard(
+                                          l10n: context.l10n,
+                                        ),
+                                      ],
+                                      const SizedBox(height: 24),
+
+                                      // Curated Courses Repository
+                                      if (feed.curatedCourses.isNotEmpty)
+                                        CuratedCourseCarousel(
+                                          courses: feed.curatedCourses,
+                                        )
+                                      else
+                                        _EmptyCoursesCard(l10n: context.l10n),
+                                    ]
+                                    .animate(interval: 80.ms)
+                                    .fadeIn(
+                                      duration: 400.ms,
+                                      curve: Curves.easeOutCubic,
+                                    )
+                                    .slideY(
+                                      begin: 0.05,
+                                      end: 0,
+                                      curve: Curves.easeOutQuint,
+                                    ),
+                          ),
+                        ),
+                        const SizedBox(width: 24),
+
+                        // Workstation Telemetry & Toolbox Column (flex: 5)
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children:
+                                [
+                                      // Real-time Cohort Presence
+                                      _StudyCirclePodPulseCard(
+                                        targetTrack: targetTrack,
+                                      ),
+                                      const SizedBox(height: 20),
+
+                                      // Retention Heatmap & Mastery Matrix
+                                      RetentionHeatMapWidget(
+                                        analytics: feed.analyticsSummary,
+                                      ),
+                                      const SizedBox(height: 20),
+
+                                      // Speed Dial / Action Toolbox
+                                      const QuickActionSpeedDial(),
+                                    ]
+                                    .animate(interval: 80.ms)
+                                    .fadeIn(
+                                      duration: 400.ms,
+                                      curve: Curves.easeOutCubic,
+                                    )
+                                    .slideY(
+                                      begin: 0.05,
+                                      end: 0,
+                                      curve: Curves.easeOutQuint,
+                                    ),
+                          ),
+                        ),
                       ],
-                      const SizedBox(height: 24),
-
-                      // Curated Courses Repository
-                      if (feed.curatedCourses.isNotEmpty)
-                        CuratedCourseCarousel(courses: feed.curatedCourses)
-                      else
-                        _EmptyCoursesCard(l10n: context.l10n),
-                    ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
-                  ),
-                ),
-                const SizedBox(width: 24),
-
-                // Workstation Telemetry & Toolbox Column (flex: 5)
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Real-time Cohort Presence
-                      _StudyCirclePodPulseCard(targetTrack: targetTrack),
-                      const SizedBox(height: 20),
-
-                      // Retention Heatmap & Mastery Matrix
-                      RetentionHeatMapWidget(analytics: feed.analyticsSummary),
-                      const SizedBox(height: 20),
-
-                      // Speed Dial / Action Toolbox
-                      const QuickActionSpeedDial(),
-                    ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
-                  ),
-                ),
-              ],
-            ),
-          ].animate(interval: 80.ms).fadeIn(duration: 400.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+                    ),
+                  ]
+                  .animate(interval: 80.ms)
+                  .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
+                  .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
         ),
       ),
     );
@@ -1154,10 +1587,9 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final neural = context.neural;
     final typography = context.typography;
     final l10n = context.l10n;
-    final isDark = context.isDarkMode;
 
     final trackLabel = (targetTrack != null && targetTrack!.trim().isNotEmpty)
         ? l10n.podSuffix(targetTrack!)
@@ -1170,92 +1602,112 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
             unawaited(HapticFeedback.lightImpact());
             unawaited(context.navigateTo(const CommunityHubRoute()));
           },
-          child: AnimatedContainer(
-            duration: AppMotion.snappy,
-            curve: AppMotion.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colors.surfaceSecondary.withAlpha(isHovered ? 180 : 150)
-                  : colors.surfacePrimary,
-              borderRadius: AppRadius.radiusPanel,
-              // Removed border
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 30 : 10),
-                  blurRadius: isHovered ? 10 : 6,
-                  offset: const Offset(0, 2),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: neural.glassPanel,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isHovered
+                        ? neural.emerald.withAlpha(51)
+                        : neural.hairline,
+                  ),
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Live pulsing dot indicator
+                    // Header: live dot + POD PULSE + pod link
                     Container(
-                      width: 9,
-                      height: 9,
+                      padding: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: colors.success,
-                        shape: BoxShape.circle,
+                        border: Border(
+                          bottom: BorderSide(color: neural.hairlineSoft),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: neural.emerald,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: neural.glowMatrixActive,
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.podPulseTitle,
+                            style: typography.caption.bold.copyWith(
+                              color: neural.emerald400,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.6,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            trackLabel,
+                            style: typography.caption.medium.copyWith(
+                              color: neural.slate300,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 14,
+                            color: neural.slate400,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.podPulseTitle,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.syllabotAccent,
-                        fontSize: 10.5,
-                        letterSpacing: 0.9,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      trackLabel,
-                      style: typography.caption.medium.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 11,
-                      color: colors.textSecondary,
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _PodMetricChip(
+                            icon: Icons.group_rounded,
+                            iconColor: neural.emerald400,
+                            value: '4/6',
+                            label: l10n.activeToday,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _PodMetricChip(
+                            icon: Icons.timer_outlined,
+                            iconColor: neural.amber400,
+                            value: '185m',
+                            label: l10n.groupFocus,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _PodMetricChip(
+                            icon: Icons.bolt_rounded,
+                            iconColor: neural.cyan400,
+                            value: '+250',
+                            valueColor: neural.cyan300,
+                            label: l10n.podKarma,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _PodMetricChip(
-                        icon: Icons.group_rounded,
-                        value: '4/6',
-                        label: l10n.activeToday,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _PodMetricChip(
-                        icon: Icons.timer_outlined,
-                        value: '185m',
-                        label: l10n.groupFocus,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _PodMetricChip(
-                        icon: Icons.bolt_rounded,
-                        value: '+250',
-                        label: l10n.podKarma,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         );
@@ -1267,41 +1719,43 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
 class _PodMetricChip extends StatelessWidget {
   const _PodMetricChip({
     required this.icon,
+    required this.iconColor,
     required this.value,
     required this.label,
+    this.valueColor,
   });
 
   final IconData icon;
+  final Color iconColor;
   final String value;
   final String label;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final neural = context.neural;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
-        color: isDark
-            ? colors.surfacePrimary.withAlpha(180)
-            : colors.surfaceSecondary.withAlpha(130),
-        borderRadius: AppRadius.radiusCard,
-        // Removed border for premium UI
+        color: neural.obsidian850.withAlpha(153),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: neural.hairlineSoft),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 13, color: colors.syllabotAccent),
+              Icon(icon, size: 14, color: iconColor),
               const SizedBox(width: 4),
               Text(
                 value,
-                style: typography.subhead.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 13,
+                style: typography.caption.bold.copyWith(
+                  color: valueColor ?? neural.slate300,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -1312,7 +1766,7 @@ class _PodMetricChip extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: typography.caption.regular.copyWith(
-              color: colors.textSecondary,
+              color: neural.slate400,
               fontSize: 10,
             ),
           ),

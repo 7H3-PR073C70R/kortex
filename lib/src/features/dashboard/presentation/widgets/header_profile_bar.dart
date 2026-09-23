@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -11,13 +12,11 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
-import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 class HeaderProfileBar extends StatelessWidget {
@@ -36,6 +35,7 @@ class HeaderProfileBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final neural = context.neural;
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
@@ -58,11 +58,16 @@ class HeaderProfileBar extends StatelessWidget {
         ? authProfile.streakDays
         : analytics.currentStreakDays;
 
+    final trimmedName = effectiveName?.trim() ?? '';
+    final initials = trimmedName.isEmpty
+        ? 'KO'
+        : trimmedName.substring(0, 2).toUpperCase();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. Top Bar with User Avatar, Name Greeting & Streak Badge
+        // 1. Top Bar with Identity Chip, Greeting & Quick Status Metrics
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -83,34 +88,90 @@ class HeaderProfileBar extends StatelessWidget {
                             Semantics(
                               label: l10n.dashboardHeyUser(displayName),
                               image: true,
-                              child: Container(
-                                width: 46,
-                                height: 46,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: colors.primary.withAlpha(
-                                      isDark ? 160 : 200,
-                                    ),
-                                    width: 1.8,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: colors.black.withAlpha(
-                                        isDark ? 50 : 20,
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      padding: const EdgeInsets.all(1.5),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            neural.amber200.withAlpha(51),
+                                            neural.emerald.withAlpha(26),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: neural.glowEmerald,
+                                            blurRadius: 20,
+                                            spreadRadius: -5,
+                                          ),
+                                        ],
                                       ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: neural.obsidian850,
+                                            border: Border.all(
+                                              color: neural.hairlineStrong,
+                                            ),
+                                          ),
+                                          child: effectivePhoto != null
+                                              ? AppAvatar(
+                                                  customDimension: 45,
+                                                  imageUrl: effectivePhoto,
+                                                  name:
+                                                      effectiveName ??
+                                                      displayName,
+                                                  borderWidth: 0,
+                                                  backgroundColor:
+                                                      neural.obsidian850,
+                                                  foregroundColor:
+                                                      neural.amber300,
+                                                )
+                                              : Center(
+                                                  child: Text(
+                                                    initials,
+                                                    style: typography
+                                                        .caption
+                                                        .bold
+                                                        .copyWith(
+                                                          color:
+                                                              neural.amber300,
+                                                          fontSize: 14,
+                                                          letterSpacing: 0.5,
+                                                        ),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: -1,
+                                      right: -1,
+                                      child: Container(
+                                        width: 14,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: neural.emerald,
+                                          border: Border.all(
+                                            color: neural.obsidian950,
+                                            width: 2,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ],
-                                ),
-                                child: AppAvatar(
-                                  customDimension: 42,
-                                  imageUrl: effectivePhoto,
-                                  name: effectiveName ?? displayName,
-                                  borderWidth: 0,
-                                  backgroundColor: colors.primary.withAlpha(25),
-                                  foregroundColor: colors.primary,
                                 ),
                               ),
                             ),
@@ -119,24 +180,38 @@ class HeaderProfileBar extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    l10n.dashboardHeyUser(displayName),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: typography.headline.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 16,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          l10n.dashboardHeyUser(displayName),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.headline.bold
+                                              .copyWith(
+                                                color: neural.slate100,
+                                                fontSize: 16,
+                                                height: 1.15,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 14,
+                                        color: neural.amber400,
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 3),
                                   Row(
                                     children: [
                                       Container(
-                                        width: 7,
-                                        height: 7,
+                                        width: 6,
+                                        height: 6,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: colors.success,
+                                          color: neural.emerald400,
                                         ),
                                       ),
                                       const SizedBox(width: 6),
@@ -147,11 +222,33 @@ class HeaderProfileBar extends StatelessWidget {
                                           overflow: TextOverflow.ellipsis,
                                           style: typography.footnote.medium
                                               .copyWith(
-                                                color: isDark
-                                                    ? colors.textSecondary
-                                                    : colors.textPrimary
-                                                          .withAlpha(190),
+                                                color: neural.slate400,
                                                 fontSize: 12,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: neural.emerald.withAlpha(26),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          border: Border.all(
+                                            color: neural.emerald.withAlpha(51),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'LVL ${authProfile?.level ?? 1}',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: neural.emerald400,
+                                                fontSize: 10,
+                                                fontFamily: 'monospace',
                                               ),
                                         ),
                                       ),
@@ -189,108 +286,62 @@ class HeaderProfileBar extends StatelessWidget {
                                     ),
                                   );
                                 },
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.panel,
+                                child: AnimatedContainer(
+                                  duration: AppMotion.snappy,
+                                  curve: AppMotion.easeOutCubic,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
                                   ),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 12,
-                                      sigmaY: 12,
+                                  decoration: BoxDecoration(
+                                    color: neural.obsidian850.withAlpha(
+                                      230,
                                     ),
-                                    child: AnimatedContainer(
-                                      duration: AppMotion.snappy,
-                                      curve: AppMotion.easeOutCubic,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                          AppRadius.panel,
-                                        ),
-                                        color: isDark
-                                            ? (isHovered
-                                                  ? colors.surfaceSecondary
-                                                        .withAlpha(
-                                                          200,
-                                                        )
-                                                  : colors.surfaceSecondary
-                                                        .withAlpha(
-                                                          150,
-                                                        ))
-                                            : (isHovered
-                                                  ? colors.surfacePrimary
-                                                  : colors.surfacePrimary
-                                                        .withAlpha(
-                                                          210,
-                                                        )),
-                                        border: Border.all(
-                                          color: isHovered
-                                              ? colors.warning.withAlpha(
-                                                  isDark ? 120 : 90,
-                                                )
-                                              : colors.surfaceBorder.withAlpha(
-                                                  isDark ? 60 : 35,
-                                                ),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.local_fire_department_rounded,
-                                            size: 18,
-                                            color: colors.warning,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '$effectiveStreak',
-                                            style: typography.callout.bold
-                                                .copyWith(
-                                                  color: colors.textPrimary,
-                                                  fontSize: 13.5,
-                                                ),
-                                          ),
-                                        ],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: neural.amber.withAlpha(
+                                        isHovered ? 140 : 77,
                                       ),
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: neural.glowAmber,
+                                        blurRadius: 20,
+                                        spreadRadius: -5,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.local_fire_department_rounded,
+                                        size: 16,
+                                        color: neural.amber400,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '$effectiveStreak',
+                                        style: typography.callout.bold.copyWith(
+                                          color: neural.amber300,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
                             },
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
 
-                        // Millionaire Ascent Arcade Shortcut
-                        _HeaderIconButton(
-                          icon: Icons.military_tech_rounded,
-                          color: colors.warning,
-                          tooltip: 'Millionaire Ascent Arcade',
-                          borderHighlightColor: colors.warning,
-                          onTap: () {
-                            unawaited(HapticFeedback.mediumImpact());
-                            unawaited(
-                              context.router.push(
-                                QuizWorkspaceRoute(
-                                  deckId: 'arcade_global',
-                                  deckTitle: 'Daily Dopamine Arcade',
-                                  assessmentMode:
-                                      AssessmentMode.millionaireMode,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Walkthrough Tour Shortcut
+                        // Discovery / Walkthrough Shortcut (compass)
                         _HeaderIconButton(
                           icon: Icons.explore_rounded,
-                          color: colors.syllabotAccent,
+                          color: neural.cyan400,
                           tooltip: 'Feature Walkthrough',
-                          borderHighlightColor: colors.syllabotAccent,
+                          borderHighlightColor: neural.cyan,
                           onTap: () {
                             unawaited(HapticFeedback.lightImpact());
                             unawaited(
@@ -312,14 +363,14 @@ class HeaderProfileBar extends StatelessWidget {
                             );
                           },
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
 
-                        // Analytics Shortcut
+                        // Analytics Shortcut (activity pulse)
                         _HeaderIconButton(
-                          icon: Icons.insights_rounded,
-                          color: colors.primary,
+                          icon: Icons.show_chart_rounded,
+                          color: neural.emerald400,
                           tooltip: l10n.dashboardViewAnalyticsSemantics,
-                          borderHighlightColor: colors.primary,
+                          borderHighlightColor: neural.emerald,
                           onTap: () {
                             unawaited(HapticFeedback.lightImpact());
                             unawaited(
@@ -332,7 +383,7 @@ class HeaderProfileBar extends StatelessWidget {
                       .fadeIn(duration: 300.ms)
                       .scaleXY(
                         begin: 0.9,
-                        end: 1.0,
+                        end: 1,
                         curve: Curves.easeOutCubic,
                       ),
             ),
@@ -460,8 +511,7 @@ class _HeaderIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final isDark = context.isDarkMode;
+    final neural = context.neural;
 
     return Semantics(
       button: true,
@@ -475,28 +525,24 @@ class _HeaderIconButton extends StatelessWidget {
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
                 curve: AppMotion.easeOutCubic,
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark
-                      ? (isHovered
-                            ? colors.surfaceSecondary.withAlpha(220)
-                            : colors.surfaceSecondary.withAlpha(150))
-                      : (isHovered
-                            ? colors.surfacePrimary
-                            : colors.surfacePrimary.withAlpha(210)),
+                  borderRadius: BorderRadius.circular(12),
+                  color: neural.obsidian850.withAlpha(
+                    isHovered ? 255 : 230,
+                  ),
                   border: Border.all(
                     color: isHovered
-                        ? (borderHighlightColor ?? colors.primary).withAlpha(
-                            isDark ? 140 : 100,
+                        ? (borderHighlightColor ?? neural.emerald).withAlpha(
+                            110,
                           )
-                        : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
+                        : neural.hairlineStrong,
                   ),
                 ),
                 child: Icon(
                   icon,
-                  size: 18,
+                  size: 16,
                   color: color,
                 ),
               ),

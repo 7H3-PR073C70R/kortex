@@ -1757,7 +1757,7 @@ abstract class AppLocalizations {
   /// User greeting in dashboard header
   ///
   /// In en, this message translates to:
-  /// **'Hey, {name} 👋'**
+  /// **'Hey, {name}'**
   String dashboardHeyUser(String name);
 
   /// Fallback name when username is not set
@@ -1879,6 +1879,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask Syllabot anything (e.g. Solve PDE #3)...'**
   String get dashboardAskSyllabotHint;
+
+  /// Label for the floating Ask Syllabot pill on the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Syllabot'**
+  String get dashboardAskSyllabotCta;
 
   /// Semantics for send prompt button
   ///
@@ -2117,7 +2123,7 @@ abstract class AppLocalizations {
   /// Subtitle explaining no active recall cards are currently due
   ///
   /// In en, this message translates to:
-  /// **'No active-recall cards due for review today. Keep it up!'**
+  /// **'No active-recall cards due for review today. Keep it up and maintain retention!'**
   String get allCaughtUpSubtitle;
 
   /// Title prompting user to curate subject courses
@@ -3925,6 +3931,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Exam Countdown'**
   String get addExamTitle;
+
+  /// Subtitle on the exam countdown banner showing the target exam and days remaining
+  ///
+  /// In en, this message translates to:
+  /// **'Target {exam} in {days} days'**
+  String examTargetInDays(String exam, int days);
 
   /// Input field label for exam title
   ///
