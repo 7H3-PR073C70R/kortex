@@ -1,12 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
+import 'package:kortex/src/features/community/presentation/widgets/leaderboard/leaderboard_scholar_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/features/community/presentation/widgets/leaderboard/leaderboard_scholar_sheet.dart';
 
 class LeaderboardRankCard extends StatelessWidget {
   const LeaderboardRankCard({
@@ -24,7 +26,6 @@ class LeaderboardRankCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
     
-    final isTopThree = index < 3;
     final isDemotion = index >= 18; // Bottom 10% assuming ~20 users total
     
     final goldColor = colors.warning;
@@ -41,12 +42,14 @@ class LeaderboardRankCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.lightImpact();
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => LeaderboardScholarSheet(entry: entry),
+        unawaited(HapticFeedback.lightImpact());
+        unawaited(
+          showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: context.colors.transparent,
+            builder: (context) => LeaderboardScholarSheet(entry: entry),
+          ),
         );
       },
       child: PlatformHoverBuilder(

@@ -124,7 +124,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                               const SizedBox(width: 5),
                               Text(
                                 'Smart Page Auto-Crop',
-                                style: TextStyle(
+                                style: context.typography.body.regular.copyWith(
                                   color: colors.white,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -159,7 +159,7 @@ class CameraLiveOcrOverlay extends StatelessWidget {
                                 const SizedBox(width: 5),
                                 Text(
                                   'Contrast Normalization Active',
-                                  style: TextStyle(
+                                  style: context.typography.body.regular.copyWith(
                                     color: colors.success,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,

@@ -276,7 +276,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
               onPressed: () => Navigator.of(dialogCtx).pop(),
               child: Text(
                 l10n.whiteboardClearCancel,
-                style: TextStyle(color: colors.textSecondary),
+                style: context.typography.body.regular.copyWith(color: colors.textSecondary),
               ),
             ),
             ElevatedButton(

@@ -519,12 +519,12 @@ class _NeuralNavItem extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? neural.emerald.withAlpha(26)
-                    : Colors.transparent,
+                    : context.colors.transparent,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected
                       ? neural.emerald.withAlpha(51)
-                      : Colors.transparent,
+                      : context.colors.transparent,
                 ),
               ),
               child: Column(

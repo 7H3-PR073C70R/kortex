@@ -166,7 +166,7 @@ class FileDropZoneWidget extends HookWidget {
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(
               'Dismiss',
-              style: TextStyle(color: colors.textSecondary),
+              style: context.typography.body.regular.copyWith(color: colors.textSecondary),
             ),
           ),
           FilledButton.icon(
@@ -238,7 +238,7 @@ class FileDropZoneWidget extends HookWidget {
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(
               'Dismiss',
-              style: TextStyle(color: colors.textSecondary),
+              style: context.typography.body.regular.copyWith(color: colors.textSecondary),
             ),
           ),
           FilledButton.icon(
@@ -317,7 +317,7 @@ class FileDropZoneWidget extends HookWidget {
             onPressed: () => Navigator.of(dialogCtx).pop(),
             child: Text(
               'Cancel',
-              style: TextStyle(color: colors.textSecondary),
+              style: context.typography.body.regular.copyWith(color: colors.textSecondary),
             ),
           ),
           OutlinedButton(

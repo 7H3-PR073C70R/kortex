@@ -218,7 +218,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                     ),
                     child: Text(
                       emoji,
-                      style: const TextStyle(fontSize: 18),
+                      style: context.typography.body.regular.copyWith(fontSize: 18),
                     ),
                   ),
                 );
@@ -306,14 +306,14 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                     keyboardType: TextInputType.multiline,
                     textCapitalization: TextCapitalization.sentences,
                     onSubmitted: (_) => _sendMessage(),
-                    style: TextStyle(
+                    style: context.typography.body.regular.copyWith(
                       fontSize: 13.5,
                       color: colors.textPrimary,
                       height: 1.3,
                     ),
                     decoration: InputDecoration(
                       hintText: l10n.chatInputHint,
-                      hintStyle: TextStyle(
+                      hintStyle: context.typography.body.regular.copyWith(
                         fontSize: 13,
                         color: colors.textSecondary.withAlpha(180),
                       ),
@@ -397,7 +397,7 @@ class _ChatMessageBubble extends StatelessWidget {
             children: [
               Text(
                 message.text,
-                style: const TextStyle(fontSize: 16),
+                style: context.typography.body.regular.copyWith(fontSize: 16),
               ),
               const SizedBox(width: 5),
               Text(

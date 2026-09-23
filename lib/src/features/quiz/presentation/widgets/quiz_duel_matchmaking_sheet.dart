@@ -381,7 +381,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                   : colors.surfaceBorder.withValues(alpha: 0.3),
                             ),
                           ),
-                          labelStyle: TextStyle(
+                          labelStyle: context.typography.body.regular.copyWith(
                             color: isSelected
                                 ? colors.primary
                                 : colors.textPrimary,
@@ -431,7 +431,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                   : colors.surfaceBorder.withValues(alpha: 0.3),
                             ),
                           ),
-                          labelStyle: TextStyle(
+                          labelStyle: context.typography.body.regular.copyWith(
                             color: isSelected
                                 ? colors.primary
                                 : colors.textPrimary,

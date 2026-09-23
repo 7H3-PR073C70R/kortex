@@ -260,7 +260,7 @@ class _BackgroundIngestionIndicatorState
                                                     color: isCloseHovered
                                                         ? colors
                                                               .surfaceSecondary
-                                                        : Colors.transparent,
+                                                        : context.colors.transparent,
                                                     shape: BoxShape.circle,
                                                   ),
                                                   child: IconButton(

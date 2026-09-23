@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -5,8 +7,8 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
-import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/features/community/presentation/widgets/leaderboard/leaderboard_scholar_sheet.dart';
+import 'package:kortex/src/shared/widgets/app_avatar.dart';
 
 class LeaderboardPodiumWidget extends StatelessWidget {
   const LeaderboardPodiumWidget({
@@ -29,7 +31,7 @@ class LeaderboardPodiumWidget extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.only(top: 24, bottom: 0, left: 16, right: 16),
+      padding: const EdgeInsets.only(top: 24, left: 16, right: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -103,12 +105,14 @@ class _PodiumPedestal extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => LeaderboardScholarSheet(entry: entry),
+        unawaited(HapticFeedback.selectionClick());
+        unawaited(
+          showModalBottomSheet<void>(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: context.colors.transparent,
+            builder: (context) => LeaderboardScholarSheet(entry: entry),
+          ),
         );
       },
       child: Column(
@@ -130,7 +134,7 @@ class _PodiumPedestal extends StatelessWidget {
               if (isFirst)
                 Positioned(
                   top: -16,
-                  child: const Text('👑', style: TextStyle(fontSize: 24))
+                  child: Text('👑', style: context.typography.body.regular.copyWith(fontSize: 24))
                       .animate(onPlay: (controller) => controller.repeat())
                       .shimmer(duration: const Duration(seconds: 2)),
                 ),

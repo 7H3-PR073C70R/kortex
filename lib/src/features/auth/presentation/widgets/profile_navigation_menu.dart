@@ -6,11 +6,9 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class ProfileNavigationMenu extends StatelessWidget {
   const ProfileNavigationMenu({
@@ -25,6 +23,7 @@ class ProfileNavigationMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final neural = context.neural;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,10 +35,10 @@ class ProfileNavigationMenu extends StatelessWidget {
             _NavTile(
               icon: Icons.school_outlined,
               iconColor: colors.textSecondary,
-              chipBg: const Color.fromRGBO(39, 39, 42, 0.8), // zinc-800/80
-              chipBorder: const Color.fromRGBO(63, 63, 70, 0.5), // zinc-700/50
-              hoverIconColor: const Color.fromRGBO(251, 191, 36, 1.0), // amber-400
-              hoverChipBorder: const Color.fromRGBO(245, 158, 11, 0.4), // amber-500/40
+              chipBg: colors.surfaceSecondary,
+              chipBorder: colors.surfaceBorder,
+              hoverIconColor: neural.amber400,
+              hoverChipBorder: neural.amber400.withValues(alpha: 0.4),
               title: 'Academic Track & Goals',
               subtitle: '$targetTrack · $dailyTarget cards a day',
               onTap: () {
@@ -51,11 +50,11 @@ class ProfileNavigationMenu extends StatelessWidget {
             ),
             _NavTile(
               icon: Icons.psychology_outlined,
-              iconColor: const Color.fromRGBO(216, 180, 254, 1.0), // purple-300
-              chipBg: const Color.fromRGBO(59, 7, 100, 0.3), // purple-950/30
-              chipBorder: const Color.fromRGBO(107, 33, 168, 0.4), // purple-800/40
-              hoverIconColor: const Color.fromRGBO(233, 213, 255, 1.0), // purple-200
-              hoverChipBorder: const Color.fromRGBO(107, 33, 168, 0.4),
+              iconColor: neural.purple500,
+              chipBg: neural.purple500.withValues(alpha: 0.15),
+              chipBorder: neural.purple500.withValues(alpha: 0.4),
+              hoverIconColor: neural.purple500.withValues(alpha: 0.8),
+              hoverChipBorder: neural.purple500.withValues(alpha: 0.4),
               title: 'Syllabot AI & Neural Engine',
               subtitle: 'Tutor style, voice and offline AI',
               onTap: () {
@@ -67,11 +66,11 @@ class ProfileNavigationMenu extends StatelessWidget {
             ),
             _NavTile(
               icon: Icons.emoji_events_outlined,
-              iconColor: const Color.fromRGBO(251, 191, 36, 1.0), // amber-400
-              chipBg: const Color.fromRGBO(69, 26, 3, 0.3), // amber-950/30
-              chipBorder: const Color.fromRGBO(153, 56, 0, 0.4), // amber-800/40
-              hoverIconColor: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
-              hoverChipBorder: const Color.fromRGBO(153, 56, 0, 0.4),
+              iconColor: neural.amber400,
+              chipBg: neural.amber.withValues(alpha: 0.15),
+              chipBorder: neural.amber.withValues(alpha: 0.4),
+              hoverIconColor: neural.amber300,
+              hoverChipBorder: neural.amber.withValues(alpha: 0.4),
               title: 'Leaderboard & Leagues',
               subtitle: 'See where you stand with your cohort this week',
               onTap: () {
@@ -93,10 +92,10 @@ class ProfileNavigationMenu extends StatelessWidget {
             _NavTile(
               icon: Icons.lock_outline_rounded,
               iconColor: colors.textSecondary,
-              chipBg: const Color.fromRGBO(39, 39, 42, 0.8), // zinc-800/80
-              chipBorder: const Color.fromRGBO(63, 63, 70, 0.5), // zinc-700/50
-              hoverIconColor: const Color.fromRGBO(34, 211, 238, 1.0), // cyan-400
-              hoverChipBorder: const Color.fromRGBO(63, 63, 70, 0.5),
+              chipBg: colors.surfaceSecondary,
+              chipBorder: colors.surfaceBorder,
+              hoverIconColor: neural.cyan400,
+              hoverChipBorder: colors.surfaceBorder,
               title: 'Password & Two-Factor Sign-In',
               subtitle: 'Keep your study history safe',
               onTap: () {
@@ -108,11 +107,11 @@ class ProfileNavigationMenu extends StatelessWidget {
             ),
             _NavTile(
               icon: Icons.workspace_premium_outlined,
-              iconColor: const Color.fromRGBO(251, 191, 36, 1.0), // amber-400
-              chipBg: const Color.fromRGBO(69, 26, 3, 0.3), // amber-950/30
-              chipBorder: const Color.fromRGBO(153, 56, 0, 0.4), // amber-800/40
-              hoverIconColor: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
-              hoverChipBorder: const Color.fromRGBO(153, 56, 0, 0.4),
+              iconColor: neural.amber400,
+              chipBg: neural.amber.withValues(alpha: 0.15),
+              chipBorder: neural.amber.withValues(alpha: 0.4),
+              hoverIconColor: neural.amber300,
+              hoverChipBorder: neural.amber.withValues(alpha: 0.4),
               title: 'Membership & Pro Tier',
               subtitle: 'Unlimited AI tutoring, sync and paper scans',
               badge: 'PRO',
@@ -135,10 +134,10 @@ class ProfileNavigationMenu extends StatelessWidget {
             _NavTile(
               icon: Icons.tune_rounded,
               iconColor: colors.textSecondary,
-              chipBg: const Color.fromRGBO(39, 39, 42, 0.8), // zinc-800/80
-              chipBorder: const Color.fromRGBO(63, 63, 70, 0.5), // zinc-700/50
-              hoverIconColor: const Color.fromRGBO(34, 211, 238, 1.0), // cyan-400
-              hoverChipBorder: const Color.fromRGBO(63, 63, 70, 0.5),
+              chipBg: colors.surfaceSecondary,
+              chipBorder: colors.surfaceBorder,
+              hoverIconColor: neural.cyan400,
+              hoverChipBorder: colors.surfaceBorder,
               title: 'Appearance & Sounds',
               subtitle: 'Dark mode, haptics and notifications',
               onTap: () {
@@ -151,10 +150,10 @@ class ProfileNavigationMenu extends StatelessWidget {
             _NavTile(
               icon: Icons.play_circle_outline_rounded,
               iconColor: colors.textSecondary,
-              chipBg: const Color.fromRGBO(39, 39, 42, 0.8), // zinc-800/80
-              chipBorder: const Color.fromRGBO(63, 63, 70, 0.5), // zinc-700/50
-              hoverIconColor: const Color.fromRGBO(52, 211, 153, 1.0), // emerald-400
-              hoverChipBorder: const Color.fromRGBO(63, 63, 70, 0.5),
+              chipBg: colors.surfaceSecondary,
+              chipBorder: colors.surfaceBorder,
+              hoverIconColor: neural.emerald400,
+              hoverChipBorder: colors.surfaceBorder,
               title: 'Feature Walkthrough',
               subtitle: 'Replay the quick tour of Kortexify',
               onTap: () {
@@ -181,10 +180,10 @@ class ProfileNavigationMenu extends StatelessWidget {
             _NavTile(
               icon: Icons.info_outline_rounded,
               iconColor: colors.textSecondary,
-              chipBg: const Color.fromRGBO(39, 39, 42, 0.8), // zinc-800/80
-              chipBorder: const Color.fromRGBO(63, 63, 70, 0.5), // zinc-700/50
-              hoverIconColor: const Color.fromRGBO(96, 165, 250, 1.0), // blue-400
-              hoverChipBorder: const Color.fromRGBO(63, 63, 70, 0.5),
+              chipBg: colors.surfaceSecondary,
+              chipBorder: colors.surfaceBorder,
+              hoverIconColor: neural.cyan300,
+              hoverChipBorder: colors.surfaceBorder,
               title: 'About, Support & Discord',
               subtitle: 'Help center, privacy and community',
               onTap: () {
@@ -210,15 +209,16 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
+    final colors = context.colors;
 
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title.toUpperCase(),
         style: typography.caption.bold.copyWith(
-          color: const Color.fromRGBO(161, 161, 170, 1.0), // zinc-400
+          color: colors.textMuted,
           fontSize: 11,
-          letterSpacing: 1.0,
+          letterSpacing: 1,
         ),
       ),
     );
@@ -232,12 +232,14 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(18, 21, 28, 0.9), // cardBg/90
+        color: colors.surfacePrimary,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color.fromRGBO(63, 63, 70, 0.8), // zinc-800/80
+          color: colors.surfaceBorder,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -280,6 +282,7 @@ class _NavTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final neural = context.neural;
 
     return Column(
       children: [
@@ -287,14 +290,14 @@ class _NavTile extends StatelessWidget {
           builder: (context, isHovered, child) {
             return InkWell(
               onTap: onTap,
-              highlightColor: const Color.fromRGBO(63, 63, 70, 0.6), // zinc-800/60
-              splashColor: Colors.transparent,
+              highlightColor: colors.surfaceTertiary,
+              splashColor: context.colors.transparent,
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
                 curve: AppMotion.easeOutCubic,
                 color: isHovered
-                    ? const Color.fromRGBO(25, 29, 38, 0.4) // surfaceMuted/40
-                    : Colors.transparent,
+                    ? colors.surfaceSecondary
+                    : context.colors.transparent,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
@@ -318,8 +321,8 @@ class _NavTile extends StatelessWidget {
                                 title,
                                 style: typography.body.bold.copyWith(
                                   color: isHovered
-                                      ? Colors.white
-                                      : const Color.fromRGBO(244, 244, 245, 1.0), // zinc-100
+                                      ? colors.textPrimary
+                                      : colors.textSecondary,
                                   fontSize: 14,
                                 ),
                               ),
@@ -328,16 +331,16 @@ class _NavTile extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                                   decoration: BoxDecoration(
-                                    color: const Color.fromRGBO(251, 191, 36, 0.1), // amber-400/10
+                                    color: neural.amber.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
-                                      color: const Color.fromRGBO(245, 158, 11, 0.3), // amber-500/30
+                                      color: neural.amber.withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Text(
                                     badge!,
                                     style: typography.caption.bold.copyWith(
-                                      color: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
+                                      color: neural.amber300,
                                       fontSize: 9,
                                       letterSpacing: 0.5,
                                     ),
@@ -350,7 +353,7 @@ class _NavTile extends StatelessWidget {
                           Text(
                             subtitle,
                             style: typography.caption.regular.copyWith(
-                              color: const Color.fromRGBO(161, 161, 170, 1.0), // zinc-400
+                              color: colors.textMuted,
                               fontSize: 12,
                             ),
                             maxLines: 1,
@@ -367,8 +370,8 @@ class _NavTile extends StatelessWidget {
                         Icons.chevron_right_rounded,
                         size: 16,
                         color: isHovered
-                            ? const Color.fromRGBO(212, 212, 216, 1.0) // zinc-300
-                            : const Color.fromRGBO(113, 113, 122, 1.0), // zinc-500
+                            ? colors.textPrimary
+                            : colors.textMuted,
                       ),
                     ),
                   ],
@@ -381,7 +384,7 @@ class _NavTile extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: const Color.fromRGBO(63, 63, 70, 0.6), // zinc-800/60
+            color: colors.surfaceBorder,
           ),
       ],
     );

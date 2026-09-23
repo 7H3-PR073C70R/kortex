@@ -394,7 +394,7 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
                         child: Center(
                           child: Text(
                             _getModeIcon(session.socraticMode),
-                            style: const TextStyle(fontSize: 16),
+                            style: context.typography.body.regular.copyWith(fontSize: 16),
                           ),
                         ),
                       ),

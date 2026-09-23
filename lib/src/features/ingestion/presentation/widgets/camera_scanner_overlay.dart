@@ -171,7 +171,7 @@ class CameraScannerOverlay extends HookWidget {
                             decoration: BoxDecoration(
                               color: isHovered
                                   ? colors.white.withAlpha(30)
-                                  : Colors.transparent,
+                                  : context.colors.transparent,
                               shape: BoxShape.circle,
                             ),
                             child: IconButton(

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
-import 'dart:math' as math;
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -22,7 +22,6 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/profile_navigation_menu.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/scholar_hub_card.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
-import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -48,8 +47,6 @@ class _ProfileView extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
 
     useEffect(() {
       context.read<AuthBloc>().add(const AuthProfileFetchRequested());
@@ -69,7 +66,7 @@ class _ProfileView extends HookWidget {
         final dailyTarget = profile?.dailyCardTarget ?? 20;
 
         return Scaffold(
-          backgroundColor: const Color.fromRGBO(3, 5, 8, 1.0),
+          backgroundColor: const Color.fromRGBO(3, 5, 8, 1),
           floatingActionButton: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
@@ -93,7 +90,6 @@ class _ProfileView extends HookWidget {
                 borderRadius: BorderRadius.circular(30),
                 side: const BorderSide(
                   color: Color.fromRGBO(63, 63, 70, 0.8), // zinc-700/80
-                  width: 1,
                 ),
               ),
             label: Row(
@@ -101,26 +97,26 @@ class _ProfileView extends HookWidget {
                 Container(
                   width: 24,
                   height: 24,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       begin: Alignment.bottomLeft,
                       end: Alignment.topRight,
                       colors: [
-                        Color.fromRGBO(99, 102, 241, 1.0), // indigo-500
-                        Color.fromRGBO(168, 85, 247, 1.0), // purple-500
-                        Color.fromRGBO(244, 114, 182, 1.0), // pink-400
+                        Color.fromRGBO(99, 102, 241, 1), // indigo-500
+                        Color.fromRGBO(168, 85, 247, 1), // purple-500
+                        Color.fromRGBO(244, 114, 182, 1), // pink-400
                       ],
                     ),
                   ),
                   padding: const EdgeInsets.all(1),
                   child: Container(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: Colors.black,
                       shape: BoxShape.circle,
                     ),
                     alignment: Alignment.center,
-                    child: const Text('🤖', style: TextStyle(fontSize: 12)),
+                    child: Text('🤖', style: context.typography.body.regular.copyWith(fontSize: 12)),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -133,11 +129,11 @@ class _ProfileView extends HookWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                Icon(
+                const Icon(
                   Icons.auto_awesome_rounded,
                   size: 14,
-                  color: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
-                ).animate(onPlay: (controller) => controller.repeat(reverse: true)).fade(begin: 0.5, end: 1.0),
+                  color: Color.fromRGBO(252, 211, 77, 1), // amber-300
+                ).animate(onPlay: (controller) => controller.repeat(reverse: true)).fade(begin: 0.5, end: 1),
               ],
             ),
             ),
@@ -151,13 +147,13 @@ class _ProfileView extends HookWidget {
                 right: 0,
                 height: 400,
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: RadialGradient(
                       center: Alignment(0, -0.7),
                       radius: 0.8,
                       colors: [
                         Color.fromRGBO(200, 160, 90, 0.1),
-                        Colors.transparent,
+                        context.colors.transparent,
                       ],
                       stops: [0.0, 0.9],
                     ),
@@ -170,13 +166,12 @@ class _ProfileView extends HookWidget {
                 width: 400,
                 height: 400,
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      center: Alignment.center,
                       radius: 0.8,
                       colors: [
                         Color.fromRGBO(56, 189, 248, 0.04),
-                        Colors.transparent,
+                        context.colors.transparent,
                       ],
                       stops: [0.0, 0.9],
                     ),
@@ -189,13 +184,12 @@ class _ProfileView extends HookWidget {
                 width: 400,
                 height: 400,
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      center: Alignment.center,
                       radius: 0.8,
                       colors: [
                         Color.fromRGBO(139, 92, 246, 0.05),
-                        Colors.transparent,
+                        context.colors.transparent,
                       ],
                       stops: [0.0, 0.9],
                     ),
@@ -217,7 +211,7 @@ class _ProfileView extends HookWidget {
                 ),
                 slivers: [
                   SliverAppBar(
-                    backgroundColor: Colors.transparent,
+                    backgroundColor: context.colors.transparent,
                     elevation: 0,
                     scrolledUnderElevation: 0,
                     pinned: true,
@@ -265,7 +259,6 @@ class _ProfileView extends HookWidget {
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: const Color.fromRGBO(245, 158, 11, 0.4), // amber-500/40
-                                  width: 1,
                                 ),
                                 boxShadow: const [
                                   BoxShadow(
@@ -282,7 +275,7 @@ class _ProfileView extends HookWidget {
                                     profile?.isPro == true
                                         ? Icons.verified_rounded
                                         : Icons.auto_awesome_rounded,
-                                    color: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
+                                    color: const Color.fromRGBO(252, 211, 77, 1), // amber-300
                                     size: 14,
                                   ),
                                   const SizedBox(width: 4),
@@ -291,7 +284,7 @@ class _ProfileView extends HookWidget {
                                         ? 'Pro Active'
                                         : 'Go Pro',
                                     style: typography.caption.bold.copyWith(
-                                      color: const Color.fromRGBO(252, 211, 77, 1.0), // amber-300
+                                      color: const Color.fromRGBO(252, 211, 77, 1), // amber-300
                                       fontSize: 12,
                                     ),
                                   ),
@@ -357,9 +350,9 @@ class _ProfileView extends HookWidget {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              Icon(
+                                              const Icon(
                                                 Icons.logout_rounded,
-                                                color: const Color.fromRGBO(251, 113, 133, 1.0), // rose-400
+                                                color: Color.fromRGBO(251, 113, 133, 1), // rose-400
                                                 size: 18,
                                               ),
                                               const SizedBox(width: 8),
@@ -367,7 +360,7 @@ class _ProfileView extends HookWidget {
                                                 'Sign Out',
                                                 style: typography.body.bold
                                                     .copyWith(
-                                                      color: const Color.fromRGBO(251, 113, 133, 1.0), // rose-400
+                                                      color: const Color.fromRGBO(251, 113, 133, 1), // rose-400
                                                       fontSize: 14,
                                                     ),
                                               ),
@@ -383,7 +376,7 @@ class _ProfileView extends HookWidget {
                                           'Kortexify v1.2.0 • Neural Study AI',
                                           style: typography.caption.bold
                                               .copyWith(
-                                                color: const Color.fromRGBO(161, 161, 170, 1.0), // zinc-400
+                                                color: const Color.fromRGBO(161, 161, 170, 1), // zinc-400
                                                 fontSize: 11,
                                                 letterSpacing: -0.2,
                                               ),
@@ -498,7 +491,7 @@ class _ProfileView extends HookWidget {
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: colors.textSecondary),
+                style: context.typography.body.regular.copyWith(color: colors.textSecondary),
               ),
             ),
             TextButton(
@@ -513,7 +506,7 @@ class _ProfileView extends HookWidget {
               },
               child: Text(
                 'Sign Out',
-                style: TextStyle(
+                style: context.typography.body.regular.copyWith(
                   color: colors.error,
                   fontWeight: FontWeight.bold,
                 ),

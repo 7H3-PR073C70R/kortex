@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +27,7 @@ class LeaderboardFloatingHud extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    int xpToPass = 0;
+    var xpToPass = 0;
     if (nextUserEntry != null) {
       xpToPass = nextUserEntry!.weeklyXp - currentUserEntry!.weeklyXp + 1;
     }
@@ -137,7 +138,7 @@ class LeaderboardFloatingHud extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  unawaited(HapticFeedback.lightImpact());
                   onJumpToMe();
                 },
                 child: Container(

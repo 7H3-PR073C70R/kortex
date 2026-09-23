@@ -212,9 +212,9 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text(
+                                Text(
                                   '🔥 ',
-                                  style: TextStyle(fontSize: 13),
+                                  style: context.typography.body.regular.copyWith(fontSize: 13),
                                 ),
                                 Text(
                                   '${state.streak} in a row! Momentum building',
@@ -374,7 +374,7 @@ class _FocusZenHeader extends StatelessWidget {
                         ),
                         child: Text(
                           '${state.parkedThoughts.length}',
-                          style: TextStyle(
+                          style: context.typography.body.regular.copyWith(
                             color: colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,

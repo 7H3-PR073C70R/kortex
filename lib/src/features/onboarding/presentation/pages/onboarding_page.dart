@@ -527,7 +527,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               foregroundColor: colors.textSecondary,
               backgroundColor: isHovered
                   ? colors.surfaceSecondary.withAlpha(isDark ? 140 : 180)
-                  : Colors.transparent,
+                  : context.colors.transparent,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.radiusBadge,

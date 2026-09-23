@@ -328,7 +328,7 @@ class _MobileCalibrationLayout extends StatelessWidget {
                       alignment: Alignment.topCenter,
                       children: <Widget>[
                         ...previousChildren,
-                        if (currentChild != null) currentChild,
+                        ?currentChild,
                       ],
                     );
                   },
@@ -414,7 +414,7 @@ class _MobileCalibrationLayout extends StatelessWidget {
                         ? colors.surfaceSecondary.withAlpha(
                             context.isDarkMode ? 100 : 140,
                           )
-                        : Colors.transparent,
+                        : context.colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: AppRadius.radiusBadge,
                     ),

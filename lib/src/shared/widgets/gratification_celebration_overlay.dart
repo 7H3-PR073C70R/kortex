@@ -202,7 +202,7 @@ class _GratificationCelebrationOverlayState
                           child: Center(
                             child: Text(
                               widget.emoji,
-                              style: const TextStyle(fontSize: 40),
+                              style: context.typography.body.regular.copyWith(fontSize: 40),
                             ),
                           ),
                         ),

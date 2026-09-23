@@ -135,7 +135,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
           ),
           title: Row(
             children: [
-              const Text('🎯', style: TextStyle(fontSize: 22)),
+              Text('🎯', style: context.typography.body.regular.copyWith(fontSize: 22)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -327,7 +327,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
           ),
           title: Row(
             children: [
-              const Text('🎯', style: TextStyle(fontSize: 20)),
+              Text('🎯', style: context.typography.body.regular.copyWith(fontSize: 20)),
               const SizedBox(width: 8),
               Text(
                 'Set Micro-Goal',
@@ -466,7 +466,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
           ),
           title: Row(
             children: [
-              const Text('⚡', style: TextStyle(fontSize: 20)),
+              Text('⚡', style: context.typography.body.regular.copyWith(fontSize: 20)),
               const SizedBox(width: 8),
               Text(
                 'Launch Co-Op Sprint',
@@ -1281,7 +1281,7 @@ class _AmbientSoundscapeBar extends StatelessWidget {
                             children: [
                               Text(
                                 track['emoji']!,
-                                style: const TextStyle(fontSize: 11),
+                                style: context.typography.body.regular.copyWith(fontSize: 11),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -1816,9 +1816,9 @@ class _FocusParticipantTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (participant.isAiBuddy) ...[
-                const Text('🤖 ', style: TextStyle(fontSize: 8)),
+                Text('🤖 ', style: context.typography.body.regular.copyWith(fontSize: 8)),
               ] else if (participant.isAway) ...[
-                const Text('⏳ ', style: TextStyle(fontSize: 8)),
+                Text('⏳ ', style: context.typography.body.regular.copyWith(fontSize: 8)),
               ],
               Text(
                 statusLabel,
@@ -1964,9 +1964,9 @@ class _AudienceSection extends StatelessWidget {
                               shape: BoxShape.circle,
                               color: cColors.warning,
                             ),
-                            child: const Text(
+                            child: Text(
                               '✋',
-                              style: TextStyle(fontSize: 8),
+                              style: context.typography.body.regular.copyWith(fontSize: 8),
                             ),
                           ),
                       ],
@@ -2589,7 +2589,7 @@ class _MinimalInRoomBottomBar extends StatelessWidget {
                     ),
                     child: Text(
                       emoji,
-                      style: const TextStyle(fontSize: 17),
+                      style: context.typography.body.regular.copyWith(fontSize: 17),
                     ),
                   ),
                 ),
@@ -2965,7 +2965,7 @@ class _RoomControlDrawer extends StatelessWidget {
                                   children: [
                                     Text(
                                       track['emoji']!,
-                                      style: const TextStyle(fontSize: 11),
+                                      style: context.typography.body.regular.copyWith(fontSize: 11),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(

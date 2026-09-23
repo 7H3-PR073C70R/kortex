@@ -104,7 +104,7 @@ class _RuleItem extends StatelessWidget {
             color: color.withAlpha(30),
             borderRadius: AppRadius.radiusCard,
           ),
-          child: Text(icon, style: const TextStyle(fontSize: 20)),
+          child: Text(icon, style: context.typography.body.regular.copyWith(fontSize: 20)),
         ),
         const SizedBox(width: 16),
         Expanded(

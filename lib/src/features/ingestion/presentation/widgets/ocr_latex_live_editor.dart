@@ -78,7 +78,7 @@ class OcrLatexLiveEditor extends HookWidget {
                                 decoration: BoxDecoration(
                                   color: isHovered
                                       ? colors.surfaceSecondary
-                                      : Colors.transparent,
+                                      : context.colors.transparent,
                                   shape: BoxShape.circle,
                                 ),
                                 child: IconButton(
@@ -455,7 +455,7 @@ class OcrLatexLiveEditor extends HookWidget {
                                 decoration: BoxDecoration(
                                   color: isHovered
                                       ? colors.primary.withAlpha(25)
-                                      : Colors.transparent,
+                                      : context.colors.transparent,
                                   borderRadius: BorderRadius.circular(
                                     AppRadius.badge,
                                   ),
@@ -485,7 +485,7 @@ class OcrLatexLiveEditor extends HookWidget {
                               decoration: BoxDecoration(
                                 color: isHovered
                                     ? colors.error.withAlpha(25)
-                                    : Colors.transparent,
+                                    : context.colors.transparent,
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.badge,
                                 ),

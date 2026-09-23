@@ -297,7 +297,7 @@ class LatexCardContentViewer extends StatelessWidget {
           physics: const ClampingScrollPhysics(),
           child: Math.tex(
             cleanFormula,
-            textStyle: TextStyle(
+            textStyle: context.typography.body.regular.copyWith(
               fontSize: 18,
               color: colors.textPrimary,
             ),

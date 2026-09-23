@@ -99,7 +99,7 @@ class AppAvatar extends StatelessWidget {
         content = Center(
           child: Text(
             url.replaceFirst('emoji:', ''),
-            style: TextStyle(fontSize: _dimension * 0.52),
+            style: context.typography.body.regular.copyWith(fontSize: _dimension * 0.52),
           ),
         );
       } else if (url.startsWith('data:image') || url.startsWith('data:')) {

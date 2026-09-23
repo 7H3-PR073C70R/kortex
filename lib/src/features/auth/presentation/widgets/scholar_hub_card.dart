@@ -6,7 +6,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
-import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -108,7 +107,7 @@ class ScholarHubCard extends StatelessWidget {
                                   )
                                   .animate(target: isHovered ? 1 : 0.8)
                                   .blurXY(begin: 8, end: 12)
-                                  .fade(begin: 0.8, end: 1.0),
+                                  .fade(begin: 0.8, end: 1),
 
                               // Avatar Circle
                               Container(
@@ -160,7 +159,6 @@ class ScholarHubCard extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: const Color.fromRGBO(63, 63, 70, 0.8), // zinc-700/80
-                                  width: 1,
                                 ),
                                 boxShadow: const [
                                   BoxShadow(
@@ -304,7 +302,7 @@ class ScholarHubCard extends StatelessWidget {
             gradient: const LinearGradient(
               colors: [
                 Color.fromRGBO(2, 44, 34, 0.2), // emerald-950/20
-                Color.fromRGBO(18, 21, 28, 1.0), // cardBg
+                Color.fromRGBO(18, 21, 28, 1), // cardBg
                 Color.fromRGBO(24, 24, 27, 0.6), // zinc-900/60
               ],
             ),
@@ -328,7 +326,7 @@ class ScholarHubCard extends StatelessWidget {
                       child: const Icon(
                         Icons.shield_outlined,
                         size: 16,
-                        color: Color.fromRGBO(52, 211, 153, 1.0), // emerald-400
+                        color: Color.fromRGBO(52, 211, 153, 1), // emerald-400
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -360,7 +358,7 @@ class ScholarHubCard extends StatelessWidget {
                 child: Text(
                   streakFreezes > 0 ? '$streakFreezes ready' : 'No shield',
                   style: typography.caption.bold.copyWith(
-                    color: const Color.fromRGBO(52, 211, 153, 1.0), // emerald-400
+                    color: const Color.fromRGBO(52, 211, 153, 1), // emerald-400
                     fontSize: 11,
                   ),
                 ),
@@ -393,7 +391,6 @@ class ScholarHubCard extends StatelessWidget {
               color: isHovered 
                   ? const Color.fromRGBO(245, 158, 11, 0.3) // amber-500/30
                   : const Color.fromRGBO(63, 63, 70, 0.7), // zinc-800/70
-              width: 1,
             ),
             boxShadow: const [
               BoxShadow(
@@ -406,7 +403,7 @@ class ScholarHubCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(icon, style: const TextStyle(fontSize: 16)),
+              Text(icon, style: context.typography.body.regular.copyWith(fontSize: 16)),
               const SizedBox(height: 4),
               Text(
                 value,
@@ -444,7 +441,7 @@ class ScholarHubCard extends StatelessWidget {
       if (photoUrl.startsWith('emoji:')) {
         return Text(
           photoUrl.replaceFirst('emoji:', ''),
-          style: TextStyle(fontSize: size * 0.5),
+          style: typography.body.regular.copyWith(fontSize: size * 0.5),
         );
       } else if (photoUrl.startsWith('data:image')) {
         try {

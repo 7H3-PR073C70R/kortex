@@ -454,7 +454,7 @@ class _StartSessionPill extends StatelessWidget {
       button: true,
       label: l10n.decksStartSession,
       child: Material(
-        color: Colors.transparent,
+        color: context.colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.badge),

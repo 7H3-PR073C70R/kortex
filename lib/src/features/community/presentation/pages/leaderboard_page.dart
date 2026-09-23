@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,9 +12,9 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
-import 'package:kortex/src/features/community/presentation/widgets/streak_leaderboard_widget.dart';
 import 'package:kortex/src/features/community/presentation/widgets/leaderboard/leaderboard_floating_hud.dart';
 import 'package:kortex/src/features/community/presentation/widgets/leaderboard/leaderboard_shimmer_view.dart';
+import 'package:kortex/src/features/community/presentation/widgets/streak_leaderboard_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 @RoutePage()
@@ -103,7 +105,7 @@ class _LeaderboardView extends HookWidget {
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                    contentPadding: EdgeInsets.zero,
                                   ),
                                 ),
                               ),
@@ -155,11 +157,11 @@ class _LeaderboardView extends HookWidget {
                         onJumpToMe: () {
                           // Approximate scroll based on rank
                           final targetOffset = 300.0 + (currentUserEntry.rank * 80.0);
-                          scrollController.animateTo(
+                          unawaited(scrollController.animateTo(
                             targetOffset,
                             duration: AppMotion.expressive,
                             curve: AppMotion.easeOutCubic,
-                          );
+                          ));
                         },
                       ),
                     ),

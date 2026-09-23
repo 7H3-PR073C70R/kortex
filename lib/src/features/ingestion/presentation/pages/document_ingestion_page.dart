@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -24,8 +27,6 @@ import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'dart:ui';
 
 @RoutePage()
 class DocumentIngestionPage extends StatelessWidget {

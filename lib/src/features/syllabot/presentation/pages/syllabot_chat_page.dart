@@ -469,7 +469,7 @@ class _SyllabotChatView extends HookWidget {
                 decoration: BoxDecoration(
                   color: isHovered
                       ? colors.surfaceSecondary
-                      : Colors.transparent,
+                      : context.colors.transparent,
                   borderRadius: BorderRadius.circular(AppRadius.badge),
                 ),
                 child: IconButton(
@@ -520,7 +520,7 @@ class _SyllabotChatView extends HookWidget {
                       decoration: BoxDecoration(
                         color: isHovered
                             ? colors.syllabotAccent.withAlpha(25)
-                            : Colors.transparent,
+                            : context.colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: IconButton(
@@ -553,7 +553,7 @@ class _SyllabotChatView extends HookWidget {
                       decoration: BoxDecoration(
                         color: isHovered
                             ? colors.primary.withAlpha(25)
-                            : Colors.transparent,
+                            : context.colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: IconButton(
@@ -585,7 +585,7 @@ class _SyllabotChatView extends HookWidget {
                       decoration: BoxDecoration(
                         color: isHovered
                             ? colors.syllabotAccent.withAlpha(25)
-                            : Colors.transparent,
+                            : context.colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: IconButton(
@@ -653,7 +653,7 @@ class _SyllabotChatView extends HookWidget {
                       decoration: BoxDecoration(
                         color: isHovered
                             ? colors.surfaceSecondary
-                            : Colors.transparent,
+                            : context.colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: IconButton(
@@ -686,7 +686,7 @@ class _SyllabotChatView extends HookWidget {
                   decoration: BoxDecoration(
                     color: isHovered
                         ? colors.surfaceSecondary
-                        : Colors.transparent,
+                        : context.colors.transparent,
                     borderRadius: BorderRadius.circular(AppRadius.badge),
                   ),
                   child: IconButton(
@@ -847,9 +847,9 @@ class _SyllabotChatView extends HookWidget {
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Text(
+                                              Text(
                                                 '⚡',
-                                                style: TextStyle(fontSize: 10),
+                                                style: context.typography.body.regular.copyWith(fontSize: 10),
                                               ),
                                               const SizedBox(width: 5),
                                               Text(
@@ -1058,7 +1058,7 @@ class _SyllabotChatView extends HookWidget {
                             children: [
                               Text(
                                 s.icon,
-                                style: const TextStyle(fontSize: 18),
+                                style: context.typography.body.regular.copyWith(fontSize: 18),
                               ),
                               const SizedBox(width: 12),
                               Expanded(

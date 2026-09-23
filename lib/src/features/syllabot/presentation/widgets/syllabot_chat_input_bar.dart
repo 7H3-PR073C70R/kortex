@@ -245,7 +245,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                 children: [
                                   Text(
                                     icon,
-                                    style: const TextStyle(fontSize: 20),
+                                    style: context.typography.body.regular.copyWith(fontSize: 20),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -666,7 +666,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                         widget.socraticMode,
                                         l10n,
                                       ).$1,
-                                      style: const TextStyle(fontSize: 13),
+                                      style: context.typography.body.regular.copyWith(fontSize: 13),
                                     ),
                                     const SizedBox(width: 6),
                                     Flexible(

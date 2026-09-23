@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -30,7 +32,6 @@ class LeaderboardScholarSheet extends StatelessWidget {
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Drag handle
             Container(
@@ -98,7 +99,7 @@ class LeaderboardScholarSheet extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  HapticFeedback.heavyImpact();
+                  unawaited(HapticFeedback.heavyImpact());
                   Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
@@ -141,7 +142,7 @@ class _StatItem extends StatelessWidget {
 
     return Column(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 24)),
+        Text(icon, style: context.typography.body.regular.copyWith(fontSize: 24)),
         const SizedBox(height: 8),
         Text(
           value,

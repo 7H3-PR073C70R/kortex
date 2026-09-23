@@ -105,7 +105,7 @@ class HeaderProfileBar extends StatelessWidget {
                                           colors: [
                                             neural.amber200.withAlpha(51),
                                             neural.emerald.withAlpha(26),
-                                            Colors.transparent,
+                                            context.colors.transparent,
                                           ],
                                         ),
                                         boxShadow: [

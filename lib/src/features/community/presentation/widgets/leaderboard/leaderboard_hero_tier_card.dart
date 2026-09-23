@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -22,11 +24,13 @@ class LeaderboardHeroTierCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.transparent,
-          isScrollControlled: true,
-          builder: (context) => const LeaderboardLeagueRulesSheet(),
+        unawaited(
+          showModalBottomSheet<void>(
+            context: context,
+            backgroundColor: context.colors.transparent,
+            isScrollControlled: true,
+            builder: (context) => const LeaderboardLeagueRulesSheet(),
+          ),
         );
       },
       child: Container(
@@ -53,7 +57,7 @@ class LeaderboardHeroTierCard extends StatelessWidget {
                   children: [
                     Text(
                       _getTierEmoji(currentTier),
-                      style: const TextStyle(fontSize: 24),
+                      style: context.typography.body.regular.copyWith(fontSize: 24),
                     ),
                     const SizedBox(width: 8),
                     Column(
@@ -112,10 +116,10 @@ class LeaderboardHeroTierCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('🛡️', style: TextStyle(fontSize: 13)),
+                    Text('🛡️', style: context.typography.body.regular.copyWith(fontSize: 13)),
                     const SizedBox(width: 6),
                     Text(
-                      "$streakFreezeCount Streak Freeze Active",
+                      '$streakFreezeCount Streak Freeze Active',
                       style: typography.caption.bold.copyWith(
                         color: colors.syllabotAccent,
                         fontSize: 11,

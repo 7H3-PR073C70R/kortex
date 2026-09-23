@@ -826,7 +826,7 @@ class QuizDuelArenaPage extends HookWidget {
                                       ),
                                       child: Text(
                                         emote,
-                                        style: const TextStyle(fontSize: 20),
+                                        style: context.typography.body.regular.copyWith(fontSize: 20),
                                       ),
                                     ),
                                   ),
@@ -856,7 +856,7 @@ class QuizDuelArenaPage extends HookWidget {
                           opacity: 1.0 - (value * 0.7),
                           child: Text(
                             emote,
-                            style: const TextStyle(fontSize: 36),
+                            style: context.typography.body.regular.copyWith(fontSize: 36),
                           ),
                         ),
                       );

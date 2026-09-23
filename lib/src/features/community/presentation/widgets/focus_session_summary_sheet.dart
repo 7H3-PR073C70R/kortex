@@ -144,7 +144,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                         color: colors.warning.withAlpha(35),
                         border: Border.all(color: colors.warning.withAlpha(80)),
                       ),
-                      child: const Text('🏆', style: TextStyle(fontSize: 24)),
+                      child: Text('🏆', style: context.typography.body.regular.copyWith(fontSize: 24)),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -183,7 +183,7 @@ class FocusSessionSummarySheet extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Text('⚡', style: TextStyle(fontSize: 14)),
+                          Text('⚡', style: context.typography.body.regular.copyWith(fontSize: 14)),
                           const SizedBox(width: 4),
                           Text(
                             '+$earnedXp XP',

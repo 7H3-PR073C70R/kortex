@@ -1198,7 +1198,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         decoration: BoxDecoration(
                           color: isHovered
                               ? colors.primary.withAlpha(25)
-                              : Colors.transparent,
+                              : context.colors.transparent,
                           borderRadius: AppRadius.radiusBadge,
                         ),
                         child: Row(

@@ -149,7 +149,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   children: [
                                     Text(
                                       _getModeIcon(mode),
-                                      style: const TextStyle(fontSize: 18),
+                                      style: context.typography.body.regular.copyWith(fontSize: 18),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
@@ -214,19 +214,19 @@ class SyllabotAiSettingsPage extends HookWidget {
                               ),
                             ),
                             SegmentedButton<VoiceGender>(
-                              segments: const [
+                              segments: [
                                 ButtonSegment(
                                   value: VoiceGender.female,
                                   label: Text(
                                     'Female',
-                                    style: TextStyle(fontSize: 11),
+                                    style: context.typography.body.regular.copyWith(fontSize: 11),
                                   ),
                                 ),
                                 ButtonSegment(
                                   value: VoiceGender.male,
                                   label: Text(
                                     'Male',
-                                    style: TextStyle(fontSize: 11),
+                                    style: context.typography.body.regular.copyWith(fontSize: 11),
                                   ),
                                 ),
                               ],
@@ -256,26 +256,26 @@ class SyllabotAiSettingsPage extends HookWidget {
                               ),
                             ),
                             SegmentedButton<double>(
-                              segments: const [
+                              segments: [
                                 ButtonSegment(
                                   value: 0.8,
                                   label: Text(
                                     '0.8x',
-                                    style: TextStyle(fontSize: 11),
+                                    style: context.typography.body.regular.copyWith(fontSize: 11),
                                   ),
                                 ),
                                 ButtonSegment(
                                   value: 1,
                                   label: Text(
                                     '1.0x',
-                                    style: TextStyle(fontSize: 11),
+                                    style: context.typography.body.regular.copyWith(fontSize: 11),
                                   ),
                                 ),
                                 ButtonSegment(
                                   value: 1.2,
                                   label: Text(
                                     '1.2x',
-                                    style: TextStyle(fontSize: 11),
+                                    style: context.typography.body.regular.copyWith(fontSize: 11),
                                   ),
                                 ),
                               ],

@@ -1651,7 +1651,7 @@ class SecuritySettingsPage extends HookWidget {
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: colors.textSecondary),
+                style: context.typography.body.regular.copyWith(color: colors.textSecondary),
               ),
             ),
             TextButton(
@@ -1673,7 +1673,7 @@ class SecuritySettingsPage extends HookWidget {
               },
               child: Text(
                 'Delete Forever',
-                style: TextStyle(
+                style: context.typography.body.regular.copyWith(
                   color: colors.error,
                   fontWeight: FontWeight.bold,
                 ),

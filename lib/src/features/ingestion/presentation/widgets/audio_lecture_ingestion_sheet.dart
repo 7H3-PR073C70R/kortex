@@ -208,7 +208,7 @@ class AudioLectureIngestionSheet extends HookWidget {
                           decoration: BoxDecoration(
                             color: isHovered
                                 ? colors.primary.withAlpha(25)
-                                : Colors.transparent,
+                                : context.colors.transparent,
                             borderRadius: BorderRadius.circular(
                               AppRadius.badge,
                             ),

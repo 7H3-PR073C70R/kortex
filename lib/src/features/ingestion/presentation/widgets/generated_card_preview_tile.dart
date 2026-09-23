@@ -245,7 +245,7 @@ class GeneratedCardPreviewTile extends HookWidget {
                   alignment: Alignment.topLeft,
                   children: <Widget>[
                     ...previousChildren,
-                    if (currentChild != null) currentChild,
+                    ?currentChild,
                   ],
                 );
               },

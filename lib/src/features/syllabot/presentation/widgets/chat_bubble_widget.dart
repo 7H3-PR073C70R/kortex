@@ -224,7 +224,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                         decoration: BoxDecoration(
                                           color: isHovered
                                               ? colors.primary.withAlpha(20)
-                                              : Colors.transparent,
+                                              : context.colors.transparent,
                                           borderRadius: AppRadius.radiusBadge,
                                         ),
                                         child: Tooltip(
@@ -264,7 +264,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                         decoration: BoxDecoration(
                                           color: isHovered
                                               ? colors.primary.withAlpha(20)
-                                              : Colors.transparent,
+                                              : context.colors.transparent,
                                           borderRadius: AppRadius.radiusBadge,
                                         ),
                                         child: Tooltip(
@@ -308,7 +308,7 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                       decoration: BoxDecoration(
                                         color: isHovered
                                             ? colors.primary.withAlpha(20)
-                                            : Colors.transparent,
+                                            : context.colors.transparent,
                                         borderRadius: AppRadius.radiusBadge,
                                       ),
                                       child: Tooltip(

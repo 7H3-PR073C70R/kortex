@@ -1,14 +1,14 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -397,7 +397,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           ),
           child: Text(
             value,
-            style: TextStyle(
+            style: context.typography.body.regular.copyWith(
               fontSize: 26,
               fontWeight: FontWeight.w800,
               color: colors.white,
@@ -407,7 +407,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
+          style: context.typography.body.regular.copyWith(
             fontSize: 10,
             fontWeight: FontWeight.w700,
             color: colors.white.withValues(alpha: 0.7),
