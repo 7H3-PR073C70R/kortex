@@ -36,8 +36,9 @@ class _TourStep {
   resolveTarget;
 }
 
-/// Interactive spotlight walkthrough overlay that guides users through the core
-/// features of Kortex after they enter the workspace.
+/// Interactive spotlight walkthrough overlay that guides users through ALL core
+/// features of Kortex. Call [AppGuidedTourOverlay.start] — it handles
+/// navigation to Dashboard automatically before launching the overlay.
 class AppGuidedTourOverlay extends StatefulWidget {
   const AppGuidedTourOverlay({
     super.key,
@@ -47,12 +48,17 @@ class AppGuidedTourOverlay extends StatefulWidget {
   final VoidCallback? onTourCompleted;
 
   /// Launches the full-screen interactive tour over the root navigator.
-  /// If [force] is false (default), the tour will only show if the user has
+  ///
+  /// If [force] is false (default), the tour only shows if the user has
   /// never completed or skipped it before.
+  ///
+  /// Pass [onBeforeStart] to navigate to Dashboard before the overlay mounts
+  /// (e.g. from About page or profile menu).
   static Future<void> start(
     BuildContext context, {
     VoidCallback? onCompleted,
     bool force = false,
+    VoidCallback? onBeforeStart,
   }) async {
     if (locator.isRegistered<LocalStorageService>()) {
       final storage = locator<LocalStorageService>();
@@ -60,11 +66,20 @@ class AppGuidedTourOverlay extends StatefulWidget {
           storage.getPreference(key: PrefKeys.hasCompletedInteractiveTour) ==
           'true';
 
-      // Tour should only show if user has never done or skipped it before.
       if (!force && hasCompleted) {
         return;
       }
     }
+
+    // Switch to Dashboard tab first so spotlights land on the right widgets.
+    onBeforeStart?.call();
+
+    // Small delay to allow navigation animation to settle.
+    if (onBeforeStart != null) {
+      await Future<void>.delayed(const Duration(milliseconds: 420));
+    }
+
+    if (!context.mounted) return;
 
     unawaited(HapticFeedback.mediumImpact());
 
@@ -101,13 +116,11 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     with TickerProviderStateMixin {
   int _currentStepIndex = 0;
 
-  // Animation controller for spotlight morphing between steps
   late final AnimationController _morphController;
   late Animation<double> _morphAnimation;
   Rect? _previousTargetRect;
   Rect? _currentTargetRect;
 
-  // Animation controller for pulse aura around highlighted element
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
@@ -121,69 +134,79 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
 
   List<_TourStep> _buildSteps(AppThemeColorsExtension colors) {
     return [
-      // 1. Dashboard & Academic Header
+      // 1. Academic Command Center
       _TourStep(
-        badge: 'STEP 1 OF 5 • DASHBOARD',
+        badge: 'STEP 1 OF 9 • DASHBOARD',
         title: 'Academic Command Center',
-        subtitle: 'Daily streak, neural tier & exam countdown',
+        subtitle: 'Streak, Neural Tier & exam countdown',
         description:
-            'Monitor your daily study consistency, level up your Neural Scholar tier, and see exact days remaining until your target exams (WAEC, JAMB, or Finals).',
-        proTip: 'Tap "Add Exam Countdown" to calibrate an automated cram pace.',
+            'This is your daily academic HQ. Track your study streak, watch your Neural Scholar tier rise (Bronze → Platinum → Diamond), and see a live countdown to every exam — WAEC, JAMB, A-levels, or custom finals.',
+        proTip:
+            'Keeping your streak alive for 7+ days unlocks bonus XP multipliers and league promotions.',
         icon: Icons.speed_rounded,
         accentColor: colors.primary,
         resolveTarget: (context, screenSize, insets) {
           final top = insets.top + 16;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(
-            left,
-            top,
-            width,
-            135,
-          );
+          return Rect.fromLTWH(left, top, width, 140);
         },
       ),
 
-      // 2. Daily Active Recall Queue
+      // 2. FSRS Daily Review Queue
       _TourStep(
-        badge: 'STEP 2 OF 5 • ACTIVE RECALL',
-        title: 'Daily Review Queue',
-        subtitle: 'Scientifically spaced flashcard reviews',
+        badge: 'STEP 2 OF 9 • ACTIVE RECALL',
+        title: 'FSRS Daily Review Queue',
+        subtitle: 'Science-backed spaced repetition',
         description:
-            'Never cram at the last minute. Cards due for review appear right here every morning, scheduled by the FSRS algorithm right before you are predicted to forget.',
+            'Cards due for review appear here every morning, scheduled by the FSRS-6 spaced-repetition algorithm — the same system used by top medical students worldwide. It predicts exactly when you are about to forget and reschedules before that happens.',
         proTip:
-            'Completing 10–15 cards a day cements durable long-term recall.',
+            'Just 10-15 reviews per day maintains 95%+ retention permanently. Do not skip your queue.',
         icon: Icons.alarm_on_rounded,
         accentColor: colors.success,
         resolveTarget: (context, screenSize, insets) {
-          final top = insets.top + 165;
+          final top = insets.top + 170;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(
-            left,
-            top,
-            width,
-            110,
-          );
+          return Rect.fromLTWH(left, top, width, 120);
         },
       ),
 
-      // 3. Study Decks & OCR Scanner
+      // 3. Exam Countdown Timer & Cram Planner
       _TourStep(
-        badge: 'STEP 3 OF 5 • STUDY DECKS',
-        title: 'Smart Decks & Past Papers',
-        subtitle: 'Curated decks & AI camera note scanner',
+        badge: 'STEP 3 OF 9 • EXAM PLANNER',
+        title: 'Exam Countdown & Cram Planner',
+        subtitle: 'Auto-calculated daily study targets',
         description:
-            'Browse curated past questions and subject curricula, or use the built-in OCR camera scanner to instantly turn textbook pages and lecture slides into active-recall cards.',
+            'Add any upcoming exam — WAEC, NECO, JAMB, SAT, or a custom paper — and Kortex generates a day-by-day cram plan. As the countdown hits zero, the timer switches to a full in-app exam clock so you practise under real time pressure.',
         proTip:
-            'Tap "+" inside Study Decks to convert physical notes into decks.',
+            'Tap "Add Exam" on the countdown banner. The algorithm auto-distributes your weaker topics to the days you have most time.',
+        icon: Icons.timer_outlined,
+        accentColor: colors.warning,
+        resolveTarget: (context, screenSize, insets) {
+          final top = insets.top + 300;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 80);
+        },
+      ),
+
+      // 4. Smart Flashcard Decks + OCR
+      _TourStep(
+        badge: 'STEP 4 OF 9 • FLASHCARD DECKS',
+        title: 'Smart Decks & OCR Scanner',
+        subtitle: 'AI-curated cards + camera note importer',
+        description:
+            'Browse thousands of pre-built past-question decks for your syllabus, or use the built-in OCR camera to instantly photograph textbook pages and lecture notes — Kortex converts them to interactive flashcards in seconds.',
+        proTip:
+            'Use the "+" icon in Decks to scan physical notes. AI auto-generates both sides of each card from your image.',
         icon: Icons.style_rounded,
         accentColor: colors.warning,
         resolveTarget: (context, screenSize, insets) {
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
           final dockLeft = (screenSize.width - dockWidth) / 2;
-          final slotWidth = dockWidth / 4;
+          final slotWidth = dockWidth / 5;
           return Rect.fromLTWH(
             dockLeft + slotWidth,
             screenSize.height - defaultBottom - 68,
@@ -193,15 +216,15 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 4. Syllabot AI Copilot
+      // 5. Syllabot AI Copilot
       _TourStep(
-        badge: 'STEP 4 OF 5 • AI COPILOT',
+        badge: 'STEP 5 OF 9 • AI COPILOT',
         title: 'Ask Syllabot 24/7',
-        subtitle: 'Your personal Socratic academic tutor',
+        subtitle: 'Socratic AI tutor — always one tap away',
         description:
-            'Stuck on a tricky math equation, physics proof, or past question? Tap this floating copilot anytime on any screen for step-by-step guidance and concept breakdowns.',
+            'Stuck on a tricky equation, past question, or concept? Tap the floating Syllabot button anywhere in the app for step-by-step explanations, essay outlines, diagram breakdowns, or even full past-paper marking.',
         proTip:
-            'Syllabot floats above all screens so help is always one tap away.',
+            'Syllabot stays visible on every screen so you never have to leave your revision session to get help.',
         icon: Icons.psychology_rounded,
         accentColor: colors.secondary,
         resolveTarget: (context, screenSize, insets) {
@@ -215,24 +238,102 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 5. Collaborative Study Hub & Live Rooms
+      // 6. Quiz & Mock Exam Engine
       _TourStep(
-        badge: 'STEP 5 OF 5 • COMMUNITY',
-        title: 'Collaborative Study Hub',
-        subtitle: 'Live virtual study rooms & leaderboards',
+        badge: 'STEP 6 OF 9 • QUIZ & MOCK EXAM',
+        title: 'Quiz Arena & Mock Exam',
+        subtitle: 'Timed tests, AI marking & instant review',
         description:
-            'Connect with fellow candidates and scholars. Join synchronized Pomodoro live study rooms, discuss challenging questions in subject forums, and climb academic rankings.',
+            'Take full timed mock exams or targeted topic quizzes. When finished, the AI marker shows your score, breaks down every wrong answer, compares your response to the correct one, and tells you exactly which topic to revise next.',
         proTip:
-            'Studying in live virtual rooms boosts focus and accountability.',
+            'Use Study Hub to launch a mock exam. Enable "Exam Mode" for a silent, distraction-free timed environment that simulates real exam conditions.',
+        icon: Icons.quiz_rounded,
+        accentColor: colors.error,
+        resolveTarget: (context, screenSize, insets) {
+          final defaultBottom = math.max(16, insets.bottom + 8);
+          final dockWidth = math.min(screenSize.width - 32, 480);
+          final dockLeft = (screenSize.width - dockWidth) / 2;
+          final slotWidth = dockWidth / 5;
+          // Study Hub tab (index 3 in 5-tab dock)
+          return Rect.fromLTWH(
+            dockLeft + slotWidth * 3,
+            screenSize.height - defaultBottom - 68,
+            slotWidth,
+            64,
+          );
+        },
+      ),
+
+      // 7. Study Hub & Pomodoro
+      _TourStep(
+        badge: 'STEP 7 OF 9 • STUDY HUB',
+        title: 'Study Hub & Pomodoro Rooms',
+        subtitle: 'Focused deep-work sessions with timer',
+        description:
+            'Access all active learning tools — Pomodoro timer, subject quiz launchers, past-question banks, and curated course materials. The built-in session timer helps you work in focused 25-minute sprints with structured breaks.',
+        proTip:
+            'Start a Pomodoro session in Study Hub to enter deep-work flow. Sessions track focused-study hours toward your weekly XP milestones.',
+        icon: Icons.device_hub_rounded,
+        accentColor: colors.syllabotAccent,
+        resolveTarget: (context, screenSize, insets) {
+          final defaultBottom = math.max(16, insets.bottom + 8);
+          final dockWidth = math.min(screenSize.width - 32, 480);
+          final dockLeft = (screenSize.width - dockWidth) / 2;
+          final slotWidth = dockWidth / 5;
+          return Rect.fromLTWH(
+            dockLeft + slotWidth * 3,
+            screenSize.height - defaultBottom - 68,
+            slotWidth,
+            64,
+          );
+        },
+      ),
+
+      // 8. Community Hub & Leaderboard
+      _TourStep(
+        badge: 'STEP 8 OF 9 • COMMUNITY',
+        title: 'Study Community & Leaderboard',
+        subtitle: 'Live rooms, forums & academic rankings',
+        description:
+            'Join synchronized live virtual study rooms with other scholars, discuss challenging past questions in subject forums, share flashcard decks on the marketplace, and compete on the real-time leaderboard to rise through Bronze to Diamond leagues.',
+        proTip:
+            'Studying in a live virtual room with peers boosts accountability. Rooms use a shared Pomodoro clock so everyone stays in sync.',
         icon: Icons.groups_rounded,
         accentColor: colors.latexHighlight,
         resolveTarget: (context, screenSize, insets) {
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
           final dockLeft = (screenSize.width - dockWidth) / 2;
-          final slotWidth = dockWidth / 4;
+          final slotWidth = dockWidth / 5;
+          // Community tab (index 2)
           return Rect.fromLTWH(
             dockLeft + slotWidth * 2,
+            screenSize.height - defaultBottom - 68,
+            slotWidth,
+            64,
+          );
+        },
+      ),
+
+      // 9. Profile, Analytics & Settings
+      _TourStep(
+        badge: 'STEP 9 OF 9 • PROFILE',
+        title: 'Progress Analytics & Profile',
+        subtitle: 'Retention heatmap, XP trends & settings',
+        description:
+            'Your Profile tab shows a retention heatmap, long-term XP curves, subject mastery breakdown, and streak history. Customise your theme accent, notification schedule, and Syllabot AI behaviour all from Appearance & Sounds in your profile.',
+        proTip:
+            'Check your weekly retention heatmap every Sunday to identify the topics with weakest recall — those are your Monday priorities.',
+        icon: Icons.person_rounded,
+        accentColor: colors.primary,
+        resolveTarget: (context, screenSize, insets) {
+          final defaultBottom = math.max(16, insets.bottom + 8);
+          final dockWidth = math.min(screenSize.width - 32, 480);
+          final dockLeft = (screenSize.width - dockWidth) / 2;
+          final slotWidth = dockWidth / 5;
+          // Profile tab (index 4)
+          return Rect.fromLTWH(
+            dockLeft + slotWidth * 4,
             screenSize.height - defaultBottom - 68,
             slotWidth,
             64,
@@ -264,7 +365,6 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
     );
 
-    // Initialize targets after first layout frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _updateTargetRect(initial: true);
@@ -283,7 +383,6 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     final screenSize = MediaQuery.sizeOf(context);
     final insets = MediaQuery.paddingOf(context);
     final step = _steps[_currentStepIndex];
-
     final newRect = step.resolveTarget(context, screenSize, insets);
 
     setState(() {
@@ -347,7 +446,6 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     final step = _steps[_currentStepIndex];
     final isLastStep = _currentStepIndex == _steps.length - 1;
 
-    // Resolve animated spotlight rectangle
     final fromRect =
         _previousTargetRect ?? step.resolveTarget(context, screenSize, insets);
     final toRect =
@@ -355,7 +453,6 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     final animatedRect =
         Rect.lerp(fromRect, toRect, _morphAnimation.value) ?? toRect;
 
-    // Determine whether the target is in the upper or lower half of screen
     final isTargetInTopHalf = animatedRect.center.dy < screenSize.height * 0.48;
 
     return PopScope(
@@ -384,7 +481,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
               },
             ),
 
-            // 2. Non-blocking tap to dismiss/advance
+            // 2. Non-blocking tap to advance
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
@@ -432,7 +529,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Card Top Row: Badge & Skip Button
+                        // Badge & Skip
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -563,7 +660,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                         ),
                         const SizedBox(height: 12),
 
-                        // Step Description
+                        // Description
                         Text(
                           step.description,
                           style: typography.footnote.regular.copyWith(
@@ -610,7 +707,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                         ),
                         const SizedBox(height: 16),
 
-                        // Bottom Navigation Controls
+                        // Navigation Controls
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -620,9 +717,9 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                                 final isSelected = idx == _currentStepIndex;
                                 return AnimatedContainer(
                                   duration: const Duration(milliseconds: 250),
-                                  margin: const EdgeInsets.only(right: 6),
-                                  width: isSelected ? 20 : 6,
-                                  height: 6,
+                                  margin: const EdgeInsets.only(right: 5),
+                                  width: isSelected ? 18 : 5,
+                                  height: 5,
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? step.accentColor
@@ -635,7 +732,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                               }),
                             ),
 
-                            // Buttons
+                            // Back + Next/Finish buttons
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -730,8 +827,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
   }
 }
 
-/// Custom painter that carves a rounded spotlight cutout out of a dark scrim
-/// with a crisp pulse border.
+/// Custom painter that carves a rounded spotlight cutout out of a dark scrim.
 class _SpotlightPainter extends CustomPainter {
   const _SpotlightPainter({
     required this.targetRect,
@@ -747,32 +843,26 @@ class _SpotlightPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Inflate target slightly for comfortable breathing margin
     final cutoutRect = targetRect.inflate(8);
     final rrect = RRect.fromRectAndRadius(
       cutoutRect,
       const Radius.circular(AppRadius.card),
     );
 
-    // 2. Draw scrim with cutout hole
     final scrimPath = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(rrect)
       ..fillType = PathFillType.evenOdd;
 
-    final scrimPaint = Paint()
-      ..color = scrimColor
-      ..style = PaintingStyle.fill;
-
-    canvas.drawPath(scrimPath, scrimPaint);
-
-    // 3. Draw crisp highlight stroke
-    final borderPaint = Paint()
-      ..color = accentColor.withAlpha((180 * pulseValue).toInt())
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-
-    canvas.drawRRect(rrect, borderPaint);
+    canvas
+      ..drawPath(scrimPath, Paint()..color = scrimColor)
+      ..drawRRect(
+        rrect,
+        Paint()
+          ..color = accentColor.withAlpha((180 * pulseValue).toInt())
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
   }
 
   @override

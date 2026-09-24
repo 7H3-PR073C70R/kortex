@@ -140,202 +140,195 @@ class AcademicTrackSettingsPage extends HookWidget {
             ),
           ),
           body: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Calibrate your academic focus, exam countdown, and '
-                        'FSRS daily retention targets.',
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 12.5,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Calibrate your academic focus, exam countdown, and '
+                      'FSRS daily retention targets.',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+            
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6, bottom: 8),
+                      child: Text(
+                        'TARGET EXAM & CURRICULUM',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary.withAlpha(170),
+                          fontSize: 11,
+                          letterSpacing: 0.8,
                         ),
                       ),
-                      const SizedBox(height: 18),
-
-                      Padding(
-                        padding: const EdgeInsets.only(left: 6, bottom: 8),
-                        child: Text(
-                          'TARGET EXAM & CURRICULUM',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.textSecondary.withAlpha(170),
-                            fontSize: 11,
-                            letterSpacing: 0.8,
-                          ),
+                    ),
+                    _buildInteractiveTrackCard(
+                      context,
+                      activeTrack,
+                      selectedTrack,
+                      colors,
+                      typography,
+                      isDark,
+                    ),
+                    const SizedBox(height: 24),
+            
+                    // 2. Daily Goal & Retention Benchmark
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6, bottom: 8),
+                      child: Text(
+                        'DAILY REVIEW & RETENTION GOAL',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary.withAlpha(170),
+                          fontSize: 11,
+                          letterSpacing: 0.8,
                         ),
                       ),
-                      _buildInteractiveTrackCard(
-                        context,
-                        activeTrack,
-                        selectedTrack,
-                        colors,
-                        typography,
-                        isDark,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 2. Daily Goal & Retention Benchmark
-                      Padding(
-                        padding: const EdgeInsets.only(left: 6, bottom: 8),
-                        child: Text(
-                          'DAILY REVIEW & RETENTION GOAL',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.textSecondary.withAlpha(170),
-                            fontSize: 11,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                      GoalCalibrationSlider(
-                        dailyTarget: dailyTarget.value,
-                        retentionBenchmark: retentionBenchmark.value,
-                        onTargetChanged: (val) {
-                          AppFeedback.selection();
-                          dailyTarget.value = val;
-                        },
-                        onRetentionChanged: (val) {
-                          AppFeedback.selection();
-                          retentionBenchmark.value = val;
-                        },
-                      ),
-                      const SizedBox(height: 28),
-
-                      // 3. Save Changes Button
-                      PlatformHoverBuilder(
-                        builder: (context, isHovered, child) {
-                          return AnimatedScale(
-                            scale: isHovered ? 1.01 : 1.0,
-                            duration: AppMotion.snappy,
-                            curve: Curves.easeOutCubic,
-                            child: child,
-                          );
-                        },
-                        child: ShrinkableButton(
-                          onTap: () {
-                            AppFeedback.medium();
-                            final currentTrack =
-                                currentProfile?.targetTrack ?? '';
-                            final isTrackChanging =
-                                currentTrack.isNotEmpty &&
-                                currentTrack.toUpperCase() !=
-                                    selectedTrack.value.toUpperCase();
-
-                            if (isTrackChanging) {
-                              unawaited(
-                                AppDialog.show<void>(
-                                  context: context,
-                                  title: 'Switch Academic Track?',
-                                  description:
-                                      'Switching from "$currentTrack" to "${selectedTrack.value}" is destructive.\n\n'
-                                      'To keep your database clean and aligned with your new curriculum, all curated courses, study decks, flashcards, and uploaded documents associated with your previous track will be permanently deleted.',
-                                  primaryActionText: 'Switch & Reset',
-                                  isDestructive: true,
-                                  onPrimaryAction: () async {
-                                    AppFeedback.heavy();
-                                    // 1. Wipe previous track's curated courses
+                    ),
+                    GoalCalibrationSlider(
+                      dailyTarget: dailyTarget.value,
+                      retentionBenchmark: retentionBenchmark.value,
+                      onTargetChanged: (val) {
+                        AppFeedback.selection();
+                        dailyTarget.value = val;
+                      },
+                      onRetentionChanged: (val) {
+                        AppFeedback.selection();
+                        retentionBenchmark.value = val;
+                      },
+                    ),
+                    const SizedBox(height: 28),
+            
+                    // 3. Save Changes Button
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.01 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: Curves.easeOutCubic,
+                          child: child,
+                        );
+                      },
+                      child: ShrinkableButton(
+                        onTap: () {
+                          AppFeedback.medium();
+                          final currentTrack =
+                              currentProfile?.targetTrack ?? '';
+                          final isTrackChanging =
+                              currentTrack.isNotEmpty &&
+                              currentTrack.toUpperCase() !=
+                                  selectedTrack.value.toUpperCase();
+            
+                          if (isTrackChanging) {
+                            unawaited(
+                              AppDialog.show<void>(
+                                context: context,
+                                title: 'Switch Academic Track?',
+                                description:
+                                    'Switching from "$currentTrack" to "${selectedTrack.value}" is destructive.\n\n'
+                                    'To keep your database clean and aligned with your new curriculum, all curated courses, study decks, flashcards, and uploaded documents associated with your previous track will be permanently deleted.',
+                                primaryActionText: 'Switch & Reset',
+                                isDestructive: true,
+                                onPrimaryAction: () async {
+                                  AppFeedback.heavy();
+                                  // 1. Wipe previous track's curated courses
+                                  if (locator
+                                      .isRegistered<
+                                        DashboardRemoteDataSource
+                                      >()) {
+                                    await locator<DashboardRemoteDataSource>()
+                                        .deleteAllCuratedCourses();
+                                  }
+                                  // 2. Wipe previous track's study decks & flashcards
+                                  if (locator
+                                      .isRegistered<
+                                        DecksRemoteDataSource
+                                      >()) {
+                                    await locator<DecksRemoteDataSource>()
+                                        .deleteAllDecks();
+                                  }
+                                  // 3. Refresh DecksBloc
+                                  if (locator.isRegistered<DecksBloc>()) {
+                                    locator<DecksBloc>().add(
+                                      const DecksRefreshed(),
+                                    );
+                                  }
+                                  // 4. Update Profile in AuthBloc
+                                  if (context.mounted) {
+                                    context.read<AuthBloc>().add(
+                                      AuthUpdateCourseTrackRequested(
+                                        track: selectedTrack.value,
+                                        dailyTarget: dailyTarget.value,
+                                        retentionBenchmark:
+                                            retentionBenchmark.value,
+                                      ),
+                                    );
+                                    // 5. Refresh Dashboard Feed
                                     if (locator
-                                        .isRegistered<
-                                          DashboardRemoteDataSource
-                                        >()) {
-                                      await locator<DashboardRemoteDataSource>()
-                                          .deleteAllCuratedCourses();
-                                    }
-                                    // 2. Wipe previous track's study decks & flashcards
-                                    if (locator
-                                        .isRegistered<
-                                          DecksRemoteDataSource
-                                        >()) {
-                                      await locator<DecksRemoteDataSource>()
-                                          .deleteAllDecks();
-                                    }
-                                    // 3. Refresh DecksBloc
-                                    if (locator.isRegistered<DecksBloc>()) {
-                                      locator<DecksBloc>().add(
-                                        const DecksRefreshed(),
+                                        .isRegistered<DashboardBloc>()) {
+                                      locator<DashboardBloc>().add(
+                                        const DashboardRefreshed(),
                                       );
                                     }
-                                    // 4. Update Profile in AuthBloc
-                                    if (context.mounted) {
-                                      context.read<AuthBloc>().add(
-                                        AuthUpdateCourseTrackRequested(
-                                          track: selectedTrack.value,
-                                          dailyTarget: dailyTarget.value,
-                                          retentionBenchmark:
-                                              retentionBenchmark.value,
-                                        ),
-                                      );
-                                      // 5. Refresh Dashboard Feed
-                                      if (locator
-                                          .isRegistered<DashboardBloc>()) {
-                                        locator<DashboardBloc>().add(
-                                          const DashboardRefreshed(),
-                                        );
-                                      }
-                                      context.showSnackBar(
-                                        message:
-                                            'Switched track to ${selectedTrack.value}. Previous track data cleared.',
-                                      );
-                                      Navigator.of(context).pop();
-                                    }
-                                  },
-                                  secondaryActionText: 'Cancel',
-                                ),
-                              );
-                            } else {
-                              context.read<AuthBloc>().add(
-                                AuthUpdateCourseTrackRequested(
-                                  track: selectedTrack.value,
-                                  dailyTarget: dailyTarget.value,
-                                  retentionBenchmark: retentionBenchmark.value,
-                                ),
-                              );
-                              context.showSnackBar(
-                                message: l10n.profileSavedSuccessNotice,
-                                type: SnackBarType.success,
-                              );
-                              Navigator.of(context).pop();
-                            }
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  colors.primary,
-                                  colors.syllabotAccent,
-                                ],
+                                    context.showSnackBar(
+                                      message:
+                                          'Switched track to ${selectedTrack.value}. Previous track data cleared.',
+                                    );
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                                secondaryActionText: 'Cancel',
                               ),
-                              borderRadius: AppRadius.radiusPanel,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: colors.black.withAlpha(
-                                    isDark ? 60 : 25,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 3),
+                            );
+                          } else {
+                            context.read<AuthBloc>().add(
+                              AuthUpdateCourseTrackRequested(
+                                track: selectedTrack.value,
+                                dailyTarget: dailyTarget.value,
+                                retentionBenchmark: retentionBenchmark.value,
+                              ),
+                            );
+                            context.showSnackBar(
+                              message: l10n.profileSavedSuccessNotice,
+                              type: SnackBarType.success,
+                            );
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          decoration: BoxDecoration(
+                            color:  colors.primary,
+                            borderRadius: AppRadius.radiusPanel,
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(
+                                  isDark ? 60 : 25,
                                 ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                l10n.saveChangesButton,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.white,
-                                  fontSize: 15,
-                                ),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              l10n.saveChangesButton,
+                              style: typography.body.bold.copyWith(
+                                color: colors.white,
+                                fontSize: 15,
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -7,7 +7,6 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -173,24 +172,20 @@ class ProfileNavigationMenu extends StatelessWidget {
               hoverIconColor: neural.emerald400,
               hoverChipBorder: neural.emerald400.withValues(alpha: 0.4),
               title: 'Feature Walkthrough',
-              subtitle: 'Replay the quick tour of Kortexify',
+              subtitle: 'Replay the full 9-step interactive tour',
               onTap: () {
                 AppFeedback.light();
+                // Capture router before any navigation happens.
+                final tabsRouter = AutoTabsRouter.of(context, watch: false);
                 unawaited(
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) => WelcomeWalkthroughDialog(
-                      onEnterWorkspace: () {
-                        if (context.mounted) {
-                          unawaited(
-                            AppGuidedTourOverlay.start(
-                              context,
-                              force: true,
-                            ),
-                          );
-                        }
-                      },
-                    ),
+                  AppGuidedTourOverlay.start(
+                    context,
+                    force: true,
+                    onBeforeStart: () {
+                      // Switch shell to Dashboard tab (index 0) so the
+                      // spotlight lands on the correct widgets.
+                      tabsRouter.setActiveIndex(0);
+                    },
                   ),
                 );
               },

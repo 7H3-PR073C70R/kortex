@@ -10,6 +10,7 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/core/themes/enums/theme_preset.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -30,6 +31,7 @@ class AppPreferencesPage extends HookWidget {
     final typography = context.typography;
     final l10n = context.l10n;
     final themeMode = context.watch<ThemeCubit>().state.themeMode;
+    final activePreset = context.watch<ThemeCubit>().state.preset;
 
     LocalStorageService? localStorage;
     try {
@@ -67,250 +69,331 @@ class AppPreferencesPage extends HookWidget {
         ),
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1. Appearance Theme (3 options: System, Light, Dark)
-                  _buildSectionContainer(
-                    title: l10n.preferencesAppearanceTitle,
-                    subtitle: l10n.preferencesAppearanceSubtitle,
-                    colors: colors,
-                    typography: typography,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildThemeCard(
-                            context: context,
-                            title: l10n.preferencesThemeSystem,
-                            icon: Icons.brightness_auto_rounded,
-                            isSelected: themeMode == ThemeMode.system,
-                            onTap: () {
-                              AppFeedback.selection();
-                              unawaited(
-                                context.read<ThemeCubit>().setThemeMode(
-                                  ThemeMode.system,
-                                ),
-                              );
-                            },
-                            colors: colors,
-                            typography: typography,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildThemeCard(
-                            context: context,
-                            title: l10n.preferencesThemeLight,
-                            icon: Icons.light_mode_rounded,
-                            isSelected: themeMode == ThemeMode.light,
-                            onTap: () {
-                              AppFeedback.selection();
-                              unawaited(
-                                context.read<ThemeCubit>().setThemeMode(
-                                  ThemeMode.light,
-                                ),
-                              );
-                            },
-                            colors: colors,
-                            typography: typography,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildThemeCard(
-                            context: context,
-                            title: l10n.preferencesThemeDark,
-                            icon: Icons.dark_mode_rounded,
-                            isSelected: themeMode == ThemeMode.dark,
-                            onTap: () {
-                              AppFeedback.selection();
-                              unawaited(
-                                context.read<ThemeCubit>().setThemeMode(
-                                  ThemeMode.dark,
-                                ),
-                              );
-                            },
-                            colors: colors,
-                            typography: typography,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 2. Sensory & Audio Effects
-                  _buildSectionContainer(
-                    title: l10n.preferencesSensoryTitle,
-                    subtitle: l10n.preferencesSensorySubtitle,
-                    colors: colors,
-                    typography: typography,
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.preferencesHapticsTitle,
-                                    style: typography.body.medium.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    l10n.preferencesHapticsSubtitle,
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Appearance Theme (3 options: System, Light, Dark)
+                _buildSectionContainer(
+                  title: l10n.preferencesAppearanceTitle,
+                  subtitle: l10n.preferencesAppearanceSubtitle,
+                  colors: colors,
+                  typography: typography,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildThemeCard(
+                          context: context,
+                          title: l10n.preferencesThemeSystem,
+                          icon: Icons.brightness_auto_rounded,
+                          isSelected: themeMode == ThemeMode.system,
+                          onTap: () {
+                            AppFeedback.selection();
+                            unawaited(
+                              context.read<ThemeCubit>().setThemeMode(
+                                ThemeMode.system,
                               ),
-                            ),
-                            Switch.adaptive(
-                              value: haptics.value,
-                              activeTrackColor: colors.primary,
-                              onChanged: (val) {
-                                haptics.value = val;
-                                unawaited(
-                                  AppFeedback.setHapticsEnabled(enabled: val),
-                                );
-                                if (val) AppFeedback.light();
-                              },
-                            ),
-                          ],
+                            );
+                          },
+                          colors: colors,
+                          typography: typography,
                         ),
-                        const Divider(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.preferencesSfxTitle,
-                                    style: typography.body.medium.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    l10n.preferencesSfxSubtitle,
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildThemeCard(
+                          context: context,
+                          title: l10n.preferencesThemeLight,
+                          icon: Icons.light_mode_rounded,
+                          isSelected: themeMode == ThemeMode.light,
+                          onTap: () {
+                            AppFeedback.selection();
+                            unawaited(
+                              context.read<ThemeCubit>().setThemeMode(
+                                ThemeMode.light,
                               ),
-                            ),
-                            Switch.adaptive(
-                              value: soundEffects.value,
-                              activeTrackColor: colors.primary,
-                              onChanged: (val) {
-                                soundEffects.value = val;
-                                unawaited(
-                                  AppFeedback.setSfxEnabled(enabled: val),
-                                );
-                                if (val) AppFeedback.light();
-                              },
-                            ),
-                          ],
+                            );
+                          },
+                          colors: colors,
+                          typography: typography,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildThemeCard(
+                          context: context,
+                          title: l10n.preferencesThemeDark,
+                          icon: Icons.dark_mode_rounded,
+                          isSelected: themeMode == ThemeMode.dark,
+                          onTap: () {
+                            AppFeedback.selection();
+                            unawaited(
+                              context.read<ThemeCubit>().setThemeMode(
+                                ThemeMode.dark,
+                              ),
+                            );
+                          },
+                          colors: colors,
+                          typography: typography,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 16),
 
-                  // 3. Notifications & Study Reminders
-                  _buildSectionContainer(
-                    title: l10n.preferencesNotificationsTitle,
-                    subtitle: l10n.preferencesNotificationsSubtitle,
-                    colors: colors,
-                    typography: typography,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
+                // Color preset grid
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: ThemePreset.values
+                      .where((p) => p.name != 'emeraldStem' && p.name != 'royalAmethyst')
+                      .map((preset) {
+                    final isSelected = activePreset == preset;
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: preset.displayName,
+                      child: GestureDetector(
+                        onTap: () {
+                          AppFeedback.selection();
+                          unawaited(context.read<ThemeCubit>().setThemePreset(preset));
+                        },
+                        child: AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: Curves.easeOutCubic,
+                          width: 72,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? preset.defaultAccent.withAlpha(30)
+                                : colors.surfacePrimary,
+                            borderRadius: AppRadius.radiusCard,
+                            border: Border.all(
+                              color: isSelected
+                                  ? preset.defaultAccent
+                                  : colors.surfaceBorder.withAlpha(90),
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                l10n.preferencesReminderTitle,
-                                style: typography.body.medium.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 13.5,
+                              AnimatedContainer(
+                                duration: AppMotion.snappy,
+                                width: isSelected ? 28 : 22,
+                                height: isSelected ? 28 : 22,
+                                decoration: BoxDecoration(
+                                  color: preset.defaultAccent,
+                                  shape: BoxShape.circle,
+                                  border: isSelected
+                                      ? Border.all(
+                                          color: colors.white.withAlpha(140),
+                                          width: 2,
+                                        )
+                                      : null,
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: preset.defaultAccent.withAlpha(80),
+                                            blurRadius: 8,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
                                 ),
                               ),
+                              const SizedBox(height: 6),
                               Text(
-                                l10n.preferencesReminderSubtitle,
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11,
+                                preset.displayName,
+                                maxLines: 2,
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.caption.bold.copyWith(
+                                  color: isSelected
+                                      ? preset.defaultAccent
+                                      : colors.textSecondary,
+                                  fontSize: 10,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Switch.adaptive(
-                          value: notifications.value,
-                          activeTrackColor: colors.primary,
-                          onChanged: (val) {
-                            AppFeedback.selection();
-                            notifications.value = val;
-                            if (localStorage != null) {
-                              unawaited(
-                                localStorage.savePreference(
-                                  key: 'study_reminders_enabled',
-                                  data: val.toString(),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+
+                // 2. Sensory & Audio Effects
+                _buildSectionContainer(
+                  title: l10n.preferencesSensoryTitle,
+                  subtitle: l10n.preferencesSensorySubtitle,
+                  colors: colors,
+                  typography: typography,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.preferencesHapticsTitle,
+                                  style: typography.body.medium.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 13.5,
+                                  ),
                                 ),
-                              );
-                            }
-                            if (!val &&
-                                locator.isRegistered<NotificationService>()) {
+                                Text(
+                                  l10n.preferencesHapticsSubtitle,
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: haptics.value,
+                            activeTrackColor: colors.primary,
+                            onChanged: (val) {
+                              haptics.value = val;
                               unawaited(
-                                locator<NotificationService>()
-                                    .cancelAllNotifications(),
+                                AppFeedback.setHapticsEnabled(enabled: val),
                               );
-                            }
-                            try {
-                              if (locator.isRegistered<ProfileApiClient>()) {
-                                final authState = context
-                                    .read<AuthBloc>()
-                                    .state;
-                                final userId =
-                                    authState.user?.id ??
-                                    authState.userProfile?.id;
-                                if (authState.isAuthenticated &&
-                                    userId != null) {
-                                  unawaited(
-                                    locator<ProfileApiClient>()
-                                        .updateNotificationPreferences(
-                                          userId: userId,
-                                          studyReminders: val,
-                                          streakAlerts: val,
-                                        ),
-                                  );
-                                }
-                              }
-                            } on Object catch (_) {}
-                          },
-                        ),
-                      ],
-                    ),
+                              if (val) AppFeedback.light();
+                            },
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.preferencesSfxTitle,
+                                  style: typography.body.medium.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                                Text(
+                                  l10n.preferencesSfxSubtitle,
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: soundEffects.value,
+                            activeTrackColor: colors.primary,
+                            onChanged: (val) {
+                              soundEffects.value = val;
+                              unawaited(
+                                AppFeedback.setSfxEnabled(enabled: val),
+                              );
+                              if (val) AppFeedback.light();
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+        
+                // 3. Notifications & Study Reminders
+                _buildSectionContainer(
+                  title: l10n.preferencesNotificationsTitle,
+                  subtitle: l10n.preferencesNotificationsSubtitle,
+                  colors: colors,
+                  typography: typography,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.preferencesReminderTitle,
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            Text(
+                              l10n.preferencesReminderSubtitle,
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: notifications.value,
+                        activeTrackColor: colors.primary,
+                        onChanged: (val) {
+                          AppFeedback.selection();
+                          notifications.value = val;
+                          if (localStorage != null) {
+                            unawaited(
+                              localStorage.savePreference(
+                                key: 'study_reminders_enabled',
+                                data: val.toString(),
+                              ),
+                            );
+                          }
+                          if (!val &&
+                              locator.isRegistered<NotificationService>()) {
+                            unawaited(
+                              locator<NotificationService>()
+                                  .cancelAllNotifications(),
+                            );
+                          }
+                          try {
+                            if (locator.isRegistered<ProfileApiClient>()) {
+                              final authState = context
+                                  .read<AuthBloc>()
+                                  .state;
+                              final userId =
+                                  authState.user?.id ??
+                                  authState.userProfile?.id;
+                              if (authState.isAuthenticated &&
+                                  userId != null) {
+                                unawaited(
+                                  locator<ProfileApiClient>()
+                                      .updateNotificationPreferences(
+                                        userId: userId,
+                                        studyReminders: val,
+                                        streakAlerts: val,
+                                      ),
+                                );
+                              }
+                            }
+                          } on Object catch (_) {}
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),

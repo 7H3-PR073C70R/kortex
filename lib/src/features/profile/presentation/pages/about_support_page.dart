@@ -8,7 +8,6 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -75,165 +74,163 @@ class AboutSupportPage extends StatelessWidget {
         ),
         centerTitle: false,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              children: [
-                // App Branding Hero Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colors.primary.withAlpha(isDark ? 40 : 25),
-                        colors.syllabotAccent.withAlpha(isDark ? 30 : 15),
-                      ],
-                    ),
-                    borderRadius: AppRadius.radiusDialog,
-                    border: Border.all(
-                      color: colors.primary.withAlpha(80),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 68,
-                        height: 68,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colors.surfacePrimary,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colors.primary.withAlpha(80),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.black.withAlpha(isDark ? 50 : 20),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: AppAssets.images.logo.svg(
-                            width: 44,
-                            height: 44,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Kortexify',
-                        style: typography.title2.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 22,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Next-Gen Academic & Exam Mastery Engine',
-                        style: typography.caption.medium.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfacePrimary,
-                          borderRadius: AppRadius.radiusBadge,
-                          border: Border.all(
-                            color: colors.surfaceBorder.withAlpha(90),
-                          ),
-                        ),
-                        child: Text(
-                          'v1.0.0+1 • Production Neural Engine',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.primary,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                      ),
+      body: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            children: [
+              // App Branding Hero Card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colors.primary.withAlpha(isDark ? 40 : 25),
+                      colors.syllabotAccent.withAlpha(isDark ? 30 : 15),
                     ],
                   ),
+                  borderRadius: AppRadius.radiusDialog,
+                  border: Border.all(
+                    color: colors.primary.withAlpha(80),
+                  ),
                 ),
-                const SizedBox(height: 20),
-
-                // Resources & Community Links
-                _buildLinkCard(
-                  icon: Icons.explore_rounded,
-                  title: 'Feature Walkthrough & Guide',
-                  subtitle: 'Replay the 4-step interactive onboarding tour',
-                  onTap: () {
-                    unawaited(
-                      showDialog<void>(
-                        context: context,
-                        builder: (_) => WelcomeWalkthroughDialog(
-                          onEnterWorkspace: () {
-                            if (context.mounted) {
-                              unawaited(
-                                AppGuidedTourOverlay.start(
-                                  context,
-                                  force: true,
-                                ),
-                              );
-                            }
-                          },
+                child: Column(
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colors.surfacePrimary,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: colors.primary.withAlpha(80),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.black.withAlpha(isDark ? 50 : 20),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: AppAssets.images.logo.svg(
+                          width: 44,
+                          height: 44,
                         ),
                       ),
-                    );
-                  },
-                  colors: colors,
-                  typography: typography,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Kortexify',
+                      style: typography.title2.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Next-Gen Academic & Exam Mastery Engine',
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.surfacePrimary,
+                        borderRadius: AppRadius.radiusBadge,
+                        border: Border.all(
+                          color: colors.surfaceBorder.withAlpha(90),
+                        ),
+                      ),
+                      child: Text(
+                        'v1.0.0+1 • Production Neural Engine',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                _buildLinkCard(
-                  icon: Icons.forum_rounded,
-                  title: 'Community Discord & Study Rooms',
-                  subtitle: 'Join study rooms, share decks, and get help',
-                  onTap: () => _launchExternalUrl(context, discordUrl),
-                  colors: colors,
-                  typography: typography,
-                ),
-                const SizedBox(height: 12),
-                _buildLinkCard(
-                  icon: Icons.help_outline_rounded,
-                  title: 'Documentation & Knowledgebase',
-                  subtitle: 'Guides on Syllabot AI and FSRS spaced repetition',
-                  onTap: () => _launchExternalUrl(context, docsUrl),
-                  colors: colors,
-                  typography: typography,
-                ),
-                const SizedBox(height: 12),
-                _buildLinkCard(
-                  icon: Icons.security_rounded,
-                  title: 'Privacy Policy',
-                  subtitle: 'How we securely store and encrypt your data',
-                  onTap: () => _launchExternalUrl(context, privacyPolicyUrl),
-                  colors: colors,
-                  typography: typography,
-                ),
-                const SizedBox(height: 12),
-                _buildLinkCard(
-                  icon: Icons.description_rounded,
-                  title: 'Terms of Service',
-                  subtitle: 'End user license agreements and policies',
-                  onTap: () => _launchExternalUrl(context, termsUrl),
-                  colors: colors,
-                  typography: typography,
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+      
+              // Resources & Community Links
+              _buildLinkCard(
+                icon: Icons.explore_rounded,
+                title: 'Feature Walkthrough & Guide',
+                subtitle: 'Replay the full interactive app tour',
+                onTap: () {
+                  // Navigate to Dashboard first, then launch the overlay.
+                  // AutoTabsRouter is a scoped ancestor of this page.
+                  final tabsRouter = AutoTabsRouter.of(context, watch: false);
+                  unawaited(
+                    AppGuidedTourOverlay.start(
+                      context,
+                      force: true,
+                      onBeforeStart: () {
+                        // Pop back to the main shell (About page is a push route)
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        }
+                        // Switch to Dashboard tab (index 0)
+                        tabsRouter.setActiveIndex(0);
+                      },
+                    ),
+                  );
+                },
+                colors: colors,
+                typography: typography,
+              ),
+              const SizedBox(height: 12),
+              _buildLinkCard(
+                icon: Icons.forum_rounded,
+                title: 'Community Discord & Study Rooms',
+                subtitle: 'Join study rooms, share decks, and get help',
+                onTap: () => _launchExternalUrl(context, discordUrl),
+                colors: colors,
+                typography: typography,
+              ),
+              const SizedBox(height: 12),
+              _buildLinkCard(
+                icon: Icons.help_outline_rounded,
+                title: 'Documentation & Knowledgebase',
+                subtitle: 'Guides on Syllabot AI and FSRS spaced repetition',
+                onTap: () => _launchExternalUrl(context, docsUrl),
+                colors: colors,
+                typography: typography,
+              ),
+              const SizedBox(height: 12),
+              _buildLinkCard(
+                icon: Icons.security_rounded,
+                title: 'Privacy Policy',
+                subtitle: 'How we securely store and encrypt your data',
+                onTap: () => _launchExternalUrl(context, privacyPolicyUrl),
+                colors: colors,
+                typography: typography,
+              ),
+              const SizedBox(height: 12),
+              _buildLinkCard(
+                icon: Icons.description_rounded,
+                title: 'Terms of Service',
+                subtitle: 'End user license agreements and policies',
+                onTap: () => _launchExternalUrl(context, termsUrl),
+                colors: colors,
+                typography: typography,
+              ),
+            ],
           ),
         ),
       ),
