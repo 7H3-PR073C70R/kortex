@@ -1855,6 +1855,15 @@ class _StudyDebtTriageBanner extends StatelessWidget {
 
   final StudyDeckEntity deck;
 
+  void _startSprint(BuildContext context, int count) {
+    AppFeedback.medium();
+    unawaited(
+      context.router.push(
+        StudySessionRoute(deckId: 'sprint:$count:${deck.id}'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -1874,105 +1883,161 @@ class _StudyDebtTriageBanner extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: AppRadius.radiusPanel,
-        // Removed border
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: colors.warning.withAlpha(35),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.healing_rounded,
-              color: colors.warning,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colors.warning.withAlpha(35),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.healing_rounded,
+                  color: colors.warning,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Text(
+                          l10n.backlogTriageTitle,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.warning,
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withAlpha(30),
+                            borderRadius: AppRadius.radiusBadge,
+                          ),
+                          child: Text(
+                            l10n.dashboardDueCount(deck.dueCards),
+                            style: typography.caption.bold.copyWith(
+                              color: colors.warning,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
                     Text(
-                      l10n.backlogTriageTitle,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.warning,
-                        fontSize: 10,
-                        letterSpacing: 0.8,
+                      l10n.backlogTriageSubtitle,
+                      style: typography.subhead.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.warning.withAlpha(30),
-                        borderRadius: AppRadius.radiusBadge,
-                      ),
-                      child: Text(
-                        l10n.dashboardDueCount(deck.dueCards),
-                        style: typography.caption.bold.copyWith(
-                          color: colors.warning,
-                          fontSize: 9,
-                        ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.backlogTriageBody(deck.title),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.backlogTriageSubtitle,
-                  style: typography.subhead.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.backlogTriageBody(deck.title),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.mediumImpact());
-              unawaited(
-                context.router.push(
-                  StudySessionRoute(deckId: deck.id),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: colors.warning,
-                borderRadius: AppRadius.radiusCard,
-              ),
-              child: Text(
-                l10n.triageTenAction,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                'Sprint Triage:',
                 style: typography.caption.bold.copyWith(
-                  color: colors.white,
-                  fontSize: 11,
+                  color: colors.textSecondary,
+                  fontSize: 10.5,
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _SprintModeChip(
+                      label: '5 Cards',
+                      onTap: () => _startSprint(context, 5),
+                    ),
+                    const SizedBox(width: 6),
+                    _SprintModeChip(
+                      label: '10 Cards',
+                      isRecommended: true,
+                      onTap: () => _startSprint(context, 10),
+                    ),
+                    const SizedBox(width: 6),
+                    _SprintModeChip(
+                      label: '15 Cards',
+                      onTap: () => _startSprint(context, 15),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SprintModeChip extends StatelessWidget {
+  const _SprintModeChip({
+    required this.label,
+    required this.onTap,
+    this.isRecommended = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool isRecommended;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    return Expanded(
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: isRecommended ? colors.warning : colors.warning.withAlpha(30),
+            borderRadius: AppRadius.radiusBadge,
+            border: Border.all(
+              color: colors.warning.withAlpha(isRecommended ? 255 : 80),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: typography.caption.bold.copyWith(
+              color: isRecommended ? colors.white : colors.warning,
+              fontSize: 10.5,
+            ),
+          ),
+        ),
       ),
     );
   }

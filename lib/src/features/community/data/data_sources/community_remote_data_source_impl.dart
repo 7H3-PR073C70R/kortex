@@ -1598,42 +1598,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   List<StudyRoomModel> _getCuratedFallbackRooms({String? category}) {
-    const allFallback = [
-      StudyRoomModel(
-        id: 'curated_room_pomodoro_silent',
-        title: 'Silent Pomodoro Library',
-        subject: 'General Study',
-        activeParticipantsCount: 14,
-        activeGoal: 'Deep study & silent focus sprint',
-      ),
-      StudyRoomModel(
-        id: 'curated_room_stem_lab',
-        title: 'Deep Work STEM Lab',
-        subject: 'Science & Engineering',
-        category: 'STEM',
-        pomodoroDurationMinutes: 50,
-        activeParticipantsCount: 8,
-        ambientSoundTrack: 'binaural',
-        activeGoal: 'Problem solving & derivation sprint',
-      ),
-      StudyRoomModel(
-        id: 'curated_room_exam_prep',
-        title: 'Exam Sprint Pod',
-        subject: 'All Subjects',
-        category: 'Exam Prep',
-        pomodoroDurationMinutes: 45,
-        activeParticipantsCount: 19,
-        ambientSoundTrack: 'rain',
-        activeGoal: 'Past question drills & active recall',
-      ),
-    ];
-    if (category != null && category.isNotEmpty && category != 'All') {
-      final filtered = allFallback
-          .where((r) => r.category.toLowerCase() == category.toLowerCase())
-          .toList();
-      if (filtered.isNotEmpty) return filtered;
-    }
-    return allFallback;
+    return const [];
   }
 
   void _persistCirclesLocally(List<StudyCircleModel> circles) {
@@ -1672,17 +1637,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   List<StudyCircleModel> _getCuratedFallbackCircles({String? track}) {
-    final effectiveTrack = (track != null && track.isNotEmpty && track != 'All')
-        ? track
-        : 'General';
-    return [
-      StudyCircleModel(
-        id: 'curated_circle_sprint',
-        name: '$effectiveTrack Study Circle',
-        track: effectiveTrack,
-        memberCount: 5,
-      ),
-    ];
+    return const [];
   }
 
   void _persistSharedDecksLocally(List<SharedDeckModel> decks) {
@@ -1721,26 +1676,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   List<SharedDeckModel> _getCuratedFallbackSharedDecks({String? subject}) {
-    final effectiveSubject =
-        (subject != null && subject.isNotEmpty && subject != 'All')
-        ? subject
-        : 'General Studies';
-    return [
-      SharedDeckModel(
-        id: 'curated_deck_high_yield',
-        ownerId: 'kortex_team',
-        ownerName: 'Kortex Academic Curators',
-        title: '$effectiveSubject Core Exam Formulas & Review',
-        subject: effectiveSubject,
-        syllabusTag: 'Universal',
-        description:
-            'High-yield flashcards covering key definitions, exam principles, and quick recall prompts.',
-        category: 'Exam Prep',
-        totalCards: 20,
-        downloadsCount: 142,
-        rating: 4.9,
-      ),
-    ];
+    return const [];
   }
 
   @override

@@ -19,6 +19,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/background_ingestion_indicator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_sync_beacon.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -168,6 +169,7 @@ class MainPage extends HookWidget {
             },
           ),
           const BackgroundIngestionIndicator(),
+          const AppSyncBeacon(),
         ],
       ),
     );

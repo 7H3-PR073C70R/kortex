@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -12,6 +12,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/course_module_quick_sheet.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -319,15 +320,8 @@ class _CourseCard extends StatelessWidget {
         builder: (context, isHovered, child) {
           return ShrinkableButton(
             onTap: () {
-              unawaited(HapticFeedback.lightImpact());
               unawaited(
-                context.router.push(
-                  CourseModuleRoute(
-                    courseId: course.id,
-                    courseCode: course.courseCode,
-                    courseTitle: course.title,
-                  ),
-                ),
+                CourseModuleQuickSheet.show(context, course: course),
               );
             },
             child: ClipRRect(

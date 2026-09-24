@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -405,21 +406,20 @@ class CreatePostBottomSheet extends HookWidget {
                     ),
                     child: ShrinkableButton(
                       onTap: () {
-                        if (titleController.text.trim().isEmpty ||
-                            contentController.text.trim().isEmpty) {
+                        final rawTitle = titleController.text.trim();
+                        final rawContent = contentController.text.trim();
+                        if (rawTitle.isEmpty || rawContent.isEmpty) {
                           return;
                         }
-                        final combinedText =
-                            '${titleController.text} ${contentController.text}';
-                        final phoneRegex = RegExp(
-                          r'(\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9})',
+
+                        final moderation = const ContentModerationService().validatePost(
+                          title: rawTitle,
+                          content: rawContent,
                         );
-                        if (phoneRegex.hasMatch(combinedText) &&
-                            combinedText.replaceAll(RegExp(r'\D'), '').length >=
-                                10) {
+
+                        if (!moderation.isValid) {
                           context.showSnackBar(
-                            message:
-                                'For student safety, sharing phone numbers or personal contact info is prohibited.',
+                            message: moderation.reason ?? 'Post content validation failed.',
                             type: SnackBarType.error,
                           );
                           return;

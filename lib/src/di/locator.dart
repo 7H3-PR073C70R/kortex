@@ -17,6 +17,7 @@ import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/sync/app_sync_engine.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
 import 'package:kortex/src/features/auth/data/client/auth_api_client.dart';
 import 'package:kortex/src/features/auth/data/data_sources/auth_remote_data_source.dart';

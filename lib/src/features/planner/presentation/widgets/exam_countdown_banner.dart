@@ -8,6 +8,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
@@ -242,6 +243,12 @@ class ExamCountdownBanner extends StatelessWidget {
         };
 
         final isTopPriority = exam.id == state.topPriorityExamId;
+        final readinessResult = const CbtReadinessCalculator().compute(
+          syllabusCoverage: 0.78,
+          fsrsRetentionRate: 0.86,
+          mockScoreRatio: 0.80,
+          daysRemaining: days,
+        );
 
         // Headline calculation with sub-daily granularity
         final String countdownHeadline;
@@ -562,6 +569,38 @@ class ExamCountdownBanner extends StatelessWidget {
                                     fontSize: 9.5,
                                     color: neural.slate300,
                                   ),
+                                ),
+                              ),
+                              // Dynamic CBT Readiness Index Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: readinessResult.statusColor.withAlpha(25),
+                                  borderRadius: BorderRadius.circular(7),
+                                  border: Border.all(
+                                    color: readinessResult.statusColor.withAlpha(90),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.analytics_rounded,
+                                      size: 11,
+                                      color: readinessResult.statusColor,
+                                    ),
+                                    const SizedBox(width: 3.5),
+                                    Text(
+                                      'Readiness: ${readinessResult.scorePercent}%',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 9.5,
+                                        color: readinessResult.statusColor,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               // Top Priority Flag

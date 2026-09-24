@@ -2,6 +2,9 @@ part of 'locator.dart';
 
 void _initServices() {
   locator
+    ..registerLazySingleton<AppSyncEngine>(
+      AppSyncEngine.new,
+    )
     ..registerLazySingleton<CrashlyticsService>(
       CrashlyticsService.new,
     )
