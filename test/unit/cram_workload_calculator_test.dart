@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
+import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 
 void main() {
@@ -130,6 +131,138 @@ void main() {
       for (var i = 1; i < trajectory.length; i++) {
         expect(trajectory[i] <= trajectory[i - 1], isTrue);
       }
+    });
+
+    group('Study Priority Index (SPI) Suite', () {
+      test('Completed or past exams return 0.0 priority score', () {
+        final completedExam = ExamEventEntity(
+          id: 'exam-c',
+          userId: 'u1',
+          examName: 'Completed Quiz',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().add(const Duration(days: 3)),
+          isCompleted: true,
+        );
+        expect(calculator.calculatePriorityScore(exam: completedExam), equals(0.0));
+
+        final pastExam = ExamEventEntity(
+          id: 'exam-p',
+          userId: 'u1',
+          examName: 'Past Exam',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().subtract(const Duration(days: 2)),
+        );
+        expect(calculator.calculatePriorityScore(exam: pastExam), equals(0.0));
+      });
+
+      test('Critical imminent exam with high weight scores significantly higher than distant low weight exam', () {
+        final imminentFinal = ExamEventEntity(
+          id: 'imminent-final',
+          userId: 'u1',
+          examName: 'Final Exam Tomorrow',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().add(const Duration(hours: 18)),
+          weightPercent: 0.50,
+          totalCardsCount: 100,
+          dailyTarget: 40,
+        );
+
+        final distantQuiz = ExamEventEntity(
+          id: 'distant-quiz',
+          userId: 'u1',
+          examName: 'Quiz in 3 Weeks',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().add(const Duration(days: 21)),
+          assessmentType: AssessmentType.quiz,
+          weightPercent: 0.10,
+          totalCardsCount: 20,
+          dailyTarget: 2,
+        );
+
+        final scoreImminent = calculator.calculatePriorityScore(exam: imminentFinal);
+        final scoreDistant = calculator.calculatePriorityScore(exam: distantQuiz);
+
+        expect(scoreImminent > scoreDistant, isTrue);
+        expect(scoreImminent >= 70.0, isTrue);
+        expect(calculator.calculatePriorityLevel(exam: imminentFinal), equals(StudyPriorityLevel.critical));
+      });
+
+      test('Priority level categorization maps accurately to discrete levels', () {
+        final highPriority = ExamEventEntity(
+          id: 'high-p',
+          userId: 'u1',
+          examName: 'Midterm Soon',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().add(const Duration(days: 3)),
+          assessmentType: AssessmentType.midterm,
+          weightPercent: 0.35,
+          totalCardsCount: 80,
+          dailyTarget: 25,
+        );
+
+        final level = calculator.calculatePriorityLevel(exam: highPriority);
+        expect(level == StudyPriorityLevel.critical || level == StudyPriorityLevel.high, isTrue);
+      });
+    });
+
+    group('Consolidated Daily Workload & Time Estimation Suite', () {
+      test('calculateTotalDailyWorkload aggregates active upcoming exams and ignores completed/past ones', () {
+        final activeExam1 = ExamEventEntity(
+          id: 'e1',
+          userId: 'u1',
+          examName: 'Active Exam 1',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().add(const Duration(days: 5)),
+          totalCardsCount: 50,
+        );
+        final activeExam2 = ExamEventEntity(
+          id: 'e2',
+          userId: 'u1',
+          examName: 'Active Exam 2',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().add(const Duration(days: 10)),
+          totalCardsCount: 100,
+        );
+        final completedExam = ExamEventEntity(
+          id: 'e3',
+          userId: 'u1',
+          examName: 'Completed Exam',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().add(const Duration(days: 2)),
+          totalCardsCount: 80,
+          isCompleted: true,
+        );
+        final pastExam = ExamEventEntity(
+          id: 'e4',
+          userId: 'u1',
+          examName: 'Past Exam',
+          subjectTrack: 'MTH 101',
+          targetDate: DateTime.now().subtract(const Duration(days: 1)),
+          totalCardsCount: 80,
+        );
+
+        final totalWorkload = calculator.calculateTotalDailyWorkload([
+          activeExam1,
+          activeExam2,
+          completedExam,
+          pastExam,
+        ]);
+
+        // activeExam1: 50 / 5 = 10
+        // activeExam2: 100 / 10 = 10
+        // total = 20
+        expect(totalWorkload, equals(20));
+      });
+
+      test('calculateEstimatedDailyMinutes scales realistically with minimum floor', () {
+        expect(calculator.calculateEstimatedDailyMinutes(0), equals(0));
+        // 10 cards * 20s = 200s ~ 3.3 mins -> clamped to min floor of 5 mins
+        expect(calculator.calculateEstimatedDailyMinutes(10), equals(5));
+        // 60 cards * 20s = 1200s = 20 mins
+        expect(calculator.calculateEstimatedDailyMinutes(60), equals(20));
+        // 120 cards * 20s = 2400s = 40 mins
+        expect(calculator.calculateEstimatedDailyMinutes(120), equals(40));
+      });
     });
   });
 }

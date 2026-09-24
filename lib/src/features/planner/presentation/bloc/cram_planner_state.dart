@@ -15,6 +15,9 @@ class CramPlannerState extends Equatable {
     this.activeExams = const [],
     this.selectedExam,
     this.dynamicDailyTarget = 20,
+    this.totalCombinedDailyTarget = 0,
+    this.estimatedDailyMinutes = 0,
+    this.topPriorityExamId,
     this.urgencyLevel = ExamUrgencyLevel.normal,
     this.errorMessage,
   });
@@ -23,8 +26,20 @@ class CramPlannerState extends Equatable {
   final List<ExamEventEntity> activeExams;
   final ExamEventEntity? selectedExam;
   final int dynamicDailyTarget;
+  final int totalCombinedDailyTarget;
+  final int estimatedDailyMinutes;
+  final String? topPriorityExamId;
   final ExamUrgencyLevel urgencyLevel;
   final String? errorMessage;
+
+  List<ExamEventEntity> get upcomingUncompletedExams =>
+      activeExams.where((e) => !e.isCompleted && !e.isPast).toList();
+
+  List<ExamEventEntity> get completedExams =>
+      activeExams.where((e) => e.isCompleted).toList();
+
+  List<ExamEventEntity> get concludedUnloggedExams =>
+      activeExams.where((e) => e.isPast && !e.isCompleted).toList();
 
   CramPlannerState copyWith({
     CramPlannerStatus? status,
@@ -32,6 +47,10 @@ class CramPlannerState extends Equatable {
     ExamEventEntity? selectedExam,
     bool clearSelectedExam = false,
     int? dynamicDailyTarget,
+    int? totalCombinedDailyTarget,
+    int? estimatedDailyMinutes,
+    String? topPriorityExamId,
+    bool clearTopPriorityExamId = false,
     ExamUrgencyLevel? urgencyLevel,
     String? errorMessage,
   }) {
@@ -42,6 +61,13 @@ class CramPlannerState extends Equatable {
           ? null
           : (selectedExam ?? this.selectedExam),
       dynamicDailyTarget: dynamicDailyTarget ?? this.dynamicDailyTarget,
+      totalCombinedDailyTarget:
+          totalCombinedDailyTarget ?? this.totalCombinedDailyTarget,
+      estimatedDailyMinutes:
+          estimatedDailyMinutes ?? this.estimatedDailyMinutes,
+      topPriorityExamId: clearTopPriorityExamId
+          ? null
+          : (topPriorityExamId ?? this.topPriorityExamId),
       urgencyLevel: urgencyLevel ?? this.urgencyLevel,
       errorMessage: errorMessage,
     );
@@ -53,6 +79,9 @@ class CramPlannerState extends Equatable {
     activeExams,
     selectedExam,
     dynamicDailyTarget,
+    totalCombinedDailyTarget,
+    estimatedDailyMinutes,
+    topPriorityExamId,
     urgencyLevel,
     errorMessage,
   ];

@@ -269,6 +269,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
     required String subjectTrack,
     AssessmentType assessmentType = AssessmentType.finalExam,
     List<String> scopedDeckIds = const [],
+    List<String> scopedTopics = const [],
     double? weightPercent,
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
@@ -300,6 +301,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'subject_track': subjectTrack,
             'assessment_type': assessmentType.name,
             'scoped_deck_ids': scopedDeckIds,
+            'scoped_topics': scopedTopics,
             'weight_percent': ?weightPercent,
             'total_cards_count': totalCardsCount,
             'mastered_cards_count': 0,
@@ -338,6 +340,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
         subjectTrack: subjectTrack,
         assessmentType: assessmentType,
         scopedDeckIds: scopedDeckIds,
+        scopedTopics: scopedTopics,
         weightPercent: weightPercent,
         totalCardsCount: totalCardsCount,
         dailyTarget: dailyTarget,
@@ -361,9 +364,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
     required String subjectTrack,
     AssessmentType? assessmentType,
     List<String>? scopedDeckIds,
+    List<String>? scopedTopics,
     double? weightPercent,
     int? totalCardsCount,
     double? targetScorePercent,
+    bool? isCompleted,
+    double? achievedScorePercent,
   }) {
     return Future<ExamEventEntity>.sync(() async {
       final idx = _cachedExams.indexWhere((e) => e.id == examId);
@@ -386,7 +392,10 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
       final effType = assessmentType ?? existing?.assessmentType ?? AssessmentType.finalExam;
       final effDecks = scopedDeckIds ?? existing?.scopedDeckIds ?? const <String>[];
+      final effTopics = scopedTopics ?? existing?.scopedTopics ?? const <String>[];
       final effWeight = weightPercent ?? existing?.weightPercent;
+      final effCompleted = isCompleted ?? existing?.isCompleted ?? false;
+      final effAchieved = achievedScorePercent ?? existing?.achievedScorePercent;
 
       final client = _effectiveDio;
       final userId = _userStorage?.getUserId() ?? '';
@@ -398,10 +407,13 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'subject_track': subjectTrack,
             'assessment_type': effType.name,
             'scoped_deck_ids': effDecks,
+            'scoped_topics': effTopics,
             'weight_percent': ?effWeight,
             'total_cards_count': ?totalCardsCount,
             'target_score_percent': ?targetScorePercent,
             'daily_target': dailyTarget,
+            'is_completed': effCompleted,
+            'achieved_score_percent': ?effAchieved,
             'updated_at': DateTime.now().toIso8601String(),
             if (userId.isNotEmpty) 'user_id': userId,
           };
@@ -426,6 +438,7 @@ class PlannerRepositoryImpl implements PlannerRepository {
         subjectTrack: subjectTrack,
         assessmentType: effType,
         scopedDeckIds: effDecks,
+        scopedTopics: effTopics,
         weightPercent: effWeight,
         totalCardsCount: cards,
         masteredCardsCount: existing?.masteredCardsCount ?? 0,
@@ -433,6 +446,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
         dailyTarget: dailyTarget,
         targetScorePercent:
             targetScorePercent ?? existing?.targetScorePercent ?? 0.85,
+        isCompleted: effCompleted,
+        achievedScorePercent: effAchieved,
+        completedAt: existing?.completedAt,
         createdAt: existing?.createdAt ?? DateTime.now(),
       );
 
@@ -444,6 +460,77 @@ class PlannerRepositoryImpl implements PlannerRepository {
       _cachedExams.sort((a, b) => a.targetDate.compareTo(b.targetDate));
       _saveToStorage();
       return updated;
+    }).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> completeExam({
+    required String examId,
+    required double scorePercent,
+    bool rolloverWeakCards = true,
+  }) {
+    return Future<ExamEventEntity>.sync(() async {
+      final idx = _cachedExams.indexWhere((e) => e.id == examId);
+      if (idx < 0) {
+        throw Exception('Exam not found with id $examId');
+      }
+      final existing = _cachedExams[idx];
+      final model = ExamEventModel(
+        id: existing.id,
+        userId: existing.userId,
+        examName: existing.examName,
+        targetDate: existing.targetDate,
+        subjectTrack: existing.subjectTrack,
+        assessmentType: existing.assessmentType,
+        scopedDeckIds: existing.scopedDeckIds,
+        scopedTopics: existing.scopedTopics,
+        weightPercent: existing.weightPercent,
+        totalCardsCount: existing.totalCardsCount,
+        masteredCardsCount: existing.masteredCardsCount,
+        totalLapses: existing.totalLapses,
+        dailyTarget: 0,
+        targetScorePercent: existing.targetScorePercent,
+        isCompleted: true,
+        achievedScorePercent: scorePercent,
+        completedAt: DateTime.now(),
+        createdAt: existing.createdAt,
+      );
+
+      _cachedExams[idx] = model;
+      _saveToStorage();
+      return model;
+    }).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> reopenExam(String examId) {
+    return Future<ExamEventEntity>.sync(() async {
+      final idx = _cachedExams.indexWhere((e) => e.id == examId);
+      if (idx < 0) {
+        throw Exception('Exam not found with id $examId');
+      }
+      final existing = _cachedExams[idx];
+      final model = ExamEventModel(
+        id: existing.id,
+        userId: existing.userId,
+        examName: existing.examName,
+        targetDate: existing.targetDate,
+        subjectTrack: existing.subjectTrack,
+        assessmentType: existing.assessmentType,
+        scopedDeckIds: existing.scopedDeckIds,
+        scopedTopics: existing.scopedTopics,
+        weightPercent: existing.weightPercent,
+        totalCardsCount: existing.totalCardsCount,
+        masteredCardsCount: existing.masteredCardsCount,
+        totalLapses: existing.totalLapses,
+        dailyTarget: existing.dailyTarget,
+        targetScorePercent: existing.targetScorePercent,
+        createdAt: existing.createdAt,
+      );
+
+      _cachedExams[idx] = model;
+      _saveToStorage();
+      return model;
     }).makeRequest();
   }
 

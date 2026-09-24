@@ -99,5 +99,85 @@ void main() {
         expect(find.text('Open Mock Lobby'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'renders consolidated daily capacity bar and grade weight badges',
+      (tester) async {
+        final examWithTopics = ExamEventEntity(
+          id: 'exam-topics',
+          userId: 'usr-1',
+          examName: 'CHM 111 Class Test',
+          targetDate: DateTime.now().add(const Duration(days: 3)),
+          subjectTrack: 'CHM 111',
+          assessmentType: AssessmentType.classTest,
+          scopedTopics: const ['Stoichiometry', 'Thermodynamics'],
+          totalCardsCount: 60,
+        );
+
+        when(
+          () => mockRepository.getActiveExams(),
+        ).thenAnswer((_) async => Right([examWithTopics, tFinal]));
+
+        await cubit.loadExams();
+
+        await tester.pumpWidget(
+          createTestApp(
+            BlocProvider<CramPlannerCubit>.value(
+              value: cubit,
+              child: const ExamCountdownBanner(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Consolidated capacity bar should be displayed because there are 2 exams
+        expect(find.textContaining('Combined Today:'), findsOneWidget);
+
+        // Scoped topics chips should be displayed
+        expect(find.textContaining('Stoichiometry'), findsOneWidget);
+        expect(find.textContaining('Thermodynamics'), findsOneWidget);
+
+        // Weight badge should be displayed
+        expect(find.text('20% Weight'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders sub-daily countdown format for imminent assessment (< 24h)',
+      (tester) async {
+        final imminentExam = ExamEventEntity(
+          id: 'exam-imminent',
+          userId: 'usr-1',
+          examName: 'Emergency Cram Quiz',
+          targetDate: DateTime.now().add(const Duration(hours: 8, minutes: 30)),
+          subjectTrack: 'MTH 101',
+          assessmentType: AssessmentType.quiz,
+          totalCardsCount: 30,
+          dailyTarget: 30,
+        );
+
+        when(
+          () => mockRepository.getActiveExams(),
+        ).thenAnswer((_) async => Right([imminentExam]));
+
+        await cubit.loadExams();
+
+        await tester.pumpWidget(
+          createTestApp(
+            BlocProvider<CramPlannerCubit>.value(
+              value: cubit,
+              child: const ExamCountdownBanner(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Sub-daily countdown should show hours and minutes left, e.g. "8h 29m left" or "8h 30m left"
+        expect(find.textContaining('8h'), findsOneWidget);
+        expect(find.textContaining('left'), findsWidgets);
+      },
+    );
   });
 }

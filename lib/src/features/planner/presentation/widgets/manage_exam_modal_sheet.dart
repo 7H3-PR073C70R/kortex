@@ -73,6 +73,163 @@ class ManageExamModalSheet extends StatelessWidget {
     );
   }
 
+  void _showCompleteDialog(
+    BuildContext context,
+    CramPlannerCubit cubit,
+    ExamEventEntity exam,
+  ) {
+    var score = 85.0;
+    var rollover = true;
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: context.colors.transparent,
+        builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setModalState) {
+            final colors = ctx.colors;
+            final typography = ctx.typography;
+            final isDark = ctx.isDarkMode;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 30),
+                decoration: BoxDecoration(
+                  color:
+                      isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.dialog),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Conclude & Record Grade',
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Record your achieved score for "${exam.examName}". Any difficult or missed flashcards can be rolled over to your continuous review queue.',
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Achieved Score',
+                          style: typography.body.semiBold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 50 : 25),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: colors.primary.withAlpha(100),
+                            ),
+                          ),
+                          child: Text(
+                            '${score.toInt()}%',
+                            style: typography.callout.bold.copyWith(
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: score,
+                      max: 100,
+                      divisions: 100,
+                      activeColor: colors.primary,
+                      onChanged: (val) {
+                        setModalState(() {
+                          score = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: rollover,
+                      activeColor: colors.primary,
+                      title: Text(
+                        'Rollover unmastered cards to Final Exam review',
+                        style: typography.caption.medium.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      onChanged: (val) {
+                        setModalState(() {
+                          rollover = val ?? true;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 18),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () async {
+                        AppFeedback.celebration();
+                        await cubit.completeAssessment(
+                          examId: exam.id,
+                          scorePercent: score / 100.0,
+                          rolloverWeakCards: rollover,
+                        );
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                          ctx.showSnackBar(
+                            message:
+                                'Assessment recorded with ${score.toInt()}% score!',
+                            type: SnackBarType.success,
+                          );
+                        }
+                      },
+                      child: const Text('Save & Archive Milestone'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -239,38 +396,71 @@ class ManageExamModalSheet extends StatelessWidget {
                           fontSize: 17,
                         ),
                       ),
-                      if (exam.scopedDeckIds.isNotEmpty ||
-                          exam.weightPercent != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            if (exam.scopedDeckIds.isNotEmpty)
-                              Text(
-                                '${exam.scopedDeckIds.length} scoped topics',
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11.5,
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          if (exam.isCompleted)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: colors.primary.withAlpha(80),
                                 ),
                               ),
-                            if (exam.scopedDeckIds.isNotEmpty &&
-                                exam.weightPercent != null)
-                              Text(
-                                ' • ',
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            if (exam.weightPercent != null)
-                              Text(
-                                '${(exam.weightPercent! * 100).toInt()}% of grade',
-                                style: typography.caption.semiBold.copyWith(
+                              child: Text(
+                                'Completed: ${exam.achievedScorePercent != null ? (exam.achievedScorePercent! * 100).toInt() : 100}%',
+                                style: typography.caption.bold.copyWith(
                                   color: colors.primary,
-                                  fontSize: 11.5,
+                                  fontSize: 11,
                                 ),
                               ),
-                          ],
-                        ),
-                      ],
+                            ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceBorder.withAlpha(isDark ? 80 : 50),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${exam.effectiveWeightPercent.toStringAsFixed(0)}% of grade',
+                              style: typography.caption.semiBold.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          if (exam.scopedTopics.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceBorder.withAlpha(isDark ? 80 : 50),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Topics: ${exam.scopedTopics.join(", ")}',
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -281,7 +471,7 @@ class ManageExamModalSheet extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            l10n.daysUntilExam(days, exam.examName),
+                            exam.formattedSubDailyCountdown,
                             style: typography.footnote.semiBold.copyWith(
                               color: badgeColor,
                               fontSize: 13,
@@ -468,6 +658,45 @@ class ManageExamModalSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
+
+                // Conclude / Reopen Milestone Action
+                if (exam.isCompleted)
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      AppFeedback.selection();
+                      await cubit.reopenAssessment(exam.id);
+                      if (context.mounted) {
+                        context.showSnackBar(
+                          message: '${exam.examName} reopened for study planning',
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.replay_rounded, size: 16),
+                    label: const Text('Reopen Milestone'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(color: colors.primary.withAlpha(120)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                    ),
+                  )
+                else
+                  FilledButton.icon(
+                    onPressed: () => _showCompleteDialog(context, cubit, exam),
+                    icon: const Icon(Icons.check_circle_outline_rounded, size: 17),
+                    label: const Text('Log Grade & Conclude Milestone'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor:
+                          exam.isPast ? colors.warning : colors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 10),
 
                 // Action Buttons Row: Edit and Add
                 Row(

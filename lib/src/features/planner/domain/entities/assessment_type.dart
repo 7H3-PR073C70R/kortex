@@ -39,6 +39,16 @@ enum AssessmentType {
     AssessmentType.custom => 14,
   };
 
+  /// Default typical grade weight percentage (as proportion 0.0 - 1.0)
+  double get defaultWeightPercent => switch (this) {
+    AssessmentType.quiz => 0.10,
+    AssessmentType.classTest => 0.20,
+    AssessmentType.midterm => 0.30,
+    AssessmentType.finalExam => 0.50,
+    AssessmentType.mockExam => 0.25,
+    AssessmentType.custom => 0.15,
+  };
+
   /// Generates a contextual default name given a course code (e.g. MTH 101 Quiz)
   String defaultNameForCourse(String courseCode) {
     final clean = courseCode.trim();

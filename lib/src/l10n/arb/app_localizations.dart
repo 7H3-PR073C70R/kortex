@@ -4160,6 +4160,78 @@ abstract class AppLocalizations {
   /// **'Finals'**
   String get filterFinals;
 
+  /// Consolidated daily workload across active assessments
+  ///
+  /// In en, this message translates to:
+  /// **'Combined Today: {count} cards across {assessments} milestones ({minutes} min)'**
+  String combinedTodayWorkload(int count, int assessments, int minutes);
+
+  /// Badge for the highest priority assessment
+  ///
+  /// In en, this message translates to:
+  /// **'Top Priority'**
+  String get topPriorityBadge;
+
+  /// Grade weight percentage badge
+  ///
+  /// In en, this message translates to:
+  /// **'{weight}% Weight'**
+  String gradeWeightBadge(String weight);
+
+  /// List of topics covered in assessment
+  ///
+  /// In en, this message translates to:
+  /// **'Topics: {topics}'**
+  String topicsCoveredLabel(String topics);
+
+  /// Button to log final score and archive assessment
+  ///
+  /// In en, this message translates to:
+  /// **'Log Grade & Conclude'**
+  String get logGradeAndConclude;
+
+  /// Prompt shown when an assessment date has passed
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment concluded • Tap to record score & rollover weak spots'**
+  String get concludeAssessmentPrompt;
+
+  /// Button to reopen a completed assessment
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen Milestone'**
+  String get reopenAssessmentAction;
+
+  /// Score achieved label
+  ///
+  /// In en, this message translates to:
+  /// **'Score: {score}%'**
+  String achievedScoreLabel(String score);
+
+  /// Checkbox to rollover lapsed cards
+  ///
+  /// In en, this message translates to:
+  /// **'Rollover missed cards to Final Exam review'**
+  String get rolloverWeakCards;
+
+  /// Header for scoped topics input
+  ///
+  /// In en, this message translates to:
+  /// **'Topics & Chapters Covered'**
+  String get scopedTopicsTitle;
+
+  /// Hint to add a topic or chapter
+  ///
+  /// In en, this message translates to:
+  /// **'Add a topic or chapter (press Enter)...'**
+  String get addTopicHint;
+
+  /// Filter chip for completed assessments
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get filterCompleted;
+
   /// Title for deleting assessment modal dialog
   ///
   /// In en, this message translates to:

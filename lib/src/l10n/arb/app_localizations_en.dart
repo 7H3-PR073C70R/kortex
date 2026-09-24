@@ -2356,6 +2356,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterFinals => 'Finals';
 
   @override
+  String combinedTodayWorkload(int count, int assessments, int minutes) {
+    return 'Combined Today: $count cards across $assessments milestones ($minutes min)';
+  }
+
+  @override
+  String get topPriorityBadge => 'Top Priority';
+
+  @override
+  String gradeWeightBadge(String weight) {
+    return '$weight% Weight';
+  }
+
+  @override
+  String topicsCoveredLabel(String topics) {
+    return 'Topics: $topics';
+  }
+
+  @override
+  String get logGradeAndConclude => 'Log Grade & Conclude';
+
+  @override
+  String get concludeAssessmentPrompt =>
+      'Assessment concluded • Tap to record score & rollover weak spots';
+
+  @override
+  String get reopenAssessmentAction => 'Reopen Milestone';
+
+  @override
+  String achievedScoreLabel(String score) {
+    return 'Score: $score%';
+  }
+
+  @override
+  String get rolloverWeakCards => 'Rollover missed cards to Final Exam review';
+
+  @override
+  String get scopedTopicsTitle => 'Topics & Chapters Covered';
+
+  @override
+  String get addTopicHint => 'Add a topic or chapter (press Enter)...';
+
+  @override
+  String get filterCompleted => 'Completed';
+
+  @override
   String get deleteAssessmentConfirmTitle => 'Delete Assessment Countdown?';
 
   @override

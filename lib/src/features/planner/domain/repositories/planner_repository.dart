@@ -12,6 +12,7 @@ abstract class PlannerRepository {
     required String subjectTrack,
     AssessmentType assessmentType = AssessmentType.finalExam,
     List<String> scopedDeckIds = const [],
+    List<String> scopedTopics = const [],
     double? weightPercent,
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
@@ -24,10 +25,21 @@ abstract class PlannerRepository {
     required String subjectTrack,
     AssessmentType? assessmentType,
     List<String>? scopedDeckIds,
+    List<String>? scopedTopics,
     double? weightPercent,
     int? totalCardsCount,
     double? targetScorePercent,
+    bool? isCompleted,
+    double? achievedScorePercent,
   });
+
+  Future<Either<Failure, ExamEventEntity>> completeExam({
+    required String examId,
+    required double scorePercent,
+    bool rolloverWeakCards = true,
+  });
+
+  Future<Either<Failure, ExamEventEntity>> reopenExam(String examId);
 
   Future<Either<Failure, void>> deleteExam(String examId);
 }

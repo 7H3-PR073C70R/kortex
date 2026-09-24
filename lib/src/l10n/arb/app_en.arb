@@ -3366,6 +3366,86 @@
     "@filterFinals": {
         "description": "Filter chip for final exams"
     },
+    "combinedTodayWorkload": "Combined Today: {count} cards across {assessments} milestones ({minutes} min)",
+    "@combinedTodayWorkload": {
+        "description": "Consolidated daily workload across active assessments",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "65"
+            },
+            "assessments": {
+                "type": "int",
+                "example": "2"
+            },
+            "minutes": {
+                "type": "int",
+                "example": "22"
+            }
+        }
+    },
+    "topPriorityBadge": "Top Priority",
+    "@topPriorityBadge": {
+        "description": "Badge for the highest priority assessment"
+    },
+    "gradeWeightBadge": "{weight}% Weight",
+    "@gradeWeightBadge": {
+        "description": "Grade weight percentage badge",
+        "placeholders": {
+            "weight": {
+                "type": "String",
+                "example": "25"
+            }
+        }
+    },
+    "topicsCoveredLabel": "Topics: {topics}",
+    "@topicsCoveredLabel": {
+        "description": "List of topics covered in assessment",
+        "placeholders": {
+            "topics": {
+                "type": "String",
+                "example": "Ch 1-3, Limits"
+            }
+        }
+    },
+    "logGradeAndConclude": "Log Grade & Conclude",
+    "@logGradeAndConclude": {
+        "description": "Button to log final score and archive assessment"
+    },
+    "concludeAssessmentPrompt": "Assessment concluded • Tap to record score & rollover weak spots",
+    "@concludeAssessmentPrompt": {
+        "description": "Prompt shown when an assessment date has passed"
+    },
+    "reopenAssessmentAction": "Reopen Milestone",
+    "@reopenAssessmentAction": {
+        "description": "Button to reopen a completed assessment"
+    },
+    "achievedScoreLabel": "Score: {score}%",
+    "@achievedScoreLabel": {
+        "description": "Score achieved label",
+        "placeholders": {
+            "score": {
+                "type": "String",
+                "example": "85"
+            }
+        }
+    },
+    "rolloverWeakCards": "Rollover missed cards to Final Exam review",
+    "@rolloverWeakCards": {
+        "description": "Checkbox to rollover lapsed cards"
+    },
+    "scopedTopicsTitle": "Topics & Chapters Covered",
+    "@scopedTopicsTitle": {
+        "description": "Header for scoped topics input"
+    },
+    "addTopicHint": "Add a topic or chapter (press Enter)...",
+    "@addTopicHint": {
+        "description": "Hint to add a topic or chapter"
+    },
+    "filterCompleted": "Completed",
+    "@filterCompleted": {
+        "description": "Filter chip for completed assessments"
+    },
     "deleteAssessmentConfirmTitle": "Delete Assessment Countdown?",
     "@deleteAssessmentConfirmTitle": {
         "description": "Title for deleting assessment modal dialog"

@@ -78,6 +78,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
   late TimeOfDay _selectedTime;
   late AssessmentType _selectedType;
   final Set<String> _selectedDeckIds = {};
+  final List<String> _scopedTopics = [];
   double? _selectedWeightPercent;
 
   List<CuratedCourseModel> _registeredCourses = [];
@@ -87,6 +88,8 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
   int _pastQuestionsCount = 0;
   bool _isCalculatingWorkload = false;
   bool _userCustomizedTitle = false;
+
+  late final TextEditingController _topicController;
 
   @override
   void initState() {
@@ -98,6 +101,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
     _nameController = TextEditingController(
       text: widget.initialExam?.examName ?? '',
     );
+    _topicController = TextEditingController();
     if (widget.initialExam != null && widget.initialExam!.examName.isNotEmpty) {
       _userCustomizedTitle = true;
     }
@@ -117,6 +121,10 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
         widget.initialExam!.scopedDeckIds.isNotEmpty) {
       _selectedDeckIds.addAll(widget.initialExam!.scopedDeckIds);
     }
+    if (widget.initialExam != null &&
+        widget.initialExam!.scopedTopics.isNotEmpty) {
+      _scopedTopics.addAll(widget.initialExam!.scopedTopics);
+    }
 
     _selectedWeightPercent = widget.initialExam?.weightPercent;
 
@@ -126,7 +134,26 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _topicController.dispose();
     super.dispose();
+  }
+
+  void _addTopic() {
+    final text = _topicController.text.trim();
+    if (text.isNotEmpty && !_scopedTopics.contains(text)) {
+      AppFeedback.selection();
+      setState(() {
+        _scopedTopics.add(text);
+        _topicController.clear();
+      });
+    }
+  }
+
+  void _removeTopic(String topic) {
+    AppFeedback.selection();
+    setState(() {
+      _scopedTopics.remove(topic);
+    });
   }
 
   void _loadRegisteredCourses() {
@@ -395,6 +422,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
           subjectTrack: courseIdentifier,
           assessmentType: _selectedType,
           scopedDeckIds: _selectedDeckIds.toList(),
+          scopedTopics: _scopedTopics,
           weightPercent: _selectedWeightPercent,
           totalCardsCount: workload,
         ),
@@ -407,6 +435,7 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
           subjectTrack: courseIdentifier,
           assessmentType: _selectedType,
           scopedDeckIds: _selectedDeckIds.toList(),
+          scopedTopics: _scopedTopics,
           weightPercent: _selectedWeightPercent,
           totalCardsCount: workload,
         ),
@@ -749,6 +778,110 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
                   ),
                   const SizedBox(height: 14),
                 ],
+
+                // Scoped Topics / Syllabus Chapters Section
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfacePrimary
+                        : colors.surfaceSecondary.withAlpha(120),
+                    borderRadius: AppRadius.radiusPanel,
+                    border: Border.all(color: colors.surfaceBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.topic_outlined,
+                            size: 14,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.scopedTopicsTitle,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _topicController,
+                              style: typography.body.regular.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 12.5,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: l10n.addTopicHint,
+                                hintStyle: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: colors.surfaceBorder,
+                                  ),
+                                ),
+                              ),
+                              onSubmitted: (_) => _addTopic(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            icon: const Icon(Icons.add_rounded, size: 16),
+                            onPressed: _addTopic,
+                            style: IconButton.styleFrom(
+                              backgroundColor: colors.primary,
+                              padding: const EdgeInsets.all(8),
+                              minimumSize: const Size(36, 36),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_scopedTopics.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _scopedTopics.map((topic) {
+                            return Chip(
+                              label: Text(topic),
+                              labelStyle: typography.caption.medium.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 11,
+                              ),
+                              deleteIcon:
+                                  const Icon(Icons.close_rounded, size: 13),
+                              onDeleted: () => _removeTopic(topic),
+                              backgroundColor:
+                                  colors.primary.withAlpha(isDark ? 35 : 20),
+                              side: BorderSide(
+                                color: colors.primary.withAlpha(70),
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
 
                 // Automatic Internal Workload Calculation Card
                 Container(

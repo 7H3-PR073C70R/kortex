@@ -1,10 +1,18 @@
 import 'dart:math' as math;
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
+import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 
 enum ExamUrgencyLevel {
   normal, // Green: on track, ample runway
   warning, // Amber: approaching prep window
   critical, // Crimson: final crunch (< 24-48h for quizzes, < 7d for finals)
+}
+
+enum StudyPriorityLevel {
+  low,
+  normal,
+  high,
+  critical,
 }
 
 /// Computes dynamic cram paces, predictive exam readiness, and retention trajectories
@@ -138,5 +146,77 @@ class CramWorkloadCalculator {
     }
 
     return trajectory;
+  }
+
+  /// Calculates the Study Priority Index (SPI) on a 0.0 to 100.0 scale.
+  /// Combines assessment grade weight, time-to-evaluation urgency, and workload deficit.
+  double calculatePriorityScore({required ExamEventEntity exam}) {
+    if (exam.isCompleted || exam.isPast) return 0;
+
+    // 1. Grade Weight Factor (0.1 to 1.0)
+    final weight = exam.effectiveWeightPercent;
+    final normWeight =
+        (weight > 1.0 ? weight / 60.0 : weight / 0.60).clamp(0.1, 1.0);
+
+    // 2. Time-to-Evaluation Urgency Factor
+    final hours = exam.timeRemaining.inHours;
+    final double urgencyFactor;
+    if (hours <= 24) {
+      urgencyFactor = 1.0;
+    } else if (hours <= 48) {
+      urgencyFactor = 0.85;
+    } else if (exam.daysRemaining <= 4) {
+      urgencyFactor = 0.70;
+    } else if (exam.daysRemaining <= 7) {
+      urgencyFactor = 0.50;
+    } else if (exam.daysRemaining <= 14) {
+      urgencyFactor = 0.35;
+    } else {
+      urgencyFactor = (14.0 / math.max(14, exam.daysRemaining)) * 0.35;
+    }
+
+    // 3. Workload Deficit Factor (unmastered cards + lapses vs total)
+    final workloadDeficit = exam.totalCardsCount > 0
+        ? ((exam.remainingCards + exam.totalLapses * 1.5) /
+                exam.totalCardsCount)
+            .clamp(0.1, 1.5)
+        : 0.5;
+
+    // Composite: 40% Grade Weight, 40% Urgency, 20% Workload Deficit
+    final composite = (normWeight * 40.0) +
+        (urgencyFactor * 40.0) +
+        ((workloadDeficit / 1.5) * 20.0);
+
+    return composite.clamp(0.0, 100.0);
+  }
+
+  /// Categorizes SPI into discrete priority levels.
+  StudyPriorityLevel calculatePriorityLevel({required ExamEventEntity exam}) {
+    final score = calculatePriorityScore(exam: exam);
+    if (score >= 70.0) return StudyPriorityLevel.critical;
+    if (score >= 45.0) return StudyPriorityLevel.high;
+    if (score >= 25.0) return StudyPriorityLevel.normal;
+    return StudyPriorityLevel.low;
+  }
+
+  /// Calculates the total consolidated daily card workload across all active upcoming assessments.
+  int calculateTotalDailyWorkload(List<ExamEventEntity> exams) {
+    var total = 0;
+    for (final e in exams) {
+      if (!e.isCompleted && !e.isPast) {
+        total += calculateDailyTarget(
+          remainingCards: e.remainingCards,
+          lapses: e.totalLapses,
+          daysRemaining: e.daysRemaining,
+        );
+      }
+    }
+    return total;
+  }
+
+  /// Estimates daily study time in minutes (~20 seconds per card recall, minimum 5 mins if cards > 0).
+  int calculateEstimatedDailyMinutes(int dailyCards) {
+    if (dailyCards <= 0) return 0;
+    return math.max(5, (dailyCards * 20 / 60).ceil());
   }
 }

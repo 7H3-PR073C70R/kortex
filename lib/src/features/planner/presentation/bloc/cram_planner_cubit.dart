@@ -26,6 +26,26 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
   final CreateExamCountdownUseCase _createExamUseCase;
   final CramWorkloadCalculator _calculator;
 
+  (int totalDaily, int estMinutes, String? topPriorityId) _computeAggregates(
+    List<ExamEventEntity> exams,
+  ) {
+    final active = exams.where((e) => !e.isCompleted && !e.isPast).toList();
+    final totalDaily = _calculator.calculateTotalDailyWorkload(active);
+    final estMinutes = _calculator.calculateEstimatedDailyMinutes(totalDaily);
+
+    String? topPriorityId;
+    var maxScore = -1.0;
+    for (final e in active) {
+      final score = _calculator.calculatePriorityScore(exam: e);
+      if (score > maxScore) {
+        maxScore = score;
+        topPriorityId = e.id;
+      }
+    }
+
+    return (totalDaily, estMinutes, topPriorityId);
+  }
+
   /// Loads active exams and calculates initial urgency for the closest exam.
   Future<void> loadExams() async {
     emit(state.copyWith(status: CramPlannerStatus.loading));
@@ -58,6 +78,8 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
           );
         }
 
+        final (totalDaily, estMins, topPriorityId) = _computeAggregates(sorted);
+
         emit(
           state.copyWith(
             status: CramPlannerStatus.loaded,
@@ -65,6 +87,9 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             selectedExam: primaryExam,
             clearSelectedExam: primaryExam == null,
             dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
             urgencyLevel: urgency,
           ),
         );
@@ -79,6 +104,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     required String subjectTrack,
     AssessmentType assessmentType = AssessmentType.finalExam,
     List<String> scopedDeckIds = const [],
+    List<String> scopedTopics = const [],
     double? weightPercent,
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
@@ -91,6 +117,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       subjectTrack: subjectTrack,
       assessmentType: assessmentType,
       scopedDeckIds: scopedDeckIds,
+      scopedTopics: scopedTopics,
       weightPercent: weightPercent,
       totalCardsCount: totalCardsCount,
       targetScorePercent: targetScorePercent,
@@ -119,12 +146,18 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
           type: primary.assessmentType,
         );
 
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
         emit(
           state.copyWith(
             status: CramPlannerStatus.loaded,
             activeExams: updatedList,
             selectedExam: primary,
             dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
             urgencyLevel: urgency,
           ),
         );
@@ -184,9 +217,12 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     required String subjectTrack,
     AssessmentType? assessmentType,
     List<String>? scopedDeckIds,
+    List<String>? scopedTopics,
     double? weightPercent,
     int? totalCardsCount,
     double? targetScorePercent,
+    bool? isCompleted,
+    double? achievedScorePercent,
   }) async {
     emit(state.copyWith(status: CramPlannerStatus.loading));
 
@@ -197,9 +233,12 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       subjectTrack: subjectTrack,
       assessmentType: assessmentType,
       scopedDeckIds: scopedDeckIds,
+      scopedTopics: scopedTopics,
       weightPercent: weightPercent,
       totalCardsCount: totalCardsCount,
       targetScorePercent: targetScorePercent,
+      isCompleted: isCompleted,
+      achievedScorePercent: achievedScorePercent,
     );
 
     result.fold(
@@ -234,12 +273,136 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
           );
         }
 
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
         emit(
           state.copyWith(
             status: CramPlannerStatus.loaded,
             activeExams: updatedList,
             selectedExam: primary,
             dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
+            urgencyLevel: urgency,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Concludes and records the final grade of an assessment, archiving it
+  /// and optionally rolling over lapsed / unmastered cards to subsequent exams.
+  Future<void> completeAssessment({
+    required String examId,
+    required double scorePercent,
+    bool rolloverWeakCards = true,
+  }) async {
+    emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    final result = await _repository.completeExam(
+      examId: examId,
+      scorePercent: scorePercent,
+      rolloverWeakCards: rolloverWeakCards,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CramPlannerStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (completedExam) {
+        final updatedList =
+            state.activeExams
+                .map((e) => e.id == examId ? completedExam : e)
+                .toList()
+              ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+        // Primary becomes the next upcoming uncompleted exam if available
+        final uncompleted =
+            updatedList.where((e) => !e.isCompleted && !e.isPast).toList();
+        final primary = uncompleted.isNotEmpty ? uncompleted.first : null;
+
+        var pace = 20;
+        var urgency = ExamUrgencyLevel.normal;
+        if (primary != null) {
+          pace = _calculateTargetUseCase(
+            remainingCards: primary.remainingCards,
+            lapses: primary.totalLapses,
+            daysRemaining: primary.daysRemaining,
+          );
+          urgency = _calculator.getUrgencyLevel(
+            primary.daysRemaining,
+            type: primary.assessmentType,
+          );
+        }
+
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.loaded,
+            activeExams: updatedList,
+            selectedExam: primary,
+            clearSelectedExam: primary == null,
+            dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
+            urgencyLevel: urgency,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Reopens a previously completed assessment back into active study planning.
+  Future<void> reopenAssessment(String examId) async {
+    emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    final result = await _repository.reopenExam(examId);
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CramPlannerStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (reopenedExam) {
+        final updatedList =
+            state.activeExams
+                .map((e) => e.id == examId ? reopenedExam : e)
+                .toList()
+              ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+        final primary = reopenedExam;
+        final pace = _calculateTargetUseCase(
+          remainingCards: primary.remainingCards,
+          lapses: primary.totalLapses,
+          daysRemaining: primary.daysRemaining,
+        );
+        final urgency = _calculator.getUrgencyLevel(
+          primary.daysRemaining,
+          type: primary.assessmentType,
+        );
+
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.loaded,
+            activeExams: updatedList,
+            selectedExam: primary,
+            dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
             urgencyLevel: urgency,
           ),
         );
@@ -281,6 +444,9 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
           );
         }
 
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
         emit(
           state.copyWith(
             status: CramPlannerStatus.loaded,
@@ -288,6 +454,9 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             selectedExam: primary,
             clearSelectedExam: primary == null,
             dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
             urgencyLevel: urgency,
           ),
         );

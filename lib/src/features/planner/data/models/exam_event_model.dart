@@ -10,12 +10,16 @@ class ExamEventModel extends ExamEventEntity {
     required super.subjectTrack,
     super.assessmentType = AssessmentType.finalExam,
     super.scopedDeckIds = const [],
+    super.scopedTopics = const [],
     super.weightPercent,
     super.totalCardsCount = 0,
     super.masteredCardsCount = 0,
     super.totalLapses = 0,
     super.dailyTarget = 20,
     super.targetScorePercent = 0.85,
+    super.isCompleted = false,
+    super.achievedScorePercent,
+    super.completedAt,
     super.createdAt,
   });
 
@@ -33,6 +37,10 @@ class ExamEventModel extends ExamEventEntity {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      scopedTopics: (json['scoped_topics'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       weightPercent: (json['weight_percent'] as num?)?.toDouble(),
       totalCardsCount: (json['total_cards_count'] as num?)?.toInt() ?? 0,
       masteredCardsCount: (json['mastered_cards_count'] as num?)?.toInt() ?? 0,
@@ -40,6 +48,12 @@ class ExamEventModel extends ExamEventEntity {
       dailyTarget: (json['daily_target'] as num?)?.toInt() ?? 20,
       targetScorePercent:
           (json['target_score_percent'] as num?)?.toDouble() ?? 0.85,
+      isCompleted: json['is_completed'] as bool? ?? false,
+      achievedScorePercent:
+          (json['achieved_score_percent'] as num?)?.toDouble(),
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String)
+          : null,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -55,12 +69,17 @@ class ExamEventModel extends ExamEventEntity {
       'subject_track': subjectTrack,
       'assessment_type': assessmentType.name,
       'scoped_deck_ids': scopedDeckIds,
+      'scoped_topics': scopedTopics,
       if (weightPercent != null) 'weight_percent': weightPercent,
       'total_cards_count': totalCardsCount,
       'mastered_cards_count': masteredCardsCount,
       'total_lapses': totalLapses,
       'daily_target': dailyTarget,
       'target_score_percent': targetScorePercent,
+      'is_completed': isCompleted,
+      if (achievedScorePercent != null)
+        'achieved_score_percent': achievedScorePercent,
+      if (completedAt != null) 'completed_at': completedAt?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
     };
   }

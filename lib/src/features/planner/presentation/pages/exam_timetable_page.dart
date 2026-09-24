@@ -40,6 +40,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
   bool _dailyReminderEnabled = true;
   bool _milestoneAlertsEnabled = true;
   AssessmentType? _selectedFilterType;
+  bool _showCompletedOnly = false;
 
   @override
   void initState() {
@@ -227,11 +228,17 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                     }
 
                     // Filter assessments if filter chip selected
-                    final filteredExams = _selectedFilterType == null
-                        ? allExams
-                        : allExams
-                            .where((e) => e.assessmentType == _selectedFilterType)
-                            .toList();
+                    final filteredExams = _showCompletedOnly
+                        ? allExams.where((e) => e.isCompleted).toList()
+                        : (_selectedFilterType == null
+                            ? allExams.where((e) => !e.isCompleted).toList()
+                            : allExams
+                                .where(
+                                  (e) =>
+                                      !e.isCompleted &&
+                                      e.assessmentType == _selectedFilterType,
+                                )
+                                .toList());
 
                     return ListView(
                       padding: const EdgeInsets.symmetric(
@@ -258,78 +265,101 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                           child: Row(
                             children: [
                               _buildFilterChip(
-                                label: '${l10n.filterAll} (${allExams.length})',
-                                isSelected: _selectedFilterType == null,
+                                label:
+                                    '${l10n.filterAll} (${allExams.where((e) => !e.isCompleted).length})',
+                                isSelected:
+                                    _selectedFilterType == null &&
+                                    !_showCompletedOnly,
                                 onSelected: () {
                                   AppFeedback.selection();
-                                  setState(() => _selectedFilterType = null);
+                                  setState(() {
+                                    _selectedFilterType = null;
+                                    _showCompletedOnly = false;
+                                  });
                                 },
                                 colors: colors,
                               ),
                               const SizedBox(width: 6),
                               _buildFilterChip(
                                 label:
-                                    '${l10n.filterQuizzes} (${allExams.where((e) => e.assessmentType == AssessmentType.quiz).length})',
+                                    '${l10n.filterQuizzes} (${allExams.where((e) => !e.isCompleted && e.assessmentType == AssessmentType.quiz).length})',
                                 isSelected:
+                                    !_showCompletedOnly &&
                                     _selectedFilterType == AssessmentType.quiz,
                                 onSelected: () {
                                   AppFeedback.selection();
-                                  setState(
-                                    () =>
-                                        _selectedFilterType =
-                                            AssessmentType.quiz,
-                                  );
+                                  setState(() {
+                                    _selectedFilterType = AssessmentType.quiz;
+                                    _showCompletedOnly = false;
+                                  });
                                 },
                                 colors: colors,
                               ),
                               const SizedBox(width: 6),
                               _buildFilterChip(
                                 label:
-                                    '${l10n.filterTests} (${allExams.where((e) => e.assessmentType == AssessmentType.classTest).length})',
+                                    '${l10n.filterTests} (${allExams.where((e) => !e.isCompleted && e.assessmentType == AssessmentType.classTest).length})',
                                 isSelected:
+                                    !_showCompletedOnly &&
                                     _selectedFilterType ==
-                                    AssessmentType.classTest,
+                                        AssessmentType.classTest,
                                 onSelected: () {
                                   AppFeedback.selection();
-                                  setState(
-                                    () =>
-                                        _selectedFilterType =
-                                            AssessmentType.classTest,
-                                  );
+                                  setState(() {
+                                    _selectedFilterType =
+                                        AssessmentType.classTest;
+                                    _showCompletedOnly = false;
+                                  });
                                 },
                                 colors: colors,
                               ),
                               const SizedBox(width: 6),
                               _buildFilterChip(
                                 label:
-                                    '${l10n.filterMidterms} (${allExams.where((e) => e.assessmentType == AssessmentType.midterm).length})',
+                                    '${l10n.filterMidterms} (${allExams.where((e) => !e.isCompleted && e.assessmentType == AssessmentType.midterm).length})',
                                 isSelected:
+                                    !_showCompletedOnly &&
                                     _selectedFilterType ==
-                                    AssessmentType.midterm,
+                                        AssessmentType.midterm,
                                 onSelected: () {
                                   AppFeedback.selection();
-                                  setState(
-                                    () =>
-                                        _selectedFilterType =
-                                            AssessmentType.midterm,
-                                  );
+                                  setState(() {
+                                    _selectedFilterType =
+                                        AssessmentType.midterm;
+                                    _showCompletedOnly = false;
+                                  });
                                 },
                                 colors: colors,
                               ),
                               const SizedBox(width: 6),
                               _buildFilterChip(
                                 label:
-                                    '${l10n.filterFinals} (${allExams.where((e) => e.assessmentType == AssessmentType.finalExam || e.assessmentType == AssessmentType.mockExam).length})',
+                                    '${l10n.filterFinals} (${allExams.where((e) => !e.isCompleted && (e.assessmentType == AssessmentType.finalExam || e.assessmentType == AssessmentType.mockExam)).length})',
                                 isSelected:
+                                    !_showCompletedOnly &&
                                     _selectedFilterType ==
-                                    AssessmentType.finalExam,
+                                        AssessmentType.finalExam,
                                 onSelected: () {
                                   AppFeedback.selection();
-                                  setState(
-                                    () =>
-                                        _selectedFilterType =
-                                            AssessmentType.finalExam,
-                                  );
+                                  setState(() {
+                                    _selectedFilterType =
+                                        AssessmentType.finalExam;
+                                    _showCompletedOnly = false;
+                                  });
+                                },
+                                colors: colors,
+                              ),
+                              const SizedBox(width: 6),
+                              _buildFilterChip(
+                                label:
+                                    '${l10n.filterCompleted} (${allExams.where((e) => e.isCompleted).length})',
+                                isSelected: _showCompletedOnly,
+                                onSelected: () {
+                                  AppFeedback.selection();
+                                  setState(() {
+                                    _showCompletedOnly = true;
+                                    _selectedFilterType = null;
+                                  });
                                 },
                                 colors: colors,
                               ),
@@ -737,6 +767,35 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                             ),
                           ),
                         ),
+                        if (exam.isCompleted) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.success.withValues(alpha: 0.15),
+                              borderRadius: AppRadius.radiusBadge,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle_rounded, size: 10, color: colors.success),
+                                const SizedBox(width: 3),
+                                Text(
+                                  exam.achievedScorePercent != null
+                                      ? '${exam.achievedScorePercent!.toInt()}%'
+                                      : 'Done',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.success,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -784,36 +843,59 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             ],
           ),
 
-          if (exam.scopedDeckIds.isNotEmpty || exam.weightPercent != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (exam.scopedDeckIds.isNotEmpty)
-                  Text(
-                    '${exam.scopedDeckIds.length} scoped topics',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 11,
-                    ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.radiusMicro,
+                ),
+                child: Text(
+                  '${(exam.effectiveWeightPercent * 100).toInt()}% weight',
+                  style: typography.caption.semiBold.copyWith(
+                    color: colors.primary,
+                    fontSize: 10.5,
                   ),
-                if (exam.scopedDeckIds.isNotEmpty && exam.weightPercent != null)
-                  Text(
-                    ' • ',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                ),
+              ),
+              if (exam.scopedTopics.isNotEmpty)
+                ...exam.scopedTopics.take(3).map((topic) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceBorder.withValues(alpha: 0.3),
+                        borderRadius: AppRadius.radiusMicro,
+                      ),
+                      child: Text(
+                        topic,
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    )),
+              if (exam.scopedTopics.length > 3)
+                Text(
+                  '+${exam.scopedTopics.length - 3} more',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary.withValues(alpha: 0.7),
+                    fontSize: 10,
                   ),
-                if (exam.weightPercent != null)
-                  Text(
-                    '${(exam.weightPercent! * 100).toInt()}% weight',
-                    style: typography.caption.semiBold.copyWith(
-                      color: colors.primary,
-                      fontSize: 11,
-                    ),
+                ),
+              if (exam.scopedTopics.isEmpty && exam.scopedDeckIds.isNotEmpty)
+                Text(
+                  '${exam.scopedDeckIds.length} scoped decks',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 10.5,
                   ),
-              ],
-            ),
-          ],
+                ),
+            ],
+          ),
 
           const SizedBox(height: 10),
 
@@ -822,9 +904,13 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                exam.formattedCountdown,
+                exam.isCompleted
+                    ? 'Completed'
+                    : exam.formattedSubDailyCountdown,
                 style: typography.caption.bold.copyWith(
-                  color: exam.isPast ? colors.textSecondary : urgencyColor,
+                  color: exam.isCompleted
+                      ? colors.success
+                      : (exam.isPast ? colors.textSecondary : urgencyColor),
                 ),
               ),
               Text(

@@ -11,12 +11,16 @@ class ExamEventEntity extends Equatable {
     required this.subjectTrack,
     this.assessmentType = AssessmentType.finalExam,
     this.scopedDeckIds = const [],
+    this.scopedTopics = const [],
     this.weightPercent,
     this.totalCardsCount = 0,
     this.masteredCardsCount = 0,
     this.totalLapses = 0,
     this.dailyTarget = 20,
     this.targetScorePercent = 0.85,
+    this.isCompleted = false,
+    this.achievedScorePercent,
+    this.completedAt,
     this.createdAt,
   });
 
@@ -27,12 +31,16 @@ class ExamEventEntity extends Equatable {
   final String subjectTrack;
   final AssessmentType assessmentType;
   final List<String> scopedDeckIds;
+  final List<String> scopedTopics;
   final double? weightPercent;
   final int totalCardsCount;
   final int masteredCardsCount;
   final int totalLapses;
   final int dailyTarget;
   final double targetScorePercent;
+  final bool isCompleted;
+  final double? achievedScorePercent;
+  final DateTime? completedAt;
   final DateTime? createdAt;
 
   int get daysRemaining {
@@ -54,8 +62,35 @@ class ExamEventEntity extends Equatable {
 
   bool get isPast => targetDate.isBefore(DateTime.now());
 
+  bool get isImminent => !isPast && !isCompleted && timeRemaining.inHours < 48;
+
+  bool get isCriticalCrunch =>
+      !isPast && !isCompleted && timeRemaining.inHours < 24;
+
+  double get effectiveWeightPercent =>
+      weightPercent ?? assessmentType.defaultWeightPercent;
+
+  String get formattedSubDailyCountdown {
+    if (isCompleted) return 'Completed';
+    if (isPast) return 'Concluded';
+    final totalHours = timeRemaining.inHours;
+    final mins = minutesRemaining;
+    if (totalHours < 24) {
+      if (totalHours > 0) {
+        return '${totalHours}h ${mins}m left';
+      }
+      return '${mins}m left';
+    }
+    if (timeRemaining.inDays == 1) {
+      return 'Tomorrow (${totalHours}h left)';
+    }
+    final days = daysRemaining;
+    return '$days ${days == 1 ? "day" : "days"} left';
+  }
+
   String get formattedCountdown {
-    if (isPast) return 'Completed';
+    if (isCompleted) return 'Completed';
+    if (isPast) return 'Concluded';
     final days = timeRemaining.inDays;
     final hours = hoursRemaining;
     final mins = minutesRemaining;
@@ -83,12 +118,16 @@ class ExamEventEntity extends Equatable {
     String? subjectTrack,
     AssessmentType? assessmentType,
     List<String>? scopedDeckIds,
+    List<String>? scopedTopics,
     double? weightPercent,
     int? totalCardsCount,
     int? masteredCardsCount,
     int? totalLapses,
     int? dailyTarget,
     double? targetScorePercent,
+    bool? isCompleted,
+    double? achievedScorePercent,
+    DateTime? completedAt,
     DateTime? createdAt,
   }) {
     return ExamEventEntity(
@@ -99,12 +138,16 @@ class ExamEventEntity extends Equatable {
       subjectTrack: subjectTrack ?? this.subjectTrack,
       assessmentType: assessmentType ?? this.assessmentType,
       scopedDeckIds: scopedDeckIds ?? this.scopedDeckIds,
+      scopedTopics: scopedTopics ?? this.scopedTopics,
       weightPercent: weightPercent ?? this.weightPercent,
       totalCardsCount: totalCardsCount ?? this.totalCardsCount,
       masteredCardsCount: masteredCardsCount ?? this.masteredCardsCount,
       totalLapses: totalLapses ?? this.totalLapses,
       dailyTarget: dailyTarget ?? this.dailyTarget,
       targetScorePercent: targetScorePercent ?? this.targetScorePercent,
+      isCompleted: isCompleted ?? this.isCompleted,
+      achievedScorePercent: achievedScorePercent ?? this.achievedScorePercent,
+      completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -118,12 +161,16 @@ class ExamEventEntity extends Equatable {
     subjectTrack,
     assessmentType,
     scopedDeckIds,
+    scopedTopics,
     weightPercent,
     totalCardsCount,
     masteredCardsCount,
     totalLapses,
     dailyTarget,
     targetScorePercent,
+    isCompleted,
+    achievedScorePercent,
+    completedAt,
     createdAt,
   ];
 }

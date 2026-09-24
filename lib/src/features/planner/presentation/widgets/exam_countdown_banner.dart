@@ -25,6 +25,10 @@ class ExamCountdownBanner extends StatelessWidget {
 
   void _onPrimaryActionPressed(BuildContext context, ExamEventEntity exam) {
     AppFeedback.selection();
+    if (exam.isPast && !exam.isCompleted) {
+      unawaited(ManageExamModalSheet.show(context));
+      return;
+    }
     if (exam.assessmentType == AssessmentType.quiz &&
         exam.scopedDeckIds.isNotEmpty) {
       unawaited(
@@ -45,9 +49,15 @@ class ExamCountdownBanner extends StatelessWidget {
     );
   }
 
-  String _getActionLabel(BuildContext context, AssessmentType type) {
+  String _getActionLabel(BuildContext context, ExamEventEntity exam) {
     final l10n = context.l10n;
-    return switch (type) {
+    if (exam.isCompleted) {
+      return 'Review Assessment';
+    }
+    if (exam.isPast) {
+      return l10n.logGradeAndConclude;
+    }
+    return switch (exam.assessmentType) {
       AssessmentType.quiz => l10n.actionPracticeScopedDecks,
       AssessmentType.classTest => l10n.actionStartTestReview,
       AssessmentType.midterm ||
@@ -209,8 +219,30 @@ class ExamCountdownBanner extends StatelessWidget {
           ExamUrgencyLevel.critical => neural.pink400,
         };
 
+        final isTopPriority = exam.id == state.topPriorityExamId;
+
+        // Headline calculation with sub-daily granularity
+        final String countdownHeadline;
+        if (exam.isCompleted) {
+          countdownHeadline =
+              '${exam.examName} • ${l10n.achievedScoreLabel(exam.achievedScorePercent != null ? (exam.achievedScorePercent! * 100).toStringAsFixed(0) : '100')}';
+        } else if (exam.isPast) {
+          countdownHeadline =
+              '${exam.examName} • ${l10n.concludeAssessmentPrompt}';
+        } else if (exam.isCriticalCrunch) {
+          final totalH = exam.timeRemaining.inHours;
+          final mins = exam.minutesRemaining;
+          final timeStr = totalH > 0 ? '${totalH}h ${mins}m left' : '${mins}m left';
+          countdownHeadline = '${exam.examName} • Starts in $timeStr';
+        } else if (exam.isImminent) {
+          countdownHeadline =
+              '${exam.examName} • Tomorrow (${exam.timeRemaining.inHours}h left)';
+        } else {
+          countdownHeadline = l10n.daysUntilExam(days, exam.examName);
+        }
+
         final bannerLabel =
-            '${exam.assessmentType.displayName} Countdown: ${l10n.daysUntilExam(days, exam.examName)}. '
+            '${exam.assessmentType.displayName} Countdown: $countdownHeadline. '
             '${l10n.recommendedDailyPace(pace)}';
 
         return Semantics(
@@ -220,7 +252,50 @@ class ExamCountdownBanner extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Multi-Milestone Horizontal Pill Strip (if more than 1 assessment exists)
+              // Consolidated Study Capacity Bar (Gap 2)
+              if (allExams.length > 1 && state.totalCombinedDailyTarget > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 7),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: neural.obsidian800.withAlpha(150),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: neural.hairline),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.stacked_line_chart_rounded,
+                          size: 13,
+                          color: neural.emerald400,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            l10n.combinedTodayWorkload(
+                              state.totalCombinedDailyTarget,
+                              allExams
+                                  .where((e) => !e.isCompleted && !e.isPast)
+                                  .length,
+                              state.estimatedDailyMinutes,
+                            ),
+                            style: typography.caption.medium.copyWith(
+                              color: neural.slate300,
+                              fontSize: 10.5,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Multi-Milestone Horizontal Pill Strip
               if (allExams.length > 1) ...[
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -230,6 +305,8 @@ class ExamCountdownBanner extends StatelessWidget {
                       children: [
                         ...allExams.map((e) {
                           final isSelected = e.id == exam.id;
+                          final isPillPriority =
+                              e.id == state.topPriorityExamId;
                           final eUrgency = _calculator.getUrgencyLevel(
                             e.daysRemaining,
                             type: e.assessmentType,
@@ -239,6 +316,13 @@ class ExamCountdownBanner extends StatelessWidget {
                             ExamUrgencyLevel.warning => neural.amber400,
                             ExamUrgencyLevel.critical => neural.pink400,
                           };
+
+                          final pillTimeStr =
+                              e.isCompleted
+                                  ? 'Done'
+                                  : (e.timeRemaining.inHours < 24 && !e.isPast
+                                      ? '${e.timeRemaining.inHours}h'
+                                      : '${e.daysRemaining}d');
 
                           return Padding(
                             padding: const EdgeInsets.only(right: 6),
@@ -288,6 +372,14 @@ class ExamCountdownBanner extends StatelessWidget {
                                         fontSize: 11,
                                       ),
                                     ),
+                                    if (isPillPriority) ...[
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.bolt_rounded,
+                                        size: 11,
+                                        color: neural.amber400,
+                                      ),
+                                    ],
                                     const SizedBox(width: 6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -299,7 +391,7 @@ class ExamCountdownBanner extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
-                                        '${e.daysRemaining}d',
+                                        pillTimeStr,
                                         style: typography.caption.bold.copyWith(
                                           color: eColor,
                                           fontSize: 9.5,
@@ -362,7 +454,10 @@ class ExamCountdownBanner extends StatelessWidget {
                             border: Border.all(
                               color: isHovered
                                   ? badgeColor.withAlpha(120)
-                                  : neural.hairline,
+                                  : (exam.isCriticalCrunch
+                                      ? badgeColor.withAlpha(100)
+                                      : neural.hairline),
+                              width: exam.isCriticalCrunch ? 1.4 : 1.0,
                             ),
                           ),
                           child: child,
@@ -374,44 +469,108 @@ class ExamCountdownBanner extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Badge Header Row
+                    // Badge Header Row (Gap 3: Grade Weight & Priority)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: neural.obsidian800,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: badgeColor.withAlpha(51),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  exam.assessmentType.icon,
-                                  size: 13,
-                                  color: badgeColor,
+                          child: Wrap(
+                            spacing: 5,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3.5,
                                 ),
-                                const SizedBox(width: 5),
-                                Flexible(
-                                  child: Text(
-                                    '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack} Track',
-                                    style: typography.caption.bold.copyWith(
-                                      fontSize: 10.5,
-                                      color: badgeColor,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                                decoration: BoxDecoration(
+                                  color: neural.obsidian800,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: badgeColor.withAlpha(51),
                                   ),
                                 ),
-                              ],
-                            ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      exam.assessmentType.icon,
+                                      size: 12,
+                                      color: badgeColor,
+                                    ),
+                                    const SizedBox(width: 4.5),
+                                    Text(
+                                      '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack}${exam.subjectTrack.toLowerCase().contains('track') ? '' : ' Track'}',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 10,
+                                        color: badgeColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Grade Weight Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: neural.obsidian800,
+                                  borderRadius: BorderRadius.circular(7),
+                                  border: Border.all(
+                                    color: neural.hairlineStrong,
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.gradeWeightBadge(
+                                    (exam.effectiveWeightPercent > 1.0
+                                            ? exam.effectiveWeightPercent
+                                            : exam.effectiveWeightPercent * 100)
+                                        .toInt()
+                                        .toString(),
+                                  ),
+                                  style: typography.caption.medium.copyWith(
+                                    fontSize: 9.5,
+                                    color: neural.slate300,
+                                  ),
+                                ),
+                              ),
+                              // Top Priority Flag
+                              if (isTopPriority)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: neural.amber400.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: neural.amber400.withAlpha(80),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.bolt_rounded,
+                                        size: 11,
+                                        color: neural.amber400,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        l10n.topPriorityBadge,
+                                        style: typography.caption.bold.copyWith(
+                                          fontSize: 9,
+                                          color: neural.amber400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -476,13 +635,43 @@ class ExamCountdownBanner extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
+                    // Countdown Headline
                     Text(
-                      l10n.daysUntilExam(days, exam.examName),
+                      countdownHeadline,
                       style: typography.title3.bold.copyWith(
                         color: neural.slate100,
                         fontSize: 15.5,
                       ),
                     ),
+
+                    // Scoped Topics Tag Strip (Gap 5)
+                    if (exam.scopedTopics.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.topic_outlined,
+                            size: 12,
+                            color: neural.slate400,
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              l10n.topicsCoveredLabel(
+                                exam.scopedTopics.join(' • '),
+                              ),
+                              style: typography.caption.regular.copyWith(
+                                color: neural.slate400,
+                                fontSize: 10.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+
                     const SizedBox(height: 6),
                     Row(
                       children: [
@@ -546,7 +735,7 @@ class ExamCountdownBanner extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                _getActionLabel(context, exam.assessmentType),
+                                _getActionLabel(context, exam),
                                 style: typography.footnote.bold.copyWith(
                                   color: Colors.white,
                                   fontSize: 12.5,
