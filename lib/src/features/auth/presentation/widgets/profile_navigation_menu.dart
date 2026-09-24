@@ -6,6 +6,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -24,6 +25,7 @@ class ProfileNavigationMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final neural = context.neural;
+    final isDark = context.isDarkMode;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,9 +36,13 @@ class ProfileNavigationMenu extends StatelessWidget {
           children: [
             _NavTile(
               icon: Icons.school_outlined,
-              iconColor: colors.textSecondary,
-              chipBg: colors.surfaceSecondary,
-              chipBorder: colors.surfaceBorder,
+              iconColor: isDark ? colors.textSecondary : colors.primary,
+              chipBg: isDark
+                  ? colors.surfaceSecondary
+                  : colors.primary.withValues(alpha: 0.08),
+              chipBorder: isDark
+                  ? colors.surfaceBorder
+                  : colors.primary.withValues(alpha: 0.2),
               hoverIconColor: neural.amber400,
               hoverChipBorder: neural.amber400.withValues(alpha: 0.4),
               title: 'Academic Track & Goals',
@@ -51,8 +57,8 @@ class ProfileNavigationMenu extends StatelessWidget {
             _NavTile(
               icon: Icons.psychology_outlined,
               iconColor: neural.purple500,
-              chipBg: neural.purple500.withValues(alpha: 0.15),
-              chipBorder: neural.purple500.withValues(alpha: 0.4),
+              chipBg: neural.purple500.withValues(alpha: isDark ? 0.15 : 0.1),
+              chipBorder: neural.purple500.withValues(alpha: isDark ? 0.4 : 0.25),
               hoverIconColor: neural.purple500.withValues(alpha: 0.8),
               hoverChipBorder: neural.purple500.withValues(alpha: 0.4),
               title: 'Syllabot AI & Neural Engine',
@@ -66,9 +72,11 @@ class ProfileNavigationMenu extends StatelessWidget {
             ),
             _NavTile(
               icon: Icons.emoji_events_outlined,
-              iconColor: neural.amber400,
-              chipBg: neural.amber.withValues(alpha: 0.15),
-              chipBorder: neural.amber.withValues(alpha: 0.4),
+              iconColor: isDark
+                  ? neural.amber400
+                  : const Color.fromRGBO(217, 119, 6, 1),
+              chipBg: neural.amber.withValues(alpha: isDark ? 0.15 : 0.1),
+              chipBorder: neural.amber.withValues(alpha: isDark ? 0.4 : 0.25),
               hoverIconColor: neural.amber300,
               hoverChipBorder: neural.amber.withValues(alpha: 0.4),
               title: 'Leaderboard & Leagues',
@@ -91,11 +99,17 @@ class ProfileNavigationMenu extends StatelessWidget {
           children: [
             _NavTile(
               icon: Icons.lock_outline_rounded,
-              iconColor: colors.textSecondary,
-              chipBg: colors.surfaceSecondary,
-              chipBorder: colors.surfaceBorder,
+              iconColor: isDark
+                  ? colors.textSecondary
+                  : const Color.fromRGBO(14, 116, 144, 1),
+              chipBg: isDark
+                  ? colors.surfaceSecondary
+                  : const Color.fromRGBO(6, 182, 212, 0.08),
+              chipBorder: isDark
+                  ? colors.surfaceBorder
+                  : const Color.fromRGBO(6, 182, 212, 0.2),
               hoverIconColor: neural.cyan400,
-              hoverChipBorder: colors.surfaceBorder,
+              hoverChipBorder: neural.cyan400.withValues(alpha: 0.4),
               title: 'Password & Two-Factor Sign-In',
               subtitle: 'Keep your study history safe',
               onTap: () {
@@ -107,9 +121,11 @@ class ProfileNavigationMenu extends StatelessWidget {
             ),
             _NavTile(
               icon: Icons.workspace_premium_outlined,
-              iconColor: neural.amber400,
-              chipBg: neural.amber.withValues(alpha: 0.15),
-              chipBorder: neural.amber.withValues(alpha: 0.4),
+              iconColor: isDark
+                  ? neural.amber400
+                  : const Color.fromRGBO(217, 119, 6, 1),
+              chipBg: neural.amber.withValues(alpha: isDark ? 0.15 : 0.1),
+              chipBorder: neural.amber.withValues(alpha: isDark ? 0.4 : 0.25),
               hoverIconColor: neural.amber300,
               hoverChipBorder: neural.amber.withValues(alpha: 0.4),
               title: 'Membership & Pro Tier',
@@ -133,7 +149,7 @@ class ProfileNavigationMenu extends StatelessWidget {
           children: [
             _NavTile(
               icon: Icons.tune_rounded,
-              iconColor: colors.textSecondary,
+              iconColor: isDark ? colors.textSecondary : colors.textPrimary,
               chipBg: colors.surfaceSecondary,
               chipBorder: colors.surfaceBorder,
               hoverIconColor: neural.cyan400,
@@ -149,11 +165,13 @@ class ProfileNavigationMenu extends StatelessWidget {
             ),
             _NavTile(
               icon: Icons.play_circle_outline_rounded,
-              iconColor: colors.textSecondary,
-              chipBg: colors.surfaceSecondary,
-              chipBorder: colors.surfaceBorder,
+              iconColor: isDark
+                  ? neural.emerald400
+                  : const Color.fromRGBO(5, 150, 105, 1),
+              chipBg: neural.emerald.withValues(alpha: isDark ? 0.15 : 0.1),
+              chipBorder: neural.emerald.withValues(alpha: isDark ? 0.4 : 0.25),
               hoverIconColor: neural.emerald400,
-              hoverChipBorder: colors.surfaceBorder,
+              hoverChipBorder: neural.emerald400.withValues(alpha: 0.4),
               title: 'Feature Walkthrough',
               subtitle: 'Replay the quick tour of Kortexify',
               onTap: () {
@@ -179,7 +197,7 @@ class ProfileNavigationMenu extends StatelessWidget {
             ),
             _NavTile(
               icon: Icons.info_outline_rounded,
-              iconColor: colors.textSecondary,
+              iconColor: isDark ? colors.textSecondary : colors.textPrimary,
               chipBg: colors.surfaceSecondary,
               chipBorder: colors.surfaceBorder,
               hoverIconColor: neural.cyan300,
@@ -212,13 +230,13 @@ class _SectionLabel extends StatelessWidget {
     final colors = context.colors;
 
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const EdgeInsets.only(left: 4, bottom: 10, top: 4),
       child: Text(
         title.toUpperCase(),
         style: typography.caption.bold.copyWith(
           color: colors.textMuted,
-          fontSize: 11,
-          letterSpacing: 1,
+          fontSize: 11.5,
+          letterSpacing: 0.8,
         ),
       ),
     );
@@ -233,14 +251,35 @@ class _SettingsGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final isDark = context.isDarkMode;
 
     return Container(
       decoration: BoxDecoration(
         color: colors.surfacePrimary,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.radiusPanel,
         border: Border.all(
           color: colors.surfaceBorder,
         ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: colors.black.withValues(alpha: 0.02),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -282,7 +321,7 @@ class _NavTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final neural = context.neural;
+    final isDark = context.isDarkMode;
 
     return Column(
       children: [
@@ -300,12 +339,12 @@ class _NavTile extends StatelessWidget {
                     : context.colors.transparent,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 14,
+                  vertical: 16,
                 ),
                 child: Row(
                   children: [
                     _IconChip(
-                      icon: icon, 
+                      icon: icon,
                       iconColor: isHovered ? hoverIconColor : iconColor,
                       bgColor: chipBg,
                       borderColor: isHovered ? hoverChipBorder : chipBorder,
@@ -320,28 +359,35 @@ class _NavTile extends StatelessWidget {
                               Text(
                                 title,
                                 style: typography.body.bold.copyWith(
-                                  color: isHovered
-                                      ? colors.textPrimary
-                                      : colors.textSecondary,
+                                  color: colors.textPrimary,
                                   fontSize: 14,
                                 ),
                               ),
                               if (badge != null) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: neural.amber.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(4),
+                                    color: isDark
+                                        ? const Color.fromRGBO(245, 158, 11, 0.15)
+                                        : const Color.fromRGBO(245, 158, 11, 0.12),
+                                    borderRadius: AppRadius.radiusMicro,
                                     border: Border.all(
-                                      color: neural.amber.withValues(alpha: 0.3),
+                                      color: isDark
+                                          ? const Color.fromRGBO(245, 158, 11, 0.35)
+                                          : const Color.fromRGBO(245, 158, 11, 0.3),
                                     ),
                                   ),
                                   child: Text(
                                     badge!,
                                     style: typography.caption.bold.copyWith(
-                                      color: neural.amber300,
-                                      fontSize: 9,
+                                      color: isDark
+                                          ? const Color.fromRGBO(252, 211, 77, 1)
+                                          : const Color.fromRGBO(180, 83, 9, 1),
+                                      fontSize: 9.5,
                                       letterSpacing: 0.5,
                                     ),
                                   ),
@@ -349,12 +395,13 @@ class _NavTile extends StatelessWidget {
                               ],
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
                             subtitle,
                             style: typography.caption.regular.copyWith(
-                              color: colors.textMuted,
-                              fontSize: 12,
+                              color: colors.textSecondary,
+                              fontSize: 12.5,
+                              height: 1.35,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -362,13 +409,14 @@ class _NavTile extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                     AnimatedSlide(
-                      offset: isHovered ? const Offset(0.1, 0) : Offset.zero,
+                      offset: isHovered ? const Offset(0.08, 0) : Offset.zero,
                       duration: AppMotion.snappy,
                       curve: AppMotion.easeOutCubic,
                       child: Icon(
                         Icons.chevron_right_rounded,
-                        size: 16,
+                        size: 18,
                         color: isHovered
                             ? colors.textPrimary
                             : colors.textMuted,
@@ -384,7 +432,9 @@ class _NavTile extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: colors.surfaceBorder,
+            color: colors.surfaceBorder.withValues(alpha: isDark ? 0.7 : 0.6),
+            indent: 70,
+            endIndent: 16,
           ),
       ],
     );
@@ -393,7 +443,7 @@ class _NavTile extends StatelessWidget {
 
 class _IconChip extends StatelessWidget {
   const _IconChip({
-    required this.icon, 
+    required this.icon,
     required this.iconColor,
     required this.bgColor,
     required this.borderColor,
@@ -409,16 +459,16 @@ class _IconChip extends StatelessWidget {
     return AnimatedContainer(
       duration: AppMotion.snappy,
       curve: AppMotion.easeOutCubic,
-      width: 36,
-      height: 36,
+      width: 40,
+      height: 40,
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.radiusCard,
         border: Border.all(
           color: borderColor,
         ),
       ),
-      child: Icon(icon, color: iconColor, size: 18),
+      child: Icon(icon, color: iconColor, size: 20),
     );
   }
 }

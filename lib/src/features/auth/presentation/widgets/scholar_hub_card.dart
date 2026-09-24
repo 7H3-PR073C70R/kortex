@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -98,9 +99,9 @@ class ScholarHubCard extends StatelessWidget {
                                         begin: Alignment.bottomLeft,
                                         end: Alignment.topRight,
                                         colors: [
-                                          Color.fromRGBO(245, 158, 11, 0.3), // amber-500/30
-                                          Color.fromRGBO(16, 185, 129, 0.2), // emerald-500/20
-                                          Color.fromRGBO(99, 102, 241, 0.3), // indigo-500/30
+                                          Color.fromRGBO(245, 158, 11, 0.25), // amber-500
+                                          Color.fromRGBO(16, 185, 129, 0.18), // emerald-500
+                                          Color.fromRGBO(99, 102, 241, 0.22), // indigo-500
                                         ],
                                       ),
                                     ),
@@ -114,25 +115,35 @@ class ScholarHubCard extends StatelessWidget {
                                 width: 96,
                                 height: 96,
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
+                                  gradient: LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    colors: [
-                                      Color(0xFFD5CAA8),
-                                      Color(0xFFA3977C),
-                                      Color(0xFF6D6451),
-                                    ],
+                                    colors: isDark
+                                        ? const [
+                                            Color(0xFFD5CAA8),
+                                            Color(0xFFA3977C),
+                                            Color(0xFF6D6451),
+                                          ]
+                                        : const [
+                                            Color(0xFFE8DFCA),
+                                            Color(0xFFD5CAA8),
+                                            Color(0xFFA3977C),
+                                          ],
                                   ),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: const Color.fromRGBO(253, 230, 138, 0.4), // amber-200/40
+                                    color: isDark
+                                        ? const Color.fromRGBO(253, 230, 138, 0.4)
+                                        : const Color.fromRGBO(217, 119, 6, 0.25),
                                     width: 2,
                                   ),
-                                  boxShadow: const [
+                                  boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black26,
-                                      blurRadius: 15,
-                                      offset: Offset(0, 8),
+                                      color: colors.black.withValues(
+                                        alpha: isDark ? 0.3 : 0.08,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
                                     ),
                                   ],
                                 ),
@@ -155,23 +166,31 @@ class ScholarHubCard extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: const Color.fromRGBO(24, 24, 27, 0.9), // zinc-900/90
+                                color: isDark
+                                    ? const Color.fromRGBO(24, 24, 27, 0.9)
+                                    : colors.surfacePrimary,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: const Color.fromRGBO(63, 63, 70, 0.8), // zinc-700/80
+                                  color: isDark
+                                      ? const Color.fromRGBO(63, 63, 70, 0.8)
+                                      : colors.surfaceBorder,
                                 ),
-                                boxShadow: const [
+                                boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black26,
+                                    color: colors.black.withValues(
+                                      alpha: isDark ? 0.3 : 0.08,
+                                    ),
                                     blurRadius: 6,
-                                    offset: Offset(0, 2),
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
                               child: Icon(
                                 Icons.camera_alt_rounded,
                                 size: 14,
-                                color: colors.textSecondary,
+                                color: isDark
+                                    ? colors.textSecondary
+                                    : colors.textPrimary,
                               ),
                             ),
                           ),
@@ -207,13 +226,23 @@ class ScholarHubCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 2,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color.fromRGBO(39, 39, 42, 0.9), // zinc-800/90
-                            borderRadius: BorderRadius.circular(12),
+                            color: profile?.isPro == true
+                                ? (isDark
+                                    ? const Color.fromRGBO(217, 119, 6, 0.2)
+                                    : const Color.fromRGBO(245, 158, 11, 0.12))
+                                : (isDark
+                                    ? const Color.fromRGBO(39, 39, 42, 0.9)
+                                    : colors.surfaceSecondary),
+                            borderRadius: AppRadius.radiusBadge,
                             border: Border.all(
-                              color: const Color.fromRGBO(63, 63, 70, 0.7), // zinc-700/70
+                              color: profile?.isPro == true
+                                  ? (isDark
+                                      ? const Color.fromRGBO(245, 158, 11, 0.4)
+                                      : const Color.fromRGBO(245, 158, 11, 0.3))
+                                  : colors.surfaceBorder,
                             ),
                           ),
                           child: Row(
@@ -222,7 +251,11 @@ class ScholarHubCard extends StatelessWidget {
                               Text(
                                 profile?.isPro == true ? 'PRO' : 'Free Tier',
                                 style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary,
+                                  color: profile?.isPro == true
+                                      ? (isDark
+                                          ? const Color.fromRGBO(252, 211, 77, 1)
+                                          : const Color.fromRGBO(180, 83, 9, 1))
+                                      : colors.textSecondary,
                                   fontSize: 10,
                                 ),
                               ),
@@ -230,14 +263,14 @@ class ScholarHubCard extends StatelessWidget {
                               Icon(
                                 Icons.edit_outlined,
                                 size: 10,
-                                color: colors.textSecondary,
+                                color: colors.textMuted,
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       email,
                       style: typography.caption.regular.copyWith(
@@ -293,23 +326,38 @@ class ScholarHubCard extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
         // Streak Shield Protection Banner
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color.fromRGBO(2, 44, 34, 0.2), // emerald-950/20
-                Color.fromRGBO(18, 21, 28, 1), // cardBg
-                Color.fromRGBO(24, 24, 27, 0.6), // zinc-900/60
-              ],
+            gradient: LinearGradient(
+              colors: isDark
+                  ? const [
+                      Color.fromRGBO(6, 78, 59, 0.3), // emerald-950/30
+                      Color.fromRGBO(18, 21, 28, 0.95), // cardBg
+                    ]
+                  : [
+                      const Color.fromRGBO(16, 185, 129, 0.08), // emerald-500/8
+                      colors.surfacePrimary,
+                    ],
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.radiusCard,
             border: Border.all(
-              color: const Color.fromRGBO(6, 78, 59, 0.4), // emerald-900/40
+              color: isDark
+                  ? const Color.fromRGBO(16, 185, 129, 0.35)
+                  : const Color.fromRGBO(16, 185, 129, 0.25),
             ),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -318,26 +366,30 @@ class ScholarHubCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: const Color.fromRGBO(16, 185, 129, 0.1), // emerald-500/10
-                        borderRadius: BorderRadius.circular(6),
+                        color: isDark
+                            ? const Color.fromRGBO(16, 185, 129, 0.15)
+                            : const Color.fromRGBO(16, 185, 129, 0.1),
+                        borderRadius: AppRadius.radiusBadge,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.shield_outlined,
                         size: 16,
-                        color: Color.fromRGBO(52, 211, 153, 1), // emerald-400
+                        color: isDark
+                            ? const Color.fromRGBO(52, 211, 153, 1)
+                            : const Color.fromRGBO(5, 150, 105, 1),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Flexible(
                       child: Text(
                         streakFreezes > 0
                             ? 'Your streak is protected'
                             : 'Study tomorrow to keep your streak going',
-                        style: typography.caption.bold.copyWith(
+                        style: typography.body.bold.copyWith(
                           color: colors.textPrimary,
-                          fontSize: 12,
+                          fontSize: 12.5,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -346,19 +398,26 @@ class ScholarHubCard extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color.fromRGBO(2, 44, 34, 0.6), // emerald-950/60
-                  borderRadius: BorderRadius.circular(6),
+                  color: isDark
+                      ? const Color.fromRGBO(6, 78, 59, 0.5)
+                      : const Color.fromRGBO(16, 185, 129, 0.12),
+                  borderRadius: AppRadius.radiusBadge,
                   border: Border.all(
-                    color: const Color.fromRGBO(4, 120, 87, 0.5), // emerald-700/50
+                    color: isDark
+                        ? const Color.fromRGBO(16, 185, 129, 0.4)
+                        : const Color.fromRGBO(16, 185, 129, 0.3),
                   ),
                 ),
                 child: Text(
                   streakFreezes > 0 ? '$streakFreezes ready' : 'No shield',
                   style: typography.caption.bold.copyWith(
-                    color: const Color.fromRGBO(52, 211, 153, 1), // emerald-400
+                    color: isDark
+                        ? const Color.fromRGBO(52, 211, 153, 1)
+                        : const Color.fromRGBO(4, 120, 87, 1),
                     fontSize: 11,
                   ),
                 ),
@@ -383,42 +442,64 @@ class ScholarHubCard extends StatelessWidget {
         return AnimatedContainer(
           duration: AppMotion.snappy,
           curve: AppMotion.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           decoration: BoxDecoration(
-            color: const Color.fromRGBO(18, 21, 28, 0.9), // cardBg/90
-            borderRadius: BorderRadius.circular(16),
+            color: isDark
+                ? (isHovered
+                    ? colors.surfaceSecondary
+                    : const Color.fromRGBO(18, 21, 28, 0.9))
+                : (isHovered
+                    ? colors.surfaceSecondary
+                    : colors.surfacePrimary),
+            borderRadius: AppRadius.radiusPanel,
             border: Border.all(
-              color: isHovered 
-                  ? const Color.fromRGBO(245, 158, 11, 0.3) // amber-500/30
-                  : const Color.fromRGBO(63, 63, 70, 0.7), // zinc-800/70
+              color: isHovered
+                  ? context.neural.amber400.withValues(alpha: 0.5)
+                  : colors.surfaceBorder,
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: colors.black.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: colors.black.withValues(alpha: 0.02),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(icon, style: context.typography.body.regular.copyWith(fontSize: 16)),
-              const SizedBox(height: 4),
+              Text(
+                icon,
+                style: typography.body.regular.copyWith(fontSize: 18),
+              ),
+              const SizedBox(height: 6),
               Text(
                 value,
-                style: typography.body.bold.copyWith(
+                style: typography.title3.bold.copyWith(
                   color: colors.textPrimary,
                   fontSize: 18,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 label,
                 style: typography.caption.bold.copyWith(
                   color: colors.textSecondary,
-                  fontSize: 10,
+                  fontSize: 10.5,
                 ),
                 textAlign: TextAlign.center,
               ),

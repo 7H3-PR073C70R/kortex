@@ -47,6 +47,7 @@ class _ProfileView extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     useEffect(() {
       context.read<AuthBloc>().add(const AuthProfileFetchRequested());
@@ -66,13 +67,15 @@ class _ProfileView extends HookWidget {
         final dailyTarget = profile?.dailyCardTarget ?? 20;
 
         return Scaffold(
-          backgroundColor: const Color.fromRGBO(3, 5, 8, 1),
+          backgroundColor: colors.backgroundPrimary,
           floatingActionButton: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: const [
+              borderRadius: AppRadius.radiusSheet,
+              boxShadow: [
                 BoxShadow(
-                  color: Color.fromRGBO(168, 85, 247, 0.28), // purple glow
+                  color: isDark
+                      ? const Color.fromRGBO(168, 85, 247, 0.28)
+                      : const Color.fromRGBO(99, 102, 241, 0.16),
                   blurRadius: 18,
                   spreadRadius: -2,
                 ),
@@ -84,58 +87,71 @@ class _ProfileView extends HookWidget {
                 locator<AuthModeCubit>().resetToAiChat();
                 unawaited(context.router.root.replaceAll([const AuthRoute()]));
               },
-              backgroundColor: const Color.fromRGBO(24, 24, 27, 0.9), // zinc-900/90
+              backgroundColor: isDark
+                  ? const Color.fromRGBO(24, 24, 27, 0.92)
+                  : colors.surfacePrimary,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-                side: const BorderSide(
-                  color: Color.fromRGBO(63, 63, 70, 0.8), // zinc-700/80
+                borderRadius: AppRadius.radiusSheet,
+                side: BorderSide(
+                  color: isDark
+                      ? const Color.fromRGBO(63, 63, 70, 0.8)
+                      : colors.surfaceBorder,
                 ),
               ),
-            label: Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomLeft,
-                      end: Alignment.topRight,
-                      colors: [
-                        Color.fromRGBO(99, 102, 241, 1), // indigo-500
-                        Color.fromRGBO(168, 85, 247, 1), // purple-500
-                        Color.fromRGBO(244, 114, 182, 1), // pink-400
-                      ],
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(1),
-                  child: Container(
+              label: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
                     decoration: const BoxDecoration(
-                      color: Colors.black,
                       shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomLeft,
+                        end: Alignment.topRight,
+                        colors: [
+                          Color.fromRGBO(99, 102, 241, 1), // indigo-500
+                          Color.fromRGBO(168, 85, 247, 1), // purple-500
+                          Color.fromRGBO(244, 114, 182, 1), // pink-400
+                        ],
+                      ),
                     ),
-                    alignment: Alignment.center,
-                    child: Text('🤖', style: context.typography.body.regular.copyWith(fontSize: 12)),
+                    padding: const EdgeInsets.all(1.5),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? colors.black : colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '🤖',
+                        style: typography.body.regular.copyWith(fontSize: 11),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Ask Syllabot',
-                  style: typography.body.bold.copyWith(
-                    color: Colors.white,
-                    fontSize: 12,
-                    letterSpacing: -0.5,
+                  const SizedBox(width: 8),
+                  Text(
+                    'Ask Syllabot',
+                    style: typography.body.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 12,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 14,
-                  color: Color.fromRGBO(252, 211, 77, 1), // amber-300
-                ).animate(onPlay: (controller) => controller.repeat(reverse: true)).fade(begin: 0.5, end: 1),
-              ],
-            ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 14,
+                    color: isDark
+                        ? const Color.fromRGBO(252, 211, 77, 1)
+                        : const Color.fromRGBO(217, 119, 6, 1),
+                  )
+                      .animate(
+                        onPlay: (controller) => controller.repeat(reverse: true),
+                      )
+                      .fade(begin: 0.5, end: 1),
+                ],
+              ),
             ),
           ),
           body: Stack(
@@ -152,8 +168,11 @@ class _ProfileView extends HookWidget {
                       center: const Alignment(0, -0.7),
                       radius: 0.8,
                       colors: [
-                        const Color.fromRGBO(200, 160, 90, 0.1),
-                        context.colors.transparent,
+                        if (isDark)
+                          const Color.fromRGBO(200, 160, 90, 0.08)
+                        else
+                          colors.primary.withValues(alpha: 0.04),
+                        colors.transparent,
                       ],
                       stops: const [0.0, 0.9],
                     ),
@@ -170,8 +189,11 @@ class _ProfileView extends HookWidget {
                     gradient: RadialGradient(
                       radius: 0.8,
                       colors: [
-                        const Color.fromRGBO(56, 189, 248, 0.04),
-                        context.colors.transparent,
+                        if (isDark)
+                          const Color.fromRGBO(56, 189, 248, 0.04)
+                        else
+                          const Color.fromRGBO(56, 189, 248, 0.03),
+                        colors.transparent,
                       ],
                       stops: const [0.0, 0.9],
                     ),
@@ -188,8 +210,11 @@ class _ProfileView extends HookWidget {
                     gradient: RadialGradient(
                       radius: 0.8,
                       colors: [
-                        const Color.fromRGBO(139, 92, 246, 0.05),
-                        context.colors.transparent,
+                        if (isDark)
+                          const Color.fromRGBO(139, 92, 246, 0.05)
+                        else
+                          const Color.fromRGBO(139, 92, 246, 0.03),
+                        colors.transparent,
                       ],
                       stops: const [0.0, 0.9],
                     ),
@@ -211,7 +236,7 @@ class _ProfileView extends HookWidget {
                 ),
                 slivers: [
                   SliverAppBar(
-                    backgroundColor: context.colors.transparent,
+                    backgroundColor: colors.transparent,
                     elevation: 0,
                     scrolledUnderElevation: 0,
                     pinned: true,
@@ -219,7 +244,7 @@ class _ProfileView extends HookWidget {
                     title: Text(
                       'Profile & Settings',
                       style: typography.title2.bold.copyWith(
-                        color: Colors.white,
+                        color: colors.textPrimary,
                         letterSpacing: -0.5,
                         fontSize: 22,
                       ),
@@ -250,20 +275,27 @@ class _ProfileView extends HookWidget {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color.fromRGBO(217, 119, 6, 0.3), // amber-600/30
-                                    Color.fromRGBO(234, 179, 8, 0.2), // yellow-500/20
-                                  ],
+                                gradient: LinearGradient(
+                                  colors: isDark
+                                      ? const [
+                                          Color.fromRGBO(217, 119, 6, 0.3),
+                                          Color.fromRGBO(234, 179, 8, 0.2),
+                                        ]
+                                      : const [
+                                          Color.fromRGBO(245, 158, 11, 0.14),
+                                          Color.fromRGBO(253, 230, 138, 0.2),
+                                        ],
                                 ),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: AppRadius.radiusDialog,
                                 border: Border.all(
-                                  color: const Color.fromRGBO(245, 158, 11, 0.4), // amber-500/40
+                                  color: isDark
+                                      ? const Color.fromRGBO(245, 158, 11, 0.4)
+                                      : const Color.fromRGBO(245, 158, 11, 0.35),
                                 ),
                                 boxShadow: const [
                                   BoxShadow(
-                                    color: Color.fromRGBO(245, 158, 11, 0.25),
-                                    blurRadius: 20,
+                                    color: Color.fromRGBO(245, 158, 11, 0.2),
+                                    blurRadius: 16,
                                     spreadRadius: -3,
                                   ),
                                 ],
@@ -275,7 +307,9 @@ class _ProfileView extends HookWidget {
                                     profile?.isPro == true
                                         ? Icons.verified_rounded
                                         : Icons.auto_awesome_rounded,
-                                    color: const Color.fromRGBO(252, 211, 77, 1), // amber-300
+                                    color: isDark
+                                        ? const Color.fromRGBO(252, 211, 77, 1)
+                                        : const Color.fromRGBO(180, 83, 9, 1),
                                     size: 14,
                                   ),
                                   const SizedBox(width: 4),
@@ -284,7 +318,9 @@ class _ProfileView extends HookWidget {
                                         ? 'Pro Active'
                                         : 'Go Pro',
                                     style: typography.caption.bold.copyWith(
-                                      color: const Color.fromRGBO(252, 211, 77, 1), // amber-300
+                                      color: isDark
+                                          ? const Color.fromRGBO(252, 211, 77, 1)
+                                          : const Color.fromRGBO(180, 83, 9, 1),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -297,7 +333,7 @@ class _ProfileView extends HookWidget {
                     ],
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
                     sliver: SliverToBoxAdapter(
                       child: Center(
                         child: ConstrainedBox(
@@ -318,14 +354,14 @@ class _ProfileView extends HookWidget {
                                                   'toxicbishop01',
                                             ),
                                       ),
-                                      const SizedBox(height: 16),
+                                      const SizedBox(height: 20),
 
                                       // 2. Navigation Block (Grouped Settings)
                                       ProfileNavigationMenu(
                                         targetTrack: targetTrack,
                                         dailyTarget: dailyTarget,
                                       ),
-                                      const SizedBox(height: 24),
+                                      const SizedBox(height: 28),
 
                                       // 3. Danger Zone (Sign Out)
                                       ShrinkableButton(
@@ -337,22 +373,37 @@ class _ProfileView extends HookWidget {
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 16,
-                                            vertical: 14,
+                                            vertical: 16,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color.fromRGBO(18, 21, 28, 0.9), // cardBg/90
-                                            borderRadius: BorderRadius.circular(16),
+                                            color: isDark
+                                                ? const Color.fromRGBO(18, 21, 28, 0.9)
+                                                : colors.error.withValues(alpha: 0.05),
+                                            borderRadius: AppRadius.radiusPanel,
                                             border: Border.all(
-                                              color: const Color.fromRGBO(136, 19, 55, 0.4), // rose-900/40
+                                              color: isDark
+                                                  ? const Color.fromRGBO(136, 19, 55, 0.4)
+                                                  : colors.error.withValues(alpha: 0.22),
                                             ),
+                                            boxShadow: isDark
+                                                ? null
+                                                : [
+                                                    BoxShadow(
+                                                      color: colors.error.withValues(alpha: 0.04),
+                                                      blurRadius: 8,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
                                           ),
                                           child: Row(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              const Icon(
+                                              Icon(
                                                 Icons.logout_rounded,
-                                                color: Color.fromRGBO(251, 113, 133, 1), // rose-400
+                                                color: isDark
+                                                    ? const Color.fromRGBO(251, 113, 133, 1)
+                                                    : colors.error,
                                                 size: 18,
                                               ),
                                               const SizedBox(width: 8),
@@ -360,7 +411,9 @@ class _ProfileView extends HookWidget {
                                                 'Sign Out',
                                                 style: typography.body.bold
                                                     .copyWith(
-                                                      color: const Color.fromRGBO(251, 113, 133, 1), // rose-400
+                                                      color: isDark
+                                                          ? const Color.fromRGBO(251, 113, 133, 1)
+                                                          : colors.error,
                                                       fontSize: 14,
                                                     ),
                                               ),
@@ -376,7 +429,7 @@ class _ProfileView extends HookWidget {
                                           'Kortexify v1.2.0 • Neural Study AI',
                                           style: typography.caption.bold
                                               .copyWith(
-                                                color: const Color.fromRGBO(161, 161, 170, 1), // zinc-400
+                                                color: colors.textMuted,
                                                 fontSize: 11,
                                                 letterSpacing: -0.2,
                                               ),
