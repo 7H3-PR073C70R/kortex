@@ -417,14 +417,16 @@ class _CourseModuleView extends StatelessWidget {
         }
         final cleanCode = courseCode.toLowerCase();
         final cleanTitle = courseTitle.toLowerCase();
-        final matchingExam = plannerState.activeExams.where((e) {
+        final matchingExams = plannerState.activeExams.where((e) {
           final track = e.subjectTrack.toLowerCase();
           final name = e.examName.toLowerCase();
           return track.contains(cleanCode) ||
               track.contains(cleanTitle) ||
               name.contains(cleanCode) ||
               name.contains(cleanTitle);
-        }).firstOrNull;
+        }).toList();
+
+        final matchingExam = matchingExams.firstOrNull;
 
         if (matchingExam != null) {
           final now = DateTime.now();
@@ -468,12 +470,10 @@ class _CourseModuleView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.card),
                   ),
                   child: Center(
-                    child: Text(
-                      '${daysLeft < 0 ? 0 : daysLeft}',
-                      style: typography.title3.bold.copyWith(
-                        color: colors.white,
-                        fontSize: 18,
-                      ),
+                    child: Icon(
+                      matchingExam.assessmentType.icon,
+                      color: colors.white,
+                      size: 22,
                     ),
                   ),
                 ),
@@ -482,20 +482,49 @@ class _CourseModuleView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        daysLeft == 1
-                            ? '1 Day Until Exam'
-                            : '$daysLeft Days Until Exam',
-                        style: typography.callout.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              daysLeft == 1
+                                  ? '1 Day Until ${matchingExam.assessmentType.displayName}'
+                                  : '$daysLeft Days Until ${matchingExam.assessmentType.displayName}',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (matchingExams.length > 1) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '+${matchingExams.length - 1} more',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$formattedDate • ~${matchingExam.dailyTarget} items/day',
+                        '${matchingExam.examName} • $formattedDate • ~${matchingExam.dailyTarget} items/day',
                         style: typography.caption.regular.copyWith(
                           color: colors.textSecondary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -557,14 +586,14 @@ class _CourseModuleView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Set Exam Countdown',
+                        'Set Assessment Countdown',
                         style: typography.callout.bold.copyWith(
                           color: colors.textPrimary,
                           fontSize: 13,
                         ),
                       ),
                       Text(
-                        'Couples automated study workload to your exam date',
+                        'Track quizzes, tests, mid-terms, or final exams with automated pacing',
                         style: typography.caption.regular.copyWith(
                           color: colors.textSecondary,
                           fontSize: 11,

@@ -1,5 +1,6 @@
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 
 abstract class PlannerRepository {
@@ -9,6 +10,9 @@ abstract class PlannerRepository {
     required String examName,
     required DateTime targetDate,
     required String subjectTrack,
+    AssessmentType assessmentType = AssessmentType.finalExam,
+    List<String> scopedDeckIds = const [],
+    double? weightPercent,
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
   });
@@ -18,6 +22,9 @@ abstract class PlannerRepository {
     required String examName,
     required DateTime targetDate,
     required String subjectTrack,
+    AssessmentType? assessmentType,
+    List<String>? scopedDeckIds,
+    double? weightPercent,
     int? totalCardsCount,
     double? targetScorePercent,
   });

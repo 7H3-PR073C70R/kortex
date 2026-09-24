@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 
 void main() {
@@ -49,6 +50,23 @@ void main() {
       expect(calculator.getUrgencyLevel(7), equals(ExamUrgencyLevel.warning));
       expect(calculator.getUrgencyLevel(6), equals(ExamUrgencyLevel.critical));
       expect(calculator.getUrgencyLevel(0), equals(ExamUrgencyLevel.critical));
+    });
+
+    test('AssessmentType-specific urgency thresholds prevent artificial panic', () {
+      // Quiz: short horizon (< 24h critical, 1-3d warning, >3d normal)
+      expect(calculator.getUrgencyLevel(4, type: AssessmentType.quiz), equals(ExamUrgencyLevel.normal));
+      expect(calculator.getUrgencyLevel(2, type: AssessmentType.quiz), equals(ExamUrgencyLevel.warning));
+      expect(calculator.getUrgencyLevel(0, type: AssessmentType.quiz), equals(ExamUrgencyLevel.critical));
+
+      // Class Test: continuous assessment (< 3d critical, 3-7d warning, >7d normal)
+      expect(calculator.getUrgencyLevel(8, type: AssessmentType.classTest), equals(ExamUrgencyLevel.normal));
+      expect(calculator.getUrgencyLevel(5, type: AssessmentType.classTest), equals(ExamUrgencyLevel.warning));
+      expect(calculator.getUrgencyLevel(2, type: AssessmentType.classTest), equals(ExamUrgencyLevel.critical));
+
+      // Midterm: (< 5d critical, 5-14d warning, >14d normal)
+      expect(calculator.getUrgencyLevel(16, type: AssessmentType.midterm), equals(ExamUrgencyLevel.normal));
+      expect(calculator.getUrgencyLevel(10, type: AssessmentType.midterm), equals(ExamUrgencyLevel.warning));
+      expect(calculator.getUrgencyLevel(4, type: AssessmentType.midterm), equals(ExamUrgencyLevel.critical));
     });
 
     test('FSRS-6 retrievability calculation matches power-law forgetting curve', () {

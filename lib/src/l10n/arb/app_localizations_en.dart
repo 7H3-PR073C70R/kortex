@@ -2279,6 +2279,91 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timePickerLabel => 'Time';
 
   @override
+  String get assessmentTypeLabel => 'Assessment Type';
+
+  @override
+  String get assessmentTypeQuiz => 'Quiz';
+
+  @override
+  String get assessmentTypeTest => 'Test / CA';
+
+  @override
+  String get assessmentTypeMidterm => 'Mid-Term';
+
+  @override
+  String get assessmentTypeFinalExam => 'Final Exam';
+
+  @override
+  String get assessmentTypeMockExam => 'Mock Exam';
+
+  @override
+  String get assessmentTypeCustom => 'Assessment';
+
+  @override
+  String get scopedTopicsLabel => 'Covered Topics & Decks';
+
+  @override
+  String allCourseDecksOption(int count) {
+    return 'All Course Decks ($count)';
+  }
+
+  @override
+  String scopedDecksSummary(int selected, int total) {
+    return '$selected of $total decks selected';
+  }
+
+  @override
+  String get noDecksForCourseHint =>
+      'No flashcard decks created for this course yet';
+
+  @override
+  String get gradeWeightLabel => 'Grade Weight (%):';
+
+  @override
+  String get optionalWeightHint => 'Optional';
+
+  @override
+  String get actionPracticeScopedDecks => 'Practice Scoped Cards';
+
+  @override
+  String get actionStartTestReview => 'Start Test Review';
+
+  @override
+  String get actionOpenMockLobby => 'Open Mock Lobby';
+
+  @override
+  String get upcomingAssessmentsTitle => 'Upcoming Milestones';
+
+  @override
+  String get allCountdownsTitle => 'All Tracked Milestones';
+
+  @override
+  String get academicTimetableTitle => 'Academic Timetable';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterQuizzes => 'Quizzes';
+
+  @override
+  String get filterTests => 'Tests';
+
+  @override
+  String get filterMidterms => 'Mid-Terms';
+
+  @override
+  String get filterFinals => 'Finals';
+
+  @override
+  String get deleteAssessmentConfirmTitle => 'Delete Assessment Countdown?';
+
+  @override
+  String deleteAssessmentConfirmMessage(String name) {
+    return 'Are you sure you want to remove \"$name\"? You can always add a new one anytime.';
+  }
+
+  @override
   String get quizTitle => 'Practice Quiz & Mock Exam';
 
   @override

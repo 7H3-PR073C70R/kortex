@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -12,6 +11,7 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
+import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
@@ -22,6 +22,8 @@ import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class ManageExamModalSheet extends StatelessWidget {
   const ManageExamModalSheet({super.key});
+
+  static const _calculator = CramWorkloadCalculator();
 
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet(
@@ -49,7 +51,7 @@ class ManageExamModalSheet extends StatelessWidget {
     unawaited(
       AppDialog.show<bool>(
         context: context,
-        title: 'Delete Exam Countdown?',
+        title: 'Delete Assessment Countdown?',
         description:
             'Are you sure you want to remove the countdown for "${exam.examName}"? You can always add a new one anytime.',
         primaryActionText: 'Delete Countdown',
@@ -101,7 +103,7 @@ class ManageExamModalSheet extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'No Active Countdown',
+                    'No Active Assessment',
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                     ),
@@ -122,6 +124,15 @@ class ManageExamModalSheet extends StatelessWidget {
 
         final days = exam.daysRemaining;
         final pace = state.dynamicDailyTarget;
+        final urgency = _calculator.getUrgencyLevel(
+          days,
+          type: exam.assessmentType,
+        );
+        final badgeColor = switch (urgency) {
+          ExamUrgencyLevel.normal => colors.primary,
+          ExamUrgencyLevel.warning => colors.warning,
+          ExamUrgencyLevel.critical => colors.error,
+        };
 
         return Padding(
           padding: EdgeInsets.only(
@@ -147,7 +158,7 @@ class ManageExamModalSheet extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Manage Exam Countdown',
+                      'Manage Academic Milestones',
                       style: typography.title3.bold.copyWith(
                         color: colors.textPrimary,
                         fontSize: 18,
@@ -173,7 +184,7 @@ class ManageExamModalSheet extends StatelessWidget {
                         : colors.surfaceSecondary.withAlpha(120),
                     borderRadius: AppRadius.radiusPanel,
                     border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 90 : 50),
+                      color: badgeColor.withAlpha(isDark ? 90 : 50),
                       width: 1.2,
                     ),
                   ),
@@ -189,15 +200,26 @@ class ManageExamModalSheet extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 40 : 25),
+                              color: badgeColor.withAlpha(isDark ? 40 : 25),
                               borderRadius: AppRadius.radiusBadge,
                             ),
-                            child: Text(
-                              '${exam.subjectTrack} Track',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 11,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  exam.assessmentType.icon,
+                                  size: 13,
+                                  color: badgeColor,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack}',
+                                  style: typography.caption.bold.copyWith(
+                                    color: badgeColor,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Text(
@@ -217,19 +239,51 @@ class ManageExamModalSheet extends StatelessWidget {
                           fontSize: 17,
                         ),
                       ),
+                      if (exam.scopedDeckIds.isNotEmpty ||
+                          exam.weightPercent != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (exam.scopedDeckIds.isNotEmpty)
+                              Text(
+                                '${exam.scopedDeckIds.length} scoped topics',
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            if (exam.scopedDeckIds.isNotEmpty &&
+                                exam.weightPercent != null)
+                              Text(
+                                ' • ',
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            if (exam.weightPercent != null)
+                              Text(
+                                '${(exam.weightPercent! * 100).toInt()}% of grade',
+                                style: typography.caption.semiBold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           Icon(
                             Icons.timer_outlined,
                             size: 15,
-                            color: colors.warning,
+                            color: badgeColor,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             l10n.daysUntilExam(days, exam.examName),
                             style: typography.footnote.semiBold.copyWith(
-                              color: colors.warning,
+                              color: badgeColor,
                               fontSize: 13,
                             ),
                           ),
@@ -257,7 +311,7 @@ class ManageExamModalSheet extends StatelessWidget {
                 // If multiple exams exist, show switch list
                 if (allExams.length > 1) ...[
                   Text(
-                    'All Saved Countdowns (${allExams.length})',
+                    'All Tracked Milestones (${allExams.length})',
                     style: typography.subhead.bold.copyWith(
                       color: colors.textSecondary,
                       fontSize: 13,
@@ -325,7 +379,15 @@ class ManageExamModalSheet extends StatelessWidget {
                                   ? colors.primary
                                   : colors.textSecondary,
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
+                            Icon(
+                              e.assessmentType.icon,
+                              size: 14,
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 e.examName,
@@ -421,33 +483,29 @@ class ManageExamModalSheet extends StatelessWidget {
                             ),
                           );
                         },
-                        icon: const Icon(Icons.edit_calendar_rounded, size: 17),
-                        label: const Text('Edit Countdown'),
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        label: const Text('Edit'),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          foregroundColor: colors.primary,
-                          side: BorderSide(
-                            color: colors.primary.withAlpha(120),
-                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: colors.surfaceBorder),
                           shape: RoundedRectangleBorder(
                             borderRadius: AppRadius.radiusCard,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: OutlinedButton.icon(
+                      child: FilledButton.icon(
                         onPressed: () {
                           Navigator.of(context).pop();
                           unawaited(AddExamModalSheet.show(context));
                         },
-                        icon: const Icon(Icons.add_rounded, size: 19),
-                        label: const Text('Add Another'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          foregroundColor: colors.textPrimary,
-                          side: BorderSide(color: colors.surfaceBorder),
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                        label: const Text('Add New'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: AppRadius.radiusCard,
                           ),
@@ -456,35 +514,30 @@ class ManageExamModalSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
-                // Destructive Delete Button
+                // Delete Button
                 TextButton.icon(
                   onPressed: () => _confirmDelete(context, cubit, exam),
                   icon: Icon(
                     Icons.delete_outline_rounded,
-                    size: 18,
+                    size: 16,
                     color: colors.error,
                   ),
                   label: Text(
                     'Delete This Countdown',
-                    style: typography.callout.bold.copyWith(
+                    style: typography.caption.bold.copyWith(
                       color: colors.error,
-                      fontSize: 14,
+                      fontSize: 13,
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.radiusCard,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                 ),
               ],
             ),
-          ).animate()
-            .fadeIn(duration: 400.ms, curve: Curves.easeOut)
-            .slideY(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOutQuint),
+          ),
         );
       },
     );

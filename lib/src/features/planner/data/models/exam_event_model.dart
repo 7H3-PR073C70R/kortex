@@ -1,3 +1,4 @@
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 
 class ExamEventModel extends ExamEventEntity {
@@ -7,6 +8,9 @@ class ExamEventModel extends ExamEventEntity {
     required super.examName,
     required super.targetDate,
     required super.subjectTrack,
+    super.assessmentType = AssessmentType.finalExam,
+    super.scopedDeckIds = const [],
+    super.weightPercent,
     super.totalCardsCount = 0,
     super.masteredCardsCount = 0,
     super.totalLapses = 0,
@@ -22,6 +26,14 @@ class ExamEventModel extends ExamEventEntity {
       examName: json['exam_name']?.toString() ?? 'Exam',
       targetDate: DateTime.parse(json['target_date'] as String),
       subjectTrack: json['subject_track']?.toString() ?? 'General',
+      assessmentType: AssessmentType.fromString(
+        json['assessment_type']?.toString(),
+      ),
+      scopedDeckIds: (json['scoped_deck_ids'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      weightPercent: (json['weight_percent'] as num?)?.toDouble(),
       totalCardsCount: (json['total_cards_count'] as num?)?.toInt() ?? 0,
       masteredCardsCount: (json['mastered_cards_count'] as num?)?.toInt() ?? 0,
       totalLapses: (json['total_lapses'] as num?)?.toInt() ?? 0,
@@ -41,6 +53,9 @@ class ExamEventModel extends ExamEventEntity {
       'exam_name': examName,
       'target_date': targetDate.toIso8601String(),
       'subject_track': subjectTrack,
+      'assessment_type': assessmentType.name,
+      'scoped_deck_ids': scopedDeckIds,
+      if (weightPercent != null) 'weight_percent': weightPercent,
       'total_cards_count': totalCardsCount,
       'mastered_cards_count': masteredCardsCount,
       'total_lapses': totalLapses,

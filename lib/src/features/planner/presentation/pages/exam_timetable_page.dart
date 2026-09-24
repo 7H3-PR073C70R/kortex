@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -12,11 +13,14 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
+import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -31,9 +35,11 @@ class ExamTimetablePage extends StatefulWidget {
 class _ExamTimetablePageState extends State<ExamTimetablePage> {
   static const String _dailyReminderKey = '__kortex_daily_exam_reminders__';
   static const String _milestoneAlertsKey = '__kortex_milestone_exam_alerts__';
+  static const _calculator = CramWorkloadCalculator();
 
   bool _dailyReminderEnabled = true;
   bool _milestoneAlertsEnabled = true;
+  AssessmentType? _selectedFilterType;
 
   @override
   void initState() {
@@ -107,11 +113,11 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             : colors.surfacePrimary,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusDialog),
         title: Text(
-          'Delete Exam Countdown?',
+          'Delete Assessment Countdown?',
           style: typography.headline.bold.copyWith(color: colors.textPrimary),
         ),
         content: Text(
-          'Are you sure you want to remove "${exam.examName}" from your exam timetable? This action cannot be undone.',
+          'Are you sure you want to remove "${exam.examName}" from your academic timetable? This action cannot be undone.',
           style: typography.body.regular.copyWith(color: colors.textSecondary),
         ),
         actions: [
@@ -130,7 +136,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               ),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete Exam'),
+            child: const Text('Delete Assessment'),
           ),
         ],
       ),
@@ -141,10 +147,33 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     }
   }
 
+  void _onPrimaryAction(BuildContext context, ExamEventEntity exam) {
+    AppFeedback.selection();
+    if (exam.assessmentType == AssessmentType.quiz &&
+        exam.scopedDeckIds.isNotEmpty) {
+      unawaited(
+        context.router.push(
+          StudySessionRoute(deckId: exam.scopedDeckIds.first),
+        ),
+      );
+      return;
+    }
+
+    unawaited(
+      context.router.push(
+        MockExamLobbyRoute(
+          examId: exam.id,
+          examName: exam.examName,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final l10n = context.l10n;
 
     final cubit = locator<CramPlannerCubit>();
     unawaited(cubit.loadExams());
@@ -177,7 +206,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                     Icons.add_circle_outline_rounded,
                     color: colors.primary,
                   ),
-                  tooltip: 'Add Exam',
+                  tooltip: 'Add Assessment',
                   onPressed: () => AddExamModalSheet.show(context),
                 ),
                 const SizedBox(width: 8),
@@ -188,14 +217,21 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: BlocBuilder<CramPlannerCubit, CramPlannerState>(
                   builder: (context, state) {
-                    final exams = state.activeExams;
+                    final allExams = state.activeExams;
                     final primaryExam =
                         state.selectedExam ??
-                        (exams.isNotEmpty ? exams.first : null);
+                        (allExams.isNotEmpty ? allExams.first : null);
 
-                    if (exams.isEmpty) {
+                    if (allExams.isEmpty) {
                       return _buildEmptyState(context);
                     }
+
+                    // Filter assessments if filter chip selected
+                    final filteredExams = _selectedFilterType == null
+                        ? allExams
+                        : allExams
+                            .where((e) => e.assessmentType == _selectedFilterType)
+                            .toList();
 
                     return ListView(
                       padding: const EdgeInsets.symmetric(
@@ -213,17 +249,105 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                               Navigator.of(context).pop();
                             },
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
                         ],
 
-                        // Section Heading: All Tracked Exams
+                        // Filter Chips Row
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildFilterChip(
+                                label: '${l10n.filterAll} (${allExams.length})',
+                                isSelected: _selectedFilterType == null,
+                                onSelected: () {
+                                  AppFeedback.selection();
+                                  setState(() => _selectedFilterType = null);
+                                },
+                                colors: colors,
+                              ),
+                              const SizedBox(width: 6),
+                              _buildFilterChip(
+                                label:
+                                    '${l10n.filterQuizzes} (${allExams.where((e) => e.assessmentType == AssessmentType.quiz).length})',
+                                isSelected:
+                                    _selectedFilterType == AssessmentType.quiz,
+                                onSelected: () {
+                                  AppFeedback.selection();
+                                  setState(
+                                    () =>
+                                        _selectedFilterType =
+                                            AssessmentType.quiz,
+                                  );
+                                },
+                                colors: colors,
+                              ),
+                              const SizedBox(width: 6),
+                              _buildFilterChip(
+                                label:
+                                    '${l10n.filterTests} (${allExams.where((e) => e.assessmentType == AssessmentType.classTest).length})',
+                                isSelected:
+                                    _selectedFilterType ==
+                                    AssessmentType.classTest,
+                                onSelected: () {
+                                  AppFeedback.selection();
+                                  setState(
+                                    () =>
+                                        _selectedFilterType =
+                                            AssessmentType.classTest,
+                                  );
+                                },
+                                colors: colors,
+                              ),
+                              const SizedBox(width: 6),
+                              _buildFilterChip(
+                                label:
+                                    '${l10n.filterMidterms} (${allExams.where((e) => e.assessmentType == AssessmentType.midterm).length})',
+                                isSelected:
+                                    _selectedFilterType ==
+                                    AssessmentType.midterm,
+                                onSelected: () {
+                                  AppFeedback.selection();
+                                  setState(
+                                    () =>
+                                        _selectedFilterType =
+                                            AssessmentType.midterm,
+                                  );
+                                },
+                                colors: colors,
+                              ),
+                              const SizedBox(width: 6),
+                              _buildFilterChip(
+                                label:
+                                    '${l10n.filterFinals} (${allExams.where((e) => e.assessmentType == AssessmentType.finalExam || e.assessmentType == AssessmentType.mockExam).length})',
+                                isSelected:
+                                    _selectedFilterType ==
+                                    AssessmentType.finalExam,
+                                onSelected: () {
+                                  AppFeedback.selection();
+                                  setState(
+                                    () =>
+                                        _selectedFilterType =
+                                            AssessmentType.finalExam,
+                                  );
+                                },
+                                colors: colors,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Section Heading
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Tracked Exams (${exams.length})',
-                              style: typography.title3.bold.copyWith(
-                                color: colors.textPrimary,
+                            Flexible(
+                              child: Text(
+                                'Tracked Exams (${filteredExams.length})',
+                                style: typography.title3.bold.copyWith(
+                                  color: colors.textPrimary,
+                                ),
                               ),
                             ),
                             TextButton.icon(
@@ -244,15 +368,27 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Chronological Exam Cards
-                        ...exams.asMap().entries.map(
-                          (entry) => _buildExamRowCard(
-                            context,
-                            exam: entry.value,
-                            index: entry.key,
-                            isSelected: entry.value.id == primaryExam?.id,
+                        // Chronological Cards
+                        if (filteredExams.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 36),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'No assessments found in this category',
+                              style: typography.subhead.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          )
+                        else
+                          ...filteredExams.asMap().entries.map(
+                            (entry) => _buildExamRowCard(
+                              context,
+                              exam: entry.value,
+                              index: entry.key,
+                              isSelected: entry.value.id == primaryExam?.id,
+                            ),
                           ),
-                        ),
 
                         const SizedBox(height: 28),
 
@@ -269,6 +405,26 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+    required AppThemeColorsExtension colors,
+  }) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onSelected(),
+      selectedColor: colors.primary,
+      labelStyle: context.typography.caption.bold.copyWith(
+        color: isSelected ? colors.white : colors.textSecondary,
+        fontSize: 11.5,
+      ),
+      backgroundColor: colors.surfaceSecondary.withAlpha(80),
+      visualDensity: VisualDensity.compact,
     );
   }
 
@@ -316,18 +472,37 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   color: colors.white.withValues(alpha: 0.2),
                   borderRadius: AppRadius.radiusBadge,
                 ),
-                child: Text(
-                  exam.subjectTrack.toUpperCase(),
-                  style: typography.caption.bold.copyWith(color: colors.white),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(exam.assessmentType.icon, size: 13, color: colors.white),
+                    const SizedBox(width: 5),
+                    Text(
+                      '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack.toUpperCase()}',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.white,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                'ACTIVE TIMETABLE',
-                style: typography.caption.bold.copyWith(
-                  color: colors.white.withValues(alpha: 0.8),
-                  letterSpacing: 1.1,
+              if (exam.weightPercent != null)
+                Text(
+                  '${(exam.weightPercent! * 100).toInt()}% OF GRADE',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.white.withValues(alpha: 0.85),
+                    letterSpacing: 1,
+                  ),
+                )
+              else
+                Text(
+                  'ACTIVE TIMETABLE',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.white.withValues(alpha: 0.8),
+                    letterSpacing: 1.1,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -379,7 +554,12 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
       ),
     ).animate()
       .fadeIn(duration: 400.ms, curve: Curves.easeOut)
-      .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), duration: 400.ms, curve: Curves.easeOutQuint);
+      .scale(
+        begin: const Offset(0.95, 0.95),
+        end: const Offset(1, 1),
+        duration: 400.ms,
+        curve: Curves.easeOutQuint,
+      );
   }
 
   Widget _buildTimeDigit(
@@ -427,10 +607,27 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     final formattedDate = DateFormat(
       'EEE, d MMM y • hh:mm a',
     ).format(exam.targetDate);
+
+    final urgency = _calculator.getUrgencyLevel(
+      exam.daysRemaining,
+      type: exam.assessmentType,
+    );
+    final urgencyColor = switch (urgency) {
+      ExamUrgencyLevel.normal => colors.primary,
+      ExamUrgencyLevel.warning => colors.warning,
+      ExamUrgencyLevel.critical => colors.error,
+    };
+
+    final actionLabel = switch (exam.assessmentType) {
+      AssessmentType.quiz => l10n.actionPracticeScopedDecks,
+      AssessmentType.classTest => l10n.actionStartTestReview,
+      _ => l10n.actionOpenMockLobby,
+    };
 
     return PlatformHoverBuilder(
       builder: (context, isHovered, child) {
@@ -495,7 +692,15 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
+
+              // Type Icon
+              Icon(
+                exam.assessmentType.icon,
+                size: 18,
+                color: urgencyColor,
+              ),
+              const SizedBox(width: 8),
 
               // Title and Subject
               Expanded(
@@ -521,13 +726,14 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colors.primary.withValues(alpha: 0.12),
+                            color: urgencyColor.withValues(alpha: 0.12),
                             borderRadius: AppRadius.radiusBadge,
                           ),
                           child: Text(
-                            exam.subjectTrack,
+                            exam.assessmentType.displayName,
                             style: typography.caption.bold.copyWith(
-                              color: colors.primary,
+                              color: urgencyColor,
+                              fontSize: 10,
                             ),
                           ),
                         ),
@@ -538,6 +744,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                       formattedDate,
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
+                        fontSize: 11.5,
                       ),
                     ),
                   ],
@@ -550,10 +757,10 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   return IconButton(
                     icon: Icon(
                       Icons.edit_outlined,
-                      size: 20,
+                      size: 18,
                       color: isHovered ? colors.primary : colors.textSecondary,
                     ),
-                    tooltip: 'Edit Exam',
+                    tooltip: 'Edit Assessment',
                     onPressed: () =>
                         AddExamModalSheet.show(context, initialExam: exam),
                   );
@@ -564,12 +771,12 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   return IconButton(
                     icon: Icon(
                       Icons.delete_outline_rounded,
-                      size: 20,
+                      size: 18,
                       color: isHovered
                           ? colors.error
                           : colors.error.withValues(alpha: 0.7),
                     ),
-                    tooltip: 'Delete Exam',
+                    tooltip: 'Delete Assessment',
                     onPressed: () => _confirmDelete(context, exam),
                   );
                 },
@@ -577,7 +784,38 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             ],
           ),
 
-          const SizedBox(height: 12),
+          if (exam.scopedDeckIds.isNotEmpty || exam.weightPercent != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (exam.scopedDeckIds.isNotEmpty)
+                  Text(
+                    '${exam.scopedDeckIds.length} scoped topics',
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                if (exam.scopedDeckIds.isNotEmpty && exam.weightPercent != null)
+                  Text(
+                    ' • ',
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                if (exam.weightPercent != null)
+                  Text(
+                    '${(exam.weightPercent! * 100).toInt()}% weight',
+                    style: typography.caption.semiBold.copyWith(
+                      color: colors.primary,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 10),
 
           // Progress and Countdown Strip
           Row(
@@ -586,7 +824,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               Text(
                 exam.formattedCountdown,
                 style: typography.caption.bold.copyWith(
-                  color: exam.isPast ? colors.textSecondary : colors.primary,
+                  color: exam.isPast ? colors.textSecondary : urgencyColor,
                 ),
               ),
               Text(
@@ -611,11 +849,37 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               minHeight: 5,
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          // Primary CTA Action Button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _onPrimaryAction(context, exam),
+              icon: Icon(
+                exam.assessmentType == AssessmentType.quiz
+                    ? Icons.bolt_rounded
+                    : Icons.play_arrow_rounded,
+                size: 15,
+                color: colors.primary,
+              ),
+              label: Text(actionLabel),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                side: BorderSide(color: colors.primary.withAlpha(120)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.radiusCard,
+                ),
+                textStyle: typography.caption.bold.copyWith(fontSize: 12),
+              ),
+            ),
+          ),
         ],
       ),
-    ).animate(delay: (index * 80).ms)
-      .fadeIn(duration: 300.ms, curve: Curves.easeOut)
-      .slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutQuint);
+    ).animate(delay: (index * 60).ms)
+      .fadeIn(duration: 250.ms, curve: Curves.easeOut)
+      .slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint);
   }
 
   Widget _buildNotificationPreferencesCard(
@@ -656,60 +920,52 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Keep your study pacing calibrated with timely reminders.',
+            'Keep your preparation on track with automated reminders.',
             style: typography.caption.regular.copyWith(
               color: colors.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
-
-          // Daily Reminder Switch
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Daily Prep Reminders',
+              style: typography.body.semiBold.copyWith(
+                color: colors.textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              'Receive daily pacing reminders based on your workload targets.',
+              style: typography.caption.regular.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
             value: _dailyReminderEnabled,
-            title: Text(
-              'Daily Study Pace Reminders',
-              style: typography.body.bold.copyWith(color: colors.textPrimary),
-            ),
-            subtitle: Text(
-              'Receive a morning nudge with your daily card target',
-              style: typography.caption.regular.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            activeThumbColor: colors.primary,
-            activeTrackColor: colors.primary.withValues(alpha: 0.5),
-            onChanged: (val) {
-              unawaited(_setDailyReminder(val));
-            },
+            activeTrackColor: colors.primary,
+            onChanged: _setDailyReminder,
           ),
-          const Divider(),
-
-          // Milestone Alerts Switch
+          const Divider(height: 16),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
-            value: _milestoneAlertsEnabled,
             title: Text(
-              'Exam Milestone Alerts',
-              style: typography.body.bold.copyWith(color: colors.textPrimary),
+              'Milestone Countdown Alerts',
+              style: typography.body.semiBold.copyWith(
+                color: colors.textPrimary,
+              ),
             ),
             subtitle: Text(
-              'Alerts at 7 days, 3 days, and 24 hours prior to exam',
+              'Get notified at 30-day, 14-day, 7-day, and 24-hour milestones.',
               style: typography.caption.regular.copyWith(
                 color: colors.textSecondary,
               ),
             ),
-            activeThumbColor: colors.primary,
-            activeTrackColor: colors.primary.withValues(alpha: 0.5),
-            onChanged: (val) {
-              unawaited(_setMilestoneAlerts(val));
-            },
+            value: _milestoneAlertsEnabled,
+            activeTrackColor: colors.primary,
+            onChanged: _setMilestoneAlerts,
           ),
         ],
       ),
-    ).animate(delay: 200.ms)
-      .fadeIn(duration: 400.ms, curve: Curves.easeOut)
-      .slideY(begin: 0.05, end: 0, duration: 400.ms, curve: Curves.easeOutQuint);
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -717,47 +973,45 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     final typography = context.typography;
 
     return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.event_note_rounded,
-                  size: 64,
-                  color: colors.primary,
-                ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 24),
-              Text(
-                'No Exams Scheduled Yet',
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                ),
+              child: Icon(
+                Icons.event_note_rounded,
+                size: 40,
+                color: colors.primary,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Add your upcoming exams to build a personalized study timetable with calibrated daily flashcard targets.',
-                textAlign: TextAlign.center,
-                style: typography.body.regular.copyWith(
-                  color: colors.textSecondary,
-                ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Exams Scheduled Yet',
+              style: typography.title2.bold.copyWith(color: colors.textPrimary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add quizzes, mid-term exams, or final exams to track your deadlines, calculate daily pacing targets, and stay calibrated.',
+              style: typography.body.regular.copyWith(
+                color: colors.textSecondary,
+                height: 1.5,
               ),
-              const SizedBox(height: 24),
-              AppButton(
-                text: 'Add First Exam',
-                onPressed: () => AddExamModalSheet.show(context),
-              ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            AppButton(
+              text: 'Add First Exam',
+              onPressed: () => AddExamModalSheet.show(context),
+            ),
+          ],
         ),
       ),
     );

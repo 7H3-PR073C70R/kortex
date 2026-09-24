@@ -13,6 +13,7 @@ import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/planner/data/models/exam_event_model.dart';
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/domain/repositories/planner_repository.dart';
@@ -266,6 +267,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
     required String examName,
     required DateTime targetDate,
     required String subjectTrack,
+    AssessmentType assessmentType = AssessmentType.finalExam,
+    List<String> scopedDeckIds = const [],
+    double? weightPercent,
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
   }) {
@@ -294,6 +298,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'exam_name': examName,
             'target_date': targetDate.toIso8601String().split('T').first,
             'subject_track': subjectTrack,
+            'assessment_type': assessmentType.name,
+            'scoped_deck_ids': scopedDeckIds,
+            'weight_percent': ?weightPercent,
             'total_cards_count': totalCardsCount,
             'mastered_cards_count': 0,
             'total_lapses': 0,
@@ -329,6 +336,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
         examName: examName,
         targetDate: targetDate,
         subjectTrack: subjectTrack,
+        assessmentType: assessmentType,
+        scopedDeckIds: scopedDeckIds,
+        weightPercent: weightPercent,
         totalCardsCount: totalCardsCount,
         dailyTarget: dailyTarget,
         targetScorePercent: targetScorePercent,
@@ -349,6 +359,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
     required String examName,
     required DateTime targetDate,
     required String subjectTrack,
+    AssessmentType? assessmentType,
+    List<String>? scopedDeckIds,
+    double? weightPercent,
     int? totalCardsCount,
     double? targetScorePercent,
   }) {
@@ -371,6 +384,10 @@ class PlannerRepositoryImpl implements PlannerRepository {
         daysRemaining: daysRemaining < 1 ? 1 : daysRemaining,
       );
 
+      final effType = assessmentType ?? existing?.assessmentType ?? AssessmentType.finalExam;
+      final effDecks = scopedDeckIds ?? existing?.scopedDeckIds ?? const <String>[];
+      final effWeight = weightPercent ?? existing?.weightPercent;
+
       final client = _effectiveDio;
       final userId = _userStorage?.getUserId() ?? '';
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
@@ -379,6 +396,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'exam_name': examName,
             'target_date': targetDate.toIso8601String().split('T').first,
             'subject_track': subjectTrack,
+            'assessment_type': effType.name,
+            'scoped_deck_ids': effDecks,
+            'weight_percent': ?effWeight,
             'total_cards_count': ?totalCardsCount,
             'target_score_percent': ?targetScorePercent,
             'daily_target': dailyTarget,
@@ -404,6 +424,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
         examName: examName,
         targetDate: targetDate,
         subjectTrack: subjectTrack,
+        assessmentType: effType,
+        scopedDeckIds: effDecks,
+        weightPercent: effWeight,
         totalCardsCount: cards,
         masteredCardsCount: existing?.masteredCardsCount ?? 0,
         totalLapses: existing?.totalLapses ?? 0,

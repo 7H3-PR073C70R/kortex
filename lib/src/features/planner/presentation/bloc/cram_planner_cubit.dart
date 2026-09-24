@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/domain/repositories/planner_repository.dart';
@@ -51,7 +52,10 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             lapses: primaryExam.totalLapses,
             daysRemaining: primaryExam.daysRemaining,
           );
-          urgency = _calculator.getUrgencyLevel(primaryExam.daysRemaining);
+          urgency = _calculator.getUrgencyLevel(
+            primaryExam.daysRemaining,
+            type: primaryExam.assessmentType,
+          );
         }
 
         emit(
@@ -68,11 +72,14 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     );
   }
 
-  /// Adds a new exam countdown and recalculates workload.
+  /// Adds a new exam/assessment countdown and recalculates workload.
   Future<void> addExamCountdown({
     required String examName,
     required DateTime targetDate,
     required String subjectTrack,
+    AssessmentType assessmentType = AssessmentType.finalExam,
+    List<String> scopedDeckIds = const [],
+    double? weightPercent,
     int totalCardsCount = 0,
     double targetScorePercent = 0.85,
   }) async {
@@ -82,6 +89,9 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       examName: examName,
       targetDate: targetDate,
       subjectTrack: subjectTrack,
+      assessmentType: assessmentType,
+      scopedDeckIds: scopedDeckIds,
+      weightPercent: weightPercent,
       totalCardsCount: totalCardsCount,
       targetScorePercent: targetScorePercent,
     );
@@ -104,7 +114,10 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
           lapses: primary.totalLapses,
           daysRemaining: primary.daysRemaining,
         );
-        final urgency = _calculator.getUrgencyLevel(primary.daysRemaining);
+        final urgency = _calculator.getUrgencyLevel(
+          primary.daysRemaining,
+          type: primary.assessmentType,
+        );
 
         emit(
           state.copyWith(
@@ -133,7 +146,10 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     emit(
       state.copyWith(
         dynamicDailyTarget: adjustedPace,
-        urgencyLevel: _calculator.getUrgencyLevel(exam.daysRemaining),
+        urgencyLevel: _calculator.getUrgencyLevel(
+          exam.daysRemaining,
+          type: exam.assessmentType,
+        ),
       ),
     );
   }
@@ -152,7 +168,10 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     emit(
       state.copyWith(
         dynamicDailyTarget: balancedTarget,
-        urgencyLevel: _calculator.getUrgencyLevel(exam.daysRemaining),
+        urgencyLevel: _calculator.getUrgencyLevel(
+          exam.daysRemaining,
+          type: exam.assessmentType,
+        ),
       ),
     );
   }
@@ -163,6 +182,9 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     required String examName,
     required DateTime targetDate,
     required String subjectTrack,
+    AssessmentType? assessmentType,
+    List<String>? scopedDeckIds,
+    double? weightPercent,
     int? totalCardsCount,
     double? targetScorePercent,
   }) async {
@@ -173,6 +195,9 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       examName: examName,
       targetDate: targetDate,
       subjectTrack: subjectTrack,
+      assessmentType: assessmentType,
+      scopedDeckIds: scopedDeckIds,
+      weightPercent: weightPercent,
       totalCardsCount: totalCardsCount,
       targetScorePercent: targetScorePercent,
     );
@@ -203,7 +228,10 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             lapses: primary.totalLapses,
             daysRemaining: primary.daysRemaining,
           );
-          urgency = _calculator.getUrgencyLevel(primary.daysRemaining);
+          urgency = _calculator.getUrgencyLevel(
+            primary.daysRemaining,
+            type: primary.assessmentType,
+          );
         }
 
         emit(
@@ -247,7 +275,10 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             lapses: primary.totalLapses,
             daysRemaining: primary.daysRemaining,
           );
-          urgency = _calculator.getUrgencyLevel(primary.daysRemaining);
+          urgency = _calculator.getUrgencyLevel(
+            primary.daysRemaining,
+            type: primary.assessmentType,
+          );
         }
 
         emit(
@@ -274,7 +305,10 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       lapses: match.totalLapses,
       daysRemaining: match.daysRemaining,
     );
-    final urgency = _calculator.getUrgencyLevel(match.daysRemaining);
+    final urgency = _calculator.getUrgencyLevel(
+      match.daysRemaining,
+      type: match.assessmentType,
+    );
 
     emit(
       state.copyWith(

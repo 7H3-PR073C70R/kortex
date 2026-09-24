@@ -1,9 +1,10 @@
 import 'dart:math' as math;
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 
 enum ExamUrgencyLevel {
-  normal, // Green: > 14 days
-  warning, // Amber: 7 to 14 days
-  critical, // Crimson: < 7 days
+  normal, // Green: on track, ample runway
+  warning, // Amber: approaching prep window
+  critical, // Crimson: final crunch (< 24-48h for quizzes, < 7d for finals)
 }
 
 /// Computes dynamic cram paces, predictive exam readiness, and retention trajectories
@@ -36,14 +37,31 @@ class CramWorkloadCalculator {
     return math.max(1, target.ceil());
   }
 
-  /// Categorizes urgency based on days remaining until the exam.
-  ExamUrgencyLevel getUrgencyLevel(int daysRemaining) {
-    if (daysRemaining > 14) {
-      return ExamUrgencyLevel.normal;
-    } else if (daysRemaining >= 7) {
-      return ExamUrgencyLevel.warning;
-    } else {
-      return ExamUrgencyLevel.critical;
+  /// Categorizes urgency based on days remaining and assessment type.
+  /// Solves the urgency inversion where short-horizon quizzes induced artificial panic.
+  ExamUrgencyLevel getUrgencyLevel(
+    int daysRemaining, {
+    AssessmentType type = AssessmentType.finalExam,
+  }) {
+    switch (type) {
+      case AssessmentType.quiz:
+        if (daysRemaining > 3) return ExamUrgencyLevel.normal;
+        if (daysRemaining >= 1) return ExamUrgencyLevel.warning;
+        return ExamUrgencyLevel.critical;
+      case AssessmentType.classTest:
+        if (daysRemaining > 7) return ExamUrgencyLevel.normal;
+        if (daysRemaining >= 3) return ExamUrgencyLevel.warning;
+        return ExamUrgencyLevel.critical;
+      case AssessmentType.midterm:
+        if (daysRemaining > 14) return ExamUrgencyLevel.normal;
+        if (daysRemaining >= 5) return ExamUrgencyLevel.warning;
+        return ExamUrgencyLevel.critical;
+      case AssessmentType.finalExam:
+      case AssessmentType.mockExam:
+      case AssessmentType.custom:
+        if (daysRemaining > 14) return ExamUrgencyLevel.normal;
+        if (daysRemaining >= 7) return ExamUrgencyLevel.warning;
+        return ExamUrgencyLevel.critical;
     }
   }
 

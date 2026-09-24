@@ -3254,6 +3254,132 @@
     "@timePickerLabel": {
         "description": "Label for selecting exam time"
     },
+    "assessmentTypeLabel": "Assessment Type",
+    "@assessmentTypeLabel": {
+        "description": "Label for choosing evaluation type"
+    },
+    "assessmentTypeQuiz": "Quiz",
+    "@assessmentTypeQuiz": {
+        "description": "Quiz assessment type"
+    },
+    "assessmentTypeTest": "Test / CA",
+    "@assessmentTypeTest": {
+        "description": "Class test or continuous assessment type"
+    },
+    "assessmentTypeMidterm": "Mid-Term",
+    "@assessmentTypeMidterm": {
+        "description": "Mid-term exam assessment type"
+    },
+    "assessmentTypeFinalExam": "Final Exam",
+    "@assessmentTypeFinalExam": {
+        "description": "Final semester exam assessment type"
+    },
+    "assessmentTypeMockExam": "Mock Exam",
+    "@assessmentTypeMockExam": {
+        "description": "Mock examination type"
+    },
+    "assessmentTypeCustom": "Assessment",
+    "@assessmentTypeCustom": {
+        "description": "Custom academic milestone"
+    },
+    "scopedTopicsLabel": "Covered Topics & Decks",
+    "@scopedTopicsLabel": {
+        "description": "Header for scoping flashcard decks covered in a test"
+    },
+    "allCourseDecksOption": "All Course Decks ({count})",
+    "@allCourseDecksOption": {
+        "description": "Option to include all decks for a course",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "scopedDecksSummary": "{selected} of {total} decks selected",
+    "@scopedDecksSummary": {
+        "description": "Summary of selected decks",
+        "placeholders": {
+            "selected": {
+                "type": "int",
+                "example": "2"
+            },
+            "total": {
+                "type": "int",
+                "example": "4"
+            }
+        }
+    },
+    "noDecksForCourseHint": "No flashcard decks created for this course yet",
+    "@noDecksForCourseHint": {
+        "description": "Hint when course has no flashcard decks"
+    },
+    "gradeWeightLabel": "Grade Weight (%):",
+    "@gradeWeightLabel": {
+        "description": "Label for assessment weight percentage"
+    },
+    "optionalWeightHint": "Optional",
+    "@optionalWeightHint": {
+        "description": "Hint for optional grade weight"
+    },
+    "actionPracticeScopedDecks": "Practice Scoped Cards",
+    "@actionPracticeScopedDecks": {
+        "description": "Button text to practice cards linked to assessment"
+    },
+    "actionStartTestReview": "Start Test Review",
+    "@actionStartTestReview": {
+        "description": "Button text to start test review"
+    },
+    "actionOpenMockLobby": "Open Mock Lobby",
+    "@actionOpenMockLobby": {
+        "description": "Button text to open mock exam lobby"
+    },
+    "upcomingAssessmentsTitle": "Upcoming Milestones",
+    "@upcomingAssessmentsTitle": {
+        "description": "Header for upcoming academic milestones"
+    },
+    "allCountdownsTitle": "All Tracked Milestones",
+    "@allCountdownsTitle": {
+        "description": "Header for all milestones list"
+    },
+    "academicTimetableTitle": "Academic Timetable",
+    "@academicTimetableTitle": {
+        "description": "Title for academic timetable page"
+    },
+    "filterAll": "All",
+    "@filterAll": {
+        "description": "Filter chip for all assessments"
+    },
+    "filterQuizzes": "Quizzes",
+    "@filterQuizzes": {
+        "description": "Filter chip for quizzes"
+    },
+    "filterTests": "Tests",
+    "@filterTests": {
+        "description": "Filter chip for tests"
+    },
+    "filterMidterms": "Mid-Terms",
+    "@filterMidterms": {
+        "description": "Filter chip for mid-term exams"
+    },
+    "filterFinals": "Finals",
+    "@filterFinals": {
+        "description": "Filter chip for final exams"
+    },
+    "deleteAssessmentConfirmTitle": "Delete Assessment Countdown?",
+    "@deleteAssessmentConfirmTitle": {
+        "description": "Title for deleting assessment modal dialog"
+    },
+    "deleteAssessmentConfirmMessage": "Are you sure you want to remove \"{name}\"? You can always add a new one anytime.",
+    "@deleteAssessmentConfirmMessage": {
+        "description": "Confirmation message when deleting an assessment",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "MTH 101 Quiz"
+            }
+        }
+    },
     "quizTitle": "Practice Quiz & Mock Exam",
     "@quizTitle": {
         "description": "Title of the quiz workspace view"

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
+import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 
-/// Entity representing an upcoming academic examination and its pacing goals.
+/// Entity representing an upcoming academic examination, test, or quiz and its pacing goals.
 class ExamEventEntity extends Equatable {
   const ExamEventEntity({
     required this.id,
@@ -8,6 +9,9 @@ class ExamEventEntity extends Equatable {
     required this.examName,
     required this.targetDate,
     required this.subjectTrack,
+    this.assessmentType = AssessmentType.finalExam,
+    this.scopedDeckIds = const [],
+    this.weightPercent,
     this.totalCardsCount = 0,
     this.masteredCardsCount = 0,
     this.totalLapses = 0,
@@ -21,6 +25,9 @@ class ExamEventEntity extends Equatable {
   final String examName;
   final DateTime targetDate;
   final String subjectTrack;
+  final AssessmentType assessmentType;
+  final List<String> scopedDeckIds;
+  final double? weightPercent;
   final int totalCardsCount;
   final int masteredCardsCount;
   final int totalLapses;
@@ -68,6 +75,40 @@ class ExamEventEntity extends Equatable {
       ? 0.0
       : (masteredCardsCount / totalCardsCount).clamp(0.0, 1.0);
 
+  ExamEventEntity copyWith({
+    String? id,
+    String? userId,
+    String? examName,
+    DateTime? targetDate,
+    String? subjectTrack,
+    AssessmentType? assessmentType,
+    List<String>? scopedDeckIds,
+    double? weightPercent,
+    int? totalCardsCount,
+    int? masteredCardsCount,
+    int? totalLapses,
+    int? dailyTarget,
+    double? targetScorePercent,
+    DateTime? createdAt,
+  }) {
+    return ExamEventEntity(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      examName: examName ?? this.examName,
+      targetDate: targetDate ?? this.targetDate,
+      subjectTrack: subjectTrack ?? this.subjectTrack,
+      assessmentType: assessmentType ?? this.assessmentType,
+      scopedDeckIds: scopedDeckIds ?? this.scopedDeckIds,
+      weightPercent: weightPercent ?? this.weightPercent,
+      totalCardsCount: totalCardsCount ?? this.totalCardsCount,
+      masteredCardsCount: masteredCardsCount ?? this.masteredCardsCount,
+      totalLapses: totalLapses ?? this.totalLapses,
+      dailyTarget: dailyTarget ?? this.dailyTarget,
+      targetScorePercent: targetScorePercent ?? this.targetScorePercent,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -75,6 +116,9 @@ class ExamEventEntity extends Equatable {
     examName,
     targetDate,
     subjectTrack,
+    assessmentType,
+    scopedDeckIds,
+    weightPercent,
     totalCardsCount,
     masteredCardsCount,
     totalLapses,

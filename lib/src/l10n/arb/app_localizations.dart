@@ -4016,6 +4016,162 @@ abstract class AppLocalizations {
   /// **'Time'**
   String get timePickerLabel;
 
+  /// Label for choosing evaluation type
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment Type'**
+  String get assessmentTypeLabel;
+
+  /// Quiz assessment type
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz'**
+  String get assessmentTypeQuiz;
+
+  /// Class test or continuous assessment type
+  ///
+  /// In en, this message translates to:
+  /// **'Test / CA'**
+  String get assessmentTypeTest;
+
+  /// Mid-term exam assessment type
+  ///
+  /// In en, this message translates to:
+  /// **'Mid-Term'**
+  String get assessmentTypeMidterm;
+
+  /// Final semester exam assessment type
+  ///
+  /// In en, this message translates to:
+  /// **'Final Exam'**
+  String get assessmentTypeFinalExam;
+
+  /// Mock examination type
+  ///
+  /// In en, this message translates to:
+  /// **'Mock Exam'**
+  String get assessmentTypeMockExam;
+
+  /// Custom academic milestone
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment'**
+  String get assessmentTypeCustom;
+
+  /// Header for scoping flashcard decks covered in a test
+  ///
+  /// In en, this message translates to:
+  /// **'Covered Topics & Decks'**
+  String get scopedTopicsLabel;
+
+  /// Option to include all decks for a course
+  ///
+  /// In en, this message translates to:
+  /// **'All Course Decks ({count})'**
+  String allCourseDecksOption(int count);
+
+  /// Summary of selected decks
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} decks selected'**
+  String scopedDecksSummary(int selected, int total);
+
+  /// Hint when course has no flashcard decks
+  ///
+  /// In en, this message translates to:
+  /// **'No flashcard decks created for this course yet'**
+  String get noDecksForCourseHint;
+
+  /// Label for assessment weight percentage
+  ///
+  /// In en, this message translates to:
+  /// **'Grade Weight (%):'**
+  String get gradeWeightLabel;
+
+  /// Hint for optional grade weight
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get optionalWeightHint;
+
+  /// Button text to practice cards linked to assessment
+  ///
+  /// In en, this message translates to:
+  /// **'Practice Scoped Cards'**
+  String get actionPracticeScopedDecks;
+
+  /// Button text to start test review
+  ///
+  /// In en, this message translates to:
+  /// **'Start Test Review'**
+  String get actionStartTestReview;
+
+  /// Button text to open mock exam lobby
+  ///
+  /// In en, this message translates to:
+  /// **'Open Mock Lobby'**
+  String get actionOpenMockLobby;
+
+  /// Header for upcoming academic milestones
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Milestones'**
+  String get upcomingAssessmentsTitle;
+
+  /// Header for all milestones list
+  ///
+  /// In en, this message translates to:
+  /// **'All Tracked Milestones'**
+  String get allCountdownsTitle;
+
+  /// Title for academic timetable page
+  ///
+  /// In en, this message translates to:
+  /// **'Academic Timetable'**
+  String get academicTimetableTitle;
+
+  /// Filter chip for all assessments
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// Filter chip for quizzes
+  ///
+  /// In en, this message translates to:
+  /// **'Quizzes'**
+  String get filterQuizzes;
+
+  /// Filter chip for tests
+  ///
+  /// In en, this message translates to:
+  /// **'Tests'**
+  String get filterTests;
+
+  /// Filter chip for mid-term exams
+  ///
+  /// In en, this message translates to:
+  /// **'Mid-Terms'**
+  String get filterMidterms;
+
+  /// Filter chip for final exams
+  ///
+  /// In en, this message translates to:
+  /// **'Finals'**
+  String get filterFinals;
+
+  /// Title for deleting assessment modal dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Assessment Countdown?'**
+  String get deleteAssessmentConfirmTitle;
+
+  /// Confirmation message when deleting an assessment
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove \"{name}\"? You can always add a new one anytime.'**
+  String deleteAssessmentConfirmMessage(String name);
+
   /// Title of the quiz workspace view
   ///
   /// In en, this message translates to:
