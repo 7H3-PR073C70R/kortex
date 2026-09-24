@@ -1,9 +1,9 @@
-import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
-
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 
 /// Callback signature for spawning a reaction particle.
 typedef FloatingReactionCallback =
@@ -193,7 +193,6 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
 
 /// Efficient CustomPainter that draws floating emoji glyphs with classical easing
 class _ReactionCanvasPainter extends CustomPainter {
-  final TypographyThemeExtension typography;
   _ReactionCanvasPainter({
     required this.typography,
     required this.particles,
@@ -201,6 +200,7 @@ class _ReactionCanvasPainter extends CustomPainter {
     required super.repaint,
   });
 
+  final TypographyThemeExtension typography;
   final List<_ReactionParticle> particles;
   final Color shadowColor;
 

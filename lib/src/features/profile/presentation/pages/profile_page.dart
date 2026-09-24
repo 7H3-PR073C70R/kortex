@@ -97,7 +97,7 @@ class _ProfileView extends HookWidget {
                 Container(
                   width: 24,
                   height: 24,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
                       begin: Alignment.bottomLeft,
@@ -111,7 +111,7 @@ class _ProfileView extends HookWidget {
                   ),
                   padding: const EdgeInsets.all(1),
                   child: Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.black,
                       shape: BoxShape.circle,
                     ),
@@ -149,13 +149,13 @@ class _ProfileView extends HookWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      center: Alignment(0, -0.7),
+                      center: const Alignment(0, -0.7),
                       radius: 0.8,
                       colors: [
-                        Color.fromRGBO(200, 160, 90, 0.1),
+                        const Color.fromRGBO(200, 160, 90, 0.1),
                         context.colors.transparent,
                       ],
-                      stops: [0.0, 0.9],
+                      stops: const [0.0, 0.9],
                     ),
                   ),
                 ),
@@ -170,10 +170,10 @@ class _ProfileView extends HookWidget {
                     gradient: RadialGradient(
                       radius: 0.8,
                       colors: [
-                        Color.fromRGBO(56, 189, 248, 0.04),
+                        const Color.fromRGBO(56, 189, 248, 0.04),
                         context.colors.transparent,
                       ],
-                      stops: [0.0, 0.9],
+                      stops: const [0.0, 0.9],
                     ),
                   ),
                 ),
@@ -188,10 +188,10 @@ class _ProfileView extends HookWidget {
                     gradient: RadialGradient(
                       radius: 0.8,
                       colors: [
-                        Color.fromRGBO(139, 92, 246, 0.05),
+                        const Color.fromRGBO(139, 92, 246, 0.05),
                         context.colors.transparent,
                       ],
-                      stops: [0.0, 0.9],
+                      stops: const [0.0, 0.9],
                     ),
                   ),
                 ),

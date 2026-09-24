@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -20,12 +22,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   void _submit() {
     setState(() => _isLoading = true);
     // Simulate network request
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        context.router.maybePop();
-      }
-    });
+    unawaited(
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          unawaited(context.router.maybePop());
+        }
+      }),
+    );
   }
 
   @override
@@ -51,7 +55,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: Padding(
-            padding: const EdgeInsets.all(32.0),
+            padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -80,7 +84,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   text: l10n.authSubmitReset,
                   isLoading: _isLoading,
                   onPressed: _submit,
-                  borderRadius: 30.0,
+                  borderRadius: 30,
                 ),
               ],
             ),

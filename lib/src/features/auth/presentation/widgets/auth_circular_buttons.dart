@@ -31,8 +31,8 @@ class CircularSocialButton extends StatelessWidget {
             child: AnimatedContainer(
               duration: AppMotion.snappy,
               curve: AppMotion.easeOutCubic,
-              width: 44,
-              height: 44,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
