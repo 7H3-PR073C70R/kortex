@@ -572,6 +572,7 @@ class _AdaptiveNavItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: AppMotion.snappy,
           curve: AppMotion.easeOutCubic,
+          width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected
