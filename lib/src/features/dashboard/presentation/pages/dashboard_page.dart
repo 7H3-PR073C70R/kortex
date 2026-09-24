@@ -13,10 +13,12 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -1654,6 +1656,28 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
         ? l10n.podSuffix(targetTrack!)
         : l10n.studyCirclePod;
 
+    final activityService = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>()
+        : null;
+    final weeklyMinutes = activityService?.getWeeklyMinutesStudied() ?? 0;
+    final userXp = activityService?.getXpPoints() ?? 0;
+
+    var activeMembers = 1;
+    var maxMembers = 6;
+    try {
+      if (locator.isRegistered<CommunityHubBloc>()) {
+        final circles = locator<CommunityHubBloc>().state.studyCircles;
+        if (circles.isNotEmpty) {
+          activeMembers = circles.first.memberCount;
+          maxMembers = circles.first.maxMembers;
+        }
+      }
+    } on Object catch (_) {}
+
+    final activeStr = '$activeMembers/$maxMembers';
+    final minutesStr = weeklyMinutes > 0 ? '${weeklyMinutes}m' : '0m';
+    final karmaStr = '+$userXp';
+
     return PlatformHoverBuilder(
       builder: (context, isHovered, _) {
         return ShrinkableButton(
@@ -1729,7 +1753,7 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                           child: _PodMetricChip(
                             icon: Icons.group_rounded,
                             iconColor: neural.emerald400,
-                            value: '4/6',
+                            value: activeStr,
                             label: l10n.activeToday,
                           ),
                         ),
@@ -1738,7 +1762,7 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                           child: _PodMetricChip(
                             icon: Icons.timer_outlined,
                             iconColor: neural.amber400,
-                            value: '185m',
+                            value: minutesStr,
                             label: l10n.groupFocus,
                           ),
                         ),
@@ -1747,7 +1771,7 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                           child: _PodMetricChip(
                             icon: Icons.bolt_rounded,
                             iconColor: neural.cyan400,
-                            value: '+250',
+                            value: karmaStr,
                             valueColor: neural.cyan300,
                             label: l10n.podKarma,
                           ),
