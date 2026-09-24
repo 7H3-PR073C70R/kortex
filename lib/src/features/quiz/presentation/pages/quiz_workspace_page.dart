@@ -287,7 +287,7 @@ class _QuizWorkspaceView extends HookWidget {
         final progress = state.totalQuestions == 0
             ? 0.0
             : (state.currentIndex + 1) / state.totalQuestions;
-        final showVerdict = current.isAnswered && !isExam;
+        final showVerdict = reviewMode || (current.isAnswered && !isExam);
 
         return Scaffold(
           backgroundColor: isDark
@@ -307,40 +307,66 @@ class _QuizWorkspaceView extends HookWidget {
               },
             ),
             title: Text(
-              state.quizTitle,
+              reviewMode ? 'Review: ${state.quizTitle}' : state.quizTitle,
               style: typography.title3.bold.copyWith(
                 color: colors.textPrimary,
+                fontSize: 16,
               ),
               overflow: TextOverflow.ellipsis,
             ),
             actions: [
-              // Flag toggle action (answering aids are hidden in review).
-              if (!reviewMode)
-                IconButton(
-                  icon: Icon(
-                    state.isCurrentQuestionFlagged
-                        ? Icons.bookmark_rounded
-                        : Icons.bookmark_border_rounded,
-                    color: state.isCurrentQuestionFlagged
-                        ? colors.warning
-                        : colors.textSecondary,
+              // In Millionaire mode: Replace question jump with progress chip!
+              if (isMillionaire)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ShrinkableButton(
+                    onTap: () => MillionaireLadderDrawer.show(context, state),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.warning.withValues(
+                          alpha: isDark ? 0.2 : 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                        border: Border.all(
+                          color: colors.warning.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.military_tech_rounded,
+                            size: 16,
+                            color: colors.warning,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Tier ${state.currentTier}/12',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.warning,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  tooltip: 'Flag Question for Review',
-                  onPressed: () => context
-                      .read<QuizSessionCubit>()
-                      .toggleFlagCurrentQuestion(),
                 ),
-              // Question Navigation Palette
-              IconButton(
-                icon: Icon(Icons.grid_view_rounded, color: colors.textPrimary),
-                tooltip: 'Question Palette',
-                onPressed: () => _showQuestionPalette(
-                  context,
-                  context.read<QuizSessionCubit>(),
-                  state,
+              // Question Navigation Palette: Shown in review or practice mode (in CBT, it's accessed via the bottom navigation bar)
+              if (reviewMode || (!isExam && !isMillionaire))
+                IconButton(
+                  icon: Icon(Icons.grid_view_rounded, color: colors.textPrimary),
+                  tooltip: 'Question Palette',
+                  onPressed: () => _showQuestionPalette(
+                    context,
+                    context.read<QuizSessionCubit>(),
+                    state,
+                  ),
                 ),
-              ),
-              // Live Session Timer Badge (with time running low warning)
+              // Live Session Timer Badge (authentic CBT countdown)
               if (!reviewMode) const _QuizTimerBadge(),
             ],
           ),
@@ -374,13 +400,88 @@ class _QuizWorkspaceView extends HookWidget {
                                   color: colors.textSecondary,
                                 ),
                               ),
-                              if (state.isCurrentQuestionFlagged) ...[
+                              if (isExam && !reviewMode) ...[
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () => context
+                                      .read<QuizSessionCubit>()
+                                      .toggleFlagCurrentQuestion(),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: state.isCurrentQuestionFlagged
+                                          ? colors.warning.withValues(
+                                              alpha: 0.15,
+                                            )
+                                          : colors.surfaceSecondary,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: state.isCurrentQuestionFlagged
+                                            ? colors.warning
+                                            : colors.surfaceBorder,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          state.isCurrentQuestionFlagged
+                                              ? Icons.bookmark_rounded
+                                              : Icons.bookmark_border_rounded,
+                                          size: 13,
+                                          color: state.isCurrentQuestionFlagged
+                                              ? colors.warning
+                                              : colors.textSecondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          state.isCurrentQuestionFlagged
+                                              ? 'Flagged'
+                                              : 'Flag',
+                                          style: typography.caption.bold.copyWith(
+                                            color: state.isCurrentQuestionFlagged
+                                                ? colors.warning
+                                                : colors.textSecondary,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ] else if (state.isCurrentQuestionFlagged) ...[
                                 const SizedBox(width: 8),
                                 QuizTagPill(
                                   label: 'Flagged',
                                   color: colors.warning,
                                   icon: Icons.bookmark_rounded,
                                 ),
+                              ],
+                              if (reviewMode) ...[
+                                const SizedBox(width: 8),
+                                if (current.isCorrect)
+                                  QuizTagPill(
+                                    label: 'Correct',
+                                    color: colors.success,
+                                    icon: Icons.check_circle_rounded,
+                                  )
+                                else if (current.userSelectedAnswer != null &&
+                                    current.userSelectedAnswer!.isNotEmpty)
+                                  QuizTagPill(
+                                    label: 'Incorrect',
+                                    color: colors.error,
+                                    icon: Icons.cancel_rounded,
+                                  )
+                                else
+                                  QuizTagPill(
+                                    label: 'Unattempted',
+                                    color: colors.warning,
+                                    icon: Icons.help_outline_rounded,
+                                  ),
                               ],
                               const Spacer(),
                               QuizTagPill(
@@ -509,10 +610,12 @@ class _QuizWorkspaceView extends HookWidget {
                               index: idx,
                               reduceMotion: reduceMotion,
                               state: McqOptionCard.resolveState(
-                                isSelected: isPractice
-                                    ? state.pendingAnswer == opt
-                                    : current.userSelectedAnswer == opt,
-                                isAnswered: current.isAnswered,
+                                isSelected: reviewMode
+                                    ? (current.userSelectedAnswer == opt)
+                                    : (isPractice
+                                        ? state.pendingAnswer == opt
+                                        : current.userSelectedAnswer == opt),
+                                isAnswered: reviewMode || current.isAnswered,
                                 isCorrect: _isSameAnswer(
                                   opt,
                                   current.correctAnswer,
@@ -1012,7 +1115,7 @@ class _QuizActionBar extends StatelessWidget {
             )
           : (
               color: colors.primary,
-              label: 'Next tier',
+              label: 'Next',
               onPressed: cubit.nextQuestion,
             );
     }
@@ -1105,24 +1208,22 @@ class _QuizActionBar extends StatelessWidget {
                     tooltip: 'Previous question',
                   ),
                   const SizedBox(width: 8),
-                ],
-                IconButton.outlined(
-                  onPressed: isMillionaire ? onOpenLadder : onOpenPalette,
-                  icon: Icon(
-                    isMillionaire
-                        ? Icons.military_tech_rounded
-                        : Icons.grid_view_rounded,
-                    color: isMillionaire ? colors.warning : colors.textPrimary,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: colors.surfaceBorder),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppRadius.radiusCard,
+                  IconButton.outlined(
+                    onPressed: onOpenPalette,
+                    icon: Icon(
+                      Icons.grid_view_rounded,
+                      color: colors.textPrimary,
                     ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: colors.surfaceBorder),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                    ),
+                    tooltip: 'All questions',
                   ),
-                  tooltip: isMillionaire ? 'Your climb' : 'All questions',
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: reduceMotion ? Duration.zero : AppMotion.standard,
@@ -1130,6 +1231,7 @@ class _QuizActionBar extends StatelessWidget {
                     switchOutCurve: AppMotion.exitCurve,
                     child: SizedBox(
                       key: ValueKey(action.label),
+                      width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: action.onPressed,

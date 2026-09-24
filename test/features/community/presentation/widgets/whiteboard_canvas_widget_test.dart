@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
-import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
-import 'package:kortex/src/features/community/presentation/widgets/whiteboard_canvas_widget.dart';
+import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/whiteboard_canvas_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 Widget _wrapWithTheme(Widget child) {

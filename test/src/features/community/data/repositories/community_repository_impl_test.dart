@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
-import 'package:kortex/src/features/community/data/models/study_room_model.dart';
 import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
+import 'package:kortex/src/features/study_rooms/data/models/study_room_model.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCommunityRemoteDataSource extends Mock

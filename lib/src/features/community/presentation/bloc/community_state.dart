@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/leaderboard/domain/entities/leaderboard_entry_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 
 enum CommunityStatus { initial, loading, loaded, failure }
 

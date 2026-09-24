@@ -25,6 +25,7 @@ void main() {
           const AchievementBadgeGrid(),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('Earned Badges & Milestones'), findsOneWidget);
 

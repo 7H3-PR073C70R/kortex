@@ -32,6 +32,7 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -1632,19 +1633,9 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: neural.emerald,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: neural.glowMatrixActive,
-                                  blurRadius: 10,
-                                ),
-                              ],
-                            ),
+                          AppPulsingBeacon(
+                            color: neural.emerald,
+                            pulseSpread: 5,
                           ),
                           const SizedBox(width: 8),
                           Text(

@@ -16,8 +16,9 @@ import 'package:kortex/src/features/community/presentation/bloc/community_event.
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
-import 'package:kortex/src/features/community/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
+import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:share_plus/share_plus.dart';
@@ -407,13 +408,10 @@ class TrackForumPostCard extends HookWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: colors.primary,
-                              ),
+                            AppPulsingBeacon(
+                              color: colors.primary,
+                              size: 6,
+                              pulseSpread: 3,
                             ),
                             const SizedBox(width: 6),
                             Text(
@@ -869,7 +867,29 @@ class TrackForumPostCard extends HookWidget {
                                             : colors.textPrimary,
                                         fontSize: 12,
                                       ),
-                                      child: Text('${post.netVotes}'),
+                                      child: AnimatedSwitcher(
+                                        duration: AppMotion.snappy,
+                                        transitionBuilder:
+                                            (child, anim) => ScaleTransition(
+                                          scale: Tween<double>(
+                                            begin: 0.85,
+                                            end: 1,
+                                          ).animate(
+                                            CurvedAnimation(
+                                              parent: anim,
+                                              curve: AppMotion.easeOutCubic,
+                                            ),
+                                          ),
+                                          child: FadeTransition(
+                                            opacity: anim,
+                                            child: child,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '${post.netVotes}',
+                                          key: ValueKey<int>(post.netVotes),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   ShrinkableButton(

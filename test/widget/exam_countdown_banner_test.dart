@@ -54,6 +54,8 @@ void main() {
         () => mockRepository.getActiveExams(),
       ).thenAnswer((_) async => const Right([]));
 
+      await cubit.loadExams();
+
       await tester.pumpWidget(
         createTestApp(
           BlocProvider<CramPlannerCubit>.value(
@@ -64,7 +66,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.alarm_add_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.access_alarm_rounded), findsOneWidget);
     });
 
     testWidgets(

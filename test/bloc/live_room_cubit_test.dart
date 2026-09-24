@@ -1,19 +1,20 @@
 import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
-import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
-import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
-import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
-import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/leaderboard/domain/entities/leaderboard_entry_entity.dart';
+import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_room_repository.dart';
+import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
+import 'package:kortex/src/features/study_rooms/presentation/bloc/live_room_cubit.dart';
 
 class MockCommunityRepository implements CommunityRepository {
   final _roomController = StreamController<StudyRoomEntity>.broadcast();

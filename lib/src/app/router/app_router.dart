@@ -51,6 +51,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: AppPreferencesRoute.page),
     AutoRoute(page: StudyHubRoute.page),
     AutoRoute(page: LeaderboardRoute.page),
+    AutoRoute(page: NotificationsRoute.page),
     AutoRoute(
       page: MainRoute.page,
       children: [

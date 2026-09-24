@@ -44,6 +44,13 @@ void _initUseCaseLocator() {
         resendOtpUseCase: locator<ResendOtpUseCase>(),
       ),
     )
+    ..registerLazySingleton<NotificationsCubit>(
+      () => NotificationsCubit(
+        notificationService: locator.isRegistered<NotificationService>()
+            ? locator<NotificationService>()
+            : null,
+      ),
+    )
     ..registerLazySingleton<GetDashboardFeedUseCase>(
       () => GetDashboardFeedUseCase(locator<DashboardRepository>()),
     )

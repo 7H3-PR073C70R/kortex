@@ -1,3 +1,4 @@
+export 'app_animated_entrance.dart';
 export 'app_avatar.dart';
 export 'app_badge.dart';
 export 'app_bottom_sheet.dart';

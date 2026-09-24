@@ -13,6 +13,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -32,6 +33,47 @@ class HeaderProfileBar extends StatelessWidget {
   final bool isProfileUncalibrated;
   final String? userName;
   final String? userPhotoUrl;
+
+  static String extractTwoLetterInitials(String? text) {
+    if (text == null) return 'KO';
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return 'KO';
+
+    // 1. If multi-word (e.g. "John Doe"), take the first letter of the first two words
+    final parts = trimmed
+        .split(RegExp(r'[\s_.\-]+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.length >= 2) {
+      final first = parts[0].characters.isNotEmpty
+          ? parts[0].characters.first
+          : '';
+      final second = parts[1].characters.isNotEmpty
+          ? parts[1].characters.first
+          : '';
+      final combined = '$first$second'.toUpperCase();
+      if (combined.isNotEmpty) return combined;
+    }
+
+    // 2. If single word/username (e.g. "toxicbishop01"), strip non-alphanumeric and take first 2 chars
+    final clean = trimmed.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
+    if (clean.characters.length >= 2) {
+      return clean.characters.take(2).toString().toUpperCase();
+    }
+    if (clean.characters.length == 1) {
+      return clean.toUpperCase();
+    }
+
+    // 3. Fallback to raw characters if only unicode/emojis or special symbols
+    if (trimmed.characters.length >= 2) {
+      return trimmed.characters.take(2).toString().toUpperCase();
+    }
+    if (trimmed.characters.length == 1) {
+      return trimmed.toUpperCase();
+    }
+
+    return 'KO';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,9 +101,9 @@ class HeaderProfileBar extends StatelessWidget {
         : analytics.currentStreakDays;
 
     final trimmedName = effectiveName?.trim() ?? '';
-    final initials = trimmedName.isEmpty
-        ? 'KO'
-        : trimmedName.substring(0, 2).toUpperCase();
+    final initials = extractTwoLetterInitials(
+      trimmedName.isNotEmpty ? trimmedName : displayName,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -88,90 +130,46 @@ class HeaderProfileBar extends StatelessWidget {
                             Semantics(
                               label: l10n.dashboardHeyUser(displayName),
                               image: true,
-                              child: SizedBox(
-                                width: 48,
-                                height: 48,
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      width: 48,
-                                      height: 48,
-                                      padding: const EdgeInsets.all(1.5),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            neural.amber200.withAlpha(51),
-                                            neural.emerald.withAlpha(26),
-                                            context.colors.transparent,
-                                          ],
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: neural.glowEmerald,
-                                            blurRadius: 20,
-                                            spreadRadius: -5,
-                                          ),
-                                        ],
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: neural.obsidian850,
-                                            border: Border.all(
-                                              color: neural.hairlineStrong,
-                                            ),
-                                          ),
-                                          child: effectivePhoto != null
-                                              ? AppAvatar(
-                                                  customDimension: 45,
-                                                  imageUrl: effectivePhoto,
-                                                  name:
-                                                      effectiveName ??
-                                                      displayName,
-                                                  borderWidth: 0,
-                                                  backgroundColor:
-                                                      neural.obsidian850,
-                                                  foregroundColor:
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: neural.obsidian850,
+                                  borderRadius: BorderRadius.circular(13),
+                                  border: Border.all(
+                                    color: neural.hairlineStrong,
+                                    width: 1.2,
+                                  ),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: effectivePhoto != null
+                                      ? AppAvatar(
+                                          customDimension: 44,
+                                          imageUrl: effectivePhoto,
+                                          name:
+                                              effectiveName ??
+                                              displayName,
+                                          borderWidth: 0,
+                                          backgroundColor:
+                                              neural.obsidian850,
+                                          foregroundColor:
+                                              neural.amber300,
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            initials,
+                                            style: typography
+                                                .caption
+                                                .bold
+                                                .copyWith(
+                                                  color:
                                                       neural.amber300,
-                                                )
-                                              : Center(
-                                                  child: Text(
-                                                    initials,
-                                                    style: typography
-                                                        .caption
-                                                        .bold
-                                                        .copyWith(
-                                                          color:
-                                                              neural.amber300,
-                                                          fontSize: 14,
-                                                          letterSpacing: 0.5,
-                                                        ),
-                                                  ),
+                                                  fontSize: 14,
+                                                  letterSpacing: 0.5,
                                                 ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      bottom: -1,
-                                      right: -1,
-                                      child: Container(
-                                        width: 14,
-                                        height: 14,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: neural.emerald,
-                                          border: Border.all(
-                                            color: neural.obsidian950,
-                                            width: 2,
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                  ],
                                 ),
                               ),
                             ),
@@ -179,8 +177,10 @@ class HeaderProfileBar extends StatelessWidget {
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Flexible(
                                         child: Text(
@@ -191,28 +191,27 @@ class HeaderProfileBar extends StatelessWidget {
                                               .copyWith(
                                                 color: neural.slate100,
                                                 fontSize: 16,
-                                                height: 1.15,
+                                                letterSpacing: -0.2,
+                                                height: 1.2,
                                               ),
                                         ),
                                       ),
-                                      const SizedBox(width: 6),
+                                      const SizedBox(width: 5),
                                       Icon(
                                         Icons.auto_awesome_rounded,
-                                        size: 14,
+                                        size: 13,
                                         color: neural.amber400,
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 3),
                                   Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: neural.emerald400,
-                                        ),
+                                      AppPulsingBeacon(
+                                        color: neural.emerald400,
+                                        size: 6,
+                                        pulseSpread: 3,
                                       ),
                                       const SizedBox(width: 6),
                                       Flexible(
@@ -228,29 +227,23 @@ class HeaderProfileBar extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 1,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: neural.emerald.withAlpha(26),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                          border: Border.all(
-                                            color: neural.emerald.withAlpha(51),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'LVL ${authProfile?.level ?? 1}',
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: neural.emerald400,
-                                                fontSize: 10,
-                                                fontFamily: 'monospace',
-                                              ),
-                                        ),
+                                      Text(
+                                        '•',
+                                        style: typography.caption.medium
+                                            .copyWith(
+                                              color: neural.slate400,
+                                              fontSize: 10,
+                                            ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'LVL ${authProfile?.level ?? 1}',
+                                        style: typography.caption.bold
+                                            .copyWith(
+                                              color: neural.emerald400,
+                                              fontSize: 11,
+                                              letterSpacing: 0.2,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -264,9 +257,11 @@ class HeaderProfileBar extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 12),
 
-            // Right: Streak Counter & Analytics Shortcut
+            // Right: Streak Counter & Discovery Shortcut
             Row(
+              mainAxisSize: MainAxisSize.min,
               children:
                   <Widget>[
                         // Study Streak Pill
@@ -295,21 +290,14 @@ class HeaderProfileBar extends StatelessWidget {
                                   ),
                                   decoration: BoxDecoration(
                                     color: neural.obsidian850.withAlpha(
-                                      230,
+                                      isHovered ? 255 : 220,
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: neural.amber.withAlpha(
-                                        isHovered ? 140 : 77,
+                                        isHovered ? 140 : 65,
                                       ),
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: neural.glowAmber,
-                                        blurRadius: 20,
-                                        spreadRadius: -5,
-                                      ),
-                                    ],
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -320,8 +308,8 @@ class HeaderProfileBar extends StatelessWidget {
                                         color: neural.amber400,
                                       ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        '$effectiveStreak',
+                                      AppAnimatedCounter(
+                                        targetValue: effectiveStreak,
                                         style: typography.callout.bold.copyWith(
                                           color: neural.amber300,
                                           fontSize: 12,
@@ -334,7 +322,7 @@ class HeaderProfileBar extends StatelessWidget {
                             },
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 10),
 
                         // Discovery / Walkthrough Shortcut (compass)
                         _HeaderIconButton(
@@ -363,18 +351,18 @@ class HeaderProfileBar extends StatelessWidget {
                             );
                           },
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
 
-                        // Analytics Shortcut (activity pulse)
+                        // Notifications Shortcut
                         _HeaderIconButton(
-                          icon: Icons.show_chart_rounded,
-                          color: neural.emerald400,
-                          tooltip: l10n.dashboardViewAnalyticsSemantics,
-                          borderHighlightColor: neural.emerald,
+                          icon: Icons.notifications_outlined,
+                          color: neural.amber300,
+                          tooltip: 'Notifications',
+                          borderHighlightColor: neural.amber,
                           onTap: () {
                             unawaited(HapticFeedback.lightImpact());
                             unawaited(
-                              context.router.push(const AnalyticsDetailRoute()),
+                              context.router.push(const NotificationsRoute()),
                             );
                           },
                         ),

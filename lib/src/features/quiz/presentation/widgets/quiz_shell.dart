@@ -261,7 +261,11 @@ class QuizVerdictPanel extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
     final isCorrect = verdict == QuizVerdict.correct;
-    final accent = isCorrect ? colors.success : colors.warning;
+    final hasUserAnswer = question.userSelectedAnswer != null &&
+        question.userSelectedAnswer!.trim().isNotEmpty;
+    final accent = isCorrect
+        ? colors.success
+        : (hasUserAnswer ? colors.error : colors.warning);
 
     return QuizStaggeredFade(
       reduceMotion: reduceMotion,
@@ -278,21 +282,58 @@ class QuizVerdictPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  isCorrect
-                      ? Icons.check_circle_rounded
-                      : Icons.history_toggle_off_rounded,
-                  color: accent,
-                  size: 20,
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(
+                    isCorrect
+                        ? Icons.check_circle_rounded
+                        : (hasUserAnswer
+                            ? Icons.cancel_rounded
+                            : Icons.help_outline_rounded),
+                    color: accent,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    isCorrect
-                        ? 'Nice, you got it'
-                        : 'Correct answer: ${question.correctAnswer}',
-                    style: typography.footnote.bold.copyWith(color: accent),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isCorrect)
+                        Text(
+                          'Nice, you got it! Correct answer: ${question.correctAnswer}',
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.success,
+                          ),
+                        )
+                      else ...[
+                        if (hasUserAnswer) ...[
+                          Text(
+                            'Your answer: ${question.userSelectedAnswer}',
+                            style: typography.footnote.bold.copyWith(
+                              color: colors.error,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                        ] else ...[
+                          Text(
+                            'You did not attempt this question',
+                            style: typography.footnote.bold.copyWith(
+                              color: colors.warning,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                        ],
+                        Text(
+                          'Correct answer: ${question.correctAnswer}',
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.success,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],

@@ -73,11 +73,9 @@ class _ProfileView extends HookWidget {
               borderRadius: AppRadius.radiusSheet,
               boxShadow: [
                 BoxShadow(
-                  color: isDark
-                      ? const Color.fromRGBO(168, 85, 247, 0.28)
-                      : const Color.fromRGBO(99, 102, 241, 0.16),
-                  blurRadius: 18,
-                  spreadRadius: -2,
+                  color: colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -292,13 +290,6 @@ class _ProfileView extends HookWidget {
                                       ? const Color.fromRGBO(245, 158, 11, 0.4)
                                       : const Color.fromRGBO(245, 158, 11, 0.35),
                                 ),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Color.fromRGBO(245, 158, 11, 0.2),
-                                    blurRadius: 16,
-                                    spreadRadius: -3,
-                                  ),
-                                ],
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,

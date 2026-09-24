@@ -1,12 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
-import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
-import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
-import 'package:kortex/src/features/community/domain/repositories/ephemeral_room_repository.dart';
-import 'package:kortex/src/features/community/presentation/bloc/live_room_cubit.dart';
+import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_room_repository.dart';
+import 'package:kortex/src/features/study_rooms/presentation/bloc/live_room_cubit.dart';
 
 class MockCommunityRepository implements CommunityRepository {
   @override

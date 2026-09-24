@@ -48,8 +48,9 @@ void main() {
           ),
         ),
       );
+      await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Hey, Alexander 👋'), findsOneWidget);
+      expect(find.text('Hey, Alexander'), findsOneWidget);
       expect(find.text('Neural Scholar'), findsOneWidget);
       expect(find.text('12'), findsOneWidget);
       expect(find.text('Calibrate Your Neural Workspace'), findsOneWidget);

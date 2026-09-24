@@ -4,13 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/shared_deck_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/study_circle_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
+import 'package:kortex/src/features/leaderboard/domain/entities/leaderboard_entry_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCommunityRepository extends Mock implements CommunityRepository {}

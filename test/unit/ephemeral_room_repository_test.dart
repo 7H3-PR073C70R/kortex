@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
-import 'package:kortex/src/features/community/data/repositories/ephemeral_room_repository_impl.dart';
+import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
+import 'package:kortex/src/features/study_rooms/data/repositories/ephemeral_room_repository_impl.dart';
 
 class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   final _participantsController =

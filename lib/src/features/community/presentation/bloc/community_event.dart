@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
-import 'package:kortex/src/features/community/domain/entities/leaderboard_entry_entity.dart';
+import 'package:kortex/src/features/leaderboard/domain/entities/leaderboard_entry_entity.dart';
 
 abstract class CommunityEvent extends Equatable {
   const CommunityEvent();

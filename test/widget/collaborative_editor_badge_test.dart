@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/community/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/collaborative_editor_badge.dart';
+import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
 
 import '../helpers/pump_app.dart';
 

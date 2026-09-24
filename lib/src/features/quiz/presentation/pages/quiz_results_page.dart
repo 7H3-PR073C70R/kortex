@@ -270,7 +270,78 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 ],
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 18),
+
+              // 2.5. Seamless Quick Study Actions
+              QuizStaggeredFade(
+                index: 2,
+                reduceMotion: reduceMotion,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(color: colors.surfaceBorder),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 20 : 4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      if (widget.questions.isNotEmpty) ...[
+                        Expanded(
+                          child: _ResultQuickActionButton(
+                            icon: Icons.replay_rounded,
+                            label: 'Retake',
+                            color: colors.primary,
+                            onTap: () => _handleTryAgain(context),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: _ResultQuickActionButton(
+                          icon: Icons.style_rounded,
+                          label: 'Flashcards',
+                          color: colors.syllabotAccent,
+                          onTap: () => unawaited(
+                            _handlePracticeWeakFlashcards(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ResultQuickActionButton(
+                          icon: Icons.forum_rounded,
+                          label: 'Ask Class',
+                          color: colors.info,
+                          onTap: () => _handleAskClassForHelp(context),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _ResultQuickActionButton(
+                          icon: Icons.share_rounded,
+                          label: 'Share',
+                          color: colors.textSecondary,
+                          onTap: () => _handleShareResult(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
 
               // 3. Topic breakdown.
               Text(
@@ -677,7 +748,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     );
   }
 
-  /// One obvious next action, with everything else behind a small menu.
+  /// Seamless direct actions: Retake + Primary Review.
   Widget _buildActionsBar(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
@@ -703,65 +774,55 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       child: SafeArea(
         top: false,
         child: Align(
-          // heightFactor keeps the bar at its natural height. A plain Center
-          // would expand to fill the loosened constraints a bottomNavigationBar
-          // is measured against, collapsing the scrollable body to zero height.
-          // Align already centers by default.
           heightFactor: 1,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 820),
             child: Row(
               children: [
-                PopupMenuButton<String>(
-                  tooltip: 'More ways to use this result',
-                  icon: Icon(
-                    Icons.more_horiz_rounded,
-                    color: colors.textPrimary,
-                  ),
-                  color: isDark
-                      ? colors.surfaceSecondary
-                      : colors.surfacePrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppRadius.radiusCard,
-                  ),
-                  onSelected: (value) => _handleOverflowAction(value, context),
-                  itemBuilder: (context) => [
-                    if (canRestart)
-                      const PopupMenuItem(
-                        value: 'retry',
-                        child: Text('Try again'),
+                if (canRestart) ...[
+                  SizedBox(
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      icon: Icon(
+                        Icons.replay_rounded,
+                        size: 18,
+                        color: colors.textPrimary,
                       ),
-                    const PopupMenuItem(
-                      value: 'flashcards',
-                      child: Text('Convert to flashcards'),
+                      label: Text(
+                        'Retake',
+                        style: typography.callout.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      onPressed: () => _handleTryAgain(context),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: colors.surfaceBorderHighlight),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
                     ),
-                    const PopupMenuItem(
-                      value: 'ask',
-                      child: Text('Ask the class for help'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'share',
-                      child: Text('Share result'),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 8),
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(
                   child: SizedBox(
                     height: 50,
                     child: ElevatedButton.icon(
                       icon: Icon(
                         hasMistakesToReview
-                            ? Icons.replay_rounded
-                            : Icons.space_dashboard_rounded,
+                            ? Icons.visibility_rounded
+                            : Icons.check_circle_rounded,
                         size: 20,
                         color: colors.white,
                       ),
                       label: Text(
                         hasMistakesToReview
-                            ? 'Review your ${mistakes.length} '
-                                  '${mistakes.length == 1 ? 'mistake' : 'mistakes'}'
-                            : 'Back to dashboard',
+                            ? 'Review ${mistakes.length} ${mistakes.length == 1 ? 'Mistake' : 'Mistakes'}'
+                            : (widget.questions.isNotEmpty
+                                ? 'Review All Answers'
+                                : 'Back to dashboard'),
                         style: typography.callout.bold.copyWith(
                           color: colors.white,
                         ),
@@ -769,6 +830,8 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                       onPressed: () {
                         if (hasMistakesToReview) {
                           _openMistakeReview(context, mistakes);
+                        } else if (widget.questions.isNotEmpty) {
+                          _openMistakeReview(context, widget.questions);
                         } else {
                           context.router.popUntilRoot();
                         }
@@ -790,19 +853,6 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
         ),
       ),
     );
-  }
-
-  void _handleOverflowAction(String value, BuildContext context) {
-    switch (value) {
-      case 'retry':
-        _handleTryAgain(context);
-      case 'flashcards':
-        unawaited(_handlePracticeWeakFlashcards(context));
-      case 'ask':
-        _handleAskClassForHelp(context);
-      case 'share':
-        _handleShareResult(context);
-    }
   }
 
   /// Sends the student back through the workspace, read-only, with every
@@ -1131,6 +1181,60 @@ class _StatColumn extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ResultQuickActionButton extends StatelessWidget {
+  const _ResultQuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return InkWell(
+      onTap: () {
+        unawaited(HapticFeedback.lightImpact());
+        onTap();
+      },
+      borderRadius: AppRadius.radiusCard,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+          borderRadius: AppRadius.radiusCard,
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: typography.caption.bold.copyWith(
+                color: colors.textPrimary,
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

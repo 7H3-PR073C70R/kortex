@@ -34,12 +34,13 @@ void main() {
             ),
           ),
         );
+        await tester.pumpAndSettle();
 
         expect(find.text('7 Days Streak'), findsOneWidget);
         expect(find.text('Equip Streak Shield (200 XP)'), findsOneWidget);
 
         await tester.tap(find.text('Equip Streak Shield (200 XP)'));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(purchaseTapped, isTrue);
       },
     );
@@ -54,6 +55,7 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('12 Days Streak'), findsOneWidget);
       expect(find.text('SHIELD ACTIVE'), findsOneWidget);

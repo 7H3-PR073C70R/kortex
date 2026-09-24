@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kortex/src/features/community/data/services/livekit_audio_service_impl.dart';
-import 'package:kortex/src/features/community/domain/services/livekit_audio_service.dart';
+import 'package:kortex/src/features/study_rooms/data/services/livekit_audio_service_impl.dart';
+import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 
 void main() {
   group('LiveKitAudioServiceImpl Unit Test Suite', () {

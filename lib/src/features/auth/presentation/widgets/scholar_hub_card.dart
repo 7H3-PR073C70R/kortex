@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -13,6 +12,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/avatar_picker_dialog.dart';
+import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -86,32 +86,8 @@ class ScholarHubCard extends StatelessWidget {
                       curve: AppMotion.easeOutCubic,
                       child: Stack(
                         children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Blurred Halo
-                              Container(
-                                    width: 108,
-                                    height: 108,
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        begin: Alignment.bottomLeft,
-                                        end: Alignment.topRight,
-                                        colors: [
-                                          Color.fromRGBO(245, 158, 11, 0.25), // amber-500
-                                          Color.fromRGBO(16, 185, 129, 0.18), // emerald-500
-                                          Color.fromRGBO(99, 102, 241, 0.22), // indigo-500
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                  .animate(target: isHovered ? 1 : 0.8)
-                                  .blurXY(begin: 8, end: 12)
-                                  .fade(begin: 0.8, end: 1),
-
-                              // Avatar Circle
-                              Container(
+                          // Avatar Circle
+                          Container(
                                 width: 96,
                                 height: 96,
                                 decoration: BoxDecoration(
@@ -154,12 +130,10 @@ class ScholarHubCard extends StatelessWidget {
                                     colors: colors,
                                     typography: typography,
                                     size: 96,
-                                    fontSize: 32,
+                                    fontSize: 28,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
                           Positioned(
                             right: 0,
                             bottom: 0,
@@ -295,6 +269,7 @@ class ScholarHubCard extends StatelessWidget {
               child: _buildGlassMetric(
                 label: 'Day Streak',
                 value: '$streakDays',
+                numericValue: streakDays,
                 icon: '🔥',
                 colors: colors,
                 typography: typography,
@@ -306,6 +281,7 @@ class ScholarHubCard extends StatelessWidget {
               child: _buildGlassMetric(
                 label: 'Current Level',
                 value: '$level',
+                numericValue: level,
                 icon: '🎯',
                 colors: colors,
                 typography: typography,
@@ -317,6 +293,8 @@ class ScholarHubCard extends StatelessWidget {
               child: _buildGlassMetric(
                 label: 'Memory Rate',
                 value: '$retentionPct%',
+                numericValue: retentionPct,
+                suffix: '%',
                 icon: '🧠',
                 colors: colors,
                 typography: typography,
@@ -436,6 +414,8 @@ class ScholarHubCard extends StatelessWidget {
     required AppThemeColorsExtension colors,
     required TypographyThemeExtension typography,
     required bool isDark,
+    int? numericValue,
+    String suffix = '',
   }) {
     return PlatformHoverBuilder(
       builder: (context, isHovered, child) {
@@ -486,14 +466,25 @@ class ScholarHubCard extends StatelessWidget {
                 style: typography.body.regular.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 6),
-              Text(
-                value,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 18,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+              if (numericValue != null)
+                AppAnimatedCounter(
+                  targetValue: numericValue,
+                  suffix: suffix,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 18,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                )
+              else
+                Text(
+                  value,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 18,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
-              ),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -510,6 +501,35 @@ class ScholarHubCard extends StatelessWidget {
     );
   }
 
+  static String extractTwoLetterInitials(String? text) {
+    if (text == null) return 'KO';
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return 'KO';
+
+    final parts =
+        trimmed.split(RegExp(r'[\s_.\-]+')).where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      final firstChar =
+          parts[0].characters.isNotEmpty ? parts[0].characters.first : '';
+      final secondChar =
+          parts[1].characters.isNotEmpty ? parts[1].characters.first : '';
+      final combined = '$firstChar$secondChar'.toUpperCase();
+      if (combined.isNotEmpty) return combined;
+    }
+
+    final clean = trimmed.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
+    if (clean.characters.length >= 2) {
+      return clean.characters.take(2).toString().toUpperCase();
+    } else if (clean.characters.length == 1) {
+      return clean.toUpperCase();
+    } else if (trimmed.characters.length >= 2) {
+      return trimmed.characters.take(2).toString().toUpperCase();
+    } else if (trimmed.characters.length == 1) {
+      return trimmed.toUpperCase();
+    }
+    return 'KO';
+  }
+
   Widget _buildAvatarContent({
     required String? photoUrl,
     required String displayName,
@@ -518,6 +538,8 @@ class ScholarHubCard extends StatelessWidget {
     double size = 56,
     double fontSize = 22,
   }) {
+    final initials = extractTwoLetterInitials(displayName);
+
     if (photoUrl != null && photoUrl.isNotEmpty) {
       if (photoUrl.startsWith('emoji:')) {
         return Text(
@@ -537,10 +559,11 @@ class ScholarHubCard extends StatelessWidget {
               height: size,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Text(
-                displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
+                initials,
                 style: typography.title3.bold.copyWith(
                   color: colors.black,
                   fontSize: fontSize,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
@@ -555,10 +578,11 @@ class ScholarHubCard extends StatelessWidget {
             height: size,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) => Text(
-              displayName.isNotEmpty ? displayName[0].toUpperCase() : 'K',
+              initials,
               style: typography.title3.bold.copyWith(
                 color: colors.black,
                 fontSize: fontSize,
+                letterSpacing: 0.5,
               ),
             ),
           ),
@@ -567,10 +591,11 @@ class ScholarHubCard extends StatelessWidget {
     }
 
     return Text(
-      displayName.isNotEmpty ? displayName[0].toUpperCase() : 'T',
+      initials,
       style: typography.title3.bold.copyWith(
         color: colors.black,
         fontSize: fontSize,
+        letterSpacing: 0.5,
       ),
     );
   }

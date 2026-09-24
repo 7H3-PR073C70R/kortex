@@ -7,7 +7,7 @@ import 'package:kortex/src/features/community/domain/entities/study_community_en
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_state.dart';
 import 'package:kortex/src/features/community/presentation/widgets/auto_community_banner_widget.dart';
-import 'package:kortex/src/features/community/presentation/widgets/quick_join_room_chip.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/quick_join_room_chip.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:mocktail/mocktail.dart';
 

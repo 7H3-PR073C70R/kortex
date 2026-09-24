@@ -1,9 +1,9 @@
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
-import 'package:kortex/src/features/community/data/models/leaderboard_entry_model.dart';
-import 'package:kortex/src/features/community/data/models/shared_deck_model.dart';
-import 'package:kortex/src/features/community/data/models/study_circle_model.dart';
 import 'package:kortex/src/features/community/data/models/study_community_model.dart';
-import 'package:kortex/src/features/community/data/models/study_room_model.dart';
+import 'package:kortex/src/features/deck_marketplace/data/models/shared_deck_model.dart';
+import 'package:kortex/src/features/leaderboard/data/models/leaderboard_entry_model.dart';
+import 'package:kortex/src/features/study_rooms/data/models/study_circle_model.dart';
+import 'package:kortex/src/features/study_rooms/data/models/study_room_model.dart';
 
 abstract class CommunityRemoteDataSource {
   Future<List<StudyRoomModel>> fetchStudyRooms({String? category});
