@@ -1297,7 +1297,7 @@
     "@navTabSyllabot": {
         "description": "Syllabot AI tab label"
     },
-    "navTabDecks": "Study Decks",
+    "navTabDecks": "Decks",
     "@navTabDecks": {
         "description": "Decks tab label"
     },
@@ -1593,7 +1593,7 @@
             }
         }
     },
-    "navTabStudyHub": "Study Hub",
+    "navTabStudyHub": "Hub",
     "@navTabStudyHub": {
         "description": "Label for Study Hub navigation tab"
     },

@@ -1727,7 +1727,7 @@ abstract class AppLocalizations {
   /// Decks tab label
   ///
   /// In en, this message translates to:
-  /// **'Study Decks'**
+  /// **'Decks'**
   String get navTabDecks;
 
   /// Label for Forum bottom navigation tab
@@ -2027,7 +2027,7 @@ abstract class AppLocalizations {
   /// Label for Study Hub navigation tab
   ///
   /// In en, this message translates to:
-  /// **'Study Hub'**
+  /// **'Hub'**
   String get navTabStudyHub;
 
   /// Status text for active neural engine in desktop navigation rail

@@ -34,9 +34,9 @@ class ScholarHubCard extends StatelessWidget {
     final isDark = context.isDarkMode;
 
     final displayName =
-        profile?.displayName ?? state.user?.displayName ?? 'toxicbishop01';
+        profile?.displayName ?? state.user?.displayName ?? '';
     final email =
-        profile?.email ?? state.user?.email ?? 'toxicbishop01@gmail.com';
+        profile?.email ?? state.user?.email ?? '';
 
     var streakDays = profile?.streakDays ?? 0;
     var level = profile?.level ?? 1;

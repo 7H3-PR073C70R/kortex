@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:ui' show ImageFilter;
+import 'dart:math' as math;
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -18,9 +19,11 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/background_ingestion_indicator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_card.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// Navigation item definition for Kortex main tabs.
 class _MainNavItem {
@@ -97,9 +100,12 @@ class MainPage extends HookWidget {
         children: [
           AutoTabsScaffold(
             routes: _kNavItems.map((item) => item.route).toList(),
+            homeIndex: 0,
             animationDuration: AppMotion.standard,
             animationCurve: AppMotion.easeOutCubic,
             extendBody: true,
+            backgroundColor: colors.backgroundPrimary,
+            resizeToAvoidBottomInset: false,
             transitionBuilder: (context, child, animation) {
               final tabsRouter = AutoTabsRouter.of(context);
 
@@ -144,7 +150,7 @@ class MainPage extends HookWidget {
                       child: FadeTransition(
                         opacity: animation,
                         child: Padding(
-                          padding: EdgeInsets.only(bottom: 60.height),
+                          padding: EdgeInsets.only(bottom: 76.height),
                           child: child,
                         ),
                       ),
@@ -158,7 +164,7 @@ class MainPage extends HookWidget {
               if (width >= desktopBreakpoint) {
                 return const SizedBox.shrink();
               }
-              return _NeuralBottomNavDock(
+              return _AdaptiveBottomNavDock(
                 tabsRouter: tabsRouter,
               );
             },
@@ -416,70 +422,125 @@ class _DesktopNavRailItem extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Neural Interface Glass Bottom Navigation Dock (< 1024dp)
+// Platform Adaptive Bottom Navigation Dock (< 1024dp)
+// iOS/macOS: App Liquid Card (specular refraction, blur, liquid styling)
+// Android/Others: Normal Capsule (clean Material 3 tonal container)
 // ---------------------------------------------------------------------------
 
-class _NeuralBottomNavDock extends StatelessWidget {
-  const _NeuralBottomNavDock({
+class _AdaptiveBottomNavDock extends StatelessWidget {
+  const _AdaptiveBottomNavDock({
     required this.tabsRouter,
   });
 
   final TabsRouter tabsRouter;
 
+  bool get _isApplePlatform {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final neural = context.neural;
+    final colors = context.colors;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final isApple = _isApplePlatform;
 
-    return Semantics(
-      container: true,
-      label: l10n.navBarSemanticsLabel,
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            padding: EdgeInsets.fromLTRB(12, 8, 12, 8 + bottomInset),
-            decoration: BoxDecoration(
-              color: neural.obsidian950.withAlpha(230),
-              border: Border(
-                top: BorderSide(color: neural.hairlineStrong),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_kNavItems.length, (index) {
-                final item = _kNavItems[index];
-                final isSelected = tabsRouter.activeIndex == index;
-                final label = item.labelBuilder(l10n);
+    final dockMargin = EdgeInsets.fromLTRB(
+      16,
+      0,
+      16,
+      math.max(12, bottomInset),
+    );
 
-                return Expanded(
-                  child: _NeuralNavItem(
-                    icon: isSelected ? item.activeIcon : item.icon,
-                    label: label,
-                    isSelected: isSelected,
-                    itemIndex: index,
-                    totalItems: _kNavItems.length,
-                    onTap: () => _handleTabTap(
-                      context,
-                      tabsRouter,
-                      index,
-                      label,
-                    ),
-                  ),
-                );
-              }),
+    final navContent = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: List.generate(_kNavItems.length, (index) {
+        final item = _kNavItems[index];
+        final isSelected = tabsRouter.activeIndex == index;
+        final label = item.labelBuilder(l10n);
+
+        return Expanded(
+          child: _AdaptiveNavItem(
+            icon: item.icon,
+            activeIcon: item.activeIcon,
+            label: label,
+            isSelected: isSelected,
+            itemIndex: index,
+            totalItems: _kNavItems.length,
+            onTap: () => _handleTabTap(
+              context,
+              tabsRouter,
+              index,
+              label,
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
+
+    if (isApple) {
+      // iOS: App Liquid Card with theme-aware specular & blur styling
+      return Semantics(
+        container: true,
+        label: l10n.navBarSemanticsLabel,
+        child: Padding(
+          padding: dockMargin,
+          child: AppLiquidCard(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            settings: LiquidGlassSettings(
+              blur: 24,
+              glassColor: isDark
+                  ? colors.surfaceSecondary.withAlpha(70)
+                  : colors.white.withAlpha(170),
+              lightIntensity: isDark ? 0.4 : 0.85,
+              refractiveIndex: 1.25,
+            ),
+            child: navContent,
+          ),
+        ),
+      );
+    } else {
+      // Android: Normal capsule surface container
+      return Semantics(
+        container: true,
+        label: l10n.navBarSemanticsLabel,
+        child: Padding(
+          padding: dockMargin,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? colors.surfaceSecondary.withAlpha(235)
+                  : colors.surfacePrimary.withAlpha(245),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: isDark
+                    ? colors.surfaceBorderHighlight.withAlpha(60)
+                    : colors.surfaceBorder.withAlpha(140),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.black.withAlpha(isDark ? 80 : 25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: navContent,
+          ),
+        ),
+      );
+    }
   }
 }
 
-class _NeuralNavItem extends StatelessWidget {
-  const _NeuralNavItem({
+class _AdaptiveNavItem extends StatelessWidget {
+  const _AdaptiveNavItem({
     required this.icon,
+    required this.activeIcon,
     required this.label,
     required this.isSelected,
     required this.itemIndex,
@@ -488,17 +549,23 @@ class _NeuralNavItem extends StatelessWidget {
   });
 
   final IconData icon;
+  final IconData activeIcon;
   final String label;
   final bool isSelected;
   final int itemIndex;
   final int totalItems;
   final VoidCallback onTap;
 
+  // Fixed capsule dimensions across all tabs
+  static const double capsuleWidth = 60;
+  static const double capsuleHeight = 48;
+
   @override
   Widget build(BuildContext context) {
-    final neural = context.neural;
+    final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return Semantics(
       button: true,
@@ -506,47 +573,44 @@ class _NeuralNavItem extends StatelessWidget {
       label: l10n.navTabSemantics(label, itemIndex + 1, totalItems),
       child: ShrinkableButton(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Center(
+        child: Center(
+          child: SizedBox(
+            width: capsuleWidth,
+            height: capsuleHeight,
             child: AnimatedContainer(
               duration: AppMotion.snappy,
               curve: AppMotion.easeOutCubic,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 4,
-              ),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? neural.emerald.withAlpha(26)
-                    : context.colors.transparent,
+                    ? colors.primary.withAlpha(isDark ? 45 : 28)
+                    : colors.transparent,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected
-                      ? neural.emerald.withAlpha(51)
-                      : context.colors.transparent,
+                      ? colors.primary.withAlpha(isDark ? 100 : 75)
+                      : colors.transparent,
+                  width: 1.2,
                 ),
               ),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    icon,
-                    size: 16,
-                    color: isSelected ? neural.emerald400 : neural.slate400,
+                    isSelected ? activeIcon : icon,
+                    size: 20,
+                    color: isSelected ? colors.primary : colors.textSecondary,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     label,
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    overflow: TextOverflow.clip,
                     style: typography.caption.medium.copyWith(
                       fontSize: 10,
-                      height: 1.2,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: isSelected ? neural.emerald400 : neural.slate400,
+                      height: 1.1,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? colors.primary : colors.textSecondary,
                     ),
                   ),
                 ],

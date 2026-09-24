@@ -6,6 +6,7 @@ export 'app_dialog.dart';
 export 'app_divider.dart';
 export 'app_empty_state.dart';
 export 'app_guided_tour_overlay.dart';
+export 'app_liquid_card.dart';
 export 'app_liquid_glass_tab_bar.dart';
 export 'app_logo_loader.dart';
 export 'app_multimodal_image.dart';

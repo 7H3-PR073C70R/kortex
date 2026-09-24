@@ -80,7 +80,7 @@ class AuthSignupFormContent extends StatelessWidget {
             size: 20,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 18),
         AppTextField(
           label: l10n.authEmailLabel,
           hintText: l10n.authEmailHint,
@@ -92,7 +92,7 @@ class AuthSignupFormContent extends StatelessWidget {
             size: 20,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 18),
         AppTextField(
           label: l10n.authPasswordLabel,
           hintText: l10n.authPasswordHint,
@@ -104,7 +104,7 @@ class AuthSignupFormContent extends StatelessWidget {
             size: 20,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 18),
         AppTextField(
           label: 'Confirm password',
           hintText: l10n.authPasswordHint,
@@ -118,7 +118,7 @@ class AuthSignupFormContent extends StatelessWidget {
           ),
         ),
         if (showPromoField.value || promoCodeController.text.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 18),
           AppTextField(
             label: l10n.authPromoCodeOptionalLabel,
             hintText: l10n.authPromoCodeHint,
@@ -129,21 +129,12 @@ class AuthSignupFormContent extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 28),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: SizedBox(
-              width: 190,
-              child: AppButton(
-                text: 'Signup',
-                isLoading: isLoading,
-                onPressed: isLoading ? null : onSubmit,
-                borderRadius: 24,
-              ),
-            ),
-          ),
+        const SizedBox(height: 44),
+        AppButton(
+          text: 'Signup',
+          isLoading: isLoading,
+          onPressed: isLoading ? null : onSubmit,
+          borderRadius: 24,
         ),
         const SizedBox(height: 14),
         Center(

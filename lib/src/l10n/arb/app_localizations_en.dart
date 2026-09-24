@@ -929,7 +929,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navTabSyllabot => 'Syllabot AI';
 
   @override
-  String get navTabDecks => 'Study Decks';
+  String get navTabDecks => 'Decks';
 
   @override
   String get navTabCommunity => 'Forum';
@@ -1115,7 +1115,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get navTabStudyHub => 'Study Hub';
+  String get navTabStudyHub => 'Hub';
 
   @override
   String get neuralEngineActive => 'Neural Engine Active';

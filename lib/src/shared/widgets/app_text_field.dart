@@ -330,8 +330,8 @@ class _AppTextFieldState extends State<AppTextField> {
             child: Text(
               widget.label!,
               style: typography.subhead.medium.copyWith(
-                color: colors.textSecondary,
-                fontSize: 13,
+                color: colors.textPrimary,
+                fontSize: 14,
               ),
             ),
           ),

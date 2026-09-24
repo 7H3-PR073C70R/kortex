@@ -89,7 +89,7 @@ class AuthLoginFormContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: onForgotPassword,
             style: TextButton.styleFrom(
@@ -99,27 +99,18 @@ class AuthLoginFormContent extends StatelessWidget {
             ),
             child: Text(
               l10n.authChipForgotPassword,
-              style: typography.caption.medium.copyWith(
+              style: typography.caption.regular.copyWith(
                 color: colors.textSecondary,
               ),
             ),
           ),
         ),
         const SizedBox(height: 44),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: SizedBox(
-              width: 190,
-              child: AppButton(
-                text: 'Login',
-                isLoading: isLoading,
-                onPressed: isLoading ? null : onSubmit,
-                borderRadius: 24,
-              ),
-            ),
-          ),
+        AppButton(
+          text: 'Login',
+          isLoading: isLoading,
+          onPressed: isLoading ? null : onSubmit,
+          borderRadius: 24,
         ),
         const SizedBox(height: 14),
         Center(
