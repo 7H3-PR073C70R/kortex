@@ -125,13 +125,17 @@ class AuthBrandLockup extends StatelessWidget {
         // Logo sits directly on the canvas — no avatar/tile behind it.
         AppAssets.svgs.kortexLogo.svg(width: logo, height: logo),
         SizedBox(width: size == BrandLockupSize.large ? 12 : 10),
-        Text(
-          l10n.appName,
-          style: typography.caption.bold.copyWith(
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.6,
-            fontSize: wordmark,
-            color: onLightSurface ? colors.white : colors.textPrimary,
+        Flexible(
+          child: Text(
+            l10n.appName,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: typography.caption.bold.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.6,
+              fontSize: wordmark,
+              color: onLightSurface ? colors.white : colors.textPrimary,
+            ),
           ),
         ),
       ],

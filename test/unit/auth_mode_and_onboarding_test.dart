@@ -4,20 +4,24 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart'
 
 void main() {
   group('AuthModeCubit & PrefKeys Suite', () {
-    test('AuthModeCubit starts in AI Chat mode and can toggle to Form and back', () {
+    test('AuthModeCubit starts in Quick Form mode and can toggle to Chat and back', () {
       final cubit = AuthModeCubit();
+      expect(cubit.state.mode, AuthMode.form);
+      expect(cubit.state.isForm, isTrue);
+      expect(cubit.state.isChat, isFalse);
+
+      cubit.toggleMode();
       expect(cubit.state.mode, AuthMode.chat);
       expect(cubit.state.isChat, isTrue);
       expect(cubit.state.isForm, isFalse);
 
-      cubit.toggleMode();
-      expect(cubit.state.mode, AuthMode.form);
-      expect(cubit.state.isChat, isFalse);
-      expect(cubit.state.isForm, isTrue);
-
       cubit.resetToAiChat();
       expect(cubit.state.mode, AuthMode.chat);
       expect(cubit.state.isChat, isTrue);
+
+      cubit.resetToLogin();
+      expect(cubit.state.mode, AuthMode.form);
+      expect(cubit.state.isForm, isTrue);
       expect(cubit.state.formType, AuthFormType.login);
     });
 

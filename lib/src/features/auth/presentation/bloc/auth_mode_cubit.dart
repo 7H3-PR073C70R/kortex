@@ -69,14 +69,10 @@ class AuthModeCubit extends Cubit<AuthModeState> {
   }
 
   void resetToAiChat() {
-    emit(const AuthModeState());
+    emit(const AuthModeState(mode: AuthMode.chat));
   }
 
   void resetToLogin() {
-    emit(
-      const AuthModeState(
-        mode: AuthMode.form,
-      ),
-    );
+    emit(const AuthModeState());
   }
 }

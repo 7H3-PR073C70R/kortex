@@ -21,7 +21,6 @@ import 'package:kortex/src/features/auth/presentation/pages/auth_page.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_chat_view.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/auth_form_view.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -45,10 +44,13 @@ class MockUpdateCourseTrackUseCase extends Mock
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
-Widget _wrapWithTheme(Widget child) {
+Widget _wrapWithTheme(
+  Widget child, {
+  TargetPlatform platform = TargetPlatform.iOS,
+}) {
   return MaterialApp(
-    theme: AppTheme.lightTheme,
-    darkTheme: AppTheme.darkTheme,
+    theme: AppTheme.lightTheme.copyWith(platform: platform),
+    darkTheme: AppTheme.darkTheme.copyWith(platform: platform),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: child,
@@ -124,43 +126,51 @@ void main() {
 
   group('AuthPage UI & Dual-Mode Test Suite', () {
     testWidgets(
-      'renders AuthPage in AI Chat mode initially and shows branding',
+      'renders AuthPage in Quick Form mode initially and shows branding',
       (tester) async {
         await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
         await tester.pump();
 
         expect(find.text('KORTEXIFY'), findsOneWidget);
         expect(find.byType(ModeSwitchButton), findsOneWidget);
-        expect(find.byType(SocialAuthBar), findsOneWidget);
-        expect(find.byType(AuthChatView), findsOneWidget);
-        expect(find.byType(AuthFormView), findsNothing);
+        expect(find.byType(AuthFormView), findsOneWidget);
+        expect(find.byType(AuthChatView), findsNothing);
       },
     );
 
-    testWidgets('toggling ModeSwitchButton switches to Quick Form view', (
+    testWidgets('toggling ModeSwitchButton switches to AI Chat view', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
       await tester.pump();
 
-      expect(find.byType(AuthChatView), findsOneWidget);
+      expect(find.byType(AuthFormView), findsOneWidget);
+      expect(find.byType(AuthChatView), findsNothing);
 
       await tester.tap(find.byType(ModeSwitchButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
-      expect(find.byType(AuthFormView), findsOneWidget);
-      expect(find.byType(AuthChatView), findsNothing);
+      expect(find.byType(AuthChatView), findsOneWidget);
+      expect(find.byType(AuthFormView), findsNothing);
     });
 
-    testWidgets('SocialAuthBar renders Google and Apple triggers', (
+    testWidgets('renders social triggers and can toggle between login and signup', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
       await tester.pump();
 
-      expect(find.text('Google'), findsOneWidget);
-      expect(find.text('Apple'), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('auth_google_button')), findsOneWidget);
+      expect(find.byKey(const ValueKey<String>('auth_apple_button')), findsOneWidget);
+      expect(find.text('Login'), findsOneWidget);
+
+      // Tap toggle arrow to switch to Signup
+      await tester.tap(find.byKey(const ValueKey<String>('auth_arrow_toggle_button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('Signup'), findsOneWidget);
     });
   });
 }

@@ -21,12 +21,16 @@ class AppRadius {
   /// 20dp: Modal sheets, dialog windows, hero banners
   static const double dialog = 20;
 
+  /// 28dp: Large modal sheets, interactive origami auth panels
+  static const double sheet = 28;
+
   // BorderRadius helpers
   static final BorderRadius radiusMicro = BorderRadius.circular(micro);
   static final BorderRadius radiusBadge = BorderRadius.circular(badge);
   static final BorderRadius radiusCard = BorderRadius.circular(card);
   static final BorderRadius radiusPanel = BorderRadius.circular(panel);
   static final BorderRadius radiusDialog = BorderRadius.circular(dialog);
+  static final BorderRadius radiusSheet = BorderRadius.circular(sheet);
 
   /// Computes a concentric inner radius given the container's [outerRadius] and [padding].
   ///

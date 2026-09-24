@@ -18,7 +18,6 @@ import 'package:kortex/src/features/auth/presentation/widgets/auth_form_view.dar
 import 'package:kortex/src/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/breathing_campus_background.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/mode_switch_button.dart';
-import 'package:kortex/src/features/auth/presentation/widgets/social_auth_bar.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -79,82 +78,93 @@ class _AuthView extends HookWidget {
                 }
 
                 // Mobile & Tablet Layout
-                return SafeArea(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: isTablet ? 560 : 480,
-                      ),
-                      child: Column(
-                        children: [
-                          // ==========================================
-                          // 1. TOP BAR (Brand Logo + Mode Switch)
-                          // Sits directly on the background canvas
-                          // ==========================================
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 14,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Brand lockup
-                                const RevealOnMount(
-                                  child: AuthBrandLockup(),
-                                ),
-
-                                // Dual Mode Switch Button
-                                RevealOnMount(
-                                  delayMs: 90,
-                                  child: ModeSwitchButton(
-                                    isChatMode: isChatMode,
-                                    onToggle: () {
-                                      context
-                                          .read<AuthModeCubit>()
-                                          .toggleMode();
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // ==========================================
-                          // 2. DUAL VIEW CANVAS (Chat vs Form)
-                          // Preserves Chat History Across Modes
-                          // ==========================================
-                          Expanded(
-                            child: RevealOnMount(
-                              delayMs: 150,
-                              child: IndexedStack(
-                                index: isChatMode ? 0 : 1,
+                if (isChatMode) {
+                  return SafeArea(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isTablet ? 560 : 480,
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  AuthChatView(
-                                    key: const ValueKey<String>(
-                                      'auth_chat_view',
-                                    ),
-                                    onGooglePressed: () =>
-                                        authGoogleSignIn(context),
-                                    onApplePressed: () =>
-                                        authAppleSignIn(context),
-                                    onForgotPassword: () { context.router.push(const ForgotPasswordRoute()); },
+                                  const RevealOnMount(
+                                    child: AuthBrandLockup(),
                                   ),
-                                  AuthFormView(
-                                    key: const ValueKey<String>(
-                                      'auth_form_view',
+                                  RevealOnMount(
+                                    delayMs: 90,
+                                    child: ModeSwitchButton(
+                                      isChatMode: isChatMode,
+                                      onToggle: () {
+                                        context
+                                            .read<AuthModeCubit>()
+                                            .toggleMode();
+                                      },
                                     ),
-                                    onForgotPassword: () { context.router.push(const ForgotPasswordRoute()); },
-                                    onGooglePressed: () => authGoogleSignIn(context),
-                                    onApplePressed: () => authAppleSignIn(context),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
+                            Expanded(
+                              child: RevealOnMount(
+                                delayMs: 150,
+                                child: AuthChatView(
+                                  key: const ValueKey<String>(
+                                    'auth_chat_view',
+                                  ),
+                                  onGooglePressed: () =>
+                                      authGoogleSignIn(context),
+                                  onApplePressed: () =>
+                                      authAppleSignIn(context),
+                                  onForgotPassword: () {
+                                    unawaited(
+                                      context.router.push(
+                                        const ForgotPasswordRoute(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
 
-
-                        ],
+                // Quick Form Mode: extends full-bleed to device screen edges
+                // covering app bar and status bar without horizontal sharp cuts
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: isTablet ? 560 : 480,
+                    ),
+                    child: RevealOnMount(
+                      delayMs: 150,
+                      child: AuthFormView(
+                        key: const ValueKey<String>(
+                          'auth_form_view',
+                        ),
+                        onForgotPassword: () {
+                          unawaited(
+                            context.router.push(
+                              const ForgotPasswordRoute(),
+                            ),
+                          );
+                        },
+                        onGooglePressed: () =>
+                            authGoogleSignIn(context),
+                        onApplePressed: () =>
+                            authAppleSignIn(context),
                       ),
                     ),
                   ),
