@@ -112,20 +112,6 @@ class _CommunityHubView extends HookWidget {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 40 : 25),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.dynamic_feed_rounded,
-                  size: 18,
-                  color: colors.primary,
-                ),
-              ),
-              const SizedBox(width: 10),
               Text(
                 l10n.forumTab,
                 style: typography.title2.bold.copyWith(
@@ -337,7 +323,9 @@ class _CommunityHubView extends HookWidget {
                                   : colors.surfaceSecondary.withAlpha(120),
                               borderRadius: AppRadius.radiusCard,
                               border: Border.all(
-                                color: colors.primary.withAlpha(isDark ? 60 : 40),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 60 : 40,
+                                ),
                               ),
                             ),
                             child: TextField(

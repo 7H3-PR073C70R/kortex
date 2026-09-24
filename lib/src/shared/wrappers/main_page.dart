@@ -556,10 +556,6 @@ class _AdaptiveNavItem extends StatelessWidget {
   final int totalItems;
   final VoidCallback onTap;
 
-  // Fixed capsule dimensions across all tabs
-  static const double capsuleWidth = 60;
-  static const double capsuleHeight = 48;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -573,49 +569,46 @@ class _AdaptiveNavItem extends StatelessWidget {
       label: l10n.navTabSemantics(label, itemIndex + 1, totalItems),
       child: ShrinkableButton(
         onTap: onTap,
-        child: Center(
-          child: SizedBox(
-            width: capsuleWidth,
-            height: capsuleHeight,
-            child: AnimatedContainer(
-              duration: AppMotion.snappy,
-              curve: AppMotion.easeOutCubic,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? colors.primary.withAlpha(isDark ? 45 : 28)
-                    : colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected
-                      ? colors.primary.withAlpha(isDark ? 100 : 75)
-                      : colors.transparent,
-                  width: 1.2,
-                ),
+        child: AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colors.primary.withAlpha(isDark ? 45 : 28)
+                : colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected
+                  ? colors.primary.withAlpha(isDark ? 100 : 75)
+                  : colors.transparent,
+              width: 1.2,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? activeIcon : icon,
+                size: 20,
+                color: isSelected ? colors.primary : colors.textSecondary,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isSelected ? activeIcon : icon,
-                    size: 20,
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: typography.caption.medium.copyWith(
+                    fontSize: 10,
+                    height: 1.1,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected ? colors.primary : colors.textSecondary,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.clip,
-                    style: typography.caption.medium.copyWith(
-                      fontSize: 10,
-                      height: 1.1,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? colors.primary : colors.textSecondary,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
