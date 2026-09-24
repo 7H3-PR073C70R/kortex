@@ -58,6 +58,26 @@ class _CommunityHubView extends HookWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final targetTrack = authState?.userProfile?.targetTrack;
+    final effectiveTrack = (targetTrack != null &&
+            targetTrack.trim().isNotEmpty &&
+            targetTrack != 'General')
+        ? targetTrack.trim()
+        : 'WAEC';
+
+    final availableTracks = useMemoized(
+      () => _getAvailableTracks(targetTrack),
+      [targetTrack],
+    );
+
+    final hubState = context.watch<CommunityHubBloc>().state;
+    final hasActiveFilters = hubState.selectedTrack != 'All' ||
+        (hubState.selectedForumFilter != 'trending' &&
+            hubState.selectedForumFilter.isNotEmpty);
+    final activeFilterCount = (hubState.selectedTrack != 'All' ? 1 : 0) +
+        (hubState.selectedForumFilter != 'trending' &&
+                hubState.selectedForumFilter.isNotEmpty
+            ? 1
+            : 0);
 
     final isSearchExpanded = useState<bool>(false);
     final searchQuery = useState<String>('');
@@ -170,7 +190,7 @@ class _CommunityHubView extends HookWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Filter Action Button
+            // Consolidated Filter Action Button
             PlatformHoverBuilder(
               builder: (context, isHovered, child) => AnimatedScale(
                 scale: isHovered ? 1.06 : 1.0,
@@ -178,28 +198,76 @@ class _CommunityHubView extends HookWidget {
                 curve: AppMotion.easeOutCubic,
                 child: ShrinkableButton(
                   onTap: () {
-                  
+                    unawaited(HapticFeedback.lightImpact());
+                    _showCommunityFilterSheet(
+                      context: context,
+                      availableTracks: availableTracks,
+                      effectiveTrack: effectiveTrack,
+                    );
                   },
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSearchExpanded.value
-                          ? colors.primary.withAlpha(isDark ? 50 : 30)
-                          : (isHovered
-                                ? colors.primary.withAlpha(isDark ? 30 : 20)
-                                : (isDark
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: hasActiveFilters
+                              ? colors.primary.withAlpha(isDark ? 55 : 30)
+                              : (isHovered
+                                  ? colors.primary.withAlpha(isDark ? 30 : 20)
+                                  : (isDark
                                       ? colors.surfaceSecondary
                                       : colors.surfaceSecondary.withAlpha(
                                           140,
                                         ))),
-                    ),
-                    child: Icon(
-                      Icons.filter_1,
-                      size: 20,
-                      color: colors.textSecondary,
-                    ),
+                          border: hasActiveFilters
+                              ? Border.all(
+                                  color: colors.primary
+                                      .withAlpha(isDark ? 100 : 70),
+                                  width: 1.2,
+                                )
+                              : null,
+                        ),
+                        child: Icon(
+                          Icons.tune_rounded,
+                          size: 20,
+                          color: hasActiveFilters
+                              ? colors.primary
+                              : colors.textSecondary,
+                        ),
+                      ),
+                      if (hasActiveFilters && activeFilterCount > 0)
+                        Positioned(
+                          top: -1,
+                          right: -1,
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colors.primary,
+                              border: Border.all(
+                                color: isDark
+                                    ? colors.backgroundPrimary
+                                    : colors.surfacePrimary,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '$activeFilterCount',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.white,
+                                  fontSize: 8.5,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -460,6 +528,8 @@ class _CommunityHubView extends HookWidget {
                       return _ForumPostsList(
                         state: state,
                         searchQuery: searchQuery.value,
+                        availableTracks: availableTracks,
+                        effectiveTrack: effectiveTrack,
                       );
                     },
                   ),
@@ -477,10 +547,14 @@ class _ForumPostsList extends HookWidget {
   const _ForumPostsList({
     required this.state,
     required this.searchQuery,
+    required this.availableTracks,
+    required this.effectiveTrack,
   });
 
   final CommunityState state;
   final String searchQuery;
+  final List<String> availableTracks;
+  final String effectiveTrack;
 
   @override
   Widget build(BuildContext context) {
@@ -491,47 +565,14 @@ class _ForumPostsList extends HookWidget {
     final scrollController = useScrollController();
     final isPulseBannerDismissed = useState<bool>(false);
 
-    final authState = context.watch<AuthBloc?>()?.state;
-    final userTrack = authState?.userProfile?.targetTrack;
-    final effectiveTrack =
-        (userTrack != null &&
-            userTrack.trim().isNotEmpty &&
-            userTrack != 'General')
-        ? userTrack.trim()
-        : 'WAEC';
-
-    final isInitialTrackApplied = useRef(false);
-    useEffect(() {
-      if (!isInitialTrackApplied.value && effectiveTrack.isNotEmpty) {
-        isInitialTrackApplied.value = true;
-        if (state.selectedTrack == 'All') {
-          context.read<CommunityHubBloc>().add(
-            ChangeTrackFilterEvent(effectiveTrack),
-          );
-        }
-      }
-      return null;
-    }, [effectiveTrack]);
-
-    final availableTracks = useMemoized(() {
-      final base = <String>[
-        'WAEC',
-        'JAMB',
-        'Mathematics',
-        'Physics',
-        'Chemistry',
-        'Computer Science',
-        'Medicine',
-        'SAT',
-      ];
-      if (userTrack != null &&
-          userTrack.trim().isNotEmpty &&
-          userTrack != 'General' &&
-          !base.contains(userTrack.trim())) {
-        base.insert(0, userTrack.trim());
-      }
-      return base;
-    }, [userTrack]);
+    final hasActiveFilters = state.selectedTrack != 'All' ||
+        (state.selectedForumFilter != 'trending' &&
+            state.selectedForumFilter.isNotEmpty);
+    final activeFilterCount = (state.selectedTrack != 'All' ? 1 : 0) +
+        (state.selectedForumFilter != 'trending' &&
+                state.selectedForumFilter.isNotEmpty
+            ? 1
+            : 0);
 
     useEffect(
       () {
@@ -584,166 +625,98 @@ class _ForumPostsList extends HookWidget {
         controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          // 1. Academic Track Selection Filter
+          // Consolidated Filter Bar
           SliverToBoxAdapter(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
               child: Row(
                 children: [
-                  _buildTrackChip(
+                  // 1. Primary Consolidated Filter Launcher
+                  _buildFilterLauncherPill(
                     context: context,
-                    label: 'All Tracks',
-                    icon: Icons.public_rounded,
-                    isSelected: state.selectedTrack == 'All',
+                    hasActiveFilters: hasActiveFilters,
+                    activeFilterCount: activeFilterCount,
                     onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeTrackFilterEvent('All'),
+                      unawaited(HapticFeedback.lightImpact());
+                      _showCommunityFilterSheet(
+                        context: context,
+                        availableTracks: availableTracks,
+                        effectiveTrack: effectiveTrack,
                       );
                     },
                   ),
                   const SizedBox(width: 8),
-                  ...availableTracks.map((trk) {
-                    final isUserHomeTrack = trk == effectiveTrack;
+
+                  // 2. Active Track Filter Chip (with remove X if not 'All')
+                  if (state.selectedTrack != 'All') ...[
+                    _buildActiveFilterChip(
+                      context: context,
+                      label: state.selectedTrack,
+                      icon: _getTrackIcon(state.selectedTrack),
+                      onTap: () {
+                        _showCommunityFilterSheet(
+                          context: context,
+                          availableTracks: availableTracks,
+                          effectiveTrack: effectiveTrack,
+                        );
+                      },
+                      onClear: () {
+                        unawaited(HapticFeedback.selectionClick());
+                        context.read<CommunityHubBloc>().add(
+                          const ChangeTrackFilterEvent('All'),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+
+                  // 3. Active Sort / Feed Type Chip (with remove X if non-default)
+                  if (state.selectedForumFilter != 'trending' &&
+                      state.selectedForumFilter.isNotEmpty) ...[
+                    _buildActiveFilterChip(
+                      context: context,
+                      label: _getSortLabel(state.selectedForumFilter),
+                      icon: _getSortIcon(state.selectedForumFilter),
+                      onTap: () {
+                        _showCommunityFilterSheet(
+                          context: context,
+                          availableTracks: availableTracks,
+                          effectiveTrack: effectiveTrack,
+                        );
+                      },
+                      onClear: () {
+                        unawaited(HapticFeedback.selectionClick());
+                        context.read<CommunityHubBloc>().add(
+                          const ChangeForumSortFilterEvent('trending'),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+
+                  // 4. Quick Access Shortcuts
+                  ..._kQuickSorts.map((sortItem) {
+                    final isSelected = state.selectedForumFilter == sortItem.key;
+                    if (state.selectedForumFilter != 'trending' && isSelected) {
+                      return const SizedBox.shrink();
+                    }
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: _buildTrackChip(
+                      child: _buildFilterChip(
                         context: context,
-                        label: trk,
-                        icon: _getTrackIcon(trk),
-                        isSelected: state.selectedTrack == trk,
-                        isHomeTrack: isUserHomeTrack,
+                        label: sortItem.label,
+                        icon: sortItem.icon,
+                        isSelected: isSelected,
                         onTap: () {
                           unawaited(HapticFeedback.selectionClick());
                           context.read<CommunityHubBloc>().add(
-                            ChangeTrackFilterEvent(trk),
+                            ChangeForumSortFilterEvent(sortItem.key),
                           );
                         },
                       ),
                     );
                   }),
-                ],
-              ),
-            ),
-          ),
-
-          // 2. Interactive Sticky Sort Filter Bar
-          SliverToBoxAdapter(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  // 1. Trending Filter
-                  _buildFilterChip(
-                    context: context,
-                    label: 'Trending',
-                    icon: Icons.local_fire_department_rounded,
-                    isSelected: state.selectedForumFilter == 'trending',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeForumSortFilterEvent('trending'),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 2. Latest Filter
-                  _buildFilterChip(
-                    context: context,
-                    label: 'Latest',
-                    icon: Icons.schedule_rounded,
-                    isSelected: state.selectedForumFilter == 'latest',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeForumSortFilterEvent('latest'),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 3. Top Today
-                  _buildFilterChip(
-                    context: context,
-                    label: 'Top Today',
-                    icon: Icons.military_tech_rounded,
-                    isSelected:
-                        state.selectedForumFilter == 'topToday' ||
-                        state.selectedForumFilter == 'top_today',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeForumSortFilterEvent('topToday'),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 4. Questions Only
-                  _buildFilterChip(
-                    context: context,
-                    label: 'Questions',
-                    icon: Icons.help_outline_rounded,
-                    isSelected: state.selectedForumFilter == 'questions',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeForumSortFilterEvent('questions'),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 5. Solved
-                  _buildFilterChip(
-                    context: context,
-                    label: 'Solved',
-                    icon: Icons.check_circle_outline_rounded,
-                    isSelected: state.selectedForumFilter == 'solved',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeForumSortFilterEvent('solved'),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 6. My Posts
-                  _buildFilterChip(
-                    context: context,
-                    label: 'My Posts',
-                    icon: Icons.person_outline_rounded,
-                    isSelected:
-                        state.selectedForumFilter == 'myPosts' ||
-                        state.selectedForumFilter == 'my_posts',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeForumSortFilterEvent('myPosts'),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-
-                  // 7. Saved / Bookmarks
-                  _buildFilterChip(
-                    context: context,
-                    label: 'Saved',
-                    icon: Icons.bookmark_outline_rounded,
-                    isSelected:
-                        state.selectedForumFilter == 'saved' ||
-                        state.selectedForumFilter == 'bookmarks',
-                    onTap: () {
-                      unawaited(HapticFeedback.selectionClick());
-                      context.read<CommunityHubBloc>().add(
-                        const ChangeForumSortFilterEvent('saved'),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
@@ -1211,35 +1184,14 @@ class _ForumPostsList extends HookWidget {
   }
 
   IconData _getTrackIcon(String track) {
-    switch (track.toLowerCase()) {
-      case 'waec':
-        return Icons.school_rounded;
-      case 'jamb':
-        return Icons.menu_book_rounded;
-      case 'mathematics':
-        return Icons.calculate_rounded;
-      case 'physics':
-        return Icons.bolt_rounded;
-      case 'chemistry':
-        return Icons.science_rounded;
-      case 'computer science':
-        return Icons.terminal_rounded;
-      case 'medicine':
-        return Icons.health_and_safety_rounded;
-      case 'sat':
-        return Icons.edit_note_rounded;
-      default:
-        return Icons.auto_stories_rounded;
-    }
+    return getTrackIcon(track);
   }
 
-  Widget _buildTrackChip({
+  Widget _buildFilterLauncherPill({
     required BuildContext context,
-    required String label,
-    required IconData icon,
-    required bool isSelected,
+    required bool hasActiveFilters,
+    required int activeFilterCount,
     required VoidCallback onTap,
-    bool isHomeTrack = false,
   }) {
     final colors = context.colors;
     final typography = context.typography;
@@ -1255,57 +1207,145 @@ class _ForumPostsList extends HookWidget {
           child: AnimatedContainer(
             duration: AppMotion.snappy,
             curve: AppMotion.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? colors.primary.withAlpha(
-                      isDark ? (isHovered ? 80 : 60) : (isHovered ? 55 : 40),
-                    )
+              color: hasActiveFilters
+                  ? colors.primary.withAlpha(isDark ? 55 : 35)
                   : (isHovered
-                        ? colors.primary.withAlpha(isDark ? 30 : 20)
-                        : (isDark
-                              ? colors.surfaceSecondary.withAlpha(160)
-                              : colors.surfaceSecondary.withAlpha(90))),
-              borderRadius: AppRadius.radiusBadge,
+                      ? colors.primary.withAlpha(isDark ? 30 : 20)
+                      : (isDark
+                          ? colors.surfaceSecondary
+                          : colors.surfaceSecondary.withAlpha(120))),
+              borderRadius: AppRadius.radiusPanel,
               border: Border.all(
-                color: isSelected
+                color: hasActiveFilters
                     ? colors.primary
                     : (isHovered
-                          ? colors.primary.withAlpha(isDark ? 70 : 50)
-                          : colors.surfaceBorder.withAlpha(isDark ? 40 : 25)),
-                width: isSelected ? 1.5 : 1.0,
+                        ? colors.primary.withAlpha(isDark ? 80 : 50)
+                        : colors.surfaceBorder.withAlpha(isDark ? 40 : 25)),
+                width: hasActiveFilters ? 1.4 : 1.0,
               ),
+              boxShadow: hasActiveFilters
+                  ? [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(isDark ? 50 : 25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  icon,
-                  size: 14,
-                  color: isSelected ? colors.primary : colors.textSecondary,
+                  Icons.tune_rounded,
+                  size: 15,
+                  color: hasActiveFilters ? colors.primary : colors.textSecondary,
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 6),
                 Text(
-                  label,
+                  'Filters',
                   style: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.primary : colors.textPrimary,
-                    fontSize: 11.5,
+                    color: hasActiveFilters ? colors.primary : colors.textPrimary,
+                    fontSize: 12,
+                    letterSpacing: 0.1,
                   ),
                 ),
-                if (isHomeTrack) ...[
-                  const SizedBox(width: 5),
+                if (hasActiveFilters && activeFilterCount > 0) ...[
+                  const SizedBox(width: 6),
                   Container(
-                    width: 6,
-                    height: 6,
+                    padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isSelected
-                          ? colors.primary
-                          : colors.syllabotAccent,
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$activeFilterCount',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.white,
+                        fontSize: 10,
+                        height: 1,
+                      ),
                     ),
                   ),
                 ],
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveFilterChip({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required VoidCallback onClear,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) => AnimatedScale(
+        scale: isHovered ? 1.04 : 1.0,
+        duration: AppMotion.snappy,
+        curve: AppMotion.easeOutCubic,
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.primary.withAlpha(isDark ? 40 : 25),
+            borderRadius: AppRadius.radiusPanel,
+            border: Border.all(
+              color: colors.primary.withAlpha(isDark ? 90 : 60),
+              width: 1.2,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: AppRadius.radiusPanel,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 13,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      label,
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: onClear,
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.primary.withAlpha(isDark ? 60 : 35),
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 11,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -1380,6 +1420,577 @@ class _ForumPostsList extends HookWidget {
                     letterSpacing: 0.1,
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Consolidated Filter Models & Helpers
+// ---------------------------------------------------------------------------
+
+class _QuickSortItem {
+  const _QuickSortItem(this.key, this.label, this.icon);
+
+  final String key;
+  final String label;
+  final IconData icon;
+}
+
+const List<_QuickSortItem> _kQuickSorts = [
+  _QuickSortItem('trending', 'Trending', Icons.local_fire_department_rounded),
+  _QuickSortItem('latest', 'Latest', Icons.schedule_rounded),
+  _QuickSortItem('topToday', 'Top Today', Icons.military_tech_rounded),
+  _QuickSortItem('questions', 'Questions', Icons.help_outline_rounded),
+  _QuickSortItem('solved', 'Solved', Icons.check_circle_outline_rounded),
+  _QuickSortItem('myPosts', 'My Posts', Icons.person_outline_rounded),
+  _QuickSortItem('saved', 'Saved', Icons.bookmark_outline_rounded),
+];
+
+String _getSortLabel(String filter) {
+  switch (filter.toLowerCase()) {
+    case 'trending':
+      return 'Trending';
+    case 'latest':
+      return 'Latest';
+    case 'toptoday':
+    case 'top_today':
+      return 'Top Today';
+    case 'questions':
+      return 'Questions';
+    case 'solved':
+      return 'Solved';
+    case 'myposts':
+    case 'my_posts':
+      return 'My Posts';
+    case 'saved':
+    case 'bookmarks':
+      return 'Saved';
+    default:
+      return filter.isNotEmpty
+          ? '${filter[0].toUpperCase()}${filter.substring(1)}'
+          : 'Filter';
+  }
+}
+
+IconData _getSortIcon(String filter) {
+  switch (filter.toLowerCase()) {
+    case 'trending':
+      return Icons.local_fire_department_rounded;
+    case 'latest':
+      return Icons.schedule_rounded;
+    case 'toptoday':
+    case 'top_today':
+      return Icons.military_tech_rounded;
+    case 'questions':
+      return Icons.help_outline_rounded;
+    case 'solved':
+      return Icons.check_circle_outline_rounded;
+    case 'myposts':
+    case 'my_posts':
+      return Icons.person_outline_rounded;
+    case 'saved':
+    case 'bookmarks':
+      return Icons.bookmark_outline_rounded;
+    default:
+      return Icons.tune_rounded;
+  }
+}
+
+IconData getTrackIcon(String track) {
+  switch (track.toLowerCase()) {
+    case 'waec':
+      return Icons.school_rounded;
+    case 'jamb':
+      return Icons.menu_book_rounded;
+    case 'mathematics':
+      return Icons.calculate_rounded;
+    case 'physics':
+      return Icons.bolt_rounded;
+    case 'chemistry':
+      return Icons.science_rounded;
+    case 'computer science':
+      return Icons.terminal_rounded;
+    case 'medicine':
+      return Icons.health_and_safety_rounded;
+    case 'sat':
+      return Icons.edit_note_rounded;
+    case 'all':
+      return Icons.public_rounded;
+    default:
+      return Icons.auto_stories_rounded;
+  }
+}
+
+List<String> _getAvailableTracks(String? userTrack) {
+  final base = <String>[
+    'WAEC',
+    'JAMB',
+    'Mathematics',
+    'Physics',
+    'Chemistry',
+    'Computer Science',
+    'Medicine',
+    'SAT',
+  ];
+  if (userTrack != null &&
+      userTrack.trim().isNotEmpty &&
+      userTrack != 'General' &&
+      !base.contains(userTrack.trim())) {
+    base.insert(0, userTrack.trim());
+  }
+  return base;
+}
+
+void _showCommunityFilterSheet({
+  required BuildContext context,
+  required List<String> availableTracks,
+  required String effectiveTrack,
+}) {
+  final bloc = context.read<CommunityHubBloc>();
+  unawaited(
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor:
+          context.colors.black.withAlpha(context.isDarkMode ? 170 : 110),
+      builder: (sheetContext) => BlocProvider.value(
+        value: bloc,
+        child: _CommunityFilterBottomSheet(
+          availableTracks: availableTracks,
+          effectiveTrack: effectiveTrack,
+        ),
+      ),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Consolidated Filter Bottom Sheet
+// ---------------------------------------------------------------------------
+
+class _CommunityFilterBottomSheet extends HookWidget {
+  const _CommunityFilterBottomSheet({
+    required this.availableTracks,
+    required this.effectiveTrack,
+  });
+
+  final List<String> availableTracks;
+  final String effectiveTrack;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+    final bloc = context.read<CommunityHubBloc>();
+
+    final currentSelectedTrack = bloc.state.selectedTrack;
+    final currentSelectedSort = bloc.state.selectedForumFilter;
+
+    final tempTrack = useState<String>(currentSelectedTrack);
+    final tempSort = useState<String>(currentSelectedSort);
+
+    final isDefault = tempTrack.value == 'All' && tempSort.value == 'trending';
+
+    final activeFilterCount = (tempTrack.value != 'All' ? 1 : 0) +
+        (tempSort.value != 'trending' ? 1 : 0);
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(
+          top: BorderSide(
+            color: isDark
+                ? colors.surfaceBorder.withAlpha(50)
+                : colors.surfaceBorder.withAlpha(30),
+            width: 1.2,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colors.black.withAlpha(isDark ? 80 : 30),
+            blurRadius: 28,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Drag Indicator Handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 8),
+                width: 36,
+                height: 4.5,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? colors.surfaceBorder.withAlpha(80)
+                      : colors.surfaceBorder.withAlpha(60),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+
+            // Sheet Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 16, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.primary.withAlpha(isDark ? 40 : 25),
+                    ),
+                    child: Icon(
+                      Icons.tune_rounded,
+                      size: 19,
+                      color: colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Filter & Sort',
+                          style: typography.body.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          'Customize what appears in your community feed',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isDefault)
+                    TextButton(
+                      onPressed: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        tempTrack.value = 'All';
+                        tempSort.value = 'trending';
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'Reset',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.error,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: colors.textSecondary,
+                    ),
+                    splashRadius: 18,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            // Scrollable Options Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section 1: Academic Focus / Track
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.school_rounded,
+                          size: 16,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          'Academic Track / Focus',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 13.5,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        // "All Tracks" option
+                        _buildFilterOptionChip(
+                          context: context,
+                          label: 'All Tracks',
+                          icon: Icons.public_rounded,
+                          isSelected: tempTrack.value == 'All',
+                          onTap: () {
+                            unawaited(HapticFeedback.selectionClick());
+                            tempTrack.value = 'All';
+                          },
+                        ),
+                        // Available tracks list
+                        ...availableTracks.map((track) {
+                          final isSelected = tempTrack.value.toLowerCase() ==
+                              track.toLowerCase();
+                          final isHomeTrack = track.toLowerCase() ==
+                              effectiveTrack.toLowerCase();
+                          return _buildFilterOptionChip(
+                            context: context,
+                            label: track,
+                            icon: getTrackIcon(track),
+                            isSelected: isSelected,
+                            isHighlighted: isHomeTrack && !isSelected,
+                            highlightBadge: isHomeTrack,
+                            onTap: () {
+                              unawaited(HapticFeedback.selectionClick());
+                              tempTrack.value = track;
+                            },
+                          );
+                        }),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 2: Feed Sort & Content Filter
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.sort_rounded,
+                          size: 16,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          'Feed Order & Content',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 13.5,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _kQuickSorts.map((sortItem) {
+                        final isSelected = tempSort.value == sortItem.key;
+                        return _buildFilterOptionChip(
+                          context: context,
+                          label: sortItem.label,
+                          icon: sortItem.icon,
+                          isSelected: isSelected,
+                          onTap: () {
+                            unawaited(HapticFeedback.selectionClick());
+                            tempSort.value = sortItem.key;
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            // Bottom Apply Action Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: PlatformHoverBuilder(
+                      builder: (context, isHovered, child) => AnimatedScale(
+                        scale: isHovered ? 1.02 : 1.0,
+                        duration: AppMotion.snappy,
+                        curve: AppMotion.easeOutCubic,
+                        child: ShrinkableButton(
+                          onTap: () {
+                            unawaited(HapticFeedback.mediumImpact());
+                            bloc
+                              ..add(ChangeTrackFilterEvent(tempTrack.value))
+                              ..add(ChangeForumSortFilterEvent(tempSort.value));
+                            Navigator.of(context).pop();
+                          },
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: AppRadius.radiusPanel,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.primary.withAlpha(isDark ? 80 : 50),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.check_rounded,
+                                    size: 18,
+                                    color: colors.white,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    activeFilterCount > 0
+                                        ? 'Apply Filters ($activeFilterCount)'
+                                        : 'Apply Filters',
+                                    style: typography.body.bold.copyWith(
+                                      color: colors.white,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterOptionChip({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    bool isHighlighted = false,
+    bool highlightBadge = false,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) => AnimatedScale(
+        scale: isHovered ? 1.04 : 1.0,
+        duration: AppMotion.snappy,
+        curve: AppMotion.easeOutCubic,
+        child: ShrinkableButton(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? colors.primary
+                  : (isHovered
+                      ? colors.primary.withAlpha(isDark ? 30 : 20)
+                      : (isDark
+                          ? colors.surfaceSecondary
+                          : colors.surfaceSecondary.withAlpha(120))),
+              borderRadius: AppRadius.radiusPanel,
+              border: Border.all(
+                color: isSelected
+                    ? colors.primary
+                    : (isHighlighted
+                        ? colors.syllabotAccent.withAlpha(isDark ? 120 : 90)
+                        : (isHovered
+                            ? colors.primary.withAlpha(isDark ? 70 : 50)
+                            : colors.surfaceBorder
+                                .withAlpha(isDark ? 40 : 25))),
+                width: isSelected ? 1.4 : 1.0,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: colors.primary.withAlpha(isDark ? 55 : 30),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
+                  color: isSelected ? colors.white : colors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: typography.caption.bold.copyWith(
+                    color: isSelected ? colors.white : colors.textPrimary,
+                    fontSize: 12.5,
+                  ),
+                ),
+                if (highlightBadge) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected ? colors.white : colors.syllabotAccent,
+                    ),
+                  ),
+                ],
+                if (isSelected) ...[
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.check_rounded,
+                    size: 13,
+                    color: colors.white,
+                  ),
+                ],
               ],
             ),
           ),
