@@ -356,7 +356,9 @@ class FsrsScheduler {
   /// Calculates next scheduled review interval from stability and
   /// target retention using FSRS-6 power-law:
   /// I(S, r) = S / factor * (r^(-1 / w20) - 1).
-  int _nextInterval(double stability) {
+  /// If [daysUntilExam] is specified and positive, compresses the interval
+  /// so cards are scheduled before the exam.
+  int _nextInterval(double stability, {int? daysUntilExam}) {
     if (stability <= 0) return 1;
     final decayExponent = w.length > 20 ? w[20] : 0.5;
     final newInterval =
@@ -364,16 +366,32 @@ class FsrsScheduler {
                 _factor *
                 (math.pow(requestRetention, -1.0 / decayExponent) - 1.0))
             .round();
-    return newInterval.clamp(1, maximumInterval);
+    final interval = newInterval.clamp(1, maximumInterval);
+
+    if (daysUntilExam != null && daysUntilExam > 0) {
+      if (daysUntilExam <= 2) {
+        return 1;
+      }
+      if (daysUntilExam <= 7) {
+        return math.max(1, math.min(interval, (daysUntilExam / 2).floor()));
+      }
+      if (daysUntilExam <= 14) {
+        return math.max(1, math.min(interval, daysUntilExam - 1));
+      }
+    }
+
+    return interval;
   }
 
   /// Executes rating review transition for a card, returning updated FsrsCard
   /// and the corresponding FsrsReviewLog with UTC timestamp & transaction UUID.
+  /// When [daysUntilExam] is supplied, schedules reviews within the acute exam horizon.
   ({FsrsCard card, FsrsReviewLog log}) reviewCard({
     required FsrsCard currentCard,
     required FsrsRating rating,
     DateTime? now,
     String? transactionUuid,
+    int? daysUntilExam,
   }) {
     final reviewTime = (now ?? DateTime.now()).toUtc();
     final reviewEpoch = reviewTime.millisecondsSinceEpoch;
@@ -417,7 +435,7 @@ class FsrsScheduler {
       }
     }
 
-    final scheduledDays = _nextInterval(nextS);
+    final scheduledDays = _nextInterval(nextS, daysUntilExam: daysUntilExam);
     final due = reviewTime.add(Duration(days: scheduledDays));
 
     final updatedCard = currentCard.copyWith(

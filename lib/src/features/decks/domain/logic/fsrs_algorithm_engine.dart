@@ -34,24 +34,43 @@ class FsrsAlgorithmEngine {
   }
 
   /// Calculates next interval in days for a target desired retention using FSRS-6.
-  int calculateNextInterval(double stability) {
+  /// When [daysUntilExam] is provided, applies acute assessment deadline compression
+  /// to ensure cards are not scheduled past an upcoming test/exam.
+  int calculateNextInterval(double stability, {int? daysUntilExam}) {
     if (stability <= 0) return 1;
     final decayExponent = weights.length > 20 ? weights[20] : 0.5;
     final factor = math.pow(0.9, -1.0 / decayExponent).toDouble() - 1.0;
-    final interval =
-        (stability /
-                factor *
-                (math.pow(desiredRetention, -1.0 / decayExponent) - 1.0))
-            .round();
-    return math.max(1, interval);
+    final standardInterval = (stability /
+            factor *
+            (math.pow(desiredRetention, -1.0 / decayExponent) - 1.0))
+        .round();
+    final interval = math.max(1, standardInterval);
+
+    if (daysUntilExam != null && daysUntilExam > 0) {
+      if (daysUntilExam <= 2) {
+        // Critical crunch (< 48h): schedule within 24 hours
+        return 1;
+      }
+      if (daysUntilExam <= 7) {
+        // Week of assessment: ensure at least one more review prior to exam day
+        return math.max(1, math.min(interval, (daysUntilExam / 2).floor()));
+      }
+      if (daysUntilExam <= 14) {
+        // 2-week acute preparation: clamp to before the exam date
+        return math.max(1, math.min(interval, daysUntilExam - 1));
+      }
+    }
+
+    return interval;
   }
 
   /// Evaluates state progression given a card's current state and new review
-  /// rating using FSRS-6.
+  /// rating using FSRS-6, with optional acute deadline horizon compression.
   FsrsMemoryState review({
     required FsrsMemoryState currentState,
     required FsrsRating rating,
     DateTime? reviewTime,
+    int? daysUntilExam,
   }) {
     final now = reviewTime ?? DateTime.now();
 
@@ -78,6 +97,20 @@ class FsrsAlgorithmEngine {
       now: now,
     );
 
+    var scheduledDays = result.card.scheduledDays;
+    if (daysUntilExam != null && daysUntilExam > 0) {
+      if (daysUntilExam <= 2) {
+        scheduledDays = 1;
+      } else if (daysUntilExam <= 7) {
+        scheduledDays =
+            math.max(1, math.min(scheduledDays, (daysUntilExam / 2).floor()));
+      } else if (daysUntilExam <= 14) {
+        scheduledDays = math.max(1, math.min(scheduledDays, daysUntilExam - 1));
+      }
+    }
+
+    final dueDate = now.add(Duration(days: scheduledDays));
+
     return FsrsMemoryState(
       stability: double.parse(result.card.stability.toStringAsFixed(3)),
       difficulty: double.parse(result.card.difficulty.toStringAsFixed(3)),
@@ -86,12 +119,11 @@ class FsrsAlgorithmEngine {
         elapsedDays: 0,
       ),
       elapsedDays: result.card.elapsedDays,
-      scheduledDays: result.card.scheduledDays,
+      scheduledDays: scheduledDays,
       reps: result.card.reps,
       lapses: result.card.lapses,
       lastReview: result.card.lastReview,
-      nextDueDate:
-          result.card.due ?? now.add(Duration(days: result.card.scheduledDays)),
+      nextDueDate: dueDate,
     );
   }
 }

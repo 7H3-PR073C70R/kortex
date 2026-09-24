@@ -120,6 +120,40 @@ void main() {
       );
     });
 
+    test('calculateExamReadinessScore combines FSRS theoretical retention with empirical quiz performance (Bimodal Model)', () {
+      // Theoretical FSRS readiness ~ 90%
+      final theoretical = calculator.calculateExamReadinessScore(
+        totalCards: 100,
+        masteredCards: 100,
+        averageStability: 30,
+        averageDifficulty: 3,
+        daysRemaining: 5,
+      );
+
+      // Poor empirical quiz score (40%) penalizes the composite bimodal readiness:
+      // (0.50 * theoretical) + (0.50 * 40%)
+      final bimodalPenalized = calculator.calculateExamReadinessScore(
+        totalCards: 100,
+        masteredCards: 100,
+        averageStability: 30,
+        averageDifficulty: 3,
+        daysRemaining: 5,
+        empiricalQuizScorePercent: 40,
+      );
+      expect(bimodalPenalized < theoretical, isTrue);
+      expect((bimodalPenalized - ((theoretical + 40.0) / 2)).abs() < 1.0, isTrue);
+
+      // Outstanding empirical quiz score (98%) bolsters moderate memory readiness:
+      final bimodalBoosted = calculator.calculateExamReadinessScore(
+        totalCards: 100,
+        masteredCards: 50,
+        averageStability: 10,
+        daysRemaining: 5,
+        empiricalQuizScorePercent: 98,
+      );
+      expect(bimodalBoosted > 60.0, isTrue);
+    });
+
     test('predictRetentionTrajectory returns monotonic decay projection over days remaining', () {
       final trajectory = calculator.predictRetentionTrajectory(
         initialStability: 15,

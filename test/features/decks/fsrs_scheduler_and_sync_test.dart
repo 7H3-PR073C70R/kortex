@@ -179,6 +179,54 @@ void main() {
       expect(rDay20, greaterThan(0.0));
     });
 
+    test('Deadline interval compression clamps intervals when daysUntilExam is present', () {
+      final matureCard = FsrsCard(
+        cardId: 'mature_card',
+        stability: 20,
+        difficulty: 3,
+        elapsedDays: 10,
+        scheduledDays: 14,
+        reps: 5,
+        state: FsrsCardState.review,
+        lastReview: DateTime.utc(2026, 8, 20),
+      );
+
+      // Unconstrained review
+      final unconstrained = scheduler.reviewCard(
+        currentCard: matureCard,
+        rating: FsrsRating.easy,
+        now: DateTime.utc(2026, 8, 30),
+      );
+      expect(unconstrained.card.scheduledDays, greaterThan(14));
+
+      // Horizon <= 2 days: clamp to 1 day
+      final crunchReview = scheduler.reviewCard(
+        currentCard: matureCard,
+        rating: FsrsRating.easy,
+        now: DateTime.utc(2026, 8, 30),
+        daysUntilExam: 2,
+      );
+      expect(crunchReview.card.scheduledDays, equals(1));
+
+      // Horizon <= 7 days (e.g. 6 days): clamp to <= floor(6/2) = 3
+      final weekReview = scheduler.reviewCard(
+        currentCard: matureCard,
+        rating: FsrsRating.easy,
+        now: DateTime.utc(2026, 8, 30),
+        daysUntilExam: 6,
+      );
+      expect(weekReview.card.scheduledDays, lessThanOrEqualTo(3));
+
+      // Horizon <= 14 days (e.g. 10 days): clamp to <= 10 - 1 = 9
+      final fortnightReview = scheduler.reviewCard(
+        currentCard: matureCard,
+        rating: FsrsRating.easy,
+        now: DateTime.utc(2026, 8, 30),
+        daysUntilExam: 10,
+      );
+      expect(fortnightReview.card.scheduledDays, lessThanOrEqualTo(9));
+    });
+
     test('SQLite serialization toMap and fromMap roundtrip', () {
       final card = FsrsCard(
         cardId: 'card_123',

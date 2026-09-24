@@ -50,11 +50,33 @@ class StudySessionPage extends HookWidget {
       );
     }
 
+    final isCram = deckId.startsWith('cram:');
+    final isSprint = deckId.startsWith('sprint:');
+    final String cleanDeckId;
+    if (isCram) {
+      final parts = deckId.split(':');
+      cleanDeckId = parts.length > 2
+          ? parts.sublist(2).join(':')
+          : (parts.length > 1 ? parts[1] : deckId);
+    } else if (isSprint) {
+      cleanDeckId = deckId.split(':').last;
+    } else {
+      cleanDeckId = deckId;
+    }
+
     return BlocProvider<StudySessionCubit>(
       create: (_) {
         final cubit = locator<StudySessionCubit>();
-        final isSprint = deckId.startsWith('sprint:');
-        if (isSprint) {
+        if (isCram) {
+          final parts = deckId.split(':');
+          final days = parts.length > 1 ? int.tryParse(parts[1]) : null;
+          unawaited(
+            cubit.startSession(
+              cleanDeckId,
+              daysUntilExam: days,
+            ),
+          );
+        } else if (isSprint) {
           // Format: 'sprint:10:actualDeckId' or 'sprint:speed:3:actualDeckId'
           final parts = deckId.split(':');
           if (parts.length > 2 && parts[1] == 'speed') {
@@ -89,7 +111,7 @@ class StudySessionPage extends HookWidget {
         return cubit;
       },
       child: _StudySessionView(
-        deckId: deckId.startsWith('sprint:') ? deckId.split(':').last : deckId,
+        deckId: cleanDeckId,
       ),
     );
   }

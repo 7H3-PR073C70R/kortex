@@ -497,6 +497,37 @@ class PlannerRepositoryImpl implements PlannerRepository {
       );
 
       _cachedExams[idx] = model;
+
+      if (rolloverWeakCards) {
+        // Automatically roll over scoped decks and syllabus topics into upcoming Midterm/Final for the same course
+        final finalExamIdx = _cachedExams.indexWhere(
+          (e) =>
+              e.id != examId &&
+              !e.isCompleted &&
+              !e.isPast &&
+              e.subjectTrack.trim().toLowerCase() ==
+                  existing.subjectTrack.trim().toLowerCase() &&
+              (e.assessmentType == AssessmentType.finalExam ||
+                  e.assessmentType == AssessmentType.midterm),
+        );
+        if (finalExamIdx >= 0) {
+          final targetExam = _cachedExams[finalExamIdx];
+          final mergedDecks = {
+            ...targetExam.scopedDeckIds,
+            ...existing.scopedDeckIds,
+          }.toList();
+          final mergedTopics = {
+            ...targetExam.scopedTopics,
+            ...existing.scopedTopics,
+          }.toList();
+
+          _cachedExams[finalExamIdx] = targetExam.copyWith(
+            scopedDeckIds: mergedDecks,
+            scopedTopics: mergedTopics,
+          );
+        }
+      }
+
       _saveToStorage();
       return model;
     }).makeRequest();

@@ -90,6 +90,8 @@ class CramWorkloadCalculator {
   /// Predicts overall Exam Readiness Score on a 0% to 100% scale.
   /// Combines topic coverage, FSRS stability retention at exam date,
   /// difficulty weighting, and lapse frequency penalties.
+  /// When [empiricalQuizScorePercent] is provided, applies a Bimodal Cognitive Model:
+  /// 50% FSRS theoretical retrievability + 50% empirical diagnostic quiz performance.
   double calculateExamReadinessScore({
     required int totalCards,
     required int masteredCards,
@@ -97,8 +99,18 @@ class CramWorkloadCalculator {
     required int daysRemaining,
     double averageDifficulty = 5.0,
     int totalLapses = 0,
+    double? empiricalQuizScorePercent,
   }) {
-    if (totalCards <= 0) return 0;
+    if (totalCards <= 0) {
+      if (empiricalQuizScorePercent != null) {
+        final normalized = (empiricalQuizScorePercent > 1.0
+                ? empiricalQuizScorePercent
+                : empiricalQuizScorePercent * 100.0)
+            .clamp(0.0, 100.0);
+        return normalized;
+      }
+      return 0;
+    }
 
     // 1. Coverage Component (0.0 to 1.0)
     final coverage = (masteredCards / totalCards).clamp(0.0, 1.0);
@@ -126,7 +138,19 @@ class CramWorkloadCalculator {
         difficultyModifier *
         lapsePenalty;
 
-    return (compositeScore * 100.0).clamp(0.0, 100.0);
+    final fsrsReadiness = (compositeScore * 100.0).clamp(0.0, 100.0);
+
+    if (empiricalQuizScorePercent == null) {
+      return fsrsReadiness;
+    }
+
+    final normalizedQuiz = (empiricalQuizScorePercent > 1.0
+            ? empiricalQuizScorePercent
+            : empiricalQuizScorePercent * 100.0)
+        .clamp(0.0, 100.0);
+
+    // Bimodal blend: 50% FSRS memory retrievability + 50% diagnostic quiz verification
+    return (0.50 * fsrsReadiness + 0.50 * normalizedQuiz).clamp(0.0, 100.0);
   }
 
   /// Projects daily retention percentages from day 0 to [daysRemaining].

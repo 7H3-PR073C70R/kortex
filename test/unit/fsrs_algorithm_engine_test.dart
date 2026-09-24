@@ -68,5 +68,28 @@ void main() {
       expect(stateLapse.stability, lessThanOrEqualTo(state1.stability));
       expect(stateLapse.scheduledDays, equals(1));
     });
+
+    test('acute assessment deadline compression clamps intervals to pre-exam horizon', () {
+      // With stability = 20, standard next interval is > 10 days
+      final unconstrained = engine.calculateNextInterval(20);
+      expect(unconstrained, greaterThan(10));
+
+      // With exam in 2 days (crunch), interval is clamped to 1
+      final crunchInterval = engine.calculateNextInterval(20, daysUntilExam: 2);
+      expect(crunchInterval, equals(1));
+
+      // With exam in 6 days (week of exam), interval is clamped to at most 3 days (6 / 2)
+      final weekInterval = engine.calculateNextInterval(20, daysUntilExam: 6);
+      expect(weekInterval, equals(3));
+
+      // Reviewing with rating Easy when exam is in 4 days clamps scheduledDays to <= 2
+      final stateEasyCrunch = engine.review(
+        currentState: FsrsMemoryState.initial(),
+        rating: FsrsRating.easy,
+        reviewTime: DateTime(2026, 9),
+        daysUntilExam: 4,
+      );
+      expect(stateEasyCrunch.scheduledDays, lessThanOrEqualTo(2));
+    });
   });
 }

@@ -31,9 +31,12 @@ class ExamCountdownBanner extends StatelessWidget {
     }
     if (exam.assessmentType == AssessmentType.quiz &&
         exam.scopedDeckIds.isNotEmpty) {
+      final deckTarget = exam.daysRemaining <= 14 && exam.daysRemaining > 0
+          ? 'cram:${exam.daysRemaining}:${exam.scopedDeckIds.first}'
+          : exam.scopedDeckIds.first;
       unawaited(
         context.router.push(
-          StudySessionRoute(deckId: exam.scopedDeckIds.first),
+          StudySessionRoute(deckId: deckTarget),
         ),
       );
       return;

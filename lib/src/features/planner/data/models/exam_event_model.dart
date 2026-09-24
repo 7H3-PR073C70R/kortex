@@ -60,6 +60,72 @@ class ExamEventModel extends ExamEventEntity {
     );
   }
 
+  factory ExamEventModel.fromEntity(ExamEventEntity entity) {
+    return ExamEventModel(
+      id: entity.id,
+      userId: entity.userId,
+      examName: entity.examName,
+      targetDate: entity.targetDate,
+      subjectTrack: entity.subjectTrack,
+      assessmentType: entity.assessmentType,
+      scopedDeckIds: entity.scopedDeckIds,
+      scopedTopics: entity.scopedTopics,
+      weightPercent: entity.weightPercent,
+      totalCardsCount: entity.totalCardsCount,
+      masteredCardsCount: entity.masteredCardsCount,
+      totalLapses: entity.totalLapses,
+      dailyTarget: entity.dailyTarget,
+      targetScorePercent: entity.targetScorePercent,
+      isCompleted: entity.isCompleted,
+      achievedScorePercent: entity.achievedScorePercent,
+      completedAt: entity.completedAt,
+      createdAt: entity.createdAt,
+    );
+  }
+
+  @override
+  ExamEventModel copyWith({
+    String? id,
+    String? userId,
+    String? examName,
+    DateTime? targetDate,
+    String? subjectTrack,
+    AssessmentType? assessmentType,
+    List<String>? scopedDeckIds,
+    List<String>? scopedTopics,
+    double? weightPercent,
+    int? totalCardsCount,
+    int? masteredCardsCount,
+    int? totalLapses,
+    int? dailyTarget,
+    double? targetScorePercent,
+    bool? isCompleted,
+    double? achievedScorePercent,
+    DateTime? completedAt,
+    DateTime? createdAt,
+  }) {
+    return ExamEventModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      examName: examName ?? this.examName,
+      targetDate: targetDate ?? this.targetDate,
+      subjectTrack: subjectTrack ?? this.subjectTrack,
+      assessmentType: assessmentType ?? this.assessmentType,
+      scopedDeckIds: scopedDeckIds ?? this.scopedDeckIds,
+      scopedTopics: scopedTopics ?? this.scopedTopics,
+      weightPercent: weightPercent ?? this.weightPercent,
+      totalCardsCount: totalCardsCount ?? this.totalCardsCount,
+      masteredCardsCount: masteredCardsCount ?? this.masteredCardsCount,
+      totalLapses: totalLapses ?? this.totalLapses,
+      dailyTarget: dailyTarget ?? this.dailyTarget,
+      targetScorePercent: targetScorePercent ?? this.targetScorePercent,
+      isCompleted: isCompleted ?? this.isCompleted,
+      achievedScorePercent: achievedScorePercent ?? this.achievedScorePercent,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

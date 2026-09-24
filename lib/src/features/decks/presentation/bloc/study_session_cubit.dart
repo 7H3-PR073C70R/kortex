@@ -91,6 +91,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
   CardSyncQueue get cardSyncQueue => _cardSyncQueue;
 
   int? _targetDurationSeconds;
+  int? _daysUntilExam;
   Timer? _timer;
 
   /// Whether the current session is a timed speed run.
@@ -98,6 +99,9 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
   /// Target duration in seconds for speed runs.
   int? get targetDurationSeconds => _targetDurationSeconds;
+
+  /// Days until the target exam deadline if this is an acute cram session.
+  int? get daysUntilExam => _daysUntilExam;
 
   /// Formats remaining countdown time for speed runs.
   String formattedRemainingTime(int elapsed) {
@@ -250,8 +254,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     bool randomize = false,
     int? targetDurationSeconds,
     bool resetProgress = false,
+    int? daysUntilExam,
   }) async {
     _targetDurationSeconds = targetDurationSeconds;
+    _daysUntilExam = daysUntilExam;
     emit(state.copyWith(status: StudySessionStatus.loading, deckId: deckId));
 
     // Cancel daily study reminder — user is actively studying now.
@@ -442,7 +448,12 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     return {
       for (final rating in FsrsRating.values)
         rating: _fsrsScheduler
-            .reviewCard(currentCard: fsrsCard, rating: rating, now: nowUtc)
+            .reviewCard(
+              currentCard: fsrsCard,
+              rating: rating,
+              now: nowUtc,
+              daysUntilExam: _daysUntilExam,
+            )
             .card
             .scheduledDays,
     };
@@ -526,6 +537,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       currentCard: fsrsCard,
       rating: fsrsRating,
       now: nowUtc,
+      daysUntilExam: _daysUntilExam,
     );
 
     // Retrievability score calculation

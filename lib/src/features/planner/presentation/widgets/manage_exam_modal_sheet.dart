@@ -415,7 +415,7 @@ class ManageExamModalSheet extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                'Completed: ${exam.achievedScorePercent != null ? (exam.achievedScorePercent! * 100).toInt() : 100}%',
+                                'Completed: ${exam.achievedScorePercent != null ? (exam.achievedScorePercent! > 1.0 ? exam.achievedScorePercent! : exam.achievedScorePercent! * 100).toInt() : 100}%',
                                 style: typography.caption.bold.copyWith(
                                   color: colors.primary,
                                   fontSize: 11,
@@ -432,7 +432,7 @@ class ManageExamModalSheet extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              '${exam.effectiveWeightPercent.toStringAsFixed(0)}% of grade',
+                              '${(exam.effectiveWeightPercent > 1.0 ? exam.effectiveWeightPercent : exam.effectiveWeightPercent * 100).toInt()}% of grade',
                               style: typography.caption.semiBold.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 11,
@@ -461,6 +461,77 @@ class ManageExamModalSheet extends StatelessWidget {
                             ),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      // Bimodal Knowledge Calibration & Readiness Gauge
+                      () {
+                        final readiness = _calculator.calculateExamReadinessScore(
+                          totalCards: exam.totalCardsCount,
+                          masteredCards: exam.masteredCardsCount,
+                          averageStability: 18,
+                          daysRemaining: exam.daysRemaining,
+                          totalLapses: exam.totalLapses,
+                          empiricalQuizScorePercent: exam.achievedScorePercent,
+                        );
+                        final readinessColor = readiness >= 75
+                            ? colors.success
+                            : (readiness >= 50 ? colors.warning : colors.error);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.psychology_outlined,
+                                        size: 14,
+                                        color: readinessColor,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        exam.achievedScorePercent != null
+                                            ? 'Bimodal Readiness (FSRS & Quiz)'
+                                            : 'Predicted FSRS Retention',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 10.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    '${readiness.toInt()}%',
+                                    style: typography.caption.bold.copyWith(
+                                      color: readinessColor,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: readiness / 100.0,
+                                  backgroundColor: colors.surfaceBorder.withAlpha(80),
+                                  valueColor: AlwaysStoppedAnimation<Color>(readinessColor),
+                                  minHeight: 4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }(),
                       const SizedBox(height: 8),
                       Row(
                         children: [

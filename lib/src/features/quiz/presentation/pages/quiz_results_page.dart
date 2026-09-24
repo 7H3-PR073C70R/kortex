@@ -17,6 +17,7 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_so
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
+import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
@@ -1080,9 +1081,32 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 'flashcards.',
             type: SnackBarType.success,
           );
+
+          int? daysUntilExam;
+          if (locator.isRegistered<CramPlannerCubit>()) {
+            final exams = locator<CramPlannerCubit>().state.activeExams;
+            final matched = exams.where((e) =>
+                e.daysRemaining > 0 &&
+                e.daysRemaining <= 14 &&
+                (resolvedCourseCode != null &&
+                    resolvedCourseCode.isNotEmpty &&
+                    (e.subjectTrack.toLowerCase() ==
+                            resolvedCourseCode.toLowerCase() ||
+                        e.examName.toLowerCase().contains(
+                            resolvedCourseCode.toLowerCase()))),
+            ).firstOrNull ?? exams.where((e) => e.daysRemaining > 0 && e.daysRemaining <= 14).firstOrNull;
+            if (matched != null) {
+              daysUntilExam = matched.daysRemaining;
+            }
+          }
+
+          final targetDeckId = (daysUntilExam != null && daysUntilExam > 0)
+              ? 'cram:$daysUntilExam:${deck.id}'
+              : deck.id;
+
           unawaited(
             context.router.replace(
-              StudySessionRoute(deckId: deck.id),
+              StudySessionRoute(deckId: targetDeckId),
             ),
           );
         }
