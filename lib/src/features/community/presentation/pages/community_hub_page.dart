@@ -170,6 +170,41 @@ class _CommunityHubView extends HookWidget {
               ),
             ),
             const SizedBox(width: 8),
+            // Filter Action Button
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) => AnimatedScale(
+                scale: isHovered ? 1.06 : 1.0,
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                child: ShrinkableButton(
+                  onTap: () {
+                  
+                  },
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSearchExpanded.value
+                          ? colors.primary.withAlpha(isDark ? 50 : 30)
+                          : (isHovered
+                                ? colors.primary.withAlpha(isDark ? 30 : 20)
+                                : (isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfaceSecondary.withAlpha(
+                                          140,
+                                        ))),
+                    ),
+                    child: Icon(
+                      Icons.filter_1,
+                      size: 20,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
 
             // Notifications Action Button with unread badge
             PlatformHoverBuilder(

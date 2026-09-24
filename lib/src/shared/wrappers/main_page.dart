@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:auto_route/auto_route.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -19,11 +19,9 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/background_ingestion_indicator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_liquid_card.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// Navigation item definition for Kortex main tabs.
 class _MainNavItem {
@@ -422,194 +420,450 @@ class _DesktopNavRailItem extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Platform Adaptive Bottom Navigation Dock (< 1024dp)
-// iOS/macOS: App Liquid Card (specular refraction, blur, liquid styling)
-// Android/Others: Normal Capsule (clean Material 3 tonal container)
+// World-Leading Floating Liquid Glass Navigation Dock (< 1024dp)
+// Authentic Apple Draggable Liquid Glass Physics, Concentric Stadium Capsule,
+// Real-time Velocity Jelly Deformation, Specular Refraction, and Ambient Glow
 // ---------------------------------------------------------------------------
 
-class _AdaptiveBottomNavDock extends StatelessWidget {
+class _AdaptiveBottomNavDock extends StatefulWidget {
   const _AdaptiveBottomNavDock({
     required this.tabsRouter,
   });
 
   final TabsRouter tabsRouter;
 
-  bool get _isApplePlatform {
-    if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
+  @override
+  State<_AdaptiveBottomNavDock> createState() => _AdaptiveBottomNavDockState();
+}
+
+class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late Animation<double> _positionAnimation;
+
+  /// Current indicator position in tab-unit coordinate space (0.0 .. tabCount - 1).
+  late double _currentUnitPosition;
+
+  /// Drag state
+  bool _isDragging = false;
+  double _dragVelocityX = 0;
+  int _lastHapticIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUnitPosition = widget.tabsRouter.activeIndex.toDouble();
+    _lastHapticIndex = widget.tabsRouter.activeIndex;
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _AdaptiveBottomNavDock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tabsRouter.activeIndex != oldWidget.tabsRouter.activeIndex &&
+        !_isDragging) {
+      _animateToTab(widget.tabsRouter.activeIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _animateToTab(int targetIndex) {
+    _animController.stop();
+    final begin = _currentUnitPosition;
+    final end = targetIndex.toDouble();
+
+    _positionAnimation = Tween<double>(begin: begin, end: end).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: AppMotion.easeOutCubic,
+      ),
+    )..addListener(() {
+        setState(() {
+          _currentUnitPosition = _positionAnimation.value;
+        });
+      });
+
+    unawaited(_animController.forward(from: 0));
+  }
+
+  void _onDragStart(DragStartDetails details, double trackWidth) {
+    _animController.stop();
+    setState(() {
+      _isDragging = true;
+      _dragVelocityX = 0;
+    });
+  }
+
+  void _onDragUpdate(DragUpdateDetails details, double trackWidth) {
+    final tabCount = _kNavItems.length;
+    final tabWidth = trackWidth / tabCount;
+    final deltaUnit = (details.primaryDelta ?? 0) / tabWidth;
+
+    setState(() {
+      _dragVelocityX = (details.primaryDelta ?? 0) * 45;
+      // Allow slight elastic overscroll at edges (-0.15 .. tabCount - 1 + 0.15)
+      _currentUnitPosition = (_currentUnitPosition + deltaUnit).clamp(
+        -0.15,
+        (tabCount - 1) + 0.15,
+      );
+
+      final hoverIndex =
+          _currentUnitPosition.round().clamp(0, tabCount - 1);
+      if (hoverIndex != _lastHapticIndex) {
+        _lastHapticIndex = hoverIndex;
+        unawaited(HapticFeedback.selectionClick());
+      }
+    });
+  }
+
+  void _onDragEnd(DragEndDetails details, double trackWidth) {
+    final tabCount = _kNavItems.length;
+    // Fling velocity adjustment for flick gestures
+    final velocityUnit = (details.primaryVelocity ?? 0.0) / 700.0;
+    final targetIndex =
+        (_currentUnitPosition + velocityUnit * 0.35).round().clamp(0, tabCount - 1);
+
+    setState(() {
+      _isDragging = false;
+      _dragVelocityX = 0;
+      _lastHapticIndex = targetIndex;
+    });
+
+    _animateToTab(targetIndex);
+
+    final l10n = context.l10n;
+    final label = _kNavItems[targetIndex].labelBuilder(l10n);
+    _handleTabTap(context, widget.tabsRouter, targetIndex, label);
+  }
+
+  void _onDragCancel() {
+    setState(() {
+      _isDragging = false;
+      _dragVelocityX = 0.0;
+    });
+    _animateToTab(widget.tabsRouter.activeIndex);
+  }
+
+  void _onTabTapped(int index) {
+    final l10n = context.l10n;
+    final label = _kNavItems[index].labelBuilder(l10n);
+
+    if (widget.tabsRouter.activeIndex == index) {
+      _handleTabTap(context, widget.tabsRouter, index, label);
+      return;
+    }
+
+    _lastHapticIndex = index;
+    _animateToTab(index);
+    _handleTabTap(context, widget.tabsRouter, index, label);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final l10n = context.l10n;
+    final typography = context.typography;
     final isDark = context.isDarkMode;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final isApple = _isApplePlatform;
 
+    // Floating dock elevation above home indicator
     final dockMargin = EdgeInsets.fromLTRB(
       16,
       0,
       16,
-      math.max(12, bottomInset),
+      math.max(14, bottomInset + 4),
     );
 
-    final navContent = Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: List.generate(_kNavItems.length, (index) {
-        final item = _kNavItems[index];
-        final isSelected = tabsRouter.activeIndex == index;
-        final label = item.labelBuilder(l10n);
+    const dockHeight = 66.0;
+    const dockRadius = 33.0;
+    const capsuleInsetV = 6.0;
+    const capsuleInsetH = 4.0;
+    const capsuleHeight = dockHeight - (capsuleInsetV * 2); // 54dp
+    const capsuleRadius = dockRadius - capsuleInsetV; // 27dp concentric
 
-        return Expanded(
-          child: _AdaptiveNavItem(
-            icon: item.icon,
-            activeIcon: item.activeIcon,
-            label: label,
-            isSelected: isSelected,
-            itemIndex: index,
-            totalItems: _kNavItems.length,
-            onTap: () => _handleTabTap(
-              context,
-              tabsRouter,
-              index,
-              label,
-            ),
-          ),
-        );
-      }),
-    );
+    // Velocity-based jelly stretch & squash
+    final velocityStretch = _isDragging
+        ? (_dragVelocityX.abs() * 0.00035).clamp(0.0, 0.22)
+        : 0.0;
+    final jellyScaleX = 1.0 + velocityStretch;
+    final jellyScaleY = 1.0 - (velocityStretch * 0.5);
 
-    if (isApple) {
-      // iOS: App Liquid Card with theme-aware specular & blur styling
-      return Semantics(
-        container: true,
-        label: l10n.navBarSemanticsLabel,
-        child: Padding(
-          padding: dockMargin,
-          child: AppLiquidCard(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            settings: LiquidGlassSettings(
-              blur: 24,
-              glassColor: isDark
-                  ? colors.surfaceSecondary.withAlpha(70)
-                  : colors.white.withAlpha(170),
-              lightIntensity: isDark ? 0.4 : 0.85,
-              refractiveIndex: 1.25,
-            ),
-            child: navContent,
-          ),
-        ),
-      );
-    } else {
-      // Android: Normal capsule surface container
-      return Semantics(
-        container: true,
-        label: l10n.navBarSemanticsLabel,
-        child: Padding(
-          padding: dockMargin,
+    // Lateral dock sway for dynamic physical inertia
+    final dockSwayX =
+        _isDragging ? (_dragVelocityX * 0.0012).clamp(-2.0, 2.0) : 0.0;
+
+    return Semantics(
+      container: true,
+      label: l10n.navBarSemanticsLabel,
+      child: Padding(
+        padding: dockMargin,
+        child: Transform.translate(
+          offset: Offset(dockSwayX, 0),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            height: dockHeight,
             decoration: BoxDecoration(
-              color: isDark
-                  ? colors.surfaceSecondary.withAlpha(235)
-                  : colors.surfacePrimary.withAlpha(245),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: isDark
-                    ? colors.surfaceBorderHighlight.withAlpha(60)
-                    : colors.surfaceBorder.withAlpha(140),
-              ),
+              borderRadius: BorderRadius.circular(dockRadius),
               boxShadow: [
+                // Deep contact shadow for 3D elevation
                 BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 80 : 25),
-                  blurRadius: 16,
+                  color: isDark
+                      ? colors.black.withAlpha(120)
+                      : colors.black.withAlpha(22),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                  spreadRadius: isDark ? -2 : -4,
+                ),
+                // Ambient brand primary aura
+                BoxShadow(
+                  color: isDark
+                      ? colors.primary.withAlpha(35)
+                      : colors.primary.withAlpha(20),
+                  blurRadius: 28,
                   offset: const Offset(0, 4),
+                  spreadRadius: -4,
                 ),
               ],
             ),
-            child: navContent,
-          ),
-        ),
-      );
-    }
-  }
-}
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(dockRadius),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+                child: Container(
+                  decoration: BoxDecoration(
+                    // Multi-layer frosted liquid glass gradient
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              colors.surfaceSecondary.withAlpha(145),
+                              colors.surfaceSecondary.withAlpha(95),
+                            ]
+                          : [
+                              colors.white.withAlpha(210),
+                              colors.white.withAlpha(170),
+                            ],
+                    ),
+                    borderRadius: BorderRadius.circular(dockRadius),
+                    // Specular perimeter light rim
+                    border: Border.all(
+                      color: isDark
+                          ? colors.white.withAlpha(48)
+                          : colors.white.withAlpha(220),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final totalWidth = constraints.maxWidth;
+                      final tabCount = _kNavItems.length;
+                      final tabWidth = totalWidth / tabCount;
+                      final capsuleWidth = tabWidth - (capsuleInsetH * 2);
 
-class _AdaptiveNavItem extends StatelessWidget {
-  const _AdaptiveNavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isSelected,
-    required this.itemIndex,
-    required this.totalItems,
-    required this.onTap,
-  });
+                      // Calculate sliding capsule left offset
+                      final capsuleLeft = capsuleInsetH +
+                          (_currentUnitPosition * tabWidth);
 
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool isSelected;
-  final int itemIndex;
-  final int totalItems;
-  final VoidCallback onTap;
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onHorizontalDragStart: (details) =>
+                            _onDragStart(details, totalWidth),
+                        onHorizontalDragUpdate: (details) =>
+                            _onDragUpdate(details, totalWidth),
+                        onHorizontalDragEnd: (details) =>
+                            _onDragEnd(details, totalWidth),
+                        onHorizontalDragCancel: _onDragCancel,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // -----------------------------------------------
+                            // 1. Unified Draggable Liquid Glass Active Capsule
+                            // Identical shape, padding, and styling across ALL tabs
+                            // -----------------------------------------------
+                            Positioned(
+                              left: capsuleLeft,
+                              top: capsuleInsetV,
+                              width: capsuleWidth,
+                              height: capsuleHeight,
+                              child: Transform.scale(
+                                scaleX: jellyScaleX,
+                                scaleY: jellyScaleY,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    // Liquid glass tint with gentle vertical gradient
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: isDark
+                                          ? [
+                                              colors.primary.withAlpha(68),
+                                              colors.primary.withAlpha(42),
+                                            ]
+                                          : [
+                                              colors.primary.withAlpha(45),
+                                              colors.primary.withAlpha(26),
+                                            ],
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.circular(capsuleRadius),
+                                    // Precision specular border around the active capsule
+                                    border: Border.all(
+                                      color: colors.primary
+                                          .withAlpha(isDark ? 110 : 80),
+                                      width: 1.2,
+                                    ),
+                                    boxShadow: [
+                                      // Soft sub-capsule glow
+                                      BoxShadow(
+                                        color: colors.primary
+                                            .withAlpha(isDark ? 55 : 28),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      // Specular top highlight sheen
+                                      Positioned(
+                                        top: 1,
+                                        left: 8,
+                                        right: 8,
+                                        height: 1,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                colors.transparent,
+                                                (isDark ? colors.white : colors.white)
+                                                    .withAlpha(isDark ? 50 : 120),
+                                                colors.transparent,
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final l10n = context.l10n;
-    final isDark = context.isDarkMode;
+                            // -----------------------------------------------
+                            // 2. Tab Items Row with Dynamic Interpolated Polish
+                            // -----------------------------------------------
+                            Positioned.fill(
+                              child: Row(
+                                children: List.generate(tabCount, (index) {
+                                  final item = _kNavItems[index];
+                                  final label = item.labelBuilder(l10n);
 
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: l10n.navTabSemantics(label, itemIndex + 1, totalItems),
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: AppMotion.easeOutCubic,
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colors.primary.withAlpha(isDark ? 45 : 28)
-                : colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? colors.primary.withAlpha(isDark ? 100 : 75)
-                  : colors.transparent,
-              width: 1.2,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isSelected ? activeIcon : icon,
-                size: 20,
-                color: isSelected ? colors.primary : colors.textSecondary,
-              ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: typography.caption.medium.copyWith(
-                    fontSize: 10,
-                    height: 1.1,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? colors.primary : colors.textSecondary,
+                                  // Interpolate selection weight based on distance to indicator
+                                  final distance =
+                                      (_currentUnitPosition - index).abs();
+                                  final activeWeight =
+                                      (1.0 - distance).clamp(0.0, 1.0);
+                                  final isSelected = activeWeight > 0.5;
+
+                                  final iconColor = Color.lerp(
+                                    colors.textSecondary,
+                                    colors.primary,
+                                    activeWeight,
+                                  )!;
+
+                                  final textColor = Color.lerp(
+                                    colors.textSecondary.withAlpha(210),
+                                    colors.primary,
+                                    activeWeight,
+                                  )!;
+
+                                  return Expanded(
+                                    child: Semantics(
+                                      button: true,
+                                      selected: widget.tabsRouter.activeIndex == index,
+                                      label: l10n.navTabSemantics(
+                                        label,
+                                        index + 1,
+                                        tabCount,
+                                      ),
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () => _onTabTapped(index),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Animated icon with subtle scale bounce
+                                              Transform.scale(
+                                                scale: 1.0 +
+                                                    (0.08 * activeWeight),
+                                                child: AnimatedSwitcher(
+                                                  duration: const Duration(
+                                                    milliseconds: 200,
+                                                  ),
+                                                  transitionBuilder:
+                                                      (child, anim) =>
+                                                          FadeTransition(
+                                                    opacity: anim,
+                                                    child: child,
+                                                  ),
+                                                  child: Icon(
+                                                    isSelected
+                                                        ? item.activeIcon
+                                                        : item.icon,
+                                                    key: ValueKey(
+                                                      '${item.icon}_$isSelected',
+                                                    ),
+                                                    size: 21,
+                                                    color: iconColor,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 3),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Text(
+                                                  label,
+                                                  maxLines: 1,
+                                                  style: typography
+                                                      .caption.medium
+                                                      .copyWith(
+                                                    fontSize: 10.5,
+                                                    height: 1.1,
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.w700
+                                                        : FontWeight.w500,
+                                                    color: textColor,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
