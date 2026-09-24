@@ -30,7 +30,8 @@ class ManageExamModalSheet extends StatelessWidget {
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
         value: context.read<CramPlannerCubit>(),
-        child: Center(
+        child: Align(
+          alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: const ManageExamModalSheet(),

@@ -78,6 +78,7 @@ class FsrsRatingActionBar extends StatelessWidget {
     ];
 
     return Center(
+      heightFactor: 1,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Column(

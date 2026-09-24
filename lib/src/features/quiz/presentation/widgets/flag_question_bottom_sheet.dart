@@ -68,7 +68,8 @@ class FlagQuestionBottomSheet extends HookWidget {
     final commentController = useTextEditingController();
     final isSubmitting = useState<bool>(false);
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 580,

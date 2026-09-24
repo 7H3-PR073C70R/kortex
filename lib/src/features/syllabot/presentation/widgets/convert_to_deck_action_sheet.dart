@@ -57,7 +57,8 @@ class ConvertToDeckActionSheet extends HookWidget {
     );
     final createForum = useState<bool>(false);
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Padding(

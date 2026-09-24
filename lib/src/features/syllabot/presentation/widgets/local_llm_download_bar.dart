@@ -34,6 +34,7 @@ class LocalLlmDownloadBar extends StatelessWidget {
     final downloadedMb = (progress.clamp(0.0, 1.0) * 248.0).toStringAsFixed(1);
 
     return Center(
+      heightFactor: 1,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
         child: ClipRRect(

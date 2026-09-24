@@ -323,7 +323,9 @@ class _PastQuestionsBoardView extends HookWidget {
             return const SizedBox.shrink();
           }
           return SafeArea(
-            child: Center(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: 1,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 960),
                 child: Padding(

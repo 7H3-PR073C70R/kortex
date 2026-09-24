@@ -43,7 +43,8 @@ class RagSourceInspectionSheet extends StatelessWidget {
       if (chunk.paragraphNumber != null) 'Paragraph ${chunk.paragraphNumber}',
     ].join(' • ');
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: BackdropFilter(

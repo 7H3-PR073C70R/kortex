@@ -124,7 +124,8 @@ class DeckSheetScaffold extends StatelessWidget {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Center(
+      child: Align(
+        alignment: Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: maxWidth,

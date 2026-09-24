@@ -124,7 +124,6 @@ class _OfflineFlashcardGenerationPageState
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        useSafeArea: true,
         backgroundColor: isDark
             ? colors.surfaceSecondary
             : colors.surfacePrimary,
@@ -134,9 +133,13 @@ class _OfflineFlashcardGenerationPageState
           ),
         ),
         builder: (sheetContext) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
+          return SafeArea(
+            top: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
               child: Padding(
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
@@ -231,7 +234,7 @@ class _OfflineFlashcardGenerationPageState
                 ),
               ),
             ),
-          );
+          ));
         },
       ),
     );

@@ -104,7 +104,8 @@ class PublishDeckModalSheet extends HookWidget {
       };
     }, []);
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Container(

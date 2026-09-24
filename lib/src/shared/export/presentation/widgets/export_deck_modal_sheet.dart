@@ -178,7 +178,11 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
     final typography = context.typography;
     final l10n = context.l10n;
 
-    return Container(
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -259,6 +263,8 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
             ),
           ],
         ],
+      ),
+        ),
       ),
     );
   }

@@ -10,8 +10,9 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-/// Gratifying celebration overlay with rich confetti blast, haptic burst,
-/// glowing trophy badge, and session accomplishment breakdown.
+/// Mind-blowing gratification celebration overlay with multi-cannon confetti blast,
+/// pulsing glowing aura, floating celebratory badge, animated XP count-up,
+/// accomplishment stat pills, and high-engagement re-practice actions.
 class GratificationCelebrationOverlay extends StatefulWidget {
   const GratificationCelebrationOverlay({
     required this.title,
@@ -20,9 +21,15 @@ class GratificationCelebrationOverlay extends StatefulWidget {
     this.primaryStatValue,
     this.secondaryStatLabel,
     this.secondaryStatValue,
+    this.tertiaryStatLabel,
+    this.tertiaryStatValue,
     this.xpEarned,
+    this.streakCount,
+    this.motivationalBadge,
     this.onDismiss,
     this.buttonText = 'Awesome!',
+    this.secondaryButtonText,
+    this.onSecondaryAction,
     this.emoji = '🏆',
     super.key,
   });
@@ -33,12 +40,18 @@ class GratificationCelebrationOverlay extends StatefulWidget {
   final String? primaryStatValue;
   final String? secondaryStatLabel;
   final String? secondaryStatValue;
+  final String? tertiaryStatLabel;
+  final String? tertiaryStatValue;
   final int? xpEarned;
+  final int? streakCount;
+  final String? motivationalBadge;
   final VoidCallback? onDismiss;
   final String buttonText;
+  final String? secondaryButtonText;
+  final VoidCallback? onSecondaryAction;
   final String emoji;
 
-  /// Shows the gratification celebration modal with full confetti burst.
+  /// Shows the gratification celebration modal with full confetti burst and mind-blowing animations.
   static Future<void> show(
     BuildContext context, {
     required String title,
@@ -47,9 +60,15 @@ class GratificationCelebrationOverlay extends StatefulWidget {
     String? primaryStatValue,
     String? secondaryStatLabel,
     String? secondaryStatValue,
+    String? tertiaryStatLabel,
+    String? tertiaryStatValue,
     int? xpEarned,
+    int? streakCount,
+    String? motivationalBadge,
     VoidCallback? onDismiss,
     String buttonText = 'Awesome!',
+    String? secondaryButtonText,
+    VoidCallback? onSecondaryAction,
     String emoji = '🏆',
   }) {
     unawaited(HapticFeedback.heavyImpact());
@@ -62,9 +81,15 @@ class GratificationCelebrationOverlay extends StatefulWidget {
         primaryStatValue: primaryStatValue,
         secondaryStatLabel: secondaryStatLabel,
         secondaryStatValue: secondaryStatValue,
+        tertiaryStatLabel: tertiaryStatLabel,
+        tertiaryStatValue: tertiaryStatValue,
         xpEarned: xpEarned,
+        streakCount: streakCount,
+        motivationalBadge: motivationalBadge,
         onDismiss: onDismiss,
         buttonText: buttonText,
+        secondaryButtonText: secondaryButtonText,
+        onSecondaryAction: onSecondaryAction,
         emoji: emoji,
       ),
     );
@@ -77,46 +102,88 @@ class GratificationCelebrationOverlay extends StatefulWidget {
 
 class _GratificationCelebrationOverlayState
     extends State<GratificationCelebrationOverlay>
-    with SingleTickerProviderStateMixin {
-  late ConfettiController _confettiController;
-  late AnimationController _animController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+    with TickerProviderStateMixin {
+  late final ConfettiController _topConfetti;
+  late final ConfettiController _leftConfetti;
+  late final ConfettiController _rightConfetti;
+
+  late final AnimationController _entranceController;
+  late final AnimationController _pulseController;
+  late final AnimationController _badgeFloatController;
+
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _badgeScaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(
-      duration: const Duration(seconds: 3),
-    );
-    _animController = AnimationController(
+
+    _topConfetti = ConfettiController(duration: const Duration(seconds: 3));
+    _leftConfetti = ConfettiController(duration: const Duration(seconds: 3));
+    _rightConfetti = ConfettiController(duration: const Duration(seconds: 3));
+
+    _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 700),
     );
+
     _scaleAnimation = CurvedAnimation(
-      parent: _animController,
+      parent: _entranceController,
       curve: Curves.elasticOut,
     );
+
     _fadeAnimation = CurvedAnimation(
-      parent: _animController,
+      parent: _entranceController,
       curve: Curves.easeIn,
     );
 
-    _confettiController.play();
-    unawaited(_animController.forward());
+    _badgeScaleAnimation = Tween<double>(begin: 0.2, end: 1).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.1, 0.8, curve: Curves.elasticOut),
+      ),
+    );
 
-    // Haptic feedback sequence
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    unawaited(_pulseController.repeat(reverse: true));
+
+    _badgeFloatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    unawaited(_badgeFloatController.repeat(reverse: true));
+
+    // Blast dual/triple confetti cannons
+    _topConfetti.play();
+    _leftConfetti.play();
+    _rightConfetti.play();
+    unawaited(_entranceController.forward());
+
+    // Tactile haptic symphony
     unawaited(
-      Future.delayed(const Duration(milliseconds: 200), () {
+      Future.delayed(const Duration(milliseconds: 220), () {
         unawaited(HapticFeedback.mediumImpact());
+      }),
+    );
+    unawaited(
+      Future.delayed(const Duration(milliseconds: 550), () {
+        unawaited(HapticFeedback.lightImpact());
       }),
     );
   }
 
   @override
   void dispose() {
-    _confettiController.dispose();
-    _animController.dispose();
+    _topConfetti.dispose();
+    _leftConfetti.dispose();
+    _rightConfetti.dispose();
+    _entranceController.dispose();
+    _pulseController.dispose();
+    _badgeFloatController.dispose();
     super.dispose();
   }
 
@@ -126,28 +193,65 @@ class _GratificationCelebrationOverlayState
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final confettiColors = [
+      colors.primary,
+      colors.success,
+      colors.warning,
+      colors.secondary,
+      colors.deepBronze,
+      colors.quartzCyan,
+      const Color(0xFFFFD700), // Gold
+      const Color(0xFFFF6584), // Rose
+      const Color(0xFF7B2CBF), // Electric purple
+    ];
+
     return Stack(
-      alignment: Alignment.topCenter,
+      alignment: Alignment.center,
       children: [
-        // Confetti Blast
+        // Top Shower Confetti
         Positioned(
           top: 0,
           child: ConfettiWidget(
-            confettiController: _confettiController,
+            confettiController: _topConfetti,
             blastDirection: math.pi / 2,
             maxBlastForce: 25,
             minBlastForce: 10,
-            emissionFrequency: 0.05,
+            emissionFrequency: 0.06,
             numberOfParticles: 35,
-            gravity: 0.15,
-            colors: [
-              colors.primary,
-              colors.success,
-              colors.warning,
-              colors.secondary,
-              colors.deepBronze,
-              colors.quartzCyan,
-            ],
+            gravity: 0.18,
+            colors: confettiColors,
+          ),
+        ),
+
+        // Left Angle Cannon (shoots up and right across screen)
+        Positioned(
+          left: 0,
+          bottom: 120,
+          child: ConfettiWidget(
+            confettiController: _leftConfetti,
+            blastDirection: -math.pi / 3.5, // ~51 degrees up-right
+            maxBlastForce: 35,
+            minBlastForce: 15,
+            emissionFrequency: 0.05,
+            numberOfParticles: 25,
+            gravity: 0.22,
+            colors: confettiColors,
+          ),
+        ),
+
+        // Right Angle Cannon (shoots up and left across screen)
+        Positioned(
+          right: 0,
+          bottom: 120,
+          child: ConfettiWidget(
+            confettiController: _rightConfetti,
+            blastDirection: -math.pi + math.pi / 3.5, // ~129 degrees up-left
+            maxBlastForce: 35,
+            minBlastForce: 15,
+            emissionFrequency: 0.05,
+            numberOfParticles: 25,
+            gravity: 0.22,
+            colors: confettiColors,
           ),
         ),
 
@@ -159,205 +263,392 @@ class _GratificationCelebrationOverlayState
               opacity: _fadeAnimation,
               child: Dialog(
                 backgroundColor: colors.transparent,
-                insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+                insetPadding: const EdgeInsets.symmetric(horizontal: 22),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: Container(
-                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: isDark
                           ? colors.surfaceSecondary
                           : colors.surfacePrimary,
                       borderRadius: BorderRadius.circular(AppRadius.dialog),
                       border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 100 : 60),
+                        color: colors.primary.withAlpha(isDark ? 110 : 70),
                         width: 1.5,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 80 : 25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+                          color: colors.primary.withAlpha(isDark ? 50 : 25),
+                          blurRadius: 36,
+                          spreadRadius: 4,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 100 : 30),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Floating Animated Badge
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                colors.primary,
-                                colors.syllabotAccent,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadius.dialog),
+                      child: Stack(
+                        children: [
+                          // Background Ambient Radial Glow
+                          Positioned(
+                            top: -40,
+                            left: 0,
+                            right: 0,
+                            child: AnimatedBuilder(
+                              animation: _pulseController,
+                              builder: (context, _) {
+                                final pulse = _pulseController.value;
+                                return Center(
+                                  child: Container(
+                                    width: 220 + (pulse * 30),
+                                    height: 220 + (pulse * 30),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: RadialGradient(
+                                        colors: [
+                                          colors.primary.withAlpha(
+                                            (isDark ? 65 : 45) +
+                                                (pulse * 25).toInt(),
+                                          ),
+                                          colors.syllabotAccent.withAlpha(
+                                            (isDark ? 40 : 25) +
+                                                (pulse * 15).toInt(),
+                                          ),
+                                          colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              widget.emoji,
-                              style: context.typography.body.regular.copyWith(fontSize: 40),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
 
-                        // Title
-                        Text(
-                          widget.title,
-                          textAlign: TextAlign.center,
-                          style: typography.title2.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 20,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Subtitle
-                        Text(
-                          widget.subtitle,
-                          textAlign: TextAlign.center,
-                          style: typography.body.medium.copyWith(
-                            color: colors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-
-                        // XP Earned Pill
-                        if (widget.xpEarned != null &&
-                            widget.xpEarned! > 0) ...[
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.warning.withAlpha(isDark ? 40 : 25),
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.badge,
-                              ),
-                              border: Border.all(
-                                color: colors.warning.withAlpha(
-                                  isDark ? 90 : 60,
-                                ),
-                              ),
-                            ),
-                            child: Row(
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                            child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.bolt_rounded,
-                                  color: colors.warning,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '+${widget.xpEarned} Scholar XP Earned',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.warning,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                                // Floating Animated Badge with Glowing Aura
+                                AnimatedBuilder(
+                                  animation: _badgeFloatController,
+                                  builder: (context, child) {
+                                    final floatY =
+                                        math.sin(_badgeFloatController.value *
+                                                math.pi) *
+                                            4.0;
+                                    return Transform.translate(
+                                      offset: Offset(0, -floatY),
+                                      child: child,
+                                    );
+                                  },
+                                  child: ScaleTransition(
+                                    scale: _badgeScaleAnimation,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        // Outer pulsing halo ring
+                                        AnimatedBuilder(
+                                          animation: _pulseController,
+                                          builder: (context, _) {
+                                            final scale =
+                                                1.0 + (_pulseController.value * 0.15);
+                                            final opacity =
+                                                0.6 - (_pulseController.value * 0.3);
+                                            return Transform.scale(
+                                              scale: scale,
+                                              child: Container(
+                                                width: 88,
+                                                height: 88,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: colors.primary
+                                                        .withValues(alpha: opacity),
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
 
-                        // Stats Row
-                        if (widget.primaryStatValue != null ||
-                            widget.secondaryStatValue != null) ...[
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.surfaceTertiary,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.panel,
-                              ),
-                              border: Border.all(
-                                color: colors.surfaceBorder.withAlpha(
-                                  isDark ? 60 : 40,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                if (widget.primaryStatValue != null)
-                                  _StatPill(
-                                    label: widget.primaryStatLabel ?? 'Score',
-                                    value: widget.primaryStatValue!,
-                                    color: colors.primary,
-                                    colors: colors,
-                                    typography: typography,
+                                        // Badge Main Orb
+                                        Container(
+                                          width: 82,
+                                          height: 82,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                colors.primary,
+                                                colors.syllabotAccent,
+                                                colors.secondary,
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: colors.primary.withAlpha(
+                                                  isDark ? 130 : 90,
+                                                ),
+                                                blurRadius: 20,
+                                                spreadRadius: 2,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              widget.emoji,
+                                              style: typography.body.regular
+                                                  .copyWith(fontSize: 40),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                if (widget.primaryStatValue != null &&
-                                    widget.secondaryStatValue != null)
+                                ),
+                                const SizedBox(height: 18),
+
+                                // Motivational Pill Badge (if available)
+                                if (widget.motivationalBadge != null ||
+                                    widget.streakCount != null) ...[
                                   Container(
-                                    width: 1,
-                                    height: 28,
-                                    color: colors.surfaceBorder,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary.withAlpha(
+                                        isDark ? 45 : 25,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.badge,
+                                      ),
+                                      border: Border.all(
+                                        color: colors.primary.withAlpha(
+                                          isDark ? 80 : 50,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      widget.motivationalBadge ??
+                                          '🔥 ${widget.streakCount}-Session Streak Active!',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 12,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
                                   ),
-                                if (widget.secondaryStatValue != null)
-                                  _StatPill(
-                                    label: widget.secondaryStatLabel ?? 'Cards',
-                                    value: widget.secondaryStatValue!,
-                                    color: colors.recallEasy,
+                                  const SizedBox(height: 12),
+                                ],
+
+                                // Title
+                                Text(
+                                  widget.title,
+                                  textAlign: TextAlign.center,
+                                  style: typography.title2.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 22,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Subtitle
+                                Text(
+                                  widget.subtitle,
+                                  textAlign: TextAlign.center,
+                                  style: typography.body.medium.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 13.5,
+                                    height: 1.35,
+                                  ),
+                                ),
+
+                                // XP Earned Animated Ticker Pill
+                                if (widget.xpEarned != null &&
+                                    widget.xpEarned! > 0) ...[
+                                  const SizedBox(height: 16),
+                                  _AnimatedXpPill(
+                                    xpEarned: widget.xpEarned!,
                                     colors: colors,
                                     typography: typography,
+                                    isDark: isDark,
                                   ),
+                                ],
+
+                                // Stats Row
+                                if (widget.primaryStatValue != null ||
+                                    widget.secondaryStatValue != null ||
+                                    widget.tertiaryStatValue != null) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceTertiary,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.panel,
+                                      ),
+                                      border: Border.all(
+                                        color: colors.surfaceBorder.withAlpha(
+                                          isDark ? 70 : 40,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceAround,
+                                      children: [
+                                        if (widget.primaryStatValue != null)
+                                          _StatPill(
+                                            label: widget.primaryStatLabel ??
+                                                'Score',
+                                            value: widget.primaryStatValue!,
+                                            color: colors.primary,
+                                            colors: colors,
+                                            typography: typography,
+                                          ),
+                                        if (widget.primaryStatValue != null &&
+                                            widget.secondaryStatValue != null)
+                                          Container(
+                                            width: 1,
+                                            height: 28,
+                                            color: colors.surfaceBorder,
+                                          ),
+                                        if (widget.secondaryStatValue != null)
+                                          _StatPill(
+                                            label: widget.secondaryStatLabel ??
+                                                'Cards',
+                                            value: widget.secondaryStatValue!,
+                                            color: colors.recallEasy,
+                                            colors: colors,
+                                            typography: typography,
+                                          ),
+                                        if (widget.tertiaryStatValue != null) ...[
+                                          Container(
+                                            width: 1,
+                                            height: 28,
+                                            color: colors.surfaceBorder,
+                                          ),
+                                          _StatPill(
+                                            label: widget.tertiaryStatLabel ??
+                                                'Pace',
+                                            value: widget.tertiaryStatValue!,
+                                            color: colors.warning,
+                                            colors: colors,
+                                            typography: typography,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+
+                                const SizedBox(height: 24),
+
+                                // Dismiss / Primary CTA Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ShrinkableButton(
+                                    onTap: () {
+                                      unawaited(HapticFeedback.mediumImpact());
+                                      Navigator.of(context).pop();
+                                      widget.onDismiss?.call();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            colors.primary,
+                                            colors.primary.withAlpha(220),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.panel,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: colors.primary.withAlpha(
+                                              isDark ? 80 : 50,
+                                            ),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          widget.buttonText,
+                                          style: typography.body.bold.copyWith(
+                                            color: colors.white,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                // Optional Secondary Button (e.g. Review Mistakes, Rematch, Practice More)
+                                if (widget.secondaryButtonText != null) ...[
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ShrinkableButton(
+                                      onTap: () {
+                                        unawaited(HapticFeedback.lightImpact());
+                                        Navigator.of(context).pop();
+                                        widget.onSecondaryAction?.call();
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: colors.transparent,
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.panel,
+                                          ),
+                                          border: Border.all(
+                                            color: colors.surfaceBorder
+                                                .withAlpha(120),
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            widget.secondaryButtonText!,
+                                            style: typography.body.semiBold
+                                                .copyWith(
+                                                  color: colors.textPrimary,
+                                                  fontSize: 14,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
                         ],
-
-                        const SizedBox(height: 22),
-
-                        // Dismiss CTA Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ShrinkableButton(
-                            onTap: () {
-                              unawaited(HapticFeedback.mediumImpact());
-                              Navigator.of(context).pop();
-                              widget.onDismiss?.call();
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 13),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    colors.primary,
-                                    colors.primary.withAlpha(220),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.panel,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  widget.buttonText,
-                                  style: typography.body.bold.copyWith(
-                                    color: colors.white,
-                                    fontSize: 14.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -366,6 +657,67 @@ class _GratificationCelebrationOverlayState
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AnimatedXpPill extends StatelessWidget {
+  const _AnimatedXpPill({
+    required this.xpEarned,
+    required this.colors,
+    required this.typography,
+    required this.isDark,
+  });
+
+  final int xpEarned;
+  final AppThemeColorsExtension colors;
+  final TypographyThemeExtension typography;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: colors.warning.withAlpha(isDark ? 45 : 25),
+        borderRadius: BorderRadius.circular(
+          AppRadius.badge,
+        ),
+        border: Border.all(
+          color: colors.warning.withAlpha(
+            isDark ? 100 : 70,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.bolt_rounded,
+            color: colors.warning,
+            size: 20,
+          ),
+          const SizedBox(width: 4),
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: xpEarned.toDouble()),
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) {
+              return Text(
+                '+${value.toInt()} Scholar XP Earned',
+                style: typography.caption.bold.copyWith(
+                  color: colors.warning,
+                  fontSize: 13,
+                  letterSpacing: 0.2,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -398,12 +750,12 @@ class _StatPill extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(
           value,
           style: typography.subhead.bold.copyWith(
             color: color,
-            fontSize: 15,
+            fontSize: 15.5,
           ),
         ),
       ],

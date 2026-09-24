@@ -1081,7 +1081,8 @@ class _QuizActionBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Center(
+        child: Align(
+          heightFactor: 1,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 820),
             child: Row(
@@ -1180,136 +1181,133 @@ class _QuestionPaletteSheet extends StatelessWidget {
     final reduceMotion = quizReduceMotion(context);
     final isExam = isExamSession(state);
 
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colors.surfaceBorder,
-                      borderRadius: AppRadius.radiusMicro,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 640),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceBorder,
+                    borderRadius: AppRadius.radiusMicro,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'All questions',
+                    style: typography.title3.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: colors.textSecondary,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: QuizStatChip(
+                      label: 'Answered',
+                      value: '${state.answeredCount}',
+                      color: colors.primary,
+                      reduceMotion: reduceMotion,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: QuizStatChip(
+                      label: 'Flagged',
+                      value: '${state.flaggedCount}',
+                      color: colors.warning,
+                      reduceMotion: reduceMotion,
+                      staggerIndex: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: QuizStatChip(
+                      label: 'Left blank',
+                      value: '${state.unansweredCount}',
+                      color: colors.textMuted,
+                      reduceMotion: reduceMotion,
+                      staggerIndex: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.4,
+                ),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(top: 4),
+                  itemCount: state.totalQuestions,
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 1.15,
+                      ),
+                  itemBuilder: (gridCtx, index) {
+                    return QuizStaggeredFade(
+                      distance: 8,
+                      index: (index % 10) ~/ 2,
+                      reduceMotion: reduceMotion,
+                      child: _PaletteTile(
+                        number: index + 1,
+                        status: _tileStatus(state, index),
+                        onTap: () => onJump(index),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (onSubmit != null)
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: onSubmit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                    ),
+                    child: Text(
+                      isExam
+                          ? 'Submit mock exam (${state.answeredCount} of '
+                                '${state.totalQuestions} answered)'
+                          : 'Finish practice quiz (${state.answeredCount} '
+                                'of ${state.totalQuestions} answered)',
+                      style: typography.callout.bold.copyWith(
+                        color: colors.white,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'All questions',
-                      style: typography.title3.bold.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: colors.textSecondary,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: QuizStatChip(
-                        label: 'Answered',
-                        value: '${state.answeredCount}',
-                        color: colors.primary,
-                        reduceMotion: reduceMotion,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: QuizStatChip(
-                        label: 'Flagged',
-                        value: '${state.flaggedCount}',
-                        color: colors.warning,
-                        reduceMotion: reduceMotion,
-                        staggerIndex: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: QuizStatChip(
-                        label: 'Left blank',
-                        value: '${state.unansweredCount}',
-                        color: colors.textMuted,
-                        reduceMotion: reduceMotion,
-                        staggerIndex: 2,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.sizeOf(context).height * 0.4,
-                  ),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.only(top: 4),
-                    itemCount: state.totalQuestions,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 5,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 1.15,
-                        ),
-                    itemBuilder: (gridCtx, index) {
-                      return QuizStaggeredFade(
-                        distance: 8,
-                        index: (index % 10) ~/ 2,
-                        reduceMotion: reduceMotion,
-                        child: _PaletteTile(
-                          number: index + 1,
-                          status: _tileStatus(state, index),
-                          onTap: () => onJump(index),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-                if (onSubmit != null)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: onSubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppRadius.radiusCard,
-                        ),
-                      ),
-                      child: Text(
-                        isExam
-                            ? 'Submit mock exam (${state.answeredCount} of '
-                                  '${state.totalQuestions} answered)'
-                            : 'Finish practice quiz (${state.answeredCount} '
-                                  'of ${state.totalQuestions} answered)',
-                        style: typography.callout.bold.copyWith(
-                          color: colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

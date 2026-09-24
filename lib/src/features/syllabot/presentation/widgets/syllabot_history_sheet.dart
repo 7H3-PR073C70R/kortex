@@ -114,7 +114,8 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
         child: Container(

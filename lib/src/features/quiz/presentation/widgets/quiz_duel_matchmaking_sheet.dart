@@ -165,7 +165,8 @@ class QuizDuelMatchmakingSheet extends HookWidget {
           );
         }
       },
-      child: Center(
+      child: Align(
+        alignment: Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: 640,

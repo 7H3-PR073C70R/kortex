@@ -121,7 +121,8 @@ class _LocalLlmCapacityPromptModalSheetState
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Container(

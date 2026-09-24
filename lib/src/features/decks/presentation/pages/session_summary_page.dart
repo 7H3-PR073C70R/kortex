@@ -10,6 +10,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 
 @RoutePage()
 class SessionSummaryPage extends StatefulWidget {
@@ -41,10 +42,8 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
   );
   bool _celebrationStarted = false;
 
-  /// Celebration is earned, not default: confetti and heavy haptics only for
-  /// a real body of work, so the reward keeps its value.
-  bool get _shouldCelebrate =>
-      widget.cardsReviewed >= 10 || widget.retentionScore >= 0.9;
+  /// Celebrate every completed deck review session.
+  bool get _shouldCelebrate => widget.cardsReviewed > 0;
 
   @override
   void didChangeDependencies() {
@@ -55,6 +54,36 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
     if (celebrate) {
       _confettiController.play();
       unawaited(HapticFeedback.heavyImpact());
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final xp = widget.cardsReviewed * 10;
+        final retention = (widget.retentionScore * 100).toInt();
+        final emoji = widget.retentionScore >= 0.85 ? '🎴' : '🧠';
+        final title = widget.retentionScore >= 0.85
+            ? 'Deck Conquered!'
+            : 'Study Session Complete!';
+        final subtitle =
+            'You reviewed ${widget.cardsReviewed} flashcards. Active recall consolidates memory tracks.';
+
+        unawaited(
+          GratificationCelebrationOverlay.show(
+            context,
+            title: title,
+            subtitle: subtitle,
+            primaryStatLabel: 'Cards',
+            primaryStatValue: '${widget.cardsReviewed}',
+            secondaryStatLabel: 'Retention',
+            secondaryStatValue: '$retention%',
+            tertiaryStatLabel: 'XP Earned',
+            tertiaryStatValue: '+$xp',
+            xpEarned: xp,
+            motivationalBadge: '🧠 Memory Consolidation Active',
+            buttonText: 'View Summary',
+            emoji: emoji,
+          ),
+        );
+      });
     } else {
       unawaited(HapticFeedback.lightImpact());
     }

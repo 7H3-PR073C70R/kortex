@@ -86,7 +86,8 @@ class CreateStudyRoomSheet extends HookWidget {
       (id: 'none', label: 'Mute Sound', icon: Icons.volume_off_rounded),
     ];
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Container(

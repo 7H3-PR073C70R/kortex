@@ -488,7 +488,9 @@ class _CourseQuestionsView extends HookWidget {
           if (state.questions.isEmpty) return const SizedBox.shrink();
 
           return SafeArea(
-            child: Center(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: 1,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 820),
                 child: Container(

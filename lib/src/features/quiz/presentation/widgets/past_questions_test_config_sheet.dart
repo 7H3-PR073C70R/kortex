@@ -48,7 +48,10 @@ void showPastQuestionsTestConfigSheet(
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return SafeArea(
-              child: Center(
+              top: false,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                heightFactor: 1,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 640),
                   child: Padding(

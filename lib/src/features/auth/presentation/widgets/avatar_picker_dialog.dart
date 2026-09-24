@@ -50,7 +50,8 @@ void showAvatarPickerDialog(
       context: context,
       backgroundColor: colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Center(
+      builder: (ctx) => Align(
+        alignment: Alignment.bottomCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 580),
           child: Container(

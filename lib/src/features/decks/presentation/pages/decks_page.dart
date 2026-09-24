@@ -55,8 +55,6 @@ class _DecksView extends HookWidget {
     unawaited(
       showModalBottomSheet<void>(
         context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
         backgroundColor: isDark
             ? colors.surfaceSecondary
             : colors.surfacePrimary,
@@ -66,12 +64,14 @@ class _DecksView extends HookWidget {
           ),
         ),
         builder: (bottomSheetContext) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: SafeArea(
-                child: SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
+          return SafeArea(
+            top: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 20,

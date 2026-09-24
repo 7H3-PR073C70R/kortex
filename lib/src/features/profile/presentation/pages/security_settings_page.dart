@@ -1482,7 +1482,8 @@ class SecuritySettingsPage extends HookWidget {
       context: context,
       backgroundColor: colors.transparent,
       builder: (sheetContext) {
-        return Center(
+        return Align(
+          alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: Container(

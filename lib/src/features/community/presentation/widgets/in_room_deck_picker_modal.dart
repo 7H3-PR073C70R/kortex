@@ -136,10 +136,14 @@ class _InRoomDeckPickerModalState extends State<InRoomDeckPickerModal> {
     TypographyThemeExtension typography,
     bool isDark,
   ) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.78,
-      ),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.78,
+          ),
       padding: EdgeInsets.only(
         top: 14,
         left: 16,
@@ -362,6 +366,8 @@ class _InRoomDeckPickerModalState extends State<InRoomDeckPickerModal> {
                   ),
           ),
         ],
+      ),
+        ),
       ),
     );
   }

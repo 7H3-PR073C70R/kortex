@@ -44,7 +44,8 @@ class MillionaireLadderDrawer extends StatelessWidget {
       (i) => QuizSessionState.millionaireTiersXp.length - i,
     );
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 580,

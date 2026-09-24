@@ -65,7 +65,10 @@ class TrackForumPostCard extends HookWidget {
         ),
         builder: (ctx) {
           return SafeArea(
-            child: Center(
+            top: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              heightFactor: 1,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 580),
                 child: Padding(

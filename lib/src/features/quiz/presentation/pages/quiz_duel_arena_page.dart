@@ -16,6 +16,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 
 /// Full-screen competitive arena for 1v1 Real-Time Quiz Duels (QZ-13).
 class QuizDuelArenaPage extends HookWidget {
@@ -29,6 +30,7 @@ class QuizDuelArenaPage extends HookWidget {
     final reduceMotion = quizReduceMotion(context);
 
     final floatingEmotes = useState<List<String>>([]);
+    final hasCelebrated = useState(false);
 
     void onSelectOption(int index) {
       AppFeedback.selection();
@@ -57,6 +59,63 @@ class QuizDuelArenaPage extends HookWidget {
               floatingEmotes.value = List.of(floatingEmotes.value)..removeAt(0);
             }
           });
+        }
+
+        if (state.status == QuizDuelStatus.finished && !hasCelebrated.value) {
+          hasCelebrated.value = true;
+          final isWinner = state.isWinner;
+          final isDraw = state.isDraw;
+          final myScore = state.myParticipant?.score ?? 0;
+          final opponentScore = state.opponentParticipant?.score ?? 0;
+          final opponentName =
+              state.opponentParticipant?.displayName ?? 'Rival';
+
+          final String title;
+          final String subtitle;
+          final String emoji;
+          final String badge;
+          final int xp;
+
+          if (isWinner) {
+            emoji = '🏆';
+            title = 'Duel Victory!';
+            subtitle =
+                'Fast and accurate! You triumphed over $opponentName in the competitive arena.';
+            badge = '🏆 Arena Champion';
+            xp = 150;
+          } else if (isDraw) {
+            emoji = '⚔️';
+            title = 'Even Match!';
+            subtitle =
+                'Incredible duel! Both you and $opponentName finished tied on points.';
+            badge = '⚔️ Steel Sharpens Steel';
+            xp = 80;
+          } else {
+            emoji = '🛡️';
+            title = 'Fierce Battle!';
+            subtitle =
+                'Close duel! Every round makes the next victory closer.';
+            badge = '💪 Experience Banked';
+            xp = 40;
+          }
+
+          unawaited(
+            GratificationCelebrationOverlay.show(
+              context,
+              title: title,
+              subtitle: subtitle,
+              primaryStatLabel: 'Your Score',
+              primaryStatValue: '$myScore pts',
+              secondaryStatLabel: 'Rival',
+              secondaryStatValue: '$opponentScore pts',
+              tertiaryStatLabel: 'Duel XP',
+              tertiaryStatValue: '+$xp',
+              xpEarned: xp,
+              motivationalBadge: badge,
+              buttonText: 'View Scoreboard',
+              emoji: emoji,
+            ),
+          );
         }
       },
       builder: (context, state) {

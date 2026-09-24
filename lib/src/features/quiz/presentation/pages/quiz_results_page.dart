@@ -64,24 +64,59 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // The full-screen celebration is reserved for genuine peak moments:
-      // the top of the millionaire ladder, a banked cash-out, or a 90%+ run.
-      // Everything else gets its recognition inline, on the page.
-      final bigWin = _isBigWin(widget.result.scorePercent);
-
-      if (widget.showCelebrationDialog && bigWin) {
+      if (widget.showCelebrationDialog) {
         final isMillionaire =
             widget.assessmentMode == AssessmentMode.millionaireMode;
+        final isMockExam =
+            widget.assessmentMode == AssessmentMode.examSimulationMode;
         final score = widget.result.scorePercent;
-        final title = isMillionaire
-            ? (widget.currentTier >= 12
-                  ? 'Top of the ladder'
-                  : 'Progress banked')
-            : 'Outstanding result';
 
-        final subtitle = isMillionaire
-            ? 'You earned ${(widget.currentTier * 100) + widget.speedBonusXp} XP on the climb'
-            : 'You scored $score% (${widget.result.correctAnswers}/${widget.result.totalQuestions} correct)';
+        final String title;
+        final String subtitle;
+        final String emoji;
+        final String? badge;
+
+        if (isMillionaire) {
+          emoji = '👑';
+          title = widget.currentTier >= 12
+              ? 'Top of the Ladder!'
+              : 'Progress Banked!';
+          subtitle =
+              'You conquered ${widget.currentTier} tiers and banked ${(widget.currentTier * 100) + widget.speedBonusXp} XP!';
+          badge = '👑 Millionaire Scholar';
+        } else if (isMockExam) {
+          emoji = score >= 80 ? '🎓' : (score >= 50 ? '🏛️' : '📝');
+          title = score >= 90
+              ? 'Exam Mastery Achieved!'
+              : (score >= 70
+                  ? 'Mock Exam Completed!'
+                  : (score >= 50
+                      ? 'Exam Simulation Done!'
+                      : 'Mock Exam Finished!'));
+          subtitle = score >= 70
+              ? 'You completed the full exam simulation with $score% accuracy. Exam readiness locked in!'
+              : 'Completed the full exam simulation. Reviewing your missed questions now will solidify your readiness.';
+          badge = '🎓 Exam Simulation Milestone';
+        } else {
+          emoji = score >= 90 ? '🌟' : (score >= 70 ? '⚡' : '💪');
+          title = score >= 90
+              ? 'Flawless Knowledge!'
+              : (score >= 70
+                  ? 'Quiz Completed!'
+                  : (score >= 50
+                      ? 'Milestone Complete!'
+                      : 'Practice Finished!'));
+          subtitle = score >= 70
+              ? 'You answered ${widget.result.correctAnswers}/${widget.result.totalQuestions} questions correctly! Synaptic recall sharpened.'
+              : 'Consistency is what builds genius. Review your answers below to convert every mistake into mastery.';
+          badge = '⚡ Active Practice Milestone';
+        }
+
+        final xp = isMillionaire
+            ? (widget.currentTier * 100) + widget.speedBonusXp
+            : (widget.result.correctAnswers * 15);
+
+        final mistakes = _missedQuestions;
 
         unawaited(
           GratificationCelebrationOverlay.show(
@@ -93,10 +128,22 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
             secondaryStatLabel: 'Correct',
             secondaryStatValue:
                 '${widget.result.correctAnswers}/${widget.result.totalQuestions}',
-            xpEarned: isMillionaire
-                ? (widget.currentTier * 100) + widget.speedBonusXp
-                : (widget.result.correctAnswers * 15),
-            emoji: isMillionaire ? '👑' : '🌟',
+            tertiaryStatLabel: 'XP Earned',
+            tertiaryStatValue: '+$xp',
+            xpEarned: xp,
+            motivationalBadge: badge,
+            buttonText: 'See Full Breakdown',
+            secondaryButtonText: mistakes.isNotEmpty
+                ? 'Review Mistakes'
+                : 'Practice Again',
+            onSecondaryAction: () {
+              if (mistakes.isNotEmpty) {
+                _openMistakeReview(context, mistakes);
+              } else {
+                _handleTryAgain(context);
+              }
+            },
+            emoji: emoji,
           ),
         );
       }

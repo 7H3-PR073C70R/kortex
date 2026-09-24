@@ -1352,11 +1352,15 @@ class _AmbientSoundscapeBar extends StatelessWidget {
               builder: (context, roomState) {
                 final volumePercent = (roomState.ambientAudioVolume * 100)
                     .round();
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
-                  ),
+                return Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 20,
+                      ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? colors.surfaceSecondary
@@ -1517,8 +1521,10 @@ class _AmbientSoundscapeBar extends StatelessWidget {
                       ],
                     ),
                   ),
-                );
-              },
+                ),
+              ),
+            );
+          },
             ),
           );
         },

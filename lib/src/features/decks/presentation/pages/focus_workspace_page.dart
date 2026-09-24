@@ -13,6 +13,7 @@ import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/thought_parking_lot_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
+import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class FocusWorkspacePage extends StatefulWidget {
@@ -136,6 +137,30 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                 context.showSnackBar(
                   message: state.errorMessage!,
                   type: SnackBarType.error,
+                );
+              }
+              if (state.status == FocusSessionStatus.completed) {
+                final total = state.cards.length;
+                final mastered = state.goodCount + state.easyCount;
+                final xp = mastered * 15;
+                unawaited(
+                  GratificationCelebrationOverlay.show(
+                    context,
+                    title: 'Hyperdrive Sprint Complete!',
+                    subtitle:
+                        'You conquered task paralysis with focused micro-momentum!',
+                    primaryStatLabel: 'Mastered',
+                    primaryStatValue: '$mastered/$total',
+                    secondaryStatLabel: 'Streak',
+                    secondaryStatValue: '${state.streak}',
+                    tertiaryStatLabel: 'XP Earned',
+                    tertiaryStatValue: '+$xp',
+                    xpEarned: xp,
+                    streakCount: state.streak,
+                    motivationalBadge: '⚡ ADHD Sprint Conquered',
+                    buttonText: 'See Summary',
+                    emoji: '⚡',
+                  ),
                 );
               }
             },

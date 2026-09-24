@@ -69,7 +69,8 @@ class PromoCodeBottomSheet extends HookWidget {
       }
     }
 
-    return Center(
+    return Align(
+      alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 580,

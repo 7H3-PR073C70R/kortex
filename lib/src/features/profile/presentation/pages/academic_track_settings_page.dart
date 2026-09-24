@@ -528,7 +528,8 @@ class AcademicTrackSettingsPage extends HookWidget {
         backgroundColor: colors.transparent,
         builder: (ctx) {
           const tracks = CourseTrackEntity.defaultTracks;
-          return Center(
+          return Align(
+            alignment: Alignment.bottomCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
               child: Container(
