@@ -119,8 +119,11 @@ class AuthNavigationListener extends StatelessWidget {
           }
         } else if (state.isAuthenticated) {
           if (!isChatMode) {
-            final l10n = context.l10n;
-            context.showSnackBar(message: l10n.authSuccessMessage);
+            if (isNewlyRegistered) {
+              context.showSnackBar(message: context.l10n.authSuccessMessage);
+            } else {
+              context.showSnackBar(message: 'Signed in successfully');
+            }
 
             // 1. Fast path: check if server-verified profile says user is onboarded
             final serverSaysOnboarded = state.userProfile?.isOnboarded ?? false;

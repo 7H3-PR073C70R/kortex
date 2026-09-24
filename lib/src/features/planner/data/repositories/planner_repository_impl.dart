@@ -390,6 +390,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
     List<String>? scopedTopics,
     double? weightPercent,
     int? totalCardsCount,
+    int? masteredCardsCount,
+    int? totalLapses,
     double? targetScorePercent,
     bool? isCompleted,
     double? achievedScorePercent,
@@ -407,9 +409,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
       );
       final daysRemaining = target.difference(today).inDays;
       final cards = totalCardsCount ?? existing?.totalCardsCount ?? 0;
+      final effMastered = masteredCardsCount ?? existing?.masteredCardsCount ?? 0;
+      final effLapses = totalLapses ?? existing?.totalLapses ?? 0;
+      final remainingCards = (cards - effMastered).clamp(0, cards);
       final dailyTarget = _calculator.calculateDailyTarget(
-        remainingCards: cards,
-        lapses: existing?.totalLapses ?? 0,
+        remainingCards: remainingCards,
+        lapses: effLapses,
         daysRemaining: daysRemaining < 1 ? 1 : daysRemaining,
       );
 
@@ -493,8 +498,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
         scopedTopics: effTopics,
         weightPercent: effWeight,
         totalCardsCount: cards,
-        masteredCardsCount: existing?.masteredCardsCount ?? 0,
-        totalLapses: existing?.totalLapses ?? 0,
+        masteredCardsCount: effMastered,
+        totalLapses: effLapses,
         dailyTarget: dailyTarget,
         targetScorePercent:
             targetScorePercent ?? existing?.targetScorePercent ?? 0.85,

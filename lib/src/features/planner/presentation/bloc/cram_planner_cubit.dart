@@ -1,4 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/utils/use_case.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
@@ -19,12 +28,53 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
        _createExamUseCase =
            createExamUseCase ?? CreateExamCountdownUseCase(plannerRepository),
        _calculator = calculator ?? const CramWorkloadCalculator(),
-       super(const CramPlannerState());
+       super(const CramPlannerState()) {
+    _initDecksListener();
+  }
 
   final PlannerRepository _repository;
   final CalculateDailyCramTargetUseCase _calculateTargetUseCase;
   final CreateExamCountdownUseCase _createExamUseCase;
   final CramWorkloadCalculator _calculator;
+  StreamSubscription<DecksState>? _decksSubscription;
+
+  void _initDecksListener() {
+    if (locator.isRegistered<DecksBloc>()) {
+      _decksSubscription = locator<DecksBloc>().stream.listen((decksState) {
+        if (state.activeExams.isNotEmpty) {
+          final calibrated = _calibrateExamsWithLiveData(
+            state.activeExams,
+            decks: decksState.allDecks,
+          );
+          final (totalDaily, estMins, topPriorityId) =
+              _computeAggregates(calibrated);
+          final primary = state.selectedExam != null
+              ? calibrated.firstWhere(
+                  (e) => e.id == state.selectedExam!.id,
+                  orElse: () => calibrated.first,
+                )
+              : (calibrated.isNotEmpty ? calibrated.first : null);
+          emit(
+            state.copyWith(
+              activeExams: calibrated,
+              selectedExam: primary,
+              dynamicDailyTarget:
+                  primary?.dailyTarget ?? state.dynamicDailyTarget,
+              totalCombinedDailyTarget: totalDaily,
+              estimatedDailyMinutes: estMins,
+              topPriorityExamId: topPriorityId,
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  Future<void> close() async {
+    await _decksSubscription?.cancel();
+    return super.close();
+  }
 
   (int totalDaily, int estMinutes, String? topPriorityId) _computeAggregates(
     List<ExamEventEntity> exams,
@@ -46,9 +96,176 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     return (totalDaily, estMinutes, topPriorityId);
   }
 
+  /// Calibrates exam entities with live deck card counts, actual mastery rates,
+  /// and due retention metrics from [DecksBloc] or [UserActivityService].
+  List<ExamEventEntity> _calibrateExamsWithLiveData(
+    List<ExamEventEntity> exams, {
+    List<DeckEntity>? decks,
+  }) {
+    final allDecks = decks ??
+        (locator.isRegistered<DecksBloc>()
+            ? locator<DecksBloc>().state.allDecks
+            : const <DeckEntity>[]);
+
+    return exams.map((exam) {
+      if (allDecks.isNotEmpty) {
+        final matchingDecks = <DeckEntity>[];
+        if (exam.scopedDeckIds.isNotEmpty) {
+          for (final deckId in exam.scopedDeckIds) {
+            matchingDecks.addAll(allDecks.where((d) => d.id == deckId));
+          }
+        }
+
+        // If no explicit scoped decks, match by smart tokens & subject/course track
+        if (matchingDecks.isEmpty) {
+          final examText = '${exam.subjectTrack} ${exam.examName}'.toLowerCase();
+          final examTokens = RegExp('[a-zA-Z0-9]+')
+              .allMatches(examText)
+              .map((m) => m.group(0)!)
+              .where((t) =>
+                  t.length >= 2 &&
+                  !const {
+                    'exam',
+                    'test',
+                    'final',
+                    'midterm',
+                    'the',
+                    'and',
+                    'for',
+                    'course',
+                    'academic',
+                  }.contains(t))
+              .toSet();
+
+          for (final d in allDecks) {
+            final deckText =
+                '${d.courseCode ?? ""} ${d.subject} ${d.title}'.toLowerCase();
+            final deckTokens = RegExp('[a-zA-Z0-9]+')
+                .allMatches(deckText)
+                .map((m) => m.group(0)!)
+                .where((t) =>
+                    t.length >= 2 &&
+                    !const {
+                      'exam',
+                      'test',
+                      'final',
+                      'midterm',
+                      'the',
+                      'and',
+                      'for',
+                      'course',
+                      'academic',
+                    }.contains(t))
+                .toSet();
+
+            final hasCommonToken = examTokens.any(deckTokens.contains);
+            final directSubstring = (d.courseCode != null &&
+                    d.courseCode!.isNotEmpty &&
+                    examText.contains(d.courseCode!.toLowerCase())) ||
+                (d.subject.isNotEmpty &&
+                    (examText.contains(d.subject.toLowerCase()) ||
+                        d.subject.toLowerCase().contains(exam.subjectTrack.toLowerCase())));
+
+            if (hasCommonToken || directSubstring) {
+              matchingDecks.add(d);
+            }
+          }
+
+          // If still empty and the user has only 1 deck, associate it naturally
+          if (matchingDecks.isEmpty && allDecks.length == 1) {
+            matchingDecks.add(allDecks.first);
+          }
+        }
+
+        if (matchingDecks.isNotEmpty) {
+          final totalCards = matchingDecks.fold<int>(
+            0,
+            (sum, d) => sum + d.totalCards,
+          );
+          final masteredCards = matchingDecks.fold<int>(
+            0,
+            (sum, d) => sum + (d.totalCards * d.masteryRate).round(),
+          );
+          final totalLapses = matchingDecks.fold<int>(
+            0,
+            (sum, d) => sum + d.dueCards,
+          );
+          final days = exam.daysRemaining <= 0 ? 1 : exam.daysRemaining;
+          final remaining = (totalCards - masteredCards).clamp(0, totalCards);
+          final dailyPace = _calculateTargetUseCase(
+            remainingCards: remaining,
+            lapses: totalLapses,
+            daysRemaining: days,
+          );
+
+          final scopedIds = exam.scopedDeckIds.isNotEmpty
+              ? exam.scopedDeckIds
+              : matchingDecks.map((d) => d.id).toList();
+
+          return exam.copyWith(
+            scopedDeckIds: scopedIds,
+            totalCardsCount: totalCards > 0 ? totalCards : exam.totalCardsCount,
+            masteredCardsCount: masteredCards,
+            totalLapses: totalLapses,
+            dailyTarget: dailyPace,
+          );
+        }
+      }
+
+      // Check UserActivityService if available
+      if (locator.isRegistered<UserActivityService>()) {
+        final totalMastered =
+            locator<UserActivityService>().getTotalCardsMastered();
+        if (totalMastered > 0) {
+          final total =
+              exam.totalCardsCount > 0 ? exam.totalCardsCount : totalMastered;
+          final mastered = totalMastered.clamp(0, total);
+          final remaining = (total - mastered).clamp(0, total);
+          final dailyPace = _calculateTargetUseCase(
+            remainingCards: remaining,
+            lapses: exam.totalLapses,
+            daysRemaining: exam.daysRemaining <= 0 ? 1 : exam.daysRemaining,
+          );
+          return exam.copyWith(
+            totalCardsCount: total,
+            masteredCardsCount: mastered,
+            dailyTarget: dailyPace,
+          );
+        }
+      }
+
+      // If truly no decks and no activity, reflect real state (not dummy 50)
+      if (allDecks.isEmpty &&
+          exam.totalCardsCount == 50 &&
+          exam.masteredCardsCount == 0) {
+        return exam.copyWith(
+          totalCardsCount: 0,
+          masteredCardsCount: 0,
+          dailyTarget: 0,
+        );
+      }
+
+      return exam;
+    }).toList();
+  }
+
   /// Loads active exams and calculates initial urgency for the closest exam.
   Future<void> loadExams() async {
     emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    var allDecks = locator.isRegistered<DecksBloc>()
+        ? locator<DecksBloc>().state.allDecks
+        : const <DeckEntity>[];
+
+    if (allDecks.isEmpty && locator.isRegistered<GetUserDecksUseCase>()) {
+      try {
+        final decksRes = await locator<GetUserDecksUseCase>()(const NoParams());
+        decksRes.fold(
+          (_) {},
+          (fetched) => allDecks = fetched,
+        );
+      } on Object catch (_) {}
+    }
 
     final result = await _repository.getActiveExams();
     result.fold(
@@ -59,7 +276,8 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         ),
       ),
       (exams) {
-        final sorted = List<ExamEventEntity>.from(exams)
+        final calibrated = _calibrateExamsWithLiveData(exams, decks: allDecks);
+        final sorted = List<ExamEventEntity>.from(calibrated)
           ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
         final primaryExam = sorted.isNotEmpty ? sorted.first : null;
@@ -67,18 +285,21 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         var urgency = ExamUrgencyLevel.normal;
 
         if (primaryExam != null) {
-          pace = _calculateTargetUseCase(
-            remainingCards: primaryExam.remainingCards,
-            lapses: primaryExam.totalLapses,
-            daysRemaining: primaryExam.daysRemaining,
-          );
+          pace = primaryExam.dailyTarget > 0
+              ? primaryExam.dailyTarget
+              : _calculateTargetUseCase(
+                  remainingCards: primaryExam.remainingCards,
+                  lapses: primaryExam.totalLapses,
+                  daysRemaining: primaryExam.daysRemaining,
+                );
           urgency = _calculator.getUrgencyLevel(
             primaryExam.daysRemaining,
             type: primaryExam.assessmentType,
           );
         }
 
-        final (totalDaily, estMins, topPriorityId) = _computeAggregates(sorted);
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(sorted);
 
         emit(
           state.copyWith(
@@ -131,16 +352,13 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         ),
       ),
       (newExam) {
-        final updatedList = List<ExamEventEntity>.from(state.activeExams)
-          ..add(newExam)
+        final rawList = List<ExamEventEntity>.from(state.activeExams)
+          ..add(newExam);
+        final updatedList = _calibrateExamsWithLiveData(rawList)
           ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
         final primary = updatedList.first;
-        final pace = _calculateTargetUseCase(
-          remainingCards: primary.remainingCards,
-          lapses: primary.totalLapses,
-          daysRemaining: primary.daysRemaining,
-        );
+        final pace = primary.dailyTarget;
         final urgency = _calculator.getUrgencyLevel(
           primary.daysRemaining,
           type: primary.assessmentType,
@@ -220,6 +438,8 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     List<String>? scopedTopics,
     double? weightPercent,
     int? totalCardsCount,
+    int? masteredCardsCount,
+    int? totalLapses,
     double? targetScorePercent,
     bool? isCompleted,
     double? achievedScorePercent,
@@ -236,6 +456,8 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       scopedTopics: scopedTopics,
       weightPercent: weightPercent,
       totalCardsCount: totalCardsCount,
+      masteredCardsCount: masteredCardsCount,
+      totalLapses: totalLapses,
       targetScorePercent: targetScorePercent,
       isCompleted: isCompleted,
       achievedScorePercent: achievedScorePercent,
@@ -249,29 +471,25 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         ),
       ),
       (updatedExam) {
-        final updatedList =
+        final rawList =
             state.activeExams
                 .map((e) => e.id == examId ? updatedExam : e)
-                .toList()
-              ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+                .toList();
+        final updatedList = _calibrateExamsWithLiveData(rawList)
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
-        final primary = (state.selectedExam?.id == examId)
-            ? updatedExam
-            : (updatedList.isNotEmpty ? updatedList.first : null);
+        final primary = updatedList.firstWhere(
+          (e) => e.id == examId,
+          orElse: () => (state.selectedExam?.id == examId)
+              ? updatedExam
+              : (updatedList.isNotEmpty ? updatedList.first : updatedExam),
+        );
 
-        var pace = 20;
-        var urgency = ExamUrgencyLevel.normal;
-        if (primary != null) {
-          pace = _calculateTargetUseCase(
-            remainingCards: primary.remainingCards,
-            lapses: primary.totalLapses,
-            daysRemaining: primary.daysRemaining,
-          );
-          urgency = _calculator.getUrgencyLevel(
-            primary.daysRemaining,
-            type: primary.assessmentType,
-          );
-        }
+        final pace = primary.dailyTarget;
+        final urgency = _calculator.getUrgencyLevel(
+          primary.daysRemaining,
+          type: primary.assessmentType,
+        );
 
         final (totalDaily, estMins, topPriorityId) =
             _computeAggregates(updatedList);

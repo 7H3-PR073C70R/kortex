@@ -21,11 +21,25 @@ import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class ManageExamModalSheet extends StatelessWidget {
-  const ManageExamModalSheet({super.key});
+  const ManageExamModalSheet({
+    this.scopedCourseCode,
+    this.scopedCourseTitle,
+    this.initialExamId,
+    super.key,
+  });
+
+  final String? scopedCourseCode;
+  final String? scopedCourseTitle;
+  final String? initialExamId;
 
   static const _calculator = CramWorkloadCalculator();
 
-  static Future<void> show(BuildContext context) {
+  static Future<void> show(
+    BuildContext context, {
+    String? scopedCourseCode,
+    String? scopedCourseTitle,
+    String? initialExamId,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -36,7 +50,11 @@ class ManageExamModalSheet extends StatelessWidget {
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: const ManageExamModalSheet(),
+            child: ManageExamModalSheet(
+              scopedCourseCode: scopedCourseCode,
+              scopedCourseTitle: scopedCourseTitle,
+              initialExamId: initialExamId,
+            ),
           ),
         ),
       ),
@@ -239,11 +257,37 @@ class ManageExamModalSheet extends StatelessWidget {
 
     return BlocBuilder<CramPlannerCubit, CramPlannerState>(
       builder: (context, state) {
-        final exam = state.selectedExam;
-        final allExams = state.activeExams;
+        final cleanCode = (scopedCourseCode ?? '').trim().toLowerCase();
+        final cleanTitle = (scopedCourseTitle ?? '').trim().toLowerCase();
+        final isScoped = cleanCode.isNotEmpty || cleanTitle.isNotEmpty;
+
+        final allExams = isScoped
+            ? state.activeExams.where((e) {
+                final track = e.subjectTrack.toLowerCase();
+                final name = e.examName.toLowerCase();
+                return (cleanCode.isNotEmpty &&
+                        (track.contains(cleanCode) ||
+                            name.contains(cleanCode))) ||
+                    (cleanTitle.isNotEmpty &&
+                        (track.contains(cleanTitle) ||
+                            name.contains(cleanTitle)));
+              }).toList()
+            : state.activeExams;
+
+        final ExamEventEntity? resolvedExam;
+        if (initialExamId != null &&
+            allExams.any((e) => e.id == initialExamId)) {
+          resolvedExam = allExams.firstWhere((e) => e.id == initialExamId);
+        } else if (state.selectedExam != null &&
+            allExams.any((e) => e.id == state.selectedExam!.id)) {
+          resolvedExam = state.selectedExam;
+        } else {
+          resolvedExam = allExams.firstOrNull;
+        }
+
         final cubit = context.read<CramPlannerCubit>();
 
-        if (exam == null) {
+        if (resolvedExam == null) {
           return Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -260,17 +304,26 @@ class ManageExamModalSheet extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'No Active Assessment',
+                    isScoped
+                        ? 'No Active Assessment for ${scopedCourseCode ?? scopedCourseTitle}'
+                        : 'No Active Assessment',
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   AppButton(
                     text: l10n.addExamTitle,
                     onPressed: () {
                       Navigator.of(context).pop();
-                      unawaited(AddExamModalSheet.show(context));
+                      unawaited(
+                        AddExamModalSheet.show(
+                          context,
+                          preselectedCourseCode: scopedCourseCode,
+                          preselectedCourseTitle: scopedCourseTitle,
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -278,6 +331,8 @@ class ManageExamModalSheet extends StatelessWidget {
             ),
           );
         }
+
+        final exam = resolvedExam;
 
         final days = exam.daysRemaining;
         final pace = state.dynamicDailyTarget;
@@ -572,7 +627,9 @@ class ManageExamModalSheet extends StatelessWidget {
                 // If multiple exams exist, show switch list
                 if (allExams.length > 1) ...[
                   Text(
-                    'All Tracked Milestones (${allExams.length})',
+                    isScoped
+                        ? '${scopedCourseCode ?? scopedCourseTitle} Milestones (${allExams.length})'
+                        : 'All Tracked Milestones (${allExams.length})',
                     style: typography.subhead.bold.copyWith(
                       color: colors.textSecondary,
                       fontSize: 13,

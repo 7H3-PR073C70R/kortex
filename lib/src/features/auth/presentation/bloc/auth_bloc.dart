@@ -133,7 +133,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               _authRepository.completeOnboarding(
                 track: profile.targetTrack.isNotEmpty
                     ? profile.targetTrack
-                    : 'WAEC',
+                    : '',
                 dailyTarget: profile.dailyCardTarget > 0
                     ? profile.dailyCardTarget
                     : 20,
@@ -372,17 +372,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
-          unawaited(
-            locator<LocalStorageService>().savePreference(
-              key: PrefKeys.isNewlyRegistered,
-              data: 'true',
-            ),
-          );
-          unawaited(
-            locator<LocalStorageService>().deletePreference(
-              key: PrefKeys.hasSeenWelcomeWalkthrough,
-            ),
-          );
+          // Only maintain isNewlyRegistered if explicitly initiated by a new registration
+          final currentIsNew =
+              locator<LocalStorageService>().getPreference(
+                key: PrefKeys.isNewlyRegistered,
+              ) ==
+              'true';
+          if (!currentIsNew) {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.isNewlyRegistered,
+                data: 'false',
+              ),
+            );
+          }
 
           try {
             final pendingPromo = locator<LocalStorageService>().getPreference(
@@ -579,7 +582,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               _authRepository.completeOnboarding(
                 track: mergedProfile.targetTrack.isNotEmpty
                     ? mergedProfile.targetTrack
-                    : 'WAEC',
+                    : '',
                 dailyTarget: mergedProfile.dailyCardTarget > 0
                     ? mergedProfile.dailyCardTarget
                     : 20,

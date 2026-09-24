@@ -1,6 +1,9 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:kortex/src/app/router/app_router.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -8,6 +11,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -173,23 +177,24 @@ class AboutSupportPage extends StatelessWidget {
                 title: 'Feature Walkthrough & Guide',
                 subtitle: 'Replay the full interactive app tour',
                 onTap: () {
-                  // Navigate to Dashboard first, then launch the overlay.
-                  // AutoTabsRouter is a scoped ancestor of this page.
-                  final tabsRouter = AutoTabsRouter.of(context, watch: false);
+                  AppFeedback.light();
+                  final router = locator<AppRouter>();
                   unawaited(
-                    AppGuidedTourOverlay.start(
-                      context,
-                      force: true,
-                      onBeforeStart: () {
-                        // Pop back to the main shell (About page is a push route)
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        }
-                        // Switch to Dashboard tab (index 0)
-                        tabsRouter.setActiveIndex(0);
-                      },
+                    router.navigate(
+                      const MainRoute(children: [DashboardRoute()]),
                     ),
                   );
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final rootContext = router.navigatorKey.currentContext;
+                    if (rootContext != null && rootContext.mounted) {
+                      unawaited(
+                        AppGuidedTourOverlay.start(
+                          rootContext,
+                          force: true,
+                        ),
+                      );
+                    }
+                  });
                 },
                 colors: colors,
                 typography: typography,

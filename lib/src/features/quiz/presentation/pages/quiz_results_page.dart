@@ -2,12 +2,14 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
@@ -20,6 +22,7 @@ import 'package:kortex/src/features/monetization/domain/services/subscription_gu
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/academic_grade_evaluator.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
@@ -65,6 +68,40 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+
+      // If this quiz is associated with an active exam, update its empirical grade in CramPlannerCubit
+      if (locator.isRegistered<CramPlannerCubit>()) {
+        try {
+          final planner = locator<CramPlannerCubit>();
+          final exams = planner.state.activeExams;
+          final matched = exams.where((e) {
+            return (widget.courseCode != null &&
+                    widget.courseCode!.isNotEmpty &&
+                    (e.subjectTrack
+                            .toLowerCase()
+                            .contains(widget.courseCode!.toLowerCase()) ||
+                        e.examName
+                            .toLowerCase()
+                            .contains(widget.courseCode!.toLowerCase()))) ||
+                widget.result.quizTitle
+                    .toLowerCase()
+                    .contains(e.examName.toLowerCase()) ||
+                e.examName
+                    .toLowerCase()
+                    .contains(widget.result.quizTitle.toLowerCase());
+          }).firstOrNull;
+          if (matched != null) {
+            unawaited(
+              planner.completeAssessment(
+                examId: matched.id,
+                scorePercent:
+                    (widget.result.scorePercent / 100.0).clamp(0.0, 1.0),
+              ),
+            );
+          }
+        } on Object catch (_) {}
+      }
+
       if (widget.showCelebrationDialog) {
         final isMillionaire =
             widget.assessmentMode == AssessmentMode.millionaireMode;
@@ -624,6 +661,78 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               color: colors.textSecondary,
             ),
           ),
+          const SizedBox(height: 14),
+          // Real-World Standard Grade Badge
+          () {
+            final activeTrack =
+                context.watch<AuthBloc?>()?.state.userProfile?.targetTrack;
+            final gradeResult = AcademicGradeEvaluator.evaluate(
+              scorePercent: score.toDouble(),
+              track: activeTrack ?? widget.courseCode,
+            );
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: gradeResult.gradeColor.withAlpha(isDark ? 35 : 18),
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(
+                  color: gradeResult.gradeColor.withAlpha(isDark ? 90 : 60),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.verified_rounded,
+                        size: 16,
+                        color: gradeResult.gradeColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Real-World Grade: ${gradeResult.grade}',
+                        style: typography.callout.bold.copyWith(
+                          color: gradeResult.gradeColor,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: gradeResult.gradeColor.withAlpha(
+                            isDark ? 50 : 30,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          gradeResult.classification,
+                          style: typography.caption.bold.copyWith(
+                            color: gradeResult.gradeColor,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${gradeResult.standard} • ${gradeResult.remark}',
+                    textAlign: TextAlign.center,
+                    style: typography.footnote.regular.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }(),
         ],
       ),
     );

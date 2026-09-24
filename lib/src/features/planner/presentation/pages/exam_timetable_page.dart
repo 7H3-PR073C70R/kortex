@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -13,12 +14,15 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
+import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
@@ -168,7 +172,452 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
         MockExamLobbyRoute(
           examId: exam.id,
           examName: exam.examName,
+          subjectTrack: exam.subjectTrack,
         ),
+      ),
+    );
+  }
+
+  String? _getLinkedDeckTitle(ExamEventEntity exam) {
+    if (exam.scopedDeckIds.isEmpty) return null;
+    if (!locator.isRegistered<DecksBloc>()) return null;
+    final allDecks = locator<DecksBloc>().state.allDecks;
+    final firstId = exam.scopedDeckIds.first;
+    final match = allDecks.where((d) => d.id == firstId).toList();
+    if (match.isEmpty) return null;
+    final d = match.first;
+    final masteryPct = (d.masteryRate * 100).toInt();
+    return '${d.title} (${d.totalCards} cards • $masteryPct% mastery)';
+  }
+
+  void _openDeckSelector(BuildContext context, ExamEventEntity exam) {
+    AppFeedback.selection();
+    final allDecks = locator.isRegistered<DecksBloc>()
+        ? locator<DecksBloc>().state.allDecks
+        : const <DeckEntity>[];
+    if (allDecks.isNotEmpty) {
+      _showDeckPickerModal(context, exam, allDecks);
+    } else {
+      _showNoDecksModal(context, exam);
+    }
+  }
+
+  void _showNoDecksModal(BuildContext context, ExamEventEntity exam) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: colors.transparent,
+        builder: (sheetCtx) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No Flashcard Decks Yet',
+                style: typography.headline.bold.copyWith(color: colors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'To calibrate your study pace with real memory mastery, create flashcards for "${exam.examName}" or practice mock questions directly.',
+                style: typography.body.regular.copyWith(color: colors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(sheetCtx).pop();
+                  unawaited(
+                    context.navigateTo(
+                      const MainRoute(children: [DecksRoute()]),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                label: const Text('Create Study Deck'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(sheetCtx).pop();
+                  unawaited(
+                    context.router.push(
+                      MockExamLobbyRoute(
+                        examId: exam.id,
+                        examName: exam.examName,
+                        subjectTrack: exam.subjectTrack,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.school_outlined),
+                label: const Text('Start Diagnostic Practice Mock'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onStartCalibrationStudy(BuildContext context, ExamEventEntity exam) {
+    AppFeedback.selection();
+
+    // 1. Direct launch if the exam has scoped decks
+    if (exam.scopedDeckIds.isNotEmpty) {
+      final deckId = exam.scopedDeckIds.first;
+      final deckTarget = exam.daysRemaining <= 14 && exam.daysRemaining > 0
+          ? 'cram:${exam.daysRemaining}:$deckId'
+          : deckId;
+      unawaited(
+        context.router.push(
+          StudySessionRoute(deckId: deckTarget),
+        ),
+      );
+      return;
+    }
+
+    // 2. Check if DecksBloc has matching decks by courseCode, subject, or title
+    if (locator.isRegistered<DecksBloc>()) {
+      final allDecks = locator<DecksBloc>().state.allDecks;
+      final examText = '${exam.subjectTrack} ${exam.examName}'.toLowerCase();
+      final examTokens = RegExp('[a-zA-Z0-9]+')
+          .allMatches(examText)
+          .map((m) => m.group(0)!)
+          .where((t) =>
+              t.length >= 2 &&
+              !const {
+                'exam',
+                'test',
+                'final',
+                'midterm',
+                'the',
+                'and',
+                'for',
+                'course',
+                'academic',
+              }.contains(t))
+          .toSet();
+
+      final matching = allDecks.where((d) {
+        final deckText =
+            '${d.courseCode ?? ""} ${d.subject} ${d.title}'.toLowerCase();
+        final deckTokens = RegExp('[a-zA-Z0-9]+')
+            .allMatches(deckText)
+            .map((m) => m.group(0)!)
+            .where((t) =>
+                t.length >= 2 &&
+                !const {
+                  'exam',
+                  'test',
+                  'final',
+                  'midterm',
+                  'the',
+                  'and',
+                  'for',
+                  'course',
+                  'academic',
+                }.contains(t))
+            .toSet();
+
+        final hasCommon = examTokens.any(deckTokens.contains);
+        final directSubstring = (d.courseCode != null &&
+                d.courseCode!.isNotEmpty &&
+                examText.contains(d.courseCode!.toLowerCase())) ||
+            (d.subject.isNotEmpty &&
+                (examText.contains(d.subject.toLowerCase()) ||
+                    d.subject.toLowerCase().contains(exam.subjectTrack.toLowerCase())));
+        return hasCommon || directSubstring;
+      }).toList();
+
+      if (matching.isNotEmpty) {
+        final chosenDeck = matching.first;
+        unawaited(
+          context.read<CramPlannerCubit>().updateExamCountdown(
+                examId: exam.id,
+                examName: exam.examName,
+                targetDate: exam.targetDate,
+                subjectTrack: exam.subjectTrack,
+                assessmentType: exam.assessmentType,
+                scopedDeckIds: [chosenDeck.id],
+                totalCardsCount: chosenDeck.totalCards,
+                masteredCardsCount:
+                    (chosenDeck.totalCards * chosenDeck.masteryRate).round(),
+                totalLapses: chosenDeck.dueCards,
+              ),
+        );
+        final deckTarget = exam.daysRemaining <= 14 && exam.daysRemaining > 0
+            ? 'cram:${exam.daysRemaining}:${chosenDeck.id}'
+            : chosenDeck.id;
+        unawaited(
+          context.router.push(
+            StudySessionRoute(deckId: deckTarget),
+          ),
+        );
+        return;
+      }
+
+      // If user has other decks, show an interactive picker sheet
+      if (allDecks.isNotEmpty) {
+        _showDeckPickerModal(context, exam, allDecks);
+        return;
+      }
+    }
+
+    // 3. Fallback: prompt to create deck or run practice mock
+    _showNoDecksModal(context, exam);
+  }
+
+  void _showDeckPickerModal(
+    BuildContext context,
+    ExamEventEntity exam,
+    List<DeckEntity> decks,
+  ) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: colors.transparent,
+        builder: (sheetCtx) {
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetCtx).size.height * 0.7,
+              maxWidth: 600,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(
+                color: colors.surfaceBorder.withValues(
+                  alpha: isDark ? 0.3 : 0.15,
+                ),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.textSecondary.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Link Study Deck to ${exam.examName}',
+                  style: typography.headline.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Select a flashcard deck to calibrate your daily study goal and track real mastery.',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: decks.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (ctx, idx) {
+                      final deck = decks[idx];
+                      final isLinked = exam.scopedDeckIds.contains(deck.id);
+
+                      return InkWell(
+                        onTap: () {
+                          Navigator.of(sheetCtx).pop();
+                          AppFeedback.heavy();
+                          unawaited(
+                            context.read<CramPlannerCubit>().updateExamCountdown(
+                                  examId: exam.id,
+                                  examName: exam.examName,
+                                  targetDate: exam.targetDate,
+                                  subjectTrack: exam.subjectTrack,
+                                  assessmentType: exam.assessmentType,
+                                  scopedDeckIds: [deck.id],
+                                  totalCardsCount: deck.totalCards,
+                                  masteredCardsCount:
+                                      (deck.totalCards * deck.masteryRate).round(),
+                                  totalLapses: deck.dueCards,
+                                ),
+                          );
+                          context.showSnackBar(
+                            message: 'Linked "${deck.title}" to ${exam.examName}',
+                            type: SnackBarType.success,
+                          );
+                          final deckTarget =
+                              exam.daysRemaining <= 14 && exam.daysRemaining > 0
+                                  ? 'cram:${exam.daysRemaining}:${deck.id}'
+                                  : deck.id;
+                          unawaited(
+                            context.router.push(
+                              StudySessionRoute(deckId: deckTarget),
+                            ),
+                          );
+                        },
+                        borderRadius: AppRadius.radiusCard,
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: isLinked
+                                ? colors.primary.withValues(
+                                    alpha: isDark ? 0.2 : 0.08,
+                                  )
+                                : colors.surfaceBorder.withValues(
+                                    alpha: isDark ? 0.2 : 0.08,
+                                  ),
+                            borderRadius: AppRadius.radiusCard,
+                            border: Border.all(
+                              color: isLinked
+                                  ? colors.primary.withValues(
+                                      alpha: isDark ? 0.6 : 0.4,
+                                    )
+                                  : colors.surfaceBorder.withValues(
+                                      alpha: isDark ? 0.4 : 0.2,
+                                    ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.style_rounded,
+                                  color: colors.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      deck.title,
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${deck.totalCards} cards • ${(deck.masteryRate * 100).toInt()}% mastery',
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isLinked)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.success.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: colors.success.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.check_rounded,
+                                        size: 13,
+                                        color: colors.success,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Linked',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.success,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 14,
+                                  color: colors.textSecondary,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(sheetCtx).pop();
+                      unawaited(
+                        context.navigateTo(
+                          const MainRoute(children: [DecksRoute()]),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Create New Deck'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -255,9 +704,13 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                           const SizedBox(height: 24),
                           StudyCalibrationGraphWidget(
                             exam: primaryExam,
-                            onStartStudySession: () {
-                              Navigator.of(context).pop();
-                            },
+                            linkedDeckTitle: _getLinkedDeckTitle(primaryExam),
+                            onSelectDeck: () =>
+                                _openDeckSelector(context, primaryExam),
+                            onStartStudySession: () =>
+                                _onStartCalibrationStudy(context, primaryExam),
+                            onManageExam: () =>
+                                ManageExamModalSheet.show(context),
                           ),
                           const SizedBox(height: 24),
                         ],
@@ -496,30 +949,37 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.white.withValues(alpha: 0.2),
-                  borderRadius: AppRadius.radiusBadge,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(exam.assessmentType.icon, size: 13, color: colors.white),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack.toUpperCase()}',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.white,
-                        fontSize: 10.5,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.white.withValues(alpha: 0.2),
+                    borderRadius: AppRadius.radiusBadge,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(exam.assessmentType.icon, size: 13, color: colors.white),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack.toUpperCase()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.white,
+                            fontSize: 10.5,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               if (exam.weightPercent != null)
                 Text(
                   '${(exam.weightPercent! * 100).toInt()}% OF GRADE',

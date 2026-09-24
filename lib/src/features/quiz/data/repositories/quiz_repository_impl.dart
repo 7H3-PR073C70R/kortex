@@ -199,11 +199,23 @@ class QuizRepositoryImpl implements QuizRepository {
                   deckTitle.toLowerCase().contains('mock')));
 
       if (_effectivePastQuestionsRepo != null) {
+        final rawTitle = deckTitle ?? '';
+        final cleanSubject = rawTitle
+            .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
+            .replaceAll(
+              RegExp(
+                r'\s+(Final Exam|Exam|Mock|Midterm|Simulator|Paper)\b',
+                caseSensitive: false,
+              ),
+              '',
+            )
+            .trim();
+
         ExamCategory? matchedCat;
-        final query = '${deckTitle ?? ''} $deckId'.toLowerCase();
+        final combined = '$rawTitle $deckId'.toLowerCase();
         for (final cat in ExamCategory.values) {
-          if (query.contains(cat.name.toLowerCase()) ||
-              query.contains(cat.code.toLowerCase())) {
+          if (combined.contains(cat.name.toLowerCase()) ||
+              combined.contains(cat.code.toLowerCase())) {
             matchedCat = cat;
             break;
           }
@@ -212,12 +224,24 @@ class QuizRepositoryImpl implements QuizRepository {
         try {
           final pqResult = await _effectivePastQuestionsRepo!.getPastQuestions(
             examCategory: matchedCat,
-            searchQuery: matchedCat == null ? (deckTitle ?? deckId) : null,
+            subject: cleanSubject.isNotEmpty ? cleanSubject : null,
+            searchQuery: cleanSubject.isNotEmpty ? cleanSubject : null,
           );
-          final pastQuestions = pqResult.fold(
+          var pastQuestions = pqResult.fold(
             (f) => <PastQuestionEntity>[],
             (q) => q,
           );
+
+          if (pastQuestions.isEmpty && cleanSubject.isNotEmpty) {
+            final fallbackResult =
+                await _effectivePastQuestionsRepo!.getPastQuestions(
+                  searchQuery: cleanSubject,
+                );
+            pastQuestions = fallbackResult.fold(
+              (f) => <PastQuestionEntity>[],
+              (q) => q,
+            );
+          }
 
           if (pastQuestions.isNotEmpty) {
             final shuffled = List<PastQuestionEntity>.from(pastQuestions)
@@ -663,85 +687,445 @@ class QuizRepositoryImpl implements QuizRepository {
     required String examId,
     int count = 10,
   }) {
-    final cleanTitle = examTitle.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
+    final cleanTitle = examTitle
+        .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
+        .replaceAll(
+          RegExp(
+            r'\s+(Final Exam|Exam|Mock|Midterm|Simulator|Paper)\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
+    final lower = cleanTitle.toLowerCase();
     final questions = <QuizQuestionModel>[];
 
-    final coreCompetencies = [
-      (
-        'Fundamental Principles',
-        'Which core principle is most critical to master in $cleanTitle?',
-        'Foundational domain comprehension and rigorous systematic application',
-        [
-          'Superficial memorization of edge cases without principles',
-          'Random sampling of unrelated tertiary concepts',
-          'Disregarding theoretical underpinnings in favor of guesswork',
-        ],
-        'High-yield exam performance depends on deep conceptual mastery rather than rote memorization.',
-      ),
-      (
-        'Analytical Problem Solving',
-        'When evaluating complex problem sets in $cleanTitle, what is the optimal first step?',
-        'Deconstruct the problem into constituent requirements and verify boundary conditions',
-        [
-          'Jump directly to conclusion based on first impression',
-          'Ignore question constraints and apply generic assumptions',
-          'Calculate outputs before defining variables or given constraints',
-        ],
-        'Systematic decomposition ensures all constraints are accounted for before synthesis.',
-      ),
-      (
-        'Critical Verification',
-        'In high-stakes examination settings for $cleanTitle, how should results be verified?',
-        'Dimensional analysis, reverse-verification, and sanity checking against baseline thresholds',
-        [
-          'Assuming the first computed value is always error-free',
-          'Skipping validation to preserve testing time regardless of margin',
-          'Changing answers at random without systematic evaluation',
-        ],
-        'Reverse verification and dimensional consistency catch common examination traps.',
-      ),
-      (
-        'Standard Methodology',
-        'What characterizes a standard rigorous methodology when approaching $cleanTitle assessments?',
-        'Evidence-based reasoning adhering to established standardized rubrics and guidelines',
-        [
-          'Unsubstantiated intuitive speculation',
-          'Disregarding established conventions for proprietary shortcuts',
-          'Inconsistent notation and unreferenced formulas',
-        ],
-        'Standardized examinations strictly score based on established rubrics and methodology.',
-      ),
-      (
-        'Error Minimization',
-        'Which technique is most effective for mitigating common cognitive traps in $cleanTitle?',
-        'Active elimination of demonstrably false distractors prior to selecting the target answer',
-        [
-          'Selecting the option with the most complex vocabulary regardless of fit',
-          'Relying solely on visual symmetry of answer keys',
-          'Ignoring negative qualifiers like NOT or EXCEPT in prompts',
-        ],
-        'Process of elimination actively isolates distractors with deceptive wording.',
-      ),
-    ];
+    List<(String, String, String, List<String>, String)> bank;
+
+    if (lower.contains('agric') || lower.contains('crop') || lower.contains('soil') || lower.contains('agr')) {
+      bank = [
+        (
+          'Soil Science',
+          'Which soil constituent is most critical for maximizing water-holding capacity and cation exchange in agricultural soils?',
+          'Humus (decomposed organic matter)',
+          [
+            'Coarse silica sand',
+            'Crushed feldspar granules',
+            'Inorganic gypsum crystals',
+          ],
+          'Humus is colloidal organic material with a very high specific surface area, providing abundant cation exchange sites and vastly improving moisture retention.',
+        ),
+        (
+          'Livestock Pathology',
+          'In poultry management, which viral pathogen is characterized by torticollis (twisted neck), respiratory distress, and high mortality?',
+          'Newcastle Disease (Avian Paramyxovirus)',
+          [
+            'Avian Coccidiosis',
+            'Fowl Typhoid (Salmonella gallinarum)',
+            'Infectious Bursal Disease (Gumboro)',
+          ],
+          'Newcastle disease is an acute avian paramyxoviral infection producing distinctive nervous signs (torticollis) and enteritis, controlled via Lasota/Komarov vaccinations.',
+        ),
+        (
+          'Crop Agronomy',
+          'Which cultural husbandry practice prevents greening and solanine toxic alkaloid formation in root and tuber crops?',
+          'Earthing up (mounding loose soil around tuber bases)',
+          [
+            'Early vegetative vine pruning',
+            'Vertical bamboo trellis staking',
+            'Application of high-nitrogen foliar sprays',
+          ],
+          'Earthing up shields developing underground tubers from sunlight exposure, preventing the formation of bitter, toxic solanine alkaloids.',
+        ),
+        (
+          'Animal Physiology',
+          'What is the specialized function of the gizzard (ventriculus) in the avian digestive tract?',
+          'Mechanical grinding and maceration of whole grains using ingested grit',
+          [
+            'Enzymatic proteolysis through gastric hydrochloric acid',
+            'Bacterial fermentation of coarse cellulose fibers',
+            'Primary absorption of volatile fatty acids into hepatic portal circulation',
+          ],
+          'Because poultry lack dentition, the muscular gizzard utilizes swallowed stones (grit) to mechanically crush tough seed coats and grains.',
+        ),
+        (
+          'Agricultural Economics',
+          'In farm enterprise accounting, what does asset depreciation represent?',
+          'Annual decline in monetary value of fixed capital assets due to wear, tear, and obsolescence',
+          [
+            'Net cash proceeds received from harvested crop commodities',
+            'Compulsory insurance premium paid for livestock indemnity',
+            'Aggregate variable operational expenditures for seasonal labor',
+          ],
+          'Depreciation quantifies the scheduled diminution of capital value across tractors, implements, and structures across their economic life cycle.',
+        ),
+        (
+          'Parasitology',
+          'Which parasite life cycle requires freshwater snails (genus Lymnaea) as intermediate hosts, causing liver rot in ruminants?',
+          'Fasciola gigantica (Liver Fluke)',
+          [
+            'Haemonchus contortus',
+            'Taenia saginata',
+            'Ascaris lumbricoides',
+          ],
+          'Fasciola miracidia penetrate amphibious Lymnaea snails to develop into infective cercariae that encyst onto pasture vegetation.',
+        ),
+        (
+          'Irrigation Engineering',
+          'Which irrigation system achieves the highest water-use efficiency by delivering moisture directly to plant root zones?',
+          'Drip (trickle / micro) irrigation',
+          [
+            'Continuous furrow basin flooding',
+            'Border strip surface gravity spreading',
+            'High-pressure rotary impact sprinkler',
+          ],
+          'Drip irrigation drastically minimizes evaporation and weed germination by conveying calibrated moisture directly to localized rhizosphere zones.',
+        ),
+        (
+          'Integrated Pest Management',
+          'In IPM, what defines the Economic Threshold Level (ETL)?',
+          'Pest density at which intervention measures must be executed to prevent reaching the Economic Injury Level',
+          [
+            'Absolute zero pest presence across all farm hectares',
+            'The pest density that causes complete defoliation',
+            'The legal limit of chemical pesticide residues on market produce',
+          ],
+          'The Economic Threshold is the critical alert density where the cost of control is justified before damage surpasses economic loss.',
+        ),
+        (
+          'Crop Breeding',
+          'In Mendelian genetics, what is the expected phenotypic ratio in the F2 generation of a monohybrid cross with complete dominance?',
+          '3 : 1',
+          ['9 : 3 : 3 : 1', '1 : 2 : 1', '1 : 1'],
+          'A cross between heterozygous parents (Bb x Bb) generates offspring with 3 dominant phenotypes to 1 recessive phenotype.',
+        ),
+        (
+          'Agricultural Extension',
+          'Which extension methodology is considered most persuasive when introducing high-yielding hybrid crop cultivars to rural farmers?',
+          'Method and Result Demonstration plots',
+          [
+            'Mass-market radio audio broadcasts',
+            'Distribution of technical monochrome flyers',
+            'Telephone SMS automated advisory notices',
+          ],
+          'Farmers adopt innovations most reliably when they observe side-by-side comparative yield results grown directly under local agro-ecological conditions.',
+        ),
+      ];
+    } else if (lower.contains('math') || lower.contains('mth') || lower.contains('calc') || lower.contains('stat')) {
+      bank = [
+        (
+          'Calculus',
+          'What is the derivative of f(x) = ln(3x^2 + 5)?',
+          '6x / (3x^2 + 5)',
+          ['3x / (3x^2 + 5)', '6x(3x^2 + 5)', '1 / (6x)'],
+          "By the chain rule, d/dx[ln(u)] = u'/u. Here u = 3x^2 + 5, so u' = 6x, yielding 6x / (3x^2 + 5).",
+        ),
+        (
+          'Algebra',
+          'If the roots of the quadratic equation 2x^2 - 8x + k = 0 are real and equal, what is the value of k?',
+          '8',
+          ['4', '16', '2'],
+          'Equal roots occur when the discriminant b^2 - 4ac = 0. (-8)^2 - 4(2)(k) = 64 - 8k = 0 => k = 8.',
+        ),
+        (
+          'Trigonometry',
+          'Simplify: sin(2theta) / (1 + cos(2theta)).',
+          'tan(theta)',
+          ['cot(theta)', 'sin(theta)', 'cos(theta)'],
+          'sin(2theta) = 2sin(theta)cos(theta) and 1 + cos(2theta) = 2cos^2(theta). Dividing yields sin(theta)/cos(theta) = tan(theta).',
+        ),
+        (
+          'Probability',
+          'Two fair six-sided dice are rolled simultaneously. What is the probability that the sum of the dice equals 7?',
+          '1/6',
+          ['1/12', '5/36', '7/36'],
+          'The favorable pairs are (1,6), (2,5), (3,4), (4,3), (5,2), (6,1) which gives 6 outcomes out of 36 total, so 6/36 = 1/6.',
+        ),
+        (
+          'Coordinate Geometry',
+          'What is the equation of the line perpendicular to 2x - 3y = 6 and passing through (0, 4)?',
+          '3x + 2y = 8',
+          ['2x + 3y = 12', '3x - 2y = -8', '2x - 3y = -12'],
+          'The given slope is 2/3. The perpendicular slope is -3/2. y - 4 = (-3/2)(x - 0) => 2y - 8 = -3x => 3x + 2y = 8.',
+        ),
+      ];
+    } else if (lower.contains('bio') || lower.contains('genet') || lower.contains('botany') || lower.contains('zool')) {
+      bank = [
+        (
+          'Cell Biology',
+          'During which phase of aerobic cellular respiration is the largest quantity of ATP synthesized via oxidative phosphorylation?',
+          'Electron Transport Chain and Chemiosmosis',
+          [
+            'Glycolysis in the cytosol',
+            'Citric Acid (Krebs) Cycle in the mitochondrial matrix',
+            'Pyruvate oxidation into Acetyl-CoA',
+          ],
+          'The electron transport chain utilizes the proton motive force through ATP synthase to generate 28–34 ATP per glucose molecule.',
+        ),
+        (
+          'Genetics',
+          'Which molecular mechanism ensures precise semiconservative replication of double-stranded DNA?',
+          'Complementary base pairing guided by DNA Polymerase III',
+          [
+            'Non-specific ribonucleic annealing',
+            'Random purine polymerization',
+            'Post-transcriptional alternative splicing',
+          ],
+          'DNA Polymerase synthesizes daughter strands according to Watson-Crick base-pairing (A-T, G-C) using parental templates.',
+        ),
+        (
+          'Ecology',
+          'What term describes the symbiotic association between leguminous plant roots and Rhizobium nitrogen-fixing bacteria?',
+          'Mutualism',
+          ['Commensalism', 'Parasitism', 'Amensalism'],
+          'Both species benefit: the plant gains fixed nitrates, while the bacteria receive organic sugars and protection.',
+        ),
+        (
+          'Physiology',
+          'Which human endocrine hormone directly stimulates the reabsorption of water in kidney collecting ducts to concentrate urine?',
+          'Antidiuretic Hormone (Vasopressin)',
+          ['Aldosterone', 'Atrial Natriuretic Peptide', 'Glucagon'],
+          'ADH binds to basolateral receptors, prompting aquaporin-2 channel insertion into apical membranes of collecting duct cells.',
+        ),
+        (
+          'Plant Physiology',
+          'In C3 photosynthesis, which enzyme catalyzes the initial carbon dioxide fixation with Ribulose-1,5-bisphosphate?',
+          'RuBisCO (Ribulose-1,5-bisphosphate carboxylase-oxygenase)',
+          ['PEP carboxylase', 'ATP synthase', 'Pyruvate kinase'],
+          'RuBisCO is the primary carbon-fixing enzyme in the stroma of chloroplasts during the Calvin-Benson cycle.',
+        ),
+      ];
+    } else if (lower.contains('chem') || lower.contains('chm')) {
+      bank = [
+        (
+          'Physical Chemistry',
+          "According to Le Chatelier's principle, what occurs when pressure is increased in the equilibrium system N2(g) + 3H2(g) <=> 2NH3(g)?",
+          'Equilibrium shifts forward (to the right) toward ammonia production',
+          [
+            'Equilibrium shifts backward to produce more reactants',
+            'The equilibrium constant Keq increases tenfold',
+            'Reaction rate drops to zero permanently',
+          ],
+          'Increasing pressure shifts equilibrium toward the side with fewer moles of gas (from 4 moles of reactants to 2 moles of product).',
+        ),
+        (
+          'Organic Chemistry',
+          'Which functional group is formed by the acid-catalyzed reaction between a carboxylic acid and a primary alcohol?',
+          'Ester',
+          ['Ether', 'Aldehyde', 'Ketone'],
+          'Fischer esterification couples an organic carboxylic acid with an alcohol to yield an ester and water.',
+        ),
+        (
+          'Electrochemistry',
+          'In an electrochemical galvanic cell, what chemical process occurs consistently at the anode?',
+          'Oxidation (loss of electrons)',
+          [
+            'Reduction (gain of electrons)',
+            'Precipitation of insoluble salts',
+            'Protonation of electrolyte solvent',
+          ],
+          'By definition across all electrochemical cells, oxidation consistently takes place at the anode (An Ox).',
+        ),
+        (
+          'Inorganic Chemistry',
+          'What happens to the first ionization energy of elements as you move from left to right across a period in the periodic table?',
+          'It generally increases due to increasing effective nuclear charge (Zeff)',
+          [
+            'It decreases monotonically because of atomic radii expansion',
+            'It remains identical across all main group elements',
+            'It drops to zero for transition metal blocks',
+          ],
+          'Across a period, nuclear charge increases with minimal shielding change, drawing valence electrons tighter and requiring more energy to remove.',
+        ),
+        (
+          'Stoichiometry',
+          'What volume of carbon dioxide at STP (standard temperature and pressure) is generated by the complete thermal decomposition of 100g of pure CaCO3 (Molar Mass = 100 g/mol)?',
+          '22.4 dm^3 (liters)',
+          ['11.2 dm^3', '44.8 dm^3', '2.24 dm^3'],
+          '100g of CaCO3 is 1 mol. The reaction CaCO3 -> CaO + CO2 produces 1 mol of CO2, occupying 22.4 dm^3 at STP.',
+        ),
+      ];
+    } else if (lower.contains('phys') || lower.contains('phy')) {
+      bank = [
+        (
+          'Mechanics',
+          'A stone is dropped from rest from the top of a 80m cliff. Assuming g = 10 m/s^2 and neglecting air resistance, what is its velocity just before impact?',
+          '40 m/s',
+          ['20 m/s', '80 m/s', '16 m/s'],
+          'v^2 = u^2 + 2gs => v^2 = 0 + 2(10)(80) = 1600 => v = 40 m/s.',
+        ),
+        (
+          'Electricity',
+          'Three resistors of 6 ohms, 3 ohms, and 2 ohms are connected in parallel. What is the equivalent resistance of this network?',
+          '1 ohm',
+          ['11 ohms', '3 ohms', '0.5 ohms'],
+          '1/Req = 1/6 + 1/3 + 1/2 = 1/6 + 2/6 + 3/6 = 6/6 = 1 => Req = 1 ohm.',
+        ),
+        (
+          'Thermodynamics',
+          'Which thermodynamic law states that absolute zero temperature cannot be attained in a finite number of physical processes?',
+          'Third Law of Thermodynamics',
+          [
+            'First Law of Thermodynamics',
+            'Second Law of Thermodynamics',
+            'Zeroth Law of Thermodynamics',
+          ],
+          'The third law specifies that the entropy of a perfect crystal approaches zero as temperature reaches absolute zero, making it asymptotically unreachable.',
+        ),
+        (
+          'Optics',
+          'What phenomenon accounts for the propagation of light signals through flexible optical fiber cables without substantial signal leakage?',
+          'Total Internal Reflection',
+          ['Diffraction', 'Polarization', 'Interference'],
+          'When light travels from dense core to less dense cladding at an angle exceeding the critical angle, total internal reflection occurs.',
+        ),
+        (
+          'Modern Physics',
+          "In Einstein's photoelectric effect equation, what does the threshold frequency (f0) represent?",
+          'Minimum frequency of incident radiation required to liberate photoelectrons from a metal surface',
+          [
+            'The frequency at which all emitted electrons achieve speed of light',
+            'The frequency where light undergoes destructive interference',
+            'The frequency producing maximum photon wavelength',
+          ],
+          'Photons with energy below the work function hf0 cannot eject electrons regardless of beam intensity.',
+        ),
+      ];
+    } else if (lower.contains('econ') || lower.contains('commerc')) {
+      bank = [
+        (
+          'Microeconomics',
+          'When the price elasticity of demand for a commodity is perfectly inelastic (|Ed| = 0), what does the demand curve look like?',
+          'A vertical straight line parallel to the price axis',
+          [
+            'A horizontal straight line parallel to the quantity axis',
+            'A rectangular hyperbola',
+            'An upward-sloping linear curve',
+          ],
+          'Perfect inelasticty indicates quantity demanded remains invariant regardless of price fluctuations.',
+        ),
+        (
+          'Macroeconomics',
+          'Which monetary policy instrument would a central bank deploy to combat severe demand-pull inflation?',
+          'Raise the monetary policy benchmark interest rate (cash reserve ratio)',
+          [
+            'Lower the policy rate to encourage credit expansion',
+            'Purchase commercial treasury bills in open market operations',
+            'Increase direct budget deficit government expenditure',
+          ],
+          'Increasing benchmark interest rates raises the cost of borrowing, cooling money supply and dampening excess aggregate demand.',
+        ),
+        (
+          'Market Structures',
+          'Which characteristic distinguishes a monopolistically competitive market from a perfectly competitive market?',
+          'Product differentiation through branding, quality, or packaging',
+          [
+            'Barriers preventing any new firm from entering the industry',
+            'A single seller dominating all industry output',
+            'Perfect price discrimination for individual consumers',
+          ],
+          'Monopolistic competition involves numerous sellers offering close but differentiated substitutes.',
+        ),
+        (
+          'National Accounting',
+          'What is the formula to calculate Gross Domestic Product (GDP) using the expenditure approach?',
+          'GDP = C + I + G + (X - M)',
+          [
+            'GDP = C + S + T',
+            'GDP = Wages + Rent + Interest + Profit',
+            'GDP = Total Capital Output - Foreign Debt',
+          ],
+          'Expenditure GDP measures consumption (C), gross private investment (I), government spending (G), and net exports (X - M).',
+        ),
+      ];
+    } else {
+      // General dynamic academic competencies tailored to course subject
+      bank = [
+        (
+          'Theoretical Foundations',
+          'In advanced $cleanTitle study, which conceptual premise provides the baseline framework for modern analysis?',
+          'Rigorous empirical validation grounded in peer-reviewed first principles',
+          [
+            'Subjective anecdotal conjecture without verifiable controls',
+            'Arbitrary historical conventions devoid of systemic evaluation',
+            'Uncalibrated intuition disregarding established analytical models',
+          ],
+          'Academic scholarship in $cleanTitle requires systematic empirical proof, falsifiable hypotheses, and methodological rigor.',
+        ),
+        (
+          'Systematic Methodology',
+          'When diagnosing complex multifaceted problem sets in $cleanTitle, what is the standard recommended first step?',
+          'Deconstruct given criteria into verified parameters and establish boundary limits',
+          [
+            'Speculate immediate solutions without reviewing constraints',
+            'Bypass diagnostic verification in favor of generic approximations',
+            'Discard anomalous variables that challenge premature assumptions',
+          ],
+          'Structured parameter decomposition isolates independent variables and prevents cognitive bias in high-level assessments.',
+        ),
+        (
+          'Quality Verification',
+          'How are conclusions rigorously evaluated against error margins in standardized $cleanTitle examinations?',
+          'Multi-angle cross-verification, dimensional consistency checks, and comparative tolerance benchmarks',
+          [
+            'Accepting initial calculations without redundant sanity validation',
+            'Altering outputs at random without methodological rationale',
+            'Assuming standard textbook constants are variable based on preference',
+          ],
+          'Rigorous cross-checking detects dimensional errors, arithmetic drift, and distractor traps common to formal academic testing.',
+        ),
+        (
+          'Applied Synthesis',
+          'What distinguishes professional mastery from novice performance when applying $cleanTitle to real-world scenarios?',
+          'Synthesizing disparate principles into coherent, scalable, and reproducible solutions under constraints',
+          [
+            'Fragmented recall of isolated terminology without integration',
+            'Over-reliance on rote formula substitution without comprehension',
+            'Ignoring real-world tolerances and environmental variance',
+          ],
+          'Excellence in $cleanTitle is characterized by contextual synthesis and the ability to adapt core principles to novel problems.',
+        ),
+        (
+          'Analytical Optimization',
+          'When evaluating competing solutions in $cleanTitle, which metric provides the most robust optimization standard?',
+          'Maximizing efficacy and accuracy while minimizing systemic resource and cognitive overhead',
+          [
+            'Selecting arbitrary solutions based solely on historical familiarity',
+            'Prioritizing unnecessary complexity to convey superficial depth',
+            'Disregarding error propagation across sequential stages',
+          ],
+          "Optimal domain execution adheres to parsimony (Occam's razor): effective, robust solutions with minimal systemic friction.",
+        ),
+      ];
+    }
+
+    final rand = Random(examId.hashCode ^ cleanTitle.hashCode);
+    final selectedIndices = <int>[];
+    for (var i = 0; i < count; i++) {
+      final index = i < bank.length ? i : rand.nextInt(bank.length);
+      selectedIndices.add(index);
+    }
 
     for (var i = 0; i < count; i++) {
-      final comp = coreCompetencies[i % coreCompetencies.length];
-      final options = [comp.$3, ...comp.$4]..shuffle(Random(i * 17));
+      final item = bank[selectedIndices[i] % bank.length];
+      final rawOptions = [item.$3, ...item.$4];
+      final shuffledOptions = List<String>.from(rawOptions)..shuffle(Random(i * 31 + rand.nextInt(100)));
 
       questions.add(
         QuizQuestionModel(
           id: 'sim-${examId.replaceAll(RegExp('[^a-zA-Z0-9]'), '_')}-$i',
-          prompt: i < coreCompetencies.length
-              ? comp.$2
-              : '[$cleanTitle Simulator - Q${i + 1}] ${comp.$2}',
+          prompt: i < bank.length
+              ? item.$2
+              : '[$cleanTitle Q${i + 1}] ${item.$2}',
           type: QuizQuestionType.multipleChoice,
-          options: options,
-          correctAnswer: comp.$3,
-          explanation: comp.$5,
-          subTopic: comp.$1,
+          options: shuffledOptions,
+          correctAnswer: item.$3,
+          explanation: item.$5,
+          subTopic: item.$1,
         ),
       );
     }
+
     return questions;
   }
 

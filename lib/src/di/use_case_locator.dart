@@ -49,6 +49,13 @@ void _initUseCaseLocator() {
         notificationService: locator.isRegistered<NotificationService>()
             ? locator<NotificationService>()
             : null,
+        dio: locator.isRegistered<Dio>() ? locator<Dio>() : null,
+        userStorageService: locator.isRegistered<UserStorageService>()
+            ? locator<UserStorageService>()
+            : null,
+        localStorageService: locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null,
       ),
     )
     ..registerLazySingleton<GetDashboardFeedUseCase>(

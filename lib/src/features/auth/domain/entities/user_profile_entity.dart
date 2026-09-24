@@ -8,7 +8,7 @@ class UserProfileEntity extends Equatable {
     required this.email,
     this.displayName,
     this.photoUrl,
-    this.targetTrack = 'WAEC',
+    this.targetTrack = '',
     this.dailyCardTarget = 20,
     this.retentionBenchmark = 0.85,
     this.level = 1,

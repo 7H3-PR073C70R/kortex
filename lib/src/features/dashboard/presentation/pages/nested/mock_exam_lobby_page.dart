@@ -3,12 +3,14 @@ import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
@@ -25,11 +27,15 @@ class MockExamLobbyPage extends HookWidget {
   const MockExamLobbyPage({
     @PathParam('examId') required this.examId,
     required this.examName,
+    this.subjectTrack,
+    this.courseCode,
     super.key,
   });
 
   final String examId;
   final String examName;
+  final String? subjectTrack;
+  final String? courseCode;
 
   @override
   Widget build(BuildContext context) {
@@ -294,31 +300,65 @@ class MockExamLobbyPage extends HookWidget {
                               ),
                             );
 
+                            final authProfile =
+                                context.read<AuthBloc?>()?.state.userProfile;
+                            final cleanSubject =
+                                _resolveCleanSubject(subjectTrack, examName);
+                            final cleanCategory = _resolveExamCategory(
+                              authProfile?.targetTrack,
+                              subjectTrack,
+                              examName,
+                            );
+                            final cleanCode = courseCode ??
+                                (subjectTrack != null &&
+                                        subjectTrack!.contains(' - ')
+                                    ? subjectTrack!.split(' - ').first.trim()
+                                    : null);
+
                             List<QuizQuestionEntity>? initialQuestions;
                             if (locator
                                 .isRegistered<PastQuestionsRepository>()) {
                               try {
-                                ExamCategory? category;
-                                final query = '$examName $examId'.toLowerCase();
-                                for (final cat in ExamCategory.values) {
-                                  if (query.contains(cat.name.toLowerCase()) ||
-                                      query.contains(cat.code.toLowerCase())) {
-                                    category = cat;
-                                    break;
-                                  }
-                                }
-                                final result =
+                                var result =
                                     await locator<PastQuestionsRepository>()
                                         .getPastQuestions(
-                                          examCategory: category,
-                                          searchQuery: category == null
-                                              ? examName
+                                          examCategory: cleanCategory,
+                                          subject: cleanSubject.isNotEmpty
+                                              ? cleanSubject
                                               : null,
+                                          courseCode: cleanCode,
                                         );
-                                final questions = result.fold(
+                                var questions = result.fold(
                                   (f) => <PastQuestionEntity>[],
                                   (list) => list,
                                 );
+
+                                if (questions.isEmpty &&
+                                    cleanSubject.isNotEmpty) {
+                                  result =
+                                      await locator<PastQuestionsRepository>()
+                                          .getPastQuestions(
+                                            subject: cleanSubject,
+                                          );
+                                  questions = result.fold(
+                                    (f) => <PastQuestionEntity>[],
+                                    (list) => list,
+                                  );
+                                }
+
+                                if (questions.isEmpty &&
+                                    cleanSubject.isNotEmpty) {
+                                  result =
+                                      await locator<PastQuestionsRepository>()
+                                          .getPastQuestions(
+                                            searchQuery: cleanSubject,
+                                          );
+                                  questions = result.fold(
+                                    (f) => <PastQuestionEntity>[],
+                                    (list) => list,
+                                  );
+                                }
+
                                 if (questions.isNotEmpty) {
                                   final shuffled =
                                       List<PastQuestionEntity>.from(questions)
@@ -342,7 +382,10 @@ class MockExamLobbyPage extends HookWidget {
                                   deckId: examId,
                                   deckTitle:
                                       '$examName (${selectedMode.title})',
-                                  subject: examName,
+                                  subject: cleanSubject.isNotEmpty
+                                      ? cleanSubject
+                                      : examName,
+                                  courseCode: cleanCode,
                                   durationMinutes: duration,
                                   assessmentMode: assessmentMode,
                                   initialQuestions: initialQuestions,
@@ -395,5 +438,65 @@ class MockExamLobbyPage extends HookWidget {
         ),
       ),
     );
+  }
+
+  String _resolveCleanSubject(String? track, String name) {
+    if (track != null && track.trim().isNotEmpty) {
+      var s = track.trim();
+      if (s.contains(' - ')) {
+        final parts = s.split(' - ');
+        if (parts.length > 1) {
+          s = parts[1].trim();
+        }
+      }
+      s = s
+          .replaceAll(
+            RegExp(r'\s+(Track|Course|Exam|Paper)\b', caseSensitive: false),
+            '',
+          )
+          .trim();
+      if (s.isNotEmpty) return s;
+    }
+
+    final clean = name
+        .replaceAll(
+          RegExp(
+            r'\s+(Final Exam|Exam|Mock|Midterm|Simulator)\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .trim();
+    if (clean.isNotEmpty) return clean;
+    return name;
+  }
+
+  ExamCategory? _resolveExamCategory(
+    String? targetTrack,
+    String? subjectTrack,
+    String name,
+  ) {
+    final combined =
+        '${targetTrack ?? ''} ${subjectTrack ?? ''} $name'.toUpperCase();
+    if (combined.contains('WAEC') || combined.contains('WASSCE')) {
+      return ExamCategory.waec;
+    }
+    if (combined.contains('JAMB') || combined.contains('UTME')) {
+      return ExamCategory.jamb;
+    }
+    if (combined.contains('NECO')) return ExamCategory.neco;
+    if (combined.contains('SAT')) return ExamCategory.sat;
+    if (combined.contains('IELTS')) return ExamCategory.ielts;
+    if (combined.contains('TOEFL')) return ExamCategory.toefl;
+    if (combined.contains('MEDIC')) return ExamCategory.medicine;
+    if (combined.contains('LAW')) return ExamCategory.law;
+    if (combined.contains('ENGIN')) return ExamCategory.engineering;
+    if (combined.contains('BUSIN') || combined.contains('COMMERC')) {
+      return ExamCategory.business;
+    }
+    if (combined.contains('COMP') || combined.contains('CSC')) {
+      return ExamCategory.computerScience;
+    }
+    return null;
   }
 }

@@ -28,6 +28,8 @@ abstract class PlannerRepository {
     List<String>? scopedTopics,
     double? weightPercent,
     int? totalCardsCount,
+    int? masteredCardsCount,
+    int? totalLapses,
     double? targetScorePercent,
     bool? isCompleted,
     double? achievedScorePercent,

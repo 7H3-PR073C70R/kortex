@@ -61,6 +61,7 @@ class ExamCountdownBanner extends StatelessWidget {
         MockExamLobbyRoute(
           examId: exam.id,
           examName: exam.examName,
+          subjectTrack: exam.subjectTrack,
         ),
       ),
     );
@@ -501,6 +502,7 @@ class ExamCountdownBanner extends StatelessWidget {
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Container(
+                                constraints: const BoxConstraints(maxWidth: 210),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 3.5,
@@ -521,11 +523,15 @@ class ExamCountdownBanner extends StatelessWidget {
                                       color: badgeColor,
                                     ),
                                     const SizedBox(width: 4.5),
-                                    Text(
-                                      '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack}${exam.subjectTrack.toLowerCase().contains('track') ? '' : ' Track'}',
-                                      style: typography.caption.bold.copyWith(
-                                        fontSize: 10,
-                                        color: badgeColor,
+                                    Flexible(
+                                      child: Text(
+                                        '${exam.assessmentType.displayName.toUpperCase()} • ${exam.subjectTrack}${exam.subjectTrack.toLowerCase().contains('track') ? '' : ' Track'}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: typography.caption.bold.copyWith(
+                                          fontSize: 10,
+                                          color: badgeColor,
+                                        ),
                                       ),
                                     ),
                                   ],

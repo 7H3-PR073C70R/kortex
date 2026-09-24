@@ -27,6 +27,7 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_d
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/track_selection_modal_sheet.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkthrough_dialog.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
@@ -92,11 +93,15 @@ class _DashboardView extends HookWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final storage = locator<LocalStorageService>();
+        final userId = authState?.userProfile?.id ?? authState?.user?.id ?? '';
+        final userSeenKey = '${PrefKeys.hasSeenWelcomeWalkthrough}_$userId';
         final isNewlyRegistered =
             storage.getPreference(key: PrefKeys.isNewlyRegistered) == 'true';
         final hasSeenWelcome =
+            (userId.isNotEmpty &&
+                storage.getPreference(key: userSeenKey) == 'true') ||
             storage.getPreference(key: PrefKeys.hasSeenWelcomeWalkthrough) ==
-            'true';
+                'true';
 
         // Welcome dialog should ONLY show to newly registered users who just created their account,
         // and never to users who already own an account and are logging back in.
@@ -115,6 +120,14 @@ class _DashboardView extends HookWidget {
                       data: 'true',
                     ),
                   );
+                  if (userId.isNotEmpty) {
+                    unawaited(
+                      storage.savePreference(
+                        key: userSeenKey,
+                        data: 'true',
+                      ),
+                    );
+                  }
                   unawaited(
                     storage.savePreference(
                       key: PrefKeys.isNewlyRegistered,
@@ -129,6 +142,14 @@ class _DashboardView extends HookWidget {
                       data: 'true',
                     ),
                   );
+                  if (userId.isNotEmpty) {
+                    unawaited(
+                      storage.savePreference(
+                        key: userSeenKey,
+                        data: 'true',
+                      ),
+                    );
+                  }
                   unawaited(
                     storage.savePreference(
                       key: PrefKeys.isNewlyRegistered,
@@ -142,13 +163,32 @@ class _DashboardView extends HookWidget {
               ),
             ),
           );
-        } else if (!isNewlyRegistered && !hasSeenWelcome) {
+        } else if (!hasSeenWelcome) {
           unawaited(
             storage.savePreference(
               key: PrefKeys.hasSeenWelcomeWalkthrough,
               data: 'true',
             ),
           );
+          if (userId.isNotEmpty) {
+            unawaited(
+              storage.savePreference(
+                key: userSeenKey,
+                data: 'true',
+              ),
+            );
+          }
+        }
+
+        // Automatic clean prompt for track selection if user hasn't selected a track yet
+        if ((targetTrack == null || targetTrack.trim().isEmpty) &&
+            context.mounted) {
+          final promptKey =
+              'prompted_track_${userId.isNotEmpty ? userId : "guest"}';
+          if (storage.getPreference(key: promptKey) != 'true') {
+            unawaited(storage.savePreference(key: promptKey, data: 'true'));
+            unawaited(TrackSelectionModalSheet.show(context));
+          }
         }
       });
       return null;
@@ -437,6 +477,12 @@ class _CompactDashboardLayout extends StatelessWidget {
                   userPhotoUrl: userPhotoUrl,
                 ),
                 const SizedBox(height: 16),
+
+                // Prompt track selection if not selected yet
+                if (targetTrack == null || targetTrack!.trim().isEmpty) ...[
+                  const _SelectTrackPromptBanner(),
+                  const SizedBox(height: 16),
+                ],
 
                 // 2. Exam Countdown Banner + Backlog Debt Triage
                 AnimatedSize(
@@ -1091,6 +1137,12 @@ class _MediumDashboardLayout extends StatelessWidget {
                   userPhotoUrl: userPhotoUrl,
                 ),
                 const SizedBox(height: 20),
+
+                // Prompt track selection if not selected yet
+                if (targetTrack == null || targetTrack!.trim().isEmpty) ...[
+                  const _SelectTrackPromptBanner(),
+                  const SizedBox(height: 20),
+                ],
                 AnimatedSize(
                   alignment: Alignment.topCenter,
                   duration: AppMotion.standard,
@@ -1240,6 +1292,12 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                       userPhotoUrl: userPhotoUrl,
                     ),
                     const SizedBox(height: 24),
+
+                    // Prompt track selection if not selected yet
+                    if (targetTrack == null || targetTrack!.trim().isEmpty) ...[
+                      const _SelectTrackPromptBanner(),
+                      const SizedBox(height: 24),
+                    ],
 
                     // 2. Urgent Callouts (with AnimatedSize for layout stability)
                     AnimatedSize(
@@ -1892,6 +1950,161 @@ class _StudyDebtTriageBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SelectTrackPromptBanner extends StatelessWidget {
+  const _SelectTrackPromptBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, child) {
+        return ShrinkableButton(
+          onTap: () {
+            unawaited(HapticFeedback.lightImpact());
+            unawaited(TrackSelectionModalSheet.show(context));
+          },
+          child: AnimatedContainer(
+            duration: AppMotion.snappy,
+            curve: AppMotion.easeOutCubic,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [
+                        colors.primary.withAlpha(50),
+                        colors.surfaceSecondary.withAlpha(240),
+                      ]
+                    : [
+                        colors.primary.withAlpha(25),
+                        colors.surfacePrimary,
+                      ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.panel),
+              border: Border.all(
+                color: isHovered
+                    ? colors.primary
+                    : colors.primary.withAlpha(isDark ? 120 : 80),
+                width: isHovered ? 1.5 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                  blurRadius: isHovered ? 16 : 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 60 : 35),
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 140 : 90),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.explore_rounded,
+                    color: colors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Select Your Academic Track',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
+                            ),
+                            child: Text(
+                              'SETUP',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.white,
+                                fontSize: 9,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Tap here to choose WAEC, JAMB, B.Sc Degree, NECO, or postgraduate level.',
+                        style: typography.footnote.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Select',
+                        style: typography.footnote.bold.copyWith(
+                          color: colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 10,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

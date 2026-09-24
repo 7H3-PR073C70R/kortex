@@ -12,8 +12,6 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/notifications/presentation/widgets/notification_tile.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class NotificationsPage extends StatelessWidget {
@@ -21,8 +19,8 @@ class NotificationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<NotificationsCubit>(
-      create: (_) => locator.isRegistered<NotificationsCubit>()
+    return BlocProvider<NotificationsCubit>.value(
+      value: locator.isRegistered<NotificationsCubit>()
           ? locator<NotificationsCubit>()
           : NotificationsCubit(),
       child: const _NotificationsView(),
@@ -50,23 +48,27 @@ class _NotificationsView extends HookWidget {
             isDark ? colors.backgroundPrimary : colors.surfacePrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: ShrinkableButton(
-          onTap: () {
-            unawaited(HapticFeedback.lightImpact());
-            unawaited(context.router.maybePop());
-          },
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isDark
-                  ? colors.surfaceSecondary
-                  : colors.surfaceSecondary.withAlpha(140),
-            ),
-            child: Icon(
-              Icons.arrow_back_rounded,
-              size: 20,
-              color: colors.textPrimary,
+        leading: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              unawaited(HapticFeedback.lightImpact());
+              unawaited(context.router.maybePop());
+            },
+            child: Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark
+                    ? colors.surfaceSecondary
+                    : colors.surfaceSecondary.withAlpha(140),
+              ),
+              child: Icon(
+                Icons.arrow_back_rounded,
+                size: 20,
+                color: colors.textPrimary,
+              ),
             ),
           ),
         ),
@@ -99,21 +101,18 @@ class _NotificationsView extends HookWidget {
           ],
         ),
         actions: [
-          if (state.notifications.isNotEmpty)
+          if (state.notifications.any((n) => !n.isRead))
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: PlatformHoverBuilder(
-                builder: (context, isHovered, child) => AnimatedScale(
-                  scale: isHovered ? 1.05 : 1.0,
-                  duration: AppMotion.snappy,
-                  curve: AppMotion.easeOutCubic,
-                  child: child,
-                ),
-                child: ShrinkableButton(
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: AppRadius.radiusBadge,
+                child: InkWell(
                   onTap: () {
                     unawaited(HapticFeedback.selectionClick());
-                    context.read<NotificationsCubit>().markAllAsRead();
+                    unawaited(context.read<NotificationsCubit>().markAllAsRead());
                   },
+                  borderRadius: AppRadius.radiusBadge,
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -160,8 +159,11 @@ class _NotificationsView extends HookWidget {
                 selectedCategory: state.selectedCategory,
                 onlyUnread: state.onlyUnread,
                 unreadCount: state.unreadCount,
+                onSelectAll: () {
+                  context.read<NotificationsCubit>().showAll();
+                },
                 onSelectCategory: (cat) {
-                  context.read<NotificationsCubit>().filterByCategory(cat);
+                  context.read<NotificationsCubit>().selectCategory(cat);
                 },
                 onToggleOnlyUnread: () {
                   context.read<NotificationsCubit>().toggleOnlyUnread();
@@ -179,7 +181,7 @@ class _NotificationsView extends HookWidget {
                       )
                     : RefreshIndicator(
                         onRefresh: () async {
-                          context.read<NotificationsCubit>().loadNotifications();
+                          await context.read<NotificationsCubit>().loadNotifications(forceRefresh: true);
                         },
                         color: colors.primary,
                         backgroundColor: isDark
@@ -193,14 +195,18 @@ class _NotificationsView extends HookWidget {
                             final tile = NotificationTile(
                               notification: notif,
                               onTap: () {
-                                context
-                                    .read<NotificationsCubit>()
-                                    .markAsRead(notif.id);
+                                unawaited(
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .markAsRead(notif.id),
+                                );
                               },
                               onDismiss: () {
-                                context
-                                    .read<NotificationsCubit>()
-                                    .deleteNotification(notif.id);
+                                unawaited(
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .deleteNotification(notif.id),
+                                );
                               },
                             );
 
@@ -236,6 +242,7 @@ class _NotificationFilterChips extends StatelessWidget {
     required this.selectedCategory,
     required this.onlyUnread,
     required this.unreadCount,
+    required this.onSelectAll,
     required this.onSelectCategory,
     required this.onToggleOnlyUnread,
   });
@@ -243,6 +250,7 @@ class _NotificationFilterChips extends StatelessWidget {
   final NotificationCategory selectedCategory;
   final bool onlyUnread;
   final int unreadCount;
+  final VoidCallback onSelectAll;
   final ValueChanged<NotificationCategory> onSelectCategory;
   final VoidCallback onToggleOnlyUnread;
 
@@ -250,13 +258,14 @@ class _NotificationFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           _FilterChipItem(
             label: 'All',
             isSelected: selectedCategory == NotificationCategory.all && !onlyUnread,
-            onTap: () => onSelectCategory(NotificationCategory.all),
+            onTap: onSelectAll,
           ),
           const SizedBox(width: 8),
           _FilterChipItem(
@@ -269,28 +278,28 @@ class _NotificationFilterChips extends StatelessWidget {
           _FilterChipItem(
             label: 'Study',
             icon: Icons.auto_stories_rounded,
-            isSelected: selectedCategory == NotificationCategory.study,
+            isSelected: selectedCategory == NotificationCategory.study && !onlyUnread,
             onTap: () => onSelectCategory(NotificationCategory.study),
           ),
           const SizedBox(width: 8),
           _FilterChipItem(
             label: 'Community',
             icon: Icons.groups_rounded,
-            isSelected: selectedCategory == NotificationCategory.community,
+            isSelected: selectedCategory == NotificationCategory.community && !onlyUnread,
             onTap: () => onSelectCategory(NotificationCategory.community),
           ),
           const SizedBox(width: 8),
           _FilterChipItem(
             label: 'Milestones',
             icon: Icons.local_fire_department_rounded,
-            isSelected: selectedCategory == NotificationCategory.streak,
+            isSelected: selectedCategory == NotificationCategory.streak && !onlyUnread,
             onTap: () => onSelectCategory(NotificationCategory.streak),
           ),
           const SizedBox(width: 8),
           _FilterChipItem(
             label: 'System',
             icon: Icons.notifications_active_rounded,
-            isSelected: selectedCategory == NotificationCategory.system,
+            isSelected: selectedCategory == NotificationCategory.system && !onlyUnread,
             onTap: () => onSelectCategory(NotificationCategory.system),
           ),
         ],
@@ -320,20 +329,26 @@ class _FilterChipItem extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) => AnimatedScale(
-        scale: isHovered ? 1.04 : 1.0,
-        duration: AppMotion.snappy,
-        curve: AppMotion.easeOutCubic,
-        child: ShrinkableButton(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: count != null ? '$label, $count items' : label,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppRadius.radiusPanel,
+        child: InkWell(
           onTap: () {
             unawaited(HapticFeedback.selectionClick());
             onTap();
           },
+          borderRadius: AppRadius.radiusPanel,
+          splashColor: colors.primary.withAlpha(25),
+          highlightColor: colors.primary.withAlpha(15),
           child: AnimatedContainer(
             duration: AppMotion.snappy,
             curve: AppMotion.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            constraints: const BoxConstraints(minHeight: 38, minWidth: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
                   ? colors.primary
@@ -358,29 +373,31 @@ class _FilterChipItem extends StatelessWidget {
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
                   Icon(
                     icon,
-                    size: 14,
+                    size: 15,
                     color: isSelected ? colors.white : colors.textSecondary,
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 6),
                 ],
                 Text(
                   label,
                   style: typography.caption.bold.copyWith(
                     color: isSelected ? colors.white : colors.textPrimary,
                     fontSize: 12.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-                if (count != null) ...[
-                  const SizedBox(width: 5),
+                if (count != null && count! > 0) ...[
+                  const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? colors.white.withAlpha(50)
+                          ? colors.white.withAlpha(55)
                           : colors.primary,
                       borderRadius: AppRadius.radiusBadge,
                     ),

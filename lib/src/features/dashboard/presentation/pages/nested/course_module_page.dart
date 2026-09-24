@@ -497,20 +497,28 @@ class _CourseModuleView extends StatelessWidget {
                           ),
                           if (matchingExams.length > 1) ...[
                             const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1.5,
+                            InkWell(
+                              onTap: () => ManageExamModalSheet.show(
+                                context,
+                                scopedCourseCode: courseCode,
+                                scopedCourseTitle: courseTitle,
                               ),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(isDark ? 50 : 25),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '+${matchingExams.length - 1} more',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 10,
+                              borderRadius: BorderRadius.circular(4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 1.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '+${matchingExams.length - 1} more',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
                             ),
@@ -530,7 +538,12 @@ class _CourseModuleView extends StatelessWidget {
                   ),
                 ),
                 ShrinkableButton(
-                  onTap: () => ManageExamModalSheet.show(context),
+                  onTap: () => ManageExamModalSheet.show(
+                    context,
+                    scopedCourseCode: courseCode,
+                    scopedCourseTitle: courseTitle,
+                    initialExamId: matchingExam.id,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,

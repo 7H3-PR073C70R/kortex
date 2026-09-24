@@ -3,17 +3,24 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
+import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 class StudyCalibrationGraphWidget extends StatelessWidget {
   const StudyCalibrationGraphWidget({
     required this.exam,
     this.onStartStudySession,
+    this.onManageExam,
+    this.linkedDeckTitle,
+    this.onSelectDeck,
     super.key,
   });
 
   final ExamEventEntity exam;
   final VoidCallback? onStartStudySession;
+  final VoidCallback? onManageExam;
+  final String? linkedDeckTitle;
+  final VoidCallback? onSelectDeck;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +48,25 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
       statusLabel = 'Calibrated';
       statusColor = colors.primary;
     }
+
+    final readiness = const CramWorkloadCalculator().calculateExamReadinessScore(
+      totalCards: exam.totalCardsCount,
+      masteredCards: exam.masteredCardsCount,
+      averageStability: 18,
+      daysRemaining: exam.daysRemaining,
+      totalLapses: exam.totalLapses,
+      empiricalQuizScorePercent: exam.achievedScorePercent,
+    );
+
+    final start = exam.createdAt ??
+        DateTime.now().subtract(
+          Duration(days: exam.assessmentType.suggestedDaysAhead),
+        );
+    final totalDurationSec = exam.targetDate.difference(start).inSeconds;
+    final elapsedSec = DateTime.now().difference(start).inSeconds;
+    final timeFraction = totalDurationSec > 0
+        ? (elapsedSec / totalDurationSec).clamp(0.08, 0.92)
+        : 0.5;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -100,43 +126,120 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
-                  borderRadius: AppRadius.radiusBadge,
-                  border: Border.all(
-                    color: statusColor.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: AppRadius.radiusBadge,
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.4),
                       ),
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          statusLabel,
+                          style: typography.caption.bold.copyWith(
+                            color: statusColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (onManageExam != null) ...[
                     const SizedBox(width: 6),
-                    Text(
-                      statusLabel,
-                      style: typography.caption.bold.copyWith(
-                        color: statusColor,
+                    IconButton(
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        size: 18,
+                        color: colors.textSecondary,
                       ),
+                      tooltip: 'Tune Calibration Pacing',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      onPressed: onManageExam,
                     ),
                   ],
-                ),
+                ],
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
+          // Connected Deck Bar / Badge
+          const SizedBox(height: 14),
+          InkWell(
+            onTap: onSelectDeck,
+            borderRadius: AppRadius.radiusCard,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: linkedDeckTitle != null
+                    ? colors.primary.withValues(alpha: isDark ? 0.15 : 0.08)
+                    : colors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
+                borderRadius: AppRadius.radiusCard,
+                border: Border.all(
+                  color: linkedDeckTitle != null
+                      ? colors.primary.withValues(alpha: isDark ? 0.35 : 0.2)
+                      : colors.warning.withValues(alpha: isDark ? 0.4 : 0.25),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    linkedDeckTitle != null
+                        ? Icons.style_rounded
+                        : Icons.link_off_rounded,
+                    size: 15,
+                    color: linkedDeckTitle != null
+                        ? colors.primary
+                        : colors.warning,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      linkedDeckTitle != null
+                          ? 'Deck: $linkedDeckTitle'
+                          : 'No flashcard deck linked • Tap to connect deck',
+                      style: typography.caption.bold.copyWith(
+                        color: linkedDeckTitle != null
+                            ? colors.textPrimary
+                            : colors.warning,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Icons.unfold_more_rounded,
+                    size: 15,
+                    color: colors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
 
           // Custom Trajectory Painter Canvas
           SizedBox(
@@ -144,6 +247,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
             child: CustomPaint(
               painter: _TrajectoryPainter(
                 progress: progress,
+                timeFraction: timeFraction,
                 primaryColor: colors.primary,
                 gridColor: colors.textSecondary.withValues(alpha: 0.15),
                 indicatorDotColor: colors.white,
@@ -186,7 +290,66 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
+
+          // Readiness & FSRS Calibration Strip
+          InkWell(
+            onTap: onManageExam,
+            borderRadius: AppRadius.radiusCard,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.surfaceBorder.withValues(
+                  alpha: isDark ? 0.35 : 0.15,
+                ),
+                borderRadius: AppRadius.radiusCard,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.psychology_rounded,
+                        size: 15,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'FSRS Mastery Readiness',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${readiness.toInt()}% • ${readiness >= 75 ? "Optimal Pace" : (readiness >= 40 ? "Calibrating" : "Needs Acceleration")}',
+                        style: typography.caption.bold.copyWith(
+                          color: readiness >= 75
+                              ? colors.success
+                              : (readiness >= 40 ? colors.warning : colors.error),
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 14,
+                        color: colors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
 
           // 3 Metric Cards
           Row(
@@ -239,7 +402,9 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                     0,
                   ),
                   child: InkWell(
-                    onTap: onStartStudySession,
+                    onTap: exam.totalCardsCount == 0
+                        ? (onSelectDeck ?? onStartStudySession)
+                        : onStartStudySession,
                     borderRadius: AppRadius.radiusCard,
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -274,14 +439,22 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.play_circle_fill_rounded,
+                    exam.totalCardsCount == 0
+                        ? Icons.link_rounded
+                        : (exam.remainingCards == 0
+                            ? Icons.school_rounded
+                            : Icons.play_circle_fill_rounded),
                     color: colors.white,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      "Review Today's ${exam.dailyTarget} Flashcards",
+                      exam.totalCardsCount == 0
+                          ? 'Link Flashcard Deck to Calibrate'
+                          : (exam.remainingCards == 0
+                              ? 'All Target Cards Mastered • Practice Mock'
+                              : "Review Today's ${exam.dailyTarget} Flashcards"),
                       style: typography.callout.bold.copyWith(
                         color: colors.white,
                       ),
@@ -388,6 +561,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
 class _TrajectoryPainter extends CustomPainter {
   _TrajectoryPainter({
     required this.progress,
+    required this.timeFraction,
     required this.primaryColor,
     required this.gridColor,
     required this.indicatorDotColor,
@@ -395,6 +569,7 @@ class _TrajectoryPainter extends CustomPainter {
   });
 
   final double progress;
+  final double timeFraction;
   final Color primaryColor;
   final Color gridColor;
   final Color indicatorDotColor;
@@ -443,7 +618,7 @@ class _TrajectoryPainter extends CustomPainter {
     canvas.drawPath(idealPath, idealPaint);
 
     // 2. Draw Actual Progress Path up to current progress point
-    final currentX = (width * 0.55).clamp(20.0, width - 20.0);
+    final currentX = (width * timeFraction).clamp(24.0, width - 24.0);
     final targetY = height - ((height * 0.9) * progress.clamp(0.05, 1.0));
 
     final actualPath = Path()
@@ -504,6 +679,7 @@ class _TrajectoryPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _TrajectoryPainter oldDelegate) {
     return oldDelegate.progress != progress ||
+        oldDelegate.timeFraction != timeFraction ||
         oldDelegate.primaryColor != primaryColor ||
         oldDelegate.indicatorDotColor != indicatorDotColor;
   }

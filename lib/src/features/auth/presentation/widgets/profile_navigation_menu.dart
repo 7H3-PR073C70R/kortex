@@ -176,7 +176,7 @@ class ProfileNavigationMenu extends StatelessWidget {
               onTap: () {
                 AppFeedback.light();
                 // Capture router before any navigation happens.
-                final tabsRouter = AutoTabsRouter.of(context, watch: false);
+                final tabsRouter = AutoTabsRouter.of(context);
                 unawaited(
                   AppGuidedTourOverlay.start(
                     context,

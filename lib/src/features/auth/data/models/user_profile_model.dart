@@ -7,7 +7,7 @@ class UserProfileModel extends Equatable {
     required this.email,
     this.displayName,
     this.photoUrl,
-    this.targetTrack = 'WAEC',
+    this.targetTrack = '',
     this.dailyCardTarget = 20,
     this.retentionBenchmark = 0.85,
     this.level = 1,
@@ -25,7 +25,7 @@ class UserProfileModel extends Equatable {
       email: json['email'] as String? ?? '',
       displayName: json['display_name'] as String?,
       photoUrl: json['photo_url'] as String?,
-      targetTrack: json['target_track'] as String? ?? 'WAEC',
+      targetTrack: json['target_track'] as String? ?? '',
       dailyCardTarget: (json['daily_card_target'] as num?)?.toInt() ?? 20,
       retentionBenchmark:
           (json['retention_benchmark'] as num?)?.toDouble() ?? 0.85,

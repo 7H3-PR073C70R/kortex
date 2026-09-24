@@ -85,7 +85,7 @@ class AppGuidedTourOverlay extends StatefulWidget {
 
     await showGeneralDialog<void>(
       context: context,
-      barrierColor: context.colors.transparent,
+      barrierColor: Colors.transparent,
       transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return FadeTransition(

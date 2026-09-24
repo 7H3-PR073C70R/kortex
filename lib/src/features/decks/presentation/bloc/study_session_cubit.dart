@@ -25,6 +25,7 @@ import 'package:kortex/src/features/decks/domain/use_cases/save_session_results_
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
+import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 
 class StudySessionCubit extends Cubit<StudySessionState> {
   StudySessionCubit({
@@ -631,6 +632,11 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       } on Object catch (_) {}
       try {
         locator<DashboardBloc>().add(const DashboardRefreshed());
+      } on Object catch (_) {}
+      try {
+        if (locator.isRegistered<CramPlannerCubit>()) {
+          unawaited(locator<CramPlannerCubit>().loadExams());
+        }
       } on Object catch (_) {}
 
       // 6. Telemetry: Performance trace and Crashlytics completion metrics
