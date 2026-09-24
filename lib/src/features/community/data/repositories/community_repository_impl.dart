@@ -573,7 +573,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
         LeaderboardEntryEntity(
           id: 'cohort_1',
           userId: 'user_ada',
-          userName: 'Ada Lovelace',
+          userName: 'Wuke Anjolaoluwa Omotoyosi',
           track: effectiveTrack,
           dailyXp: 420,
           weeklyXp: 2150,

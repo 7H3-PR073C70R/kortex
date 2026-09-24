@@ -487,7 +487,7 @@ abstract class AppLocalizations {
   /// Hint for display name text field
   ///
   /// In en, this message translates to:
-  /// **'Ada Lovelace'**
+  /// **'Wuke Anjolaoluwa Omotoyosi'**
   String get authDisplayNameHint;
 
   /// Submit button for login

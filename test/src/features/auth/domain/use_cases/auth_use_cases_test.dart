@@ -29,14 +29,14 @@ void main() {
   const tUser = UserEntity(
     id: 'user_123',
     email: 'student@university.edu',
-    displayName: 'Ada Lovelace',
+    displayName: 'Wuke Anjolaoluwa Omotoyosi',
     token: 'jwt_token_xyz',
   );
 
   const tProfile = UserProfileEntity(
     id: 'user_123',
     email: 'student@university.edu',
-    displayName: 'Ada Lovelace',
+    displayName: 'Wuke Anjolaoluwa Omotoyosi',
     targetTrack: 'JAMB',
     dailyCardTarget: 25,
     isOnboarded: true,
@@ -85,7 +85,7 @@ void main() {
         () => mockRepository.registerWithEmail(
           email: 'student@university.edu',
           password: 'password123',
-          displayName: 'Ada Lovelace',
+          displayName: 'Wuke Anjolaoluwa Omotoyosi',
         ),
       ).thenAnswer(
         (_) async => const Right<Failure, UserEntity>(tUser),
@@ -95,7 +95,7 @@ void main() {
         const RegisterParams(
           email: 'student@university.edu',
           password: 'password123',
-          displayName: 'Ada Lovelace',
+          displayName: 'Wuke Anjolaoluwa Omotoyosi',
         ),
       );
 

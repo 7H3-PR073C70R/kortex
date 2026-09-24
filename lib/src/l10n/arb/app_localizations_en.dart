@@ -234,7 +234,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authDisplayNameLabel => 'Full Name';
 
   @override
-  String get authDisplayNameHint => 'Ada Lovelace';
+  String get authDisplayNameHint => 'Wuke Anjolaoluwa Omotoyosi';
 
   @override
   String get authSubmitLogin => 'Sign In';

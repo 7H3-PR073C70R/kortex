@@ -152,7 +152,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithTheme(
           const AppAvatar(
-            name: 'Ada Lovelace',
+            name: 'Wuke Anjolaoluwa Omotoyosi',
             showBadge: true,
           ),
         ),

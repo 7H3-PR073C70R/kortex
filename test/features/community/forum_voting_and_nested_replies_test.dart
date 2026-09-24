@@ -17,6 +17,7 @@ import 'package:retrofit/retrofit.dart';
 import '../../helpers/pump_app.dart';
 
 class MockCommunityApiClient extends Mock implements CommunityApiClient {}
+
 class MockUserStorageService extends Mock implements UserStorageService {}
 
 void main() {
@@ -27,7 +28,7 @@ void main() {
       final post = ForumPostEntity(
         id: 'post-1',
         authorId: 'author-1',
-        authorName: 'Ada Lovelace',
+        authorName: 'Wuke Anjolaoluwa Omotoyosi',
         track: 'JAMB - Engineering',
         title: 'Projectile Motion Doubt',
         content: 'How do I calculate range?',
@@ -59,7 +60,7 @@ void main() {
         postId: 'post-1',
         parentReplyId: 'reply-1',
         authorId: 'author-1',
-        authorName: 'Ada Lovelace',
+        authorName: 'Wuke Anjolaoluwa Omotoyosi',
         content: 'Does this assume zero air resistance?',
         createdAt: DateTime.now(),
         upvotes: 5,
@@ -71,102 +72,108 @@ void main() {
       expect(nestedReply.parentReplyId, equals('reply-1'));
     });
 
-    test('ForumPostModel serialization and deserialization preserves voting and nested replies', () {
-      final json = {
-        'id': 'post-100',
-        'author_id': 'user-100',
-        'author_name': 'Grace Hopper',
-        'track': 'WAEC - Sciences',
-        'title': 'Compiler Optimization',
-        'content': 'How does SSA form help in optimization?',
-        'upvotes': 15,
-        'downvotes': 2,
-        'user_vote': 1,
-        'replies_count': 1,
-        'created_at': '2026-09-13T06:00:00.000Z',
-        'forum_replies': [
-          {
-            'id': 'reply-101',
-            'post_id': 'post-100',
-            'parent_reply_id': 'reply-100',
-            'author_id': 'user-102',
-            'author_name': 'Margaret Hamilton',
-            'content': 'It makes data flow analysis explicit and sparse.',
-            'upvotes': 8,
-            'downvotes': 1,
-            'user_vote': 1,
-            'created_at': '2026-09-13T06:05:00.000Z',
-          }
-        ],
-      };
+    test(
+      'ForumPostModel serialization and deserialization preserves voting and nested replies',
+      () {
+        final json = {
+          'id': 'post-100',
+          'author_id': 'user-100',
+          'author_name': 'Grace Hopper',
+          'track': 'WAEC - Sciences',
+          'title': 'Compiler Optimization',
+          'content': 'How does SSA form help in optimization?',
+          'upvotes': 15,
+          'downvotes': 2,
+          'user_vote': 1,
+          'replies_count': 1,
+          'created_at': '2026-09-13T06:00:00.000Z',
+          'forum_replies': [
+            {
+              'id': 'reply-101',
+              'post_id': 'post-100',
+              'parent_reply_id': 'reply-100',
+              'author_id': 'user-102',
+              'author_name': 'Margaret Hamilton',
+              'content': 'It makes data flow analysis explicit and sparse.',
+              'upvotes': 8,
+              'downvotes': 1,
+              'user_vote': 1,
+              'created_at': '2026-09-13T06:05:00.000Z',
+            },
+          ],
+        };
 
-      final model = ForumPostModel.fromJson(json);
-      expect(model.id, equals('post-100'));
-      expect(model.upvotes, equals(15));
-      expect(model.downvotes, equals(2));
-      expect(model.userVote, equals(1));
-      expect(model.netVotes, equals(13));
-      expect(model.replies.length, equals(1));
-      expect(model.replies.first.parentReplyId, equals('reply-100'));
-      expect(model.replies.first.netVotes, equals(7));
+        final model = ForumPostModel.fromJson(json);
+        expect(model.id, equals('post-100'));
+        expect(model.upvotes, equals(15));
+        expect(model.downvotes, equals(2));
+        expect(model.userVote, equals(1));
+        expect(model.netVotes, equals(13));
+        expect(model.replies.length, equals(1));
+        expect(model.replies.first.parentReplyId, equals('reply-100'));
+        expect(model.replies.first.netVotes, equals(7));
 
-      final entity = model.toEntity();
-      expect(entity.netVotes, equals(13));
-      expect(entity.replies.first.isNested, isTrue);
-    });
+        final entity = model.toEntity();
+        expect(entity.netVotes, equals(13));
+        expect(entity.replies.first.isNested, isTrue);
+      },
+    );
 
-    test('ForumPostEntity computes topLevelRepliesCount by excluding nested replies', () {
-      final topLevel1 = ForumReplyEntity(
-        id: 'r1',
-        postId: 'p1',
-        authorId: 'u1',
-        authorName: 'User 1',
-        content: 'Main Answer 1',
-        createdAt: DateTime.now(),
-      );
-      final topLevel2 = ForumReplyEntity(
-        id: 'r2',
-        postId: 'p1',
-        authorId: 'u2',
-        authorName: 'User 2',
-        content: 'Main Answer 2',
-        createdAt: DateTime.now(),
-      );
-      final nested1 = ForumReplyEntity(
-        id: 'r3',
-        postId: 'p1',
-        parentReplyId: 'r1',
-        authorId: 'u3',
-        authorName: 'User 3',
-        content: 'Reply to Answer 1',
-        createdAt: DateTime.now(),
-      );
-      final nested2 = ForumReplyEntity(
-        id: 'r4',
-        postId: 'p1',
-        parentReplyId: 'r3',
-        authorId: 'u4',
-        authorName: 'User 4',
-        content: 'Reply to reply',
-        createdAt: DateTime.now(),
-      );
+    test(
+      'ForumPostEntity computes topLevelRepliesCount by excluding nested replies',
+      () {
+        final topLevel1 = ForumReplyEntity(
+          id: 'r1',
+          postId: 'p1',
+          authorId: 'u1',
+          authorName: 'User 1',
+          content: 'Main Answer 1',
+          createdAt: DateTime.now(),
+        );
+        final topLevel2 = ForumReplyEntity(
+          id: 'r2',
+          postId: 'p1',
+          authorId: 'u2',
+          authorName: 'User 2',
+          content: 'Main Answer 2',
+          createdAt: DateTime.now(),
+        );
+        final nested1 = ForumReplyEntity(
+          id: 'r3',
+          postId: 'p1',
+          parentReplyId: 'r1',
+          authorId: 'u3',
+          authorName: 'User 3',
+          content: 'Reply to Answer 1',
+          createdAt: DateTime.now(),
+        );
+        final nested2 = ForumReplyEntity(
+          id: 'r4',
+          postId: 'p1',
+          parentReplyId: 'r3',
+          authorId: 'u4',
+          authorName: 'User 4',
+          content: 'Reply to reply',
+          createdAt: DateTime.now(),
+        );
 
-      final post = ForumPostEntity(
-        id: 'p1',
-        authorId: 'u0',
-        authorName: 'Post Author',
-        track: 'WAEC',
-        title: 'Question',
-        content: 'Content',
-        createdAt: DateTime.now(),
-        replies: [topLevel1, topLevel2, nested1, nested2],
-        repliesCount: 4,
-      );
+        final post = ForumPostEntity(
+          id: 'p1',
+          authorId: 'u0',
+          authorName: 'Post Author',
+          track: 'WAEC',
+          title: 'Question',
+          content: 'Content',
+          createdAt: DateTime.now(),
+          replies: [topLevel1, topLevel2, nested1, nested2],
+          repliesCount: 4,
+        );
 
-      expect(post.replies.length, equals(4));
-      // Only 2 top level replies!
-      expect(post.topLevelRepliesCount, equals(2));
-    });
+        expect(post.replies.length, equals(4));
+        // Only 2 top level replies!
+        expect(post.topLevelRepliesCount, equals(2));
+      },
+    );
   });
 
   group('CommunityRemoteDataSourceImpl Voting & Threading Tests', () {
@@ -188,7 +195,9 @@ void main() {
       );
 
       when(() => mockUserStorage.getUserId()).thenReturn('user-current');
-      when(() => mockUserStorage.getUserDisplayName()).thenReturn('Current Scholar');
+      when(
+        () => mockUserStorage.getUserDisplayName(),
+      ).thenReturn('Current Scholar');
       when(() => mockUserStorage.getUserAvatarUrl()).thenReturn(null);
     });
 
@@ -196,49 +205,58 @@ void main() {
       await db.close();
     });
 
-    test('voteForumPost updates post votes optimistically and calls API', () async {
-      final initialPost = ForumPostModel(
-        id: 'test-post',
-        authorId: 'author-1',
-        authorName: 'Scholar',
-        track: 'JAMB',
-        title: 'Math Question',
-        content: 'Integration by parts',
-        upvotes: 5,
-        downvotes: 1,
-        createdAt: DateTime.now(),
-      );
-      await localDataSource.saveForumPost(initialPost);
+    test(
+      'voteForumPost updates post votes optimistically and calls API',
+      () async {
+        final initialPost = ForumPostModel(
+          id: 'test-post',
+          authorId: 'author-1',
+          authorName: 'Scholar',
+          track: 'JAMB',
+          title: 'Math Question',
+          content: 'Integration by parts',
+          upvotes: 5,
+          downvotes: 1,
+          createdAt: DateTime.now(),
+        );
+        await localDataSource.saveForumPost(initialPost);
 
-      when(() => mockClient.voteForumPostAtomic(any())).thenAnswer(
-        (_) async => HttpResponse(
-          {'success': true, 'upvotes': 6, 'downvotes': 1},
-          Response(requestOptions: RequestOptions(path: '/rest/v1/rpc/vote_forum_post_atomic')),
-        ),
-      );
+        when(() => mockClient.voteForumPostAtomic(any())).thenAnswer(
+          (_) async => HttpResponse(
+            {'success': true, 'upvotes': 6, 'downvotes': 1},
+            Response(
+              requestOptions: RequestOptions(
+                path: '/rest/v1/rpc/vote_forum_post_atomic',
+              ),
+            ),
+          ),
+        );
 
-      // Upvote post
-      final success = await remoteDataSource.voteForumPost(
-        postId: 'test-post',
-        voteDirection: 1,
-      );
+        // Upvote post
+        final success = await remoteDataSource.voteForumPost(
+          postId: 'test-post',
+          voteDirection: 1,
+        );
 
-      expect(success, isTrue);
+        expect(success, isTrue);
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final updated = await localDataSource.getForumPost('test-post');
-      expect(updated, isNotNull);
-      expect(updated!.upvotes, equals(6));
-      expect(updated.downvotes, equals(1));
-      expect(updated.userVote, equals(1));
-      expect(updated.netVotes, equals(5));
+        final updated = await localDataSource.getForumPost('test-post');
+        expect(updated, isNotNull);
+        expect(updated!.upvotes, equals(6));
+        expect(updated.downvotes, equals(1));
+        expect(updated.userVote, equals(1));
+        expect(updated.netVotes, equals(5));
 
-      verify(() => mockClient.voteForumPostAtomic({
-        'p_post_id': 'test-post',
-        'p_vote_direction': 1,
-      })).called(1);
-    });
+        verify(
+          () => mockClient.voteForumPostAtomic({
+            'p_post_id': 'test-post',
+            'p_vote_direction': 1,
+          }),
+        ).called(1);
+      },
+    );
 
     test('replyToForumPost sends parent_reply_id for nested replies', () async {
       final initialPost = ForumPostModel(
@@ -269,7 +287,9 @@ void main() {
       when(() => mockClient.replyToForumPost(any())).thenAnswer(
         (_) async => HttpResponse(
           [createdReplyJson],
-          Response(requestOptions: RequestOptions(path: '/rest/v1/forum_replies')),
+          Response(
+            requestOptions: RequestOptions(path: '/rest/v1/forum_replies'),
+          ),
         ),
       );
 
@@ -285,17 +305,25 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(() => mockClient.replyToForumPost(
-        any(that: predicate<Map<String, dynamic>>((payload) =>
-          payload['post_id'] == 'post-1' &&
-          payload['parent_reply_id'] == 'reply-parent' &&
-          payload['content'] == 'I agree with this answer.')),
-      )).called(1);
+      verify(
+        () => mockClient.replyToForumPost(
+          any(
+            that: predicate<Map<String, dynamic>>(
+              (payload) =>
+                  payload['post_id'] == 'post-1' &&
+                  payload['parent_reply_id'] == 'reply-parent' &&
+                  payload['content'] == 'I agree with this answer.',
+            ),
+          ),
+        ),
+      ).called(1);
     });
   });
 
   group('TrackForumPostCard Bidirectional Voting Widget Tests', () {
-    testWidgets('renders bidirectional vote buttons and net vote score', (tester) async {
+    testWidgets('renders bidirectional vote buttons and net vote score', (
+      tester,
+    ) async {
       var upvoted = false;
       var downvoted = false;
 
@@ -336,151 +364,173 @@ void main() {
       expect(downvoted, isTrue);
     });
 
-    testWidgets('displays only top-level replies count on card, excluding nested sub-replies', (tester) async {
-      final topLevel1 = ForumReplyEntity(
-        id: 'r1',
-        postId: 'post-count-1',
-        authorId: 'u1',
-        authorName: 'User 1',
-        content: 'Top Level Answer 1',
-        createdAt: DateTime.now(),
-      );
-      final topLevel2 = ForumReplyEntity(
-        id: 'r2',
-        postId: 'post-count-1',
-        authorId: 'u2',
-        authorName: 'User 2',
-        content: 'Top Level Answer 2',
-        createdAt: DateTime.now(),
-      );
-      final nested1 = ForumReplyEntity(
-        id: 'r3',
-        postId: 'post-count-1',
-        parentReplyId: 'r1',
-        authorId: 'u3',
-        authorName: 'User 3',
-        content: 'Nested reply',
-        createdAt: DateTime.now(),
-      );
+    testWidgets(
+      'displays only top-level replies count on card, excluding nested sub-replies',
+      (tester) async {
+        final topLevel1 = ForumReplyEntity(
+          id: 'r1',
+          postId: 'post-count-1',
+          authorId: 'u1',
+          authorName: 'User 1',
+          content: 'Top Level Answer 1',
+          createdAt: DateTime.now(),
+        );
+        final topLevel2 = ForumReplyEntity(
+          id: 'r2',
+          postId: 'post-count-1',
+          authorId: 'u2',
+          authorName: 'User 2',
+          content: 'Top Level Answer 2',
+          createdAt: DateTime.now(),
+        );
+        final nested1 = ForumReplyEntity(
+          id: 'r3',
+          postId: 'post-count-1',
+          parentReplyId: 'r1',
+          authorId: 'u3',
+          authorName: 'User 3',
+          content: 'Nested reply',
+          createdAt: DateTime.now(),
+        );
 
-      final post = ForumPostEntity(
-        id: 'post-count-1',
-        authorId: 'author-1',
-        authorName: 'Scholar',
-        track: 'WAEC',
-        title: 'Photosynthesis Question',
-        content: '**Question:** What is light dependent reaction? **Options:** A. Calvin Cycle B. Photolysis',
-        createdAt: DateTime.now(),
-        replies: [topLevel1, topLevel2, nested1],
-        repliesCount: 3,
-      );
+        final post = ForumPostEntity(
+          id: 'post-count-1',
+          authorId: 'author-1',
+          authorName: 'Scholar',
+          track: 'WAEC',
+          title: 'Photosynthesis Question',
+          content:
+              '**Question:** What is light dependent reaction? **Options:** A. Calvin Cycle B. Photolysis',
+          createdAt: DateTime.now(),
+          replies: [topLevel1, topLevel2, nested1],
+          repliesCount: 3,
+        );
 
-      await tester.pumpApp(
-        Scaffold(
-          body: TrackForumPostCard(
-            post: post,
-            onTap: () {},
+        await tester.pumpApp(
+          Scaffold(
+            body: TrackForumPostCard(
+              post: post,
+              onTap: () {},
+            ),
           ),
-        ),
-      );
+        );
 
-      // Should display "2 replies", NOT "3 replies"
-      expect(find.text('2 replies'), findsOneWidget);
-      expect(find.text('3 replies'), findsNothing);
-    });
+        // Should display "2 replies", NOT "3 replies"
+        expect(find.text('2 replies'), findsOneWidget);
+        expect(find.text('3 replies'), findsNothing);
+      },
+    );
 
-    test('top-level replies are sorted by upvotes descending and nested replies by date descending', () {
-      final t0 = DateTime(2026, 9, 13, 6);
-      final t1 = DateTime(2026, 9, 13, 6, 10);
-      final t2 = DateTime(2026, 9, 13, 6, 20);
+    test(
+      'top-level replies are sorted by upvotes descending and nested replies by date descending',
+      () {
+        final t0 = DateTime(2026, 9, 13, 6);
+        final t1 = DateTime(2026, 9, 13, 6, 10);
+        final t2 = DateTime(2026, 9, 13, 6, 20);
 
-      final replyLowVotes = ForumReplyEntity(
-        id: 'r_low',
-        postId: 'p1',
-        authorId: 'u1',
-        authorName: 'User 1',
-        content: 'Low votes reply',
-        upvotes: 2,
-        downvotes: 1,
-        createdAt: t0,
-      );
+        final replyLowVotes = ForumReplyEntity(
+          id: 'r_low',
+          postId: 'p1',
+          authorId: 'u1',
+          authorName: 'User 1',
+          content: 'Low votes reply',
+          upvotes: 2,
+          downvotes: 1,
+          createdAt: t0,
+        );
 
-      final replyHighVotes = ForumReplyEntity(
-        id: 'r_high',
-        postId: 'p1',
-        authorId: 'u2',
-        authorName: 'User 2',
-        content: 'High votes reply',
-        upvotes: 15,
-        downvotes: 1,
-        createdAt: t1,
-      );
+        final replyHighVotes = ForumReplyEntity(
+          id: 'r_high',
+          postId: 'p1',
+          authorId: 'u2',
+          authorName: 'User 2',
+          content: 'High votes reply',
+          upvotes: 15,
+          downvotes: 1,
+          createdAt: t1,
+        );
 
-      final replyVerified = ForumReplyEntity(
-        id: 'r_verified',
-        postId: 'p1',
-        authorId: 'u3',
-        authorName: 'User 3',
-        content: 'Verified solution',
-        upvotes: 8,
-        isVerifiedSolution: true,
-        createdAt: t0,
-      );
+        final replyVerified = ForumReplyEntity(
+          id: 'r_verified',
+          postId: 'p1',
+          authorId: 'u3',
+          authorName: 'User 3',
+          content: 'Verified solution',
+          upvotes: 8,
+          isVerifiedSolution: true,
+          createdAt: t0,
+        );
 
-      final nestedOlder = ForumReplyEntity(
-        id: 'n_old',
-        postId: 'p1',
-        parentReplyId: 'r_high',
-        authorId: 'u4',
-        authorName: 'Commenter 1',
-        content: 'Older comment',
-        createdAt: t0,
-      );
+        final nestedOlder = ForumReplyEntity(
+          id: 'n_old',
+          postId: 'p1',
+          parentReplyId: 'r_high',
+          authorId: 'u4',
+          authorName: 'Commenter 1',
+          content: 'Older comment',
+          createdAt: t0,
+        );
 
-      final nestedNewer = ForumReplyEntity(
-        id: 'n_new',
-        postId: 'p1',
-        parentReplyId: 'r_high',
-        authorId: 'u5',
-        authorName: 'Commenter 2',
-        content: 'Newer comment',
-        createdAt: t2,
-      );
+        final nestedNewer = ForumReplyEntity(
+          id: 'n_new',
+          postId: 'p1',
+          parentReplyId: 'r_high',
+          authorId: 'u5',
+          authorName: 'Commenter 2',
+          content: 'Newer comment',
+          createdAt: t2,
+        );
 
-      final allReplies = [replyLowVotes, nestedOlder, replyHighVotes, nestedNewer, replyVerified];
+        final allReplies = [
+          replyLowVotes,
+          nestedOlder,
+          replyHighVotes,
+          nestedNewer,
+          replyVerified,
+        ];
 
-      // Top-level sorting logic
-      final topLevel = allReplies
-          .where((r) => r.parentReplyId == null || r.parentReplyId!.isEmpty)
-          .toList()
-        ..sort((a, b) {
-          if (a.isVerifiedSolution != b.isVerifiedSolution) {
-            return a.isVerifiedSolution ? -1 : 1;
+        // Top-level sorting logic
+        final topLevel =
+            allReplies
+                .where(
+                  (r) => r.parentReplyId == null || r.parentReplyId!.isEmpty,
+                )
+                .toList()
+              ..sort((a, b) {
+                if (a.isVerifiedSolution != b.isVerifiedSolution) {
+                  return a.isVerifiedSolution ? -1 : 1;
+                }
+                final voteComp = b.netVotes.compareTo(a.netVotes);
+                if (voteComp != 0) return voteComp;
+                return b.createdAt.compareTo(a.createdAt);
+              });
+
+        expect(topLevel.first.id, equals('r_verified')); // Verified on top
+        expect(topLevel[1].id, equals('r_high')); // 14 net votes
+        expect(topLevel[2].id, equals('r_low')); // 1 net vote
+
+        // Nested sorting logic (most recent first)
+        final nestedMap = <String, List<ForumReplyEntity>>{};
+        for (final r in allReplies) {
+          if (r.parentReplyId != null && r.parentReplyId!.isNotEmpty) {
+            nestedMap.putIfAbsent(r.parentReplyId!, () => []).add(r);
           }
-          final voteComp = b.netVotes.compareTo(a.netVotes);
-          if (voteComp != 0) return voteComp;
-          return b.createdAt.compareTo(a.createdAt);
-        });
-
-      expect(topLevel.first.id, equals('r_verified')); // Verified on top
-      expect(topLevel[1].id, equals('r_high'));       // 14 net votes
-      expect(topLevel[2].id, equals('r_low'));        // 1 net vote
-
-      // Nested sorting logic (most recent first)
-      final nestedMap = <String, List<ForumReplyEntity>>{};
-      for (final r in allReplies) {
-        if (r.parentReplyId != null && r.parentReplyId!.isNotEmpty) {
-          nestedMap.putIfAbsent(r.parentReplyId!, () => []).add(r);
         }
-      }
-      for (final list in nestedMap.values) {
-        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      }
+        for (final list in nestedMap.values) {
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        }
 
-      final highNested = nestedMap['r_high']!;
-      expect(highNested.first.id, equals('n_new')); // Newer comment (t2) first
-      expect(highNested.last.id, equals('n_old'));  // Older comment (t0) second
-    });
+        final highNested = nestedMap['r_high']!;
+        expect(
+          highNested.first.id,
+          equals('n_new'),
+        ); // Newer comment (t2) first
+        expect(
+          highNested.last.id,
+          equals('n_old'),
+        ); // Older comment (t0) second
+      },
+    );
 
     test('hasAiHint correctly detects if an AI hint exists in replies', () {
       final normalReply = ForumReplyEntity(

@@ -51,13 +51,13 @@ void main() {
   const tUser = UserEntity(
     id: 'user_123',
     email: 'student@university.edu',
-    displayName: 'Ada Lovelace',
+    displayName: 'Wuke Anjolaoluwa Omotoyosi',
   );
 
   const tProfile = UserProfileEntity(
     id: 'user_123',
     email: 'student@university.edu',
-    displayName: 'Ada Lovelace',
+    displayName: 'Wuke Anjolaoluwa Omotoyosi',
     targetTrack: 'JAMB',
     dailyCardTarget: 25,
     isOnboarded: true,
@@ -192,7 +192,7 @@ void main() {
         const AuthRegisterRequested(
           email: 'student@university.edu',
           password: 'password123',
-          displayName: 'Ada Lovelace',
+          displayName: 'Wuke Anjolaoluwa Omotoyosi',
         ),
       ),
       expect: () => [

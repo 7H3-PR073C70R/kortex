@@ -332,7 +332,7 @@
     "@authDisplayNameLabel": {
         "description": "Label for display name text field"
     },
-    "authDisplayNameHint": "Ada Lovelace",
+    "authDisplayNameHint": "Wuke Anjolaoluwa Omotoyosi",
     "@authDisplayNameHint": {
         "description": "Hint for display name text field"
     },

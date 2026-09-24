@@ -14,7 +14,9 @@ import 'package:kortex/src/shared/widgets/tailored_biometric_lock_view.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockBiometricAuthService extends Mock implements BiometricAuthService {}
+
 class MockUserStorageService extends Mock implements UserStorageService {}
+
 class MockAuthBloc extends Mock implements AuthBloc {}
 
 void main() {
@@ -35,15 +37,20 @@ void main() {
     currentTime = DateTime(2026, 9, 6, 12);
 
     const tState = AuthState(
-      user: UserEntity(id: 'u1', email: 'scholar@kortex.ai', displayName: 'Ada Lovelace'),
+      user: UserEntity(
+        id: 'u1',
+        email: 'scholar@kortex.ai',
+        displayName: 'Wuke Anjolaoluwa Omotoyosi',
+      ),
     );
     when(() => mockAuthBloc.state).thenReturn(tState);
     when(() => mockAuthBloc.stream).thenAnswer((_) => Stream.value(tState));
 
     when(() => mockBiometric.isEnabledListenable).thenReturn(isEnabledNotifier);
     when(() => mockBiometric.isBiometricLockEnabled()).thenReturn(true);
-    when(() => mockBiometric.backgroundLockTimeout)
-        .thenReturn(const Duration(seconds: 30));
+    when(
+      () => mockBiometric.backgroundLockTimeout,
+    ).thenReturn(const Duration(seconds: 30));
     when(() => mockUserStorage.getToken()).thenReturn('valid_jwt_token_123');
 
     // Simulate background recording & shouldReArm logic
@@ -61,13 +68,18 @@ void main() {
       ),
     ).thenAnswer((inv) {
       if (recordedTime == null) return false;
-      final now = (inv.namedArguments[const Symbol('now')] as DateTime?) ?? currentTime;
-      final threshold = (inv.namedArguments[const Symbol('threshold')] as Duration?) ??
+      final now =
+          (inv.namedArguments[const Symbol('now')] as DateTime?) ?? currentTime;
+      final threshold =
+          (inv.namedArguments[const Symbol('threshold')] as Duration?) ??
           const Duration(seconds: 30);
       return now.difference(recordedTime!) >= threshold;
     });
-    when(() => mockBiometric.authenticate(localizedReason: any(named: 'localizedReason')))
-        .thenAnswer((_) async => true);
+    when(
+      () => mockBiometric.authenticate(
+        localizedReason: any(named: 'localizedReason'),
+      ),
+    ).thenAnswer((_) async => true);
   });
 
   Widget buildWidget({Duration? backgroundTimeout}) {
@@ -122,36 +134,47 @@ void main() {
       expect(find.byType(TailoredBiometricLockView), findsNothing);
     });
 
-    testWidgets('resuming after 30s timeout threshold locks overlay and presents TailoredBiometricLockView', (
-      tester,
-    ) async {
-      // Return false initially so it stays locked
-      when(() => mockBiometric.authenticate(localizedReason: any(named: 'localizedReason')))
-          .thenAnswer((_) async => false);
+    testWidgets(
+      'resuming after 30s timeout threshold locks overlay and presents TailoredBiometricLockView',
+      (
+        tester,
+      ) async {
+        // Return false initially so it stays locked
+        when(
+          () => mockBiometric.authenticate(
+            localizedReason: any(named: 'localizedReason'),
+          ),
+        ).thenAnswer((_) async => false);
 
-      await tester.pumpWidget(buildWidget());
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(buildWidget());
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Pause app
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump();
+        // Pause app
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await tester.pump();
 
-      // Advance clock by 35 seconds (exceeds 30s threshold)
-      currentTime = currentTime.add(const Duration(seconds: 35));
+        // Advance clock by 35 seconds (exceeds 30s threshold)
+        currentTime = currentTime.add(const Duration(seconds: 35));
 
-      // Resume app
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pump(const Duration(milliseconds: 100));
+        // Resume app
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Expect TailoredBiometricLockView to be shown
-      expect(find.byType(TailoredBiometricLockView), findsOneWidget);
-    });
+        // Expect TailoredBiometricLockView to be shown
+        expect(find.byType(TailoredBiometricLockView), findsOneWidget);
+      },
+    );
 
     testWidgets('successful biometric authentication unlocks overlay', (
       tester,
     ) async {
-      when(() => mockBiometric.authenticate(localizedReason: any(named: 'localizedReason')))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockBiometric.authenticate(
+          localizedReason: any(named: 'localizedReason'),
+        ),
+      ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildWidget());
       await tester.pump(const Duration(milliseconds: 100));
@@ -168,22 +191,27 @@ void main() {
       expect(find.byType(TailoredBiometricLockView), findsNothing);
     });
 
-    testWidgets('does not lock on resume if biometric lock is disabled in settings', (
-      tester,
-    ) async {
-      when(() => mockBiometric.isBiometricLockEnabled()).thenReturn(false);
+    testWidgets(
+      'does not lock on resume if biometric lock is disabled in settings',
+      (
+        tester,
+      ) async {
+        when(() => mockBiometric.isBiometricLockEnabled()).thenReturn(false);
 
-      await tester.pumpWidget(buildWidget());
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(buildWidget());
+        await tester.pump(const Duration(milliseconds: 100));
 
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump();
-      currentTime = currentTime.add(const Duration(seconds: 50));
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pump(const Duration(milliseconds: 100));
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+        await tester.pump();
+        currentTime = currentTime.add(const Duration(seconds: 50));
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Protected Study Dashboard'), findsOneWidget);
-      expect(find.byType(TailoredBiometricLockView), findsNothing);
-    });
+        expect(find.text('Protected Study Dashboard'), findsOneWidget);
+        expect(find.byType(TailoredBiometricLockView), findsNothing);
+      },
+    );
   });
 }

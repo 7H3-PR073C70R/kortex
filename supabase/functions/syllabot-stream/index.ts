@@ -103,8 +103,8 @@ serve(async (req: Request) => {
 
     const isCacheHit = Boolean(
       cacheResult.hit &&
-        cacheResult.data?.tokens &&
-        !isCorruptedOrMismatchCache(rawPrompt, cacheResult.data.tokens as string[])
+      cacheResult.data?.tokens &&
+      !isCorruptedOrMismatchCache(rawPrompt, cacheResult.data.tokens as string[])
     );
     const cachedTokens = isCacheHit
       ? (cacheResult.data?.tokens as string[])
@@ -500,7 +500,7 @@ function getFallbackTokens(
       "A **noun** is a fundamental part of speech that names a **person**, **place**, **thing**, or **idea**.",
       "\n\n### 1. Categories of Nouns:",
       "\n• **Common Nouns:** General names for things (e.g., *student*, *city*, *book*).",
-      "\n• **Proper Nouns:** Specific names, always capitalized (e.g., *Ada Lovelace*, *London*, *Kortex*).",
+      "\n• **Proper Nouns:** Specific names, always capitalized (e.g., *Wuke Anjolaoluwa Omotoyosi*, *London*, *Kortex*).",
       "\n• **Abstract Nouns:** Intangible concepts, feelings, or qualities (e.g., *gravity*, *knowledge*, *courage*).",
       "\n• **Concrete Nouns:** Tangible objects perceptible by the senses (e.g., *apple*, *telescope*).",
       "\n• **Collective Nouns:** Groups of individuals or items (e.g., *team*, *flock*, *committee*).",

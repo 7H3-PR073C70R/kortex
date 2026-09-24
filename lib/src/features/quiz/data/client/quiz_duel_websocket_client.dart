@@ -340,7 +340,7 @@ class QuizDuelWebSocketClient {
 
     final aiNames = [
       'Syllabot Scholar',
-      'Ada Lovelace ⚡',
+      'Wuke Anjolaoluwa Omotoyosi ⚡',
       'Kortex Rival',
       'Newton Mind',
       'Curie Intellect',
