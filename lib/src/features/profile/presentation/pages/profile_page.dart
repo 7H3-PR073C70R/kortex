@@ -236,7 +236,7 @@ class _ProfileView extends HookWidget {
                 ),
                 slivers: [
                   SliverAppBar(
-                    backgroundColor: colors.transparent,
+                    backgroundColor: colors.backgroundPrimary,
                     elevation: 0,
                     scrolledUnderElevation: 0,
                     pinned: true,
@@ -351,7 +351,7 @@ class _ProfileView extends HookWidget {
                                               context,
                                               profile?.displayName ??
                                                   state.user?.displayName ??
-                                                  'toxicbishop01',
+                                                  '',
                                             ),
                                       ),
                                       const SizedBox(height: 20),

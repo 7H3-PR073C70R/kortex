@@ -432,7 +432,7 @@ class _NavTile extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: colors.surfaceBorder.withValues(alpha: isDark ? 0.7 : 0.6),
+            color: colors.surface.withValues(alpha: isDark ? 0.7 : 0.6),
             indent: 70,
             endIndent: 16,
           ),
