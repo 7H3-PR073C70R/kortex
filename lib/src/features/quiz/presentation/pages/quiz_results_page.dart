@@ -699,22 +699,24 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: gradeResult.gradeColor.withAlpha(
-                            isDark ? 50 : 30,
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
                           ),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          gradeResult.classification,
-                          style: typography.caption.bold.copyWith(
-                            color: gradeResult.gradeColor,
-                            fontSize: 10.5,
+                          decoration: BoxDecoration(
+                            color: gradeResult.gradeColor.withAlpha(
+                              isDark ? 50 : 30,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            gradeResult.classification,
+                            style: typography.caption.bold.copyWith(
+                              color: gradeResult.gradeColor,
+                              fontSize: 10.5,
+                            ),
                           ),
                         ),
                       ),
