@@ -219,5 +219,34 @@ void main() {
         expect(find.text('scholar@stanford.edu'), findsWidgets);
       },
     );
+
+    testWidgets(
+      'social login buttons are rendered with exact dimensions in diagonal channel',
+      (tester) async {
+        tester.view.physicalSize = const Size(1170, 2532);
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
+        await tester.pump();
+
+        final googleFinder =
+            find.byKey(const ValueKey<String>('auth_google_button'));
+        expect(googleFinder, findsOneWidget);
+
+        final googleSize = tester.getSize(googleFinder);
+        expect(googleSize.width, 48.0);
+        expect(googleSize.height, 48.0);
+
+        final appleFinder =
+            find.byKey(const ValueKey<String>('auth_apple_button'));
+        expect(appleFinder, findsOneWidget);
+
+        final appleSize = tester.getSize(appleFinder);
+        expect(appleSize.width, 48.0);
+        expect(appleSize.height, 48.0);
+      },
+    );
   });
 }

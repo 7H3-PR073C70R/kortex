@@ -99,7 +99,7 @@ class AuthFormView extends HookWidget {
 
     // Animation controller for the Login <-> Signup slide transition
     final animController = useAnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 580),
       initialValue: isRegister ? 1.0 : 0.0,
     );
 
@@ -108,14 +108,14 @@ class AuthFormView extends HookWidget {
         unawaited(
           animController.animateTo(
             1,
-            curve: const Cubic(0.34, 1.35, 0.64, 1),
+            curve: Curves.easeInOutCubicEmphasized,
           ),
         );
       } else {
         unawaited(
           animController.animateTo(
             0,
-            curve: const Cubic(0.34, 1.35, 0.64, 1),
+            curve: Curves.easeInOutCubicEmphasized,
           ),
         );
       }
@@ -197,11 +197,13 @@ class AuthFormView extends HookWidget {
           const slantHeight = 110.0;
           final slope = slantHeight / cardW;
 
-          // Channel spacing: exactly 32px between Card 1 and socials,
-          // and exactly 32px between socials and Card 2.
-          const gap = 32.0;
+          // Channel spacing:
+          // Exactly 40px between Card 1 bottom slant and socials,
+          // and exactly 32px between socials and Card 2 top slant.
+          const gapTop = 40.0;
           const socialDiameter = 44.0;
-          const channelH = gap + socialDiameter + gap; // 32 + 44 + 32 = 108.0
+          const gapBottom = 32.0;
+          const channelH = gapTop + socialDiameter + gapBottom; // 40 + 44 + 32 = 116.0
 
           // Default safe padding for when cards are in their resting states:
           // Card 1 does not touch status bar on Login; Card 2 does not touch bottom on Signup.
@@ -209,7 +211,7 @@ class AuthFormView extends HookWidget {
           final defaultBottomPadding = math.max(bottomSafePadding + 16.0, 20);
 
           final loginCardH =
-              (maxH - 108.0 - defaultTopPadding).clamp(420.0, 640.0);
+              (maxH - channelH - defaultTopPadding).clamp(420.0, 640.0);
           final peekingCard1H =
               slantHeight + math.max(statusBarHeight + 14.0, 52.0);
 
@@ -228,15 +230,21 @@ class AuthFormView extends HookWidget {
                   final loginOpacity = ((0.7 - t) / 0.7).clamp(0.0, 1.0);
                   final signupOpacity = ((t - 0.3) / 0.7).clamp(0.0, 1.0);
 
-                  // Fun & Crazy Motion Kinetics:
-                  // 1. Motion peak delta (peaks at midpoint t = 0.5)
+                  // 3D Motion Kinetics:
+                  // 1. Motion peak delta (peaks smoothly at midpoint t = 0.5)
                   final motionDelta = math.sin(t.clamp(0.0, 1.0) * math.pi);
-                  // 2. Dynamic 3D tilt of cards while sliding
-                  final tiltAngle = motionDelta * 0.045;
-                  // 3. 360-degree joyful spin on the floating social buttons
-                  final socialRotation = t * math.pi * 2;
-                  final socialScale = 1.0 + (motionDelta * 0.22);
-                  final arrowScale = 1.0 + (motionDelta * 0.25);
+
+                  // 2. Card 1 3D Perspective kinematics
+                  final card1TiltX = -0.11 * motionDelta; // In radians (~ -6.3°)
+                  final card1TiltY = 0.04 * motionDelta;  // Diagonal twist
+                  final card1TiltZ = -0.02 * motionDelta;
+                  final card1Scale = 1.0 - (motionDelta * 0.035);
+
+                  // 3. Card 2 3D Perspective kinematics
+                  final card2TiltX = 0.11 * motionDelta;  // In radians (~ +6.3°)
+                  final card2TiltY = -0.04 * motionDelta;
+                  final card2TiltZ = 0.02 * motionDelta;
+                  final card2Scale = 1.0 - (motionDelta * 0.035);
 
                   // Card 1 top: on Login (t=0) maintains default padding below status bar;
                   // on Signup (t=1) extends to top: 0 covering the app bar.
@@ -262,7 +270,7 @@ class AuthFormView extends HookWidget {
                     children: [
                       // ========================================================
                       // 1. CARD 2: Peeking in Login / Full Card in Signup
-                      // Uses 3D kinetic tilt and maintains proper padding on Signup
+                      // Uses true 3D perspective fold and maintains proper padding on Signup
                       // ========================================================
                       Positioned(
                         top: card2TopAt(0),
@@ -272,17 +280,23 @@ class AuthFormView extends HookWidget {
                         child: Transform(
                           alignment: Alignment.bottomCenter,
                           transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001)
-                            ..rotateZ(showLogin ? tiltAngle : -tiltAngle),
+                            ..setEntry(3, 2, 0.0012)
+                            ..rotateX(card2TiltX)
+                            ..rotateY(card2TiltY)
+                            ..rotateZ(card2TiltZ)
+                            ..scaleByDouble(card2Scale, card2Scale, 1, 1),
                           child: CustomPaint(
                             painter: _ShapeShadowPainter(
                               clipper: const _SignupCardClipper(
                                 slantHeight: slantHeight,
                               ),
                               color: cardColor,
-                              shadowColor:
-                                  colors.black.withAlpha(isDark ? 90 : 35),
-                              elevation: 14 + (motionDelta * 6),
+                              shadowColor: colors.black.withAlpha(
+                                isDark
+                                    ? (85 + (motionDelta * 45).toInt())
+                                    : (30 + (motionDelta * 35).toInt()),
+                              ),
+                              elevation: 14.0 + (motionDelta * 18.0),
                             ),
                             child: ClipPath(
                               clipper: const _SignupCardClipper(
@@ -290,7 +304,33 @@ class AuthFormView extends HookWidget {
                               ),
                               child: !showLogin
                                   ? Container(
-                                      color: cardColor,
+                                      decoration: BoxDecoration(
+                                        color: cardColor,
+                                        gradient: LinearGradient(
+                                          begin: Alignment(
+                                            -0.8 + (motionDelta * 0.4),
+                                            -1,
+                                          ),
+                                          end: const Alignment(0.8, 1),
+                                          colors: isDark
+                                              ? [
+                                                  colors.surfaceSecondary,
+                                                  Color.lerp(
+                                                    colors.surfaceSecondary,
+                                                    Colors.white,
+                                                    0.03 * (1 - motionDelta),
+                                                  )!,
+                                                ]
+                                              : [
+                                                  colors.white,
+                                                  Color.lerp(
+                                                    colors.white,
+                                                    colors.primary,
+                                                    0.02 * motionDelta,
+                                                  )!,
+                                                ],
+                                        ),
+                                      ),
                                       padding: const EdgeInsets.only(
                                         left: 20,
                                         right: 20,
@@ -311,7 +351,7 @@ class AuthFormView extends HookWidget {
                                                 child: Transform.translate(
                                                   offset: Offset(
                                                     0,
-                                                    30.0 * (1.0 - t),
+                                                    32.0 * (1.0 - t),
                                                   ),
                                                   child: Opacity(
                                                     opacity: signupOpacity,
@@ -342,7 +382,35 @@ class AuthFormView extends HookWidget {
                                               ),
                                             ),
                                     )
-                                  : Container(color: cardColor),
+                                  : Container(
+                                      decoration: BoxDecoration(
+                                        color: cardColor,
+                                        gradient: LinearGradient(
+                                          begin: Alignment(
+                                            -0.8 + (motionDelta * 0.4),
+                                            -1,
+                                          ),
+                                          end: const Alignment(0.8, 1),
+                                          colors: isDark
+                                              ? [
+                                                  colors.surfaceSecondary,
+                                                  Color.lerp(
+                                                    colors.surfaceSecondary,
+                                                    Colors.white,
+                                                    0.03 * (1 - motionDelta),
+                                                  )!,
+                                                ]
+                                              : [
+                                                  colors.white,
+                                                  Color.lerp(
+                                                    colors.white,
+                                                    colors.primary,
+                                                    0.02 * motionDelta,
+                                                  )!,
+                                                ],
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
@@ -350,7 +418,7 @@ class AuthFormView extends HookWidget {
 
                       // ========================================================
                       // 2. CARD 1: Full Card in Login / Peeking in Signup
-                      // Uses 3D kinetic tilt and maintains proper padding on Login
+                      // Uses true 3D perspective fold and maintains proper padding on Login
                       // ========================================================
                       Positioned(
                         top: card1Top,
@@ -360,17 +428,23 @@ class AuthFormView extends HookWidget {
                         child: Transform(
                           alignment: Alignment.topCenter,
                           transform: Matrix4.identity()
-                            ..setEntry(3, 2, 0.001)
-                            ..rotateZ(showLogin ? -tiltAngle : tiltAngle),
+                            ..setEntry(3, 2, 0.0012)
+                            ..rotateX(card1TiltX)
+                            ..rotateY(card1TiltY)
+                            ..rotateZ(card1TiltZ)
+                            ..scaleByDouble(card1Scale, card1Scale, 1, 1),
                           child: CustomPaint(
                             painter: _ShapeShadowPainter(
                               clipper: const _LoginCardClipper(
                                 slantHeight: slantHeight,
                               ),
                               color: cardColor,
-                              shadowColor:
-                                  colors.black.withAlpha(isDark ? 90 : 35),
-                              elevation: 14 + (motionDelta * 6),
+                              shadowColor: colors.black.withAlpha(
+                                isDark
+                                    ? (85 + (motionDelta * 45).toInt())
+                                    : (30 + (motionDelta * 35).toInt()),
+                              ),
+                              elevation: 14.0 + (motionDelta * 18.0),
                             ),
                             child: ClipPath(
                               clipper: const _LoginCardClipper(
@@ -378,7 +452,33 @@ class AuthFormView extends HookWidget {
                               ),
                               child: showLogin
                                   ? Container(
-                                      color: cardColor,
+                                      decoration: BoxDecoration(
+                                        color: cardColor,
+                                        gradient: LinearGradient(
+                                          begin: Alignment(
+                                            -0.8 + (motionDelta * 0.4),
+                                            -1,
+                                          ),
+                                          end: const Alignment(0.8, 1),
+                                          colors: isDark
+                                              ? [
+                                                  colors.surfaceSecondary,
+                                                  Color.lerp(
+                                                    colors.surfaceSecondary,
+                                                    Colors.white,
+                                                    0.03 * (1 - motionDelta),
+                                                  )!,
+                                                ]
+                                              : [
+                                                  colors.white,
+                                                  Color.lerp(
+                                                    colors.white,
+                                                    colors.primary,
+                                                    0.02 * motionDelta,
+                                                  )!,
+                                                ],
+                                        ),
+                                      ),
                                       padding: const EdgeInsets.only(
                                         left: 20,
                                         right: 20,
@@ -389,7 +489,7 @@ class AuthFormView extends HookWidget {
                                         physics: const ClampingScrollPhysics(),
                                         child: AutofillGroup(
                                           child: Transform.translate(
-                                            offset: Offset(0, -30.0 * t),
+                                            offset: Offset(0, -32.0 * t),
                                             child: Opacity(
                                               opacity: loginOpacity,
                                               child: _buildLoginForm(
@@ -411,30 +511,66 @@ class AuthFormView extends HookWidget {
                                         ),
                                       ),
                                     )
-                                  : Container(color: cardColor),
+                                  : Container(
+                                      decoration: BoxDecoration(
+                                        color: cardColor,
+                                        gradient: LinearGradient(
+                                          begin: Alignment(
+                                            -0.8 + (motionDelta * 0.4),
+                                            -1,
+                                          ),
+                                          end: const Alignment(0.8, 1),
+                                          colors: isDark
+                                              ? [
+                                                  colors.surfaceSecondary,
+                                                  Color.lerp(
+                                                    colors.surfaceSecondary,
+                                                    Colors.white,
+                                                    0.03 * (1 - motionDelta),
+                                                  )!,
+                                                ]
+                                              : [
+                                                  colors.white,
+                                                  Color.lerp(
+                                                    colors.white,
+                                                    colors.primary,
+                                                    0.02 * motionDelta,
+                                                  )!,
+                                                ],
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
                       ),
 
                       // ========================================================
-                      // 3. SOCIALS (Directly on canvas with 32px padding and acrobatics)
+                      // 3. SOCIALS (Floating 3D Coin tokens with 40px top & 32px bottom spacing)
                       // ========================================================
                       // Google Button
                       Positioned(
                         left: marginX + (isAppleSupported ? 68 : 108),
-                        top: card1BottomAt(isAppleSupported ? 90 : 130) + gap,
-                        child: Transform.scale(
-                          scale: socialScale,
-                          child: Transform.rotate(
-                            angle: socialRotation,
-                            child: _CircularSocialButton(
-                              key: const ValueKey<String>('auth_google_button'),
-                              icon: const _GooglePlusIcon(),
-                              color: const Color(0xFFEA4335),
-                              onPressed: isLoading ? () {} : onGooglePressed,
-                              semanticsLabel: 'Google Sign In',
+                        top: card1BottomAt(isAppleSupported ? 90 : 130) +
+                            gapTop,
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.0016)
+                            ..rotateY(motionDelta * math.pi)
+                            ..rotateX(motionDelta * 0.22)
+                            ..scaleByDouble(
+                              1.0 + (motionDelta * 0.16),
+                              1.0 + (motionDelta * 0.16),
+                              1,
+                              1,
                             ),
+                          child: _CircularSocialButton(
+                            key: const ValueKey<String>('auth_google_button'),
+                            icon: const _GooglePlusIcon(),
+                            color: const Color(0xFFEA4335),
+                            onPressed: isLoading ? () {} : onGooglePressed,
+                            semanticsLabel: 'Google Sign In',
                           ),
                         ),
                       ),
@@ -443,36 +579,52 @@ class AuthFormView extends HookWidget {
                       if (isAppleSupported)
                         Positioned(
                           left: marginX + 138,
-                          top: card1BottomAt(160) + gap,
-                          child: Transform.scale(
-                            scale: socialScale,
-                            child: Transform.rotate(
-                              angle: -socialRotation,
-                              child: _CircularSocialButton(
-                                key:
-                                    const ValueKey<String>('auth_apple_button'),
-                                icon: const Icon(
-                                  Icons.apple,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                                color: const Color(0xFF1E293B),
-                                onPressed: isLoading ? () {} : onApplePressed,
-                                semanticsLabel: 'Apple Sign In',
+                          top: card1BottomAt(160) + gapTop,
+                          child: Transform(
+                            alignment: Alignment.center,
+                            transform: Matrix4.identity()
+                              ..setEntry(3, 2, 0.0016)
+                              ..rotateY(-motionDelta * math.pi)
+                              ..rotateX(motionDelta * 0.22)
+                              ..scaleByDouble(
+                                1.0 + (motionDelta * 0.16),
+                                1.0 + (motionDelta * 0.16),
+                                1,
+                                1,
                               ),
+                            child: _CircularSocialButton(
+                              key:
+                                  const ValueKey<String>('auth_apple_button'),
+                              icon: const Icon(
+                                Icons.apple,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              color: const Color(0xFF1E293B),
+                              onPressed: isLoading ? () {} : onApplePressed,
+                              semanticsLabel: 'Apple Sign In',
                             ),
                           ),
                         ),
 
                       // ========================================================
-                      // 4. ARROW BUTTONS (Spring scaling toggle buttons)
+                      // 4. ARROW BUTTONS (3D spring rotating toggle buttons)
                       // ========================================================
                       // Left Circle Arrow (Inside Card 2)
                       Positioned(
                         left: marginX + 16,
                         top: card2TopAt(35) + 16,
-                        child: Transform.scale(
-                          scale: arrowScale,
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.0016)
+                            ..rotateZ(t * math.pi)
+                            ..scaleByDouble(
+                              1.0 + (motionDelta * 0.16),
+                              1.0 + (motionDelta * 0.16),
+                              1,
+                              1,
+                            ),
                           child: _CircularArrowButton(
                             key: const ValueKey<String>(
                               'auth_arrow_toggle_button',
@@ -494,8 +646,17 @@ class AuthFormView extends HookWidget {
                       Positioned(
                         left: marginX + cardW - 54,
                         top: card1BottomAt(cardW - 35) - 54,
-                        child: Transform.scale(
-                          scale: arrowScale,
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.0016)
+                            ..rotateZ(t * math.pi)
+                            ..scaleByDouble(
+                              1.0 + (motionDelta * 0.16),
+                              1.0 + (motionDelta * 0.16),
+                              1,
+                              1,
+                            ),
                           child: _CircularArrowButton(
                             icon: showLogin
                                 ? Icons.arrow_upward_rounded
