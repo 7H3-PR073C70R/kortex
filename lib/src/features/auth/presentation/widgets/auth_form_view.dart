@@ -99,15 +99,25 @@ class AuthFormView extends HookWidget {
 
     // Animation controller for the Login <-> Signup slide transition
     final animController = useAnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 600),
       initialValue: isRegister ? 1.0 : 0.0,
     );
 
     useEffect(() {
       if (isRegister) {
-        unawaited(animController.animateTo(1, curve: Curves.easeInOutCubic));
+        unawaited(
+          animController.animateTo(
+            1,
+            curve: const Cubic(0.34, 1.35, 0.64, 1),
+          ),
+        );
       } else {
-        unawaited(animController.animateTo(0, curve: Curves.easeInOutCubic));
+        unawaited(
+          animController.animateTo(
+            0,
+            curve: const Cubic(0.34, 1.35, 0.64, 1),
+          ),
+        );
       }
       return null;
     }, [isRegister]);
@@ -187,15 +197,19 @@ class AuthFormView extends HookWidget {
           const slantHeight = 110.0;
           final slope = slantHeight / cardW;
 
-          // Channel spacing: exactly 16px between Card 1 and socials,
-          // and exactly 16px between socials and Card 2.
-          const gap = 16.0;
-          const channelH = 76.0; // gap (16) + social diameter (44) + gap (16)
+          // Channel spacing: exactly 32px between Card 1 and socials,
+          // and exactly 32px between socials and Card 2.
+          const gap = 32.0;
+          const socialDiameter = 44.0;
+          const channelH = gap + socialDiameter + gap; // 32 + 44 + 32 = 108.0
 
-          // Card 1 starts at top: 0 in both modes (covering status bar / app bar area).
-          // In Login mode (t = 0), Card 1 is tall (leaving ~100px for Card 2 to peek at bottom).
-          // In Signup mode (t = 1), Card 1 peeks at the top covering the status bar.
-          final loginCardH = (maxH - 76.0).clamp(480.0, 680.0);
+          // Default safe padding for when cards are in their resting states:
+          // Card 1 does not touch status bar on Login; Card 2 does not touch bottom on Signup.
+          final defaultTopPadding = statusBarHeight + 12.0;
+          final defaultBottomPadding = math.max(bottomSafePadding + 16.0, 20);
+
+          final loginCardH =
+              (maxH - 108.0 - defaultTopPadding).clamp(420.0, 640.0);
           final peekingCard1H =
               slantHeight + math.max(statusBarHeight + 14.0, 52.0);
 
@@ -214,13 +228,32 @@ class AuthFormView extends HookWidget {
                   final loginOpacity = ((0.7 - t) / 0.7).clamp(0.0, 1.0);
                   final signupOpacity = ((t - 0.3) / 0.7).clamp(0.0, 1.0);
 
+                  // Fun & Crazy Motion Kinetics:
+                  // 1. Motion peak delta (peaks at midpoint t = 0.5)
+                  final motionDelta = math.sin(t.clamp(0.0, 1.0) * math.pi);
+                  // 2. Dynamic 3D tilt of cards while sliding
+                  final tiltAngle = motionDelta * 0.045;
+                  // 3. 360-degree joyful spin on the floating social buttons
+                  final socialRotation = t * math.pi * 2;
+                  final socialScale = 1.0 + (motionDelta * 0.22);
+                  final arrowScale = 1.0 + (motionDelta * 0.25);
+
+                  // Card 1 top: on Login (t=0) maintains default padding below status bar;
+                  // on Signup (t=1) extends to top: 0 covering the app bar.
+                  final card1Top = ui.lerpDouble(defaultTopPadding, 0.0, t)!;
+
+                  // Card 2 bottom: on Login (t=0) extends to bottom: 0;
+                  // on Signup (t=1) maintains proper padding and safe area above bottom.
+                  final card2Bottom =
+                      ui.lerpDouble(0.0, defaultBottomPadding, t)!;
+
                   // Card 1 height smoothly interpolates from loginCardH to peekingCard1H
                   final card1H = ui.lerpDouble(loginCardH, peekingCard1H, t)!;
 
                   // Y-coordinate functions along the slant:
                   // Card 1 bottom at x:
                   double card1BottomAt(double x) =>
-                      card1H - slantHeight + slope * x;
+                      card1Top + card1H - slantHeight + slope * x;
 
                   // Card 2 top at x:
                   double card2TopAt(double x) => card1BottomAt(x) + channelH;
@@ -229,155 +262,180 @@ class AuthFormView extends HookWidget {
                     children: [
                       // ========================================================
                       // 1. CARD 2: Peeking in Login / Full Card in Signup
-                      // Extends ALL THE WAY to bottom: 0 in both modes,
-                      // eliminating any sharp bottom cut or detached cutoff.
+                      // Uses 3D kinetic tilt and maintains proper padding on Signup
                       // ========================================================
                       Positioned(
                         top: card2TopAt(0),
                         left: marginX,
                         width: cardW,
-                        bottom: 0,
-                        child: CustomPaint(
-                          painter: _ShapeShadowPainter(
-                            clipper: const _SignupCardClipper(
-                              slantHeight: slantHeight,
+                        bottom: card2Bottom,
+                        child: Transform(
+                          alignment: Alignment.bottomCenter,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..rotateZ(showLogin ? tiltAngle : -tiltAngle),
+                          child: CustomPaint(
+                            painter: _ShapeShadowPainter(
+                              clipper: const _SignupCardClipper(
+                                slantHeight: slantHeight,
+                              ),
+                              color: cardColor,
+                              shadowColor:
+                                  colors.black.withAlpha(isDark ? 90 : 35),
+                              elevation: 14 + (motionDelta * 6),
                             ),
-                            color: cardColor,
-                            shadowColor:
-                                colors.black.withAlpha(isDark ? 90 : 35),
-                            elevation: 14,
-                          ),
-                          child: ClipPath(
-                            clipper: const _SignupCardClipper(
-                              slantHeight: slantHeight,
-                            ),
-                            child: !showLogin
-                                ? Container(
-                                    color: cardColor,
-                                    padding: EdgeInsets.only(
-                                      left: 20,
-                                      right: 20,
-                                      top: slantHeight + 14,
-                                      bottom: math.max(
-                                        bottomSafePadding + 16.0,
-                                        24,
+                            child: ClipPath(
+                              clipper: const _SignupCardClipper(
+                                slantHeight: slantHeight,
+                              ),
+                              child: !showLogin
+                                  ? Container(
+                                      color: cardColor,
+                                      padding: const EdgeInsets.only(
+                                        left: 20,
+                                        right: 20,
+                                        top: slantHeight + 14,
+                                        bottom: 16,
                                       ),
-                                    ),
-                                    child: isNeedsEmailVerification
-                                        ? _buildVerificationView(
-                                            context,
-                                            email: emailController.text,
-                                            otpController: otpController,
-                                            isLoading: isLoading,
-                                          )
-                                        : SingleChildScrollView(
-                                            physics:
-                                                const ClampingScrollPhysics(),
-                                            child: AutofillGroup(
-                                              child: Opacity(
-                                                opacity: signupOpacity,
-                                                child: _buildSignupForm(
-                                                  context,
-                                                  nameController:
-                                                      nameController,
-                                                  emailController:
-                                                      emailController,
-                                                  passwordController:
-                                                      passwordController,
-                                                  confirmPasswordController:
-                                                      confirmPasswordController,
-                                                  promoCodeController:
-                                                      promoCodeController,
-                                                  showPromoField:
-                                                      showPromoField,
-                                                  isLoading: isLoading,
-                                                  onSubmit: handleSubmit,
-                                                  errorMessage:
-                                                      errorMessageState.value,
+                                      child: isNeedsEmailVerification
+                                          ? _buildVerificationView(
+                                              context,
+                                              email: emailController.text,
+                                              otpController: otpController,
+                                              isLoading: isLoading,
+                                            )
+                                          : SingleChildScrollView(
+                                              physics:
+                                                  const ClampingScrollPhysics(),
+                                              child: AutofillGroup(
+                                                child: Transform.translate(
+                                                  offset: Offset(
+                                                    0,
+                                                    30.0 * (1.0 - t),
+                                                  ),
+                                                  child: Opacity(
+                                                    opacity: signupOpacity,
+                                                    child: _buildSignupForm(
+                                                      context,
+                                                      nameController:
+                                                          nameController,
+                                                      emailController:
+                                                          emailController,
+                                                      passwordController:
+                                                          passwordController,
+                                                      confirmPasswordController:
+                                                          confirmPasswordController,
+                                                      promoCodeController:
+                                                          promoCodeController,
+                                                      showPromoField:
+                                                          showPromoField,
+                                                      isLoading: isLoading,
+                                                      onSubmit: handleSubmit,
+                                                      onToggleForm:
+                                                          handleToggleForm,
+                                                      errorMessage:
+                                                          errorMessageState
+                                                              .value,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                  )
-                                : Container(color: cardColor),
+                                    )
+                                  : Container(color: cardColor),
+                            ),
                           ),
                         ),
                       ),
 
                       // ========================================================
                       // 2. CARD 1: Full Card in Login / Peeking in Signup
-                      // Starts at top: 0 in both modes, covering status bar /
-                      // app bar area without any sharp horizontal cut.
+                      // Uses 3D kinetic tilt and maintains proper padding on Login
                       // ========================================================
                       Positioned(
-                        top: 0,
+                        top: card1Top,
                         left: marginX,
                         width: cardW,
                         height: card1H,
-                        child: CustomPaint(
-                          painter: _ShapeShadowPainter(
-                            clipper: const _LoginCardClipper(
-                              slantHeight: slantHeight,
+                        child: Transform(
+                          alignment: Alignment.topCenter,
+                          transform: Matrix4.identity()
+                            ..setEntry(3, 2, 0.001)
+                            ..rotateZ(showLogin ? -tiltAngle : tiltAngle),
+                          child: CustomPaint(
+                            painter: _ShapeShadowPainter(
+                              clipper: const _LoginCardClipper(
+                                slantHeight: slantHeight,
+                              ),
+                              color: cardColor,
+                              shadowColor:
+                                  colors.black.withAlpha(isDark ? 90 : 35),
+                              elevation: 14 + (motionDelta * 6),
                             ),
-                            color: cardColor,
-                            shadowColor:
-                                colors.black.withAlpha(isDark ? 90 : 35),
-                            elevation: 14,
-                          ),
-                          child: ClipPath(
-                            clipper: const _LoginCardClipper(
-                              slantHeight: slantHeight,
-                            ),
-                            child: showLogin
-                                ? Container(
-                                    color: cardColor,
-                                    padding: EdgeInsets.only(
-                                      left: 20,
-                                      right: 20,
-                                      top: math.max(
-                                        statusBarHeight + 14.0,
-                                        48,
+                            child: ClipPath(
+                              clipper: const _LoginCardClipper(
+                                slantHeight: slantHeight,
+                              ),
+                              child: showLogin
+                                  ? Container(
+                                      color: cardColor,
+                                      padding: const EdgeInsets.only(
+                                        left: 20,
+                                        right: 20,
+                                        top: 20,
+                                        bottom: 20,
                                       ),
-                                      bottom: 20,
-                                    ),
-                                    child: SingleChildScrollView(
-                                      physics: const ClampingScrollPhysics(),
-                                      child: AutofillGroup(
-                                        child: Opacity(
-                                          opacity: loginOpacity,
-                                          child: _buildLoginForm(
-                                            context,
-                                            emailController: emailController,
-                                            passwordController:
-                                                passwordController,
-                                            isLoading: isLoading,
-                                            onSubmit: handleSubmit,
-                                            onForgotPassword: onForgotPassword,
-                                            errorMessage:
-                                                errorMessageState.value,
+                                      child: SingleChildScrollView(
+                                        physics: const ClampingScrollPhysics(),
+                                        child: AutofillGroup(
+                                          child: Transform.translate(
+                                            offset: Offset(0, -30.0 * t),
+                                            child: Opacity(
+                                              opacity: loginOpacity,
+                                              child: _buildLoginForm(
+                                                context,
+                                                emailController:
+                                                    emailController,
+                                                passwordController:
+                                                    passwordController,
+                                                isLoading: isLoading,
+                                                onSubmit: handleSubmit,
+                                                onForgotPassword:
+                                                    onForgotPassword,
+                                                onToggleForm: handleToggleForm,
+                                                errorMessage:
+                                                    errorMessageState.value,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  )
-                                : Container(color: cardColor),
+                                    )
+                                  : Container(color: cardColor),
+                            ),
                           ),
                         ),
                       ),
 
                       // ========================================================
-                      // 3. SOCIALS (Directly on canvas in the middle between both cards)
+                      // 3. SOCIALS (Directly on canvas with 32px padding and acrobatics)
                       // ========================================================
                       // Google Button
                       Positioned(
                         left: marginX + (isAppleSupported ? 68 : 108),
                         top: card1BottomAt(isAppleSupported ? 90 : 130) + gap,
-                        child: _CircularSocialButton(
-                          key: const ValueKey<String>('auth_google_button'),
-                          icon: const _GooglePlusIcon(),
-                          color: const Color(0xFFEA4335),
-                          onPressed: isLoading ? () {} : onGooglePressed,
-                          semanticsLabel: 'Google Sign In',
+                        child: Transform.scale(
+                          scale: socialScale,
+                          child: Transform.rotate(
+                            angle: socialRotation,
+                            child: _CircularSocialButton(
+                              key: const ValueKey<String>('auth_google_button'),
+                              icon: const _GooglePlusIcon(),
+                              color: const Color(0xFFEA4335),
+                              onPressed: isLoading ? () {} : onGooglePressed,
+                              semanticsLabel: 'Google Sign In',
+                            ),
+                          ),
                         ),
                       ),
 
@@ -386,39 +444,49 @@ class AuthFormView extends HookWidget {
                         Positioned(
                           left: marginX + 138,
                           top: card1BottomAt(160) + gap,
-                          child: _CircularSocialButton(
-                            key: const ValueKey<String>('auth_apple_button'),
-                            icon: const Icon(
-                              Icons.apple,
-                              color: Colors.white,
-                              size: 22,
+                          child: Transform.scale(
+                            scale: socialScale,
+                            child: Transform.rotate(
+                              angle: -socialRotation,
+                              child: _CircularSocialButton(
+                                key:
+                                    const ValueKey<String>('auth_apple_button'),
+                                icon: const Icon(
+                                  Icons.apple,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                                color: const Color(0xFF1E293B),
+                                onPressed: isLoading ? () {} : onApplePressed,
+                                semanticsLabel: 'Apple Sign In',
+                              ),
                             ),
-                            color: const Color(0xFF1E293B),
-                            onPressed: isLoading ? () {} : onApplePressed,
-                            semanticsLabel: 'Apple Sign In',
                           ),
                         ),
 
                       // ========================================================
-                      // 4. ARROW BUTTONS (Strictly inside cards at slanted ends)
+                      // 4. ARROW BUTTONS (Spring scaling toggle buttons)
                       // ========================================================
                       // Left Circle Arrow (Inside Card 2)
                       Positioned(
                         left: marginX + 16,
                         top: card2TopAt(35) + 16,
-                        child: _CircularArrowButton(
-                          key: const ValueKey<String>(
-                            'auth_arrow_toggle_button',
+                        child: Transform.scale(
+                          scale: arrowScale,
+                          child: _CircularArrowButton(
+                            key: const ValueKey<String>(
+                              'auth_arrow_toggle_button',
+                            ),
+                            icon: showLogin
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
+                            color: showLogin
+                                ? const Color(0xFFFF7A45)
+                                : const Color(0xFFFF5252),
+                            onPressed: handleToggleForm,
+                            tooltip:
+                                showLogin ? 'Switch to Signup' : 'Switch to Login',
                           ),
-                          icon: showLogin
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          color: showLogin
-                              ? const Color(0xFFFF7A45)
-                              : const Color(0xFFFF5252),
-                          onPressed: handleToggleForm,
-                          tooltip:
-                              showLogin ? 'Switch to Signup' : 'Switch to Login',
                         ),
                       ),
 
@@ -426,14 +494,17 @@ class AuthFormView extends HookWidget {
                       Positioned(
                         left: marginX + cardW - 54,
                         top: card1BottomAt(cardW - 35) - 54,
-                        child: _CircularArrowButton(
-                          icon: showLogin
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          color: const Color(0xFFFF5252),
-                          onPressed: handleToggleForm,
-                          tooltip:
-                              showLogin ? 'Switch to Signup' : 'Switch to Login',
+                        child: Transform.scale(
+                          scale: arrowScale,
+                          child: _CircularArrowButton(
+                            icon: showLogin
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
+                            color: const Color(0xFFFF5252),
+                            onPressed: handleToggleForm,
+                            tooltip:
+                                showLogin ? 'Switch to Signup' : 'Switch to Login',
+                          ),
                         ),
                       ),
                     ],
@@ -457,6 +528,7 @@ class AuthFormView extends HookWidget {
     required bool isLoading,
     required VoidCallback onSubmit,
     required VoidCallback onForgotPassword,
+    required VoidCallback onToggleForm,
     required String? errorMessage,
   }) {
     final colors = context.colors;
@@ -560,6 +632,36 @@ class AuthFormView extends HookWidget {
             ),
           ),
         ),
+        const SizedBox(height: 14),
+
+        // "I don't have an account" toggle link
+        Center(
+          child: TextButton(
+            key: const ValueKey<String>('auth_to_signup_button'),
+            onPressed: onToggleForm,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text.rich(
+              TextSpan(
+                text: "I don't have an account? ",
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Sign up',
+                    style: typography.caption.semiBold.copyWith(
+                      color: colors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -577,6 +679,7 @@ class AuthFormView extends HookWidget {
     required ValueNotifier<bool> showPromoField,
     required bool isLoading,
     required VoidCallback onSubmit,
+    required VoidCallback onToggleForm,
     required String? errorMessage,
   }) {
     final colors = context.colors;
@@ -698,6 +801,36 @@ class AuthFormView extends HookWidget {
                 isLoading: isLoading,
                 onPressed: isLoading ? null : onSubmit,
                 borderRadius: 24,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // "Already have an account" toggle link
+        Center(
+          child: TextButton(
+            key: const ValueKey<String>('auth_to_login_button'),
+            onPressed: onToggleForm,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text.rich(
+              TextSpan(
+                text: 'Already have an account? ',
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+                children: [
+                  TextSpan(
+                    text: 'Log in',
+                    style: typography.caption.semiBold.copyWith(
+                      color: colors.primary,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

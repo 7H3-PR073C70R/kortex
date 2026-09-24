@@ -168,9 +168,56 @@ void main() {
       // Tap toggle arrow to switch to Signup
       await tester.tap(find.byKey(const ValueKey<String>('auth_arrow_toggle_button')));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 700));
 
       expect(find.text('Signup'), findsOneWidget);
     });
+
+    testWidgets(
+      'toggling via "I don\'t have an account" and "Already have an account" switches cards and preserves input',
+      (tester) async {
+        tester.view.physicalSize = const Size(1170, 2532);
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_wrapWithTheme(const AuthPage()));
+        await tester.pump();
+
+        // Enter email and password in Login form
+        await tester.enterText(
+          find.byType(TextField).at(0),
+          'scholar@stanford.edu',
+        );
+        await tester.enterText(
+          find.byType(TextField).at(1),
+          'SecretPass123!',
+        );
+        await tester.pump();
+
+        expect(find.byKey(const ValueKey<String>('auth_to_signup_button')), findsOneWidget);
+
+        // Tap "I don't have an account"
+        await tester.tap(find.byKey(const ValueKey<String>('auth_to_signup_button')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+
+        // Signup form is visible and input is preserved
+        expect(find.text('Signup'), findsOneWidget);
+        expect(find.text('scholar@stanford.edu'), findsWidgets);
+
+        // Tap "Already have an account"
+        final toLoginFinder =
+            find.byKey(const ValueKey<String>('auth_to_login_button'));
+        expect(toLoginFinder, findsOneWidget);
+        await tester.tap(toLoginFinder);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 700));
+
+        // Login form is visible and credentials still present
+        expect(find.text('Login'), findsOneWidget);
+        expect(find.text('scholar@stanford.edu'), findsWidgets);
+      },
+    );
   });
 }
