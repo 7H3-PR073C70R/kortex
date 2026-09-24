@@ -42,7 +42,7 @@ class LatexRichViewer extends StatelessWidget {
   );
 
   static final RegExp _latexRegex = RegExp(
-    r'(\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\$(?!\$)[\s\S]*?\$)',
+    r'(\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|(?<!\\)\$(?!\s)((?:\\.|[^\$\n])+?)(?<!\s)\$)',
     multiLine: true,
   );
 
@@ -519,11 +519,12 @@ class LatexRichViewer extends StatelessWidget {
       } else if (formula.startsWith(r'$') && formula.endsWith(r'$')) {
         formula = formula.substring(1, formula.length - 1);
       }
-      formula = formula.trim();
+      final cleanFormula =
+          LatexAstCache.instance.getOrCleanFormula(formula);
 
-      if (formula.isNotEmpty) {
+      if (cleanFormula.isNotEmpty) {
         final isLongFormula =
-            formula.length > 35 || formula.split('=').length > 2;
+            cleanFormula.length > 35 || cleanFormula.split('=').length > 2;
 
         spans.add(
           WidgetSpan(
@@ -539,22 +540,34 @@ class LatexRichViewer extends StatelessWidget {
                         scrollDirection: Axis.horizontal,
                         physics: const ClampingScrollPhysics(),
                         child: Math.tex(
-                          formula,
+                          cleanFormula,
                           textStyle: baseStyle,
                           mathStyle: MathStyle.text,
-                          onErrorFallback: (err) =>
-                              Text(rawMath, style: baseStyle),
+                          onErrorFallback: (err) {
+                            final fallback = LatexAstCache.instance
+                                .formatLatexHumanReadableFallback(rawMath);
+                            return Text(
+                              fallback.isNotEmpty ? fallback : rawMath,
+                              style: baseStyle,
+                            );
+                          },
                         ),
                       ),
                     )
                   : FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Math.tex(
-                        formula,
+                        cleanFormula,
                         textStyle: baseStyle,
                         mathStyle: MathStyle.text,
-                        onErrorFallback: (err) =>
-                            Text(rawMath, style: baseStyle),
+                        onErrorFallback: (err) {
+                          final fallback = LatexAstCache.instance
+                              .formatLatexHumanReadableFallback(rawMath);
+                          return Text(
+                            fallback.isNotEmpty ? fallback : rawMath,
+                            style: baseStyle,
+                          );
+                        },
                       ),
                     ),
             ),

@@ -736,13 +736,29 @@ class QuizDuelArenaPage extends HookWidget {
                                     ),
                                   ),
                                 ),
-                                child: LatexRichViewer(
-                                  text: currentQuestion.prompt,
-                                  style: typography.body.regular.copyWith(
-                                    fontSize: 16,
-                                    height: 1.4,
-                                    color: colors.textPrimary,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    LatexRichViewer(
+                                      text: currentQuestion.prompt,
+                                      style: typography.body.regular.copyWith(
+                                        fontSize: 16,
+                                        height: 1.4,
+                                        color: colors.textPrimary,
+                                      ),
+                                    ),
+                                    if (currentQuestion.latexFormula != null &&
+                                        currentQuestion
+                                            .latexFormula!
+                                            .trim()
+                                            .isNotEmpty) ...[
+                                      const SizedBox(height: 10),
+                                      LatexFormulaBlock(
+                                        formula: currentQuestion.latexFormula!,
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ),
                             ),

@@ -221,6 +221,13 @@ class PastQuestionCard extends StatelessWidget {
               height: 1.4,
             ),
           ),
+          if (question.latexFormula != null &&
+              question.latexFormula!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            LatexFormulaBlock(
+              formula: question.latexFormula!,
+            ),
+          ],
           if (question.imageUrl != null &&
               question.imageUrl!.trim().isNotEmpty) ...[
             const SizedBox(height: 12),

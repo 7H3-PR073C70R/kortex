@@ -90,12 +90,53 @@ class LatexAstCache {
       }
     } while (changed);
 
-    // 2. Remove dangling backslash at the end
+    // 2. Normalize common unsupported TeX macros and environments
+    // Chemical equilibrium arrows: \xrightleftharpoons{...} -> \overset{...}{\rightleftharpoons}
+    clean = clean.replaceAllMapped(
+      RegExp(r'\\xrightleftharpoons(?:\[([^\]]*)\])?\{([^}]*)\}'),
+      (m) => '\\overset{${m.group(2) ?? ''}}{\\rightleftharpoons}',
+    );
+    // Unsupported arrows & relations
+    clean = clean.replaceAll(r'\implies', r'\Longrightarrow');
+    clean = clean.replaceAll(r'\iff', r'\Longleftrightarrow');
+    clean = clean.replaceAll(r'\ointctrclockwise', r'\oint');
+    clean = clean.replaceAll(r'\to', r'\rightarrow');
+    clean = clean.replaceAll('-->', r'\rightarrow');
+    clean = clean.replaceAll('<=>', r'\Leftrightarrow');
+    clean = clean.replaceAll('<->', r'\leftrightarrow');
+    clean = clean.replaceAll(r'\degree', r'^\circ');
+    clean = clean.replaceAll('°', r'^\circ');
+
+    // Number sets: \R, \N, \Z, \Q, \C without mathbb
+    clean = clean.replaceAllMapped(
+      RegExp(r'\\(R|N|Z|Q|C)\b'),
+      (m) => '\\mathbb{${m.group(1)}}',
+    );
+
+    // Unescape escaped single quotes or quotes inside \text
+    clean = clean.replaceAll(r"\'", "'");
+
+    // Fix unescaped percentage signs in math: "100%" -> "100\%"
+    clean = clean.replaceAllMapped(
+      RegExp(r'(?<!\\)%'),
+      (m) => r'\%',
+    );
+
+    // 3. Remove dangling backslash at the end
     while (clean.endsWith(r'\') && !clean.endsWith(r'\\')) {
       clean = clean.substring(0, clean.length - 1).trim();
     }
 
-    // 3. Balance unclosed curly braces (e.g. truncated "\text{Pote")
+    // 4. Balance \left and \right delimiters (prevent flutter_math_fork parsing crashes)
+    final leftMatches = RegExp(r'\\left[\(\[\{\.\|]').allMatches(clean).length;
+    final rightMatches = RegExp(r'\\right[\)\]\}\.\|]').allMatches(clean).length;
+    if (leftMatches > rightMatches) {
+      clean = clean + (r'\right.' * (leftMatches - rightMatches));
+    } else if (rightMatches > leftMatches) {
+      clean = (r'\left.' * (rightMatches - leftMatches)) + clean;
+    }
+
+    // 5. Balance unclosed curly braces (e.g. truncated "\text{Pote")
     var openBraces = 0;
     for (var i = 0; i < clean.length; i++) {
       if (clean[i] == '{' && (i == 0 || clean[i - 1] != r'\')) {
@@ -128,33 +169,52 @@ class LatexAstCache {
       (m) => '(${m.group(1)}) / (${m.group(2)})',
     );
 
-    // Unpack text tags: \text{...}, \mathrm{...}, \mathbf{...}
+    // Unpack text tags: \text{...}, \mathrm{...}, \mathbf{...}, \mathbb{...}
     s = s.replaceAllMapped(
-      RegExp(r'\\(?:text|mathrm|mathbf|mathit|textbf|textrm)\s*\{([^{}]*)\}'),
+      RegExp(r'\\(?:text|mathrm|mathbf|mathit|textbf|textrm|mathbb|mathcal)\s*\{([^{}]*)\}'),
       (m) => m.group(1) ?? '',
     );
 
-    // Convert standard math symbols
+    // Convert standard math symbols and arrows
     s = s.replaceAll(r'\times', '×');
     s = s.replaceAll(r'\cdot', '·');
     s = s.replaceAll(r'\div', '÷');
     s = s.replaceAll(r'\pm', '±');
+    s = s.replaceAll(r'\mp', '∓');
     s = s.replaceAll(r'\approx', '≈');
     s = s.replaceAll(r'\neq', '≠');
     s = s.replaceAll(r'\le', '≤');
     s = s.replaceAll(r'\ge', '≥');
     s = s.replaceAll(r'\infty', '∞');
     s = s.replaceAll(r'\sqrt', '√');
+    s = s.replaceAll(r'\Longrightarrow', '⟹');
+    s = s.replaceAll(r'\implies', '⟹');
+    s = s.replaceAll(r'\rightarrow', '→');
+    s = s.replaceAll(r'\leftarrow', '←');
+    s = s.replaceAll(r'\leftrightarrow', '↔');
+    s = s.replaceAll(r'\rightleftharpoons', '⇌');
+    s = s.replaceAll(r'\angle', '∠');
+    s = s.replaceAll(r'\quad', '  ');
+    s = s.replaceAll(r'\qquad', '    ');
+    s = s.replaceAll(r'^\circ', '°');
+
+    // Greek letters
     s = s.replaceAll(r'\alpha', 'α');
     s = s.replaceAll(r'\beta', 'β');
     s = s.replaceAll(r'\gamma', 'γ');
     s = s.replaceAll(r'\theta', 'θ');
     s = s.replaceAll(r'\pi', 'π');
+    s = s.replaceAll(r'\lambda', 'λ');
+    s = s.replaceAll(r'\mu', 'μ');
+    s = s.replaceAll(r'\sigma', 'σ');
+    s = s.replaceAll(r'\omega', 'ω');
     s = s.replaceAll(r'\Delta', 'Δ');
     s = s.replaceAll(r'\Omega', 'Ω');
+    s = s.replaceAll(r'\Sigma', 'Σ');
     s = s.replaceAll(r'\partial', '∂');
     s = s.replaceAll(r'\sum', '∑');
     s = s.replaceAll(r'\int', '∫');
+    s = s.replaceAll(r'\oint', '∮');
 
     // Remove remaining stray LaTeX commands and braces
     s = s.replaceAll(RegExp(r'\\[a-zA-Z]+'), '');

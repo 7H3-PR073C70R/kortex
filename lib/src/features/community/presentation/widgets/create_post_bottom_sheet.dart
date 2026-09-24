@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -99,6 +100,7 @@ class CreatePostBottomSheet extends HookWidget {
     final titleController = useTextEditingController(text: initialTitle);
     final contentController = useTextEditingController(text: initialContent);
     final latexController = useTextEditingController(text: initialLatex);
+    useListenable(latexController);
     final syllabusTagController = useTextEditingController(
       text: initialSyllabusTag,
     );
@@ -311,6 +313,21 @@ class CreatePostBottomSheet extends HookWidget {
                   hintText:
                       r'Optional LaTeX formula (e.g. \int_0^\infty e^{-x^2} dx)',
                 ),
+                if (latexController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  LatexFormulaBlock(
+                    formula: latexController.text.trim(),
+                    backgroundColor: isDark
+                        ? colors.surfacePrimary
+                        : colors.surfaceSecondary.withAlpha(120),
+                    borderColor:
+                        colors.primary.withAlpha(isDark ? 50 : 30),
+                    textStyle: typography.body.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
 
                 // Ask Anonymously Toggle

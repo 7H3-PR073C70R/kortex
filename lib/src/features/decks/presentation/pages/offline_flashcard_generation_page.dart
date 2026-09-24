@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
@@ -20,6 +19,7 @@ import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -800,36 +800,12 @@ class _OfflineFlashcardGenerationPageState
     AppThemeColorsExtension colors,
     TypographyThemeExtension typography,
   ) {
-    if (text.contains(r'$$')) {
-      final parts = text.split(r'$$');
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: parts.map((part) {
-          if (part.trim().isEmpty) return const SizedBox.shrink();
-          if (part.contains(r'\')) {
-            return Math.tex(
-              part.trim(),
-              textStyle: typography.body.regular.copyWith(
-                fontSize: 14.sp,
-                color: colors.latexHighlight,
-              ),
-            );
-          }
-          return Text(
-            part.trim(),
-            style: typography.body.regular.copyWith(
-              fontSize: 13.sp,
-              color: colors.textSecondary,
-            ),
-          );
-        }).toList(),
-      );
-    }
-    return Text(
-      text,
+    return LatexRichViewer(
+      text: text,
       style: typography.body.regular.copyWith(
         fontSize: 13.sp,
         color: colors.textSecondary,
+        height: 1.4,
       ),
     );
   }

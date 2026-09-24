@@ -1188,11 +1188,18 @@ class ForumThreadDetailPage extends HookWidget {
                                                   ),
                                             ),
                                             const SizedBox(height: 8),
-                                            Text(
-                                              currentPost.value.latexContent!,
-                                              style: typography.body.bold
+                                            LatexFormulaBlock(
+                                              formula: currentPost
+                                                  .value
+                                                  .latexContent!,
+                                              backgroundColor:
+                                                  Colors.transparent,
+                                              borderColor: colors.primary
+                                                  .withAlpha(isDark ? 50 : 30),
+                                              textStyle: typography.body.bold
                                                   .copyWith(
                                                     color: colors.primary,
+                                                    fontSize: 16,
                                                   ),
                                             ),
                                           ],
@@ -3238,21 +3245,16 @@ class _DiscussionThreadGroupCard extends HookWidget {
               if (parentReply.latexContent != null &&
                   parentReply.latexContent!.isNotEmpty) ...[
                 const SizedBox(height: 6),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfacePrimary
-                        : colors.surfaceSecondary.withAlpha(120),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    parentReply.latexContent!,
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontFamily: 'monospace',
-                    ),
+                LatexFormulaBlock(
+                  formula: parentReply.latexContent!,
+                  backgroundColor: isDark
+                      ? colors.surfacePrimary
+                      : colors.surfaceSecondary.withAlpha(120),
+                  borderColor:
+                      colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
+                  textStyle: typography.caption.bold.copyWith(
+                    color: colors.primary,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -3881,12 +3883,16 @@ class _Level2ChildReplyCard extends HookWidget {
                   if (childReply.latexContent != null &&
                       childReply.latexContent!.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      childReply.latexContent!,
-                      style: typography.caption.bold.copyWith(
+                    LatexFormulaBlock(
+                      formula: childReply.latexContent!,
+                      backgroundColor: isDark
+                          ? colors.surfacePrimary
+                          : colors.surfaceSecondary.withAlpha(120),
+                      borderColor:
+                          colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
+                      textStyle: typography.caption.bold.copyWith(
                         color: colors.primary,
-                        fontFamily: 'monospace',
-                        fontSize: 11,
+                        fontSize: 12,
                       ),
                     ),
                   ],

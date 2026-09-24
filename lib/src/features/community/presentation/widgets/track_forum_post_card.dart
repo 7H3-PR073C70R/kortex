@@ -646,66 +646,15 @@ class TrackForumPostCard extends HookWidget {
                     if (post.latexContent != null &&
                         post.latexContent!.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colors.surfacePrimary.withAlpha(160)
-                              : colors.surfaceSecondary.withAlpha(100),
-                          borderRadius: AppRadius.radiusCard,
-                          border: Border.all(
-                            color: colors.surfaceBorder.withAlpha(20),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: colors.primary.withAlpha(20),
-                                borderRadius: AppRadius.radiusMicro,
-                              ),
-                              child: Icon(
-                                Icons.functions_rounded,
-                                size: 16,
-                                color: colors.primary,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                post.latexContent!,
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontFamily: 'monospace',
-                                  fontSize: 11.5,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceElevated.withAlpha(120),
-                                borderRadius: AppRadius.radiusMicro,
-                              ),
-                              child: Text(
-                                'LaTeX',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 9.5,
-                                ),
-                              ),
-                            ),
-                          ],
+                      LatexFormulaBlock(
+                        formula: post.latexContent!,
+                        backgroundColor: isDark
+                            ? colors.surfacePrimary.withAlpha(160)
+                            : colors.surfaceSecondary.withAlpha(100),
+                        borderColor: colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
+                        textStyle: typography.body.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 13.5,
                         ),
                       ),
                     ],

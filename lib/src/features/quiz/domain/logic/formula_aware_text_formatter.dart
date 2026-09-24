@@ -8,7 +8,7 @@ class FormulaAwareTextFormatter {
   );
 
   static final RegExp _rawLatexCmdRegex = RegExp(
-    r'\\(frac|sqrt|alpha|beta|gamma|theta|pi|pm|times|div|le|ge|neq|approx|infty|circ|partial|sum|int|to|rightarrow|Leftarrow|Rightarrow|mathrm|mathbf|text|lambda|mu|sigma|omega|Delta|Omega)\b',
+    r'\\(frac|sqrt|alpha|beta|gamma|theta|pi|pm|mp|times|div|le|ge|neq|approx|infty|circ|partial|sum|int|oint|to|rightarrow|leftarrow|leftrightarrow|rightleftharpoons|Leftarrow|Rightarrow|Leftrightarrow|mathrm|mathbf|mathit|textbf|text|mathbb|mathcal|lambda|mu|sigma|omega|Delta|Omega|Theta|Lambda|Sigma|Phi|Psi|angle|quad|qquad|implies|iff|lim|cdot|cos|sin|tan|cot|sec|csc|log|ln|deg|vec|hat|bar|tilde|dot|ddot|left|right|binom|prod|cup|cap|subset|supset|in|notin|exists|forall|nabla|perp|parallel)\b',
   );
 
   static final RegExp _optionPrefixRegex = RegExp(
@@ -16,7 +16,7 @@ class FormulaAwareTextFormatter {
   );
 
   static final RegExp _commonEnglishWordsRegex = RegExp(
-    r'\b(the|is|are|was|were|which|what|when|where|who|how|because|reaction|process|between|compound|element|energy|water|acid|base|salt|solution|state|substance|neutralization|decomposition|diffusion|photosynthesis|respiration|circulation|cellular|mitosis|meiosis|dominant|recessive|ecosystem|increase|decrease|increases|decreases|remains|constant|produces|formed|greater|less|equal|according|principle|concept|definition|corresponds|none|all|above|both|neither|either|true|false|always|never|only|first|second|third|fourth|gas|liquid|solid|precipitate|solution|temperature|pressure|volume|mass|weight|moles|atoms|molecules|electrons|protons|neutrons|catalyst|equilibrium)\b',
+    r'\b(the|is|are|was|were|which|what|when|where|who|how|why|because|reaction|process|between|compound|element|energy|water|acid|base|salt|solution|state|substance|neutralization|decomposition|diffusion|photosynthesis|respiration|circulation|cellular|mitosis|meiosis|dominant|recessive|ecosystem|increase|decrease|increases|decreases|remains|constant|produces|formed|greater|less|equal|according|principle|concept|definition|corresponds|none|all|above|both|neither|either|true|false|always|never|only|first|second|third|fourth|gas|liquid|solid|precipitate|solution|temperature|pressure|volume|mass|weight|moles|atoms|molecules|electrons|protons|neutrons|catalyst|equilibrium|calculate|find|determine|given|suppose|assume|consider|show|prove|verify|evaluate|simplify|express|value|values|with|from|into|than|that|this|these|those|have|has|had|can|could|will|would|should|must|an|and|or|not|for|of|to|in|on|at|by|question|problem|option|answer|choice|explanation|note|hint|formula|equation)\b',
     caseSensitive: false,
   );
 
@@ -198,8 +198,14 @@ class FormulaAwareTextFormatter {
 
     // 1. Raw LaTeX command without delimiters (e.g. "\frac{1}{2}" or "\sqrt{16}")
     if (_rawLatexCmdRegex.hasMatch(body)) {
-      final formatted = _wrapRawLatex(body);
-      return prefix + formatted;
+      final hasEnglishWords = _commonEnglishWordsRegex.hasMatch(body);
+      if (hasEnglishWords) {
+        final formatted = _wrapInlineLatexExpressions(body);
+        return prefix + formatted;
+      } else {
+        final formatted = _wrapRawLatex(body);
+        return prefix + formatted;
+      }
     }
 
     // 2. Scientific notation (e.g. "3 x 10^8" -> "$3 \times 10^{8}$")
@@ -376,6 +382,20 @@ class FormulaAwareTextFormatter {
     // Convert degrees 45° -> 45^\circ
     s = s.replaceAllMapped(RegExp(r'(\d+)\s*°'), (m) => '${m.group(1)}^\\circ');
     return s;
+  }
+
+  /// Matches a raw LaTeX command and its arguments/parameters when appearing inside normal sentences
+  static final RegExp _inlineLatexExprRegex = RegExp(
+    r'(?<!\$|\\)(\\[a-zA-Z]+(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\[[^\]]*\])*(?:(?:\^|_)(?:\{[^{}]*\}|[a-zA-Z0-9]))*(?:\s*[\+\-\*\/\=\<\>\±]\s*(?:-?\d+(?:\.\d+)?|[a-zA-Z]|\\[a-zA-Z]+(?:\{[^{}]*\})*))*)(?!\$)',
+  );
+
+  /// Wraps individual raw LaTeX expressions found within an English sentence into `$...$`
+  static String _wrapInlineLatexExpressions(String text) {
+    return text.replaceAllMapped(_inlineLatexExprRegex, (m) {
+      final expr = m.group(1)?.trim() ?? '';
+      if (expr.isEmpty) return '';
+      return '\$$expr\$';
+    });
   }
 
   /// Wraps raw LaTeX command text in `$...$`
