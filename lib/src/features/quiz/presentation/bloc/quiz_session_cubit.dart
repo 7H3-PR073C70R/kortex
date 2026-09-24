@@ -661,6 +661,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
   /// Stages or unstages a practice answer before it is checked.
   void _stageDiscoveryOption(String option) {
     if (state.pendingAnswer == option) {
+      AppFeedback.selection();
       clearPendingAnswer();
       return;
     }

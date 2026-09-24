@@ -167,9 +167,11 @@ class _QuizWorkspaceView extends HookWidget {
           previous.currentQuestion != current.currentQuestion ||
           previous.totalQuestions != current.totalQuestions ||
           previous.assessmentMode != current.assessmentMode ||
+          previous.pendingAnswer != current.pendingAnswer ||
           previous.isCurrentQuestionFlagged !=
               current.isCurrentQuestionFlagged ||
           previous.isHintRevealed != current.isHintRevealed ||
+          previous.hintsUsedCount != current.hintsUsedCount ||
           previous.activeClueText != current.activeClueText ||
           previous.isSecondChanceActive != current.isSecondChanceActive ||
           previous.isSoftFailed != current.isSoftFailed ||
@@ -644,10 +646,22 @@ class _QuizWorkspaceView extends HookWidget {
                               reduceMotion: reduceMotion,
                               state: McqOptionCard.resolveState(
                                 isSelected: reviewMode
-                                    ? (current.userSelectedAnswer == opt)
+                                    ? (current.userSelectedAnswer == opt ||
+                                        _isSameAnswer(
+                                          current.userSelectedAnswer ?? '',
+                                          opt,
+                                        ))
                                     : (isPractice
-                                        ? state.pendingAnswer == opt
-                                        : current.userSelectedAnswer == opt),
+                                        ? (state.pendingAnswer == opt ||
+                                            _isSameAnswer(
+                                              state.pendingAnswer ?? '',
+                                              opt,
+                                            ))
+                                        : (current.userSelectedAnswer == opt ||
+                                            _isSameAnswer(
+                                              current.userSelectedAnswer ?? '',
+                                              opt,
+                                            ))),
                                 isAnswered: reviewMode || current.isAnswered,
                                 isCorrect: _isSameAnswer(
                                   opt,
