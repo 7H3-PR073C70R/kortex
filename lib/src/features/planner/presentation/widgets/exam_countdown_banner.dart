@@ -29,17 +29,31 @@ class ExamCountdownBanner extends StatelessWidget {
       unawaited(ManageExamModalSheet.show(context));
       return;
     }
-    if (exam.assessmentType == AssessmentType.quiz &&
-        exam.scopedDeckIds.isNotEmpty) {
-      final deckTarget = exam.daysRemaining <= 14 && exam.daysRemaining > 0
-          ? 'cram:${exam.daysRemaining}:${exam.scopedDeckIds.first}'
-          : exam.scopedDeckIds.first;
-      unawaited(
-        context.router.push(
-          StudySessionRoute(deckId: deckTarget),
-        ),
-      );
-      return;
+    if (exam.assessmentType == AssessmentType.quiz ||
+        exam.assessmentType == AssessmentType.classTest) {
+      if (exam.scopedDeckIds.isNotEmpty) {
+        final deckTarget = exam.daysRemaining <= 14 && exam.daysRemaining > 0
+            ? 'cram:${exam.daysRemaining}:${exam.scopedDeckIds.first}'
+            : exam.scopedDeckIds.first;
+        unawaited(
+          context.router.push(
+            StudySessionRoute(deckId: deckTarget),
+          ),
+        );
+        return;
+      } else {
+        // Scope-aware fallback: Quick diagnostic check for this assessment
+        unawaited(
+          context.router.push(
+            QuizWorkspaceRoute(
+              deckId: 'quick-quiz-${exam.id}',
+              deckTitle: exam.examName,
+              courseCode: exam.subjectTrack,
+            ),
+          ),
+        );
+        return;
+      }
     }
 
     unawaited(
@@ -61,8 +75,12 @@ class ExamCountdownBanner extends StatelessWidget {
       return l10n.logGradeAndConclude;
     }
     return switch (exam.assessmentType) {
-      AssessmentType.quiz => l10n.actionPracticeScopedDecks,
-      AssessmentType.classTest => l10n.actionStartTestReview,
+      AssessmentType.quiz => exam.scopedDeckIds.isNotEmpty
+          ? l10n.actionPracticeScopedDecks
+          : 'Take Quick Quiz',
+      AssessmentType.classTest => exam.scopedDeckIds.isNotEmpty
+          ? l10n.actionStartTestReview
+          : 'Start Test Practice',
       AssessmentType.midterm ||
       AssessmentType.finalExam ||
       AssessmentType.mockExam ||
@@ -158,27 +176,27 @@ class ExamCountdownBanner extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  l10n.addExamTitle,
+                                  'Track Assessment Milestone',
                                   style: typography.callout.semiBold.copyWith(
                                     color: neural.slate200,
                                     fontSize: 14,
                                   ),
                                 ),
-                                if (targetExam != null) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    l10n.examTargetInDays(
-                                      targetExam.examName,
-                                      targetExam.daysRemaining,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: typography.caption.regular.copyWith(
-                                      color: neural.slate400,
-                                      fontSize: 11,
-                                    ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  targetExam != null
+                                      ? l10n.examTargetInDays(
+                                          targetExam.examName,
+                                          targetExam.daysRemaining,
+                                        )
+                                      : 'Set countdown for upcoming tests, quizzes, or exams',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: typography.caption.regular.copyWith(
+                                    color: neural.slate400,
+                                    fontSize: 11,
                                   ),
-                                ],
+                                ),
                               ],
                             ),
                           ),

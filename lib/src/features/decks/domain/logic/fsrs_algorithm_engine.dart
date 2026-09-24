@@ -126,4 +126,45 @@ class FsrsAlgorithmEngine {
       nextDueDate: dueDate,
     );
   }
+
+  /// Recalibrates a card after an assessment deadline has passed, lifting acute
+  /// horizon compression so the card resumes its natural FSRS-6 spacing curve
+  /// without carrying forward an artificial cram penalty into future reviews.
+  FsrsMemoryState recalibratePostAssessment({
+    required FsrsMemoryState currentState,
+    DateTime? referenceTime,
+  }) {
+    if (currentState.stability <= 0) return currentState;
+    final now = referenceTime ?? DateTime.now();
+    final naturalInterval = calculateNextInterval(currentState.stability);
+
+    if (currentState.scheduledDays < naturalInterval) {
+      final baseDate = currentState.lastReview ?? now;
+      final restoredDueDate = baseDate.add(Duration(days: naturalInterval));
+
+      return currentState.copyWith(
+        scheduledDays: naturalInterval,
+        nextDueDate: restoredDueDate,
+        retrievability: calculateRetrievability(
+          stability: currentState.stability,
+          elapsedDays: math.max(0, now.difference(baseDate).inDays),
+        ),
+      );
+    }
+
+    return currentState;
+  }
+
+  /// Batch recalibrates memory states across a full deck after milestone conclusion.
+  List<FsrsMemoryState> recalibrateBatch({
+    required List<FsrsMemoryState> states,
+    DateTime? referenceTime,
+  }) {
+    return states
+        .map((s) => recalibratePostAssessment(
+              currentState: s,
+              referenceTime: referenceTime,
+            ))
+        .toList();
+  }
 }

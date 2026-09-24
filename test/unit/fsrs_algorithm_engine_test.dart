@@ -91,5 +91,40 @@ void main() {
       );
       expect(stateEasyCrunch.scheduledDays, lessThanOrEqualTo(2));
     });
+
+    test('recalibratePostAssessment lifts artificial cram clamping back to natural spacing', () {
+      // Create a card that was reviewed under acute cram pressure (clamped to 2 days)
+      final reviewDate = DateTime(2026, 9, 10);
+      final clampedState = engine.review(
+        currentState: FsrsMemoryState.initial(),
+        rating: FsrsRating.easy,
+        reviewTime: reviewDate,
+        daysUntilExam: 4,
+      );
+
+      // Verify it was clamped
+      expect(clampedState.scheduledDays, lessThanOrEqualTo(2));
+      final naturalInterval = engine.calculateNextInterval(clampedState.stability);
+      expect(naturalInterval, greaterThan(clampedState.scheduledDays));
+
+      // Now assessment has passed, recalibrate:
+      final recalibrated = engine.recalibratePostAssessment(
+        currentState: clampedState,
+        referenceTime: DateTime(2026, 9, 15),
+      );
+
+      expect(recalibrated.scheduledDays, equals(naturalInterval));
+      expect(
+        recalibrated.nextDueDate,
+        equals(clampedState.lastReview!.add(Duration(days: naturalInterval))),
+      );
+
+      // Batch recalibration also works
+      final batch = engine.recalibrateBatch(
+        states: [clampedState],
+        referenceTime: DateTime(2026, 9, 15),
+      );
+      expect(batch.first.scheduledDays, equals(naturalInterval));
+    });
   });
 }

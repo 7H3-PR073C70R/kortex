@@ -493,7 +493,14 @@ class _StudySessionView extends HookWidget {
                             }
                           },
                         ),
-                        const SizedBox(height: 10),
+                        // Contextual In-Session Cram Banner (Phase 1 Pillar 2)
+                        if (context.read<StudySessionCubit>().daysUntilExam != null &&
+                            context.read<StudySessionCubit>().daysUntilExam! > 0) ...[
+                          _CramSessionBanner(
+                            daysUntilExam: context.read<StudySessionCubit>().daysUntilExam!,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
 
                         // Milestone check-in — informative, never blocking.
                         if (milestoneTick.value != null) ...[
@@ -985,6 +992,94 @@ class _LiveDotState extends State<_LiveDot>
           shape: BoxShape.circle,
           color: colors.success,
         ),
+      ),
+    );
+  }
+}
+
+class _CramSessionBanner extends StatelessWidget {
+  const _CramSessionBanner({required this.daysUntilExam});
+
+  final int daysUntilExam;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final isCrunch = daysUntilExam <= 1;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.warning.withValues(alpha: isDark ? 0.16 : 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(
+          color: colors.warning.withValues(alpha: isDark ? 0.45 : 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: colors.warning.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.bolt_rounded,
+              size: 15,
+              color: colors.warning,
+            ),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isCrunch
+                      ? 'Imminent Assessment Crunch'
+                      : 'Milestone Crunch: $daysUntilExam days remaining',
+                  style: typography.caption.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  isCrunch
+                      ? 'Intervals condensed to 24h for acute recall before your test.'
+                      : 'FSRS-6 intervals clamped so cards stay fresh before exam day.',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 10.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: colors.warning.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(AppRadius.badge),
+              border: Border.all(
+                color: colors.warning.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Text(
+              'Clamped',
+              style: typography.caption.bold.copyWith(
+                color: colors.warning,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

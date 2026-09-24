@@ -371,9 +371,35 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                           },
                         ),
                       ] else ...[
+                        // Bidirectional Bridge: Checkpoint Quiz (Phase 2 Pillar 2 & 3)
+                        if (widget.cardsReviewed > 0) ...[
+                          AppButton(
+                            text: '🎯 Validate with Checkpoint Quiz',
+                            onPressed: () {
+                              final cleanId = deckId.startsWith('cram:')
+                                  ? (deckId.split(':').length > 2
+                                      ? deckId.split(':')[2]
+                                      : deckId.split(':').last)
+                                  : deckId;
+                              unawaited(
+                                context.router.push(
+                                  QuizWorkspaceRoute(
+                                    deckId: cleanId,
+                                    deckTitle: 'Checkpoint Quiz',
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
                         // Return to Dashboard Action
                         AppButton(
                           text: l10n.sessionSummaryReturnDashboard,
+                          variant: widget.cardsReviewed > 0
+                              ? AppButtonVariant.outline
+                              : AppButtonVariant.primary,
                           onPressed: () {
                             unawaited(
                               context.router.replace(const MainRoute()),
@@ -385,7 +411,7 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                         // Review More Decks Action
                         AppButton(
                           text: l10n.sessionSummaryReviewAgain,
-                          variant: AppButtonVariant.outline,
+                          variant: AppButtonVariant.ghost,
                           onPressed: () {
                             unawaited(context.router.maybePop());
                           },

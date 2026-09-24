@@ -553,4 +553,24 @@ class FsrsScheduler {
 
     return result;
   }
+
+  /// Recalibrates a card whose interval was acutely clamped for an assessment
+  /// that has now concluded, restoring natural FSRS spacing based on its current stability.
+  FsrsCard recalibratePostAssessment({
+    required FsrsCard card,
+    DateTime? now,
+  }) {
+    if (card.stability <= 0) return card;
+    final currentTime = now ?? DateTime.now();
+    final naturalInterval = _nextInterval(card.stability);
+    if (card.scheduledDays < naturalInterval) {
+      final baseDate = card.lastReview ?? currentTime;
+      final restoredDue = baseDate.add(Duration(days: naturalInterval));
+      return card.copyWith(
+        scheduledDays: naturalInterval,
+        due: restoredDue,
+      );
+    }
+    return card;
+  }
 }

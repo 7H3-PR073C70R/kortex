@@ -814,9 +814,28 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
     _timer?.cancel();
     emit(state.copyWith(status: QuizSessionStatus.loading));
 
+    // Grade all answered questions so accuracy and review verdicts reflect the student's actual work
+    final gradedQuestions = state.questions.map((q) {
+      if (q.userSelectedAnswer == null || q.userSelectedAnswer!.trim().isEmpty) {
+        return q.copyWith(isCorrect: false);
+      }
+      final isCorrect = _matchesCorrectAnswer(q, q.userSelectedAnswer!);
+      return q.copyWith(
+        isCorrect: isCorrect,
+        isAnswered: true,
+      );
+    }).toList();
+
+    // Flag misses to FSRS sync queue
+    for (final q in gradedQuestions) {
+      if (!q.isCorrect && q.isAnswered) {
+        _flagMissedCardToFsrs(q.id);
+      }
+    }
+
     final result = await _submitQuizUseCase(
       quizTitle: state.quizTitle,
-      questions: state.questions,
+      questions: gradedQuestions,
       durationSeconds: state.elapsedSeconds,
     );
 
@@ -871,6 +890,7 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         emit(
           state.copyWith(
             status: QuizSessionStatus.completed,
+            questions: gradedQuestions,
             result: quizResult,
           ),
         );

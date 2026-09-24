@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/features/planner/data/models/exam_event_model.dart';
+import 'package:kortex/src/features/planner/data/repositories/planner_repository_impl.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 
 void main() {
@@ -182,4 +184,71 @@ void main() {
       expect(futureExam.formattedSubDailyCountdown, equals('10 days left'));
     });
   });
+
+  group('PlannerRepositoryImpl Milestone Conclusion & Rollover Tests', () {
+    test('completeExam marks complete, records score, and rolls over to midterm/final', () async {
+      final fakeStorage = _FakeLocalStorageService();
+      final repo = PlannerRepositoryImpl(storageService: fakeStorage);
+
+      // Create a quiz with scoped deck and topics
+      final quizRes = await repo.createExam(
+        examName: 'MTH 101 Quiz 1',
+        targetDate: DateTime.now().add(const Duration(days: 2)),
+        subjectTrack: 'MTH 101',
+        assessmentType: AssessmentType.quiz,
+        scopedDeckIds: ['deck-limits'],
+        scopedTopics: ['Limits', 'Derivatives'],
+      );
+      expect(quizRes.isRight, isTrue);
+      final quiz = quizRes.fold((l) => throw Exception(l.message), (r) => r);
+
+      // Create an upcoming final exam for the same course
+      final finalRes = await repo.createExam(
+        examName: 'MTH 101 Final Exam',
+        targetDate: DateTime.now().add(const Duration(days: 45)),
+        subjectTrack: 'MTH 101',
+        scopedDeckIds: ['deck-integrals'],
+        scopedTopics: ['Integrals'],
+      );
+      expect(finalRes.isRight, isTrue);
+      final finalExam = finalRes.fold((l) => throw Exception(l.message), (r) => r);
+
+      // Conclude the quiz with 85% score and rollover
+      final concludeRes = await repo.completeExam(
+        examId: quiz.id,
+        scorePercent: 0.85,
+      );
+      expect(concludeRes.isRight, isTrue);
+      final concluded = concludeRes.fold((l) => throw Exception(l.message), (r) => r);
+      expect(concluded.isCompleted, isTrue);
+      expect(concluded.achievedScorePercent, equals(0.85));
+
+      // Verify that final exam rolled over the scoped decks & topics from quiz
+      final allExamsRes = await repo.getActiveExams();
+      final allExams = allExamsRes.fold((l) => throw Exception(l.message), (r) => r);
+      final updatedFinal = allExams.firstWhere((e) => e.id == finalExam.id);
+      expect(updatedFinal.scopedDeckIds, containsAll(['deck-integrals', 'deck-limits']));
+      expect(updatedFinal.scopedTopics, containsAll(['Integrals', 'Limits', 'Derivatives']));
+    });
+  });
+}
+
+class _FakeLocalStorageService implements LocalStorageService {
+  final Map<String, String> storage = {};
+
+  @override
+  Future<void> initDB() async {}
+
+  @override
+  String? getPreference({required String key}) => storage[key];
+
+  @override
+  Future<void> savePreference({required String key, required String data}) async {
+    storage[key] = data;
+  }
+
+  @override
+  Future<void> deletePreference({required String key}) async {
+    storage.remove(key);
+  }
 }

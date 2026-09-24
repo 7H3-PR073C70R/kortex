@@ -20,11 +20,11 @@ import 'package:kortex/src/features/monetization/domain/services/subscription_gu
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
+import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -158,8 +158,24 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     return score >= 90;
   }
 
+  bool _isQuestionCorrect(QuizQuestionEntity q) {
+    if (q.isCorrect) return true;
+    if (q.userSelectedAnswer == null || q.userSelectedAnswer!.trim().isEmpty) {
+      return false;
+    }
+    final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+      q.correctAnswer,
+    ).trim().toLowerCase();
+    final cleanSelected = QuizContentSanitizer.cleanOptionText(
+      q.userSelectedAnswer!,
+    ).trim().toLowerCase();
+    return cleanCorrect == cleanSelected ||
+        q.userSelectedAnswer!.trim().toLowerCase() ==
+            q.correctAnswer.trim().toLowerCase();
+  }
+
   List<QuizQuestionEntity> get _missedQuestions =>
-      widget.questions.where((q) => !q.isCorrect).toList();
+      widget.questions.where((q) => !_isQuestionCorrect(q)).toList();
 
   int get _mistakeCount {
     if (widget.questions.isNotEmpty) return _missedQuestions.length;
@@ -902,14 +918,37 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     );
   }
 
-  void _handleShareResult(BuildContext context) {
+  Future<void> _handleShareResult(BuildContext context) async {
     unawaited(HapticFeedback.lightImpact());
     final result = widget.result;
     final message =
         'I scored ${result.scorePercent}% on "${result.quizTitle}" in '
         'Kortex (${result.correctAnswers} of ${result.totalQuestions} '
         'correct).';
-    unawaited(SharePlus.instance.share(ShareParams(text: message)));
+    try {
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box != null && box.hasSize
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+      await SharePlus.instance.share(
+        ShareParams(
+          text: message,
+          sharePositionOrigin: origin,
+        ),
+      );
+    } on Object catch (_) {
+      // Share failed — fall back to clipboard.
+      await Clipboard.setData(ClipboardData(text: message));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Result copied to clipboard!'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   void _handleAskClassForHelp(BuildContext context) {

@@ -427,15 +427,36 @@ class QuizRepositoryImpl implements QuizRepository {
     required int durationSeconds,
   }) {
     return Future<QuizResultEntity>.sync(() async {
-      final total = questions.length;
-      final correctCount = questions.where((q) => q.isCorrect).length;
+      // Defensive grading: normalize and verify question correctness in case questions
+      // arrived from an un-graded exam simulation session
+      final gradedQuestions = questions.map((q) {
+        if (q.isCorrect) return q;
+        if (q.userSelectedAnswer != null &&
+            q.userSelectedAnswer!.trim().isNotEmpty) {
+          final cleanCorrect = QuizContentSanitizer.cleanOptionText(
+            q.correctAnswer,
+          ).trim().toLowerCase();
+          final cleanSelected = QuizContentSanitizer.cleanOptionText(
+            q.userSelectedAnswer!,
+          ).trim().toLowerCase();
+          if (cleanCorrect == cleanSelected ||
+              q.userSelectedAnswer!.trim().toLowerCase() ==
+                  q.correctAnswer.trim().toLowerCase()) {
+            return q.copyWith(isCorrect: true);
+          }
+        }
+        return q;
+      }).toList();
+
+      final total = gradedQuestions.length;
+      final correctCount = gradedQuestions.where((q) => q.isCorrect).length;
       final scorePercent = total > 0
           ? ((correctCount / total) * 100).round()
           : 0;
       final completedAt = DateTime.now();
 
       final topicGroups = <String, List<QuizQuestionEntity>>{};
-      for (final q in questions) {
+      for (final q in gradedQuestions) {
         topicGroups.putIfAbsent(q.subTopic, () => []).add(q);
       }
 

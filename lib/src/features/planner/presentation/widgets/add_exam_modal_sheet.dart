@@ -413,37 +413,48 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
 
     final workload = _totalWorkload > 0 ? _totalWorkload : 50;
 
-    if (widget.initialExam != null) {
-      unawaited(
-        cubit.updateExamCountdown(
-          examId: widget.initialExam!.id,
-          examName: examName,
-          targetDate: targetDateTime,
-          subjectTrack: courseIdentifier,
-          assessmentType: _selectedType,
-          scopedDeckIds: _selectedDeckIds.toList(),
-          scopedTopics: _scopedTopics,
-          weightPercent: _selectedWeightPercent,
-          totalCardsCount: workload,
-        ),
-      );
-    } else {
-      unawaited(
-        cubit.addExamCountdown(
-          examName: examName,
-          targetDate: targetDateTime,
-          subjectTrack: courseIdentifier,
-          assessmentType: _selectedType,
-          scopedDeckIds: _selectedDeckIds.toList(),
-          scopedTopics: _scopedTopics,
-          weightPercent: _selectedWeightPercent,
-          totalCardsCount: workload,
-        ),
-      );
-    }
+    try {
+      if (widget.initialExam != null) {
+        unawaited(
+          cubit.updateExamCountdown(
+            examId: widget.initialExam!.id,
+            examName: examName,
+            targetDate: targetDateTime,
+            subjectTrack: courseIdentifier,
+            assessmentType: _selectedType,
+            scopedDeckIds: _selectedDeckIds.toList(),
+            scopedTopics: _scopedTopics,
+            weightPercent: _selectedWeightPercent,
+            totalCardsCount: workload,
+          ),
+        );
+      } else {
+        unawaited(
+          cubit.addExamCountdown(
+            examName: examName,
+            targetDate: targetDateTime,
+            subjectTrack: courseIdentifier,
+            assessmentType: _selectedType,
+            scopedDeckIds: _selectedDeckIds.toList(),
+            scopedTopics: _scopedTopics,
+            weightPercent: _selectedWeightPercent,
+            totalCardsCount: workload,
+          ),
+        );
+      }
 
-    AppFeedback.heavy();
-    Navigator.of(context).pop();
+      AppFeedback.heavy();
+      Navigator.of(context).pop();
+    } on Object catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not save countdown: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override

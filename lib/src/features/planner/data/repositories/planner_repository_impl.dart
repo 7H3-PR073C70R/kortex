@@ -12,6 +12,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
 import 'package:kortex/src/features/planner/data/models/exam_event_model.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
@@ -78,7 +79,6 @@ class PlannerRepositoryImpl implements PlannerRepository {
 
   // In-memory local cache / fallback list
   final List<ExamEventModel> _cachedExams = [];
-  bool _migrationAttempted = false;
 
   void _loadFromStorage() {
     final db = _effectiveDatabase;
@@ -110,71 +110,61 @@ class PlannerRepositoryImpl implements PlannerRepository {
     if (db == null) return;
 
     try {
+      // Load rich persisted models from local preferences if present
+      final richModelsMap = <String, ExamEventModel>{};
+      final raw = _storage?.getPreference(
+        key: PrefKeys.persistedExamCountdowns,
+      );
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          final list = jsonDecode(raw) as List<dynamic>;
+          for (final item in list) {
+            if (item is Map<String, dynamic>) {
+              final model = ExamEventModel.fromJson(item);
+              richModelsMap[model.id] = model;
+            }
+          }
+        } on Object catch (_) {}
+      }
+
       final entries = await db.getAllExamEvents();
       if (entries.isNotEmpty) {
+        final merged = entries.map((e) {
+          final rich = richModelsMap[e.id];
+          return ExamEventModel(
+            id: e.id,
+            userId: e.userId,
+            examName: e.examName,
+            targetDate: e.targetDate,
+            subjectTrack: e.subjectTrack,
+            assessmentType: rich?.assessmentType ?? AssessmentType.finalExam,
+            scopedDeckIds: rich?.scopedDeckIds ?? const [],
+            scopedTopics: rich?.scopedTopics ?? const [],
+            weightPercent: rich?.weightPercent,
+            totalCardsCount: e.totalCardsCount,
+            masteredCardsCount: e.masteredCardsCount,
+            totalLapses: e.totalLapses,
+            dailyTarget: e.dailyTarget,
+            targetScorePercent: e.targetScorePercent,
+            isCompleted: rich?.isCompleted ?? false,
+            achievedScorePercent: rich?.achievedScorePercent,
+            completedAt: rich?.completedAt,
+            createdAt: e.createdAt,
+          );
+        }).toList();
+
         _cachedExams
           ..clear()
-          ..addAll(
-            entries.map(
-              (e) => ExamEventModel(
-                id: e.id,
-                userId: e.userId,
-                examName: e.examName,
-                targetDate: e.targetDate,
-                subjectTrack: e.subjectTrack,
-                totalCardsCount: e.totalCardsCount,
-                masteredCardsCount: e.masteredCardsCount,
-                totalLapses: e.totalLapses,
-                dailyTarget: e.dailyTarget,
-                targetScorePercent: e.targetScorePercent,
-                createdAt: e.createdAt,
-              ),
-            ),
-          )
+          ..addAll(merged)
           ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
         return;
       }
 
-      // Check migration from SharedPreferences
-      if (!_migrationAttempted && _storage != null) {
-        _migrationAttempted = true;
-        final raw = _storage?.getPreference(
-          key: PrefKeys.persistedExamCountdowns,
-        );
-        if (raw != null && raw.isNotEmpty) {
-          final list = jsonDecode(raw) as List<dynamic>;
-          final parsed = list
-              .map((e) => ExamEventModel.fromJson(e as Map<String, dynamic>))
-              .toList();
-
-          final companions = parsed
-              .map(
-                (e) => ExamEventsCompanion(
-                  id: Value(e.id),
-                  userId: Value(e.userId),
-                  examName: Value(e.examName),
-                  targetDate: Value(e.targetDate),
-                  subjectTrack: Value(e.subjectTrack),
-                  totalCardsCount: Value(e.totalCardsCount),
-                  masteredCardsCount: Value(e.masteredCardsCount),
-                  totalLapses: Value(e.totalLapses),
-                  dailyTarget: Value(e.dailyTarget),
-                  targetScorePercent: Value(e.targetScorePercent),
-                  createdAt: Value(e.createdAt ?? DateTime.now()),
-                ),
-              )
-              .toList();
-
-          await db.batchUpsertExamEvents(companions);
-          await _storage?.deletePreference(
-            key: PrefKeys.persistedExamCountdowns,
-          );
-
-          _cachedExams
-            ..clear()
-            ..addAll(parsed)
-            ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
-        }
+      if (richModelsMap.isNotEmpty) {
+        _cachedExams
+          ..clear()
+          ..addAll(richModelsMap.values)
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
       }
     } on Object catch (e) {
       developer.log('Error syncing ExamEvents from Drift: $e');
@@ -310,11 +300,44 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'target_score_percent': targetScorePercent,
             if (userId.isNotEmpty) 'user_id': userId,
           };
-          final response = await client.post<dynamic>(
-            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
-            data: payload,
-            options: Options(headers: {'Prefer': 'return=representation'}),
-          );
+          Response<dynamic> response;
+          try {
+            response = await client.post<dynamic>(
+              '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
+              data: payload,
+              options: Options(headers: {'Prefer': 'return=representation'}),
+            );
+          } on DioException catch (dioErr) {
+            final errBody = dioErr.response?.data?.toString() ?? '';
+            final isSchemaMismatch = dioErr.response?.statusCode == 400 &&
+                (errBody.contains('assessment_type') ||
+                    errBody.contains('schema cache') ||
+                    errBody.contains('column'));
+            if (isSchemaMismatch) {
+              developer.log(
+                'Supabase missing assessment_type column; retrying with legacy schema fields',
+              );
+              final legacyPayload = <String, dynamic>{
+                'exam_name': examName,
+                'target_date': targetDate.toIso8601String().split('T').first,
+                'subject_track': subjectTrack,
+                'total_cards_count': totalCardsCount,
+                'mastered_cards_count': 0,
+                'total_lapses': 0,
+                'daily_target': dailyTarget,
+                'target_score_percent': targetScorePercent,
+                if (userId.isNotEmpty) 'user_id': userId,
+              };
+              response = await client.post<dynamic>(
+                '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
+                data: legacyPayload,
+                options: Options(headers: {'Prefer': 'return=representation'}),
+              );
+            } else {
+              rethrow;
+            }
+          }
+
           if (response.statusCode == 201 || response.statusCode == 200) {
             if (response.data is List && (response.data as List).isNotEmpty) {
               final first =
@@ -420,10 +443,39 @@ class PlannerRepositoryImpl implements PlannerRepository {
           final uri = userId.isNotEmpty
               ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId&user_id=eq.$userId'
               : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId';
-          await client.patch<dynamic>(
-            uri,
-            data: payload,
-          );
+          try {
+            await client.patch<dynamic>(
+              uri,
+              data: payload,
+            );
+          } on DioException catch (dioErr) {
+            final errBody = dioErr.response?.data?.toString() ?? '';
+            final isSchemaMismatch = dioErr.response?.statusCode == 400 &&
+                (errBody.contains('assessment_type') ||
+                    errBody.contains('schema cache') ||
+                    errBody.contains('column'));
+            if (isSchemaMismatch) {
+              developer.log(
+                'Supabase missing assessment_type column; retrying patch with legacy schema fields',
+              );
+              final legacyPayload = <String, dynamic>{
+                'exam_name': examName,
+                'target_date': targetDate.toIso8601String().split('T').first,
+                'subject_track': subjectTrack,
+                'total_cards_count': ?totalCardsCount,
+                'target_score_percent': ?targetScorePercent,
+                'daily_target': dailyTarget,
+                'updated_at': DateTime.now().toIso8601String(),
+                if (userId.isNotEmpty) 'user_id': userId,
+              };
+              await client.patch<dynamic>(
+                uri,
+                data: legacyPayload,
+              );
+            } else {
+              rethrow;
+            }
+          }
         } on Object catch (e) {
           developer.log('Failed to patch exam in Supabase: $e');
         }
@@ -528,6 +580,10 @@ class PlannerRepositoryImpl implements PlannerRepository {
         }
       }
 
+      if (_effectiveDatabase != null && existing.scopedDeckIds.isNotEmpty) {
+        unawaited(_recalibrateScopedDecks(existing.scopedDeckIds));
+      }
+
       _saveToStorage();
       return model;
     }).makeRequest();
@@ -593,5 +649,45 @@ class PlannerRepositoryImpl implements PlannerRepository {
       _cachedExams.removeWhere((e) => e.id == examId);
       _saveToStorage();
     }).makeRequest();
+  }
+
+  /// Recalibrates cards in scoped decks to lift acute cram interval compression
+  /// once an assessment has concluded.
+  Future<void> _recalibrateScopedDecks(List<String> deckIds) async {
+    try {
+      final db = _effectiveDatabase;
+      if (db == null || deckIds.isEmpty) return;
+
+      final fsrsEngine = FsrsAlgorithmEngine();
+      final now = DateTime.now();
+
+      for (final deckId in deckIds) {
+        final cards = await db.getCardsForDeckId(deckId);
+        for (final card in cards) {
+          if (card.stability > 0) {
+            final naturalInterval =
+                fsrsEngine.calculateNextInterval(card.stability);
+            if (card.scheduledDays < naturalInterval) {
+              final baseDate = card.lastReviewed ?? now;
+              final restoredDue = baseDate.add(Duration(days: naturalInterval));
+
+              await (db.update(db.flashcards)
+                    ..where((t) => t.id.equals(card.id)))
+                  .write(
+                FlashcardsCompanion(
+                  scheduledDays: Value(naturalInterval),
+                  nextDueDate: Value(restoredDue),
+                ),
+              );
+            }
+          }
+        }
+      }
+    } on Object catch (e, st) {
+      developer.log(
+        'Failed to recalibrate scoped decks post assessment: $e',
+        stackTrace: st,
+      );
+    }
   }
 }

@@ -355,8 +355,37 @@ class _QuizWorkspaceView extends HookWidget {
                     ),
                   ),
                 ),
-              // Question Navigation Palette: Shown in review or practice mode (in CBT, it's accessed via the bottom navigation bar)
-              if (reviewMode || (!isExam && !isMillionaire))
+              // In CBT / Mock Exam: Dedicated quick-action to review & finish anytime
+              if (isExam && !reviewMode)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: TextButton.icon(
+                    onPressed: () => _confirmSubmit(context, state),
+                    icon: Icon(
+                      Icons.assignment_turned_in_outlined,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                    label: Text(
+                      'Finish (${state.answeredCount}/${state.totalQuestions})',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      backgroundColor: colors.primary.withAlpha(20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                    ),
+                  ),
+                ),
+              // Question Navigation Palette: Accessible in review, practice and exam simulation
+              if (reviewMode || !isMillionaire)
                 IconButton(
                   icon: Icon(Icons.grid_view_rounded, color: colors.textPrimary),
                   tooltip: 'Question Palette',
@@ -463,7 +492,11 @@ class _QuizWorkspaceView extends HookWidget {
                               ],
                               if (reviewMode) ...[
                                 const SizedBox(width: 8),
-                                if (current.isCorrect)
+                                if (current.isCorrect ||
+                                    _isSameAnswer(
+                                      current.userSelectedAnswer ?? '',
+                                      current.correctAnswer,
+                                    ))
                                   QuizTagPill(
                                     label: 'Correct',
                                     color: colors.success,
@@ -640,7 +673,11 @@ class _QuizWorkspaceView extends HookWidget {
                             child: Padding(
                               padding: const EdgeInsets.only(top: 12),
                               child: QuizVerdictPanel(
-                                verdict: current.isCorrect
+                                verdict: (current.isCorrect ||
+                                        _isSameAnswer(
+                                          current.userSelectedAnswer ?? '',
+                                          current.correctAnswer,
+                                        ))
                                     ? QuizVerdict.correct
                                     : QuizVerdict.incorrect,
                                 question: current,
@@ -1121,19 +1158,19 @@ class _QuizActionBar extends StatelessWidget {
     }
 
     if (isExamSession(state)) {
-      if (state.answeredCount == 0) {
+      if (state.isLastQuestion) {
         return (
-          color: colors.primary,
-          label: 'Answer or flag a question',
-          onPressed: null,
+          color: colors.success,
+          label: state.unansweredCount == 0
+              ? 'Review and finish'
+              : 'Review (${state.unansweredCount} left blank)',
+          onPressed: onReviewAndSubmit,
         );
       }
       return (
         color: colors.primary,
-        label: state.unansweredCount == 0
-            ? 'Review and finish'
-            : 'Review ${state.unansweredCount} left blank',
-        onPressed: onReviewAndSubmit,
+        label: 'Next question',
+        onPressed: cubit.nextQuestion,
       );
     }
 
@@ -1222,6 +1259,36 @@ class _QuizActionBar extends StatelessWidget {
                     ),
                     tooltip: 'All questions',
                   ),
+                  if (isExamSession(state)) ...[
+                    const SizedBox(width: 8),
+                    IconButton.outlined(
+                      onPressed: cubit.toggleFlagCurrentQuestion,
+                      icon: Icon(
+                        state.isCurrentQuestionFlagged
+                            ? Icons.bookmark_added_rounded
+                            : Icons.bookmark_border_rounded,
+                        color: state.isCurrentQuestionFlagged
+                            ? colors.warning
+                            : colors.textSecondary,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: state.isCurrentQuestionFlagged
+                              ? colors.warning.withAlpha(120)
+                              : colors.surfaceBorder,
+                        ),
+                        backgroundColor: state.isCurrentQuestionFlagged
+                            ? colors.warning.withAlpha(20)
+                            : null,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.radiusCard,
+                        ),
+                      ),
+                      tooltip: state.isCurrentQuestionFlagged
+                          ? 'Question flagged for review'
+                          : 'Flag question for review',
+                    ),
+                  ],
                   const SizedBox(width: 12),
                 ],
                 Expanded(
