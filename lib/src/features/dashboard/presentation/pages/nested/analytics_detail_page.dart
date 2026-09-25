@@ -1304,32 +1304,44 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     if (_selectedDay != null) ...[
-                      Text(
-                        DateFormat('EEEE, MMM d').format(_selectedDay!.date),
-                        style: typography.footnote.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 11.5,
+                      Flexible(
+                        child: Text(
+                          DateFormat('EEEE, MMM d').format(_selectedDay!.date),
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 11.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        '${_selectedDay!.cardsReviewed} cards reviewed • '
-                        '${_selectedDay!.minutesStudied}m studied',
-                        style: typography.footnote.medium.copyWith(
-                          color: colors.primary,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '${_selectedDay!.cardsReviewed} cards reviewed • '
+                          '${_selectedDay!.minutesStudied}m studied',
+                          style: typography.footnote.medium.copyWith(
+                            color: colors.primary,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
                         ),
                       ),
                     ] else ...[
-                      Text(
-                        hasActivity
-                            ? 'Tap any day to inspect study performance'
-                            : 'No study activity in past 28 days',
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11,
+                      Expanded(
+                        child: Text(
+                          hasActivity
+                              ? 'Tap any day to inspect study performance'
+                              : 'No study activity in past 28 days',
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

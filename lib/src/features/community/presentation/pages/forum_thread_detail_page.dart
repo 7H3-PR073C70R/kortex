@@ -2297,9 +2297,15 @@ class ForumThreadDetailPage extends HookWidget {
                             children: [
                               // 1. Attach Button -> opens image attachment directly
                               IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 34,
+                                  minHeight: 34,
+                                ),
+                                visualDensity: VisualDensity.compact,
                                 icon: Icon(
                                   Icons.attach_file_rounded,
-                                  size: 21,
+                                  size: 20,
                                   color: replyImages.value.isNotEmpty
                                       ? colors.primary
                                       : colors.textSecondary,
@@ -2327,11 +2333,17 @@ class ForumThreadDetailPage extends HookWidget {
 
                               // 2. Mic Button (Replaces code button in row)
                               IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 34,
+                                  minHeight: 34,
+                                ),
+                                visualDensity: VisualDensity.compact,
                                 icon: Icon(
                                   isRecordingReplyVoice.value
                                       ? Icons.stop_circle_rounded
                                       : Icons.mic_rounded,
-                                  size: 21,
+                                  size: 20,
                                   color: isRecordingReplyVoice.value
                                       ? colors.error
                                       : (replyVoiceNoteUrl.value != null
@@ -2370,11 +2382,17 @@ class ForumThreadDetailPage extends HookWidget {
 
                               // 3. Compact Styling Tools Toggle Button
                               IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 34,
+                                  minHeight: 34,
+                                ),
+                                visualDensity: VisualDensity.compact,
                                 icon: Icon(
                                   showFormattingTools.value
                                       ? Icons.text_format_rounded
                                       : Icons.text_fields_rounded,
-                                  size: 20,
+                                  size: 19,
                                   color: showFormattingTools.value
                                       ? colors.primary
                                       : colors.textSecondary,
@@ -2388,6 +2406,7 @@ class ForumThreadDetailPage extends HookWidget {
                                       !showFormattingTools.value;
                                 },
                               ),
+                              const SizedBox(width: 4),
 
                               // 4. Text Field
                               Expanded(
@@ -2400,11 +2419,12 @@ class ForumThreadDetailPage extends HookWidget {
                                       TextCapitalization.sentences,
                                   decoration: InputDecoration(
                                     hintText: replyingToReply.value != null
-                                        ? 'Write a reply to @${replyingToReply.value!.authorName}...'
-                                        : 'Add a thoughtful reply...',
+                                        ? 'Reply to @${replyingToReply.value!.authorName}…'
+                                        : 'Add a reply…',
                                     hintStyle: typography.body.regular.copyWith(
                                       color: colors.textSecondary,
                                       fontSize: 14,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     filled: true,
                                     fillColor: isDark
@@ -2435,8 +2455,8 @@ class ForumThreadDetailPage extends HookWidget {
                                       ),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 9,
+                                      horizontal: 14,
+                                      vertical: 10,
                                     ),
                                   ),
                                 ),
@@ -3801,53 +3821,62 @@ class _Level2ChildReplyCard extends HookWidget {
                   // Author Info & Collapse Toggle
                   Row(
                     children: [
-                      AppAvatar(
-                        customDimension: 22,
-                        name: childReply.authorName,
-                        backgroundColor: colors.primary.withAlpha(
-                          isDark ? 40 : 25,
-                        ),
-                        foregroundColor: colors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '@${childReply.authorName}',
-                        style: typography.caption.bold.copyWith(
-                          color: isAiReply
-                              ? colors.syllabotAccent
-                              : colors.textPrimary,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      if (isOp) ...[
-                        const SizedBox(width: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'OP',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.white,
-                              fontSize: 8.5,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            AppAvatar(
+                              customDimension: 22,
+                              name: childReply.authorName,
+                              backgroundColor: colors.primary.withAlpha(
+                                isDark ? 40 : 25,
+                              ),
+                              foregroundColor: colors.primary,
                             ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(width: 6),
-                      Text(
-                        _formatTime(childReply.createdAt, l10n),
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 10.5,
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                '@${childReply.authorName}',
+                                style: typography.caption.bold.copyWith(
+                                  color: isAiReply
+                                      ? colors.syllabotAccent
+                                      : colors.textPrimary,
+                                  fontSize: 12.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isOp) ...[
+                              const SizedBox(width: 5),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'OP',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.white,
+                                    fontSize: 8.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(width: 6),
+                            Text(
+                              _formatTime(childReply.createdAt, l10n),
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 6),
                       ShrinkableButton(
                         onTap: () => isCollapsed.value = true,
                         child: Padding(

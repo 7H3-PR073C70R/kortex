@@ -10,7 +10,7 @@ class WhiteboardCompression {
   /// Eliminates intermediate points with perpendicular distance less than [epsilon].
   static List<WhiteboardPoint> simplify(
     List<WhiteboardPoint> points, {
-    double epsilon = 1.2,
+    double epsilon = 0.0015,
   }) {
     if (points.length <= 2) return points;
 
@@ -125,6 +125,6 @@ class WhiteboardCompression {
   }
 
   static double _round(double val) {
-    return (val * 10.0).roundToDouble() / 10.0;
+    return (val * 100000.0).roundToDouble() / 100000.0;
   }
 }

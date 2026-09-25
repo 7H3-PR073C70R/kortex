@@ -855,203 +855,211 @@ class TrackForumPostCard extends HookWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Left actions: Votes & Replies
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Upvote / Downvote Capsule
-                            Container(
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: (isUpvoted || isDownvoted)
-                                    ? (isUpvoted
-                                          ? colors.primary.withAlpha(
-                                              isDark ? 35 : 20,
-                                            )
-                                          : colors.error.withAlpha(
-                                              isDark ? 35 : 20,
-                                            ))
-                                    : (isDark
-                                          ? colors.surfacePrimary.withAlpha(180)
-                                          : colors.surfaceSecondary.withAlpha(
-                                              120,
-                                            )),
-                                borderRadius: AppRadius.radiusBadge,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ShrinkableButton(
-                                    onTap: onUpvoteTap == null
-                                        ? null
-                                        : () {
-                                            unawaited(
-                                              HapticFeedback.selectionClick(),
-                                            );
-                                            onUpvoteTap!();
-                                          },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 4,
-                                      ),
-                                      child: AnimatedSwitcher(
-                                        duration: AppMotion.snappy,
-                                        transitionBuilder:
-                                            (child, anim) => ScaleTransition(
-                                              scale: Tween<double>(
-                                                begin: 0.8,
-                                                end: 1,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: anim,
-                                                  curve: AppMotion.easeOutCubic,
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Upvote / Downvote Capsule
+                              Container(
+                                height: 32,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: (isUpvoted || isDownvoted)
+                                      ? (isUpvoted
+                                            ? colors.primary.withAlpha(
+                                                isDark ? 35 : 20,
+                                              )
+                                            : colors.error.withAlpha(
+                                                isDark ? 35 : 20,
+                                              ))
+                                      : (isDark
+                                            ? colors.surfacePrimary.withAlpha(180)
+                                            : colors.surfaceSecondary.withAlpha(
+                                                120,
+                                              )),
+                                  borderRadius: AppRadius.radiusBadge,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ShrinkableButton(
+                                      onTap: onUpvoteTap == null
+                                          ? null
+                                          : () {
+                                              unawaited(
+                                                HapticFeedback.selectionClick(),
+                                              );
+                                              onUpvoteTap!();
+                                            },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 4,
+                                        ),
+                                        child: AnimatedSwitcher(
+                                          duration: AppMotion.snappy,
+                                          transitionBuilder:
+                                              (child, anim) => ScaleTransition(
+                                                scale: Tween<double>(
+                                                  begin: 0.8,
+                                                  end: 1,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: anim,
+                                                    curve: AppMotion.easeOutCubic,
+                                                  ),
+                                                ),
+                                                child: FadeTransition(
+                                                  opacity: anim,
+                                                  child: child,
                                                 ),
                                               ),
-                                              child: FadeTransition(
-                                                opacity: anim,
-                                                child: child,
-                                              ),
-                                            ),
-                                        child: Icon(
-                                          isUpvoted
-                                              ? Icons.arrow_circle_up_rounded
-                                              : Icons.keyboard_arrow_up_rounded,
-                                          key: ValueKey<bool>(isUpvoted),
-                                          size: 18,
+                                          child: Icon(
+                                            isUpvoted
+                                                ? Icons.arrow_circle_up_rounded
+                                                : Icons.keyboard_arrow_up_rounded,
+                                            key: ValueKey<bool>(isUpvoted),
+                                            size: 18,
+                                            color: isUpvoted
+                                                ? colors.primary
+                                                : colors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                      ),
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.easeOutCubic,
+                                        style: typography.caption.bold.copyWith(
                                           color: isUpvoted
                                               ? colors.primary
-                                              : colors.textSecondary,
+                                              : isDownvoted
+                                              ? colors.error
+                                              : colors.textPrimary,
+                                          fontSize: 12,
                                         ),
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 2,
-                                    ),
-                                    child: AnimatedDefaultTextStyle(
-                                      duration: AppMotion.snappy,
-                                      curve: AppMotion.easeOutCubic,
-                                      style: typography.caption.bold.copyWith(
-                                        color: isUpvoted
-                                            ? colors.primary
-                                            : isDownvoted
-                                            ? colors.error
-                                            : colors.textPrimary,
-                                        fontSize: 12,
-                                      ),
-                                      child: AnimatedSwitcher(
-                                        duration: AppMotion.snappy,
-                                        transitionBuilder:
-                                            (child, anim) => ScaleTransition(
-                                          scale: Tween<double>(
-                                            begin: 0.85,
-                                            end: 1,
-                                          ).animate(
-                                            CurvedAnimation(
-                                              parent: anim,
-                                              curve: AppMotion.easeOutCubic,
+                                        child: AnimatedSwitcher(
+                                          duration: AppMotion.snappy,
+                                          transitionBuilder:
+                                              (child, anim) => ScaleTransition(
+                                            scale: Tween<double>(
+                                              begin: 0.85,
+                                              end: 1,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: anim,
+                                                curve: AppMotion.easeOutCubic,
+                                              ),
+                                            ),
+                                            child: FadeTransition(
+                                              opacity: anim,
+                                              child: child,
                                             ),
                                           ),
-                                          child: FadeTransition(
-                                            opacity: anim,
-                                            child: child,
+                                          child: Text(
+                                            '${post.netVotes}',
+                                            key: ValueKey<int>(post.netVotes),
                                           ),
-                                        ),
-                                        child: Text(
-                                          '${post.netVotes}',
-                                          key: ValueKey<int>(post.netVotes),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  ShrinkableButton(
-                                    onTap: onDownvoteTap == null
-                                        ? null
-                                        : () {
-                                            unawaited(
-                                              HapticFeedback.selectionClick(),
-                                            );
-                                            onDownvoteTap!();
-                                          },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 4,
-                                      ),
-                                      child: AnimatedSwitcher(
-                                        duration: AppMotion.snappy,
-                                        transitionBuilder:
-                                            (child, anim) => ScaleTransition(
-                                              scale: Tween<double>(
-                                                begin: 0.8,
-                                                end: 1,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: anim,
-                                                  curve: AppMotion.easeOutCubic,
+                                    ShrinkableButton(
+                                      onTap: onDownvoteTap == null
+                                          ? null
+                                          : () {
+                                              unawaited(
+                                                HapticFeedback.selectionClick(),
+                                              );
+                                              onDownvoteTap!();
+                                            },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 4,
+                                        ),
+                                        child: AnimatedSwitcher(
+                                          duration: AppMotion.snappy,
+                                          transitionBuilder:
+                                              (child, anim) => ScaleTransition(
+                                                scale: Tween<double>(
+                                                  begin: 0.8,
+                                                  end: 1,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: anim,
+                                                    curve: AppMotion.easeOutCubic,
+                                                  ),
+                                                ),
+                                                child: FadeTransition(
+                                                  opacity: anim,
+                                                  child: child,
                                                 ),
                                               ),
-                                              child: FadeTransition(
-                                                opacity: anim,
-                                                child: child,
-                                              ),
-                                            ),
-                                        child: Icon(
-                                          isDownvoted
-                                              ? Icons.arrow_circle_down_rounded
-                                              : Icons.keyboard_arrow_down_rounded,
-                                          key: ValueKey<bool>(isDownvoted),
-                                          size: 18,
-                                          color: isDownvoted
-                                              ? colors.error
-                                              : colors.textSecondary,
+                                          child: Icon(
+                                            isDownvoted
+                                                ? Icons.arrow_circle_down_rounded
+                                                : Icons.keyboard_arrow_down_rounded,
+                                            key: ValueKey<bool>(isDownvoted),
+                                            size: 18,
+                                            color: isDownvoted
+                                                ? colors.error
+                                                : colors.textSecondary,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
+                              const SizedBox(width: 8),
 
-                            // Reply Pill
-                            Container(
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfacePrimary.withAlpha(180)
-                                    : colors.surfaceSecondary.withAlpha(120),
-                                borderRadius: AppRadius.radiusBadge,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble_outline_rounded,
-                                    size: 14,
-                                    color: colors.textSecondary,
+                              // Reply Pill
+                              Flexible(
+                                child: Container(
+                                  height: 32,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
                                   ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    post.topLevelRepliesCount == 1
-                                        ? '1 reply'
-                                        : '${post.topLevelRepliesCount} replies',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 12,
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfacePrimary.withAlpha(180)
+                                        : colors.surfaceSecondary.withAlpha(120),
+                                    borderRadius: AppRadius.radiusBadge,
                                   ),
-                                ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.chat_bubble_outline_rounded,
+                                        size: 14,
+                                        color: colors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          post.topLevelRepliesCount == 1
+                                              ? '1 reply'
+                                              : '${post.topLevelRepliesCount} replies',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
 
                         // Right actions: Share & Bookmark

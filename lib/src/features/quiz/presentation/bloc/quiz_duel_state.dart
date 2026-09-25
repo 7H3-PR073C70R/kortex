@@ -31,7 +31,8 @@ class QuizDuelState extends Equatable {
   QuizDuelParticipant? get opponentParticipant {
     if (match == null) return null;
     if (match!.player1.userId == currentUserId) return match!.player2;
-    return match!.player1;
+    if (match!.player2?.userId == currentUserId) return match!.player1;
+    return match!.player2 ?? match!.player1;
   }
 
   bool get isMyAnswerLocked => selectedOptionIndex != null;

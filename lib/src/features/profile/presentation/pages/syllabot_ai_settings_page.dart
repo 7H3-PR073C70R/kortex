@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/constants/app_spacing.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -145,14 +146,17 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        Text(
-                                          activeMode.label,
-                                          style: typography.body.bold.copyWith(
-                                            color: colors.primary,
-                                            fontSize: 15,
+                                        Expanded(
+                                          child: Text(
+                                            activeMode.label,
+                                            style: typography.body.bold
+                                                .copyWith(
+                                                  color: colors.primary,
+                                                  fontSize: 15,
+                                                ),
                                           ),
                                         ),
-                                        const Spacer(),
+                                        AppSpacing.horizontalSpaceSmall,
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
@@ -294,41 +298,45 @@ class SyllabotAiSettingsPage extends HookWidget {
                                 fontSize: 13.5,
                               ),
                             ),
-                            SegmentedButton<VoiceGender>(
-                              segments: [
-                                ButtonSegment(
-                                  value: VoiceGender.female,
-                                  label: Text(
-                                    'Female',
-                                    style: typography.caption.bold.copyWith(
-                                      fontSize: 11,
+                            AppSpacing.horizontalSpaceMedium,
+                            Expanded(
+                              child: SegmentedButton<VoiceGender>(
+                                showSelectedIcon: false,
+                                segments: [
+                                  ButtonSegment(
+                                    value: VoiceGender.female,
+                                    label: Text(
+                                      'Female',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                ButtonSegment(
-                                  value: VoiceGender.male,
-                                  label: Text(
-                                    'Male',
-                                    style: typography.caption.bold.copyWith(
-                                      fontSize: 11,
+                                  ButtonSegment(
+                                    value: VoiceGender.male,
+                                    label: Text(
+                                      'Male',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                              selected: {voiceGender.value},
-                              onSelectionChanged: (set) {
-                                AppFeedback.selection();
-                                final g = set.first;
-                                voiceGender.value = g;
-                                if (storage != null) {
-                                  unawaited(
-                                    storage.savePreference(
-                                      key: PrefKeys.syllabotVoiceGender,
-                                      data: g.name,
-                                    ),
-                                  );
-                                }
-                              },
+                                ],
+                                selected: {voiceGender.value},
+                                onSelectionChanged: (set) {
+                                  AppFeedback.selection();
+                                  final g = set.first;
+                                  voiceGender.value = g;
+                                  if (storage != null) {
+                                    unawaited(
+                                      storage.savePreference(
+                                        key: PrefKeys.syllabotVoiceGender,
+                                        data: g.name,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -343,50 +351,55 @@ class SyllabotAiSettingsPage extends HookWidget {
                                 fontSize: 13.5,
                               ),
                             ),
-                            SegmentedButton<double>(
-                              segments: [
-                                ButtonSegment(
-                                  value: 0.8,
-                                  label: Text(
-                                    '0.8x',
-                                    style: typography.caption.bold.copyWith(
-                                      fontSize: 11,
+                            AppSpacing.horizontalSpaceMedium,
+
+                            Expanded(
+                              child: SegmentedButton<double>(
+                                showSelectedIcon: false,
+                                segments: [
+                                  ButtonSegment(
+                                    value: 0.8,
+                                    label: Text(
+                                      '0.8x',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                ButtonSegment(
-                                  value: 1,
-                                  label: Text(
-                                    '1.0x',
-                                    style: typography.caption.bold.copyWith(
-                                      fontSize: 11,
+                                  ButtonSegment(
+                                    value: 1,
+                                    label: Text(
+                                      '1.0x',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                ButtonSegment(
-                                  value: 1.2,
-                                  label: Text(
-                                    '1.2x',
-                                    style: typography.caption.bold.copyWith(
-                                      fontSize: 11,
+                                  ButtonSegment(
+                                    value: 1.2,
+                                    label: Text(
+                                      '1.2x',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                              selected: {speechRate.value},
-                              onSelectionChanged: (set) {
-                                AppFeedback.selection();
-                                final r = set.first;
-                                speechRate.value = r;
-                                if (storage != null) {
-                                  unawaited(
-                                    storage.savePreference(
-                                      key: PrefKeys.syllabotSpeechRate,
-                                      data: r.toString(),
-                                    ),
-                                  );
-                                }
-                              },
+                                ],
+                                selected: {speechRate.value},
+                                onSelectionChanged: (set) {
+                                  AppFeedback.selection();
+                                  final r = set.first;
+                                  speechRate.value = r;
+                                  if (storage != null) {
+                                    unawaited(
+                                      storage.savePreference(
+                                        key: PrefKeys.syllabotSpeechRate,
+                                        data: r.toString(),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
                           ],
                         ),

@@ -420,7 +420,9 @@ class _QuizWorkspaceView extends HookWidget {
                         // Where you are, and what this question covers.
                         QuizStaggeredFade(
                           reduceMotion: reduceMotion,
-                          child: Row(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
                             children: [
                               Text(
                                 l10n.quizQuestionProgress(
@@ -518,7 +520,7 @@ class _QuizWorkspaceView extends HookWidget {
                                     icon: Icons.help_outline_rounded,
                                   ),
                               ],
-                              const Spacer(),
+                              const SizedBox(width: 12),
                               QuizTagPill(
                                 label: current.subTopic,
                                 color: colors.primary,
@@ -526,6 +528,7 @@ class _QuizWorkspaceView extends HookWidget {
                               ),
                             ],
                           ),
+                        ),
                         ),
                         const SizedBox(height: 6),
                         // The rules for this session, stated once in plain

@@ -221,9 +221,20 @@ class _AppState extends State<App> {
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 routerConfig: _routerConfig,
-                builder: (context, child) => BiometricLockOverlay(
-                  child: child ?? const SizedBox.shrink(),
-                ),
+                builder: (context, child) {
+                  final mediaQueryData = MediaQuery.of(context);
+                  return MediaQuery(
+                    data: mediaQueryData.copyWith(
+                      textScaler: mediaQueryData.textScaler.clamp(
+                        minScaleFactor: 0.85,
+                        maxScaleFactor: 1.25,
+                      ),
+                    ),
+                    child: BiometricLockOverlay(
+                      child: child ?? const SizedBox.shrink(),
+                    ),
+                  );
+                },
               ),
             ),
           );

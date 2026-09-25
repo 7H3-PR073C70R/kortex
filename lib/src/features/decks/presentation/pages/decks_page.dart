@@ -210,7 +210,7 @@ class _DecksView extends HookWidget {
                     physics: const ClampingScrollPhysics(
                       parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
                     children: [
                       // 1. Header Title & Create Action
                       Row(
@@ -642,7 +642,7 @@ class _DecksView extends HookWidget {
     bool isDark,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

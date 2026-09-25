@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -12,6 +13,52 @@ import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_ro
 import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 
 enum RoomViewMode { stage, whiteboard, deckStudy }
+
+/// A unique reaction event emitted when emojis are sent in a live study room.
+class LiveRoomReactionEvent extends Equatable {
+  const LiveRoomReactionEvent({
+    required this.id,
+    required this.emojis,
+    required this.senderId,
+    required this.senderName,
+  });
+
+  final String id;
+  final List<String> emojis;
+  final String senderId;
+  final String senderName;
+
+  @override
+  List<Object?> get props => [id, emojis, senderId, senderName];
+}
+
+/// Extracts individual emoji glyphs from a string, supporting multi-codepoint Unicode graphemes.
+List<String> extractEmojis(String text) {
+  if (text.trim().isEmpty) return const [];
+  final emojis = <String>[];
+
+  final emojiRegex = RegExp(
+    r'(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])',
+  );
+
+  for (final char in text.characters) {
+    final trimmed = char.trim();
+    if (trimmed.isNotEmpty && emojiRegex.hasMatch(trimmed)) {
+      emojis.add(trimmed);
+    }
+  }
+
+  if (emojis.isEmpty && text.trim().length <= 8) {
+    for (final char in text.characters) {
+      final t = char.trim();
+      if (t.isNotEmpty) {
+        emojis.add(t);
+      }
+    }
+  }
+
+  return emojis;
+}
 
 class LiveRoomState extends Equatable {
   const LiveRoomState({
@@ -40,6 +87,7 @@ class LiveRoomState extends Equatable {
     this.cardsReviewedInSprint = 0,
     this.recentActivityTicker = const [],
     this.lastReactionEmoji,
+    this.lastReactionEvent,
     this.isCoOpSprintActive = false,
     this.coOpSprintDeckTitle,
     this.coOpSprintTargetCards = 10,
@@ -78,6 +126,7 @@ class LiveRoomState extends Equatable {
   final int cardsReviewedInSprint;
   final List<String> recentActivityTicker;
   final String? lastReactionEmoji;
+  final LiveRoomReactionEvent? lastReactionEvent;
   final bool isCoOpSprintActive;
   final String? coOpSprintDeckTitle;
   final int coOpSprintTargetCards;
@@ -141,6 +190,7 @@ class LiveRoomState extends Equatable {
     int? cardsReviewedInSprint,
     List<String>? recentActivityTicker,
     String? lastReactionEmoji,
+    LiveRoomReactionEvent? lastReactionEvent,
     bool? isCoOpSprintActive,
     String? coOpSprintDeckTitle,
     int? coOpSprintTargetCards,
@@ -186,6 +236,7 @@ class LiveRoomState extends Equatable {
           cardsReviewedInSprint ?? this.cardsReviewedInSprint,
       recentActivityTicker: recentActivityTicker ?? this.recentActivityTicker,
       lastReactionEmoji: lastReactionEmoji ?? this.lastReactionEmoji,
+      lastReactionEvent: lastReactionEvent ?? this.lastReactionEvent,
       isCoOpSprintActive: isCoOpSprintActive ?? this.isCoOpSprintActive,
       coOpSprintDeckTitle: coOpSprintDeckTitle ?? this.coOpSprintDeckTitle,
       coOpSprintTargetCards:
@@ -235,6 +286,7 @@ class LiveRoomState extends Equatable {
     cardsReviewedInSprint,
     recentActivityTicker,
     lastReactionEmoji,
+    lastReactionEvent,
     isCoOpSprintActive,
     coOpSprintDeckTitle,
     coOpSprintTargetCards,
@@ -571,14 +623,26 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           tickerMsg,
           ...state.recentActivityTicker.take(4),
         ];
+        final extracted = extractEmojis(chatMsg.text);
+        final isEmojiOrReaction = chatMsg.isReaction || extracted.isNotEmpty;
+        final reactionEvent = isEmojiOrReaction
+            ? LiveRoomReactionEvent(
+                id: '${chatMsg.id}_${DateTime.now().microsecondsSinceEpoch}',
+                emojis: extracted.isNotEmpty ? extracted : [chatMsg.text],
+                senderId: chatMsg.senderId,
+                senderName: chatMsg.senderName,
+              )
+            : null;
+
         emit(
           state.copyWith(
             chatMessages: [...state.chatMessages, chatMsg],
             unreadChatCount: state.unreadChatCount + 1,
             recentActivityTicker: updatedTicker,
-            lastReactionEmoji: chatMsg.isReaction
+            lastReactionEmoji: isEmojiOrReaction
                 ? chatMsg.text
                 : state.lastReactionEmoji,
+            lastReactionEvent: reactionEvent ?? state.lastReactionEvent,
           ),
         );
       }
@@ -732,9 +796,17 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   void triggerMicroReaction(String emoji) {
     final message = 'You sent $emoji';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    final extracted = extractEmojis(emoji);
+    final reactionEvent = LiveRoomReactionEvent(
+      id: 'local_${_currentUserId}_${DateTime.now().microsecondsSinceEpoch}',
+      emojis: extracted.isNotEmpty ? extracted : [emoji],
+      senderId: _currentUserId,
+      senderName: _currentUserName,
+    );
     emit(
       state.copyWith(
         lastReactionEmoji: emoji,
+        lastReactionEvent: reactionEvent,
         recentActivityTicker: updatedTicker,
       ),
     );
@@ -1024,7 +1096,24 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       isReaction: isReaction,
     );
     final updated = List<RoomChatMessage>.from(state.chatMessages)..add(msg);
-    emit(state.copyWith(chatMessages: updated));
+    final extracted = extractEmojis(trimmed);
+    final isEmojiOrReaction = isReaction || extracted.isNotEmpty;
+    final reactionEvent = isEmojiOrReaction
+        ? LiveRoomReactionEvent(
+            id: '${msg.id}_${DateTime.now().microsecondsSinceEpoch}',
+            emojis: extracted.isNotEmpty ? extracted : [trimmed],
+            senderId: _currentUserId,
+            senderName: _currentUserName,
+          )
+        : null;
+
+    emit(
+      state.copyWith(
+        chatMessages: updated,
+        lastReactionEmoji: isEmojiOrReaction ? trimmed : state.lastReactionEmoji,
+        lastReactionEvent: reactionEvent ?? state.lastReactionEvent,
+      ),
+    );
     unawaited(
       _ephemeralRepository?.broadcastChatMessage(
         roomId: state.room.id,

@@ -172,15 +172,15 @@ class WhiteboardStroke {
 
   factory WhiteboardStroke.fromJson(Map<String, dynamic> json) {
     final List<WhiteboardPoint> parsedPoints;
-    if (json['deltas'] is List) {
-      parsedPoints = WhiteboardCompression.decodeDelta(
-        json['deltas'] as List<dynamic>,
-      );
-    } else if (json['points'] is List) {
+    if (json['points'] is List && (json['points'] as List).isNotEmpty) {
       parsedPoints = (json['points'] as List<dynamic>)
           .cast<Map<String, dynamic>>()
           .map(WhiteboardPoint.fromJson)
           .toList();
+    } else if (json['deltas'] is List) {
+      parsedPoints = WhiteboardCompression.decodeDelta(
+        json['deltas'] as List<dynamic>,
+      );
     } else {
       parsedPoints = const [];
     }
@@ -228,6 +228,7 @@ class WhiteboardStroke {
       if (text != null) 'text': text,
       if (fontSize != null) 'fontSize': fontSize,
       'deltas': WhiteboardCompression.encodeDelta(points),
+      'points': points.map((p) => p.toJson()).toList(),
     };
   }
 }
@@ -380,7 +381,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   // WS subscriptions per room
   final Map<String, StreamSubscription<Map<String, dynamic>>> _wsSubs = {};
 
-  String _channelName(String roomId) => 'room:$roomId';
+  String _channelName(String roomId) => 'realtime:room:$roomId';
 
   void _ensureRoomListening(String roomId) {
     if (_wsSubs.containsKey(roomId)) return;
@@ -406,10 +407,45 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
             if (action == 'leave') {
               _roomParticipants[roomId]!.remove(userId);
             } else {
-              _roomParticipants[roomId]![userId] =
-                  EphemeralParticipant.fromJson(data);
+              final newParticipant = EphemeralParticipant.fromJson(data);
+              _roomParticipants[roomId]![userId] = newParticipant;
+
+              // If a new peer joined, reply by re-broadcasting local presence state
+              if (action == 'join') {
+                final localUserId = _roomParticipants[roomId]?.keys.firstWhere(
+                  (id) => id != userId,
+                  orElse: () => '',
+                );
+                if (localUserId != null && localUserId.isNotEmpty) {
+                  final localP = _roomParticipants[roomId]?[localUserId];
+                  if (localP != null) {
+                    _realtime.broadcastPresence(
+                      channelName: channel,
+                      payload: {
+                        'data': {
+                          'action': 'announce',
+                          ...localP.toJson(),
+                        },
+                      },
+                    );
+                  }
+                }
+              }
             }
             _notifyParticipants(roomId);
+          } else if (type == 'request_presence') {
+            final localP = _roomParticipants[roomId]?.values.firstOrNull;
+            if (localP != null) {
+              _realtime.broadcastPresence(
+                channelName: channel,
+                payload: {
+                  'data': {
+                    'action': 'announce',
+                    ...localP.toJson(),
+                  },
+                },
+              );
+            }
           } else if (type == 'card_progress') {
             final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final userId = data['userId'] as String?;
@@ -503,15 +539,21 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     _roomParticipants[roomId]![userId] = participant;
     _notifyParticipants(roomId);
 
-    _realtime.broadcastPresence(
-      channelName: _channelName(roomId),
-      payload: {
-        'data': {
-          'action': 'join',
-          ...participant.toJson(),
+    _realtime
+      ..broadcastPresence(
+        channelName: _channelName(roomId),
+        payload: {
+          'data': {
+            'action': 'join',
+            ...participant.toJson(),
+          },
         },
-      },
-    );
+      )
+      // Prompt existing peers in room to announce their presence to the new joiner
+      ..broadcastPresence(
+        channelName: _channelName(roomId),
+        payload: {'type': 'request_presence'},
+      );
   }
 
   @override

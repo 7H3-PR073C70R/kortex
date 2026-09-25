@@ -389,8 +389,8 @@ class _CommunityNotificationAction extends StatelessWidget {
                 ),
                 if (unreadCount > 0)
                   Positioned(
-                    top: -2,
-                    right: -2,
+                    top: 1,
+                    right: 1,
                     child: Container(
                       width: 8,
                       height: 8,

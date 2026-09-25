@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/app_spacing.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -911,25 +912,28 @@ class SecuritySettingsPage extends HookWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Syllabot & Image Cache',
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 13.5,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Syllabot & Image Cache',
+                        style: typography.body.medium.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 13.5,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Temporary audio, token & image buffers',
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11,
+                      Text(
+                        'Temporary audio, token & image buffers',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                AppSpacing.horizontalSpaceSmall,
                 PlatformHoverBuilder(
                   builder: (context, isHovered, child) {
                     return AnimatedScale(

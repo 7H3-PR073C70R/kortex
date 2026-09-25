@@ -680,15 +680,17 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
                       Icon(
                         Icons.verified_rounded,
                         size: 16,
                         color: gradeResult.gradeColor,
                       ),
-                      const SizedBox(width: 6),
                       Text(
                         'Real-World Grade: ${gradeResult.grade}',
                         style: typography.callout.bold.copyWith(
@@ -696,25 +698,24 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                           fontSize: 14,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: gradeResult.gradeColor.withAlpha(
+                            isDark ? 50 : 30,
                           ),
-                          decoration: BoxDecoration(
-                            color: gradeResult.gradeColor.withAlpha(
-                              isDark ? 50 : 30,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            gradeResult.classification,
-                            style: typography.caption.bold.copyWith(
-                              color: gradeResult.gradeColor,
-                              fontSize: 10.5,
-                            ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          gradeResult.classification,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.caption.bold.copyWith(
+                            color: gradeResult.gradeColor,
+                            fontSize: 10.5,
                           ),
                         ),
                       ),

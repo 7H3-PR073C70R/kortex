@@ -199,11 +199,7 @@ class _WhiteboardCanvasWidgetState extends State<WhiteboardCanvasWidget> {
     if (isShape || _livePoints.length <= 2) {
       processedPoints = List<WhiteboardPoint>.from(_livePoints);
     } else {
-      // Epsilon 0.0015 corresponds to ~1.5 pixels on a 1000px canvas
-      processedPoints = WhiteboardCompression.simplify(
-        _livePoints,
-        epsilon: 0.0015,
-      );
+      processedPoints = WhiteboardCompression.simplify(_livePoints);
     }
 
     final colors = context.colors;
@@ -875,9 +871,54 @@ class _WhiteboardCanvasPainter extends CustomPainter {
     }
   }
 
+  Path _buildSmoothPath(List<WhiteboardPoint> points, Size size) {
+    final path = Path();
+    if (points.isEmpty) return path;
+
+    final p0 = Offset(points[0].x * size.width, points[0].y * size.height);
+    path.moveTo(p0.dx, p0.dy);
+
+    if (points.length == 1) {
+      path.addOval(Rect.fromCircle(center: p0, radius: 0.5));
+      return path;
+    }
+
+    if (points.length == 2) {
+      final p1 = Offset(points[1].x * size.width, points[1].y * size.height);
+      path.lineTo(p1.dx, p1.dy);
+      return path;
+    }
+
+    for (var i = 1; i < points.length - 1; i++) {
+      final pCurrent = Offset(
+        points[i].x * size.width,
+        points[i].y * size.height,
+      );
+      final pNext = Offset(
+        points[i + 1].x * size.width,
+        points[i + 1].y * size.height,
+      );
+      final midX = (pCurrent.dx + pNext.dx) / 2;
+      final midY = (pCurrent.dy + pNext.dy) / 2;
+      path.quadraticBezierTo(pCurrent.dx, pCurrent.dy, midX, midY);
+    }
+
+    final pLast = Offset(
+      points.last.x * size.width,
+      points.last.y * size.height,
+    );
+    path.lineTo(pLast.dx, pLast.dy);
+
+    return path;
+  }
+
   void _drawCompletedStroke(Canvas canvas, Size size, WhiteboardStroke stroke) {
+    final strokeColor = stroke.isEraser
+        ? (isDark ? colors.surfacePrimary : colors.white)
+        : Color(stroke.colorHex);
+
     final paint = Paint()
-      ..color = Color(stroke.colorHex)
+      ..color = strokeColor
       ..strokeWidth = stroke.strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -893,18 +934,7 @@ class _WhiteboardCanvasPainter extends CustomPainter {
         paint,
       );
     } else {
-      final path = Path()
-        ..moveTo(
-          stroke.points.first.x * size.width,
-          stroke.points.first.y * size.height,
-        );
-
-      for (var i = 1; i < stroke.points.length; i++) {
-        path.lineTo(
-          stroke.points[i].x * size.width,
-          stroke.points[i].y * size.height,
-        );
-      }
+      final path = _buildSmoothPath(stroke.points, size);
       canvas.drawPath(path, paint);
     }
   }
@@ -936,18 +966,7 @@ class _WhiteboardCanvasPainter extends CustomPainter {
         livePaint,
       );
     } else {
-      final livePath = Path()
-        ..moveTo(
-          livePoints.first.x * size.width,
-          livePoints.first.y * size.height,
-        );
-
-      for (var i = 1; i < livePoints.length; i++) {
-        livePath.lineTo(
-          livePoints[i].x * size.width,
-          livePoints[i].y * size.height,
-        );
-      }
+      final livePath = _buildSmoothPath(livePoints, size);
       canvas.drawPath(livePath, livePaint);
     }
   }

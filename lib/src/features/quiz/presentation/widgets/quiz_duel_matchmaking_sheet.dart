@@ -135,13 +135,23 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     void startMatchmaking() {
       AppFeedback.selection();
       isSearching.value = true;
+      final profile = authBloc?.state.userProfile;
+      final resolvedUserId = profile?.id ??
+          authBloc?.state.user?.id ??
+          'user_${DateTime.now().millisecondsSinceEpoch}';
+      final resolvedDisplayName = (profile?.displayName != null &&
+              profile!.displayName!.trim().isNotEmpty)
+          ? profile.displayName!.trim()
+          : 'Scholar';
+      final resolvedAvatarUrl = profile?.photoUrl ?? '';
+
       unawaited(
         context.read<QuizDuelCubit>().startMatchmaking(
           subject: selectedSubject.value,
           examBoard: resolvedExamBoard,
-          userId: 'user_${DateTime.now().millisecondsSinceEpoch}',
-          displayName: 'You',
-          avatarUrl: '⚡',
+          userId: resolvedUserId,
+          displayName: resolvedDisplayName,
+          avatarUrl: resolvedAvatarUrl,
           questionCount: selectedQuestionCount.value,
         ),
       );
@@ -322,7 +332,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Searching classmates studying $selectedSubject ($resolvedExamBoard)\nIf nobody joins within 2 minutes, you will practice with AI',
+                              'Searching classmates studying ${selectedSubject.value} ($resolvedExamBoard)\nIf nobody joins within 2 minutes, you will practice with AI',
                               textAlign: TextAlign.center,
                               style: typography.body.regular.copyWith(
                                 color: colors.textSecondary,

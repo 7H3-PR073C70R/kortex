@@ -52,6 +52,28 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     }
   }
 
+  String _normalizeSubjectCode(String subject) {
+    final s = subject.trim().toLowerCase();
+    if (s.contains('english')) return 'ENG';
+    if (s.contains('math') && !s.contains('further')) return 'MTH';
+    if (s.contains('further math')) return 'FMTH';
+    if (s.contains('physic')) return 'PHY';
+    if (s.contains('chemis')) return 'CHM';
+    if (s.contains('biolog')) return 'BIO';
+    if (s.contains('econom')) return 'ECN';
+    if (s.contains('govern')) return 'GOV';
+    if (s.contains('literat')) return 'LIT';
+    if (s.contains('civic')) return 'CIV';
+    if (s.contains('agric')) return 'AGR';
+    if (s.contains('commer')) return 'COM';
+    if (s.contains('account')) return 'ACC';
+    if (s.contains('geograp')) return 'GEO';
+    if (s.contains('histor')) return 'HIS';
+    if (s.contains('data proc') || s.contains('computer')) return 'DPR';
+    final clean = subject.replaceAll(RegExp('[^a-zA-Z0-9]'), '').toUpperCase();
+    return clean.length > 4 ? clean.substring(0, 4) : (clean.isNotEmpty ? clean : 'SUBJ');
+  }
+
   List<CuratedCourseModel> _getLocallySavedCourses() {
     try {
       final raw = _storage?.getPreference(key: PrefKeys.userCuratedCourses);
@@ -60,7 +82,19 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         final courses = list
             .map((e) => CuratedCourseModel.fromJson(e as Map<String, dynamic>))
             .toList();
-        if (courses.isNotEmpty) return courses;
+        if (courses.isNotEmpty) {
+          final seenKeys = <String>{};
+          final deduplicated = <CuratedCourseModel>[];
+          for (final c in courses) {
+            final normCode = _normalizeSubjectCode(c.courseCode.isNotEmpty ? c.courseCode : c.title);
+            final normTitle = c.title.trim().toLowerCase();
+            final key = normCode.isNotEmpty ? normCode : normTitle;
+            if (seenKeys.add(key)) {
+              deduplicated.add(c);
+            }
+          }
+          return deduplicated;
+        }
       }
     } on Object catch (_) {}
     return _getCoursesFromCalibrationProfile();
@@ -77,13 +111,16 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                 .where((s) => s.isNotEmpty)
                 .toList() ??
             [];
-        final examName = (jsonMap['highSchoolExam'] as String?) ?? 'WAEC';
 
         if (subjects.isNotEmpty) {
           final catalog = _generateDefaultCatalogCourses();
           final matched = <CuratedCourseModel>[];
+          final seenKeys = <String>{};
 
           for (final subject in subjects) {
+            final code = _normalizeSubjectCode(subject);
+            if (!seenKeys.add(code)) continue;
+
             final lower = subject.toLowerCase().trim();
             CuratedCourseModel? bestMatch;
             for (final c in catalog) {
@@ -95,13 +132,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                   c.courseCode.toLowerCase() == lower;
 
               if (isNameMatch) {
-                if (c.department.toLowerCase().contains(
-                  examName.toLowerCase(),
-                )) {
-                  bestMatch = c;
-                  break;
-                }
-                bestMatch ??= c;
+                bestMatch = c;
+                break;
               }
             }
 
@@ -112,12 +144,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             } else {
               matched.add(
                 CuratedCourseModel(
-                  id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
-                  courseCode: subject.length > 4
-                      ? subject.substring(0, 4).toUpperCase()
-                      : subject.toUpperCase(),
+                  id: 'course_${code.toLowerCase()}',
+                  courseCode: code,
                   title: subject,
-                  department: '$examName - General Studies',
+                  department: 'Secondary School Board',
                   totalMaterials: 25,
                   hasActivePastPapers: true,
                   iconName: 'school',
@@ -500,6 +530,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final catalog = _generateDefaultCatalogCourses();
       final matched = <CuratedCourseModel>[];
       for (final subject in subjects) {
+        final code = _normalizeSubjectCode(subject);
         final lower = subject.toLowerCase().trim();
         CuratedCourseModel? bestMatch;
         for (final c in catalog) {
@@ -511,11 +542,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
               c.courseCode.toLowerCase() == lower;
 
           if (isNameMatch) {
-            if (c.department.toLowerCase().contains(examName.toLowerCase())) {
-              bestMatch = c;
-              break;
-            }
-            bestMatch ??= c;
+            bestMatch = c;
+            break;
           }
         }
 
@@ -526,12 +554,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         } else {
           matched.add(
             CuratedCourseModel(
-              id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
-              courseCode: subject.length > 4
-                  ? subject.substring(0, 4).toUpperCase()
-                  : subject.toUpperCase(),
+              id: 'course_${code.toLowerCase()}',
+              courseCode: code,
               title: subject,
-              department: '$examName - General Studies',
+              department: 'Secondary School Board',
               totalMaterials: 25,
               hasActivePastPapers: true,
               iconName: 'school',
@@ -542,10 +568,17 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       }
       if (matched.isNotEmpty) {
         final current = _getLocallySavedCourses();
-        final currentIds = {for (final c in current) c.id};
+        final currentKeys = {
+          for (final c in current)
+            _normalizeSubjectCode(c.courseCode.isNotEmpty ? c.courseCode : c.title)
+        };
         final merged = [
           ...current,
-          ...matched.where((m) => !currentIds.contains(m.id)),
+          ...matched.where(
+            (m) => !currentKeys.contains(
+              _normalizeSubjectCode(m.courseCode.isNotEmpty ? m.courseCode : m.title),
+            ),
+          ),
         ];
         final jsonStr = jsonEncode(merged.map((c) => c.toJson()).toList());
         await _storage?.savePreference(

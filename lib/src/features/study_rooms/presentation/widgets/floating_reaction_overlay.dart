@@ -15,21 +15,37 @@ typedef FloatingReactionCallback =
 /// Controller to programmatically spawn floating reaction emojis on the overlay.
 class FloatingReactionController {
   FloatingReactionCallback? _onSpawn;
+  void Function(List<String> emojis, {Offset? startOffset})? _onSpawnMultiple;
 
   /// Attaches the overlay's spawn callback.
-  void attach(FloatingReactionCallback callback) {
-    if (identical(_onSpawn, callback)) return;
+  void attach(
+    FloatingReactionCallback callback, {
+    void Function(List<String> emojis, {Offset? startOffset})? onSpawnMultiple,
+  }) {
     _onSpawn = callback;
+    _onSpawnMultiple = onSpawnMultiple;
   }
 
   /// Detaches the current callback when disposed.
   void detach() {
     _onSpawn = null;
+    _onSpawnMultiple = null;
   }
 
   /// Spawns a floating reaction with classical drifting, scaling, and fading.
   void spawn(String emoji, {Offset? startOffset}) {
     _onSpawn?.call(emoji, startOffset: startOffset);
+  }
+
+  /// Spawns multiple floating reaction emojis with micro-staggered timing.
+  void spawnMultiple(List<String> emojis, {Offset? startOffset}) {
+    if (_onSpawnMultiple != null) {
+      _onSpawnMultiple?.call(emojis, startOffset: startOffset);
+    } else {
+      for (final e in emojis) {
+        spawn(e, startOffset: startOffset);
+      }
+    }
   }
 }
 
@@ -85,7 +101,7 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
   @override
   void initState() {
     super.initState();
-    widget.controller?.attach(spawn);
+    widget.controller?.attach(spawn, onSpawnMultiple: spawnMultiple);
   }
 
   @override
@@ -93,7 +109,7 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller?.detach();
-      widget.controller?.attach(spawn);
+      widget.controller?.attach(spawn, onSpawnMultiple: spawnMultiple);
     }
   }
 
@@ -107,11 +123,29 @@ class _FloatingReactionOverlayState extends State<FloatingReactionOverlay>
     super.dispose();
   }
 
+  void spawnMultiple(List<String> emojis, {Offset? startOffset}) {
+    if (!mounted || emojis.isEmpty) return;
+
+    for (var i = 0; i < emojis.length; i++) {
+      final emoji = emojis[i];
+      final delayMs = i * 75;
+      if (delayMs == 0) {
+        spawn(emoji, startOffset: startOffset);
+      } else {
+        Future.delayed(Duration(milliseconds: delayMs), () {
+          if (mounted) {
+            spawn(emoji, startOffset: startOffset);
+          }
+        });
+      }
+    }
+  }
+
   void spawn(String emoji, {Offset? startOffset}) {
     if (!mounted) return;
 
     // Cap max active particles to prevent performance degradation
-    if (_particles.length > 25) {
+    if (_particles.length >= 35) {
       final oldest = _particles.removeAt(0);
       oldest.controller.dispose();
     }

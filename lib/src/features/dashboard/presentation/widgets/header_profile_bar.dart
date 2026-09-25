@@ -221,45 +221,17 @@ class HeaderProfileBar extends StatelessWidget {
                                           pulseSpread: 2,
                                         ),
                                         const SizedBox(width: 4),
-                                        Text(
-                                          analytics.academicRank,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: typography.footnote.medium
-                                              .copyWith(
-                                                color: neural.slate300,
-                                                fontSize: 11.5,
-                                              ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 5,
-                                            vertical: 1,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: neural.emerald400.withAlpha(22),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(
-                                              color: neural.emerald400.withAlpha(50),
-                                              width: 0.8,
-                                            ),
-                                          ),
+                                        Flexible(
                                           child: Text(
-                                            'LVL ${authProfile?.level ?? 1}',
-                                            style: typography.caption.bold
+                                            analytics.academicRank,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: typography.footnote.medium
                                                 .copyWith(
-                                                  color: neural.emerald400,
-                                                  fontSize: 10,
-                                                  letterSpacing: 0.2,
+                                                  color: neural.slate300,
+                                                  fontSize: 11.5,
                                                 ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 2),
-                                        Icon(
-                                          Icons.chevron_right_rounded,
-                                          size: 12,
-                                          color: neural.slate400,
                                         ),
                                       ],
                                     ),

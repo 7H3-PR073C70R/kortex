@@ -4,13 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Standard top header for the Community Hub displaying title and active filter indicator.
@@ -38,82 +36,14 @@ class CommunityStandardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
-    final isDark = context.isDarkMode;
 
-    return Row(
+    return Text(
+      title,
       key: const ValueKey('standard_header'),
-      children: [
-        Text(
-          title,
-          style: typography.title2.bold.copyWith(
-            color: colors.textPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        if (hasActiveFilters) ...[
-          const SizedBox(width: 8),
-          PlatformHoverBuilder(
-            builder: (context, isHovered, child) => AnimatedScale(
-              scale: isHovered ? 1.05 : 1.0,
-              duration: AppMotion.snappy,
-              curve: AppMotion.easeOutCubic,
-              child: child,
-            ),
-            child: ShrinkableButton(
-              onTap: () {
-                unawaited(HapticFeedback.lightImpact());
-                showCommunityFilterSheet(
-                  context: context,
-                  availableTracks: availableTracks,
-                  effectiveTrack: effectiveTrack,
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 45 : 25),
-                  borderRadius: AppRadius.radiusBadge,
-                  border: Border.all(
-                    color: colors.primary.withAlpha(isDark ? 90 : 50),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      selectedTrack != 'All'
-                          ? Icons.school_rounded
-                          : getSortIcon(selectedForumFilter),
-                      size: 13,
-                      color: colors.primary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      selectedTrack != 'All'
-                          ? selectedTrack
-                          : getSortLabel(selectedForumFilter),
-                      style: typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        fontSize: 11.5,
-                      ),
-                    ),
-                    if (activeFilterCount > 1) ...[
-                      const SizedBox(width: 3),
-                      Text(
-                        '+${activeFilterCount - 1}',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 10.5,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
+      style: typography.title2.bold.copyWith(
+        color: colors.textPrimary,
+        letterSpacing: -0.5,
+      ),
     );
   }
 }

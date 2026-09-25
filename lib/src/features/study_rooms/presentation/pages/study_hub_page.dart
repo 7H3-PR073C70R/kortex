@@ -705,7 +705,7 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -938,7 +938,7 @@ class _StudyCirclesTab extends StatelessWidget {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -1254,7 +1254,7 @@ class _DeckMarketplaceTab extends HookWidget {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {

@@ -32,215 +32,207 @@ class QuizDuelWebSocketClient {
   /// Points configuration
   static const int baseCorrectPoints = 100;
   static const int maxSpeedBonus = 50;
-  static const int defaultQuestionTimeSeconds = 15;
+  static const int defaultQuestionTimeSeconds = 60;
 
-  /// Default fallback past questions when starting a duel
+  /// Returns passed questions or an empty bank (dynamic curation handled via repositories).
   static List<QuizQuestionEntity> getDefaultDuelQuestions(
     String subject,
     String examBoard, {
     int count = 10,
   }) {
-    final bank = [
-      const QuizQuestionEntity(
-        id: 'duel_q_1',
-        prompt: 'What is the SI unit of electric potential difference?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['Ampere', 'Volt', 'Ohm', 'Joule'],
-        correctAnswer: 'Volt',
-        explanation:
-            'The SI unit of electric potential difference (voltage) is the Volt (V), defined as one joule per coulomb.',
-        subTopic: 'Current Electricity',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_2',
-        prompt: r'Evaluate the integral: \(\int 2x\,dx\)',
-        type: QuizQuestionType.multipleChoice,
-        options: [r'\(2x^2 + C\)', r'\(x^2 + C\)', r'\(x + C\)', r'\(2 + C\)'],
-        correctAnswer: r'\(x^2 + C\)',
-        explanation:
-            r'Integrating \(2x\) with respect to \(x\) gives \(2 \cdot \frac{x^2}{2} + C = x^2 + C\).',
-        subTopic: 'Calculus',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_3',
-        prompt: 'Which organelle is known as the powerhouse of the cell?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['Ribosome', 'Golgi apparatus', 'Mitochondria', 'Nucleus'],
-        correctAnswer: 'Mitochondria',
-        explanation:
-            'Mitochondria generate most of the chemical energy needed to power biochemical reactions via ATP synthesis.',
-        subTopic: 'Cell Biology',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_4',
-        prompt: 'In economics, what happens when demand exceeds supply?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          'Price falls',
-          'Price rises',
-          'Supply shifts left',
-          'Equilibrium unchanged',
-        ],
-        correctAnswer: 'Price rises',
-        explanation:
-            'Excess demand creates upward price pressure until a new market equilibrium is established.',
-        subTopic: 'Price Theory',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_5',
-        prompt: 'Which law states that energy cannot be created or destroyed?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          'First Law of Thermodynamics',
-          'Second Law of Thermodynamics',
-          "Newton's Third Law",
-          "Hooke's Law",
-        ],
-        correctAnswer: 'First Law of Thermodynamics',
-        explanation:
-            'The Law of Conservation of Energy (First Law of Thermodynamics) states energy can only change forms.',
-        subTopic: 'Thermodynamics',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_6',
-        prompt:
-            'In Computer Science, what is the average time complexity of searching in a Balanced Binary Search Tree (AVL/Red-Black)?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          r'\(O(1)\)',
-          r'\(O(\log n)\)',
-          r'\(O(n)\)',
-          r'\(O(n \log n)\)',
-        ],
-        correctAnswer: r'\(O(\log n)\)',
-        explanation:
-            'Balanced BST operations divide the search space in half at each step, yielding logarithmic time O(log n).',
-        subTopic: 'Data Structures & Algorithms',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_7',
-        prompt:
-            'Which gas is released during photosynthesis when water molecules are split in the light reaction?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['Carbon dioxide', 'Oxygen', 'Nitrogen', 'Methane'],
-        correctAnswer: 'Oxygen',
-        explanation:
-            'Photolysis of water in the thylakoid membrane during the light-dependent reactions produces oxygen gas.',
-        subTopic: 'Biochemistry & Botany',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_8',
-        prompt: r'What is the derivative of \(f(x) = \sin(3x)\)?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          r'\(3\cos(3x)\)',
-          r'\(-\cos(3x)\)',
-          r'\(3\sin(3x)\)',
-          r'\(-3\cos(3x)\)',
-        ],
-        correctAnswer: r'\(3\cos(3x)\)',
-        explanation:
-            r'Applying the chain rule: \(\frac{d}{dx}[\sin(3x)] = \cos(3x) \cdot 3 = 3\cos(3x)\).',
-        subTopic: 'Calculus',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_9',
-        prompt: 'What is the pH of a neutral aqueous solution at 25°C?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['0', '7', '14', '10'],
-        correctAnswer: '7',
-        explanation:
-            'At 25°C, pure neutral water has equal hydronium and hydroxide concentrations of 10^-7 M, corresponding to pH 7.',
-        subTopic: 'Physical Chemistry',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_10',
-        prompt:
-            'Which legal principle states that no one can be judged twice for the same offense?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          'Double Jeopardy',
-          'Habeas Corpus',
-          'Mens Rea',
-          'Stare Decisis',
-        ],
-        correctAnswer: 'Double Jeopardy',
-        explanation:
-            'The doctrine against double jeopardy prevents an accused person from being tried again on the same or similar charges and on the same facts.',
-        subTopic: 'Jurisprudence & Constitutional Law',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_11',
-        prompt:
-            'Which normal human organ filters blood and produces urine as a byproduct?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['Liver', 'Kidney', 'Pancreas', 'Spleen'],
-        correctAnswer: 'Kidney',
-        explanation:
-            'The nephrons inside the kidneys filter metabolic waste from the bloodstream to form urine.',
-        subTopic: 'Human Anatomy & Physiology',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_12',
-        prompt:
-            'Which acceleration is experienced by an object in uniform circular motion with velocity v and radius r?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          r'\(a = \frac{v^2}{r}\)',
-          r'\(a = v \cdot r\)',
-          r'\(a = \frac{r}{v^2}\)',
-          r'\(a = \frac{1}{2}vr\)',
-        ],
-        correctAnswer: r'\(a = \frac{v^2}{r}\)',
-        explanation:
-            r'Centripetal acceleration is directed toward the center of curvature and equals \(v^2 / r\).',
-        subTopic: 'Mechanics',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_13',
-        prompt: 'In macroeconomics, what does GDP stand for?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          'Gross Domestic Product',
-          'General Development Price',
-          'Global Domestic Performance',
-          'Government Debt Percentage',
-        ],
-        correctAnswer: 'Gross Domestic Product',
-        explanation:
-            'Gross Domestic Product (GDP) is the total monetary or market value of all finished goods and services produced within a country.',
-        subTopic: 'Macroeconomics',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_14',
-        prompt:
-            'Which type of bond is formed by the sharing of electron pairs between atoms?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          'Ionic bond',
-          'Covalent bond',
-          'Hydrogen bond',
-          'Metallic bond',
-        ],
-        correctAnswer: 'Covalent bond',
-        explanation:
-            'A covalent bond consists of the mutual sharing of one or more pairs of electrons between two non-metallic atoms.',
-        subTopic: 'Chemical Bonding',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_15',
-        prompt:
-            'Which of the following is a fundamental principle of Object-Oriented Programming (OOP)?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['Encapsulation', 'Compilation', 'Paging', 'Quantization'],
-        correctAnswer: 'Encapsulation',
-        explanation:
-            'The four core pillars of OOP are Encapsulation, Abstraction, Inheritance, and Polymorphism.',
-        subTopic: 'Software Engineering',
-      ),
-    ];
+    return const [];
+  }
+  bool _matchmakingListenerInitialized = false;
+  final Set<String> _listenedDuelChannels = {};
 
-    return bank.take(count.clamp(1, bank.length)).toList();
+  void _initMatchmakingRealtime() {
+    if (_matchmakingListenerInitialized) return;
+    _matchmakingListenerInitialized = true;
+
+    _realtimeClient
+        .watchPresence('realtime:quiz_duel_matchmaking')
+        .listen((msg) {
+      try {
+        final event = msg['event'] as String?;
+        final payload = msg['payload'] as Map<String, dynamic>? ?? {};
+
+        if (event == 'broadcast') {
+          final inner =
+              (payload['payload'] as Map<String, dynamic>?) ?? payload;
+          final type = inner['type'] as String?;
+          final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+
+          if (type == 'search') {
+            final remoteDuelId = data['duelId'] as String?;
+            final remoteSubject =
+                (data['subject'] as String? ?? '').trim().toLowerCase();
+            final remoteExamBoard =
+                (data['examBoard'] as String? ?? '').trim().toLowerCase();
+            final remoteUserId = data['userId'] as String?;
+            final remoteDisplayName =
+                data['displayName'] as String? ?? 'Scholar';
+            final remoteAvatarUrl = data['avatarUrl'] as String? ?? '';
+
+            if (remoteDuelId == null || remoteUserId == null) return;
+
+            for (final localMatch in _activeMatches.values) {
+              if (localMatch.status == QuizDuelStatus.matching &&
+                  localMatch.subject.trim().toLowerCase() == remoteSubject &&
+                  localMatch.examBoard.trim().toLowerCase() ==
+                      remoteExamBoard &&
+                  localMatch.player1.userId != remoteUserId &&
+                  localMatch.player2 == null) {
+                final player2 = QuizDuelParticipant(
+                  userId: remoteUserId,
+                  displayName: remoteDisplayName,
+                  avatarUrl: remoteAvatarUrl,
+                  isReady: true,
+                  eloRating: 1250,
+                );
+
+                _matchingTimers[localMatch.duelId]?.cancel();
+
+                final matched = localMatch.copyWith(
+                  player2: player2,
+                  status: QuizDuelStatus.countdown,
+                );
+
+                _updateMatch(localMatch.duelId, matched);
+                _listenToDuelChannel(localMatch.duelId);
+
+                _realtimeClient.broadcastPresence(
+                  channelName: 'realtime:quiz_duel_matchmaking',
+                  payload: {
+                    'type': 'match_joined',
+                    'data': {
+                      'duelId': localMatch.duelId,
+                      'matchedUserId': remoteUserId,
+                      'match': matched.toJson(),
+                    },
+                  },
+                );
+
+                Timer(const Duration(milliseconds: 2500), () {
+                  _startRound(localMatch.duelId, 0);
+                });
+                break;
+              }
+            }
+          } else if (type == 'match_joined') {
+            final matchedUserId = data['matchedUserId'] as String?;
+            final matchJson = data['match'] as Map<String, dynamic>?;
+
+            for (final localMatch in _activeMatches.values.toList()) {
+              if (localMatch.status == QuizDuelStatus.matching &&
+                  (matchedUserId == localMatch.player1.userId || matchJson != null)) {
+                _matchingTimers[localMatch.duelId]?.cancel();
+
+                final QuizDuelMatch syncedMatch;
+                if (matchJson != null) {
+                  syncedMatch = QuizDuelMatch.fromJson(matchJson);
+                } else {
+                  final duelId = data['duelId'] as String? ?? localMatch.duelId;
+                  final player2Data = data['player2'] as Map<String, dynamic>?;
+                  final p2 = player2Data != null
+                      ? QuizDuelParticipant.fromJson(player2Data)
+                      : QuizDuelParticipant(
+                          userId: matchedUserId ?? 'p2',
+                          displayName: 'Opponent',
+                          avatarUrl: '',
+                          isReady: true,
+                          eloRating: 1250,
+                        );
+                  syncedMatch = localMatch.copyWith(
+                    duelId: duelId,
+                    player2: p2,
+                    status: QuizDuelStatus.countdown,
+                  );
+                }
+
+                _activeMatches[syncedMatch.duelId] = syncedMatch;
+                _listenToDuelChannel(syncedMatch.duelId);
+
+                _updateMatch(localMatch.duelId, syncedMatch);
+                _updateMatch(syncedMatch.duelId, syncedMatch);
+
+                Timer(const Duration(milliseconds: 2500), () {
+                  _startRound(syncedMatch.duelId, 0);
+                });
+                break;
+              }
+            }
+          } else if (type == 'announcement_request') {
+            for (final m in _activeMatches.values) {
+              if (m.status == QuizDuelStatus.matching && m.player2 == null) {
+                _realtimeClient.broadcastPresence(
+                  channelName: 'realtime:quiz_duel_matchmaking',
+                  payload: {
+                    'type': 'search',
+                    'data': {
+                      'duelId': m.duelId,
+                      'subject': m.subject,
+                      'examBoard': m.examBoard,
+                      'userId': m.player1.userId,
+                      'displayName': m.player1.displayName,
+                      'avatarUrl': m.player1.avatarUrl,
+                    },
+                  },
+                );
+              }
+            }
+          }
+        }
+      } on Exception catch (_) {}
+    });
+  }
+
+  void _listenToDuelChannel(String duelId) {
+    if (_listenedDuelChannels.contains(duelId)) return;
+    _listenedDuelChannels.add(duelId);
+
+    final channel = 'realtime:quiz_duel:$duelId';
+    _realtimeClient.watchPresence(channel).listen((msg) {
+      try {
+        final event = msg['event'] as String?;
+        final payload = msg['payload'] as Map<String, dynamic>? ?? {};
+
+        if (event == 'broadcast') {
+          final inner =
+              (payload['payload'] as Map<String, dynamic>?) ?? payload;
+          final type = inner['type'] as String?;
+          final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+
+          if (type == 'submit_answer') {
+            final userId = data['userId'] as String?;
+            final questionIndex = data['questionIndex'] as int? ?? 0;
+            final optionIndex = data['optionIndex'] as int? ?? 0;
+            final responseTimeMs = data['responseTimeMs'] as int? ?? 1000;
+
+            if (userId != null) {
+              _applyDuelAnswerLocally(
+                duelId: duelId,
+                userId: userId,
+                questionIndex: questionIndex,
+                optionIndex: optionIndex,
+                responseTimeMs: responseTimeMs,
+              );
+            }
+          } else if (type == 'send_emote') {
+            final userId = data['userId'] as String?;
+            final emote = data['emote'] as String?;
+            final timestamp = data['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+            if (userId != null && emote != null) {
+              _applyEmoteLocally(duelId: duelId, userId: userId, emote: emote, timestamp: timestamp);
+            }
+          } else if (type == 'leave_duel') {
+            final userId = data['userId'] as String?;
+            if (userId != null) {
+              _applyLeaveLocally(duelId: duelId, userId: userId);
+            }
+          }
+        }
+      } on Exception catch (_) {}
+    });
   }
 
   /// Finds or creates a duel match room.
@@ -254,7 +246,9 @@ class QuizDuelWebSocketClient {
     int questionCount = 10,
     List<QuizQuestionEntity>? customQuestions,
   }) async {
-    // 1. Check if another real player is already waiting in matchmaking for this track/subject
+    _initMatchmakingRealtime();
+
+    // 1. Check if another real player is already waiting in matchmaking locally
     QuizDuelMatch? existingMatch;
     for (final m in _activeMatches.values) {
       if (m.status == QuizDuelStatus.matching &&
@@ -284,8 +278,24 @@ class QuizDuelWebSocketClient {
       );
 
       _updateMatch(existingMatch.duelId, matched);
+      _listenToDuelChannel(existingMatch.duelId);
 
-      // Start round 1 after 2.5s countdown
+      _realtimeClient.broadcastPresence(
+        channelName: 'realtime:quiz_duel_matchmaking',
+        payload: {
+          'type': 'match_joined',
+          'data': {
+            'duelId': existingMatch.duelId,
+            'matchedUserId': userId,
+            'player2': {
+              'userId': userId,
+              'displayName': displayName,
+              'avatarUrl': avatarUrl,
+            },
+          },
+        },
+      );
+
       Timer(const Duration(milliseconds: 2500), () {
         _startRound(existingMatch!.duelId, 0);
       });
@@ -293,7 +303,7 @@ class QuizDuelWebSocketClient {
       return matched;
     }
 
-    // 2. No open room found: Create new match and wait for real opponent for 2 minutes
+    // 2. No open room found locally: Create new match and broadcast search event to peers
     final duelId =
         'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
     final questions = (customQuestions != null && customQuestions.isNotEmpty)
@@ -319,6 +329,28 @@ class QuizDuelWebSocketClient {
 
     _activeMatches[duelId] = match;
     _getOrCreateController(duelId).add(match);
+    _listenToDuelChannel(duelId);
+
+    // Broadcast search query over Realtime
+    _realtimeClient
+      ..broadcastPresence(
+        channelName: 'realtime:quiz_duel_matchmaking',
+        payload: {
+          'type': 'search',
+          'data': {
+            'duelId': duelId,
+            'subject': subject,
+            'examBoard': examBoard,
+            'userId': userId,
+            'displayName': displayName,
+            'avatarUrl': avatarUrl,
+          },
+        },
+      )
+      ..broadcastPresence(
+        channelName: 'realtime:quiz_duel_matchmaking',
+        payload: {'type': 'announcement_request'},
+      );
 
     // Schedule AI match if no real player joins within matchmakingTimeout (default 2 minutes)
     _matchingTimers[duelId]?.cancel();
@@ -448,14 +480,13 @@ class QuizDuelWebSocketClient {
     });
   }
 
-  /// Submits an answer for player 1 or player 2.
-  Future<void> submitDuelAnswer({
+  void _applyDuelAnswerLocally({
     required String duelId,
     required String userId,
     required int questionIndex,
     required int optionIndex,
     required int responseTimeMs,
-  }) async {
+  }) {
     final current = _activeMatches[duelId];
     if (current == null ||
         current.status != QuizDuelStatus.inRound ||
@@ -515,6 +546,37 @@ class QuizDuelWebSocketClient {
     }
   }
 
+  /// Submits an answer for player 1 or player 2.
+  Future<void> submitDuelAnswer({
+    required String duelId,
+    required String userId,
+    required int questionIndex,
+    required int optionIndex,
+    required int responseTimeMs,
+  }) async {
+    _applyDuelAnswerLocally(
+      duelId: duelId,
+      userId: userId,
+      questionIndex: questionIndex,
+      optionIndex: optionIndex,
+      responseTimeMs: responseTimeMs,
+    );
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'submit_answer',
+        'data': {
+          'duelId': duelId,
+          'userId': userId,
+          'questionIndex': questionIndex,
+          'optionIndex': optionIndex,
+          'responseTimeMs': responseTimeMs,
+        },
+      },
+    );
+  }
+
   void _onRoundTimeExpired(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null || current.currentQuestionIndex != questionIndex) {
@@ -531,8 +593,8 @@ class QuizDuelWebSocketClient {
     final updated = current.copyWith(status: QuizDuelStatus.roundSummary);
     _updateMatch(duelId, updated);
 
-    // Show round summary for 2.8s, then proceed to next question
-    Timer(const Duration(milliseconds: 2800), () {
+    // Show round summary briefly (600ms), then proceed immediately to next question
+    Timer(const Duration(milliseconds: 600), () {
       final nextIdx = questionIndex + 1;
       if (nextIdx < current.questions.length) {
         _startRound(duelId, nextIdx);
@@ -569,20 +631,44 @@ class QuizDuelWebSocketClient {
     _updateMatch(duelId, finished);
   }
 
-  /// Sends a real-time reaction emote.
-  Future<void> sendDuelEmote({
+  void _applyEmoteLocally({
     required String duelId,
     required String userId,
     required String emote,
-  }) async {
+    int? timestamp,
+  }) {
     final current = _activeMatches[duelId];
     if (current == null) return;
 
     final updated = current.copyWith(
       latestEmote: emote,
       latestEmoteSenderId: userId,
+      latestEmoteTimestamp: timestamp ?? DateTime.now().millisecondsSinceEpoch,
     );
     _updateMatch(duelId, updated);
+  }
+
+  /// Sends a real-time reaction emote.
+  Future<void> sendDuelEmote({
+    required String duelId,
+    required String userId,
+    required String emote,
+  }) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    _applyEmoteLocally(duelId: duelId, userId: userId, emote: emote, timestamp: timestamp);
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'send_emote',
+        'data': {
+          'duelId': duelId,
+          'userId': userId,
+          'emote': emote,
+          'timestamp': timestamp,
+        },
+      },
+    );
   }
 
   /// Streams real-time updates for a duel.
@@ -595,19 +681,70 @@ class QuizDuelWebSocketClient {
     yield* ctrl.stream;
   }
 
-  /// Leaves or terminates a duel match.
-  Future<void> leaveDuel({
+  void _applyLeaveLocally({
     required String duelId,
     required String userId,
-  }) async {
+  }) {
     _matchingTimers[duelId]?.cancel();
     _roundTimers[duelId]?.cancel();
     _aiActionTimers[duelId]?.cancel();
     final current = _activeMatches[duelId];
     if (current != null) {
-      final cancelled = current.copyWith(status: QuizDuelStatus.cancelled);
-      _updateMatch(duelId, cancelled);
+      if (current.status == QuizDuelStatus.matching) {
+        final cancelled = current.copyWith(status: QuizDuelStatus.cancelled);
+        _updateMatch(duelId, cancelled);
+      } else if (current.status != QuizDuelStatus.finished) {
+        // Active match: player forfeits by leaving. Award victory and bonus points to remaining player.
+        final winnerId = current.player1.userId == userId
+            ? current.player2?.userId
+            : current.player1.userId;
+
+        var p1 = current.player1;
+        var p2 = current.player2;
+
+        if (winnerId != null) {
+          if (p1.userId == winnerId) {
+            p1 = p1.copyWith(
+              score: p1.score + 500,
+              hasFinished: true,
+            );
+          } else if (p2?.userId == winnerId) {
+            p2 = p2!.copyWith(
+              score: p2.score + 500,
+              hasFinished: true,
+            );
+          }
+        }
+
+        final finished = current.copyWith(
+          player1: p1,
+          player2: p2,
+          status: QuizDuelStatus.finished,
+          winnerUserId: winnerId,
+          isDraw: winnerId == null,
+        );
+        _updateMatch(duelId, finished);
+      }
     }
+  }
+
+  /// Leaves or terminates a duel match.
+  Future<void> leaveDuel({
+    required String duelId,
+    required String userId,
+  }) async {
+    _applyLeaveLocally(duelId: duelId, userId: userId);
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'leave_duel',
+        'data': {
+          'duelId': duelId,
+          'userId': userId,
+        },
+      },
+    );
   }
 
   StreamController<QuizDuelMatch> _getOrCreateController(String duelId) {

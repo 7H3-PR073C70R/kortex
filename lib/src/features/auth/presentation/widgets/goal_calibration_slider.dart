@@ -51,12 +51,17 @@ class GoalCalibrationSlider extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                l10n.dailyTargetCardGoal,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
+              Expanded(
+                child: Text(
+                  l10n.dailyTargetCardGoal,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               PlatformHoverBuilder(
                 builder: (context, isHovered, child) {
                   return AnimatedContainer(

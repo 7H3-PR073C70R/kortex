@@ -138,7 +138,7 @@ class QuizDuelMatch extends Equatable {
     required this.questions,
     required this.player1,
     this.currentQuestionIndex = 0,
-    this.durationPerQuestionSeconds = 15,
+    this.durationPerQuestionSeconds = 60,
     this.player2,
     this.status = QuizDuelStatus.matching,
     this.winnerUserId,
@@ -146,6 +146,7 @@ class QuizDuelMatch extends Equatable {
     this.createdAt,
     this.latestEmote,
     this.latestEmoteSenderId,
+    this.latestEmoteTimestamp,
   });
 
   factory QuizDuelMatch.fromJson(Map<String, dynamic> json) {
@@ -176,7 +177,7 @@ class QuizDuelMatch extends Equatable {
       questions: questions,
       currentQuestionIndex: json['currentQuestionIndex'] as int? ?? 0,
       durationPerQuestionSeconds:
-          json['durationPerQuestionSeconds'] as int? ?? 15,
+          json['durationPerQuestionSeconds'] as int? ?? 60,
       player1: QuizDuelParticipant.fromJson(
         json['player1'] as Map<String, dynamic>? ?? {},
       ),
@@ -196,6 +197,7 @@ class QuizDuelMatch extends Equatable {
           : null,
       latestEmote: json['latestEmote'] as String?,
       latestEmoteSenderId: json['latestEmoteSenderId'] as String?,
+      latestEmoteTimestamp: json['latestEmoteTimestamp'] as int?,
     );
   }
 
@@ -213,6 +215,7 @@ class QuizDuelMatch extends Equatable {
   final DateTime? createdAt;
   final String? latestEmote;
   final String? latestEmoteSenderId;
+  final int? latestEmoteTimestamp;
 
   QuizQuestionEntity? get currentQuestion =>
       (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length)
@@ -251,6 +254,8 @@ class QuizDuelMatch extends Equatable {
       if (latestEmote != null) 'latestEmote': latestEmote,
       if (latestEmoteSenderId != null)
         'latestEmoteSenderId': latestEmoteSenderId,
+      if (latestEmoteTimestamp != null)
+        'latestEmoteTimestamp': latestEmoteTimestamp,
     };
   }
 
@@ -269,6 +274,7 @@ class QuizDuelMatch extends Equatable {
     DateTime? createdAt,
     String? latestEmote,
     String? latestEmoteSenderId,
+    int? latestEmoteTimestamp,
   }) {
     return QuizDuelMatch(
       duelId: duelId ?? this.duelId,
@@ -286,6 +292,7 @@ class QuizDuelMatch extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       latestEmote: latestEmote ?? this.latestEmote,
       latestEmoteSenderId: latestEmoteSenderId ?? this.latestEmoteSenderId,
+      latestEmoteTimestamp: latestEmoteTimestamp ?? this.latestEmoteTimestamp,
     );
   }
 
@@ -305,5 +312,6 @@ class QuizDuelMatch extends Equatable {
     createdAt,
     latestEmote,
     latestEmoteSenderId,
+    latestEmoteTimestamp,
   ];
 }

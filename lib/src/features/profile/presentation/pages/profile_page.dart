@@ -251,7 +251,7 @@ class _ProfileView extends HookWidget {
                     ],
                   ),
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 140),
                     sliver: SliverToBoxAdapter(
                       child: Center(
                         child: ConstrainedBox(

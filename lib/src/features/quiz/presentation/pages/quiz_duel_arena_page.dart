@@ -31,6 +31,7 @@ class QuizDuelArenaPage extends HookWidget {
 
     final floatingEmotes = useState<List<String>>([]);
     final hasCelebrated = useState(false);
+    final lastEmoteTs = useState<int?>(null);
 
     void onSelectOption(int index) {
       AppFeedback.selection();
@@ -51,7 +52,10 @@ class QuizDuelArenaPage extends HookWidget {
     return BlocConsumer<QuizDuelCubit, QuizDuelState>(
       listener: (context, state) {
         if (state.match?.latestEmote != null &&
+            state.match?.latestEmoteTimestamp != null &&
+            state.match!.latestEmoteTimestamp != lastEmoteTs.value &&
             state.match?.latestEmoteSenderId != state.currentUserId) {
+          lastEmoteTs.value = state.match!.latestEmoteTimestamp;
           final emote = state.match!.latestEmote!;
           floatingEmotes.value = [...floatingEmotes.value, emote];
           Future.delayed(const Duration(milliseconds: 2200), () {
@@ -440,6 +444,22 @@ class QuizDuelArenaPage extends HookWidget {
         if (state.status == QuizDuelStatus.finished) {
           final isWinner = state.isWinner;
           final isDraw = state.isDraw;
+          final p1 = match?.player1;
+          final p2 = match?.player2;
+          final p1Score = p1?.score ?? 0;
+          final p2Score = p2?.score ?? 0;
+
+          final p1Won = match?.winnerUserId == p1?.userId ||
+              (match?.winnerUserId == null && p1Score > p2Score && !isDraw);
+          final p2Won = match?.winnerUserId == p2?.userId ||
+              (match?.winnerUserId == null && p2Score > p1Score && !isDraw);
+
+          final winnerName = p1Won
+              ? (p1?.displayName ?? 'Player 1')
+              : p2Won
+                  ? (p2?.displayName ?? 'Player 2')
+                  : 'Neither';
+          final winnerScore = p1Won ? p1Score : p2Score;
 
           return Scaffold(
             backgroundColor: isDark
@@ -448,41 +468,55 @@ class QuizDuelArenaPage extends HookWidget {
             body: SafeArea(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 580),
+                  constraints: const BoxConstraints(maxWidth: 620),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // Winner Emblem Header
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDraw
+                                ? colors.warning.withAlpha(30)
+                                : isWinner
+                                    ? colors.success.withAlpha(30)
+                                    : colors.primary.withAlpha(30),
+                          ),
+                          child: Text(
+                            isDraw ? '⚔️' : '🏆',
+                            style: const TextStyle(fontSize: 48),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         Text(
                           isDraw
-                              ? 'Even match'
-                              : isWinner
-                              ? 'You won this one'
-                              : 'Rival took this one',
+                              ? "It's a Draw!"
+                              : '$winnerName Won the Duel!',
+                          textAlign: TextAlign.center,
                           style: typography.largeTitle.bold.copyWith(
                             color: isDraw
                                 ? colors.warning
-                                : isWinner
-                                ? colors.success
-                                : colors.error,
+                                : colors.success,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Text(
-                          isWinner
-                              ? 'Fast and accurate. The bonus XP is on its way.'
-                              : 'Close one. Every round makes the next one easier.',
+                          isDraw
+                              ? 'Both scholars tied with $p1Score pts in a fierce battle.'
+                              : 'Winner declared with $winnerScore pts in real-time!',
                           textAlign: TextAlign.center,
                           style: typography.body.regular.copyWith(
                             color: colors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 36),
+                        const SizedBox(height: 32),
 
-                        // Final Scoreboard Card
+                        // Synchronized Real-Time Scoreboard Card
                         Container(
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             color: colors.surfacePrimary,
                             borderRadius: BorderRadius.circular(
@@ -493,59 +527,155 @@ class QuizDuelArenaPage extends HookWidget {
                                 alpha: 0.6,
                               ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Column(
-                                children: [
-                                  AppAvatar(
-                                    name: myPlayer.displayName,
-                                    customDimension: 52,
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    myPlayer.displayName,
-                                    style: typography.body.bold,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${myPlayer.score} pts',
-                                    style: typography.title2.bold.copyWith(
-                                      color: colors.primary,
-                                    ),
-                                  ),
-                                  if (isWinner)
-                                    const AppBadge(
-                                      label: 'Winner',
-                                      variant: AppBadgeVariant.success,
-                                    ),
-                                ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.black.withAlpha(isDark ? 50 : 20),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
                               ),
-                              Text('—', style: typography.title1.bold),
-                              Column(
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'DUEL SCOREBOARD',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textSecondary,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
                                 children: [
-                                  AppAvatar(
-                                    name: opponent.displayName,
-                                    customDimension: 52,
+                                  // Player 1
+                                  Column(
+                                    children: [
+                                      Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          AppAvatar(
+                                            name: p1?.displayName ?? 'Player 1',
+                                            customDimension: 56,
+                                          ),
+                                          if (p1Won && !isDraw)
+                                            Positioned(
+                                              top: -8,
+                                              right: -8,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(
+                                                  color: colors.warning,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.emoji_events_rounded,
+                                                  size: 14,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        p1?.displayName ?? 'Player 1',
+                                        style: typography.body.bold,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${p1?.score ?? 0} pts',
+                                        style: typography.title2.bold.copyWith(
+                                          color: p1Won
+                                              ? colors.success
+                                              : colors.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      if (p1Won && !isDraw)
+                                        const AppBadge(
+                                          label: '🏆 Winner',
+                                          variant: AppBadgeVariant.success,
+                                        )
+                                      else if (isDraw)
+                                        const AppBadge(
+                                          label: '⚔️ Tied',
+                                          variant: AppBadgeVariant.warning,
+                                        )
+                                      else
+                                        const AppBadge(
+                                          label: 'Runner-up',
+                                          variant: AppBadgeVariant.secondary,
+                                        ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 6),
                                   Text(
-                                    opponent.displayName,
-                                    style: typography.body.bold,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${opponent.score} pts',
+                                    'VS',
                                     style: typography.title2.bold.copyWith(
-                                      color: colors.secondary,
+                                      color: colors.textSecondary,
                                     ),
                                   ),
-                                  if (!isWinner && !isDraw)
-                                    const AppBadge(
-                                      label: 'Winner',
-                                      variant: AppBadgeVariant.success,
-                                    ),
+                                  // Player 2
+                                  Column(
+                                    children: [
+                                      Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          AppAvatar(
+                                            name: p2?.displayName ?? 'Player 2',
+                                            customDimension: 56,
+                                          ),
+                                          if (p2Won && !isDraw)
+                                            Positioned(
+                                              top: -8,
+                                              right: -8,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: BoxDecoration(
+                                                  color: colors.warning,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.emoji_events_rounded,
+                                                  size: 14,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        p2?.displayName ?? 'Player 2',
+                                        style: typography.body.bold,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${p2?.score ?? 0} pts',
+                                        style: typography.title2.bold.copyWith(
+                                          color: p2Won
+                                              ? colors.success
+                                              : colors.secondary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      if (p2Won && !isDraw)
+                                        const AppBadge(
+                                          label: '🏆 Winner',
+                                          variant: AppBadgeVariant.success,
+                                        )
+                                      else if (isDraw)
+                                        const AppBadge(
+                                          label: '⚔️ Tied',
+                                          variant: AppBadgeVariant.warning,
+                                        )
+                                      else
+                                        const AppBadge(
+                                          label: 'Runner-up',
+                                          variant: AppBadgeVariant.secondary,
+                                        ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ],
@@ -572,7 +702,7 @@ class QuizDuelArenaPage extends HookWidget {
                           text: 'Leave arena',
                           variant: AppButtonVariant.secondary,
                           onPressed: () {
-                            Navigator.of(context).pop();
+                            Navigator.of(context).popUntil((route) => route.isFirst);
                           },
                         ),
                       ],
@@ -585,7 +715,8 @@ class QuizDuelArenaPage extends HookWidget {
         }
 
         // Active Duel Round & Summary View
-        final progress = (state.remainingSeconds / 15.0).clamp(0.0, 1.0);
+        final totalSeconds = (match?.durationPerQuestionSeconds ?? 60).toDouble();
+        final progress = (state.remainingSeconds / totalSeconds).clamp(0.0, 1.0);
         final timerColor = state.remainingSeconds <= 5
             ? colors.error
             : state.remainingSeconds <= 8
@@ -593,23 +724,85 @@ class QuizDuelArenaPage extends HookWidget {
             : colors.primary;
         final rivalLocked = opponent.selectedOptionIndex != null;
 
-        return Scaffold(
-          backgroundColor: isDark
-              ? colors.surfaceSecondary
-              : colors.surfacePrimary,
-          appBar: AppBar(
-            backgroundColor: colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.close_rounded),
-              onPressed: () async {
-                AppFeedback.light();
-                await context.read<QuizDuelCubit>().leaveMatch();
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
+        Future<bool> confirmLeave() async {
+          final cubit = context.read<QuizDuelCubit>();
+          if (cubit.state.status == QuizDuelStatus.finished ||
+              cubit.state.status == QuizDuelStatus.cancelled) {
+            return true;
+          }
+
+          final result = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.dialog),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: colors.warning, size: 24),
+                  const SizedBox(width: 8),
+                  Text('Leave Quiz Duel?', style: typography.title3.bold),
+                ],
+              ),
+              content: Text(
+                'Are you sure you want to forfeit? Leaving now will award victory to your rival and return you to the dashboard.',
+                style: typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text('Stay in Duel', style: TextStyle(color: colors.textSecondary)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.error,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Leave & Forfeit'),
+                ),
+              ],
             ),
+          );
+
+          return result ?? false;
+        }
+
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            final shouldLeave = await confirmLeave();
+            if (shouldLeave && context.mounted) {
+              await context.read<QuizDuelCubit>().leaveMatch();
+              if (context.mounted) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              }
+            }
+          },
+          child: Scaffold(
+            backgroundColor: isDark
+                ? colors.surfaceSecondary
+                : colors.surfacePrimary,
+            appBar: AppBar(
+              backgroundColor: colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () async {
+                  AppFeedback.light();
+                  final shouldLeave = await confirmLeave();
+                  if (shouldLeave && context.mounted) {
+                    await context.read<QuizDuelCubit>().leaveMatch();
+                    if (context.mounted) {
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    }
+                  }
+                },
+              ),
             title: Text(
               '${match?.subject ?? "Duel"} • Q${(match?.currentQuestionIndex ?? 0) + 1}/${match?.totalQuestions ?? 5}',
               style: typography.body.bold,
@@ -941,10 +1134,11 @@ class QuizDuelArenaPage extends HookWidget {
               }),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+ }
 }
 
 /// One-shot scale-in used for the "rival found" moment, so both player cards

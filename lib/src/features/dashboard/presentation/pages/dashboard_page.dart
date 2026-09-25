@@ -18,6 +18,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
@@ -184,8 +185,19 @@ class _DashboardView extends HookWidget {
         }
 
         // Automatic clean prompt for track selection if user hasn't selected a track yet
-        if ((targetTrack == null || targetTrack.trim().isEmpty) &&
-            context.mounted) {
+        final isAuthLoading = authState?.status == AuthStatus.loading;
+        final profileTrack = authState?.userProfile?.targetTrack;
+        final effectiveTrack = (profileTrack != null && profileTrack.trim().isNotEmpty)
+            ? profileTrack.trim()
+            : (targetTrack != null && targetTrack.trim().isNotEmpty
+                ? targetTrack.trim()
+                : '');
+        final hasTrack = effectiveTrack.isNotEmpty;
+
+        if (hasTrack && userId.isNotEmpty) {
+          final promptKey = 'prompted_track_$userId';
+          unawaited(storage.savePreference(key: promptKey, data: 'true'));
+        } else if (!isAuthLoading && !hasTrack && context.mounted) {
           final promptKey =
               'prompted_track_${userId.isNotEmpty ? userId : "guest"}';
           if (storage.getPreference(key: promptKey) != 'true') {
@@ -195,7 +207,7 @@ class _DashboardView extends HookWidget {
         }
       });
       return null;
-    }, const []);
+    }, [authState?.status, authState?.userProfile?.targetTrack, targetTrack]);
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -469,7 +481,7 @@ class _CompactDashboardLayout extends StatelessWidget {
       physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 140),
       children:
           <Widget>[
                 // 1. User Profile Header (Identity & Streak Anchor)
