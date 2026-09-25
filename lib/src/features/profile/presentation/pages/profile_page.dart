@@ -205,7 +205,12 @@ class _ProfileView extends HookWidget {
                                 border: Border.all(
                                   color: isDark
                                       ? const Color.fromRGBO(245, 158, 11, 0.4)
-                                      : const Color.fromRGBO(245, 158, 11, 0.35),
+                                      : const Color.fromRGBO(
+                                          245,
+                                          158,
+                                          11,
+                                          0.35,
+                                        ),
                                 ),
                               ),
                               child: Row(
@@ -227,7 +232,12 @@ class _ProfileView extends HookWidget {
                                         : 'Go Pro',
                                     style: typography.caption.bold.copyWith(
                                       color: isDark
-                                          ? const Color.fromRGBO(252, 211, 77, 1)
+                                          ? const Color.fromRGBO(
+                                              252,
+                                              211,
+                                              77,
+                                              1,
+                                            )
                                           : const Color.fromRGBO(180, 83, 9, 1),
                                       fontSize: 12,
                                     ),
@@ -286,21 +296,41 @@ class _ProfileView extends HookWidget {
                                           ),
                                           decoration: BoxDecoration(
                                             color: isDark
-                                                ? const Color.fromRGBO(18, 21, 28, 0.9)
-                                                : colors.error.withValues(alpha: 0.05),
+                                                ? const Color.fromRGBO(
+                                                    18,
+                                                    21,
+                                                    28,
+                                                    0.9,
+                                                  )
+                                                : colors.error.withValues(
+                                                    alpha: 0.05,
+                                                  ),
                                             borderRadius: AppRadius.radiusPanel,
                                             border: Border.all(
                                               color: isDark
-                                                  ? const Color.fromRGBO(136, 19, 55, 0.4)
-                                                  : colors.error.withValues(alpha: 0.22),
+                                                  ? const Color.fromRGBO(
+                                                      136,
+                                                      19,
+                                                      55,
+                                                      0.4,
+                                                    )
+                                                  : colors.error.withValues(
+                                                      alpha: 0.22,
+                                                    ),
                                             ),
                                             boxShadow: isDark
                                                 ? null
                                                 : [
                                                     BoxShadow(
-                                                      color: colors.error.withValues(alpha: 0.04),
+                                                      color: colors.error
+                                                          .withValues(
+                                                            alpha: 0.04,
+                                                          ),
                                                       blurRadius: 8,
-                                                      offset: const Offset(0, 2),
+                                                      offset: const Offset(
+                                                        0,
+                                                        2,
+                                                      ),
                                                     ),
                                                   ],
                                           ),
@@ -311,7 +341,12 @@ class _ProfileView extends HookWidget {
                                               Icon(
                                                 Icons.logout_rounded,
                                                 color: isDark
-                                                    ? const Color.fromRGBO(251, 113, 133, 1)
+                                                    ? const Color.fromRGBO(
+                                                        251,
+                                                        113,
+                                                        133,
+                                                        1,
+                                                      )
                                                     : colors.error,
                                                 size: 18,
                                               ),
@@ -321,7 +356,12 @@ class _ProfileView extends HookWidget {
                                                 style: typography.body.bold
                                                     .copyWith(
                                                       color: isDark
-                                                          ? const Color.fromRGBO(251, 113, 133, 1)
+                                                          ? const Color.fromRGBO(
+                                                              251,
+                                                              113,
+                                                              133,
+                                                              1,
+                                                            )
                                                           : colors.error,
                                                       fontSize: 14,
                                                     ),
@@ -453,7 +493,9 @@ class _ProfileView extends HookWidget {
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text(
                 'Cancel',
-                style: context.typography.body.regular.copyWith(color: colors.textSecondary),
+                style: context.typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             TextButton(

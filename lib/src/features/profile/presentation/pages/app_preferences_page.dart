@@ -24,7 +24,6 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-
 /// Subpage for customizing appearance, sensory haptics, and study reminders.
 @RoutePage()
 class AppPreferencesPage extends HookWidget {
@@ -65,7 +64,8 @@ class AppPreferencesPage extends HookWidget {
             );
             if (result.isRight) {
               notificationPrefs.value =
-                  (result as Right<Failure, NotificationPreferencesEntity>).value;
+                  (result as Right<Failure, NotificationPreferencesEntity>)
+                      .value;
             }
           }
         } on Object catch (_) {}
@@ -200,7 +200,8 @@ class AppPreferencesPage extends HookWidget {
                 // 2. Accent Color Palette & Theme Presets (World-Class Redesign)
                 _buildSectionContainer(
                   title: 'ACCENT PALETTE & COLOR ENGINE',
-                  subtitle: 'Calibrate visual accent tones for maximum study focus',
+                  subtitle:
+                      'Calibrate visual accent tones for maximum study focus',
                   colors: colors,
                   typography: typography,
                   child: Column(
@@ -212,10 +213,14 @@ class AppPreferencesPage extends HookWidget {
                         curve: Curves.easeOutCubic,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: activePreset.defaultAccent.withAlpha(isDark ? 35 : 20),
+                          color: activePreset.defaultAccent.withAlpha(
+                            isDark ? 35 : 20,
+                          ),
                           borderRadius: AppRadius.radiusPanel,
                           border: Border.all(
-                            color: activePreset.defaultAccent.withAlpha(isDark ? 120 : 90),
+                            color: activePreset.defaultAccent.withAlpha(
+                              isDark ? 120 : 90,
+                            ),
                             width: 1.5,
                           ),
                         ),
@@ -233,7 +238,9 @@ class AppPreferencesPage extends HookWidget {
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: activePreset.defaultAccent.withAlpha(90),
+                                    color: activePreset.defaultAccent.withAlpha(
+                                      90,
+                                    ),
                                     blurRadius: 10,
                                     spreadRadius: 1,
                                   ),
@@ -271,11 +278,12 @@ class AppPreferencesPage extends HookWidget {
                                         ),
                                         child: Text(
                                           'ACTIVE',
-                                          style: typography.caption.bold.copyWith(
-                                            color: colors.white,
-                                            fontSize: 9.5,
-                                            letterSpacing: 0.8,
-                                          ),
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.white,
+                                                fontSize: 9.5,
+                                                letterSpacing: 0.8,
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -300,18 +308,27 @@ class AppPreferencesPage extends HookWidget {
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 2.8,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 10,
+                              crossAxisSpacing: 10,
+                              childAspectRatio: 2.8,
+                            ),
                         itemCount: ThemePreset.values
-                            .where((p) => p.name != 'emeraldStem' && p.name != 'royalAmethyst')
+                            .where(
+                              (p) =>
+                                  p.name != 'emeraldStem' &&
+                                  p.name != 'royalAmethyst',
+                            )
                             .length,
                         itemBuilder: (context, index) {
                           final presets = ThemePreset.values
-                              .where((p) => p.name != 'emeraldStem' && p.name != 'royalAmethyst')
+                              .where(
+                                (p) =>
+                                    p.name != 'emeraldStem' &&
+                                    p.name != 'royalAmethyst',
+                              )
                               .toList();
                           final preset = presets[index];
                           final isSelected = activePreset == preset;
@@ -328,7 +345,9 @@ class AppPreferencesPage extends HookWidget {
                               onTap: () {
                                 AppFeedback.selection();
                                 unawaited(
-                                  context.read<ThemeCubit>().setThemePreset(preset),
+                                  context.read<ThemeCubit>().setThemePreset(
+                                    preset,
+                                  ),
                                 );
                               },
                               child: AnimatedContainer(
@@ -340,7 +359,9 @@ class AppPreferencesPage extends HookWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? preset.defaultAccent.withAlpha(isDark ? 35 : 20)
+                                      ? preset.defaultAccent.withAlpha(
+                                          isDark ? 35 : 20,
+                                        )
                                       : colors.surfaceSecondary,
                                   borderRadius: AppRadius.radiusCard,
                                   border: Border.all(
@@ -361,7 +382,8 @@ class AppPreferencesPage extends HookWidget {
                                         boxShadow: isSelected
                                             ? [
                                                 BoxShadow(
-                                                  color: preset.defaultAccent.withAlpha(80),
+                                                  color: preset.defaultAccent
+                                                      .withAlpha(80),
                                                   blurRadius: 6,
                                                 ),
                                               ]
@@ -400,7 +422,6 @@ class AppPreferencesPage extends HookWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-
 
                 // 2. Sensory & Audio Effects
                 _buildSectionContainer(
@@ -489,7 +510,7 @@ class AppPreferencesPage extends HookWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-        
+
                 // 3. Granular Notification Control Matrix
                 _buildSectionContainer(
                   title: l10n.preferencesNotificationsTitle,
@@ -514,7 +535,8 @@ class AppPreferencesPage extends HookWidget {
                       // Toggle 2: Streak Alerts & Freeze Notifications
                       _buildNotificationRow(
                         title: 'Streak Alerts & Freeze Warnings',
-                        subtitle: 'Alerts before study streak resets at midnight',
+                        subtitle:
+                            'Alerts before study streak resets at midnight',
                         value: notificationPrefs.value.streakAlerts,
                         onChanged: (val) => updateNotificationPref(
                           notificationPrefs.value.copyWith(streakAlerts: val),
@@ -540,7 +562,8 @@ class AppPreferencesPage extends HookWidget {
                       // Toggle 4: Social & Community Forum Alerts
                       _buildNotificationRow(
                         title: 'Community Forum & Circle Alerts',
-                        subtitle: 'Notifications when someone replies to your threads',
+                        subtitle:
+                            'Notifications when someone replies to your threads',
                         value: notificationPrefs.value.socialAlerts,
                         onChanged: (val) => updateNotificationPref(
                           notificationPrefs.value.copyWith(socialAlerts: val),
@@ -553,10 +576,13 @@ class AppPreferencesPage extends HookWidget {
                       // Toggle 5: Syllabot AI Ingestion & Synthesis
                       _buildNotificationRow(
                         title: 'Syllabot AI Document Ingestion',
-                        subtitle: 'Alerts when document processing & OCR completes',
+                        subtitle:
+                            'Alerts when document processing & OCR completes',
                         value: notificationPrefs.value.aiIngestionAlerts,
                         onChanged: (val) => updateNotificationPref(
-                          notificationPrefs.value.copyWith(aiIngestionAlerts: val),
+                          notificationPrefs.value.copyWith(
+                            aiIngestionAlerts: val,
+                          ),
                         ),
                         colors: colors,
                         typography: typography,
@@ -612,7 +638,6 @@ class AppPreferencesPage extends HookWidget {
       ],
     );
   }
-
 
   Widget _buildSectionContainer({
     required String title,

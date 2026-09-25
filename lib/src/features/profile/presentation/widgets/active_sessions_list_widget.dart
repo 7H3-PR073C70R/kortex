@@ -126,98 +126,97 @@ class ActiveSessionsListWidget extends HookWidget {
           physics: const NeverScrollableScrollPhysics(),
           itemCount: sessionList.value.length,
           itemBuilder: (context, index) {
-
-              final session = sessionList.value[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedContainer(
-                      duration: AppMotion.snappy,
-                      curve: Curves.easeOutCubic,
-                      transform: isHovered
-                          ? Matrix4.translationValues(0, -2, 0)
-                          : Matrix4.identity(),
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colors.surfacePrimary,
-                      borderRadius: AppRadius.radiusPanel,
-                      border: Border.all(
-                        color: session.isCurrentDevice
-                            ? colors.primary.withValues(alpha: 0.4)
-                            : colors.surfaceBorder.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: session.isCurrentDevice
-                                ? colors.primary.withValues(alpha: 0.12)
-                                : colors.surfaceSecondary,
-                            borderRadius: AppRadius.radiusCard,
-                          ),
-                          child: Icon(
-                            _getDeviceIcon(session.osType),
-                            size: 24,
-                            color: session.isCurrentDevice
-                                ? colors.primary
-                                : colors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      session.deviceName,
-                                      style: typography.body.bold.copyWith(
-                                        color: colors.textPrimary,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (session.isCurrentDevice) ...[
-                                    const SizedBox(width: 6),
-                                    const AppBadge(
-                                      label: 'This Device',
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                '${session.location} • ${session.ipAddress}',
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (!session.isCurrentDevice)
-                          IconButton(
-                            icon: const Icon(Icons.logout_rounded, size: 20),
-                            color: colors.error,
-                            tooltip: 'Revoke session',
-                            onPressed: () => revokeSession(session.id),
-                          ),
-                      ],
+            final session = sessionList.value[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: Curves.easeOutCubic,
+                    transform: isHovered
+                        ? Matrix4.translationValues(0, -2, 0)
+                        : Matrix4.identity(),
+                    child: child,
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.surfacePrimary,
+                    borderRadius: AppRadius.radiusPanel,
+                    border: Border.all(
+                      color: session.isCurrentDevice
+                          ? colors.primary.withValues(alpha: 0.4)
+                          : colors.surfaceBorder.withValues(alpha: 0.5),
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: session.isCurrentDevice
+                              ? colors.primary.withValues(alpha: 0.12)
+                              : colors.surfaceSecondary,
+                          borderRadius: AppRadius.radiusCard,
+                        ),
+                        child: Icon(
+                          _getDeviceIcon(session.osType),
+                          size: 24,
+                          color: session.isCurrentDevice
+                              ? colors.primary
+                              : colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    session.deviceName,
+                                    style: typography.body.bold.copyWith(
+                                      color: colors.textPrimary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (session.isCurrentDevice) ...[
+                                  const SizedBox(width: 6),
+                                  const AppBadge(
+                                    label: 'This Device',
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${session.location} • ${session.ipAddress}',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!session.isCurrentDevice)
+                        IconButton(
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          color: colors.error,
+                          tooltip: 'Revoke session',
+                          onPressed: () => revokeSession(session.id),
+                        ),
+                    ],
+                  ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
+        ),
       ],
     );
   }

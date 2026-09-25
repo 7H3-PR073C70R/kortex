@@ -221,8 +221,6 @@ class SecuritySettingsPage extends HookWidget {
     );
   }
 
-
-
   // ==========================================
   // TAB 1: SECURITY & ACCESS
   // ==========================================
@@ -726,17 +724,17 @@ class SecuritySettingsPage extends HookWidget {
                   deviceName: Theme.of(context).platform == TargetPlatform.macOS
                       ? 'MacBook Pro / Desktop Workstation'
                       : Theme.of(context).platform == TargetPlatform.iOS
-                          ? 'iPhone Scholar Workstation'
-                          : Theme.of(context).platform == TargetPlatform.android
-                              ? 'Android Scholar Device'
-                              : 'Kortexify Web Client',
+                      ? 'iPhone Scholar Workstation'
+                      : Theme.of(context).platform == TargetPlatform.android
+                      ? 'Android Scholar Device'
+                      : 'Kortexify Web Client',
                   osType: Theme.of(context).platform == TargetPlatform.macOS
                       ? 'macos'
                       : Theme.of(context).platform == TargetPlatform.iOS
-                          ? 'ios'
-                          : Theme.of(context).platform == TargetPlatform.android
-                              ? 'android'
-                              : 'web',
+                      ? 'ios'
+                      : Theme.of(context).platform == TargetPlatform.android
+                      ? 'android'
+                      : 'web',
                   ipAddress: '127.0.0.1 (Encrypted TLS)',
                   location: 'Current Device • Primary Session',
                   lastActive: DateTime.now(),
@@ -1496,7 +1494,9 @@ class SecuritySettingsPage extends HookWidget {
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text(
                 'Cancel',
-                style: context.typography.body.regular.copyWith(color: colors.textSecondary),
+                style: context.typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             TextButton(

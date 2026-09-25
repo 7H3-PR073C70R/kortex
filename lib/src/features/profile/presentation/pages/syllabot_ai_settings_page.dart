@@ -105,7 +105,8 @@ class SyllabotAiSettingsPage extends HookWidget {
                   // Section 1: Socratic Reasoning Preference (Consolidated)
                   _buildSectionContainer(
                     title: 'SOCRATIC REASONING ENGINE',
-                    subtitle: 'Select how Syllabot structures tutoring & explanations',
+                    subtitle:
+                        'Select how Syllabot structures tutoring & explanations',
                     colors: colors,
                     typography: typography,
                     child: Column(
@@ -120,7 +121,9 @@ class SyllabotAiSettingsPage extends HookWidget {
                             color: colors.primary.withAlpha(isDark ? 35 : 20),
                             borderRadius: AppRadius.radiusPanel,
                             border: Border.all(
-                              color: colors.primary.withAlpha(isDark ? 110 : 80),
+                              color: colors.primary.withAlpha(
+                                isDark ? 110 : 80,
+                              ),
                               width: 1.5,
                             ),
                           ),
@@ -167,11 +170,12 @@ class SyllabotAiSettingsPage extends HookWidget {
                                           ),
                                           child: Text(
                                             'ACTIVE',
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.white,
-                                              fontSize: 9.5,
-                                              letterSpacing: 0.8,
-                                            ),
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.white,
+                                                  fontSize: 9.5,
+                                                  letterSpacing: 0.8,
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -179,11 +183,12 @@ class SyllabotAiSettingsPage extends HookWidget {
                                     const SizedBox(height: 4),
                                     Text(
                                       activeMode.description,
-                                      style: typography.caption.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 12.5,
-                                        height: 1.35,
-                                      ),
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 12.5,
+                                            height: 1.35,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -301,14 +306,18 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   value: VoiceGender.female,
                                   label: Text(
                                     'Female',
-                                    style: typography.caption.bold.copyWith(fontSize: 11),
+                                    style: typography.caption.bold.copyWith(
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                                 ButtonSegment(
                                   value: VoiceGender.male,
                                   label: Text(
                                     'Male',
-                                    style: typography.caption.bold.copyWith(fontSize: 11),
+                                    style: typography.caption.bold.copyWith(
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -346,21 +355,27 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   value: 0.8,
                                   label: Text(
                                     '0.8x',
-                                    style: typography.caption.bold.copyWith(fontSize: 11),
+                                    style: typography.caption.bold.copyWith(
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                                 ButtonSegment(
                                   value: 1,
                                   label: Text(
                                     '1.0x',
-                                    style: typography.caption.bold.copyWith(fontSize: 11),
+                                    style: typography.caption.bold.copyWith(
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                                 ButtonSegment(
                                   value: 1.2,
                                   label: Text(
                                     '1.2x',
-                                    style: typography.caption.bold.copyWith(fontSize: 11),
+                                    style: typography.caption.bold.copyWith(
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -453,7 +468,8 @@ class SyllabotAiSettingsPage extends HookWidget {
                         }
                         if (context.mounted) {
                           context.showSnackBar(
-                            message: 'Syllabot AI preferences updated successfully!',
+                            message:
+                                'Syllabot AI preferences updated successfully!',
                             type: SnackBarType.success,
                           );
                           Navigator.of(context).pop();

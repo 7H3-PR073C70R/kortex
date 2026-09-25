@@ -77,7 +77,8 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, NotificationPreferencesEntity>> getNotificationPreferences() {
+  Future<Either<Failure, NotificationPreferencesEntity>>
+  getNotificationPreferences() {
     return _remoteDataSource.getNotificationPreferences().makeRequest();
   }
 

@@ -170,7 +170,7 @@ class AboutSupportPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-      
+
               // Resources & Community Links
               _buildLinkCard(
                 icon: Icons.explore_rounded,

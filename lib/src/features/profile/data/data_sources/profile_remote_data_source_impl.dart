@@ -7,7 +7,6 @@ import 'package:kortex/src/features/profile/data/models/mfa_enroll_result_model.
 import 'package:kortex/src/features/profile/data/models/mfa_factor_model.dart';
 import 'package:kortex/src/features/profile/domain/entities/notification_preferences_entity.dart';
 
-
 /// Concrete implementation of [ProfileRemoteDataSource] using
 /// pure REST API client.
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {

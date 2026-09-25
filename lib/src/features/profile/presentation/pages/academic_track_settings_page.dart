@@ -156,7 +156,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                       ),
                     ),
                     const SizedBox(height: 18),
-            
+
                     Padding(
                       padding: const EdgeInsets.only(left: 6, bottom: 8),
                       child: Text(
@@ -177,7 +177,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                       isDark,
                     ),
                     const SizedBox(height: 24),
-            
+
                     // 2. Daily Goal & Retention Benchmark
                     Padding(
                       padding: const EdgeInsets.only(left: 6, bottom: 8),
@@ -203,7 +203,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                       },
                     ),
                     const SizedBox(height: 28),
-            
+
                     // 3. Save Changes Button
                     PlatformHoverBuilder(
                       builder: (context, isHovered, child) {
@@ -223,7 +223,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                               currentTrack.isNotEmpty &&
                               currentTrack.toUpperCase() !=
                                   selectedTrack.value.toUpperCase();
-            
+
                           if (isTrackChanging) {
                             unawaited(
                               AppDialog.show<void>(
@@ -246,9 +246,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                                   }
                                   // 2. Wipe previous track's study decks & flashcards
                                   if (locator
-                                      .isRegistered<
-                                        DecksRemoteDataSource
-                                      >()) {
+                                      .isRegistered<DecksRemoteDataSource>()) {
                                     await locator<DecksRemoteDataSource>()
                                         .deleteAllDecks();
                                   }
@@ -269,8 +267,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                                       ),
                                     );
                                     // 5. Refresh Dashboard Feed
-                                    if (locator
-                                        .isRegistered<DashboardBloc>()) {
+                                    if (locator.isRegistered<DashboardBloc>()) {
                                       locator<DashboardBloc>().add(
                                         const DashboardRefreshed(),
                                       );
@@ -304,7 +301,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           decoration: BoxDecoration(
-                            color:  colors.primary,
+                            color: colors.primary,
                             borderRadius: AppRadius.radiusPanel,
                             boxShadow: [
                               BoxShadow(

@@ -19,7 +19,8 @@ abstract class ProfileRepository {
   Future<Either<Failure, List<MfaFactorEntity>>> listMfaFactors();
   Future<Either<Failure, void>> signOutOtherSessions();
   Future<Either<Failure, void>> deleteAccount();
-  Future<Either<Failure, NotificationPreferencesEntity>> getNotificationPreferences();
+  Future<Either<Failure, NotificationPreferencesEntity>>
+  getNotificationPreferences();
   Future<Either<Failure, void>> updateNotificationPreferences(
     NotificationPreferencesEntity preferences,
   );

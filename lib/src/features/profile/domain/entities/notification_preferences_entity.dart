@@ -54,10 +54,10 @@ class NotificationPreferencesEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        studyReminders,
-        streakAlerts,
-        examAlerts,
-        socialAlerts,
-        aiIngestionAlerts,
-      ];
+    studyReminders,
+    streakAlerts,
+    examAlerts,
+    socialAlerts,
+    aiIngestionAlerts,
+  ];
 }
