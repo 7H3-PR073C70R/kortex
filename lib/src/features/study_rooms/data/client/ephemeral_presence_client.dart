@@ -333,6 +333,11 @@ abstract class EphemeralPresenceClient {
     required WhiteboardStroke stroke,
   });
 
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  });
+
   Future<void> broadcastWhiteboardClear({required String roomId});
 
   Future<void> broadcastChatMessage({
@@ -345,6 +350,8 @@ abstract class EphemeralPresenceClient {
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId);
 
   Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId);
+
+  Stream<String> watchWhiteboardUndo(String roomId);
 
   Stream<void> watchWhiteboardClear(String roomId);
 
@@ -375,6 +382,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
       {};
   final Map<String, StreamController<WhiteboardStroke>> _whiteboardControllers =
       {};
+  final Map<String, StreamController<String>> _whiteboardUndoControllers = {};
   final Map<String, StreamController<void>> _whiteboardClearControllers = {};
   final Map<String, StreamController<RoomChatMessage>> _chatControllers = {};
 
@@ -469,6 +477,12 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
             final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final stroke = WhiteboardStroke.fromJson(data);
             _whiteboardControllers[roomId]?.add(stroke);
+          } else if (type == 'whiteboard_undo') {
+            final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+            final strokeId = data['strokeId'] as String?;
+            if (strokeId != null) {
+              _whiteboardUndoControllers[roomId]?.add(strokeId);
+            }
           } else if (type == 'whiteboard_clear') {
             _whiteboardClearControllers[roomId]?.add(null);
           } else if (type == 'chat_message') {
@@ -578,6 +592,10 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     );
     unawaited(
       _whiteboardControllers.remove(roomId)?.close() ?? Future<void>.value(),
+    );
+    unawaited(
+      _whiteboardUndoControllers.remove(roomId)?.close() ??
+          Future<void>.value(),
     );
     unawaited(
       _whiteboardClearControllers.remove(roomId)?.close() ??
@@ -756,6 +774,20 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   }
 
   @override
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  }) async {
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'type': 'whiteboard_undo',
+        'data': {'strokeId': strokeId},
+      },
+    );
+  }
+
+  @override
   Future<void> broadcastWhiteboardClear({required String roomId}) async {
     _realtime.broadcastPresence(
       channelName: _channelName(roomId),
@@ -810,6 +842,16 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
           StreamController<WhiteboardStroke>.broadcast();
     }
     return _whiteboardControllers[roomId]!.stream;
+  }
+
+  @override
+  Stream<String> watchWhiteboardUndo(String roomId) {
+    _ensureRoomListening(roomId);
+    if (!_whiteboardUndoControllers.containsKey(roomId)) {
+      _whiteboardUndoControllers[roomId] =
+          StreamController<String>.broadcast();
+    }
+    return _whiteboardUndoControllers[roomId]!.stream;
   }
 
   @override

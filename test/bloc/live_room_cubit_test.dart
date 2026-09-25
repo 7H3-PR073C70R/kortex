@@ -339,11 +339,13 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   final _syncController = StreamController<PomodoroSyncEvent>.broadcast();
   final _whiteboardStrokeController =
       StreamController<WhiteboardStroke>.broadcast();
+  final _whiteboardUndoController = StreamController<String>.broadcast();
   final _whiteboardClearController = StreamController<void>.broadcast();
   final _chatMessageController = StreamController<RoomChatMessage>.broadcast();
 
   final List<EphemeralParticipant> participants = [];
   final List<WhiteboardStroke> broadcastedStrokes = [];
+  final List<String> broadcastedUndos = [];
   final List<RoomChatMessage> broadcastedMessages = [];
   bool whiteboardCleared = false;
   bool handRaised = false;
@@ -452,6 +454,14 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  }) async {
+    broadcastedUndos.add(strokeId);
+  }
+
+  @override
   Future<void> broadcastWhiteboardClear({required String roomId}) async {
     whiteboardCleared = true;
   }
@@ -459,6 +469,10 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   @override
   Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId) =>
       _whiteboardStrokeController.stream;
+
+  @override
+  Stream<String> watchWhiteboardUndo(String roomId) =>
+      _whiteboardUndoController.stream;
 
   @override
   Stream<void> watchWhiteboardClear(String roomId) =>
@@ -507,6 +521,7 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
     await _participantsController.close();
     await _syncController.close();
     await _whiteboardStrokeController.close();
+    await _whiteboardUndoController.close();
     await _whiteboardClearController.close();
     await _chatMessageController.close();
   }

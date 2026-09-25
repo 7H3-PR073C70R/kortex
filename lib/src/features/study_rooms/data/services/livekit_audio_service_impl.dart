@@ -3,7 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// Production LiveKit audio RTC implementation for peer voice study rooms.
 class LiveKitAudioServiceImpl implements LiveKitAudioService {
@@ -137,11 +137,11 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   @override
   Future<bool> setMicrophoneEnabled({required bool enabled}) async {
     if (enabled) {
-      var status = await Permission.microphone.status;
+      var status = await ph.Permission.microphone.status;
       if (!status.isGranted) {
-        status = await Permission.microphone.request();
+        status = await ph.Permission.microphone.request();
       }
-      if (status != PermissionStatus.granted) {
+      if (status != ph.PermissionStatus.granted) {
         developer.log(
           'LiveKitAudioService: Microphone permission denied (status: $status)',
           name: 'LiveKitAudio',
@@ -173,7 +173,7 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   @override
   Future<bool> isMicrophonePermissionPermanentlyDenied() async {
     try {
-      final status = await Permission.microphone.status;
+      final status = await ph.Permission.microphone.status;
       return status.isPermanentlyDenied;
     } on Object catch (_) {
       return false;
@@ -183,9 +183,9 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   @override
   Future<bool> requestMicrophonePermission() async {
     try {
-      var status = await Permission.microphone.status;
+      var status = await ph.Permission.microphone.status;
       if (status.isGranted) return true;
-      status = await Permission.microphone.request();
+      status = await ph.Permission.microphone.request();
       return status.isGranted;
     } on Object catch (_) {
       return false;
@@ -195,7 +195,7 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
   @override
   Future<bool> openAppSettings() async {
     try {
-      return await openAppSettings();
+      return await ph.openAppSettings();
     } on Object catch (_) {
       return false;
     }

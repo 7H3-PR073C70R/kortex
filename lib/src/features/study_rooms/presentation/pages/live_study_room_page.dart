@@ -746,7 +746,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 Navigator.of(dialogCtx).pop();
                 cubit.dismissMicPermissionPrompt();
                 if (isPermanentlyDenied) {
-                  await openAppSettings();
+                  await cubit.openAppSettingsForMic();
                 } else {
                   final status = await Permission.microphone.request();
                   if (status.isGranted && context.mounted) {
@@ -819,6 +819,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         }
 
         if (state.microphonePermissionDenied) {
+          context.read<LiveRoomCubit>().dismissMicPermissionPrompt();
           _showMicrophonePermissionDialog(
             context,
             isPermanentlyDenied: state.isPermanentlyDeniedMic,

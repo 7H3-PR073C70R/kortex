@@ -56,6 +56,11 @@ abstract class EphemeralRoomRepository {
     required WhiteboardStroke stroke,
   });
 
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  });
+
   Future<void> broadcastWhiteboardClear({required String roomId});
 
   Future<void> broadcastChatMessage({
@@ -68,6 +73,8 @@ abstract class EphemeralRoomRepository {
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId);
 
   Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId);
+
+  Stream<String> watchWhiteboardUndo(String roomId);
 
   Stream<void> watchWhiteboardClear(String roomId);
 

@@ -365,6 +365,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   StreamSubscription<List<EphemeralParticipant>>? _presenceSubscription;
   StreamSubscription<PomodoroSyncEvent>? _syncSubscription;
   StreamSubscription<WhiteboardStroke>? _whiteboardSubscription;
+  StreamSubscription<String>? _whiteboardUndoSubscription;
   StreamSubscription<void>? _whiteboardClearSubscription;
   StreamSubscription<RoomChatMessage>? _chatSubscription;
   StreamSubscription<Set<String>>? _speakersSubscription;
@@ -598,6 +599,25 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         }
       }
     });
+
+    _whiteboardUndoSubscription = ephemeral
+        .watchWhiteboardUndo(roomId)
+        .listen((strokeId) {
+          if (!isClosed) {
+            final updatedStrokes = state.whiteboardStrokes
+                .where((s) => s.id != strokeId)
+                .toList();
+            final updatedRedo = state.whiteboardRedoStack
+                .where((s) => s.id != strokeId)
+                .toList();
+            emit(
+              state.copyWith(
+                whiteboardStrokes: updatedStrokes,
+                whiteboardRedoStack: updatedRedo,
+              ),
+            );
+          }
+        });
 
     _whiteboardClearSubscription = ephemeral
         .watchWhiteboardClear(roomId)
@@ -1060,6 +1080,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           whiteboardRedoStack: updatedRedo,
         ),
       );
+      unawaited(
+        _ephemeralRepository?.broadcastWhiteboardUndo(
+          roomId: state.room.id,
+          strokeId: removed.id,
+        ),
+      );
     }
   }
 
@@ -1263,6 +1289,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     await _presenceSubscription?.cancel();
     await _syncSubscription?.cancel();
     await _whiteboardSubscription?.cancel();
+    await _whiteboardUndoSubscription?.cancel();
     await _whiteboardClearSubscription?.cancel();
     await _chatSubscription?.cancel();
     await _speakersSubscription?.cancel();
