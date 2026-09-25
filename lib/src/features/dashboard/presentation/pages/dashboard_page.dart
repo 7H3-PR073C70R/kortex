@@ -777,11 +777,15 @@ class _QuickActionsGrid extends StatelessWidget {
                     accent: neural.violet,
                     onTap: () {
                       AppFeedback.light();
-                      unawaited(
-                        context.navigateTo(
-                          const MainRoute(children: [DecksRoute()]),
-                        ),
-                      );
+                      try {
+                        AutoTabsRouter.of(context).setActiveIndex(1);
+                      } on Object catch (_) {
+                        unawaited(
+                          context.navigateTo(
+                            const MainRoute(children: [DecksRoute()]),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),

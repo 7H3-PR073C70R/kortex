@@ -112,11 +112,15 @@ class HeaderProfileBar extends StatelessWidget {
               child: ShrinkableButton(
                 onTap: () {
                   unawaited(HapticFeedback.lightImpact());
-                  unawaited(
-                    context.navigateTo(
-                      const MainRoute(children: [ProfileRoute()]),
-                    ),
-                  );
+                  try {
+                    AutoTabsRouter.of(context).setActiveIndex(4);
+                  } on Object catch (_) {
+                    unawaited(
+                      context.navigateTo(
+                        const MainRoute(children: [ProfileRoute()]),
+                      ),
+                    );
+                  }
                 },
                 child: Row(
                   children:

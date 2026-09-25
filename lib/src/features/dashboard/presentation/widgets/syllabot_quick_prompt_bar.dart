@@ -50,10 +50,8 @@ class SyllabotQuickPromptBar extends HookWidget {
       unawaited(HapticFeedback.lightImpact());
       controller.clear();
       unawaited(
-        context.navigateTo(
-          MainRoute(
-            children: [SyllabotChatRoute(initialPrompt: text)],
-          ),
+        context.router.push(
+          SyllabotChatRoute(initialPrompt: text),
         ),
       );
     }
@@ -161,13 +159,9 @@ class SyllabotQuickPromptBar extends HookWidget {
                                 onTap: () {
                                   unawaited(HapticFeedback.mediumImpact());
                                   unawaited(
-                                    context.navigateTo(
-                                      MainRoute(
-                                        children: [
-                                          SyllabotChatRoute(
-                                            initialPrompt: 'Voice Assistant Query',
-                                          ),
-                                        ],
+                                    context.router.push(
+                                      SyllabotChatRoute(
+                                        initialPrompt: 'Voice Assistant Query',
                                       ),
                                     ),
                                   );
