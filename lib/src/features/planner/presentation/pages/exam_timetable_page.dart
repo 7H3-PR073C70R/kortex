@@ -22,9 +22,7 @@ import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculato
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
-import 'package:kortex/src/features/planner/presentation/widgets/cancel_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
-import 'package:kortex/src/features/planner/presentation/widgets/postpone_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';

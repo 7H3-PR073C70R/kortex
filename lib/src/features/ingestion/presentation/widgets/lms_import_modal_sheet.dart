@@ -36,14 +36,18 @@ class LmsOAuthResult {
 class LmsImportModalSheet extends HookWidget {
   const LmsImportModalSheet({super.key});
 
-  static Future<void> show(BuildContext context) {
+  static Future<void> show(
+    BuildContext context, {
+    IngestionBloc? bloc,
+  }) {
     final colors = context.colors;
+    final ingestionBloc = bloc ?? context.read<IngestionBloc>();
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: colors.transparent,
       builder: (bottomSheetContext) => BlocProvider.value(
-        value: context.read<IngestionBloc>(),
+        value: ingestionBloc,
         child: const LmsImportModalSheet(),
       ),
     );

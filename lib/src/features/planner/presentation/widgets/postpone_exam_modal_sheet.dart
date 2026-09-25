@@ -9,7 +9,6 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
-import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -22,18 +21,18 @@ class PostponeExamModalSheet extends StatefulWidget {
 
   final ExamEventEntity exam;
 
-  static const _calculator = CramWorkloadCalculator();
-
   static Future<void> show(
     BuildContext context, {
     required ExamEventEntity exam,
+    CramPlannerCubit? cubit,
   }) {
+    final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
-        value: context.read<CramPlannerCubit>(),
+        value: cramPlannerCubit,
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(

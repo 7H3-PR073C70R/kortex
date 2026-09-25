@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -14,7 +15,6 @@ import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.da
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
-import 'package:intl/intl.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/cancel_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/postpone_exam_modal_sheet.dart';
@@ -42,13 +42,15 @@ class ManageExamModalSheet extends StatelessWidget {
     String? scopedCourseCode,
     String? scopedCourseTitle,
     String? initialExamId,
+    CramPlannerCubit? cubit,
   }) {
+    final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
-        value: context.read<CramPlannerCubit>(),
+        value: cramPlannerCubit,
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
@@ -320,12 +322,15 @@ class ManageExamModalSheet extends StatelessWidget {
                   AppButton(
                     text: l10n.addExamTitle,
                     onPressed: () {
-                      Navigator.of(context).pop();
+                      final cubit = context.read<CramPlannerCubit>();
+                      final nav = Navigator.of(context);
+                      nav.pop();
                       unawaited(
                         AddExamModalSheet.show(
-                          context,
+                          nav.context,
                           preselectedCourseCode: scopedCourseCode,
                           preselectedCourseTitle: scopedCourseTitle,
+                          cubit: cubit,
                         ),
                       );
                     },
@@ -799,9 +804,10 @@ class ManageExamModalSheet extends StatelessWidget {
                       ),
                       child: InkWell(
                         onTap: () {
+                          final router = context.router;
                           Navigator.of(context).pop();
                           unawaited(
-                            context.router.push(const ExamTimetableRoute()),
+                            router.push(const ExamTimetableRoute()),
                           );
                         },
                         borderRadius: AppRadius.radiusCard,
@@ -904,11 +910,14 @@ class ManageExamModalSheet extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            Navigator.of(context).pop();
+                            final cubit = context.read<CramPlannerCubit>();
+                            final nav = Navigator.of(context);
+                            nav.pop();
                             unawaited(
                               PostponeExamModalSheet.show(
-                                context,
+                                nav.context,
                                 exam: exam,
+                                cubit: cubit,
                               ),
                             );
                           },
@@ -930,11 +939,14 @@ class ManageExamModalSheet extends StatelessWidget {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            Navigator.of(context).pop();
+                            final cubit = context.read<CramPlannerCubit>();
+                            final nav = Navigator.of(context);
+                            nav.pop();
                             unawaited(
                               CancelExamModalSheet.show(
-                                context,
+                                nav.context,
                                 exam: exam,
+                                cubit: cubit,
                               ),
                             );
                           },
@@ -963,11 +975,14 @@ class ManageExamModalSheet extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          Navigator.of(context).pop();
+                          final cubit = context.read<CramPlannerCubit>();
+                          final nav = Navigator.of(context);
+                          nav.pop();
                           unawaited(
                             AddExamModalSheet.show(
-                              context,
+                              nav.context,
                               initialExam: exam,
+                              cubit: cubit,
                             ),
                           );
                         },
@@ -986,8 +1001,15 @@ class ManageExamModalSheet extends StatelessWidget {
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: () {
-                          Navigator.of(context).pop();
-                          unawaited(AddExamModalSheet.show(context));
+                          final cubit = context.read<CramPlannerCubit>();
+                          final nav = Navigator.of(context);
+                          nav.pop();
+                          unawaited(
+                            AddExamModalSheet.show(
+                              nav.context,
+                              cubit: cubit,
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.add_rounded, size: 16),
                         label: Text(l10n.commonAddNew),

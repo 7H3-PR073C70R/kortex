@@ -21,15 +21,20 @@ class RoomChatDrawer extends StatefulWidget {
 
   final String currentUserId;
 
-  static void show(BuildContext context, {required String currentUserId}) {
-    context.read<LiveRoomCubit>().markChatAsRead();
+  static void show(
+    BuildContext context, {
+    required String currentUserId,
+    LiveRoomCubit? cubit,
+  }) {
+    final liveRoomCubit = cubit ?? context.read<LiveRoomCubit>();
+    liveRoomCubit.markChatAsRead();
     unawaited(
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         backgroundColor: context.colors.transparent,
         builder: (_) => BlocProvider.value(
-          value: context.read<LiveRoomCubit>(),
+          value: liveRoomCubit,
           child: RoomChatDrawer(currentUserId: currentUserId),
         ),
       ),

@@ -21,13 +21,18 @@ class StudyCircleDetailSheet extends StatelessWidget {
 
   final StudyCircleEntity circle;
 
-  static Future<void> show(BuildContext context, StudyCircleEntity circle) {
+  static Future<void> show(
+    BuildContext context,
+    StudyCircleEntity circle, {
+    CommunityHubBloc? bloc,
+  }) {
+    final hubBloc = bloc ?? context.read<CommunityHubBloc>();
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => BlocProvider.value(
-        value: context.read<CommunityHubBloc>(),
+        value: hubBloc,
         child: StudyCircleDetailSheet(circle: circle),
       ),
     );

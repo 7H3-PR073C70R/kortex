@@ -44,13 +44,15 @@ class AddExamModalSheet extends StatefulWidget {
     String? preselectedCourseCode,
     String? preselectedCourseTitle,
     AssessmentType? preselectedType,
+    CramPlannerCubit? cubit,
   }) {
+    final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
-        value: context.read<CramPlannerCubit>(),
+        value: cramPlannerCubit,
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(

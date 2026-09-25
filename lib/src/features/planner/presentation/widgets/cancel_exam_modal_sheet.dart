@@ -21,13 +21,15 @@ class CancelExamModalSheet extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required ExamEventEntity exam,
+    CramPlannerCubit? cubit,
   }) {
+    final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
-        value: context.read<CramPlannerCubit>(),
+        value: cramPlannerCubit,
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
@@ -75,7 +77,6 @@ class _CancelExamModalSheetState extends State<CancelExamModalSheet> {
     Navigator.of(context).pop();
     context.showSnackBar(
       message: '"${widget.exam.examName}" marked as cancelled',
-      type: SnackBarType.info,
     );
   }
 

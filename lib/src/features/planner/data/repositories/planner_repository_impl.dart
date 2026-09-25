@@ -545,102 +545,87 @@ class PlannerRepositoryImpl implements PlannerRepository {
     required String examId,
     required DateTime newTargetDate,
     String? reason,
-  }) {
-    return Future<ExamEventEntity>.sync(() async {
-      final idx = _cachedExams.indexWhere((e) => e.id == examId);
-      if (idx < 0) {
-        throw Exception('Exam not found with id $examId');
-      }
-      final existing = _cachedExams[idx];
-      return (await updateExam(
-        examId: examId,
-        examName: existing.examName,
-        targetDate: newTargetDate,
-        subjectTrack: existing.subjectTrack,
-        assessmentType: existing.assessmentType,
-        scopedDeckIds: existing.scopedDeckIds,
-        scopedTopics: existing.scopedTopics,
-        weightPercent: existing.weightPercent,
-        totalCardsCount: existing.totalCardsCount,
-        masteredCardsCount: existing.masteredCardsCount,
-        totalLapses: existing.totalLapses,
-        targetScorePercent: existing.targetScorePercent,
-        isCompleted: false,
-        isCancelled: false,
-        isPostponed: true,
-        originalTargetDate: existing.originalTargetDate ?? existing.targetDate,
-        postponedReason: reason,
-      )).fold(
-        (failure) => throw failure,
-        (updated) => updated,
-      );
-    }).makeRequest();
+  }) async {
+    final idx = _cachedExams.indexWhere((e) => e.id == examId);
+    if (idx < 0) {
+      return const Left(CacheFailure(message: 'Exam not found'));
+    }
+    final existing = _cachedExams[idx];
+    return updateExam(
+      examId: examId,
+      examName: existing.examName,
+      targetDate: newTargetDate,
+      subjectTrack: existing.subjectTrack,
+      assessmentType: existing.assessmentType,
+      scopedDeckIds: existing.scopedDeckIds,
+      scopedTopics: existing.scopedTopics,
+      weightPercent: existing.weightPercent,
+      totalCardsCount: existing.totalCardsCount,
+      masteredCardsCount: existing.masteredCardsCount,
+      totalLapses: existing.totalLapses,
+      targetScorePercent: existing.targetScorePercent,
+      isCompleted: false,
+      isCancelled: false,
+      isPostponed: true,
+      originalTargetDate: existing.originalTargetDate ?? existing.targetDate,
+      postponedReason: reason,
+    );
   }
 
   @override
   Future<Either<Failure, ExamEventEntity>> cancelExam({
     required String examId,
     String? reason,
-  }) {
-    return Future<ExamEventEntity>.sync(() async {
-      final idx = _cachedExams.indexWhere((e) => e.id == examId);
-      if (idx < 0) {
-        throw Exception('Exam not found with id $examId');
-      }
-      final existing = _cachedExams[idx];
-      return (await updateExam(
-        examId: examId,
-        examName: existing.examName,
-        targetDate: existing.targetDate,
-        subjectTrack: existing.subjectTrack,
-        assessmentType: existing.assessmentType,
-        scopedDeckIds: existing.scopedDeckIds,
-        scopedTopics: existing.scopedTopics,
-        weightPercent: existing.weightPercent,
-        totalCardsCount: existing.totalCardsCount,
-        masteredCardsCount: existing.masteredCardsCount,
-        totalLapses: existing.totalLapses,
-        targetScorePercent: existing.targetScorePercent,
-        isCompleted: false,
-        isCancelled: true,
-        cancelledAt: DateTime.now(),
-        cancellationReason: reason,
-      )).fold(
-        (failure) => throw failure,
-        (updated) => updated,
-      );
-    }).makeRequest();
+  }) async {
+    final idx = _cachedExams.indexWhere((e) => e.id == examId);
+    if (idx < 0) {
+      return const Left(CacheFailure(message: 'Exam not found'));
+    }
+    final existing = _cachedExams[idx];
+    return updateExam(
+      examId: examId,
+      examName: existing.examName,
+      targetDate: existing.targetDate,
+      subjectTrack: existing.subjectTrack,
+      assessmentType: existing.assessmentType,
+      scopedDeckIds: existing.scopedDeckIds,
+      scopedTopics: existing.scopedTopics,
+      weightPercent: existing.weightPercent,
+      totalCardsCount: existing.totalCardsCount,
+      masteredCardsCount: existing.masteredCardsCount,
+      totalLapses: existing.totalLapses,
+      targetScorePercent: existing.targetScorePercent,
+      isCompleted: false,
+      isCancelled: true,
+      cancelledAt: DateTime.now(),
+      cancellationReason: reason,
+    );
   }
 
   @override
-  Future<Either<Failure, ExamEventEntity>> restoreExam(String examId) {
-    return Future<ExamEventEntity>.sync(() async {
-      final idx = _cachedExams.indexWhere((e) => e.id == examId);
-      if (idx < 0) {
-        throw Exception('Exam not found with id $examId');
-      }
-      final existing = _cachedExams[idx];
-      return (await updateExam(
-        examId: examId,
-        examName: existing.examName,
-        targetDate: existing.targetDate,
-        subjectTrack: existing.subjectTrack,
-        assessmentType: existing.assessmentType,
-        scopedDeckIds: existing.scopedDeckIds,
-        scopedTopics: existing.scopedTopics,
-        weightPercent: existing.weightPercent,
-        totalCardsCount: existing.totalCardsCount,
-        masteredCardsCount: existing.masteredCardsCount,
-        totalLapses: existing.totalLapses,
-        targetScorePercent: existing.targetScorePercent,
-        isCompleted: false,
-        isCancelled: false,
-        isPostponed: false,
-      )).fold(
-        (failure) => throw failure,
-        (updated) => updated,
-      );
-    }).makeRequest();
+  Future<Either<Failure, ExamEventEntity>> restoreExam(String examId) async {
+    final idx = _cachedExams.indexWhere((e) => e.id == examId);
+    if (idx < 0) {
+      return const Left(CacheFailure(message: 'Exam not found'));
+    }
+    final existing = _cachedExams[idx];
+    return updateExam(
+      examId: examId,
+      examName: existing.examName,
+      targetDate: existing.targetDate,
+      subjectTrack: existing.subjectTrack,
+      assessmentType: existing.assessmentType,
+      scopedDeckIds: existing.scopedDeckIds,
+      scopedTopics: existing.scopedTopics,
+      weightPercent: existing.weightPercent,
+      totalCardsCount: existing.totalCardsCount,
+      masteredCardsCount: existing.masteredCardsCount,
+      totalLapses: existing.totalLapses,
+      targetScorePercent: existing.targetScorePercent,
+      isCompleted: false,
+      isCancelled: false,
+      isPostponed: false,
+    );
   }
 
   @override

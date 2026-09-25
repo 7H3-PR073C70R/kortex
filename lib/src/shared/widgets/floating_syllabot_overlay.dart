@@ -130,6 +130,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                         );
                       },
                       child: ShrinkableButton(
+                        key: AppTourKeys.syllabotFabKey,
                         onTap: _expand,
                         child: const _SyllabotLogoOrb(),
                       ),
@@ -220,7 +221,6 @@ class _SyllabotLogoOrbState extends State<_SyllabotLogoOrb>
         return Transform.scale(
           scale: breathScale,
           child: Container(
-            key: AppTourKeys.syllabotFabKey,
             width: 58,
             height: 58,
             decoration: BoxDecoration(
