@@ -271,7 +271,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
       // 6. Today's Revision Hero Session
       _TourStep(
         badge: 'STEP 6 OF 14 • REVISION HERO',
-        title: 'Today\'s Priority Revision Session',
+        title: "Today's Priority Revision Session",
         subtitle: 'Single-click active recall launcher',
         description:
             'Kortex identifies your highest-priority review deck for today. One tap launches active recall mode with real-time AI feedback on incorrect answers.',
