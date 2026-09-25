@@ -587,9 +587,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
     const dockHeight = 66.0;
     const dockRadius = 33.0;
     const capsuleInsetV = 6.0;
-    const capsuleInsetH = 4.0;
     const capsuleHeight = dockHeight - (capsuleInsetV * 2); // 54dp
-    const capsuleRadius = dockRadius - capsuleInsetV; // 27dp concentric
 
     // Velocity-based jelly stretch & squash
     final velocityStretch = _isDragging
@@ -618,50 +616,83 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
         padding: dockMargin,
         child: Transform.translate(
           offset: Offset(dockSwayX, 0),
-          child: Container(
+          child: SizedBox(
             height: dockHeight,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(dockRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.black.withAlpha(isDark ? 90 : 20),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: colors.primary.withAlpha(isDark ? 45 : 25),
-                  blurRadius: 24,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(dockRadius),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceSecondary.withAlpha(150)
-                        : colors.surfaceSecondary.withAlpha(210),
-                    borderRadius: BorderRadius.circular(dockRadius),
-                    border: Border.all(
-                      color: isDark
-                          ? colors.white.withAlpha(45)
-                          : colors.white.withAlpha(220),
-                      width: 1.2,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // -----------------------------------------------
+                // 0. Base Dock Glass Container & Border Track
+                // -----------------------------------------------
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(dockRadius),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 90 : 20),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: colors.primary.withAlpha(isDark ? 45 : 25),
+                          blurRadius: 24,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(dockRadius),
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.surfaceSecondary.withAlpha(150)
+                                : colors.surfaceSecondary.withAlpha(210),
+                            borderRadius: BorderRadius.circular(dockRadius),
+                            border: Border.all(
+                              color: isDark
+                                  ? colors.white.withAlpha(45)
+                                  : colors.white.withAlpha(220),
+                              width: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
+                ),
+
+                // -----------------------------------------------
+                // 1. Dock Content (Tab Row + WhatsApp 1-1 Overflowing Lens)
+                // -----------------------------------------------
+                Positioned.fill(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final totalWidth = constraints.maxWidth;
                       final tabCount = _kNavItems.length;
                       final tabWidth = totalWidth / tabCount;
-                      final capsuleWidth = tabWidth - (capsuleInsetH * 2);
 
-                      // Calculate sliding capsule left offset
-                      final capsuleLeft = capsuleInsetH +
-                          (_currentUnitPosition * tabWidth);
+                      // Dynamic Lerp Geometry for WhatsApp 1-1 Transition Expansion
+                      final currentInsetV =
+                          ui.lerpDouble(6.0, -5.0, transitionWeight)!;
+                      final currentHeight =
+                          ui.lerpDouble(54.0, 76.0, transitionWeight)!;
+                      final currentRadius =
+                          ui.lerpDouble(27.0, 38.0, transitionWeight)!;
+
+                      // Expand width horizontally in transition
+                      final settledCapsuleWidth = tabWidth - 8.0;
+                      final transitionCapsuleWidth = tabWidth + 22.0;
+                      final capsuleWidth = ui.lerpDouble(
+                        settledCapsuleWidth,
+                        transitionCapsuleWidth,
+                        transitionWeight,
+                      )!;
+                      final capsuleLeft = 4.0 +
+                          (_currentUnitPosition * tabWidth) -
+                          ((capsuleWidth - settledCapsuleWidth) / 2);
 
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
@@ -676,7 +707,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                           clipBehavior: Clip.none,
                           children: [
                             // -----------------------------------------------
-                            // 0. Top Glass Reflection Line (Reflects elements above nav bar)
+                            // Top Dock Specular Reflection Line
                             // -----------------------------------------------
                             Positioned(
                               top: 0,
@@ -698,7 +729,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                             ),
 
                             // -----------------------------------------------
-                            // 1. Base Tab Items Row (Underneath sliding mirror glass lens)
+                            // Base Tab Items Row (High Transparency Visibility Under Lens)
                             // -----------------------------------------------
                             Positioned.fill(
                               child: Row(
@@ -711,6 +742,13 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                   final activeWeight =
                                       (1.0 - distance).clamp(0.0, 1.0);
                                   final isSelected = activeWeight > 0.5;
+
+                                  final iconColor = isSelected && transitionWeight <= 0.01
+                                      ? colors.transparent
+                                      : (isSelected ? colors.textPrimary : colors.textSecondary);
+                                  final textColor = isSelected && transitionWeight <= 0.01
+                                      ? colors.transparent
+                                      : (isSelected ? colors.textPrimary : colors.textSecondary);
 
                                   return Expanded(
                                     child: Semantics(
@@ -736,9 +774,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                                     ? item.activeIcon
                                                     : item.icon,
                                                 size: 21,
-                                                color: isSelected && transitionWeight <= 0.01
-                                                    ? colors.transparent
-                                                    : colors.textSecondary,
+                                                color: iconColor,
                                               ),
                                               const SizedBox(height: 3),
                                               FittedBox(
@@ -750,12 +786,10 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                                       .copyWith(
                                                     fontSize: 10.5,
                                                     height: 1.1,
-                                                    fontWeight: isSelected && transitionWeight <= 0.01
+                                                    fontWeight: isSelected
                                                         ? FontWeight.w700
                                                         : FontWeight.w500,
-                                                    color: isSelected && transitionWeight <= 0.01
-                                                        ? colors.transparent
-                                                        : colors.textSecondary,
+                                                    color: textColor,
                                                   ),
                                                 ),
                                               ),
@@ -770,19 +804,19 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                             ),
 
                             // -----------------------------------------------
-                            // 2. Translucent Mirror Glass Lens (Transition) vs 3D Popping Pill (Settled)
+                            // Translucent Glass Lens (Transition) vs 3D Popping Pill (Settled)
                             // -----------------------------------------------
                             Positioned(
                               left: capsuleLeft,
-                              top: capsuleInsetV,
+                              top: currentInsetV,
                               width: capsuleWidth,
-                              height: capsuleHeight,
+                              height: currentHeight,
                               child: Transform.scale(
                                 scaleX: jellyScaleX,
                                 scaleY: jellyScaleY,
                                 child: ClipRRect(
                                   borderRadius:
-                                      BorderRadius.circular(capsuleRadius),
+                                      BorderRadius.circular(currentRadius),
                                   child: Container(
                                     decoration: BoxDecoration(
                                       gradient: transitionWeight > 0.01
@@ -792,21 +826,21 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                               colors: isDark
                                                   ? [
                                                       colors.white.withAlpha(
-                                                        (45 * transitionWeight)
+                                                        (22 * transitionWeight)
                                                             .toInt(),
                                                       ),
                                                       colors.white.withAlpha(
-                                                        (15 * transitionWeight)
+                                                        (8 * transitionWeight)
                                                             .toInt(),
                                                       ),
                                                     ]
                                                   : [
                                                       colors.white.withAlpha(
-                                                        (140 * transitionWeight)
+                                                        (45 * transitionWeight)
                                                             .toInt(),
                                                       ),
                                                       colors.white.withAlpha(
-                                                        (70 * transitionWeight)
+                                                        (18 * transitionWeight)
                                                             .toInt(),
                                                       ),
                                                     ],
@@ -827,56 +861,33 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                                     ],
                                             ),
                                       borderRadius:
-                                          BorderRadius.circular(capsuleRadius),
+                                          BorderRadius.circular(currentRadius),
                                       border: Border.all(
                                         color: transitionWeight > 0.01
                                             ? colors.white.withAlpha(
-                                                (210 * transitionWeight).toInt(),
+                                                (220 * transitionWeight).toInt(),
                                               )
                                             : colors.primary.withAlpha(
                                                 isDark ? 160 : 120,
                                               ),
-                                        width: 1.4,
+                                        width: transitionWeight > 0.01 ? 1.5 : 1.4,
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: transitionWeight > 0.01
-                                              ? colors.black.withAlpha(
-                                                  isDark ? 50 : 20,
-                                                )
-                                              : colors.primary.withAlpha(
+                                      boxShadow: transitionWeight > 0.01
+                                          ? const []
+                                          : [
+                                              BoxShadow(
+                                                color: colors.primary.withAlpha(
                                                   isDark ? 120 : 80,
                                                 ),
-                                          blurRadius: transitionWeight > 0.01
-                                              ? 10
-                                              : 18,
-                                          spreadRadius: transitionWeight > 0.01
-                                              ? 0
-                                              : 2,
-                                          offset: Offset(
-                                            0,
-                                            transitionWeight > 0.01 ? 2 : 6,
-                                          ),
-                                        ),
-                                      ],
+                                                blurRadius: 18,
+                                                spreadRadius: 2,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                            ],
                                     ),
                                     child: Stack(
                                       children: [
-                                        // Real-time glass lens backdrop blur during transition
-                                        if (transitionWeight > 0.01)
-                                          Positioned.fill(
-                                            child: BackdropFilter(
-                                              filter: ui.ImageFilter.blur(
-                                                sigmaX: 8,
-                                                sigmaY: 8,
-                                              ),
-                                              child: Container(
-                                                color: colors.transparent,
-                                              ),
-                                            ),
-                                          ),
-
-                                        // Top & bottom liquid glass chromatic refraction arcs during transition (Images 2 & 3)
+                                        // Chromatic Liquid Edge Refraction Arcs during transition
                                         Positioned.fill(
                                           child: CustomPaint(
                                             painter: _LiquidLensEdgePainter(
@@ -888,7 +899,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                           ),
                                         ),
 
-                                        // 3D Bevel Top Specular Crest when settled (Image 1 3D Pop)
+                                        // 3D Bevel Top Specular Crest when settled
                                         if (transitionWeight <= 0.01)
                                           Positioned(
                                             top: 0,
@@ -917,12 +928,12 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                             ),
 
                             // -----------------------------------------------
-                            // 3. Active 3D Popping Tab Item Overlay (Settled)
+                            // Active 3D Popping Tab Item Overlay (Settled)
                             // -----------------------------------------------
                             if (transitionWeight <= 0.01)
                               Positioned(
                                 left: capsuleLeft,
-                                top: capsuleInsetV,
+                                top: currentInsetV,
                                 width: capsuleWidth,
                                 height: capsuleHeight,
                                 child: IgnorePointer(
@@ -963,7 +974,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                     },
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
