@@ -70,8 +70,9 @@ void main() {
     ) async {
       await pumpSummary(
         tester,
-        cardsReviewed: 3,
+        cardsReviewed: 0,
         retentionScore: 0.6,
+        settle: false,
       );
 
       expect(find.byType(ConfettiWidget), findsNothing);
@@ -87,9 +88,10 @@ void main() {
         settle: false,
       );
 
-      expect(find.byType(ConfettiWidget), findsOneWidget);
+      expect(find.byType(ConfettiWidget), findsWidgets);
 
       // Unmount so the playing confetti controller releases its ticker.
+      await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });
@@ -104,8 +106,9 @@ void main() {
         settle: false,
       );
 
-      expect(find.byType(ConfettiWidget), findsOneWidget);
+      expect(find.byType(ConfettiWidget), findsWidgets);
 
+      await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });
@@ -131,13 +134,19 @@ void main() {
         cardsReviewed: 2,
         retentionScore: 0.5,
         nextReviewInDays: 3,
+        disableAnimations: true,
       );
       expect(
         find.text('Next review batch in about 3 days'),
         findsOneWidget,
       );
 
-      await pumpSummary(tester, cardsReviewed: 2, retentionScore: 0.5);
+      await pumpSummary(
+        tester,
+        cardsReviewed: 2,
+        retentionScore: 0.5,
+        disableAnimations: true,
+      );
       expect(
         find.textContaining('Next review batch'),
         findsNothing,

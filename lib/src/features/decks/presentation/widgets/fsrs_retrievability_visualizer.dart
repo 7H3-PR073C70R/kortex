@@ -78,40 +78,49 @@ class FsrsRetrievabilityVisualizer extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.badge),
-                    ),
-                    child: Icon(
-                      Icons.show_chart_rounded,
-                      color: colors.primary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'FSRS Memory Forgetting Curve',
-                        style: typography.body.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
-                      Text(
-                        subjectTitle,
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                        ),
+                      child: Icon(
+                        Icons.show_chart_rounded,
+                        color: colors.primary,
+                        size: 20,
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'FSRS Memory Forgetting Curve',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: typography.body.bold.copyWith(
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            subjectTitle,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
