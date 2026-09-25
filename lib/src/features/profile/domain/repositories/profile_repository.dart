@@ -24,6 +24,3 @@ abstract class ProfileRepository {
     NotificationPreferencesEntity preferences,
   );
 }
-
-
-

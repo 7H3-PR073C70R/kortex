@@ -45,6 +45,3 @@ abstract class ProfileRemoteDataSource {
     NotificationPreferencesEntity preferences,
   );
 }
-
-
-

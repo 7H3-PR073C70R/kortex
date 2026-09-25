@@ -331,6 +331,3 @@ void _initUseCaseLocator() {
       () => RedeemPromoCodeUseCase(locator<PromoCodeRepository>()),
     );
 }
-
-
-

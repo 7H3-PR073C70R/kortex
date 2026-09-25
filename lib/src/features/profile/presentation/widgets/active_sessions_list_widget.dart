@@ -222,6 +222,3 @@ class ActiveSessionsListWidget extends HookWidget {
     );
   }
 }
-
-
-

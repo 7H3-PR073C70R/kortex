@@ -27,7 +27,7 @@ class FsrsRetrievabilityVisualizer extends StatelessWidget {
 
   /// Calculates retrievability R(t) at time t (in days) given stability S
   static double calculateRetrievability(double stability, int t) {
-    if (stability <= 0) return 1.0;
+    if (stability <= 0) return 1;
     // Standard FSRS formula: R(t) = 0.9^(t / S)
     return math.pow(0.9, t / stability).toDouble().clamp(0.0, 1.0);
   }
@@ -315,33 +315,35 @@ class _ForgettingCurvePainter extends CustomPainter {
         gridPaint,
       );
 
-      textPainter.text = TextSpan(
-        text: '${(tick * 100).toInt()}%',
-        style: TextStyle(color: textColor, fontSize: 9),
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(margin.left - textPainter.width - 6, y - textPainter.height / 2),
-      );
+      textPainter
+        ..text = TextSpan(
+          text: '${(tick * 100).toInt()}%',
+          style: TextStyle(color: textColor, fontSize: 9),
+        )
+        ..layout()
+        ..paint(
+          canvas,
+          Offset(margin.left - textPainter.width - 6, y - textPainter.height / 2),
+        );
     }
 
     // Draw X-axis day labels (Day 0, 7, 14, 30, 60)
-    final maxDays = math.max(60.0, stability * 2.5);
+    final maxDays = math.max(60, stability * 2.5);
     final xTicks = [0, 7, 14, 30, 60];
 
     for (final tick in xTicks) {
       final x = margin.left + (tick / maxDays) * chartWidth;
       if (x <= size.width - margin.right) {
-        textPainter.text = TextSpan(
-          text: 'd$tick',
-          style: TextStyle(color: textColor, fontSize: 9),
-        );
-        textPainter.layout();
-        textPainter.paint(
-          canvas,
-          Offset(x - textPainter.width / 2, size.height - margin.bottom + 4),
-        );
+        textPainter
+          ..text = TextSpan(
+            text: 'd$tick',
+            style: TextStyle(color: textColor, fontSize: 9),
+          )
+          ..layout()
+          ..paint(
+            canvas,
+            Offset(x - textPainter.width / 2, size.height - margin.bottom + 4),
+          );
       }
     }
 
@@ -355,8 +357,7 @@ class _ForgettingCurvePainter extends CustomPainter {
 
     // Build Curve Path R(t) = 0.9^(t / S)
     final path = Path();
-    final fillPath = Path();
-    fillPath.moveTo(margin.left, margin.top);
+    final fillPath = Path()..moveTo(margin.left, margin.top);
 
     for (var px = 0.0; px <= chartWidth; px += 2) {
       final t = (px / chartWidth) * maxDays;
@@ -372,12 +373,14 @@ class _ForgettingCurvePainter extends CustomPainter {
       fillPath.lineTo(x, y);
     }
 
-    fillPath.lineTo(margin.left + chartWidth, margin.top + chartHeight);
-    fillPath.lineTo(margin.left, margin.top + chartHeight);
-    fillPath.close();
+    fillPath
+      ..lineTo(margin.left + chartWidth, margin.top + chartHeight)
+      ..lineTo(margin.left, margin.top + chartHeight)
+      ..close();
 
-    canvas.drawPath(fillPath, fillPaint);
-    canvas.drawPath(path, curvePaint);
+    canvas
+      ..drawPath(fillPath, fillPaint)
+      ..drawPath(path, curvePaint);
 
     // Elapsed Day Marker Dot
     final elapsedX = margin.left + (elapsedDays / maxDays).clamp(0.0, 1.0) * chartWidth;
@@ -389,8 +392,9 @@ class _ForgettingCurvePainter extends CustomPainter {
       ..color = primaryColor.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(Offset(elapsedX, elapsedY), 7, dotOuterPaint);
-    canvas.drawCircle(Offset(elapsedX, elapsedY), 4, dotPaint);
+    canvas
+      ..drawCircle(Offset(elapsedX, elapsedY), 7, dotOuterPaint)
+      ..drawCircle(Offset(elapsedX, elapsedY), 4, dotPaint);
   }
 
   @override

@@ -230,8 +230,7 @@ class MockCommunityRepository implements CommunityRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
-    String? circleId,
-    required int minutes,
+    required int minutes, String? circleId,
   }) async => const Right({'success': true});
 
   @override

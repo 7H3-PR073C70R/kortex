@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:auto_route/auto_route.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +9,10 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/fsrs_retrievability_visualizer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/fsrs_retrievability_visualizer.dart';
 
 @RoutePage()
 class SessionSummaryPage extends StatefulWidget {
@@ -325,7 +326,6 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                       FsrsRetrievabilityVisualizer(
                         stabilityDays: (cardsReviewed * 1.5).clamp(2.0, 30.0),
                         targetRetention: retentionScore.clamp(0.70, 0.95),
-                        elapsedDays: 0,
                         subjectTitle: 'Consolidated Session Retrievability',
                       ),
 

@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/features/syllabot/presentation/pages/syllabot_chat_page.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-
-import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 
 /// A global floating expandable & collapsible Syllabot AI overlay.
 ///
