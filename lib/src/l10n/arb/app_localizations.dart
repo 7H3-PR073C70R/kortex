@@ -5839,6 +5839,414 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next review batch in about {days, plural, =1{1 day} other{{days} days}}'**
   String sessionSummaryNextReview(int days);
+
+  /// Common delete button label
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get commonDelete;
+
+  /// Common edit button label
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get commonEdit;
+
+  /// Common add new label
+  ///
+  /// In en, this message translates to:
+  /// **'Add New'**
+  String get commonAddNew;
+
+  /// Bold formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get tooltipBold;
+
+  /// Italic formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get tooltipItalic;
+
+  /// Strikethrough formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Strikethrough'**
+  String get tooltipStrikethrough;
+
+  /// Heading formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get tooltipHeading;
+
+  /// Code block formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Code Block'**
+  String get tooltipCodeBlock;
+
+  /// Bullet list formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Bullet List'**
+  String get tooltipBulletList;
+
+  /// Numbered list formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Numbered List'**
+  String get tooltipNumberedList;
+
+  /// Quote formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Quote'**
+  String get tooltipQuote;
+
+  /// LaTeX math formatting button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'LaTeX Math'**
+  String get tooltipLatexMath;
+
+  /// Greek and math symbols button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Greek / Math Symbols'**
+  String get tooltipMathSymbols;
+
+  /// AI format assist button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'AI Format Assist'**
+  String get tooltipAiFormatAssist;
+
+  /// Report thread tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Report Thread'**
+  String get tooltipReportThread;
+
+  /// Share thread tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Share Thread'**
+  String get tooltipShareThread;
+
+  /// Sort replies tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Sort Replies'**
+  String get tooltipSortReplies;
+
+  /// Attach image tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Attach Image'**
+  String get tooltipAttachImage;
+
+  /// Focus room tile title
+  ///
+  /// In en, this message translates to:
+  /// **'Focus Room'**
+  String get communityFocusRoomTitle;
+
+  /// Socratic hint accordion level 1 title
+  ///
+  /// In en, this message translates to:
+  /// **'Level 1: Core Concept Clue'**
+  String get socraticHintLevel1;
+
+  /// Socratic hint accordion level 2 title
+  ///
+  /// In en, this message translates to:
+  /// **'Level 2: Method & Strategy Direction'**
+  String get socraticHintLevel2;
+
+  /// Socratic hint accordion level 3 title
+  ///
+  /// In en, this message translates to:
+  /// **'Level 3: Formula & Pitfall Warning'**
+  String get socraticHintLevel3;
+
+  /// Search discussions input hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search discussions, topics, tags...'**
+  String get communitySearchHint;
+
+  /// Create post syllabus topic input hint
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabus Topic (e.g. Thermodynamics, Calculus I)'**
+  String get createPostSyllabusHint;
+
+  /// Quiz exit confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Leave this quiz?'**
+  String get quizLeaveDialogTitle;
+
+  /// Keep going button label in quiz dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going'**
+  String get quizKeepGoing;
+
+  /// Finish quiz confirmation dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Finish and mark your answers?'**
+  String get quizFinishDialogTitle;
+
+  /// Finish quiz confirmation dialog subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Here is where you stand.'**
+  String get quizFinishDialogSub;
+
+  /// Go back button in quiz finish dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get quizGoBack;
+
+  /// See results button in quiz finish dialog
+  ///
+  /// In en, this message translates to:
+  /// **'See results'**
+  String get quizSeeResults;
+
+  /// Past questions filter all years random option
+  ///
+  /// In en, this message translates to:
+  /// **'All Years (Random)'**
+  String get quizAllYearsRandom;
+
+  /// Snackbar message when quiz results are copied
+  ///
+  /// In en, this message translates to:
+  /// **'Result copied to clipboard!'**
+  String get quizResultCopied;
+
+  /// Delete assessment menu item label
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Assessment'**
+  String get plannerDeleteAssessment;
+
+  /// Create study deck button label in timetable
+  ///
+  /// In en, this message translates to:
+  /// **'Create Study Deck'**
+  String get plannerCreateStudyDeck;
+
+  /// Start diagnostic mock button label
+  ///
+  /// In en, this message translates to:
+  /// **'Start Diagnostic Practice Mock'**
+  String get plannerStartDiagnosticMock;
+
+  /// Create new deck button label
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Deck'**
+  String get plannerCreateNewDeck;
+
+  /// Save & archive milestone button label
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Archive Milestone'**
+  String get plannerSaveArchiveMilestone;
+
+  /// Reopen milestone button label
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen Milestone'**
+  String get plannerReopenMilestone;
+
+  /// Log grade and conclude milestone button label
+  ///
+  /// In en, this message translates to:
+  /// **'Log Grade & Conclude Milestone'**
+  String get plannerConcludeMilestone;
+
+  /// Upgrade tier button label in drop zone
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade Tier'**
+  String get ingestionUpgradeTier;
+
+  /// Re-extract document button label
+  ///
+  /// In en, this message translates to:
+  /// **'Re-extract'**
+  String get ingestionReExtract;
+
+  /// Security timeout option immediately
+  ///
+  /// In en, this message translates to:
+  /// **'Immediately'**
+  String get securityTimeoutImmediately;
+
+  /// Security timeout option 15 seconds
+  ///
+  /// In en, this message translates to:
+  /// **'15 seconds'**
+  String get securityTimeout15s;
+
+  /// Security timeout option 30 seconds default
+  ///
+  /// In en, this message translates to:
+  /// **'30 seconds (Default)'**
+  String get securityTimeout30sDefault;
+
+  /// Security timeout option 1 minute
+  ///
+  /// In en, this message translates to:
+  /// **'1 minute'**
+  String get securityTimeout1m;
+
+  /// Security timeout option 5 minutes
+  ///
+  /// In en, this message translates to:
+  /// **'5 minutes'**
+  String get securityTimeout5m;
+
+  /// View all tracks button label
+  ///
+  /// In en, this message translates to:
+  /// **'View All Tracks'**
+  String get studyHubViewAllTracks;
+
+  /// Syllabot capacity storage space label
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Space'**
+  String get syllabotCapStorageSpace;
+
+  /// Syllabot capacity processor cores label
+  ///
+  /// In en, this message translates to:
+  /// **'Processor & Cores'**
+  String get syllabotCapProcessorCores;
+
+  /// Syllabot capacity RAM battery guard label
+  ///
+  /// In en, this message translates to:
+  /// **'RAM & Battery Guard'**
+  String get syllabotCapRamBatteryGuard;
+
+  /// Undo last stroke tooltip in LaTeX scratchpad
+  ///
+  /// In en, this message translates to:
+  /// **'Undo last stroke'**
+  String get tooltipUndoStroke;
+
+  /// Clear canvas tooltip in LaTeX scratchpad
+  ///
+  /// In en, this message translates to:
+  /// **'Clear canvas'**
+  String get tooltipClearCanvas;
+
+  /// Share insight tooltip in Syllabot chat
+  ///
+  /// In en, this message translates to:
+  /// **'Share Insight to Study Circle'**
+  String get tooltipShareInsight;
+
+  /// Chat history tooltip in Syllabot chat
+  ///
+  /// In en, this message translates to:
+  /// **'Chat History'**
+  String get tooltipChatHistory;
+
+  /// Promo code input hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. SCHOLAR2026, UNILAG_STEM'**
+  String get monetizationPromoHint;
+
+  /// Hyperdrive focus mode title
+  ///
+  /// In en, this message translates to:
+  /// **'Hyperdrive Focus Mode'**
+  String get focusModeTitle;
+
+  /// Hyperdrive focus mode subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'ADHD-calibrated micro-sprints to beat task paralysis.'**
+  String get focusModeSubtitle;
+
+  /// Soft catch-up rescuer option title
+  ///
+  /// In en, this message translates to:
+  /// **'Soft Catch-Up Rescuer'**
+  String get focusModeCatchUpRescuer;
+
+  /// Read aloud TTS option title
+  ///
+  /// In en, this message translates to:
+  /// **'Read Aloud (TTS)'**
+  String get focusModeReadAloud;
+
+  /// Hide clock option title
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Clock / Counter'**
+  String get focusModeHideClock;
+
+  /// Thought parking lot title
+  ///
+  /// In en, this message translates to:
+  /// **'Thought Parking Lot'**
+  String get thoughtParkingLotTitle;
+
+  /// Thought parking lot subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Dump intrusive thoughts in 5s. Clear your working memory.'**
+  String get thoughtParkingLotSubtitle;
+
+  /// Thought parking lot text input hint
+  ///
+  /// In en, this message translates to:
+  /// **'Park an intrusive thought...'**
+  String get thoughtParkingLotHint;
+
+  /// Remove card button tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Card'**
+  String get tooltipRemoveCard;
+
+  /// Search hierarchy and sub-decks hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search hierarchy & sub-decks...'**
+  String get subdeckSearchHint;
+
+  /// Exit session tooltip in study top bar
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Session'**
+  String get tooltipExitSession;
+
+  /// Undo last rating tooltip in study top bar
+  ///
+  /// In en, this message translates to:
+  /// **'Undo Last Rating (Cmd+Z / Z)'**
+  String get tooltipUndoRating;
+
+  /// Thought parking lot tooltip in study top bar
+  ///
+  /// In en, this message translates to:
+  /// **'Thought Parking Lot'**
+  String get tooltipThoughtParkingLot;
 }
 
 class _AppLocalizationsDelegate

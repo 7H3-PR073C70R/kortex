@@ -30,6 +30,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -477,7 +478,7 @@ class ForumThreadDetailPage extends HookWidget {
                 ),
               ),
               onPressed: () => Navigator.of(dialogCtx).pop(true),
-              child: const Text('Delete'),
+              child: Text(l10n.commonDelete),
             ),
           ],
         ),
@@ -829,14 +830,7 @@ class ForumThreadDetailPage extends HookWidget {
         elevation: 0,
         scrolledUnderElevation: 1,
         shadowColor: colors.black.withAlpha(20),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: colors.textPrimary,
-            size: 22,
-          ),
-          onPressed: () => unawaited(context.router.maybePop()),
-        ),
+        leading: const AppBackButton(),
         title: Row(
           children: [
             Text(
@@ -897,7 +891,7 @@ class ForumThreadDetailPage extends HookWidget {
               color: colors.textSecondary,
               size: 20,
             ),
-            tooltip: 'Report Thread',
+            tooltip: l10n.tooltipReportThread,
             onPressed: () {
               unawaited(HapticFeedback.lightImpact());
               unawaited(
@@ -919,7 +913,7 @@ class ForumThreadDetailPage extends HookWidget {
               color: colors.textSecondary,
               size: 20,
             ),
-            tooltip: 'Share Thread',
+            tooltip: l10n.tooltipShareThread,
             onPressed: shareThread,
           ),
           const SizedBox(width: 4),
@@ -1429,10 +1423,9 @@ class ForumThreadDetailPage extends HookWidget {
                               ),
                               const Spacer(),
 
-                              // Sort Filter Dropdown Pill
-                              PopupMenuButton<ForumSortFilter>(
-                                initialValue: sortFilter.value,
-                                tooltip: 'Sort Replies',
+                                PopupMenuButton<ForumSortFilter>(
+                                  initialValue: sortFilter.value,
+                                  tooltip: l10n.tooltipSortReplies,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                   side: BorderSide(
@@ -2311,7 +2304,7 @@ class ForumThreadDetailPage extends HookWidget {
                                       ? colors.primary
                                       : colors.textSecondary,
                                 ),
-                                tooltip: 'Attach Image',
+                                tooltip: l10n.tooltipAttachImage,
                                 onPressed: () async {
                                   unawaited(HapticFeedback.lightImpact());
                                   try {

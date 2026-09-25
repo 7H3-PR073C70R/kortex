@@ -177,7 +177,7 @@ class FileDropZoneWidget extends HookWidget {
               ),
             ),
             icon: const Icon(Icons.star_rounded, size: 18),
-            label: const Text('Upgrade Tier'),
+            label: Text(context.l10n.ingestionUpgradeTier),
             onPressed: () {
               Navigator.of(dialogCtx).pop();
               unawaited(
@@ -249,7 +249,7 @@ class FileDropZoneWidget extends HookWidget {
               ),
             ),
             icon: const Icon(Icons.star_rounded, size: 18),
-            label: const Text('Upgrade Tier'),
+            label: Text(context.l10n.ingestionUpgradeTier),
             onPressed: () {
               Navigator.of(dialogCtx).pop();
               unawaited(
@@ -331,7 +331,7 @@ class FileDropZoneWidget extends HookWidget {
               Navigator.of(dialogCtx).pop();
               onReExtract();
             },
-            child: const Text('Re-extract'),
+            child: Text(context.l10n.ingestionReExtract),
           ),
           if (courseId != null)
             FilledButton.icon(

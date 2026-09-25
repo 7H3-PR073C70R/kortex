@@ -13,6 +13,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -62,14 +63,7 @@ class AboutSupportPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: colors.surfacePrimary,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'About & Support',
           style: typography.title3.bold.copyWith(

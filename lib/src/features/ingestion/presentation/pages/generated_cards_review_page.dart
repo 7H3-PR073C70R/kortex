@@ -25,6 +25,7 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/generated_card_preview_tile.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -173,24 +174,7 @@ class _GeneratedCardsReviewView extends HookWidget {
                 backgroundColor: colors.transparent,
                 elevation: 0,
                 pinned: true,
-                leading: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.08 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: AppMotion.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: colors.textPrimary,
-                      size: 20,
-                    ),
-                    onPressed: () => unawaited(Navigator.of(context).maybePop()),
-                  ),
-                ),
+                leading: const AppBackButton(),
                 flexibleSpace: ClipRect(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),

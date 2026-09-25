@@ -24,6 +24,7 @@ import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_ty
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -66,6 +67,7 @@ class CreateForumDiscussionPage extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     final userStorage = locator<UserStorageService>();
     final userDisplayName = userStorage.getUserDisplayName() ?? 'Elena Rostova';
@@ -1331,72 +1333,72 @@ class CreateForumDiscussionPage extends HookWidget {
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_bold_rounded,
-                                      tooltip: 'Bold',
+                                      tooltip: l10n.tooltipBold,
                                       onTap: () => applyFormatting('**', '**'),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_italic_rounded,
-                                      tooltip: 'Italic',
+                                      tooltip: l10n.tooltipItalic,
                                       onTap: () => applyFormatting('*', '*'),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.strikethrough_s_rounded,
-                                      tooltip: 'Strikethrough',
+                                      tooltip: l10n.tooltipStrikethrough,
                                       onTap: () => applyFormatting('~~', '~~'),
                                     ),
                                     _buildFormatDivider(context),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.title_rounded,
-                                      tooltip: 'Heading',
+                                      tooltip: l10n.tooltipHeading,
                                       onTap: () => applyFormatting('### '),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.code_rounded,
-                                      tooltip: 'Code Block',
+                                      tooltip: l10n.tooltipCodeBlock,
                                       onTap: () =>
                                           applyFormatting('```\n', '\n```'),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_list_bulleted_rounded,
-                                      tooltip: 'Bullet List',
+                                      tooltip: l10n.tooltipBulletList,
                                       onTap: () => applyFormatting('- '),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_list_numbered_rounded,
-                                      tooltip: 'Numbered List',
+                                      tooltip: l10n.tooltipNumberedList,
                                       onTap: () => applyFormatting('1. '),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_quote_rounded,
-                                      tooltip: 'Quote',
+                                      tooltip: l10n.tooltipQuote,
                                       onTap: () => applyFormatting('> '),
                                     ),
                                     _buildFormatDivider(context),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.functions_rounded,
-                                      tooltip: 'LaTeX Math',
+                                      tooltip: l10n.tooltipLatexMath,
                                       label: 'Σ',
                                       onTap: showMathFormulaSheet,
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.pie_chart_outline_rounded,
-                                      tooltip: 'Greek / Math Symbols',
+                                      tooltip: l10n.tooltipMathSymbols,
                                       label: 'π',
                                       onTap: showSymbolSheet,
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.auto_awesome_rounded,
-                                      tooltip: 'AI Format Assist',
+                                      tooltip: l10n.tooltipAiFormatAssist,
                                       isAccent: true,
                                       onTap: runAiFormatAssist,
                                     ),

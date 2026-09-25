@@ -31,8 +31,10 @@ import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
 import 'package:kortex/src/features/profile/presentation/widgets/active_sessions_list_widget.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -130,14 +132,7 @@ class SecuritySettingsPage extends HookWidget {
           appBar: AppBar(
             backgroundColor: colors.backgroundPrimary,
             elevation: 0,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: colors.textPrimary,
-                size: 18,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            leading: const AppBackButton(),
             title: Text(
               'Account & Security',
               style: typography.title3.bold.copyWith(
@@ -157,10 +152,6 @@ class SecuritySettingsPage extends HookWidget {
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                       child: AppLiquidGlassTabBar(
                         tabs: const ['Security & Access', 'Account & Data'],
-                        icons: const [
-                          Icons.shield_outlined,
-                          Icons.person_outline_rounded,
-                        ],
                         selectedIndex: selectedTabIndex.value,
                         onTabSelected: (index) {
                           selectedTabIndex.value = index;
@@ -628,26 +619,26 @@ class SecuritySettingsPage extends HookWidget {
                               );
                             }
                           },
-                          items: const [
+                          items: [
                             DropdownMenuItem(
                               value: 0,
-                              child: Text('Immediately'),
+                              child: Text(context.l10n.securityTimeoutImmediately),
                             ),
                             DropdownMenuItem(
                               value: 15,
-                              child: Text('15 seconds'),
+                              child: Text(context.l10n.securityTimeout15s),
                             ),
                             DropdownMenuItem(
                               value: 30,
-                              child: Text('30 seconds (Default)'),
+                              child: Text(context.l10n.securityTimeout30sDefault),
                             ),
                             DropdownMenuItem(
                               value: 60,
-                              child: Text('1 minute'),
+                              child: Text(context.l10n.securityTimeout1m),
                             ),
                             DropdownMenuItem(
                               value: 300,
-                              child: Text('5 minutes'),
+                              child: Text(context.l10n.securityTimeout5m),
                             ),
                           ],
                         ),

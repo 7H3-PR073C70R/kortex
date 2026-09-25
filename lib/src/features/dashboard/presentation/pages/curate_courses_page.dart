@@ -17,6 +17,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_state.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -227,10 +228,7 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
           appBar: AppBar(
             backgroundColor: colors.transparent,
             elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            leading: const AppBackButton(),
             title: Text(
               'Curate Your Curriculum',
               style: typography.title3.bold.copyWith(color: colors.textPrimary),

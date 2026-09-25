@@ -31,6 +31,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.
 import 'package:kortex/src/features/quiz/presentation/widgets/add_past_question_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_config_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -304,14 +305,7 @@ class _CourseModuleView extends StatelessWidget {
             backgroundColor: colors.backgroundPrimary,
             elevation: 0,
             scrolledUnderElevation: 0,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: colors.textPrimary,
-                size: 18,
-              ),
-              onPressed: () => context.router.pop(),
-            ),
+            leading: const AppBackButton(),
             title: Text(
               courseCode,
               style: typography.title3.bold.copyWith(

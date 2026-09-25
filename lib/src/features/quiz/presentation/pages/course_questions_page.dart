@@ -19,6 +19,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_tes
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -97,14 +98,7 @@ class _CourseQuestionsView extends HookWidget {
         backgroundColor: colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-            size: 18,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(),
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -694,7 +694,7 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
                                       vertical: 10,
                                     ),
                                   ),
-                                  child: const Text('View All Tracks'),
+                                  child: Text(l10n.studyHubViewAllTracks),
                                 ),
                             ],
                           ),

@@ -13,6 +13,7 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.d
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -217,42 +218,20 @@ class LmsImportModalSheet extends HookWidget {
                     const SizedBox(height: 20),
 
                     // Platform Selector Toggle
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.surfaceTertiary
-                            : colors.surfaceSecondary,
-                        borderRadius: BorderRadius.circular(AppRadius.panel),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _PlatformTab(
-                              label: 'Google Classroom',
-                              icon: Icons.class_outlined,
-                              isSelected: !isCanvas,
-                              onTap: () {
-                                AppFeedback.selection();
-                                selectedPlatform.value = 'google_classroom';
-                                connectedAccount.value = null;
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            child: _PlatformTab(
-                              label: 'Canvas LMS',
-                              icon: Icons.assignment_outlined,
-                              isSelected: isCanvas,
-                              onTap: () {
-                                AppFeedback.selection();
-                                selectedPlatform.value = 'canvas';
-                                connectedAccount.value = null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                    AppLiquidGlassTabBar(
+                      tabs: const ['Google Classroom', 'Canvas LMS'],
+                      icons: const [
+                        Icons.class_outlined,
+                        Icons.assignment_outlined,
+                      ],
+                      selectedIndex: isCanvas ? 1 : 0,
+                      onTabSelected: (index) {
+                        AppFeedback.selection();
+                        selectedPlatform.value =
+                            index == 1 ? 'canvas' : 'google_classroom';
+                        connectedAccount.value = null;
+                      },
+                      height: 42,
                     ),
                     const SizedBox(height: 16),
 
@@ -586,64 +565,6 @@ class LmsImportModalSheet extends HookWidget {
   }
 }
 
-class _PlatformTab extends StatelessWidget {
-  const _PlatformTab({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) {
-        return GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: AppMotion.snappy,
-            curve: AppMotion.easeOutCubic,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? colors.primary
-                  : (isHovered
-                        ? colors.primary.withAlpha(20)
-                        : colors.transparent),
-              borderRadius: BorderRadius.circular(AppRadius.card),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color: isSelected ? colors.white : colors.textSecondary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.white : colors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
 
 class _LmsCourseCard extends StatelessWidget {
   const _LmsCourseCard({

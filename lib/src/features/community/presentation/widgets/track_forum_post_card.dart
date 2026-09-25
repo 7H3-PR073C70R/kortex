@@ -18,6 +18,7 @@ import 'package:kortex/src/features/community/presentation/widgets/forum_media_a
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -52,6 +53,7 @@ class TrackForumPostCard extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     unawaited(
       showModalBottomSheet<void>(
@@ -231,7 +233,7 @@ class TrackForumPostCard extends HookWidget {
                                     ),
                                     onPressed: () =>
                                         Navigator.of(dialogCtx).pop(true),
-                                    child: const Text('Delete'),
+                                    child: Text(l10n.commonDelete),
                                   ),
                                 ],
                               ),

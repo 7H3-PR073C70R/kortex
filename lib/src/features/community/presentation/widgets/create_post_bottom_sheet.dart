@@ -305,7 +305,7 @@ class CreatePostBottomSheet extends HookWidget {
                 // Optional Syllabus Tag Field
                 AppTextField(
                   controller: syllabusTagController,
-                  hintText: 'Syllabus Topic (e.g. Thermodynamics, Calculus I)',
+                  hintText: l10n.createPostSyllabusHint,
                 ),
                 const SizedBox(height: 12),
 

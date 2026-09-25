@@ -25,6 +25,7 @@ import 'package:kortex/src/features/ingestion/presentation/widgets/lms_import_mo
 import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 @RoutePage()
@@ -161,24 +162,7 @@ class _DocumentIngestionView extends HookWidget {
                 backgroundColor: colors.transparent,
                 elevation: 0,
                 pinned: true,
-                leading: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.08 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: AppMotion.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: colors.textPrimary,
-                      size: 20,
-                    ),
-                    onPressed: () => unawaited(Navigator.of(context).maybePop()),
-                  ),
-                ),
+                leading: const AppBackButton(),
                 flexibleSpace: ClipRect(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -663,7 +647,7 @@ class _DocumentIngestionView extends HookWidget {
               ),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),

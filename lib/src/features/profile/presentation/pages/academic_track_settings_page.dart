@@ -23,6 +23,7 @@ import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_so
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -123,14 +124,7 @@ class AcademicTrackSettingsPage extends HookWidget {
             backgroundColor: colors.backgroundPrimary,
             elevation: 0,
             scrolledUnderElevation: 0,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: colors.textPrimary,
-                size: 18,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            leading: const AppBackButton(),
             title: Text(
               'Academic Track & Goals',
               style: typography.title3.bold.copyWith(

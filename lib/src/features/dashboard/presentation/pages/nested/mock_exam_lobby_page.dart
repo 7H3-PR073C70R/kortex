@@ -18,6 +18,7 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -78,10 +79,7 @@ class MockExamLobbyPage extends HookWidget {
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-          onPressed: () => context.router.pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           l10n.mockExamLobbyTitle,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),

@@ -50,7 +50,7 @@ class StudyProgressTopBar extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: Icon(Icons.close_rounded, color: colors.textPrimary),
-                      tooltip: 'Exit Session',
+                      tooltip: l10n.tooltipExitSession,
                       onPressed: onClose,
                     ),
                     if (canUndo && onUndo != null)
@@ -60,7 +60,7 @@ class StudyProgressTopBar extends StatelessWidget {
                           color: colors.primary,
                           size: 20,
                         ),
-                        tooltip: 'Undo Last Rating (Cmd+Z / Z)',
+                        tooltip: l10n.tooltipUndoRating,
                         onPressed: onUndo,
                       ),
                   ],
@@ -103,7 +103,7 @@ class StudyProgressTopBar extends StatelessWidget {
                           color: colors.textSecondary,
                           size: 20,
                         ),
-                        tooltip: 'Thought Parking Lot',
+                        tooltip: l10n.tooltipThoughtParkingLot,
                         onPressed: onThoughtParkingLot,
                       ),
                     const SizedBox(width: 4),

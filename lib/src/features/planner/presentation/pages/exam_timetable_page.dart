@@ -25,6 +25,7 @@ import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -141,7 +142,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               ),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete Assessment'),
+            child: Text(context.l10n.plannerDeleteAssessment),
           ),
         ],
       ),
@@ -252,7 +253,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   );
                 },
                 icon: const Icon(Icons.add_circle_outline_rounded),
-                label: const Text('Create Study Deck'),
+                label: Text(context.l10n.plannerCreateStudyDeck),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
@@ -269,7 +270,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   );
                 },
                 icon: const Icon(Icons.school_outlined),
-                label: const Text('Start Diagnostic Practice Mock'),
+                label: Text(context.l10n.plannerStartDiagnosticMock),
               ),
             ],
           ),
@@ -605,7 +606,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                       );
                     },
                     icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text('Create New Deck'),
+                    label: Text(context.l10n.plannerCreateNewDeck),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -640,13 +641,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             appBar: AppBar(
               backgroundColor: colors.backgroundPrimary,
               elevation: 0,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: colors.textPrimary,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+              leading: const AppBackButton(),
               title: Text(
                 'Exam Timetable',
                 style: typography.headline.bold.copyWith(

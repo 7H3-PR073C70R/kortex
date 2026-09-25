@@ -16,6 +16,7 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -77,14 +78,7 @@ class SyllabotAiSettingsPage extends HookWidget {
       appBar: AppBar(
         backgroundColor: colors.backgroundPrimary,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-            size: 18,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Syllabot AI & Neural Engine',
           style: typography.title3.bold.copyWith(

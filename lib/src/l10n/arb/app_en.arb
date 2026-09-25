@@ -4670,5 +4670,277 @@
                 "example": "3"
             }
         }
+    },
+    "commonDelete": "Delete",
+    "@commonDelete": {
+        "description": "Common delete button label"
+    },
+    "commonEdit": "Edit",
+    "@commonEdit": {
+        "description": "Common edit button label"
+    },
+    "commonAddNew": "Add New",
+    "@commonAddNew": {
+        "description": "Common add new label"
+    },
+    "tooltipBold": "Bold",
+    "@tooltipBold": {
+        "description": "Bold formatting button tooltip"
+    },
+    "tooltipItalic": "Italic",
+    "@tooltipItalic": {
+        "description": "Italic formatting button tooltip"
+    },
+    "tooltipStrikethrough": "Strikethrough",
+    "@tooltipStrikethrough": {
+        "description": "Strikethrough formatting button tooltip"
+    },
+    "tooltipHeading": "Heading",
+    "@tooltipHeading": {
+        "description": "Heading formatting button tooltip"
+    },
+    "tooltipCodeBlock": "Code Block",
+    "@tooltipCodeBlock": {
+        "description": "Code block formatting button tooltip"
+    },
+    "tooltipBulletList": "Bullet List",
+    "@tooltipBulletList": {
+        "description": "Bullet list formatting button tooltip"
+    },
+    "tooltipNumberedList": "Numbered List",
+    "@tooltipNumberedList": {
+        "description": "Numbered list formatting button tooltip"
+    },
+    "tooltipQuote": "Quote",
+    "@tooltipQuote": {
+        "description": "Quote formatting button tooltip"
+    },
+    "tooltipLatexMath": "LaTeX Math",
+    "@tooltipLatexMath": {
+        "description": "LaTeX math formatting button tooltip"
+    },
+    "tooltipMathSymbols": "Greek / Math Symbols",
+    "@tooltipMathSymbols": {
+        "description": "Greek and math symbols button tooltip"
+    },
+    "tooltipAiFormatAssist": "AI Format Assist",
+    "@tooltipAiFormatAssist": {
+        "description": "AI format assist button tooltip"
+    },
+    "tooltipReportThread": "Report Thread",
+    "@tooltipReportThread": {
+        "description": "Report thread tooltip"
+    },
+    "tooltipShareThread": "Share Thread",
+    "@tooltipShareThread": {
+        "description": "Share thread tooltip"
+    },
+    "tooltipSortReplies": "Sort Replies",
+    "@tooltipSortReplies": {
+        "description": "Sort replies tooltip"
+    },
+    "tooltipAttachImage": "Attach Image",
+    "@tooltipAttachImage": {
+        "description": "Attach image tooltip"
+    },
+    "communityFocusRoomTitle": "Focus Room",
+    "@communityFocusRoomTitle": {
+        "description": "Focus room tile title"
+    },
+    "socraticHintLevel1": "Level 1: Core Concept Clue",
+    "@socraticHintLevel1": {
+        "description": "Socratic hint accordion level 1 title"
+    },
+    "socraticHintLevel2": "Level 2: Method & Strategy Direction",
+    "@socraticHintLevel2": {
+        "description": "Socratic hint accordion level 2 title"
+    },
+    "socraticHintLevel3": "Level 3: Formula & Pitfall Warning",
+    "@socraticHintLevel3": {
+        "description": "Socratic hint accordion level 3 title"
+    },
+    "communitySearchHint": "Search discussions, topics, tags...",
+    "@communitySearchHint": {
+        "description": "Search discussions input hint"
+    },
+    "createPostSyllabusHint": "Syllabus Topic (e.g. Thermodynamics, Calculus I)",
+    "@createPostSyllabusHint": {
+        "description": "Create post syllabus topic input hint"
+    },
+    "quizLeaveDialogTitle": "Leave this quiz?",
+    "@quizLeaveDialogTitle": {
+        "description": "Quiz exit confirmation dialog title"
+    },
+    "quizKeepGoing": "Keep going",
+    "@quizKeepGoing": {
+        "description": "Keep going button label in quiz dialog"
+    },
+    "quizFinishDialogTitle": "Finish and mark your answers?",
+    "@quizFinishDialogTitle": {
+        "description": "Finish quiz confirmation dialog title"
+    },
+    "quizFinishDialogSub": "Here is where you stand.",
+    "@quizFinishDialogSub": {
+        "description": "Finish quiz confirmation dialog subtitle"
+    },
+    "quizGoBack": "Go back",
+    "@quizGoBack": {
+        "description": "Go back button in quiz finish dialog"
+    },
+    "quizSeeResults": "See results",
+    "@quizSeeResults": {
+        "description": "See results button in quiz finish dialog"
+    },
+    "quizAllYearsRandom": "All Years (Random)",
+    "@quizAllYearsRandom": {
+        "description": "Past questions filter all years random option"
+    },
+    "quizResultCopied": "Result copied to clipboard!",
+    "@quizResultCopied": {
+        "description": "Snackbar message when quiz results are copied"
+    },
+    "plannerDeleteAssessment": "Delete Assessment",
+    "@plannerDeleteAssessment": {
+        "description": "Delete assessment menu item label"
+    },
+    "plannerCreateStudyDeck": "Create Study Deck",
+    "@plannerCreateStudyDeck": {
+        "description": "Create study deck button label in timetable"
+    },
+    "plannerStartDiagnosticMock": "Start Diagnostic Practice Mock",
+    "@plannerStartDiagnosticMock": {
+        "description": "Start diagnostic mock button label"
+    },
+    "plannerCreateNewDeck": "Create New Deck",
+    "@plannerCreateNewDeck": {
+        "description": "Create new deck button label"
+    },
+    "plannerSaveArchiveMilestone": "Save & Archive Milestone",
+    "@plannerSaveArchiveMilestone": {
+        "description": "Save & archive milestone button label"
+    },
+    "plannerReopenMilestone": "Reopen Milestone",
+    "@plannerReopenMilestone": {
+        "description": "Reopen milestone button label"
+    },
+    "plannerConcludeMilestone": "Log Grade & Conclude Milestone",
+    "@plannerConcludeMilestone": {
+        "description": "Log grade and conclude milestone button label"
+    },
+    "ingestionUpgradeTier": "Upgrade Tier",
+    "@ingestionUpgradeTier": {
+        "description": "Upgrade tier button label in drop zone"
+    },
+    "ingestionReExtract": "Re-extract",
+    "@ingestionReExtract": {
+        "description": "Re-extract document button label"
+    },
+    "securityTimeoutImmediately": "Immediately",
+    "@securityTimeoutImmediately": {
+        "description": "Security timeout option immediately"
+    },
+    "securityTimeout15s": "15 seconds",
+    "@securityTimeout15s": {
+        "description": "Security timeout option 15 seconds"
+    },
+    "securityTimeout30sDefault": "30 seconds (Default)",
+    "@securityTimeout30sDefault": {
+        "description": "Security timeout option 30 seconds default"
+    },
+    "securityTimeout1m": "1 minute",
+    "@securityTimeout1m": {
+        "description": "Security timeout option 1 minute"
+    },
+    "securityTimeout5m": "5 minutes",
+    "@securityTimeout5m": {
+        "description": "Security timeout option 5 minutes"
+    },
+    "studyHubViewAllTracks": "View All Tracks",
+    "@studyHubViewAllTracks": {
+        "description": "View all tracks button label"
+    },
+    "syllabotCapStorageSpace": "Storage Space",
+    "@syllabotCapStorageSpace": {
+        "description": "Syllabot capacity storage space label"
+    },
+    "syllabotCapProcessorCores": "Processor & Cores",
+    "@syllabotCapProcessorCores": {
+        "description": "Syllabot capacity processor cores label"
+    },
+    "syllabotCapRamBatteryGuard": "RAM & Battery Guard",
+    "@syllabotCapRamBatteryGuard": {
+        "description": "Syllabot capacity RAM battery guard label"
+    },
+    "tooltipUndoStroke": "Undo last stroke",
+    "@tooltipUndoStroke": {
+        "description": "Undo last stroke tooltip in LaTeX scratchpad"
+    },
+    "tooltipClearCanvas": "Clear canvas",
+    "@tooltipClearCanvas": {
+        "description": "Clear canvas tooltip in LaTeX scratchpad"
+    },
+    "tooltipShareInsight": "Share Insight to Study Circle",
+    "@tooltipShareInsight": {
+        "description": "Share insight tooltip in Syllabot chat"
+    },
+    "tooltipChatHistory": "Chat History",
+    "@tooltipChatHistory": {
+        "description": "Chat history tooltip in Syllabot chat"
+    },
+    "monetizationPromoHint": "e.g. SCHOLAR2026, UNILAG_STEM",
+    "@monetizationPromoHint": {
+        "description": "Promo code input hint"
+    },
+    "focusModeTitle": "Hyperdrive Focus Mode",
+    "@focusModeTitle": {
+        "description": "Hyperdrive focus mode title"
+    },
+    "focusModeSubtitle": "ADHD-calibrated micro-sprints to beat task paralysis.",
+    "@focusModeSubtitle": {
+        "description": "Hyperdrive focus mode subtitle"
+    },
+    "focusModeCatchUpRescuer": "Soft Catch-Up Rescuer",
+    "@focusModeCatchUpRescuer": {
+        "description": "Soft catch-up rescuer option title"
+    },
+    "focusModeReadAloud": "Read Aloud (TTS)",
+    "@focusModeReadAloud": {
+        "description": "Read aloud TTS option title"
+    },
+    "focusModeHideClock": "Hide Clock / Counter",
+    "@focusModeHideClock": {
+        "description": "Hide clock option title"
+    },
+    "thoughtParkingLotTitle": "Thought Parking Lot",
+    "@thoughtParkingLotTitle": {
+        "description": "Thought parking lot title"
+    },
+    "thoughtParkingLotSubtitle": "Dump intrusive thoughts in 5s. Clear your working memory.",
+    "@thoughtParkingLotSubtitle": {
+        "description": "Thought parking lot subtitle"
+    },
+    "thoughtParkingLotHint": "Park an intrusive thought...",
+    "@thoughtParkingLotHint": {
+        "description": "Thought parking lot text input hint"
+    },
+    "tooltipRemoveCard": "Remove Card",
+    "@tooltipRemoveCard": {
+        "description": "Remove card button tooltip"
+    },
+    "subdeckSearchHint": "Search hierarchy & sub-decks...",
+    "@subdeckSearchHint": {
+        "description": "Search hierarchy and sub-decks hint"
+    },
+    "tooltipExitSession": "Exit Session",
+    "@tooltipExitSession": {
+        "description": "Exit session tooltip in study top bar"
+    },
+    "tooltipUndoRating": "Undo Last Rating (Cmd+Z / Z)",
+    "@tooltipUndoRating": {
+        "description": "Undo last rating tooltip in study top bar"
+    },
+    "tooltipThoughtParkingLot": "Thought Parking Lot",
+    "@tooltipThoughtParkingLot": {
+        "description": "Thought parking lot tooltip in study top bar"
     }
 }

@@ -12,6 +12,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/notifications/presentation/widgets/notification_tile.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 
 @RoutePage()
 class NotificationsPage extends StatelessWidget {
@@ -48,30 +49,7 @@ class _NotificationsView extends HookWidget {
             isDark ? colors.backgroundPrimary : colors.surfacePrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              unawaited(HapticFeedback.lightImpact());
-              unawaited(context.router.maybePop());
-            },
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isDark
-                    ? colors.surfaceSecondary
-                    : colors.surfaceSecondary.withAlpha(140),
-              ),
-              child: Icon(
-                Icons.arrow_back_rounded,
-                size: 20,
-                color: colors.textPrimary,
-              ),
-            ),
-          ),
-        ),
+        leading: const AppBackButton(),
         title: Row(
           children: [
             Text(

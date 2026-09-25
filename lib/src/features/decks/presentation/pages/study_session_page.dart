@@ -24,6 +24,7 @@ import 'package:kortex/src/features/decks/presentation/widgets/sprint_milestone_
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/thought_parking_lot_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -198,32 +199,7 @@ class _StudySessionView extends HookWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Semantics(
-                          button: true,
-                          label: 'Back',
-                          child: IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceSecondary.withAlpha(
-                                  isDark ? 180 : 120,
-                                ),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 50 : 25,
-                                  ),
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.arrow_back_rounded,
-                                color: colors.textPrimary,
-                                size: 20,
-                              ),
-                            ),
-                            onPressed: () => context.router.pop(),
-                          ),
-                        ),
+                        const AppBackButton(),
                         Text(
                           'Study Session',
                           style: typography.subhead.bold.copyWith(

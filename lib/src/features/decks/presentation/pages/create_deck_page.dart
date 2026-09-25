@@ -18,6 +18,7 @@ import 'package:kortex/src/features/decks/domain/services/study_engine_router.da
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -356,14 +357,7 @@ class CreateDeckPage extends HookWidget {
         backgroundColor: colors.backgroundPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-            size: 19,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(),
         title: Column(
           children: [
             Text(

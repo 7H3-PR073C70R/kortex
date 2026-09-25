@@ -297,7 +297,7 @@ class _CommunityHubView extends HookWidget {
                       (r) => r.id == roomId,
                       orElse: () => StudyRoomEntity(
                         id: roomId,
-                        title: 'Focus Room',
+                        title: context.l10n.communityFocusRoomTitle,
                         subject: 'General Study',
                       ),
                     );

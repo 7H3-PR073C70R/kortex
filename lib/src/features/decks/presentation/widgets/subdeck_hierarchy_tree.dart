@@ -4,6 +4,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 
 /// Hierarchical tree node representing a folder, sub-deck, or tag hierarchy.
@@ -146,7 +147,7 @@ class SubdeckHierarchyTree extends HookWidget {
           child: TextField(
             onChanged: (val) => searchQuery.value = val.trim().toLowerCase(),
             decoration: InputDecoration(
-              hintText: 'Search hierarchy & sub-decks...',
+              hintText: context.l10n.subdeckSearchHint,
               prefixIcon: Icon(
                 Icons.search_rounded,
                 size: 20,

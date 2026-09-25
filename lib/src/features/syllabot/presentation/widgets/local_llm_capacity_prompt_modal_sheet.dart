@@ -8,6 +8,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -120,6 +121,7 @@ class _LocalLlmCapacityPromptModalSheetState
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -238,7 +240,7 @@ class _LocalLlmCapacityPromptModalSheetState
                             iconColor: _report!.hasSufficientStorage
                                 ? colors.success
                                 : colors.error,
-                            title: 'Storage Space',
+                            title: l10n.syllabotCapStorageSpace,
                             subtitle: _report!.storageStatusText,
                             statusBadge: _report!.hasSufficientStorage
                                 ? 'Ready'
@@ -251,7 +253,7 @@ class _LocalLlmCapacityPromptModalSheetState
                           _AuditRow(
                             icon: Icons.speed_rounded,
                             iconColor: colors.primary,
-                            title: 'Processor & Cores',
+                            title: l10n.syllabotCapProcessorCores,
                             subtitle:
                                 '${_report!.cpuCores} CPU Cores • ${_report!.performanceTier}',
                             statusBadge: 'Optimized',
@@ -261,7 +263,7 @@ class _LocalLlmCapacityPromptModalSheetState
                           _AuditRow(
                             icon: Icons.psychology_rounded,
                             iconColor: colors.syllabotAccent,
-                            title: 'RAM & Battery Guard',
+                            title: l10n.syllabotCapRamBatteryGuard,
                             subtitle:
                                 '~350MB Peak RAM • Optimized for energy efficiency',
                             statusBadge: 'Optimal',

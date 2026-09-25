@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class SocraticHintAccordionWidget extends StatefulWidget {
@@ -81,7 +82,7 @@ class _SocraticHintAccordionWidgetState
           // Level 1: Core Concept Clue
           _buildAccordionTier(
             tierLevel: 1,
-            title: 'Level 1: Core Concept Clue',
+            title: context.l10n.socraticHintLevel1,
             icon: Icons.lightbulb_outline_rounded,
             content: parsedTiers.level1,
             accentColor: neural.cyan400,
@@ -91,7 +92,7 @@ class _SocraticHintAccordionWidgetState
           // Level 2: Method & Strategy Direction
           _buildAccordionTier(
             tierLevel: 2,
-            title: 'Level 2: Method & Strategy Direction',
+            title: context.l10n.socraticHintLevel2,
             icon: Icons.explore_outlined,
             content: parsedTiers.level2,
             accentColor: neural.amber400,
@@ -101,7 +102,7 @@ class _SocraticHintAccordionWidgetState
           // Level 3: Formula & Pitfall Warning
           _buildAccordionTier(
             tierLevel: 3,
-            title: 'Level 3: Formula & Pitfall Warning',
+            title: context.l10n.socraticHintLevel3,
             icon: Icons.verified_outlined,
             content: parsedTiers.level3,
             accentColor: neural.emerald400,

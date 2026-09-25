@@ -3,6 +3,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -309,7 +310,7 @@ class ManualCardEditorView extends StatelessWidget {
                         color: colors.error,
                       ),
                       onPressed: () => onRemoveCard(idx),
-                      tooltip: 'Remove Card',
+                      tooltip: context.l10n.tooltipRemoveCard,
                     ),
                   ],
                 ),

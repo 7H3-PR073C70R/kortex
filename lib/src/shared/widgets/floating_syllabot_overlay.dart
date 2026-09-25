@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,8 +15,9 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 ///
 /// Features:
 /// - Floats conveniently above the bottom navigation dock.
+/// - Innovative Logo-Only Syllabot AI orb button with rotating multi-color AI ring.
 /// - Expandable into full-screen Syllabot AI workspace on tap.
-/// - Collapsible with a single tap to return to the unobtrusive floating pill.
+/// - Collapsible with a single tap to return to the unobtrusive floating logo.
 /// - Retains ongoing conversation context across minimize/maximize cycles.
 class FloatingSyllabotOverlay extends StatefulWidget {
   const FloatingSyllabotOverlay({
@@ -83,12 +85,10 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final neural = context.neural;
     final colors = context.colors;
-    final typography = context.typography;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    final defaultBottom = math.max(84, (bottomInset + 72).toInt()).toDouble();
+    final defaultBottom = math.max(84, (bottomInset + 76).toInt()).toDouble();
     final bottomPosition = _customBottomOffset ?? defaultBottom;
 
     return Stack(
@@ -96,10 +96,10 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
         // 1. Underlying Application Pages
         widget.child,
 
-        // 2. Collapsed Floating Syllabot Action Pill (When not expanded)
+        // 2. Collapsed Floating Syllabot AI Logo Orb (When not expanded)
         if (!_isExpanded || _expandAnimation.value < 1.0)
           Positioned(
-            right: 16,
+            right: 20,
             bottom: bottomPosition,
             child: FadeTransition(
               opacity: Tween<double>(begin: 1, end: 0).animate(
@@ -122,7 +122,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                     child: PlatformHoverBuilder(
                       builder: (context, isHovered, child) {
                         return AnimatedScale(
-                          scale: isHovered ? 1.04 : 1.0,
+                          scale: isHovered ? 1.08 : 1.0,
                           duration: AppMotion.snappy,
                           curve: AppMotion.easeOutCubic,
                           child: child,
@@ -130,86 +130,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                       },
                       child: ShrinkableButton(
                         onTap: _expand,
-                        child: Container(
-                          key: AppTourKeys.syllabotFabKey,
-                          padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                neural.obsidian850,
-                                neural.obsidian800,
-                                neural.obsidian850,
-                              ],
-                            ),
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(99),
-                            ),
-                            border: Border.fromBorderSide(
-                              BorderSide(
-                                color: neural.purple500.withAlpha(102),
-                              ),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: neural.glowCyan,
-                                blurRadius: 20,
-                                spreadRadius: -5,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Bot avatar with neon cyan→indigo→fuchsia ring
-                              Container(
-                                width: 32,
-                                height: 32,
-                                padding: const EdgeInsets.all(1.5),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    begin: Alignment.bottomLeft,
-                                    end: Alignment.topRight,
-                                    colors: [
-                                      neural.cyan,
-                                      neural.indigo500,
-                                      neural.fuchsia500,
-                                    ],
-                                  ),
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: neural.obsidian950,
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.smart_toy_rounded,
-                                      size: 16,
-                                      color: neural.cyan300,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Ask Syllabot',
-                                style: typography.caption.semiBold.copyWith(
-                                  color: neural.slate100,
-                                  fontSize: 12,
-                                  letterSpacing: 0.2,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.auto_awesome_rounded,
-                                color: neural.amber400,
-                                size: 12,
-                              ),
-                            ],
-                          ),
-                        ),
+                        child: const _SyllabotLogoOrb(),
                       ),
                     ),
                   ),
@@ -252,4 +173,169 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
       ],
     );
   }
+}
+
+/// Innovative Logo-Only Syllabot AI Floating Orb with rotating multi-color AI petals
+class _SyllabotLogoOrb extends StatefulWidget {
+  const _SyllabotLogoOrb();
+
+  @override
+  State<_SyllabotLogoOrb> createState() => _SyllabotLogoOrbState();
+}
+
+class _SyllabotLogoOrbState extends State<_SyllabotLogoOrb>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _rotationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    );
+    unawaited(_rotationController.repeat());
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final neural = context.neural;
+    final colors = context.colors;
+    final isDark = context.isDarkMode;
+
+    return Container(
+      key: AppTourKeys.syllabotFabKey,
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isDark
+            ? neural.obsidian950.withAlpha(240)
+            : colors.surfaceSecondary.withAlpha(240),
+        border: Border.all(
+          color: isDark
+              ? colors.white.withAlpha(45)
+              : colors.black.withAlpha(20),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: neural.fuchsia500.withAlpha(isDark ? 80 : 50),
+            blurRadius: 18,
+            spreadRadius: -2,
+          ),
+          BoxShadow(
+            color: neural.cyan.withAlpha(isDark ? 65 : 40),
+            blurRadius: 14,
+            spreadRadius: -4,
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 1. Rotating multi-color radial AI petals
+              RotationTransition(
+                turns: _rotationController,
+                child: CustomPaint(
+                  size: const Size(50, 50),
+                  painter: _AIPetalsPainter(
+                    colors: [
+                      neural.cyan,
+                      neural.indigo500,
+                      neural.fuchsia500,
+                      neural.purple500,
+                      neural.amber400,
+                      neural.cyan300,
+                      neural.cyan,
+                    ],
+                  ),
+                ),
+              ),
+              // 2. Central AI core spark badge
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark
+                      ? neural.obsidian950.withAlpha(230)
+                      : colors.surfaceSecondary.withAlpha(235),
+                  border: Border.all(
+                    color: neural.cyan.withAlpha(120),
+                    width: 0.8,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 13,
+                    color: neural.cyan300,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AIPetalsPainter extends CustomPainter {
+  _AIPetalsPainter({required this.colors});
+
+  final List<Color> colors;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    const count = 8;
+    final radius = size.width * 0.33;
+    final petalWidth = size.width * 0.12;
+    final petalLength = size.width * 0.22;
+
+    for (var i = 0; i < count; i++) {
+      final angle = (i * 2 * math.pi) / count;
+      final color = colors[i % colors.length];
+
+      canvas
+        ..save()
+        ..translate(center.dx, center.dy)
+        ..rotate(angle);
+
+      final paint = Paint()
+        ..color = color.withAlpha(220)
+        ..style = PaintingStyle.fill;
+
+      final path = Path()
+        ..addRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(
+              -petalWidth / 2,
+              -radius - (petalLength / 2),
+              petalWidth,
+              petalLength,
+            ),
+            Radius.circular(petalWidth / 2),
+          ),
+        );
+
+      canvas
+        ..drawPath(path, paint)
+        ..restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _AIPetalsPainter oldDelegate) => false;
 }

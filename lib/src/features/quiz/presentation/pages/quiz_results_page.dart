@@ -28,6 +28,7 @@ import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -247,10 +248,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           result.quizTitle,
           style: typography.title3.bold.copyWith(
@@ -1052,10 +1050,10 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       await Clipboard.setData(ClipboardData(text: message));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Result copied to clipboard!'),
+          SnackBar(
+            content: Text(context.l10n.quizResultCopied),
             behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }

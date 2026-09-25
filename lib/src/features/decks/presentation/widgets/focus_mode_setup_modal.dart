@@ -7,6 +7,7 @@ import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/focus_session_config.dart';
 import 'package:kortex/src/features/decks/presentation/pages/focus_workspace_page.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class FocusModeSetupModal extends StatefulWidget {
@@ -108,9 +109,11 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final l10n = context.l10n;
+
     return DeckSheetScaffold(
-      title: 'Hyperdrive Focus Mode',
-      subtitle: 'ADHD-calibrated micro-sprints to beat task paralysis.',
+      title: l10n.focusModeTitle,
+      subtitle: l10n.focusModeSubtitle,
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -335,7 +338,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
             children: [
               _FeatureSwitchTile(
                 icon: Icons.auto_awesome_rounded,
-                title: 'Soft Catch-Up Rescuer',
+                title: l10n.focusModeCatchUpRescuer,
                 subtitle:
                     '60% quick dopamine wins + 40% priority cards to eliminate paralysis.',
                 value: _isSoftCatchUp,
@@ -344,7 +347,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
               const Divider(height: 16),
               _FeatureSwitchTile(
                 icon: Icons.record_voice_over_rounded,
-                title: 'Read Aloud (TTS)',
+                title: l10n.focusModeReadAloud,
                 subtitle:
                     'Engage multi-sensory attention with spoken card prompts.',
                 value: _ttsAutoRead,
@@ -353,7 +356,7 @@ class _FocusModeSetupModalState extends State<FocusModeSetupModal> {
               const Divider(height: 16),
               _FeatureSwitchTile(
                 icon: Icons.visibility_off_rounded,
-                title: 'Hide Clock / Counter',
+                title: l10n.focusModeHideClock,
                 subtitle:
                     'Alleviate timer panic and rejection-sensitivity anxiety.',
                 value: _hideCardCounter,

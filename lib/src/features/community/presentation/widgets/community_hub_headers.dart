@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -180,7 +181,7 @@ class CommunitySearchHeader extends StatelessWidget {
                       fontSize: 13.5,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Search discussions, topics, tags...',
+                      hintText: context.l10n.communitySearchHint,
                       hintStyle: typography.footnote.regular.copyWith(
                         color: colors.textSecondary.withAlpha(160),
                         fontSize: 13,

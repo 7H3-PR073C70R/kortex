@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 /// Modal bottom sheet for redeeming promotional and institutional voucher codes (MON-06).
@@ -34,6 +35,7 @@ class PromoCodeBottomSheet extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     final codeController = useTextEditingController();
     final isValidating = useState<bool>(false);
@@ -147,7 +149,7 @@ class PromoCodeBottomSheet extends HookWidget {
                   controller: codeController,
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
-                    hintText: 'e.g. SCHOLAR2026, UNILAG_STEM',
+                    hintText: l10n.monetizationPromoHint,
                     hintStyle: typography.body.medium.copyWith(
                       color: colors.textSecondary,
                     ),

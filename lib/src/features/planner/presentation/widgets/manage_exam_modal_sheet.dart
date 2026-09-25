@@ -110,6 +110,7 @@ class ManageExamModalSheet extends StatelessWidget {
             final colors = ctx.colors;
             final typography = ctx.typography;
             final isDark = ctx.isDarkMode;
+            final l10n = ctx.l10n;
 
             return Padding(
               padding: EdgeInsets.only(
@@ -236,7 +237,7 @@ class ManageExamModalSheet extends StatelessWidget {
                           );
                         }
                       },
-                      child: const Text('Save & Archive Milestone'),
+                      child: Text(l10n.plannerSaveArchiveMilestone),
                     ),
                   ],
                 ),
@@ -800,7 +801,7 @@ class ManageExamModalSheet extends StatelessWidget {
                       }
                     },
                     icon: const Icon(Icons.replay_rounded, size: 16),
-                    label: const Text('Reopen Milestone'),
+                    label: Text(l10n.plannerReopenMilestone),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: BorderSide(color: colors.primary.withAlpha(120)),
@@ -813,7 +814,7 @@ class ManageExamModalSheet extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: () => _showCompleteDialog(context, cubit, exam),
                     icon: const Icon(Icons.check_circle_outline_rounded, size: 17),
-                    label: const Text('Log Grade & Conclude Milestone'),
+                    label: Text(l10n.plannerConcludeMilestone),
                     style: FilledButton.styleFrom(
                       backgroundColor:
                           exam.isPast ? colors.warning : colors.primary,
@@ -841,7 +842,7 @@ class ManageExamModalSheet extends StatelessWidget {
                           );
                         },
                         icon: const Icon(Icons.edit_outlined, size: 16),
-                        label: const Text('Edit'),
+                        label: Text(l10n.commonEdit),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           side: BorderSide(color: colors.surfaceBorder),
@@ -859,7 +860,7 @@ class ManageExamModalSheet extends StatelessWidget {
                           unawaited(AddExamModalSheet.show(context));
                         },
                         icon: const Icon(Icons.add_rounded, size: 16),
-                        label: const Text('Add New'),
+                        label: Text(l10n.commonAddNew),
                         style: FilledButton.styleFrom(
                           backgroundColor: colors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 12),

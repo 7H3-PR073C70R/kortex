@@ -17,9 +17,9 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/otp_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class OtpVerificationPage extends HookWidget {
@@ -118,43 +118,9 @@ class _OtpView extends HookWidget {
                     child: Column(
                       children: [
                         if (Navigator.canPop(context)) ...[
-                          Align(
+                          const Align(
                             alignment: Alignment.centerLeft,
-                            child: PlatformHoverBuilder(
-                              builder: (context, isHovered, child) {
-                                return ShrinkableButton(
-                                  onTap: () {
-                                    unawaited(HapticFeedback.lightImpact());
-                                    unawaited(Navigator.maybePop(context));
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: AppMotion.snappy,
-                                    curve: AppMotion.easeOutCubic,
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: isHovered
-                                          ? colors.surfaceSecondary.withAlpha(
-                                              140,
-                                            )
-                                          : colors.surfaceSecondary.withAlpha(
-                                              80,
-                                            ),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isHovered
-                                            ? colors.surfaceBorderHighlight
-                                            : colors.surfaceBorder,
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      Icons.arrow_back_ios_new_rounded,
-                                      size: 18,
-                                      color: colors.textPrimary,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
+                            child: AppBackButton(),
                           ),
                           const SizedBox(height: 12),
                         ],

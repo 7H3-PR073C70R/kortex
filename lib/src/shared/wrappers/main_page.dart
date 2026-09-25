@@ -614,52 +614,32 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(dockRadius),
               boxShadow: [
-                // Deep contact shadow for 3D elevation
                 BoxShadow(
-                  color: isDark
-                      ? colors.black.withAlpha(120)
-                      : colors.black.withAlpha(22),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                  spreadRadius: isDark ? -2 : -4,
-                ),
-                // Ambient brand primary aura
-                BoxShadow(
-                  color: isDark
-                      ? colors.primary.withAlpha(35)
-                      : colors.primary.withAlpha(20),
-                  blurRadius: 28,
+                  color: colors.black.withAlpha(isDark ? 80 : 15),
+                  blurRadius: 16,
                   offset: const Offset(0, 4),
-                  spreadRadius: -4,
+                ),
+                BoxShadow(
+                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                  blurRadius: 20,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(dockRadius),
               child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+                filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                 child: Container(
                   decoration: BoxDecoration(
-                    // Multi-layer frosted liquid glass gradient
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              colors.surfaceSecondary.withAlpha(145),
-                              colors.surfaceSecondary.withAlpha(95),
-                            ]
-                          : [
-                              colors.white.withAlpha(210),
-                              colors.white.withAlpha(170),
-                            ],
-                    ),
+                    color: isDark
+                        ? colors.surfaceSecondary.withAlpha(140)
+                        : colors.surfaceSecondary.withAlpha(200),
                     borderRadius: BorderRadius.circular(dockRadius),
-                    // Specular perimeter light rim
                     border: Border.all(
                       color: isDark
-                          ? colors.white.withAlpha(48)
-                          : colors.white.withAlpha(220),
+                          ? colors.white.withAlpha(35)
+                          : colors.white.withAlpha(180),
                       width: 1.2,
                     ),
                   ),
@@ -688,7 +668,6 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                           children: [
                             // -----------------------------------------------
                             // 1. Unified Draggable Liquid Glass Active Capsule
-                            // Identical shape, padding, and styling across ALL tabs
                             // -----------------------------------------------
                             Positioned(
                               left: capsuleLeft,
@@ -700,33 +679,30 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                 scaleY: jellyScaleY,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    // Liquid glass tint with gentle vertical gradient
                                     gradient: LinearGradient(
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
                                       colors: isDark
                                           ? [
-                                              colors.primary.withAlpha(68),
-                                              colors.primary.withAlpha(42),
+                                              colors.primary.withAlpha(180),
+                                              colors.primary.withAlpha(140),
                                             ]
                                           : [
-                                              colors.primary.withAlpha(45),
-                                              colors.primary.withAlpha(26),
+                                              colors.primary,
+                                              colors.primary.withAlpha(235),
                                             ],
                                     ),
                                     borderRadius:
                                         BorderRadius.circular(capsuleRadius),
-                                    // Precision specular border around the active capsule
                                     border: Border.all(
                                       color: colors.primary
-                                          .withAlpha(isDark ? 110 : 80),
+                                          .withAlpha(isDark ? 140 : 100),
                                       width: 1.2,
                                     ),
                                     boxShadow: [
-                                      // Soft sub-capsule glow
                                       BoxShadow(
                                         color: colors.primary
-                                            .withAlpha(isDark ? 55 : 28),
+                                            .withAlpha(isDark ? 80 : 40),
                                         blurRadius: 12,
                                         offset: const Offset(0, 2),
                                       ),
@@ -734,19 +710,47 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                   ),
                                   child: Stack(
                                     children: [
-                                      // Specular top highlight sheen
+                                      // Top liquid glass chromatic edge refraction
                                       Positioned(
-                                        top: 1,
-                                        left: 8,
-                                        right: 8,
-                                        height: 1,
+                                        top: 0,
+                                        left: 6,
+                                        right: 6,
+                                        height: 2.5,
                                         child: Container(
                                           decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(2),
                                             gradient: LinearGradient(
                                               colors: [
                                                 colors.transparent,
-                                                (isDark ? colors.white : colors.white)
-                                                    .withAlpha(isDark ? 50 : 120),
+                                                context.neural.cyan
+                                                    .withAlpha(160),
+                                                colors.white.withAlpha(220),
+                                                context.neural.amber400
+                                                    .withAlpha(160),
+                                                colors.transparent,
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Bottom liquid glass chromatic edge refraction
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 6,
+                                        right: 6,
+                                        height: 2.5,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(2),
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                colors.transparent,
+                                                context.neural.fuchsia500
+                                                    .withAlpha(160),
+                                                context.neural.cyan300
+                                                    .withAlpha(180),
                                                 colors.transparent,
                                               ],
                                             ),
@@ -760,7 +764,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                             ),
 
                             // -----------------------------------------------
-                            // 2. Tab Items Row with Dynamic Interpolated Polish
+                            // 2. Tab Items Row
                             // -----------------------------------------------
                             Positioned.fill(
                               child: Row(
@@ -777,13 +781,13 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
 
                                   final iconColor = Color.lerp(
                                     colors.textSecondary,
-                                    colors.primary,
+                                    colors.white,
                                     activeWeight,
                                   )!;
 
                                   final textColor = Color.lerp(
-                                    colors.textSecondary.withAlpha(210),
-                                    colors.primary,
+                                    colors.textSecondary,
+                                    colors.white,
                                     activeWeight,
                                   )!;
 
