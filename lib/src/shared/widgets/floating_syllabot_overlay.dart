@@ -10,6 +10,7 @@ import 'package:kortex/src/features/syllabot/presentation/pages/syllabot_chat_pa
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
 
 /// A global floating expandable & collapsible Syllabot AI overlay.
 ///
@@ -175,7 +176,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
   }
 }
 
-/// Innovative Logo-Only Syllabot AI Floating Orb with rotating multi-color AI petals
+/// Mind-Blowing & Weird Quantum Liquid Syllabot AI Floating Orb
 class _SyllabotLogoOrb extends StatefulWidget {
   const _SyllabotLogoOrb();
 
@@ -185,21 +186,21 @@ class _SyllabotLogoOrb extends StatefulWidget {
 
 class _SyllabotLogoOrbState extends State<_SyllabotLogoOrb>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _rotationController;
+  late final AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    _rotationController = AnimationController(
+    _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 12),
+      duration: const Duration(seconds: 4),
     );
-    unawaited(_rotationController.repeat());
+    unawaited(_pulseController.repeat(reverse: true));
   }
 
   @override
   void dispose() {
-    _rotationController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -209,133 +210,156 @@ class _SyllabotLogoOrbState extends State<_SyllabotLogoOrb>
     final colors = context.colors;
     final isDark = context.isDarkMode;
 
-    return Container(
-      key: AppTourKeys.syllabotFabKey,
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isDark
-            ? neural.obsidian950.withAlpha(240)
-            : colors.surfaceSecondary.withAlpha(240),
-        border: Border.all(
-          color: isDark
-              ? colors.white.withAlpha(45)
-              : colors.black.withAlpha(20),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: neural.fuchsia500.withAlpha(isDark ? 80 : 50),
-            blurRadius: 18,
-            spreadRadius: -2,
-          ),
-          BoxShadow(
-            color: neural.cyan.withAlpha(isDark ? 65 : 40),
-            blurRadius: 14,
-            spreadRadius: -4,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. Rotating multi-color radial AI petals
-              RotationTransition(
-                turns: _rotationController,
-                child: CustomPaint(
-                  size: const Size(50, 50),
-                  painter: _AIPetalsPainter(
-                    colors: [
-                      neural.cyan,
-                      neural.indigo500,
-                      neural.fuchsia500,
-                      neural.purple500,
-                      neural.amber400,
-                      neural.cyan300,
-                      neural.cyan,
-                    ],
-                  ),
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final progress = _pulseController.value;
+        final breathScale = 1.0 + (math.sin(progress * math.pi * 2) * 0.04);
+        final glowOpacity = 0.35 + (math.sin(progress * math.pi * 2) * 0.25);
+
+        return Transform.scale(
+          scale: breathScale,
+          child: Container(
+            key: AppTourKeys.syllabotFabKey,
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark
+                  ? neural.obsidian950.withAlpha(240)
+                  : colors.surfacePrimary.withAlpha(240),
+              border: Border.all(
+                color: isDark
+                    ? colors.white.withAlpha(50)
+                    : colors.black.withAlpha(25),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: neural.fuchsia500.withAlpha((glowOpacity * 160).toInt()),
+                  blurRadius: 22,
+                  spreadRadius: 1,
+                ),
+                BoxShadow(
+                  color: neural.cyan.withAlpha((glowOpacity * 180).toInt()),
+                  blurRadius: 18,
+                  spreadRadius: -2,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // 1. Organic Weird Quantum Liquid Wave Halo
+                    CustomPaint(
+                      size: const Size(58, 58),
+                      painter: _QuantumAuroraHaloPainter(
+                        progress: progress,
+                        cyan: neural.cyan,
+                        fuchsia: neural.fuchsia500,
+                        indigo: neural.indigo500,
+                        amber: neural.amber400,
+                      ),
+                    ),
+
+                    // 2. Central Syllabot Mascot Avatar Core
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? neural.obsidian950.withAlpha(220)
+                            : colors.surfaceSecondary.withAlpha(230),
+                        border: Border.all(
+                          color: neural.cyan.withAlpha(120),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: neural.cyan.withAlpha(60),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: SyllabotAvatar(size: 34),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              // 2. Central AI core spark badge
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isDark
-                      ? neural.obsidian950.withAlpha(230)
-                      : colors.surfaceSecondary.withAlpha(235),
-                  border: Border.all(
-                    color: neural.cyan.withAlpha(120),
-                    width: 0.8,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.auto_awesome_rounded,
-                    size: 13,
-                    color: neural.cyan300,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
-class _AIPetalsPainter extends CustomPainter {
-  _AIPetalsPainter({required this.colors});
+class _QuantumAuroraHaloPainter extends CustomPainter {
+  const _QuantumAuroraHaloPainter({
+    required this.progress,
+    required this.cyan,
+    required this.fuchsia,
+    required this.indigo,
+    required this.amber,
+  });
 
-  final List<Color> colors;
+  final double progress;
+  final Color cyan;
+  final Color fuchsia;
+  final Color indigo;
+  final Color amber;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    const count = 8;
-    final radius = size.width * 0.33;
-    final petalWidth = size.width * 0.12;
-    final petalLength = size.width * 0.22;
+    final radius = size.width / 2;
 
-    for (var i = 0; i < count; i++) {
-      final angle = (i * 2 * math.pi) / count;
-      final color = colors[i % colors.length];
+    final angle = progress * math.pi * 2;
 
-      canvas
-        ..save()
-        ..translate(center.dx, center.dy)
-        ..rotate(angle);
+    // Organic liquid wave distortion painter
+    final path = Path();
+    const points = 16;
+    for (var i = 0; i < points; i++) {
+      final theta = (i * 2 * math.pi) / points;
+      // Organic sine wave distortion for a weird liquid physics vibe
+      final wave = math.sin(theta * 3 + angle * 2) * 2.2 +
+          math.cos(theta * 2 - angle) * 1.4;
+      final r = (radius * 0.90) + wave;
 
-      final paint = Paint()
-        ..color = color.withAlpha(220)
-        ..style = PaintingStyle.fill;
+      final x = center.dx + r * math.cos(theta);
+      final y = center.dy + r * math.sin(theta);
 
-      final path = Path()
-        ..addRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(
-              -petalWidth / 2,
-              -radius - (petalLength / 2),
-              petalWidth,
-              petalLength,
-            ),
-            Radius.circular(petalWidth / 2),
-          ),
-        );
-
-      canvas
-        ..drawPath(path, paint)
-        ..restore();
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
+    path.close();
+
+    final paint = Paint()
+      ..shader = SweepGradient(
+        transform: GradientRotation(angle),
+        colors: [
+          cyan.withAlpha(180),
+          indigo.withAlpha(190),
+          fuchsia.withAlpha(200),
+          amber.withAlpha(160),
+          cyan.withAlpha(180),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.8;
+
+    canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _AIPetalsPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _QuantumAuroraHaloPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
 }
