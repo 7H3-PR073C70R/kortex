@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -9,11 +10,14 @@ import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 
 Widget createTestApp(Widget child) {
-  return MaterialApp(
-    theme: AppTheme.darkTheme,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: child),
+  return ScreenUtilInit(
+    designSize: const Size(375, 812),
+    builder: (context, _) => MaterialApp(
+      theme: AppTheme.darkTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: child),
+    ),
   );
 }
 
@@ -65,6 +69,11 @@ void main() {
     testWidgets(
       'AppGuidedTourOverlay renders steps and handles next/previous/finish navigation',
       (tester) async {
+        tester.view.physicalSize = const Size(375 * 3, 812 * 3);
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         var tourCompleted = false;
 
         await tester.pumpWidget(
@@ -78,7 +87,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         // Step 1: Dashboard
-        expect(find.text('Academic Command Center'), findsOneWidget);
+        expect(find.text('Academic HQ & Neural Tier'), findsOneWidget);
         expect(find.text('Next Step'), findsOneWidget);
 
         // Tap Next Step -> Step 2
@@ -86,7 +95,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.text('Daily Review Queue'), findsOneWidget);
+        expect(find.text('FSRS-6 Daily Review Queue'), findsOneWidget);
         expect(find.text('Back'), findsOneWidget);
 
         // Tap Back -> Back to Step 1
@@ -94,7 +103,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(find.text('Academic Command Center'), findsOneWidget);
+        expect(find.text('Academic HQ & Neural Tier'), findsOneWidget);
 
         // Skip Tour
         await tester.tap(find.text('Skip Tour'));
@@ -131,7 +140,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tour should NOT appear because it was already completed/skipped
-        expect(find.text('Academic Command Center'), findsNothing);
+        expect(find.text('Academic HQ & Neural Tier'), findsNothing);
 
         locator.unregister<LocalStorageService>();
       },
@@ -164,7 +173,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         // Tour SHOULD appear because force: true was specified
-        expect(find.text('Academic Command Center'), findsOneWidget);
+        expect(find.text('Academic HQ & Neural Tier'), findsOneWidget);
 
         locator.unregister<LocalStorageService>();
       },

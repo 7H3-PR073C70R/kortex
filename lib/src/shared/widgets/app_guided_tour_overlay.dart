@@ -26,6 +26,7 @@ class _TourStep {
     required this.accentColor,
     required this.targetTabIndex,
     required this.resolveTarget,
+    this.onStepActivated,
   });
 
   final String badge;
@@ -38,6 +39,7 @@ class _TourStep {
   final int targetTabIndex;
   final Rect Function(BuildContext context, Size screenSize, EdgeInsets insets)
   resolveTarget;
+  final VoidCallback? onStepActivated;
 }
 
 /// Interactive spotlight walkthrough overlay that guides users through ALL core
@@ -255,16 +257,10 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         resolveTarget: (context, screenSize, insets) {
           final measured = AppTourKeys.getTargetRect(AppTourKeys.decksHeaderKey);
           if (measured != null) return measured.inflate(6);
-          final defaultBottom = math.max(16, insets.bottom + 8);
-          final dockWidth = math.min(screenSize.width - 32, 480);
-          final dockLeft = (screenSize.width - dockWidth) / 2;
-          final slotWidth = dockWidth / 5;
-          return Rect.fromLTWH(
-            dockLeft + slotWidth,
-            screenSize.height - defaultBottom - 68,
-            slotWidth,
-            64,
-          );
+          final top = insets.top + 16;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 90);
         },
       ),
 
@@ -281,9 +277,11 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         accentColor: colors.primary,
         targetTabIndex: 1,
         resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.decksTodayHeroKey);
+          final measured =
+              AppTourKeys.getTargetRect(AppTourKeys.decksTodayHeroKey) ??
+              AppTourKeys.getTargetRect(AppTourKeys.decksHeaderKey);
           if (measured != null) return measured.inflate(6);
-          final top = insets.top + 180;
+          final top = insets.top + 16;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
           return Rect.fromLTWH(left, top, width, 140);
@@ -303,12 +301,14 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         accentColor: colors.warning,
         targetTabIndex: 1,
         resolveTarget: (context, screenSize, insets) {
-          final measured = AppTourKeys.getTargetRect(AppTourKeys.decksSprintChipsKey);
+          final measured =
+              AppTourKeys.getTargetRect(AppTourKeys.decksSprintChipsKey) ??
+              AppTourKeys.getTargetRect(AppTourKeys.decksHeaderKey);
           if (measured != null) return measured.inflate(6);
-          final top = insets.top + 340;
+          final top = insets.top + 16;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
-          return Rect.fromLTWH(left, top, width, 60);
+          return Rect.fromLTWH(left, top, width, 140);
         },
       ),
 
@@ -349,19 +349,14 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.device_hub_rounded,
         accentColor: colors.syllabotAccent,
         targetTabIndex: 3,
+        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(0),
         resolveTarget: (context, screenSize, insets) {
           final measured = AppTourKeys.getTargetRect(AppTourKeys.pomodoroCardKey);
           if (measured != null) return measured.inflate(6);
-          final defaultBottom = math.max(16, insets.bottom + 8);
-          final dockWidth = math.min(screenSize.width - 32, 480);
-          final dockLeft = (screenSize.width - dockWidth) / 2;
-          final slotWidth = dockWidth / 5;
-          return Rect.fromLTWH(
-            dockLeft + slotWidth * 3,
-            screenSize.height - defaultBottom - 68,
-            slotWidth,
-            64,
-          );
+          final top = insets.top + 50;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 50);
         },
       ),
 
@@ -377,10 +372,11 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.groups_rounded,
         accentColor: colors.primary,
         targetTabIndex: 3,
+        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(0),
         resolveTarget: (context, screenSize, insets) {
           final measured = AppTourKeys.getTargetRect(AppTourKeys.liveRoomsCardKey);
           if (measured != null) return measured.inflate(6);
-          final top = insets.top + 140;
+          final top = insets.top + 120;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
           return Rect.fromLTWH(left, top, width, 180);
@@ -399,10 +395,11 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         icon: Icons.storefront_rounded,
         accentColor: colors.warning,
         targetTabIndex: 3,
+        onStepActivated: () => AppTourKeys.onSelectStudyHubSubTab?.call(2),
         resolveTarget: (context, screenSize, insets) {
           final measured = AppTourKeys.getTargetRect(AppTourKeys.marketplaceCardKey);
           if (measured != null) return measured.inflate(6);
-          final top = insets.top + 140;
+          final top = insets.top + 120;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
           return Rect.fromLTWH(left, top, width, 180);
@@ -424,16 +421,10 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         resolveTarget: (context, screenSize, insets) {
           final measured = AppTourKeys.getTargetRect(AppTourKeys.communityHeroKey);
           if (measured != null) return measured.inflate(6);
-          final defaultBottom = math.max(16, insets.bottom + 8);
-          final dockWidth = math.min(screenSize.width - 32, 480);
-          final dockLeft = (screenSize.width - dockWidth) / 2;
-          final slotWidth = dockWidth / 5;
-          return Rect.fromLTWH(
-            dockLeft + slotWidth * 2,
-            screenSize.height - defaultBottom - 68,
-            slotWidth,
-            64,
-          );
+          final top = insets.top + 16;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 120);
         },
       ),
 
@@ -472,16 +463,10 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         resolveTarget: (context, screenSize, insets) {
           final measured = AppTourKeys.getTargetRect(AppTourKeys.profileCardKey);
           if (measured != null) return measured.inflate(6);
-          final defaultBottom = math.max(16, insets.bottom + 8);
-          final dockWidth = math.min(screenSize.width - 32, 480);
-          final dockLeft = (screenSize.width - dockWidth) / 2;
-          final slotWidth = dockWidth / 5;
-          return Rect.fromLTWH(
-            dockLeft + slotWidth * 4,
-            screenSize.height - defaultBottom - 68,
-            slotWidth,
-            64,
-          );
+          final top = insets.top + 16;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 180);
         },
       ),
     ];
@@ -546,7 +531,8 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
       _currentStepIndex = newIndex;
     });
 
-    final targetTabIndex = _steps[newIndex].targetTabIndex;
+    final step = _steps[newIndex];
+    final targetTabIndex = step.targetTabIndex;
 
     // Switch tab dynamically via parent widget callback & AutoTabsRouter
     widget.onTabChange?.call(targetTabIndex);
@@ -558,12 +544,24 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
       }
     } on Object catch (_) {}
 
-    // Allow frame rendering & tab switch animation before re-measuring target rect
-    Future.delayed(const Duration(milliseconds: 250), () {
-      if (mounted) {
-        _updateTargetRect();
-      }
-    });
+    // Trigger sub-tab activation callback (e.g. Study Hub inner tabs)
+    step.onStepActivated?.call();
+
+    // Multi-phase target re-measurement as tabs transition & layout
+    _scheduleTargetRemeasurement();
+  }
+
+  void _scheduleTargetRemeasurement() {
+    _updateTargetRect();
+
+    final delays = [50, 150, 300, 450, 600];
+    for (final delay in delays) {
+      Future.delayed(Duration(milliseconds: delay), () {
+        if (mounted) {
+          _updateTargetRect();
+        }
+      });
+    }
   }
 
   void _goToNextStep() {
@@ -617,7 +615,28 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     final animatedRect =
         Rect.lerp(fromRect, toRect, _morphAnimation.value) ?? toRect;
 
-    final isTargetInTopHalf = animatedRect.center.dy < screenSize.height * 0.48;
+    final minTop = insets.top + 16;
+    final maxBottom = math.max<double>(76, insets.bottom + 68);
+
+    final spaceAbove = animatedRect.top - minTop - 16;
+    final spaceBelow = (screenSize.height - maxBottom) - animatedRect.bottom - 16;
+
+    final placeBelow = spaceBelow >= 220 || spaceBelow >= spaceAbove;
+
+    double? cardTop;
+    double? cardBottom;
+
+    if (placeBelow) {
+      cardTop = math.min(
+        math.max(animatedRect.bottom + 16, minTop),
+        screenSize.height - maxBottom - 260,
+      );
+    } else {
+      cardBottom = math.min(
+        math.max(screenSize.height - animatedRect.top + 16, maxBottom),
+        screenSize.height - minTop - 260,
+      );
+    }
 
     return PopScope(
       canPop: false,
@@ -658,18 +677,17 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
             Positioned(
               left: 20,
               right: 20,
-              top: isTargetInTopHalf
-                  ? math.max(animatedRect.bottom + 24, insets.top + 160)
-                  : null,
-              bottom: !isTargetInTopHalf
-                  ? math.max(
-                      screenSize.height - animatedRect.top + 20,
-                      insets.bottom + 84,
-                    )
-                  : null,
+              top: cardTop,
+              bottom: cardBottom,
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
+                  constraints: BoxConstraints(
+                    maxWidth: 420,
+                    maxHeight: math.max(
+                      180,
+                      screenSize.height - minTop - maxBottom - 20,
+                    ),
+                  ),
                   child: Container(
                     decoration: BoxDecoration(
                       color: isDark
@@ -689,7 +707,9 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                       ],
                     ),
                     padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
-                    child: Column(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -876,25 +896,32 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Step dots
-                            Row(
-                              children: List.generate(_steps.length, (idx) {
-                                final isSelected = idx == _currentStepIndex;
-                                return AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  margin: const EdgeInsets.only(right: 5),
-                                  width: isSelected ? 18 : 5,
-                                  height: 5,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? step.accentColor
-                                        : colors.surfaceBorderHighlight,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.micro,
-                                    ),
-                                  ),
-                                );
-                              }),
+                            Flexible(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: List.generate(_steps.length, (idx) {
+                                    final isSelected = idx == _currentStepIndex;
+                                    return AnimatedContainer(
+                                      duration: const Duration(milliseconds: 250),
+                                      margin: const EdgeInsets.only(right: 4),
+                                      width: isSelected ? 14 : 4,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? step.accentColor
+                                            : colors.surfaceBorderHighlight,
+                                        borderRadius: BorderRadius.circular(
+                                          AppRadius.micro,
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ),
                             ),
+                            const SizedBox(width: 8),
 
                             // Back + Next/Finish buttons
                             Row(
@@ -983,6 +1010,7 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
                   ),
                 ),
               ),
+            ),
             ),
           ],
         ),

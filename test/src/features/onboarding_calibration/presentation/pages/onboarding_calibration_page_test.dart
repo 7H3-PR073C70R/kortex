@@ -69,7 +69,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithTheme(const OnboardingCalibrationPage()),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(
         find.text('What is your current academic focus?'),
@@ -90,7 +90,7 @@ void main() {
       await tester.tap(find.text('University / Polytechnic'));
       await tester.pump();
       await tester.tap(find.text('Continue'));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(
         find.text('What is your current academic level?'),
@@ -113,7 +113,7 @@ void main() {
       await tester.tap(find.text('High School / Exam Prep'));
       await tester.pump();
       await tester.tap(find.text('Continue'));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(
         find.text('What exam are you preparing for?'),
@@ -139,7 +139,7 @@ void main() {
       await tester.tap(find.text('SAT'));
       await tester.pump();
       await tester.tap(find.text('Continue'));
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(
         find.text('SAT Reading Comprehension'),

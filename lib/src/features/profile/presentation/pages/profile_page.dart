@@ -262,7 +262,6 @@ class _ProfileView extends HookWidget {
                                 [
                                       // 1. Identity Block (Scholar Hub Card)
                                       ScholarHubCard(
-                                        key: AppTourKeys.profileCardKey,
                                         state: state,
                                         profile: profile,
                                         onEditName: () =>
@@ -277,6 +276,7 @@ class _ProfileView extends HookWidget {
 
                                       // 2. Navigation Block (Grouped Settings)
                                       ProfileNavigationMenu(
+                                        key: AppTourKeys.profileCardKey,
                                         targetTrack: targetTrack,
                                         dailyTarget: dailyTarget,
                                       ),

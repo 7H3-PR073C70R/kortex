@@ -75,6 +75,9 @@ class AppTourKeys {
   /// Key for the bottom navigation dock.
   static final GlobalKey dockKey = GlobalKey(debugLabel: 'tour_bottom_dock');
 
+  /// Callback registered by StudyHubPage to switch its inner sub-tabs during the app tour.
+  static void Function(int subTabIndex)? onSelectStudyHubSubTab;
+
   /// Safely resolves the bounding box of a [GlobalKey] in global window coordinates.
   static Rect? getTargetRect(GlobalKey key) {
     final context = key.currentContext;

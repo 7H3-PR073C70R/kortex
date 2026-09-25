@@ -61,6 +61,15 @@ class _StudyHubView extends HookWidget {
     final tabController = useTabController(initialLength: 3);
     useListenable(tabController);
 
+    useEffect(() {
+      AppTourKeys.onSelectStudyHubSubTab = (index) {
+        if (tabController.length > index) {
+          tabController.animateTo(index);
+        }
+      };
+      return () => AppTourKeys.onSelectStudyHubSubTab = null;
+    }, [tabController]);
+
     final authState = context.watch<AuthBloc?>()?.state;
     final targetTrack = authState?.userProfile?.targetTrack;
 

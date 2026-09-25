@@ -53,6 +53,7 @@ void main() {
           const PromoCodeModalSheet(),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('Redeem Promo Code'), findsOneWidget);
       expect(find.text('Promo Code'), findsOneWidget);
