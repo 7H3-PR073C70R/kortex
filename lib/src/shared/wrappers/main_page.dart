@@ -609,6 +609,16 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
             ? (distFromNearest * 2.5).clamp(0.0, 1.0)
             : (distFromNearest > 0.02 ? 1.0 : 0.0));
 
+    // Calculate dynamic ambient color reflection bounce off the top of the dock card
+    final tabCount = _kNavItems.length;
+    final normalizedPos =
+        (_currentUnitPosition / (tabCount - 1)).clamp(0.0, 1.0);
+    final colorBounce = Color.lerp(
+      context.neural.cyan,
+      context.neural.fuchsia500,
+      normalizedPos,
+    )!;
+
     return Semantics(
       container: true,
       label: l10n.navBarSemanticsLabel,
@@ -622,41 +632,101 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
               clipBehavior: Clip.none,
               children: [
                 // -----------------------------------------------
-                // 0. Base Dock Glass Container & Border Track
+                // 0. Base 3D Liquid Glass Dock Container & Reactive Reflection Track
                 // -----------------------------------------------
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(dockRadius),
                       boxShadow: [
+                        // Deep 3D Ambient Drop Shadow
                         BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 90 : 20),
-                          blurRadius: 20,
-                          offset: const Offset(0, 6),
+                          color: colors.black.withAlpha(isDark ? 110 : 35),
+                          blurRadius: 28,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 10),
                         ),
+                        // Primary Dynamic Color Reflection Bounce Shadow
                         BoxShadow(
-                          color: colors.primary.withAlpha(isDark ? 45 : 25),
+                          color: colorBounce.withAlpha(isDark ? 55 : 30),
                           blurRadius: 24,
-                          offset: const Offset(0, 2),
+                          offset: const Offset(0, 3),
+                        ),
+                        // Subtle 3D Top Specular Glow
+                        BoxShadow(
+                          color: colors.white.withAlpha(isDark ? 20 : 60),
+                          blurRadius: 12,
+                          offset: const Offset(0, -1),
                         ),
                       ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(dockRadius),
                       child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                        filter: ui.ImageFilter.blur(sigmaX: 28, sigmaY: 28),
                         child: Container(
                           decoration: BoxDecoration(
                             color: isDark
-                                ? colors.surfaceSecondary.withAlpha(150)
-                                : colors.surfaceSecondary.withAlpha(210),
+                                ? colors.surfaceSecondary.withAlpha(115)
+                                : colors.surfaceSecondary.withAlpha(155),
                             borderRadius: BorderRadius.circular(dockRadius),
                             border: Border.all(
                               color: isDark
-                                  ? colors.white.withAlpha(45)
+                                  ? colors.white.withAlpha(50)
                                   : colors.white.withAlpha(220),
                               width: 1.2,
                             ),
+                          ),
+                          child: Stack(
+                            children: [
+                              // 3D Specular Top Bevel Crest with Dynamic Environmental Color Bounce
+                              Positioned(
+                                top: 0,
+                                left: 12,
+                                right: 12,
+                                height: 2.2,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(1),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colors.transparent,
+                                        colors.white.withAlpha(isDark ? 140 : 220),
+                                        colorBounce.withAlpha(isDark ? 220 : 180),
+                                        colors.white.withAlpha(isDark ? 140 : 220),
+                                        colors.transparent,
+                                      ],
+                                      stops: [
+                                        0.0,
+                                        (normalizedPos - 0.2).clamp(0.0, 0.8),
+                                        normalizedPos,
+                                        (normalizedPos + 0.2).clamp(0.2, 1.0),
+                                        1.0,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Bottom Glass Rim Inset Shadow for 3D Volume
+                              Positioned(
+                                bottom: 0,
+                                left: 20,
+                                right: 20,
+                                height: 1.2,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colors.transparent,
+                                        colors.black.withAlpha(isDark ? 60 : 25),
+                                        colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
