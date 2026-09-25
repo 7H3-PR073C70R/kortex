@@ -8,6 +8,7 @@ import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
@@ -880,12 +881,23 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           unawaited(trace.start().then((_) => trace.stop()));
         } on Object catch (_) {}
 
-        // Live UI state refresh for Auth streak and Dashboard
+        // Live UI state refresh for Auth streak, Dashboard, and Pod Focus Minutes
         try {
           locator<AuthBloc>().add(const AuthStreakIncremented());
         } on Object catch (_) {}
         try {
           locator<DashboardBloc>().add(const DashboardRefreshed());
+        } on Object catch (_) {}
+        try {
+          if (quizResult.durationSeconds >= 60 && locator.isRegistered<CommunityRepository>()) {
+            final minutes = quizResult.durationSeconds ~/ 60;
+            unawaited(
+              locator<CommunityRepository>().recordPodFocusMinutes(
+                circleId: '',
+                minutes: minutes,
+              ),
+            );
+          }
         } on Object catch (_) {}
 
         emit(

@@ -24,6 +24,7 @@ import 'package:kortex/src/features/auth/presentation/widgets/scholar_hub_card.d
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -251,6 +252,7 @@ class _ProfileView extends HookWidget {
                                 [
                                       // 1. Identity Block (Scholar Hub Card)
                                       ScholarHubCard(
+                                        key: AppTourKeys.profileCardKey,
                                         state: state,
                                         profile: profile,
                                         onEditName: () =>

@@ -171,6 +171,41 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
     }
   }
 
+  Future<void> _exportJson() async {
+    setState(() {
+      _isExporting = true;
+      _exportMessage = 'Packaging structured JSON archive...';
+    });
+
+    try {
+      final bytes = widget.ankiExportService.generateAnkiJsonExportBytes(widget.deck);
+      final tempDir = await getTemporaryDirectory();
+      final sanitizedTitle = widget.deck.title.replaceAll(RegExp(r'\W+'), '_');
+      final file = File('${tempDir.path}/${sanitizedTitle}_package.json');
+      await file.writeAsBytes(bytes);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path)],
+            subject: '${widget.deck.title} - Structured Deck Package',
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        context.showSnackBar(
+          message: 'Failed to export JSON package: $e',
+          type: SnackBarType.error,
+        );
+        Navigator.of(context).pop();
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
@@ -259,6 +294,16 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
               subtitle: l10n.exportNotionSubtitle,
               onTap: () {
                 unawaited(_exportNotion());
+              },
+            ),
+            const SizedBox(height: 12),
+            _ExportOptionTile(
+              icon: Icons.code_rounded,
+              iconColor: colors.primary,
+              title: 'Structured JSON Package',
+              subtitle: 'Export complete metadata, formulas, and FSRS metrics',
+              onTap: () {
+                unawaited(_exportJson());
               },
             ),
           ],

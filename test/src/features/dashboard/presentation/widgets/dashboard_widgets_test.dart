@@ -48,11 +48,11 @@ void main() {
           ),
         ),
       );
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(milliseconds: 1500));
 
       expect(find.text('Hey, Alexander'), findsOneWidget);
       expect(find.text('Neural Scholar'), findsOneWidget);
-      expect(find.text('12'), findsOneWidget);
+      expect(find.text('LVL 1'), findsOneWidget);
       expect(find.text('Calibrate Your Neural Workspace'), findsOneWidget);
     });
 
@@ -75,6 +75,7 @@ void main() {
           FsrsReviewDeckCard(deck: deck),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('ENGINEERING MATH'), findsOneWidget);
       expect(find.text('Fourier Series & Boundary Values'), findsOneWidget);
@@ -92,6 +93,7 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(
         find.text('Review PDE separation of variables before mock exam!'),
@@ -122,6 +124,7 @@ void main() {
           const RetentionHeatMapWidget(analytics: analytics),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('Retention & Study Matrix'), findsOneWidget);
       expect(find.text('89%'), findsOneWidget);
@@ -137,6 +140,7 @@ void main() {
           const QuickActionSpeedDial(),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('Upload Notes'), findsOneWidget);
       expect(find.text('Q-Bank'), findsOneWidget);

@@ -8,6 +8,8 @@ import 'package:kortex/src/features/syllabot/presentation/pages/syllabot_chat_pa
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
+
 /// A global floating expandable & collapsible Syllabot AI overlay.
 ///
 /// Features:
@@ -129,6 +131,7 @@ class _FloatingSyllabotOverlayState extends State<FloatingSyllabotOverlay>
                       child: ShrinkableButton(
                         onTap: _expand,
                         child: Container(
+                          key: AppTourKeys.syllabotFabKey,
                           padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(

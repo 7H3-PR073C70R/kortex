@@ -11,6 +11,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/fsrs_retrievability_visualizer.dart';
 
 @RoutePage()
 class SessionSummaryPage extends StatefulWidget {
@@ -317,6 +318,15 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // FSRS Memory Forgetting Curve Visualizer
+                      FsrsRetrievabilityVisualizer(
+                        stabilityDays: (cardsReviewed * 1.5).clamp(2.0, 30.0),
+                        targetRetention: retentionScore.clamp(0.70, 0.95),
+                        elapsedDays: 0,
+                        subjectTitle: 'Consolidated Session Retrievability',
                       ),
 
                       // Forward-looking line: what the effort buys later.

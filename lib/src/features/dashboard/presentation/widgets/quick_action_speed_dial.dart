@@ -98,6 +98,20 @@ class QuickActionSpeedDial extends StatelessWidget {
                           ),
                           _buildDivider(colors, isDark),
                           _ActionItem(
+                            icon: Icons.groups_rounded,
+                            label: 'Study Hub',
+                            color: colors.success,
+                            onTap: () {
+                              AppFeedback.light();
+                              unawaited(
+                                context.navigateTo(
+                                  const MainRoute(children: [CommunityHubRoute()]),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDivider(colors, isDark),
+                          _ActionItem(
                             icon: Icons.add_to_photos_rounded,
                             label: l10n.dashboardNewDeck,
                             color: colors.secondary,

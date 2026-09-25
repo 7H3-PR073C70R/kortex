@@ -228,8 +228,6 @@ class CuratedCourseCarousel extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-
         // Single horizontally scrollable row of repository cards
         LayoutBuilder(
           builder: (context, constraints) {

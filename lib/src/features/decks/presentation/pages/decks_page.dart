@@ -21,6 +21,7 @@ import 'package:kortex/src/features/decks/presentation/widgets/focus_mode_setup_
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_empty_state.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -213,6 +214,7 @@ class _DecksView extends HookWidget {
                     children: [
                       // 1. Header Title & Create Action
                       Row(
+                        key: AppTourKeys.decksHeaderKey,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
@@ -274,7 +276,10 @@ class _DecksView extends HookWidget {
                       // 2. Today focus — the single obvious next action.
                       //    One decision at the front door beats four equal tiles.
                       if (state.allDecks.isNotEmpty) ...[
-                        _TodayHeroCard(state: state),
+                        _TodayHeroCard(
+                          key: AppTourKeys.decksTodayHeroKey,
+                          state: state,
+                        ),
                         const SizedBox(height: 14),
 
                         // 3. Sprint options demoted to a compact secondary row:
@@ -289,6 +294,7 @@ class _DecksView extends HookWidget {
                         ),
                         const SizedBox(height: 8),
                         SingleChildScrollView(
+                          key: AppTourKeys.decksSprintChipsKey,
                           scrollDirection: Axis.horizontal,
                           physics: const ClampingScrollPhysics(),
                           child: Row(
@@ -707,7 +713,7 @@ class _DecksView extends HookWidget {
 /// The "what should I do right now?" answer, front and center.
 /// Due > 0: one number, one button. Due == 0: calm confirmation, no dead end.
 class _TodayHeroCard extends StatelessWidget {
-  const _TodayHeroCard({required this.state});
+  const _TodayHeroCard({required this.state, super.key});
 
   final DecksState state;
 

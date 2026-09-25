@@ -120,6 +120,15 @@ abstract class CommunityRemoteDataSource {
 
   Future<StudyCircleModel> joinStudyCircle(String circleId);
 
+  Future<StudyCircleModel> leaveStudyCircle(String circleId);
+
+  Future<Map<String, dynamic>> nudgeStudyCircle(String circleId);
+
+  Future<Map<String, dynamic>> recordPodFocusMinutes({
+    required String circleId,
+    required int minutes,
+  });
+
   Future<List<SharedDeckModel>> fetchSharedDecks({String? subject});
 
   Future<SharedDeckModel> publishDeck({
@@ -171,4 +180,10 @@ abstract class CommunityRemoteDataSource {
 
   /// Retrieves all bookmarked forum post IDs for the current user.
   Future<Set<String>> getBookmarkedForumPostIds();
+
+  /// Toggles follow status for an academic topic / track.
+  Future<Set<String>> toggleFollowTopic(String topic);
+
+  /// Retrieves the set of followed topics for the current user.
+  Future<Set<String>> getFollowedTopics();
 }

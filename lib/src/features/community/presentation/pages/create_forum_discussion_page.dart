@@ -14,6 +14,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/spoken_math_converter.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
@@ -32,11 +33,19 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class CreateForumDiscussionPage extends HookWidget {
   const CreateForumDiscussionPage({
     this.initialTrack = 'WAEC',
+    this.initialTitle,
+    this.initialContent,
+    this.initialTags,
+    this.karmaBounty = 0,
     this.onSubmit,
     super.key,
   });
 
   final String initialTrack;
+  final String? initialTitle;
+  final String? initialContent;
+  final List<String>? initialTags;
+  final int karmaBounty;
   final void Function({
     required String title,
     required String content,
@@ -62,18 +71,14 @@ class CreateForumDiscussionPage extends HookWidget {
     final userDisplayName = userStorage.getUserDisplayName() ?? 'Elena Rostova';
     final userHandle = userDisplayName.toLowerCase().replaceAll(' ', '_');
 
-    final titleController = useTextEditingController();
-    final contentController = useTextEditingController();
+    final titleController = useTextEditingController(text: initialTitle ?? '');
+    final contentController = useTextEditingController(text: initialContent ?? '');
     final tagInputController = useTextEditingController();
 
     final selectedTrack = useState<String>(
       initialTrack.isEmpty ? 'WAEC' : initialTrack,
     );
-    final tags = useState<List<String>>([
-      'vector-search',
-      'math-latex',
-      'algorithms',
-    ]);
+    final tags = useState<List<String>>(initialTags ?? []);
     final isAnonymous = useState<bool>(false);
     final isRichPreview = useState<bool>(false);
     final isAiBannerVisible = useState<bool>(true);
@@ -91,18 +96,20 @@ class CreateForumDiscussionPage extends HookWidget {
     final recordingTimer = useRef<Timer?>(null);
 
     final characterCount = useState<int>(0);
-    final lastSavedTime = useState<String>('2s ago');
+    final lastSavedTime = useState<String>('Draft');
 
-    // Speech to Text handler for live voice-to-text dictation
+    // Speech to Text handler for live voice-to-text dictation with math KaTeX conversion
     final sttHandler = useMemoized(
       () => SpeechToTextHandler(
         onResult: (words) {
           if (words.trim().isNotEmpty) {
+            final convertedMath =
+                SpokenMathToKaTeXConverter.convertSpokenMathToKaTeX(words);
             final current = contentController.text;
             if (current.isEmpty) {
-              contentController.text = words;
-            } else if (!current.contains(words)) {
-              contentController.text = '$current $words';
+              contentController.text = convertedMath;
+            } else if (!current.contains(convertedMath)) {
+              contentController.text = '$current $convertedMath';
             }
           }
         },

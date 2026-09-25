@@ -67,6 +67,11 @@ class ActiveSessionsListWidget extends HookWidget {
 
     final sessionList = useState<List<DeviceSession>>(sessions);
 
+    useEffect(() {
+      sessionList.value = sessions;
+      return null;
+    }, [sessions]);
+
     void revokeSession(String sessionId) {
       AppFeedback.light();
       sessionList.value = sessionList.value
@@ -116,10 +121,12 @@ class ActiveSessionsListWidget extends HookWidget {
           ),
         ),
         // Sessions List
-        Expanded(
-          child: ListView.builder(
-            itemCount: sessionList.value.length,
-            itemBuilder: (context, index) {
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: sessionList.value.length,
+          itemBuilder: (context, index) {
+
               final session = sessionList.value[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
@@ -211,8 +218,10 @@ class ActiveSessionsListWidget extends HookWidget {
               );
             },
           ),
-        ),
       ],
     );
   }
 }
+
+
+

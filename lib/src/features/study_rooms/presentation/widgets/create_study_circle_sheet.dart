@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -246,14 +249,20 @@ class CreateStudyCircleSheet extends HookWidget {
                     child: ShrinkableButton(
                       onTap: () {
                         final name = nameController.text.trim();
-                        if (name.isNotEmpty) {
-                          onSubmit(
-                            name: name,
-                            track: selectedTrack.value,
-                            targetWeeklyMinutes: targetMinutes.value,
+                        if (name.isEmpty) {
+                          context.showSnackBar(
+                            message: 'Please enter a name for your study circle.',
+                            type: SnackBarType.error,
                           );
-                          Navigator.pop(context);
+                          return;
                         }
+                        unawaited(HapticFeedback.mediumImpact());
+                        onSubmit(
+                          name: name,
+                          track: selectedTrack.value,
+                          targetWeeklyMinutes: targetMinutes.value,
+                        );
+                        Navigator.pop(context);
                       },
                       child: Container(
                         width: double.infinity,

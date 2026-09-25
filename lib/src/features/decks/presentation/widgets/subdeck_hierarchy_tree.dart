@@ -35,6 +35,7 @@ class SubdeckHierarchyTree extends HookWidget {
     this.selectedDeckId,
     this.onDeckSelected,
     this.onTagSelected,
+    this.onDeckMoved,
     this.initialExpanded = true,
   });
 
@@ -42,6 +43,7 @@ class SubdeckHierarchyTree extends HookWidget {
   final String? selectedDeckId;
   final ValueChanged<DeckEntity>? onDeckSelected;
   final ValueChanged<String>? onTagSelected;
+  final void Function(DeckEntity deck, String targetFolderPath)? onDeckMoved;
   final bool initialExpanded;
 
   /// Builds a tree structure from deck names/tags supporting `/` or `::` hierarchies.
@@ -207,10 +209,16 @@ class SubdeckHierarchyTree extends HookWidget {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Semantics(
+    final tileWidget = DragTarget<DeckEntity>(
+      onWillAcceptWithDetails: (details) => details.data.id != node.deck?.id,
+      onAcceptWithDetails: (details) {
+        AppFeedback.medium();
+        onDeckMoved?.call(details.data, node.path);
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isDragHovering = candidateData.isNotEmpty;
+
+        return Semantics(
           label: '${node.name}, ${node.totalCards} cards',
           button: true,
           selected: isSelected,
@@ -233,7 +241,8 @@ class SubdeckHierarchyTree extends HookWidget {
               }
             },
             borderRadius: BorderRadius.circular(AppRadius.badge),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
               margin: const EdgeInsets.symmetric(vertical: 2),
               padding: EdgeInsets.only(
                 left: 12.0 + (level * 20.0),
@@ -242,11 +251,15 @@ class SubdeckHierarchyTree extends HookWidget {
                 bottom: 8,
               ),
               decoration: BoxDecoration(
-                color: isSelected
+                color: isDragHovering
+                    ? colors.primary.withValues(alpha: 0.25)
+                    : isSelected
                     ? colors.primary.withValues(alpha: 0.12)
                     : colors.transparent,
                 borderRadius: BorderRadius.circular(AppRadius.badge),
-                border: isSelected
+                border: isDragHovering
+                    ? Border.all(color: colors.primary, width: 2)
+                    : isSelected
                     ? Border.all(color: colors.primary.withValues(alpha: 0.4))
                     : null,
               ),
@@ -291,7 +304,50 @@ class SubdeckHierarchyTree extends HookWidget {
               ),
             ),
           ),
-        ),
+        );
+      },
+    );
+
+    final draggableTile = node.deck != null
+        ? LongPressDraggable<DeckEntity>(
+            data: node.deck,
+            feedback: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              color: colors.surfaceSecondary,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: colors.primary),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.style_rounded, color: colors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      node.name,
+                      style: typography.body.bold.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            childWhenDragging: Opacity(opacity: 0.4, child: tileWidget),
+            child: tileWidget,
+          )
+        : tileWidget;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        draggableTile,
         if (hasChildren && (isExpanded || searchFilter.isNotEmpty))
           ...node.children.map(
             (child) => _buildTreeNode(

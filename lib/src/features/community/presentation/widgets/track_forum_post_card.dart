@@ -426,6 +426,43 @@ class TrackForumPostCard extends HookWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            if (post.isQuestion || post.title.endsWith('?') || post.repliesCount == 0)
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 35 : 20,
+                                  ),
+                                  borderRadius: AppRadius.radiusMicro,
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 70 : 40,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome_rounded,
+                                      size: 11,
+                                      color: colors.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Knowledge Gap',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             if (post.isVerifiedSolution)
                               Container(
                                 margin: const EdgeInsets.only(right: 6),
@@ -748,6 +785,38 @@ class TrackForumPostCard extends HookWidget {
                                   fontSize: 11,
                                 ),
                               ),
+                            ),
+                          ),
+                        if (post.karmaBounty > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.syllabotAccent.withValues(alpha: 0.15),
+                              borderRadius: AppRadius.radiusBadge,
+                              border: Border.all(
+                                color: colors.syllabotAccent.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.monetization_on_rounded,
+                                  size: 12,
+                                  color: colors.syllabotAccent,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '💰 ${post.karmaBounty} XP Bounty',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.syllabotAccent,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         if (post.isQuestion)

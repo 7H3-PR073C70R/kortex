@@ -156,6 +156,45 @@ class SyllabotQuickPromptBar extends HookWidget {
                             const SizedBox(width: 6),
                             Semantics(
                               button: true,
+                              label: 'Voice prompt for Syllabot',
+                              child: ShrinkableButton(
+                                onTap: () {
+                                  unawaited(HapticFeedback.mediumImpact());
+                                  unawaited(
+                                    context.navigateTo(
+                                      MainRoute(
+                                        children: [
+                                          SyllabotChatRoute(
+                                            initialPrompt: 'Voice Assistant Query',
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: AnimatedContainer(
+                                  duration: AppMotion.snappy,
+                                  curve: AppMotion.easeOutCubic,
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isDark
+                                        ? colors.surfaceBorder.withAlpha(50)
+                                        : colors.surfaceBorder.withAlpha(35),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.mic_rounded,
+                                    size: 17,
+                                    color: colors.syllabotAccent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Semantics(
+                              button: true,
                               label: l10n.dashboardSendPromptSemantics,
                               child: ShrinkableButton(
                                 onTap: handleSubmit,

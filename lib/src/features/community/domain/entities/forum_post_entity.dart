@@ -25,6 +25,7 @@ class ForumPostEntity extends Equatable {
     this.voiceNoteDurationSeconds,
     this.socraticHint,
     this.socraticHintGeneratedAt,
+    this.karmaBounty = 0,
     this.replies = const [],
   });
 
@@ -49,6 +50,7 @@ class ForumPostEntity extends Equatable {
   final int? voiceNoteDurationSeconds;
   final String? socraticHint;
   final DateTime? socraticHintGeneratedAt;
+  final int karmaBounty;
   final DateTime createdAt;
   final List<ForumReplyEntity> replies;
 
@@ -79,6 +81,7 @@ class ForumPostEntity extends Equatable {
     int? voiceNoteDurationSeconds,
     String? socraticHint,
     DateTime? socraticHintGeneratedAt,
+    int? karmaBounty,
     DateTime? createdAt,
     List<ForumReplyEntity>? replies,
   }) {
@@ -106,6 +109,7 @@ class ForumPostEntity extends Equatable {
       socraticHint: socraticHint ?? this.socraticHint,
       socraticHintGeneratedAt:
           socraticHintGeneratedAt ?? this.socraticHintGeneratedAt,
+      karmaBounty: karmaBounty ?? this.karmaBounty,
       createdAt: createdAt ?? this.createdAt,
       replies: replies ?? this.replies,
     );
@@ -134,6 +138,7 @@ class ForumPostEntity extends Equatable {
     voiceNoteDurationSeconds,
     socraticHint,
     socraticHintGeneratedAt,
+    karmaBounty,
     createdAt,
     replies,
   ];

@@ -525,18 +525,21 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       rolloverWeakCards: rolloverWeakCards,
     );
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: CramPlannerStatus.error,
-          errorMessage: failure.message,
-        ),
-      ),
-      (completedExam) {
+    await result.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.error,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (completedExam) async {
+        // Auto-delete completed assessment from persistent storage
+        await _repository.deleteExam(examId);
+
         final updatedList =
-            state.activeExams
-                .map((e) => e.id == examId ? completedExam : e)
-                .toList()
+            state.activeExams.where((e) => e.id != examId).toList()
               ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
         // Primary becomes the next upcoming uncompleted exam if available

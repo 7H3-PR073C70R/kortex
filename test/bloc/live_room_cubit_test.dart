@@ -221,6 +221,28 @@ class MockCommunityRepository implements CommunityRepository {
   }) async => const Right('authenticated_livekit_test_token');
 
   @override
+  Future<Either<Failure, Map<String, dynamic>>> nudgeStudyCircle(String circleId) async =>
+      const Right({'nudged_count': 1, 'nudge_cooldown_until': null});
+
+  @override
+  Future<Either<Failure, StudyCircleEntity>> leaveStudyCircle(String circleId) async =>
+      const Left(ServerFailure(message: 'Unimplemented'));
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
+    String? circleId,
+    required int minutes,
+  }) async => const Right({'success': true});
+
+  @override
+  Future<Either<Failure, Set<String>>> getFollowedTopics() async =>
+      const Right({});
+
+  @override
+  Future<Either<Failure, Set<String>>> toggleFollowTopic(String topic) async =>
+      const Right({});
+
+  @override
   Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds() async =>
       const Right({});
 

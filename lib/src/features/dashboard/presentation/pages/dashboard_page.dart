@@ -37,6 +37,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmak
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -473,6 +474,7 @@ class _CompactDashboardLayout extends StatelessWidget {
           <Widget>[
                 // 1. User Profile Header (Identity & Streak Anchor)
                 HeaderProfileBar(
+                  key: AppTourKeys.headerProfileKey,
                   analytics: feed.analyticsSummary,
                   isProfileUncalibrated: feed.isProfileUncalibrated,
                   userName: userName,
@@ -494,7 +496,7 @@ class _CompactDashboardLayout extends StatelessWidget {
                   child: Column(
                     children: [
                       if (feed.curatedCourses.isNotEmpty) ...[
-                        const ExamCountdownBanner(),
+                        ExamCountdownBanner(key: AppTourKeys.countdownKey),
                         const SizedBox(height: 16),
                       ],
                       if (heavyDebtDeck != null) ...[
@@ -506,11 +508,15 @@ class _CompactDashboardLayout extends StatelessWidget {
                 ),
 
                 // 3. Daily Recall Status Banner ("All caught up!" / due-cards state)
-                _DailyRecallStatusBanner(feed: feed),
+                _DailyRecallStatusBanner(
+                  key: AppTourKeys.reviewQueueKey,
+                  feed: feed,
+                ),
+
                 const SizedBox(height: 16),
 
                 // 4. Quick Actions Grid (Upload Notes | Q-Bank | 1v1 Duel | New Deck)
-                const _QuickActionsGrid(),
+                _QuickActionsGrid(key: AppTourKeys.quickActionsKey),
                 const SizedBox(height: 16),
 
                 // 5. Curated Course Repositories
@@ -539,7 +545,7 @@ class _CompactDashboardLayout extends StatelessWidget {
 /// Glass "All caught up! SYNCED" banner — mirrors the Stitch DailyStatusRecallBanner.
 /// Shows due-card count + deck title when reviews are pending.
 class _DailyRecallStatusBanner extends StatelessWidget {
-  const _DailyRecallStatusBanner({required this.feed});
+  const _DailyRecallStatusBanner({required this.feed, super.key});
 
   final DashboardFeedEntity feed;
 
@@ -687,7 +693,7 @@ class _DailyRecallStatusBanner extends StatelessWidget {
 /// 4-column quick actions glass grid — mirrors the Stitch QuickActionsRow.
 /// Upload Notes | Q-Bank | 1v1 Duel | New Deck
 class _QuickActionsGrid extends StatelessWidget {
-  const _QuickActionsGrid();
+  const _QuickActionsGrid({super.key});
 
   @override
   Widget build(BuildContext context) {

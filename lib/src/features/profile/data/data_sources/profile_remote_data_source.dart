@@ -1,5 +1,6 @@
 import 'package:kortex/src/features/profile/data/models/mfa_enroll_result_model.dart';
 import 'package:kortex/src/features/profile/data/models/mfa_factor_model.dart';
+import 'package:kortex/src/features/profile/domain/entities/notification_preferences_entity.dart';
 
 /// Contract for Profile & Security remote API data source.
 abstract class ProfileRemoteDataSource {
@@ -35,4 +36,15 @@ abstract class ProfileRemoteDataSource {
 
   /// Permanently deletes the user profile and records from the database.
   Future<void> deleteAccount();
+
+  /// Fetches notification preferences for current user.
+  Future<NotificationPreferencesEntity> getNotificationPreferences();
+
+  /// Updates notification preferences for current user.
+  Future<void> updateNotificationPreferences(
+    NotificationPreferencesEntity preferences,
+  );
 }
+
+
+

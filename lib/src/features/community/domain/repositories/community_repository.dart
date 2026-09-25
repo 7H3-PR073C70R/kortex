@@ -136,6 +136,20 @@ abstract class CommunityRepository {
   /// Joins an existing Study Circle.
   Future<Either<Failure, StudyCircleEntity>> joinStudyCircle(String circleId);
 
+  /// Leaves a Study Circle.
+  Future<Either<Failure, StudyCircleEntity>> leaveStudyCircle(String circleId);
+
+  /// Sends a push notification focus nudge to all pod members in a Study Circle.
+  Future<Either<Failure, Map<String, dynamic>>> nudgeStudyCircle(
+    String circleId,
+  );
+
+  /// Records completed focus minutes for a scholar in a Study Circle.
+  Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
+    required String circleId,
+    required int minutes,
+  });
+
   /// Creates a new Study Circle.
   Future<Either<Failure, StudyCircleEntity>> createStudyCircle({
     required String name,
@@ -199,4 +213,10 @@ abstract class CommunityRepository {
 
   /// Retrieves the set of bookmarked forum post IDs.
   Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds();
+
+  /// Toggles follow status for an academic topic / track.
+  Future<Either<Failure, Set<String>>> toggleFollowTopic(String topic);
+
+  /// Retrieves the set of followed topics for the current user.
+  Future<Either<Failure, Set<String>>> getFollowedTopics();
 }

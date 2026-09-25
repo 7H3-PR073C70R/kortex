@@ -17,9 +17,59 @@ class AppTourKeys {
     debugLabel: 'tour_review_queue',
   );
 
+  /// Key for Dashboard quick actions grid (AI Upload, Q-Bank, Quiz Duel).
+  static final GlobalKey quickActionsKey = GlobalKey(
+    debugLabel: 'tour_quick_actions',
+  );
+
   /// Key for the collapsed floating Syllabot AI action pill.
   static final GlobalKey syllabotFabKey = GlobalKey(
     debugLabel: 'tour_syllabot_fab',
+  );
+
+  /// Key for Decks page main header / OCR scanner section.
+  static final GlobalKey decksHeaderKey = GlobalKey(
+    debugLabel: 'tour_decks_header',
+  );
+
+  /// Key for Decks page today's hero revision card.
+  static final GlobalKey decksTodayHeroKey = GlobalKey(
+    debugLabel: 'tour_decks_today_hero',
+  );
+
+  /// Key for Decks sprint chips row (Quick 10, Power 20, Speed Run).
+  static final GlobalKey decksSprintChipsKey = GlobalKey(
+    debugLabel: 'tour_decks_sprint_chips',
+  );
+
+  /// Key for Community Hub top header / live study rooms.
+  static final GlobalKey communityHeroKey = GlobalKey(
+    debugLabel: 'tour_community_hero',
+  );
+
+  /// Key for Community Hub create post action button.
+  static final GlobalKey communityPostBtnKey = GlobalKey(
+    debugLabel: 'tour_community_post_btn',
+  );
+
+  /// Key for Study Hub liquid glass tab bar & Pomodoro launcher.
+  static final GlobalKey pomodoroCardKey = GlobalKey(
+    debugLabel: 'tour_pomodoro_card',
+  );
+
+  /// Key for Study Hub live focus rooms section.
+  static final GlobalKey liveRoomsCardKey = GlobalKey(
+    debugLabel: 'tour_live_rooms_card',
+  );
+
+  /// Key for Study Hub marketplace section.
+  static final GlobalKey marketplaceCardKey = GlobalKey(
+    debugLabel: 'tour_marketplace_card',
+  );
+
+  /// Key for Profile Scholar Hub header card.
+  static final GlobalKey profileCardKey = GlobalKey(
+    debugLabel: 'tour_profile_card',
   );
 
   /// Key for the bottom navigation dock.

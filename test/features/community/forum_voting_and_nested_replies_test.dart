@@ -336,7 +336,7 @@ void main() {
         content: 'V - E + F = 2 for convex polyhedra.',
         upvotes: 42,
         downvotes: 2,
-        userVote: 1,
+        userVote: 0,
         createdAt: DateTime.now(),
       );
 

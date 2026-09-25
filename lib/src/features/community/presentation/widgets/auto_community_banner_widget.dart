@@ -275,39 +275,39 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
                 },
               ),
             ),
-            if (community.activeRoomId != null) ...[
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                key: const Key('join_room_button'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.primary,
-                  side: BorderSide(
-                    color: colors.primary.withAlpha(isDark ? 90 : 60),
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              key: const Key('join_room_button'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.primary,
+                side: BorderSide(
+                  color: colors.primary.withAlpha(isDark ? 90 : 60),
                 ),
-                icon: Icon(
-                  Icons.sensors_rounded,
-                  size: 16,
-                  color: colors.recallEasy,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                label: Text(
-                  l10n.quickJoinStudyRoom,
-                  style: typography.footnote.medium.copyWith(
-                    color: colors.primary,
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
                 ),
-                onPressed: () {
-                  widget.onTapJoinRoom?.call(community.activeRoomId!);
-                },
               ),
-            ],
+              icon: Icon(
+                Icons.sensors_rounded,
+                size: 16,
+                color: colors.recallEasy,
+              ),
+              label: Text(
+                'Join Live Stage',
+                style: typography.footnote.medium.copyWith(
+                  color: colors.primary,
+                ),
+              ),
+              onPressed: () {
+                widget.onTapJoinRoom?.call(
+                  community.activeRoomId ?? community.courseCode,
+                );
+              },
+            ),
           ],
         ),
       ],
@@ -389,39 +389,39 @@ class _AutoCommunityBannerWidgetState extends State<AutoCommunityBannerWidget>
           ),
         ),
         const SizedBox(width: 16),
-        if (community.activeRoomId != null) ...[
-          OutlinedButton.icon(
-            key: const Key('join_room_button'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.primary,
-              side: BorderSide(
-                color: colors.primary.withAlpha(isDark ? 90 : 60),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
+        OutlinedButton.icon(
+          key: const Key('join_room_button'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: colors.primary,
+            side: BorderSide(
+              color: colors.primary.withAlpha(isDark ? 90 : 60),
             ),
-            icon: Icon(
-              Icons.sensors_rounded,
-              size: 18,
-              color: colors.recallEasy,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            label: Text(
-              l10n.quickJoinStudyRoom,
-              style: typography.footnote.medium.copyWith(
-                color: colors.primary,
-              ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
             ),
-            onPressed: () {
-              widget.onTapJoinRoom?.call(community.activeRoomId!);
-            },
           ),
-          const SizedBox(width: 8),
-        ],
+          icon: Icon(
+            Icons.sensors_rounded,
+            size: 18,
+            color: colors.recallEasy,
+          ),
+          label: Text(
+            'Join Live Stage',
+            style: typography.footnote.medium.copyWith(
+              color: colors.primary,
+            ),
+          ),
+          onPressed: () {
+            widget.onTapJoinRoom?.call(
+              community.activeRoomId ?? community.courseCode,
+            );
+          },
+        ),
+        const SizedBox(width: 8),
         ElevatedButton.icon(
           key: const Key('open_hub_button'),
           style: ElevatedButton.styleFrom(

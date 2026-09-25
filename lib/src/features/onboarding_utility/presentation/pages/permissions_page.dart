@@ -10,7 +10,6 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/permissions_cubit.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -58,137 +57,134 @@ class _PermissionsView extends StatelessWidget {
         }
       },
       child: Scaffold(
-        body: AuraMeshNebula(
-          showBackgroundImage: true,
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Top Bar with Logo, Mode Switch, and Skip button
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AppAssets.svgs.kortexLogo.svg(
-                                width: 24,
-                                height: 24,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.appName,
-                                style: typography.caption.bold.copyWith(
-                                  letterSpacing: 1.5,
-                                  fontSize: 13,
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          PlatformHoverBuilder(
-                            builder: (context, isHovered, child) {
-                              return ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  context
-                                      .read<PermissionsCubit>()
-                                      .skipPermissions();
-                                },
-                                child: AnimatedContainer(
-                                  duration: AppMotion.snappy,
-                                  curve: AppMotion.easeOutCubic,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isHovered
-                                        ? (isDark
-                                              ? colors.surfaceSecondary
-                                                    .withAlpha(220)
-                                              : colors.surfacePrimary)
-                                        : (isDark
-                                              ? colors.surfaceSecondary
-                                                    .withAlpha(180)
-                                              : colors.surfacePrimary.withAlpha(
-                                                  240,
-                                                )),
-                                    borderRadius: AppRadius.radiusBadge,
-                                    border: Border.all(
-                                      color: isHovered
-                                          ? colors.primary.withAlpha(120)
-                                          : (isDark
-                                                ? colors.surfaceBorder
-                                                      .withAlpha(100)
-                                                : colors.surfaceBorder),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.black.withAlpha(
-                                          isDark
-                                              ? (isHovered ? 45 : 30)
-                                              : (isHovered ? 20 : 12),
-                                        ),
-                                        blurRadius: isHovered ? 12 : 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    l10n.permissionsSkip,
-                                    style: typography.callout.bold.copyWith(
-                                      color: colors.primary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top Bar with Logo, Mode Switch, and Skip button
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
                     ),
-                  ),
-                ),
-
-                // Main Content
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      child: SingleChildScrollView(
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const SizedBox(height: 12),
-                            _PermissionsHeader(l10n: l10n),
-                            const SizedBox(height: 28),
-                            _NotificationPermissionCard(l10n: l10n),
-                            const SizedBox(height: 14),
-                            _StoragePermissionCard(l10n: l10n),
-                            const SizedBox(height: 32),
-                            _PermissionsFooter(l10n: l10n),
-                          ].animate(interval: 80.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
+                            AppAssets.svgs.kortexLogo.svg(
+                              width: 24,
+                              height: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.appName,
+                              style: typography.caption.bold.copyWith(
+                                letterSpacing: 1.5,
+                                fontSize: 13,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
+                        PlatformHoverBuilder(
+                          builder: (context, isHovered, child) {
+                            return ShrinkableButton(
+                              onTap: () {
+                                unawaited(HapticFeedback.lightImpact());
+                                context
+                                    .read<PermissionsCubit>()
+                                    .skipPermissions();
+                              },
+                              child: AnimatedContainer(
+                                duration: AppMotion.snappy,
+                                curve: AppMotion.easeOutCubic,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isHovered
+                                      ? (isDark
+                                            ? colors.surfaceSecondary
+                                                  .withAlpha(220)
+                                            : colors.surfacePrimary)
+                                      : (isDark
+                                            ? colors.surfaceSecondary
+                                                  .withAlpha(180)
+                                            : colors.surfacePrimary.withAlpha(
+                                                240,
+                                              )),
+                                  borderRadius: AppRadius.radiusBadge,
+                                  border: Border.all(
+                                    color: isHovered
+                                        ? colors.primary.withAlpha(120)
+                                        : (isDark
+                                              ? colors.surfaceBorder
+                                                    .withAlpha(100)
+                                              : colors.surfaceBorder),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colors.black.withAlpha(
+                                        isDark
+                                            ? (isHovered ? 45 : 30)
+                                            : (isHovered ? 20 : 12),
+                                      ),
+                                      blurRadius: isHovered ? 12 : 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  l10n.permissionsSkip,
+                                  style: typography.callout.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+        
+              // Main Content
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 12),
+                          _PermissionsHeader(l10n: l10n),
+                          const SizedBox(height: 28),
+                          _NotificationPermissionCard(l10n: l10n),
+                          const SizedBox(height: 14),
+                          _StoragePermissionCard(l10n: l10n),
+                          const SizedBox(height: 32),
+                          _PermissionsFooter(l10n: l10n),
+                        ].animate(interval: 80.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

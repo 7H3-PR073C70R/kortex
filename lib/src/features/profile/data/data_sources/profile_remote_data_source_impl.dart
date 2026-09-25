@@ -5,6 +5,8 @@ import 'package:kortex/src/features/profile/data/client/profile_api_client.dart'
 import 'package:kortex/src/features/profile/data/data_sources/profile_remote_data_source.dart';
 import 'package:kortex/src/features/profile/data/models/mfa_enroll_result_model.dart';
 import 'package:kortex/src/features/profile/data/models/mfa_factor_model.dart';
+import 'package:kortex/src/features/profile/domain/entities/notification_preferences_entity.dart';
+
 
 /// Concrete implementation of [ProfileRemoteDataSource] using
 /// pure REST API client.
@@ -163,4 +165,48 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       throw ServerException(message: e.toString());
     }
   }
+
+  @override
+  Future<NotificationPreferencesEntity> getNotificationPreferences() async {
+    try {
+      final res = await _profileApiClient.getNotificationPreferences(
+        userId: _userId,
+      );
+      if (res != null) {
+        return NotificationPreferencesEntity.fromJson(res);
+      }
+      return const NotificationPreferencesEntity();
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.message ?? 'Failed to fetch notification preferences',
+      );
+    } on Object {
+      return const NotificationPreferencesEntity();
+    }
+  }
+
+  @override
+  Future<void> updateNotificationPreferences(
+    NotificationPreferencesEntity preferences,
+  ) async {
+    try {
+      await _profileApiClient.updateNotificationPreferences(
+        userId: _userId,
+        studyReminders: preferences.studyReminders,
+        streakAlerts: preferences.streakAlerts,
+        examAlerts: preferences.examAlerts,
+        socialAlerts: preferences.socialAlerts,
+        aiIngestionAlerts: preferences.aiIngestionAlerts,
+      );
+    } on DioException catch (e) {
+      throw ServerException(
+        message: e.message ?? 'Failed to update notification preferences',
+      );
+    } on Object catch (e) {
+      throw ServerException(message: e.toString());
+    }
+  }
 }
+
+
+

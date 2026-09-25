@@ -17,8 +17,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/presentation/widgets/promo_code_modal_sheet.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -268,11 +268,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    return AuraMeshNebula(
-      child: Scaffold(
-        backgroundColor: colors.transparent,
-        appBar: AppBar(
-          backgroundColor: colors.transparent,
+    return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
+      appBar: AppBar(
+        backgroundColor: colors.backgroundPrimary,
+
           elevation: 0,
           leading: PlatformHoverBuilder(
             builder: (context, isHovered, child) {
@@ -395,11 +395,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                       ),
                     ),
                   ),
-                ),
         ),
       ),
     );
   }
+
 
   Widget _buildHeroHeader(
     AppThemeColorsExtension colors,

@@ -146,12 +146,17 @@ import 'package:kortex/src/features/profile/data/client/profile_api_client.dart'
 import 'package:kortex/src/features/profile/data/data_sources/profile_remote_data_source.dart';
 import 'package:kortex/src/features/profile/data/data_sources/profile_remote_data_source_impl.dart';
 import 'package:kortex/src/features/profile/data/repositories/profile_repository_impl.dart';
+
 import 'package:kortex/src/features/profile/domain/repositories/profile_repository.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/notification_preferences_use_cases.dart';
+
+
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset_email_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_avatar_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
+
 import 'package:kortex/src/features/quiz/data/client/past_questions_api_client.dart';
 import 'package:kortex/src/features/quiz/data/client/quiz_duel_websocket_client.dart';
 import 'package:kortex/src/features/quiz/data/data_sources/past_questions_local_data_source.dart';

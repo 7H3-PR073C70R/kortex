@@ -32,11 +32,15 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<LoadStudyCirclesEvent>(_onLoadStudyCircles);
     on<CreateStudyCircleEvent>(_onCreateStudyCircle);
     on<JoinStudyCircleEvent>(_onJoinStudyCircle);
+    on<LeaveStudyCircleEvent>(_onLeaveStudyCircle);
+    on<NudgeStudyCircleEvent>(_onNudgeStudyCircle);
+    on<RecordPodFocusMinutesEvent>(_onRecordPodFocusMinutes);
     on<CloneDeckEvent>(_onCloneDeck);
     on<PublishDeckEvent>(_onPublishDeck);
     on<LeaderboardUpdatedEvent>(_onLeaderboardUpdated);
     on<FetchMoreForumPostsEvent>(_onFetchMoreForumPosts);
     on<ToggleBookmarkForumPostEvent>(_onToggleBookmarkForumPost);
+    on<ToggleFollowTopicEvent>(_onToggleFollowTopic);
     on<ClearCommunityErrorEvent>(_onClearCommunityError);
   }
 
@@ -48,6 +52,23 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     Emitter<CommunityState> emit,
   ) {
     emit(state.copyWith());
+  }
+
+  Future<void> _onToggleFollowTopic(
+    ToggleFollowTopicEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final res = await _repository.toggleFollowTopic(event.topic);
+    res.fold(
+      (failure) => emit(state.copyWith(errorMessage: failure.message)),
+      (followedTopics) {
+        emit(state.copyWith(followedTopics: followedTopics));
+        if (state.selectedForumFilter == 'following' ||
+            state.selectedForumFilter == 'knowledge_gap') {
+          add(ChangeForumSortFilterEvent(state.selectedForumFilter));
+        }
+      },
+    );
   }
 
   Future<void> _onLoadCommunityHub(
@@ -79,6 +100,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       track: effectiveTrack,
     );
     final bookmarkedRes = await _repository.getBookmarkedForumPostIds();
+    final followedRes = await _repository.getFollowedTopics();
 
     final rooms = roomsRes.fold((_) => state.studyRooms, (r) => r);
     final forumPosts = forumRes.fold((_) => state.forumPosts, (posts) => posts);
@@ -92,6 +114,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       (entries) => entries,
     );
     final bookmarkedIds = bookmarkedRes.fold((_) => <String>{}, (ids) => ids);
+    final followedTopics = followedRes.fold((_) => <String>{}, (topics) => topics);
 
     final hasAnyData =
         rooms.isNotEmpty ||
@@ -118,6 +141,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
           sharedDecks: sharedDecks,
           leaderboardEntries: leaderboardEntries,
           bookmarkedPostIds: bookmarkedIds,
+          followedTopics: followedTopics,
           hasMoreForumPosts: forumPosts.length >= 15,
           forumPostsOffset: forumPosts.length,
           lastCreatedAt: lastPost?.createdAt,
@@ -664,6 +688,59 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         }).toList();
         emit(state.copyWith(studyCircles: updatedList));
       },
+    );
+  }
+
+  Future<void> _onLeaveStudyCircle(
+    LeaveStudyCircleEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final res = await _repository.leaveStudyCircle(event.circleId);
+    res.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CommunityStatus.failure,
+          errorMessage: failure.message,
+        ),
+      ),
+      (updatedCircle) {
+        final updatedList = state.studyCircles.map((c) {
+          return c.id == event.circleId ? updatedCircle : c;
+        }).toList();
+        emit(state.copyWith(studyCircles: updatedList));
+      },
+    );
+  }
+
+  Future<void> _onNudgeStudyCircle(
+    NudgeStudyCircleEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final res = await _repository.nudgeStudyCircle(event.circleId);
+    res.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CommunityStatus.failure,
+          errorMessage: failure.message,
+        ),
+      ),
+      (data) {
+        // Nudge successfully dispatched via Supabase notifications table & FCM
+      },
+    );
+  }
+
+  Future<void> _onRecordPodFocusMinutes(
+    RecordPodFocusMinutesEvent event,
+    Emitter<CommunityState> emit,
+  ) async {
+    final res = await _repository.recordPodFocusMinutes(
+      circleId: event.circleId,
+      minutes: event.minutes,
+    );
+    res.fold(
+      (failure) => null,
+      (_) => add(const LoadStudyCirclesEvent()),
     );
   }
 

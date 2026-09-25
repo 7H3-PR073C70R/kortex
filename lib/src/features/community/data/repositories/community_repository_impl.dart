@@ -343,6 +343,31 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<Either<Failure, StudyCircleEntity>> leaveStudyCircle(String circleId) {
+    return _remoteDataSource
+        .leaveStudyCircle(circleId)
+        .then((m) => m.toEntity(currentUserId: _currentUserId))
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> nudgeStudyCircle(
+    String circleId,
+  ) {
+    return _remoteDataSource.nudgeStudyCircle(circleId).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
+    required String circleId,
+    required int minutes,
+  }) {
+    return _remoteDataSource
+        .recordPodFocusMinutes(circleId: circleId, minutes: minutes)
+        .makeRequest();
+  }
+
+  @override
   Future<Either<Failure, List<SharedDeckEntity>>> fetchSharedDecks({
     String? subject,
   }) {
@@ -541,7 +566,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
         final entities = models
             .map((m) => m.toEntity(currentUserId: currentUserId))
             .toList();
-        return _ensureNonEmptyWithCurrentUser(entities, track: track);
+        return _processLeaderboardList(entities, track: track);
       },
     );
   }
@@ -555,106 +580,39 @@ class CommunityRepositoryImpl implements CommunityRepository {
       final entities = models
           .map((m) => m.toEntity(currentUserId: currentUserId))
           .toList();
-      return _ensureNonEmptyWithCurrentUser(entities, track: track);
+      return _processLeaderboardList(entities, track: track);
     }).makeRequest();
   }
 
-  List<LeaderboardEntryEntity> _ensureNonEmptyWithCurrentUser(
+  List<LeaderboardEntryEntity> _processLeaderboardList(
     List<LeaderboardEntryEntity> list, {
     String? track,
   }) {
-    final currentUserId = _userStorage?.getUserId() ?? 'user_current';
-    final currentUserName =
-        _userStorage?.getUserDisplayName() ?? 'Scholar (You)';
-    final currentUserAvatar = _userStorage?.getUserAvatarUrl();
-    final effectiveTrack = track ?? 'General';
-
     if (list.isEmpty) {
-      return [
-        LeaderboardEntryEntity(
-          id: 'cohort_1',
-          userId: 'user_ada',
-          userName: 'Wuke Anjolaoluwa Omotoyosi',
-          track: effectiveTrack,
-          dailyXp: 420,
-          weeklyXp: 2150,
-          streakDays: 16,
-          leagueTier: "Dean's List",
-        ),
-        LeaderboardEntryEntity(
-          id: 'cohort_2',
-          userId: 'user_alan',
-          userName: 'Alan Turing',
-          track: effectiveTrack,
-          dailyXp: 380,
-          weeklyXp: 1890,
-          streakDays: 14,
-          leagueTier: 'Diamond',
-          rank: 2,
-        ),
-        LeaderboardEntryEntity(
-          id: 'cohort_3',
-          userId: 'user_grace',
-          userName: 'Grace Hopper',
-          track: effectiveTrack,
-          dailyXp: 310,
-          weeklyXp: 1540,
-          streakDays: 11,
-          leagueTier: 'Diamond',
-          rank: 3,
-        ),
-        LeaderboardEntryEntity(
-          id: 'cohort_current',
-          userId: currentUserId,
-          userName: currentUserName,
-          avatarUrl: currentUserAvatar,
-          track: effectiveTrack,
-          dailyXp: 260,
-          weeklyXp: 1120,
-          streakDays: 7,
-          leagueTier: 'Gold',
-          rank: 4,
-          isCurrentUser: true,
-        ),
-        LeaderboardEntryEntity(
-          id: 'cohort_5',
-          userId: 'user_katherine',
-          userName: 'Katherine Johnson',
-          track: effectiveTrack,
-          dailyXp: 190,
-          weeklyXp: 980,
-          streakDays: 5,
-          leagueTier: 'Gold',
-          rank: 5,
-        ),
-        LeaderboardEntryEntity(
-          id: 'cohort_6',
-          userId: 'user_claude',
-          userName: 'Claude Shannon',
-          track: effectiveTrack,
-          dailyXp: 140,
-          weeklyXp: 740,
-          streakDays: 4,
-          leagueTier: 'Silver',
-          rank: 6,
-        ),
-      ];
+      return const [];
+    }
+
+    final currentUserId = _userStorage?.getUserId();
+    if (currentUserId == null || currentUserId.isEmpty) {
+      return list;
     }
 
     final hasCurrentUser = list.any(
       (e) => e.isCurrentUser || e.userId == currentUserId,
     );
     if (!hasCurrentUser) {
+      final currentUserName =
+          _userStorage?.getUserDisplayName() ?? 'Scholar (You)';
+      final currentUserAvatar = _userStorage?.getUserAvatarUrl();
+      final effectiveTrack = track ?? 'General';
+
       return List<LeaderboardEntryEntity>.from(list)..add(
         LeaderboardEntryEntity(
-          id: 'cohort_current',
+          id: 'user_$currentUserId',
           userId: currentUserId,
           userName: currentUserName,
           avatarUrl: currentUserAvatar,
           track: effectiveTrack,
-          dailyXp: 100,
-          weeklyXp: 450,
-          streakDays: 3,
           rank: list.length + 1,
           isCurrentUser: true,
         ),
@@ -663,6 +621,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
 
     return list;
   }
+
 
   @override
   Future<Either<Failure, StudyCommunityEntity>> autoProvisionCommunity({
@@ -716,5 +675,15 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds() {
     return _remoteDataSource.getBookmarkedForumPostIds().makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, Set<String>>> toggleFollowTopic(String topic) {
+    return _remoteDataSource.toggleFollowTopic(topic).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, Set<String>>> getFollowedTopics() {
+    return _remoteDataSource.getFollowedTopics().makeRequest();
   }
 }

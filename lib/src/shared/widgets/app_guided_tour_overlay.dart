@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -9,6 +10,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -22,6 +24,7 @@ class _TourStep {
     required this.proTip,
     required this.icon,
     required this.accentColor,
+    required this.targetTabIndex,
     required this.resolveTarget,
   });
 
@@ -32,20 +35,23 @@ class _TourStep {
   final String proTip;
   final IconData icon;
   final Color accentColor;
+  final int targetTabIndex;
   final Rect Function(BuildContext context, Size screenSize, EdgeInsets insets)
   resolveTarget;
 }
 
 /// Interactive spotlight walkthrough overlay that guides users through ALL core
 /// features of Kortex. Call [AppGuidedTourOverlay.start] — it handles
-/// navigation to Dashboard automatically before launching the overlay.
+/// navigation across tabs automatically during the walkthrough.
 class AppGuidedTourOverlay extends StatefulWidget {
   const AppGuidedTourOverlay({
     super.key,
     this.onTourCompleted,
+    this.onTabChange,
   });
 
   final VoidCallback? onTourCompleted;
+  final ValueChanged<int>? onTabChange;
 
   /// Launches the full-screen interactive tour over the root navigator.
   ///
@@ -74,6 +80,12 @@ class AppGuidedTourOverlay extends StatefulWidget {
     // Switch to Dashboard tab first so spotlights land on the right widgets.
     onBeforeStart?.call();
 
+    // Resolve outer TabsRouter before mounting root dialog!
+    TabsRouter? tabsRouter;
+    try {
+      tabsRouter = AutoTabsRouter.of(context);
+    } on Object catch (_) {}
+
     // Small delay to allow navigation animation to settle.
     if (onBeforeStart != null) {
       await Future<void>.delayed(const Duration(milliseconds: 420));
@@ -91,6 +103,11 @@ class AppGuidedTourOverlay extends StatefulWidget {
         return FadeTransition(
           opacity: animation,
           child: AppGuidedTourOverlay(
+            onTabChange: (targetTabIndex) {
+              if (tabsRouter != null) {
+                tabsRouter.setActiveIndex(targetTabIndex);
+              }
+            },
             onTourCompleted: () {
               if (locator.isRegistered<LocalStorageService>()) {
                 unawaited(
@@ -107,6 +124,7 @@ class AppGuidedTourOverlay extends StatefulWidget {
       },
     );
   }
+
 
   @override
   State<AppGuidedTourOverlay> createState() => _AppGuidedTourOverlayState();
@@ -136,16 +154,19 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     return [
       // 1. Academic Command Center
       _TourStep(
-        badge: 'STEP 1 OF 9 • DASHBOARD',
-        title: 'Academic Command Center',
-        subtitle: 'Streak, Neural Tier & exam countdown',
+        badge: 'STEP 1 OF 14 • DASHBOARD',
+        title: 'Academic HQ & Neural Tier',
+        subtitle: 'Streak counter, level progress & scholar identity',
         description:
-            'This is your daily academic HQ. Track your study streak, watch your Neural Scholar tier rise (Bronze → Platinum → Diamond), and see a live countdown to every exam — WAEC, JAMB, A-levels, or custom finals.',
+            'Welcome to Kortexify! Track your daily study streak, watch your Neural Scholar tier elevate from Bronze to Diamond, and monitor your XP multipliers.',
         proTip:
-            'Keeping your streak alive for 7+ days unlocks bonus XP multipliers and league promotions.',
+            'Maintaining a 7+ day streak unlocks double XP multipliers and automatic league promotion.',
         icon: Icons.speed_rounded,
         accentColor: colors.primary,
+        targetTabIndex: 0,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.headerProfileKey);
+          if (measured != null) return measured.inflate(6);
           final top = insets.top + 16;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
@@ -153,18 +174,21 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 2. FSRS Daily Review Queue
+      // 2. FSRS Spaced-Repetition Queue
       _TourStep(
-        badge: 'STEP 2 OF 9 • ACTIVE RECALL',
-        title: 'FSRS Daily Review Queue',
-        subtitle: 'Science-backed spaced repetition',
+        badge: 'STEP 2 OF 14 • ACTIVE RECALL',
+        title: 'FSRS-6 Daily Review Queue',
+        subtitle: 'Science-backed spaced repetition engine',
         description:
-            'Cards due for review appear here every morning, scheduled by the FSRS-6 spaced-repetition algorithm — the same system used by top medical students worldwide. It predicts exactly when you are about to forget and reschedules before that happens.',
+            'Cards due for review appear here every morning, scheduled by the FSRS-6 algorithm. It predicts exact memory decay curves so you review right before forgetting.',
         proTip:
             'Just 10-15 reviews per day maintains 95%+ retention permanently. Do not skip your queue.',
         icon: Icons.alarm_on_rounded,
         accentColor: colors.success,
+        targetTabIndex: 0,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.reviewQueueKey);
+          if (measured != null) return measured.inflate(6);
           final top = insets.top + 170;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
@@ -172,18 +196,21 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 3. Exam Countdown Timer & Cram Planner
+      // 3. Exam Countdown & Cram Planner
       _TourStep(
-        badge: 'STEP 3 OF 9 • EXAM PLANNER',
-        title: 'Exam Countdown & Cram Planner',
-        subtitle: 'Auto-calculated daily study targets',
+        badge: 'STEP 3 OF 14 • EXAM PLANNER',
+        title: 'Exam Countdown & Cram Clock',
+        subtitle: 'Auto-calculated daily study velocity',
         description:
-            'Add any upcoming exam — WAEC, NECO, JAMB, SAT, or a custom paper — and Kortex generates a day-by-day cram plan. As the countdown hits zero, the timer switches to a full in-app exam clock so you practise under real time pressure.',
+            'Add upcoming exams like WAEC, NECO, JAMB, SAT, or university finals. Kortex automatically builds a daily study target and switches to a timed exam clock on test day.',
         proTip:
-            'Tap "Add Exam" on the countdown banner. The algorithm auto-distributes your weaker topics to the days you have most time.',
+            'Tap "Add Exam" on the countdown banner to let the algorithm balance your weaker topics.',
         icon: Icons.timer_outlined,
         accentColor: colors.warning,
+        targetTabIndex: 0,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.countdownKey);
+          if (measured != null) return measured.inflate(6);
           final top = insets.top + 300;
           final width = math.min<double>(screenSize.width - 32, 560);
           final left = (screenSize.width - width) / 2;
@@ -191,18 +218,43 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 4. Smart Flashcard Decks + OCR
+      // 4. AI Quick Actions Suite
       _TourStep(
-        badge: 'STEP 4 OF 9 • FLASHCARD DECKS',
-        title: 'Smart Decks & OCR Scanner',
-        subtitle: 'AI-curated cards + camera note importer',
+        badge: 'STEP 4 OF 14 • AI TOOLS',
+        title: 'AI Study Tools & Quick Launcher',
+        subtitle: 'OCR note upload, Q-Bank & 1v1 Quiz Duels',
         description:
-            'Browse thousands of pre-built past-question decks for your syllabus, or use the built-in OCR camera to instantly photograph textbook pages and lecture notes — Kortex converts them to interactive flashcards in seconds.',
+            'Instant entry point for active learning: snap notes with the AI OCR camera, launch subject past-question banks, or challenge scholars to live 1v1 quiz duels.',
         proTip:
-            'Use the "+" icon in Decks to scan physical notes. AI auto-generates both sides of each card from your image.',
+            'Use "Upload Notes" to convert physical textbook photos into structured flashcards in seconds.',
+        icon: Icons.auto_awesome_rounded,
+        accentColor: colors.syllabotAccent,
+        targetTabIndex: 0,
+        resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.quickActionsKey);
+          if (measured != null) return measured.inflate(6);
+          final top = insets.top + 400;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 100);
+        },
+      ),
+
+      // 5. Smart Flashcard Decks & Note Importer
+      _TourStep(
+        badge: 'STEP 5 OF 14 • FLASHCARD DECKS',
+        title: 'Smart Decks & Note Importer',
+        subtitle: 'Syllabus-curated decks & camera scanner',
+        description:
+            'Browse thousands of pre-built past-question decks for your syllabus, or use the camera importer to instantly generate interactive flashcards from your notes.',
+        proTip:
+            'Decks are automatically tagged by subject and difficulty weights for structured revision.',
         icon: Icons.style_rounded,
         accentColor: colors.warning,
+        targetTabIndex: 1,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.decksHeaderKey);
+          if (measured != null) return measured.inflate(6);
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
           final dockLeft = (screenSize.width - dockWidth) / 2;
@@ -216,18 +268,65 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 5. Syllabot AI Copilot
+      // 6. Today's Revision Hero Session
       _TourStep(
-        badge: 'STEP 5 OF 9 • AI COPILOT',
-        title: 'Ask Syllabot 24/7',
+        badge: 'STEP 6 OF 14 • REVISION HERO',
+        title: 'Today\'s Priority Revision Session',
+        subtitle: 'Single-click active recall launcher',
+        description:
+            'Kortex identifies your highest-priority review deck for today. One tap launches active recall mode with real-time AI feedback on incorrect answers.',
+        proTip:
+            'Complete your hero revision card first thing every morning for peak memory retention.',
+        icon: Icons.play_circle_fill_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 1,
+        resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.decksTodayHeroKey);
+          if (measured != null) return measured.inflate(6);
+          final top = insets.top + 180;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 140);
+        },
+      ),
+
+      // 7. Rapid Study Sprints & Focus Mode
+      _TourStep(
+        badge: 'STEP 7 OF 14 • STUDY SPRINTS',
+        title: 'Rapid Sprints & Hyperdrive Focus',
+        subtitle: '10-card, 20-card & speed-run revision modes',
+        description:
+            'Short on time? Launch Quick 10 or Power 20 sprints. Or activate Hyperdrive Focus Mode for a silent, distraction-free study sprint.',
+        proTip:
+            'Quick 10 sprints are ideal for quick study sessions during commute or break times.',
+        icon: Icons.bolt_rounded,
+        accentColor: colors.warning,
+        targetTabIndex: 1,
+        resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.decksSprintChipsKey);
+          if (measured != null) return measured.inflate(6);
+          final top = insets.top + 340;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 60);
+        },
+      ),
+
+      // 8. Ask Syllabot 24/7 AI Tutor
+      _TourStep(
+        badge: 'STEP 8 OF 14 • AI COPILOT',
+        title: 'Ask Syllabot 24/7 AI Tutor',
         subtitle: 'Socratic AI tutor — always one tap away',
         description:
-            'Stuck on a tricky equation, past question, or concept? Tap the floating Syllabot button anywhere in the app for step-by-step explanations, essay outlines, diagram breakdowns, or even full past-paper marking.',
+            'Stuck on a tricky equation, past paper question, or concept? Tap the floating Syllabot button on any screen for step-by-step explanations, essay outlines, or past-paper marking.',
         proTip:
-            'Syllabot stays visible on every screen so you never have to leave your revision session to get help.',
+            'Syllabot stays visible on every screen so you never have to leave your revision session for help.',
         icon: Icons.psychology_rounded,
         accentColor: colors.secondary,
+        targetTabIndex: 1,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.syllabotFabKey);
+          if (measured != null) return measured.inflate(8);
           final defaultBottom = math.max(84, insets.bottom + 72);
           return Rect.fromLTWH(
             screenSize.width - 160,
@@ -238,44 +337,21 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 6. Quiz & Mock Exam Engine
+      // 9. Study Hub Command Center
       _TourStep(
-        badge: 'STEP 6 OF 9 • QUIZ & MOCK EXAM',
-        title: 'Quiz Arena & Mock Exam',
-        subtitle: 'Timed tests, AI marking & instant review',
+        badge: 'STEP 9 OF 14 • STUDY HUB',
+        title: 'Study Hub Command Center',
+        subtitle: 'Live focus rooms, Study Circles & Marketplace',
         description:
-            'Take full timed mock exams or targeted topic quizzes. When finished, the AI marker shows your score, breaks down every wrong answer, compares your response to the correct one, and tells you exactly which topic to revise next.',
+            'Access all deep-work tools using the Liquid Glass tab bar — co-working focus rooms, subject study circles, and community deck marketplace.',
         proTip:
-            'Use Study Hub to launch a mock exam. Enable "Exam Mode" for a silent, distraction-free timed environment that simulates real exam conditions.',
-        icon: Icons.quiz_rounded,
-        accentColor: colors.error,
-        resolveTarget: (context, screenSize, insets) {
-          final defaultBottom = math.max(16, insets.bottom + 8);
-          final dockWidth = math.min(screenSize.width - 32, 480);
-          final dockLeft = (screenSize.width - dockWidth) / 2;
-          final slotWidth = dockWidth / 5;
-          // Study Hub tab (index 3 in 5-tab dock)
-          return Rect.fromLTWH(
-            dockLeft + slotWidth * 3,
-            screenSize.height - defaultBottom - 68,
-            slotWidth,
-            64,
-          );
-        },
-      ),
-
-      // 7. Study Hub & Pomodoro
-      _TourStep(
-        badge: 'STEP 7 OF 9 • STUDY HUB',
-        title: 'Study Hub & Pomodoro Rooms',
-        subtitle: 'Focused deep-work sessions with timer',
-        description:
-            'Access all active learning tools — Pomodoro timer, subject quiz launchers, past-question banks, and curated course materials. The built-in session timer helps you work in focused 25-minute sprints with structured breaks.',
-        proTip:
-            'Start a Pomodoro session in Study Hub to enter deep-work flow. Sessions track focused-study hours toward your weekly XP milestones.',
+            'Swipe horizontally across the Liquid Glass tab bar to switch rooms instantly.',
         icon: Icons.device_hub_rounded,
         accentColor: colors.syllabotAccent,
+        targetTabIndex: 3,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.pomodoroCardKey);
+          if (measured != null) return measured.inflate(6);
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
           final dockLeft = (screenSize.width - dockWidth) / 2;
@@ -289,23 +365,69 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 8. Community Hub & Leaderboard
+      // 10. Synchronized Live Focus Rooms
       _TourStep(
-        badge: 'STEP 8 OF 9 • COMMUNITY',
-        title: 'Study Community & Leaderboard',
-        subtitle: 'Live rooms, forums & academic rankings',
+        badge: 'STEP 10 OF 14 • FOCUS ROOMS',
+        title: 'Synchronized Live Focus Rooms',
+        subtitle: 'Shared Pomodoro timers & ambient audio',
         description:
-            'Join synchronized live virtual study rooms with other scholars, discuss challenging past questions in subject forums, share flashcard decks on the marketplace, and compete on the real-time leaderboard to rise through Bronze to Diamond leagues.',
+            'Join virtual study rooms with scholars worldwide. Features synchronized 25-minute Pomodoro clocks, lo-fi beats, ambient audio, and shared study goals.',
         proTip:
-            'Studying in a live virtual room with peers boosts accountability. Rooms use a shared Pomodoro clock so everyone stays in sync.',
+            'Co-working in live focus rooms boosts study accountability and earns bonus group XP.',
         icon: Icons.groups_rounded,
-        accentColor: colors.latexHighlight,
+        accentColor: colors.primary,
+        targetTabIndex: 3,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.liveRoomsCardKey);
+          if (measured != null) return measured.inflate(6);
+          final top = insets.top + 140;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 180);
+        },
+      ),
+
+      // 11. Scholar Deck Marketplace
+      _TourStep(
+        badge: 'STEP 11 OF 14 • MARKETPLACE',
+        title: 'Scholar Deck Marketplace',
+        subtitle: 'Community-curated decks & past questions',
+        description:
+            'Browse and clone high-yield flashcard decks curated by top scholars and verified educators for your exact exam track.',
+        proTip:
+            'Clone any marketplace deck with one tap to save it directly to your personal library.',
+        icon: Icons.storefront_rounded,
+        accentColor: colors.warning,
+        targetTabIndex: 3,
+        resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.marketplaceCardKey);
+          if (measured != null) return measured.inflate(6);
+          final top = insets.top + 140;
+          final width = math.min<double>(screenSize.width - 32, 560);
+          final left = (screenSize.width - width) / 2;
+          return Rect.fromLTWH(left, top, width, 180);
+        },
+      ),
+
+      // 12. Scholar Community & Forum
+      _TourStep(
+        badge: 'STEP 12 OF 14 • COMMUNITY',
+        title: 'Scholar Community & Forum',
+        subtitle: 'Track-specific Q&A forums & discussions',
+        description:
+            'Discuss challenging past questions, share solutions with peers, and filter discussions by your academic track (WAEC, JAMB, A-Levels, SAT).',
+        proTip:
+            'Filter forum discussions by "Trending" or "Unanswered" to help fellow scholars.',
+        icon: Icons.forum_rounded,
+        accentColor: colors.latexHighlight,
+        targetTabIndex: 2,
+        resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.communityHeroKey);
+          if (measured != null) return measured.inflate(6);
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
           final dockLeft = (screenSize.width - dockWidth) / 2;
           final slotWidth = dockWidth / 5;
-          // Community tab (index 2)
           return Rect.fromLTWH(
             dockLeft + slotWidth * 2,
             screenSize.height - defaultBottom - 68,
@@ -315,23 +437,45 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
         },
       ),
 
-      // 9. Profile, Analytics & Settings
+      // 13. Post Questions & Discuss Solutions
       _TourStep(
-        badge: 'STEP 9 OF 9 • PROFILE',
-        title: 'Progress Analytics & Profile',
-        subtitle: 'Retention heatmap, XP trends & settings',
+        badge: 'STEP 13 OF 14 • CREATE DISCUSSION',
+        title: 'Post Questions & Discuss Solutions',
+        subtitle: 'Ask the scholar community for help',
         description:
-            'Your Profile tab shows a retention heatmap, long-term XP curves, subject mastery breakdown, and streak history. Customise your theme accent, notification schedule, and Syllabot AI behaviour all from Appearance & Sounds in your profile.',
+            'Post questions, attach images of past paper equations, or start academic debates with scholars studying the same syllabus.',
         proTip:
-            'Check your weekly retention heatmap every Sunday to identify the topics with weakest recall — those are your Monday priorities.',
+            'Add subject tags when posting so scholars in your track get instant notifications.',
+        icon: Icons.post_add_rounded,
+        accentColor: colors.primary,
+        targetTabIndex: 2,
+        resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.communityPostBtnKey);
+          if (measured != null) return measured.inflate(6);
+          final top = insets.top + 16;
+          return Rect.fromLTWH(screenSize.width - 100, top, 80, 40);
+        },
+      ),
+
+      // 14. Analytics, Settings & Customization
+      _TourStep(
+        badge: 'STEP 14 OF 14 • PROFILE',
+        title: 'Analytics, Settings & Customization',
+        subtitle: 'Retention heatmaps, theme swatches & security',
+        description:
+            'Track long-term retention heatmaps and XP curves. Customize your theme palette, Socratic AI behavior, biometric lock, and account security.',
+        proTip:
+            'Check your weekly retention heatmap every Sunday to target weak topics for the upcoming week.',
         icon: Icons.person_rounded,
         accentColor: colors.primary,
+        targetTabIndex: 4,
         resolveTarget: (context, screenSize, insets) {
+          final measured = AppTourKeys.getTargetRect(AppTourKeys.profileCardKey);
+          if (measured != null) return measured.inflate(6);
           final defaultBottom = math.max(16, insets.bottom + 8);
           final dockWidth = math.min(screenSize.width - 32, 480);
           final dockLeft = (screenSize.width - dockWidth) / 2;
           final slotWidth = dockWidth / 5;
-          // Profile tab (index 4)
           return Rect.fromLTWH(
             dockLeft + slotWidth * 4,
             screenSize.height - defaultBottom - 68,
@@ -397,13 +541,35 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
     }
   }
 
+  void _onStepChange(int newIndex) {
+    setState(() {
+      _currentStepIndex = newIndex;
+    });
+
+    final targetTabIndex = _steps[newIndex].targetTabIndex;
+
+    // Switch tab dynamically via parent widget callback & AutoTabsRouter
+    widget.onTabChange?.call(targetTabIndex);
+
+    try {
+      final tabsRouter = AutoTabsRouter.of(context);
+      if (tabsRouter.activeIndex != targetTabIndex) {
+        tabsRouter.setActiveIndex(targetTabIndex);
+      }
+    } on Object catch (_) {}
+
+    // Allow frame rendering & tab switch animation before re-measuring target rect
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        _updateTargetRect();
+      }
+    });
+  }
+
   void _goToNextStep() {
     unawaited(HapticFeedback.lightImpact());
     if (_currentStepIndex < _steps.length - 1) {
-      setState(() {
-        _currentStepIndex++;
-      });
-      _updateTargetRect();
+      _onStepChange(_currentStepIndex + 1);
     } else {
       _finishTour();
     }
@@ -412,12 +578,10 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
   void _goToPreviousStep() {
     unawaited(HapticFeedback.lightImpact());
     if (_currentStepIndex > 0) {
-      setState(() {
-        _currentStepIndex--;
-      });
-      _updateTargetRect();
+      _onStepChange(_currentStepIndex - 1);
     }
   }
+
 
   void _finishTour() {
     unawaited(HapticFeedback.mediumImpact());

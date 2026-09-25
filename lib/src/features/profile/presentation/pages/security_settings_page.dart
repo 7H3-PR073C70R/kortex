@@ -30,8 +30,11 @@ import 'package:kortex/src/features/profile/domain/use_cases/profile_security_us
 import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset_email_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/active_sessions_list_widget.dart';
+
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -149,11 +152,20 @@ class SecuritySettingsPage extends HookWidget {
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: Column(
                   children: [
-                    // Top Segmented Pill Tab Bar
-                    _buildSegmentBar(
-                      selectedTab: selectedTabIndex,
-                      colors: colors,
-                      typography: typography,
+                    // Top Segmented Liquid Glass Pill Tab Bar
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: AppLiquidGlassTabBar(
+                        tabs: const ['Security & Access', 'Account & Data'],
+                        icons: const [
+                          Icons.shield_outlined,
+                          Icons.person_outline_rounded,
+                        ],
+                        selectedIndex: selectedTabIndex.value,
+                        onTabSelected: (index) {
+                          selectedTabIndex.value = index;
+                        },
+                      ),
                     ),
 
                     // Tab Content
@@ -209,113 +221,7 @@ class SecuritySettingsPage extends HookWidget {
     );
   }
 
-  Widget _buildSegmentBar({
-    required ValueNotifier<int> selectedTab,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
-        borderRadius: AppRadius.radiusPanel,
-        border: Border.all(
-          color: colors.surfaceBorder.withAlpha(60),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildSegmentButton(
-              title: 'Security & Access',
-              icon: Icons.shield_outlined,
-              isSelected: selectedTab.value == 0,
-              onTap: () {
-                AppFeedback.selection();
-                selectedTab.value = 0;
-              },
-              colors: colors,
-              typography: typography,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _buildSegmentButton(
-              title: 'Account & Data',
-              icon: Icons.person_outline_rounded,
-              isSelected: selectedTab.value == 1,
-              onTap: () {
-                AppFeedback.selection();
-                selectedTab.value = 1;
-              },
-              colors: colors,
-              typography: typography,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildSegmentButton({
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) {
-        return AnimatedScale(
-          scale: isHovered && !isSelected ? 1.02 : 1.0,
-          duration: AppMotion.snappy,
-          curve: Curves.easeOutCubic,
-          child: child,
-        );
-      },
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: isSelected ? colors.primary : colors.transparent,
-            borderRadius: AppRadius.radiusCard,
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: colors.black.withAlpha(25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: isSelected ? colors.white : colors.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: typography.caption.bold.copyWith(
-                  color: isSelected ? colors.white : colors.textSecondary,
-                  fontSize: 12.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // ==========================================
   // TAB 1: SECURITY & ACCESS
@@ -813,116 +719,55 @@ class SecuritySettingsPage extends HookWidget {
             subtitle: 'Review authorized devices connected to your account',
             colors: colors,
             typography: typography,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.surfacePrimary,
-                    borderRadius: AppRadius.radiusCard,
-                    border: Border.all(
-                      color: colors.surfaceBorder.withAlpha(70),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colors.success.withAlpha(25),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.phone_iphone_rounded,
-                          color: colors.success,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Current Mobile Device',
-                              style: typography.body.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
-                            ),
-                            Text(
-                              'Active Now • Authorized Session',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.success,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.02 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: Curves.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: ShrinkableButton(
-                    onTap: () async {
-                      AppFeedback.medium();
-                      final result =
-                          await locator<SignOutOtherSessionsUseCase>()(
-                            const NoParams(),
-                          );
-                      if (result.isLeft) {
-                        final failure = (result as Left<Failure, void>).value;
-                        if (context.mounted) {
-                          context.showSnackBar(
-                            message: failure.message ?? 'Sign out failed',
-                            type: SnackBarType.error,
-                          );
-                        }
-                      } else {
-                        if (context.mounted) {
-                          context.showSnackBar(
-                            message: 'Signed out of all other active sessions!',
-                            type: SnackBarType.success,
-                          );
-                        }
-                      }
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: colors.error.withAlpha(20),
-                        borderRadius: AppRadius.radiusCard,
-                        border: Border.all(
-                          color: colors.error.withAlpha(80),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Sign Out All Other Devices',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.error,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+            child: ActiveSessionsListWidget(
+              sessions: [
+                DeviceSession(
+                  id: 'current_session',
+                  deviceName: Theme.of(context).platform == TargetPlatform.macOS
+                      ? 'MacBook Pro / Desktop Workstation'
+                      : Theme.of(context).platform == TargetPlatform.iOS
+                          ? 'iPhone Scholar Workstation'
+                          : Theme.of(context).platform == TargetPlatform.android
+                              ? 'Android Scholar Device'
+                              : 'Kortexify Web Client',
+                  osType: Theme.of(context).platform == TargetPlatform.macOS
+                      ? 'macos'
+                      : Theme.of(context).platform == TargetPlatform.iOS
+                          ? 'ios'
+                          : Theme.of(context).platform == TargetPlatform.android
+                              ? 'android'
+                              : 'web',
+                  ipAddress: '127.0.0.1 (Encrypted TLS)',
+                  location: 'Current Device • Primary Session',
+                  lastActive: DateTime.now(),
+                  isCurrentDevice: true,
                 ),
               ],
+              onRevokeAllOthers: () async {
+                AppFeedback.medium();
+                final result = await locator<SignOutOtherSessionsUseCase>()(
+                  const NoParams(),
+                );
+                if (result.isLeft) {
+                  final failure = (result as Left<Failure, void>).value;
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message: failure.message ?? 'Sign out failed',
+                      type: SnackBarType.error,
+                    );
+                  }
+                } else {
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message: 'Signed out of all other active sessions!',
+                      type: SnackBarType.success,
+                    );
+                  }
+                }
+              },
             ),
           ),
+
           const SizedBox(height: 20),
 
           // 4. Danger Zone: Delete Account
@@ -1166,10 +1011,9 @@ class SecuritySettingsPage extends HookWidget {
             children: [
               Text(
                 title.toUpperCase(),
-                style: typography.caption.bold.copyWith(
-                  color: colors.textSecondary.withAlpha(170),
-                  fontSize: 11,
-                  letterSpacing: 0.8,
+                style: typography.headline.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 14,
                 ),
               ),
               if (subtitle.isNotEmpty) ...[
@@ -1177,8 +1021,8 @@ class SecuritySettingsPage extends HookWidget {
                 Text(
                   subtitle,
                   style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary.withAlpha(120),
-                    fontSize: 11,
+                    color: colors.textSecondary.withAlpha(200),
+                    fontSize: 12,
                   ),
                 ),
               ],

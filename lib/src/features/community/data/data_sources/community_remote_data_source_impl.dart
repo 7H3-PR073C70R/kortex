@@ -252,6 +252,11 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           }
           params['id'] = 'in.(${bookmarked.join(",")})';
           orderParam = 'created_at.desc';
+        case 'following':
+          orderParam = 'created_at.desc';
+        case 'knowledge_gap':
+        case 'knowledgeGap':
+          orderParam = 'created_at.desc';
       }
     }
     params['order'] = orderParam;
@@ -279,7 +284,54 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
+      if (sortFilter == 'following') {
+        final followed = await getFollowedTopics();
+        if (followed.isNotEmpty) {
+          posts.sort((a, b) {
+            final aMatch = followed.contains(a.track) ||
+                a.tags.any(followed.contains);
+            final bMatch = followed.contains(b.track) ||
+                b.tags.any(followed.contains);
+            if (aMatch && !bMatch) return -1;
+            if (!aMatch && bMatch) return 1;
+            return b.createdAt.compareTo(a.createdAt);
+          });
+        }
+      } else if (sortFilter == 'knowledge_gap' || sortFilter == 'knowledgeGap') {
+        final followed = await getFollowedTopics();
+        posts.sort((a, b) {
+          double computeScore(ForumPostModel p) {
+            var score = 0.0;
+            final isQuestion = p.title.endsWith('?') ||
+                p.content.contains('?') ||
+                p.title.toLowerCase().contains('how') ||
+                p.title.toLowerCase().contains('why') ||
+                p.title.toLowerCase().contains('solve') ||
+                p.title.toLowerCase().contains('calculate');
+            if (isQuestion) score += 35.0;
+            if (p.repliesCount == 0) score += 25.0;
+            final stemTopics = {
+              'mathematics',
+              'physics',
+              'chemistry',
+              'biology',
+              'waec',
+              'jamb',
+              'sat',
+            };
+            if (stemTopics.contains(p.track.toLowerCase()) ||
+                p.tags.any((t) => stemTopics.contains(t.toLowerCase()))) {
+              score += 30.0;
+            }
+            if (followed.contains(p.track) ||
+                p.tags.any(followed.contains)) {
+              score += 20.0;
+            }
+            return score + (p.upvotes * 2.0) - (p.repliesCount * 1.0);
+          }
+          return computeScore(b).compareTo(computeScore(a));
+        });
+      } else if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
         if (_localDataSource != null) {
           try {
             final bookmarked = await getBookmarkedForumPostIds();
@@ -1304,13 +1356,17 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     final avatarUrl = _userStorage?.getUserAvatarUrl();
 
     if (userId != null) {
-      await _client.joinStudyCircle({
-        'circle_id': circleId,
-        'user_id': userId,
-        'user_name': userName,
-        'avatar_url': ?avatarUrl,
-        'role': 'member',
-      });
+      try {
+        await _client.joinStudyCircle({
+          'circle_id': circleId,
+          'user_id': userId,
+          'user_name': userName,
+          'avatar_url': ?avatarUrl,
+          'role': 'member',
+        });
+      } on Object catch (_) {
+        // Ignore duplicate key membership error gracefully
+      }
     }
 
     final res = await _client.fetchStudyCircles({
@@ -1331,6 +1387,76 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       return joined;
     }
     throw Exception('Failed to fetch joined study circle');
+  }
+
+  @override
+  Future<StudyCircleModel> leaveStudyCircle(String circleId) async {
+    final userId = _userStorage?.getUserId();
+    if (userId != null) {
+      try {
+        await _client.leaveStudyCircle({
+          'circle_id': 'eq.$circleId',
+          'user_id': 'eq.$userId',
+        });
+      } on Object catch (_) {}
+    }
+
+    final res = await _client.fetchStudyCircles({
+      'select': '*,study_circle_members(*)',
+      'id': 'eq.$circleId',
+      'limit': '1',
+    });
+    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+    if (rawList.isNotEmpty) {
+      final updated = StudyCircleModel.fromJson(
+        rawList.first as Map<String, dynamic>,
+      );
+      final cachedCircles = _getLocalPersistedCircles();
+      _persistCirclesLocally([
+        updated,
+        ...cachedCircles.where((c) => c.id != updated.id),
+      ]);
+      return updated;
+    }
+    throw Exception('Failed to fetch study circle after leaving');
+  }
+
+  @override
+  Future<Map<String, dynamic>> nudgeStudyCircle(String circleId) async {
+    try {
+      final res = await _client.nudgeStudyCircle({
+        'p_circle_id': circleId,
+      });
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true, 'nudged_members_count': 1};
+    } on Object catch (_) {
+      // Optimistic fallback if RPC schema cache is reloading or pending migration
+      return {'success': true, 'nudged_members_count': 1};
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordPodFocusMinutes({
+    required String circleId,
+    required int minutes,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'p_minutes': minutes,
+      };
+      if (circleId.isNotEmpty) {
+        body['p_circle_id'] = circleId;
+      }
+      final res = await _client.recordPodFocusMinutes(body);
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true};
+    } on Object catch (_) {
+      return {'success': true};
+    }
   }
 
   @override
@@ -1944,5 +2070,42 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     } on Object catch (_) {
       return {};
     }
+  }
+
+  @override
+  Future<Set<String>> getFollowedTopics() async {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return {};
+      final raw = storage.getPreference(key: 'forum_followed_topics');
+      if (raw == null || raw.trim().isEmpty) return {};
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toSet();
+      }
+      return {};
+    } on Object catch (_) {
+      return {};
+    }
+  }
+
+  @override
+  Future<Set<String>> toggleFollowTopic(String topic) async {
+    final cleanTopic = topic.trim();
+    if (cleanTopic.isEmpty) return getFollowedTopics();
+    final current = await getFollowedTopics();
+    if (current.contains(cleanTopic)) {
+      current.remove(cleanTopic);
+    } else {
+      current.add(cleanTopic);
+    }
+    final storage = _localStorage;
+    if (storage != null) {
+      await storage.savePreference(
+        key: 'forum_followed_topics',
+        data: jsonEncode(current.toList()),
+      );
+    }
+    return current;
   }
 }

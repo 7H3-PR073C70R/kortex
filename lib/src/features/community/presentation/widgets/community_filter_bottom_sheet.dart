@@ -21,6 +21,8 @@ class QuickSortItem {
 }
 
 const List<QuickSortItem> kQuickSorts = [
+  QuickSortItem('knowledge_gap', 'Knowledge Gap', Icons.auto_awesome_rounded),
+  QuickSortItem('following', 'Following Topics', Icons.stars_rounded),
   QuickSortItem('trending', 'Trending', Icons.local_fire_department_rounded),
   QuickSortItem('latest', 'Latest', Icons.schedule_rounded),
   QuickSortItem('topToday', 'Top Today', Icons.military_tech_rounded),
@@ -32,6 +34,11 @@ const List<QuickSortItem> kQuickSorts = [
 
 String getSortLabel(String filter) {
   switch (filter.toLowerCase()) {
+    case 'knowledge_gap':
+    case 'knowledgegap':
+      return 'Knowledge Gap';
+    case 'following':
+      return 'Following Topics';
     case 'trending':
       return 'Trending';
     case 'latest':
@@ -58,6 +65,11 @@ String getSortLabel(String filter) {
 
 IconData getSortIcon(String filter) {
   switch (filter.toLowerCase()) {
+    case 'knowledge_gap':
+    case 'knowledgegap':
+      return Icons.auto_awesome_rounded;
+    case 'following':
+      return Icons.stars_rounded;
     case 'trending':
       return Icons.local_fire_department_rounded;
     case 'latest':

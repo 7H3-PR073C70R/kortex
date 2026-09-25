@@ -100,6 +100,11 @@ class AppApiEndpoint {
       '/rest/v1/rpc/vote_forum_reply_atomic';
   static const String autoProvisionCommunityRpc =
       '/rest/v1/rpc/auto_provision_community_rpc';
+  static const String nudgeStudyCircleRpc =
+      '/rest/v1/rpc/nudge_study_circle_rpc';
+  static const String recordPodFocusMinutesRpc =
+      '/rest/v1/rpc/record_pod_focus_minutes_rpc';
+  static const String notifications = '/rest/v1/notifications';
   static const String studyCommunities = '/rest/v1/study_communities';
   static const String forumPostSubscriptions =
       '/rest/v1/forum_post_subscriptions';

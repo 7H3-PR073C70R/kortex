@@ -2,6 +2,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_factor_entity.dart';
+import 'package:kortex/src/features/profile/domain/entities/notification_preferences_entity.dart';
 
 /// Domain Repository Interface for Profile & Security.
 abstract class ProfileRepository {
@@ -18,4 +19,11 @@ abstract class ProfileRepository {
   Future<Either<Failure, List<MfaFactorEntity>>> listMfaFactors();
   Future<Either<Failure, void>> signOutOtherSessions();
   Future<Either<Failure, void>> deleteAccount();
+  Future<Either<Failure, NotificationPreferencesEntity>> getNotificationPreferences();
+  Future<Either<Failure, void>> updateNotificationPreferences(
+    NotificationPreferencesEntity preferences,
+  );
 }
+
+
+

@@ -15,7 +15,6 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/otp_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -105,111 +104,108 @@ class _OtpView extends HookWidget {
       },
       child: Scaffold(
         backgroundColor: colors.surfacePrimary,
-        body: AuraMeshNebula(
-          showBackgroundImage: true,
-          child: Stack(
-            children: [
-              SafeArea(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 32,
-                      ),
-                      child: Column(
-                        children: [
-                          if (Navigator.canPop(context)) ...[
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return ShrinkableButton(
-                                    onTap: () {
-                                      unawaited(HapticFeedback.lightImpact());
-                                      unawaited(Navigator.maybePop(context));
-                                    },
-                                    child: AnimatedContainer(
-                                      duration: AppMotion.snappy,
-                                      curve: AppMotion.easeOutCubic,
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
+        body: Stack(
+          children: [
+            SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 32,
+                    ),
+                    child: Column(
+                      children: [
+                        if (Navigator.canPop(context)) ...[
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return ShrinkableButton(
+                                  onTap: () {
+                                    unawaited(HapticFeedback.lightImpact());
+                                    unawaited(Navigator.maybePop(context));
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: AppMotion.snappy,
+                                    curve: AppMotion.easeOutCubic,
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isHovered
+                                          ? colors.surfaceSecondary.withAlpha(
+                                              140,
+                                            )
+                                          : colors.surfaceSecondary.withAlpha(
+                                              80,
+                                            ),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
                                         color: isHovered
-                                            ? colors.surfaceSecondary.withAlpha(
-                                                140,
-                                              )
-                                            : colors.surfaceSecondary.withAlpha(
-                                                80,
-                                              ),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isHovered
-                                              ? colors.surfaceBorderHighlight
-                                              : colors.surfaceBorder,
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.arrow_back_ios_new_rounded,
-                                        size: 18,
-                                        color: colors.textPrimary,
+                                            ? colors.surfaceBorderHighlight
+                                            : colors.surfaceBorder,
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          const SizedBox(height: 16),
-                          _EnvelopeIcon(),
-                          const SizedBox(height: 28),
-                          Semantics(
-                            header: true,
-                            child: Text(
-                              l10n.otpTitle,
-                              textAlign: TextAlign.center,
-                              style: typography.title1.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 26,
-                              ),
+                                    child: Icon(
+                                      Icons.arrow_back_ios_new_rounded,
+                                      size: 18,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Text(
-                            l10n.otpSubtitle(email),
+                        ],
+                        const SizedBox(height: 16),
+                        _EnvelopeIcon(),
+                        const SizedBox(height: 28),
+                        Semantics(
+                          header: true,
+                          child: Text(
+                            l10n.otpTitle,
                             textAlign: TextAlign.center,
-                            style: typography.callout.regular.copyWith(
-                              color: colors.textSecondary,
-                              height: 1.5,
+                            style: typography.title1.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 26,
                             ),
                           ),
-                          const SizedBox(height: 36),
-                          _OtpGlassCard(
-                            controllers: controllers,
-                            focusNodes: focusNodes,
-                            onComplete: submitOtp,
-                            colors: colors,
-                            typography: typography,
-                            l10n: l10n,
-                            submitOtp: submitOtp,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.otpSubtitle(email),
+                          textAlign: TextAlign.center,
+                          style: typography.callout.regular.copyWith(
+                            color: colors.textSecondary,
+                            height: 1.5,
                           ),
-                          const SizedBox(height: 24),
-                          _ResendSection(
-                            cubit: cubit,
-                            email: email,
-                            l10n: l10n,
-                            typography: typography,
-                            colors: colors,
-                          ),
-                        ].animate(interval: 80.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
-                      ),
+                        ),
+                        const SizedBox(height: 36),
+                        _OtpGlassCard(
+                          controllers: controllers,
+                          focusNodes: focusNodes,
+                          onComplete: submitOtp,
+                          colors: colors,
+                          typography: typography,
+                          l10n: l10n,
+                          submitOtp: submitOtp,
+                        ),
+                        const SizedBox(height: 24),
+                        _ResendSection(
+                          cubit: cubit,
+                          email: email,
+                          l10n: l10n,
+                          typography: typography,
+                          colors: colors,
+                        ),
+                      ].animate(interval: 80.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

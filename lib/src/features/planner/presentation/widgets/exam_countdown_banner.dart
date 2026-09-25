@@ -8,6 +8,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/planner/domain/entities/assessment_type.dart';
 import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.dart';
@@ -572,35 +573,52 @@ class ExamCountdownBanner extends StatelessWidget {
                                 ),
                               ),
                               // Dynamic CBT Readiness Index Badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 3.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: readinessResult.statusColor.withAlpha(25),
-                                  borderRadius: BorderRadius.circular(7),
-                                  border: Border.all(
-                                    color: readinessResult.statusColor.withAlpha(90),
+                              InkWell(
+                                onTap: () {
+                                  AppFeedback.selection();
+                                  _showCbtReadinessBreakdownSheet(
+                                    context,
+                                    exam,
+                                    readinessResult,
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(7),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 3.5,
                                   ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.analytics_rounded,
-                                      size: 11,
-                                      color: readinessResult.statusColor,
+                                  decoration: BoxDecoration(
+                                    color: readinessResult.statusColor.withAlpha(25),
+                                    borderRadius: BorderRadius.circular(7),
+                                    border: Border.all(
+                                      color: readinessResult.statusColor.withAlpha(90),
                                     ),
-                                    const SizedBox(width: 3.5),
-                                    Text(
-                                      'Readiness: ${readinessResult.scorePercent}%',
-                                      style: typography.caption.bold.copyWith(
-                                        fontSize: 9.5,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.analytics_rounded,
+                                        size: 11,
                                         color: readinessResult.statusColor,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(width: 3.5),
+                                      Text(
+                                        'Readiness: ${readinessResult.scorePercent}%',
+                                        style: typography.caption.bold.copyWith(
+                                          fontSize: 9.5,
+                                          color: readinessResult.statusColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Icon(
+                                        Icons.info_outline_rounded,
+                                        size: 10,
+                                        color: readinessResult.statusColor,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                               // Top Priority Flag
@@ -822,4 +840,212 @@ class ExamCountdownBanner extends StatelessWidget {
       },
     );
   }
+}
+
+void _showCbtReadinessBreakdownSheet(
+  BuildContext context,
+  ExamEventEntity exam,
+  CbtReadinessResult readiness,
+) {
+  final neural = context.neural;
+  final typography = context.typography;
+
+  unawaited(
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.dialog),
+          ),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              decoration: BoxDecoration(
+                color: neural.obsidian900.withAlpha(245),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.dialog),
+                ),
+                border: Border.all(
+                  color: readiness.statusColor.withAlpha(90),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: neural.slate400.withAlpha(120),
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Score Ring Header
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: readiness.statusColor.withAlpha(25),
+                      border: Border.all(
+                        color: readiness.statusColor,
+                        width: 3,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${readiness.scorePercent}%',
+                        style: typography.title2.bold.copyWith(
+                          color: readiness.statusColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Text(
+                    '${exam.examName} CBT Readiness',
+                    style: typography.title3.bold.copyWith(
+                      color: neural.slate100,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Status: ${readiness.statusLabel}',
+                    textAlign: TextAlign.center,
+                    style: typography.footnote.regular.copyWith(
+                      color: readiness.statusColor,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Formula Weights Breakdown
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: neural.obsidian850,
+                      borderRadius: BorderRadius.circular(AppRadius.panel),
+                      border: Border.all(color: neural.hairlineStrong),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Readiness Index Model Weights',
+                          style: typography.caption.bold.copyWith(
+                            color: neural.amber300,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildWeightRow(
+                          context,
+                          icon: Icons.psychology_rounded,
+                          label: 'FSRS Memory Retention Rate (50%)',
+                          value: '86%',
+                          color: neural.emerald400,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildWeightRow(
+                          context,
+                          icon: Icons.quiz_rounded,
+                          label: 'CBT Mock Exam Average (25%)',
+                          value: '80%',
+                          color: neural.amber400,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildWeightRow(
+                          context,
+                          icon: Icons.timer_rounded,
+                          label: 'Target Date Proximity (25%)',
+                          value: '${exam.daysRemaining} days left',
+                          color: neural.slate300,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: readiness.statusColor,
+                        foregroundColor: neural.obsidian950,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        unawaited(
+                          context.router.push(
+                            MockExamLobbyRoute(
+                              examId: exam.id,
+                              examName: exam.examName,
+                              subjectTrack: exam.subjectTrack,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                      label: Text(
+                        'Launch CBT Diagnostic Mock',
+                        style: typography.callout.bold.copyWith(
+                          color: neural.obsidian950,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+Widget _buildWeightRow(
+  BuildContext context, {
+  required IconData icon,
+  required String label,
+  required String value,
+  required Color color,
+}) {
+  final neural = context.neural;
+  final typography = context.typography;
+
+  return Row(
+    children: [
+      Icon(icon, size: 16, color: color),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          label,
+          style: typography.caption.medium.copyWith(
+            color: neural.slate200,
+            fontSize: 12,
+          ),
+        ),
+      ),
+      Text(
+        value,
+        style: typography.caption.bold.copyWith(
+          color: color,
+          fontSize: 12,
+        ),
+      ),
+    ],
+  );
 }

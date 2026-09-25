@@ -3,11 +3,19 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 
+enum OcclusionShapeType {
+  rectangle,
+  ellipse,
+  polygon,
+}
+
 class OcclusionMask {
   const OcclusionMask({
     required this.id,
     required this.rect,
     required this.label,
+    this.shapeType = OcclusionShapeType.rectangle,
+    this.points = const [],
     this.isRevealed = false,
   });
 
@@ -16,13 +24,21 @@ class OcclusionMask {
   /// Normalized coordinates (0.0 to 1.0)
   final Rect rect;
   final String label;
+  final OcclusionShapeType shapeType;
+  final List<Offset> points;
   final bool isRevealed;
 
-  OcclusionMask copyWith({bool? isRevealed}) {
+  OcclusionMask copyWith({
+    bool? isRevealed,
+    OcclusionShapeType? shapeType,
+    List<Offset>? points,
+  }) {
     return OcclusionMask(
       id: id,
       rect: rect,
       label: label,
+      shapeType: shapeType ?? this.shapeType,
+      points: points ?? this.points,
       isRevealed: isRevealed ?? this.isRevealed,
     );
   }
@@ -143,7 +159,9 @@ class _ImageOcclusionCanvasState extends State<ImageOcclusionCanvas> {
                             color: mask.isRevealed
                                 ? neural.emerald.withAlpha(40)
                                 : neural.amber.withAlpha(230),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: mask.shapeType == OcclusionShapeType.ellipse
+                                ? BorderRadius.circular(maskWidth / 2)
+                                : BorderRadius.circular(6),
                             border: Border.all(
                               color: mask.isRevealed
                                   ? neural.emerald400
