@@ -177,9 +177,15 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
           widget.preselectedCourseCode ?? widget.initialExam?.subjectTrack;
       if (targetCode != null && targetCode.isNotEmpty) {
         _selectedCourse = _registeredCourses.firstWhere(
-          (c) =>
-              c.courseCode.toLowerCase() == targetCode.toLowerCase() ||
-              c.title.toLowerCase() == targetCode.toLowerCase(),
+          (c) {
+            final t = targetCode.toLowerCase();
+            final code = c.courseCode.toLowerCase();
+            final title = c.title.toLowerCase();
+            return code == t ||
+                title == t ||
+                t.contains(code) ||
+                t.contains(title);
+          },
           orElse: () => _registeredCourses.first,
         );
       } else {

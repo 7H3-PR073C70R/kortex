@@ -469,7 +469,7 @@ class _CompactDashboardLayout extends StatelessWidget {
       physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
       children:
           <Widget>[
                 // 1. User Profile Header (Identity & Streak Anchor)

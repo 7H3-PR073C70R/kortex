@@ -33,7 +33,26 @@ abstract class PlannerRepository {
     double? targetScorePercent,
     bool? isCompleted,
     double? achievedScorePercent,
+    bool? isPostponed,
+    DateTime? originalTargetDate,
+    String? postponedReason,
+    bool? isCancelled,
+    DateTime? cancelledAt,
+    String? cancellationReason,
   });
+
+  Future<Either<Failure, ExamEventEntity>> postponeExam({
+    required String examId,
+    required DateTime newTargetDate,
+    String? reason,
+  });
+
+  Future<Either<Failure, ExamEventEntity>> cancelExam({
+    required String examId,
+    String? reason,
+  });
+
+  Future<Either<Failure, ExamEventEntity>> restoreExam(String examId);
 
   Future<Either<Failure, ExamEventEntity>> completeExam({
     required String examId,

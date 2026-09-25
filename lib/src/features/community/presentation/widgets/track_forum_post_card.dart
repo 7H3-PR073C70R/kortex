@@ -403,28 +403,33 @@ class TrackForumPostCard extends HookWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Channel & Options Header: [Dot + c/Track] ... [more_horiz]
+                    // Channel & Options Header: [Dot + c/Track] ... [Badges] [more_horiz]
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AppPulsingBeacon(
-                              color: colors.primary,
-                              size: 6,
-                              pulseSpread: 3,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'c/${post.track}',
-                              style: typography.caption.bold.copyWith(
+                        Expanded(
+                          child: Row(
+                            children: [
+                              AppPulsingBeacon(
                                 color: colors.primary,
-                                fontSize: 12.5,
+                                size: 6,
+                                pulseSpread: 3,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'c/${post.track}',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 12.5,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 6),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

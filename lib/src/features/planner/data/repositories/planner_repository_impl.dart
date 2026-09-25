@@ -395,6 +395,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
     double? targetScorePercent,
     bool? isCompleted,
     double? achievedScorePercent,
+    bool? isPostponed,
+    DateTime? originalTargetDate,
+    String? postponedReason,
+    bool? isCancelled,
+    DateTime? cancelledAt,
+    String? cancellationReason,
   }) {
     return Future<ExamEventEntity>.sync(() async {
       final idx = _cachedExams.indexWhere((e) => e.id == examId);
@@ -424,6 +430,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
       final effWeight = weightPercent ?? existing?.weightPercent;
       final effCompleted = isCompleted ?? existing?.isCompleted ?? false;
       final effAchieved = achievedScorePercent ?? existing?.achievedScorePercent;
+      final effPostponed = isPostponed ?? existing?.isPostponed ?? false;
+      final effOrigTarget = originalTargetDate ?? existing?.originalTargetDate;
+      final effPostponedReason = postponedReason ?? existing?.postponedReason;
+      final effCancelled = isCancelled ?? existing?.isCancelled ?? false;
+      final effCancelledAt = cancelledAt ?? existing?.cancelledAt;
+      final effCancellationReason = cancellationReason ?? existing?.cancellationReason;
 
       final client = _effectiveDio;
       final userId = _userStorage?.getUserId() ?? '';
@@ -442,6 +454,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'daily_target': dailyTarget,
             'is_completed': effCompleted,
             'achieved_score_percent': ?effAchieved,
+            'is_postponed': effPostponed,
+            'is_cancelled': effCancelled,
             'updated_at': DateTime.now().toIso8601String(),
             if (userId.isNotEmpty) 'user_id': userId,
           };
@@ -507,6 +521,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
         achievedScorePercent: effAchieved,
         completedAt: existing?.completedAt,
         createdAt: existing?.createdAt ?? DateTime.now(),
+        isPostponed: effPostponed,
+        originalTargetDate: effOrigTarget,
+        postponedReason: effPostponedReason,
+        isCancelled: effCancelled,
+        cancelledAt: effCancelledAt,
+        cancellationReason: effCancellationReason,
       );
 
       if (idx >= 0) {
@@ -517,6 +537,109 @@ class PlannerRepositoryImpl implements PlannerRepository {
       _cachedExams.sort((a, b) => a.targetDate.compareTo(b.targetDate));
       _saveToStorage();
       return updated;
+    }).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> postponeExam({
+    required String examId,
+    required DateTime newTargetDate,
+    String? reason,
+  }) {
+    return Future<ExamEventEntity>.sync(() async {
+      final idx = _cachedExams.indexWhere((e) => e.id == examId);
+      if (idx < 0) {
+        throw Exception('Exam not found with id $examId');
+      }
+      final existing = _cachedExams[idx];
+      return (await updateExam(
+        examId: examId,
+        examName: existing.examName,
+        targetDate: newTargetDate,
+        subjectTrack: existing.subjectTrack,
+        assessmentType: existing.assessmentType,
+        scopedDeckIds: existing.scopedDeckIds,
+        scopedTopics: existing.scopedTopics,
+        weightPercent: existing.weightPercent,
+        totalCardsCount: existing.totalCardsCount,
+        masteredCardsCount: existing.masteredCardsCount,
+        totalLapses: existing.totalLapses,
+        targetScorePercent: existing.targetScorePercent,
+        isCompleted: false,
+        isCancelled: false,
+        isPostponed: true,
+        originalTargetDate: existing.originalTargetDate ?? existing.targetDate,
+        postponedReason: reason,
+      )).fold(
+        (failure) => throw failure,
+        (updated) => updated,
+      );
+    }).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> cancelExam({
+    required String examId,
+    String? reason,
+  }) {
+    return Future<ExamEventEntity>.sync(() async {
+      final idx = _cachedExams.indexWhere((e) => e.id == examId);
+      if (idx < 0) {
+        throw Exception('Exam not found with id $examId');
+      }
+      final existing = _cachedExams[idx];
+      return (await updateExam(
+        examId: examId,
+        examName: existing.examName,
+        targetDate: existing.targetDate,
+        subjectTrack: existing.subjectTrack,
+        assessmentType: existing.assessmentType,
+        scopedDeckIds: existing.scopedDeckIds,
+        scopedTopics: existing.scopedTopics,
+        weightPercent: existing.weightPercent,
+        totalCardsCount: existing.totalCardsCount,
+        masteredCardsCount: existing.masteredCardsCount,
+        totalLapses: existing.totalLapses,
+        targetScorePercent: existing.targetScorePercent,
+        isCompleted: false,
+        isCancelled: true,
+        cancelledAt: DateTime.now(),
+        cancellationReason: reason,
+      )).fold(
+        (failure) => throw failure,
+        (updated) => updated,
+      );
+    }).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> restoreExam(String examId) {
+    return Future<ExamEventEntity>.sync(() async {
+      final idx = _cachedExams.indexWhere((e) => e.id == examId);
+      if (idx < 0) {
+        throw Exception('Exam not found with id $examId');
+      }
+      final existing = _cachedExams[idx];
+      return (await updateExam(
+        examId: examId,
+        examName: existing.examName,
+        targetDate: existing.targetDate,
+        subjectTrack: existing.subjectTrack,
+        assessmentType: existing.assessmentType,
+        scopedDeckIds: existing.scopedDeckIds,
+        scopedTopics: existing.scopedTopics,
+        weightPercent: existing.weightPercent,
+        totalCardsCount: existing.totalCardsCount,
+        masteredCardsCount: existing.masteredCardsCount,
+        totalLapses: existing.totalLapses,
+        targetScorePercent: existing.targetScorePercent,
+        isCompleted: false,
+        isCancelled: false,
+        isPostponed: false,
+      )).fold(
+        (failure) => throw failure,
+        (updated) => updated,
+      );
     }).makeRequest();
   }
 

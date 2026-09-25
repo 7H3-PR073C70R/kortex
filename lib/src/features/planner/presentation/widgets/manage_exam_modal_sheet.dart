@@ -14,7 +14,10 @@ import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.da
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
+import 'package:intl/intl.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
+import 'package:kortex/src/features/planner/presentation/widgets/cancel_exam_modal_sheet.dart';
+import 'package:kortex/src/features/planner/presentation/widgets/postpone_exam_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
@@ -457,6 +460,50 @@ class ManageExamModalSheet extends StatelessWidget {
                         spacing: 6,
                         runSpacing: 4,
                         children: [
+                          if (exam.isPostponed)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.warning.withAlpha(isDark ? 50 : 25),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: colors.warning.withAlpha(80),
+                                ),
+                              ),
+                              child: Text(
+                                exam.originalTargetDate != null
+                                    ? 'Postponed from ${DateFormat("MMM d").format(exam.originalTargetDate!)}'
+                                    : 'Postponed',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.warning,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          if (exam.isCancelled)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.error.withAlpha(isDark ? 50 : 25),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: colors.error.withAlpha(80),
+                                ),
+                              ),
+                              child: Text(
+                                'Cancelled',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.error,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
                           if (exam.isCompleted)
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -788,8 +835,31 @@ class ManageExamModalSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                // Conclude / Reopen Milestone Action
-                if (exam.isCompleted)
+                // Primary Status Action
+                if (exam.isCancelled)
+                  FilledButton.icon(
+                    onPressed: () async {
+                      AppFeedback.heavy();
+                      await cubit.restoreAssessment(exam.id);
+                      if (context.mounted) {
+                        context.showSnackBar(
+                          message: '${exam.examName} restored to active study schedule',
+                          type: SnackBarType.success,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.restore_rounded, size: 17),
+                    label: const Text('Restore to Active Schedule'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusCard,
+                      ),
+                    ),
+                  )
+                else if (exam.isCompleted)
                   OutlinedButton.icon(
                     onPressed: () async {
                       AppFeedback.selection();
@@ -826,6 +896,66 @@ class ManageExamModalSheet extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 10),
+
+                // Postpone & Cancel Actions Row (for uncompleted exams)
+                if (!exam.isCompleted && !exam.isCancelled) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            unawaited(
+                              PostponeExamModalSheet.show(
+                                context,
+                                exam: exam,
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.update_rounded, size: 16, color: colors.warning),
+                          label: Text(
+                            'Postpone',
+                            style: TextStyle(color: colors.warning),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(color: colors.warning.withAlpha(120)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.radiusCard,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            unawaited(
+                              CancelExamModalSheet.show(
+                                context,
+                                exam: exam,
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.cancel_outlined, size: 16, color: colors.error),
+                          label: Text(
+                            'Cancel',
+                            style: TextStyle(color: colors.error),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(color: colors.error.withAlpha(120)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppRadius.radiusCard,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
 
                 // Action Buttons Row: Edit and Add
                 Row(

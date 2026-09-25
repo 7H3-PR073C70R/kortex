@@ -7,7 +7,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/extensions/num_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -148,10 +147,7 @@ class MainPage extends HookWidget {
                       bottom: false,
                       child: FadeTransition(
                         opacity: animation,
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: 76.height),
-                          child: child,
-                        ),
+                        child: child,
                       ),
                     );
                   },
@@ -609,16 +605,6 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
             ? (distFromNearest * 2.5).clamp(0.0, 1.0)
             : (distFromNearest > 0.02 ? 1.0 : 0.0));
 
-    // Calculate dynamic ambient color reflection bounce off the top of the dock card
-    final tabCount = _kNavItems.length;
-    final normalizedPos =
-        (_currentUnitPosition / (tabCount - 1)).clamp(0.0, 1.0);
-    final colorBounce = Color.lerp(
-      context.neural.cyan,
-      context.neural.fuchsia500,
-      normalizedPos,
-    )!;
-
     return Semantics(
       container: true,
       label: l10n.navBarSemanticsLabel,
@@ -632,76 +618,51 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
               clipBehavior: Clip.none,
               children: [
                 // -----------------------------------------------
-                // 0. Base 3D Liquid Glass Dock Container & Reactive Reflection Track
+                // 0. Base Neutral 3D Liquid Glass Dock Track
                 // -----------------------------------------------
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(dockRadius),
                       boxShadow: [
-                        // Deep 3D Ambient Drop Shadow
                         BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 110 : 35),
-                          blurRadius: 28,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 10),
-                        ),
-                        // Primary Dynamic Color Reflection Bounce Shadow
-                        BoxShadow(
-                          color: colorBounce.withAlpha(isDark ? 55 : 30),
-                          blurRadius: 24,
-                          offset: const Offset(0, 3),
-                        ),
-                        // Subtle 3D Top Specular Glow
-                        BoxShadow(
-                          color: colors.white.withAlpha(isDark ? 20 : 60),
-                          blurRadius: 12,
-                          offset: const Offset(0, -1),
+                          color: colors.black.withAlpha(isDark ? 85 : 20),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(dockRadius),
                       child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+                        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                         child: Container(
                           decoration: BoxDecoration(
                             color: isDark
-                                ? colors.surfaceSecondary.withAlpha(115)
-                                : colors.surfaceSecondary.withAlpha(155),
+                                ? colors.black.withAlpha(35)
+                                : colors.white.withAlpha(125),
                             borderRadius: BorderRadius.circular(dockRadius),
                             border: Border.all(
                               color: isDark
-                                  ? colors.white.withAlpha(50)
-                                  : colors.white.withAlpha(220),
-                              width: 1.2,
+                                  ? colors.white.withAlpha(40)
+                                  : colors.white.withAlpha(180),
                             ),
                           ),
                           child: Stack(
                             children: [
-                              // 3D Specular Top Bevel Crest with Dynamic Environmental Color Bounce
+                              // Pure Neutral 3D Specular Top Glass Crest Line
                               Positioned(
                                 top: 0,
-                                left: 12,
-                                right: 12,
-                                height: 2.2,
+                                left: 20,
+                                right: 20,
+                                height: 1.8,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(1),
                                     gradient: LinearGradient(
                                       colors: [
                                         colors.transparent,
-                                        colors.white.withAlpha(isDark ? 140 : 220),
-                                        colorBounce.withAlpha(isDark ? 220 : 180),
-                                        colors.white.withAlpha(isDark ? 140 : 220),
+                                        colors.white.withAlpha(isDark ? 120 : 200),
                                         colors.transparent,
-                                      ],
-                                      stops: [
-                                        0.0,
-                                        (normalizedPos - 0.2).clamp(0.0, 0.8),
-                                        normalizedPos,
-                                        (normalizedPos + 0.2).clamp(0.2, 1.0),
-                                        1.0,
                                       ],
                                     ),
                                   ),
@@ -719,7 +680,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                     gradient: LinearGradient(
                                       colors: [
                                         colors.transparent,
-                                        colors.black.withAlpha(isDark ? 60 : 25),
+                                        colors.black.withAlpha(isDark ? 50 : 20),
                                         colors.transparent,
                                       ],
                                     ),
