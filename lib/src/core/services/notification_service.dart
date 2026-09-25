@@ -116,7 +116,7 @@ class NotificationService {
     try {
       tz_data.initializeTimeZones();
       final deviceTz = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(deviceTz));
+      tz.setLocalLocation(tz.getLocation(deviceTz.identifier));
     } on Object catch (e) {
       developer.log('NotificationService: timezone init failed: $e');
     }
