@@ -26,8 +26,8 @@ class RoomChatDrawer extends StatefulWidget {
     required String currentUserId,
     LiveRoomCubit? cubit,
   }) {
-    final liveRoomCubit = cubit ?? context.read<LiveRoomCubit>();
-    liveRoomCubit.markChatAsRead();
+    final liveRoomCubit = cubit ?? context.read<LiveRoomCubit>()
+    ..markChatAsRead();
     unawaited(
       showModalBottomSheet<void>(
         context: context,

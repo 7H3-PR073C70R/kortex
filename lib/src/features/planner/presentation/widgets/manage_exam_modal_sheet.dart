@@ -323,8 +323,8 @@ class ManageExamModalSheet extends StatelessWidget {
                     text: l10n.addExamTitle,
                     onPressed: () {
                       final cubit = context.read<CramPlannerCubit>();
-                      final nav = Navigator.of(context);
-                      nav.pop();
+                      final nav = Navigator.of(context)
+                      ..pop();
                       unawaited(
                         AddExamModalSheet.show(
                           nav.context,
@@ -911,8 +911,8 @@ class ManageExamModalSheet extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             final cubit = context.read<CramPlannerCubit>();
-                            final nav = Navigator.of(context);
-                            nav.pop();
+                            final nav = Navigator.of(context)
+                            ..pop();
                             unawaited(
                               PostponeExamModalSheet.show(
                                 nav.context,
@@ -940,8 +940,8 @@ class ManageExamModalSheet extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             final cubit = context.read<CramPlannerCubit>();
-                            final nav = Navigator.of(context);
-                            nav.pop();
+                            final nav = Navigator.of(context)
+                            ..pop();
                             unawaited(
                               CancelExamModalSheet.show(
                                 nav.context,
@@ -976,8 +976,8 @@ class ManageExamModalSheet extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: () {
                           final cubit = context.read<CramPlannerCubit>();
-                          final nav = Navigator.of(context);
-                          nav.pop();
+                          final nav = Navigator.of(context)
+                          ..pop();
                           unawaited(
                             AddExamModalSheet.show(
                               nav.context,
@@ -1002,8 +1002,8 @@ class ManageExamModalSheet extends StatelessWidget {
                       child: FilledButton.icon(
                         onPressed: () {
                           final cubit = context.read<CramPlannerCubit>();
-                          final nav = Navigator.of(context);
-                          nav.pop();
+                          final nav = Navigator.of(context)
+                          ..pop();
                           unawaited(
                             AddExamModalSheet.show(
                               nav.context,
