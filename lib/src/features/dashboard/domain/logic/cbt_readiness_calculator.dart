@@ -10,6 +10,8 @@ class CbtReadinessResult {
     required this.syllabusCoverage,
     required this.fsrsRetentionRate,
     required this.mockScoreRatio,
+    required this.projectedGrade,
+    required this.projectedScoreRange,
     this.remediationSuggestion = '',
     this.weakestAreaLabel = '',
   });
@@ -17,7 +19,7 @@ class CbtReadinessResult {
   /// Overall readiness index (0 to 100)
   final int scorePercent;
 
-  /// Human readable diagnostic tag (e.g. "On Track", "Needs Acceleration", "Critical Review")
+  /// Human readable diagnostic tag (e.g. "ON TRACK", "ACCELERATE PREP", "NEEDS TRIAGE")
   final String statusLabel;
 
   /// UI Color associated with the readiness status
@@ -26,6 +28,12 @@ class CbtReadinessResult {
   final double syllabusCoverage;
   final double fsrsRetentionRate;
   final double mockScoreRatio;
+
+  /// Projected letter grade (e.g., "A+", "A", "B+", "B", "C", "D", "F")
+  final String projectedGrade;
+
+  /// Projected CBT exam score range (e.g., "290 - 325 / 400")
+  final String projectedScoreRange;
 
   /// Actionable Socratic recommendation to boost score
   final String remediationSuggestion;
@@ -37,7 +45,7 @@ class CbtReadinessResult {
 class CbtReadinessCalculator {
   const CbtReadinessCalculator();
 
-  /// Computes a weighted 0-100% CBT readiness score.
+  /// Computes a weighted 0-100% CBT readiness score and projects expected exam grade.
   /// Weights:
   /// - Syllabus Coverage: 30%
   /// - FSRS Active Recall Retention: 35%
@@ -72,16 +80,44 @@ class CbtReadinessCalculator {
 
     final String label;
     final Color color;
+    final String grade;
+    final String scoreRange;
 
-    if (finalPercent >= 75) {
+    if (finalPercent >= 90) {
       label = 'ON TRACK';
       color = const Color(0xFF10B981); // Emerald
-    } else if (finalPercent >= 50) {
+      grade = 'A+';
+      scoreRange = '320 - 360 / 400';
+    } else if (finalPercent >= 80) {
+      label = 'ON TRACK';
+      color = const Color(0xFF10B981); // Emerald
+      grade = 'A';
+      scoreRange = '280 - 315 / 400';
+    } else if (finalPercent >= 70) {
       label = 'ACCELERATE PREP';
       color = const Color(0xFFF59E0B); // Amber
+      grade = 'B+';
+      scoreRange = '250 - 279 / 400';
+    } else if (finalPercent >= 60) {
+      label = 'ACCELERATE PREP';
+      color = const Color(0xFFF59E0B); // Amber
+      grade = 'B';
+      scoreRange = '220 - 249 / 400';
+    } else if (finalPercent >= 50) {
+      label = 'NEEDS TRIAGE';
+      color = const Color(0xFFEF4444); // Crimson/Rose
+      grade = 'C';
+      scoreRange = '190 - 219 / 400';
+    } else if (finalPercent >= 40) {
+      label = 'NEEDS TRIAGE';
+      color = const Color(0xFFEF4444); // Crimson/Rose
+      grade = 'D';
+      scoreRange = '160 - 189 / 400';
     } else {
       label = 'NEEDS TRIAGE';
       color = const Color(0xFFEF4444); // Crimson/Rose
+      grade = 'F';
+      scoreRange = '< 160 / 400';
     }
 
     // Determine primary bottleneck diagnostic
@@ -115,6 +151,8 @@ class CbtReadinessCalculator {
       syllabusCoverage: cov,
       fsrsRetentionRate: ret,
       mockScoreRatio: mock,
+      projectedGrade: grade,
+      projectedScoreRange: scoreRange,
       remediationSuggestion: remediation,
       weakestAreaLabel: weakestArea,
     );

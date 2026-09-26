@@ -118,26 +118,59 @@ class CbtReadinessImpactCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: result.statusColor.withAlpha(isDark ? 40 : 20),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: result.statusColor.withAlpha(120),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: result.statusColor.withAlpha(isDark ? 40 : 20),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: result.statusColor.withAlpha(120),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          result.statusLabel,
+                          style: typography.caption.bold.copyWith(
+                            color: result.statusColor,
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: result.statusColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            result.projectedGrade,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.white,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Text(
-                  result.statusLabel,
-                  style: typography.caption.bold.copyWith(
-                    color: result.statusColor,
-                    fontSize: 11,
-                    letterSpacing: 0.5,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Proj: ${result.projectedScoreRange}',
+                    style: typography.caption.medium.copyWith(
+                      color: colors.textMuted,
+                      fontSize: 10.5,
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

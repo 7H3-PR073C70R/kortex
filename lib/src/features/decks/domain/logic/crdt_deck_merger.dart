@@ -12,6 +12,11 @@ class CrdtCardRecord extends Equatable {
     this.frontLatex,
     this.backLatex,
     this.isDeleted = false,
+    this.fsrsStability = 0.0,
+    this.fsrsDifficulty = 0.0,
+    this.fsrsState = 0,
+    this.fsrsLapses = 0,
+    this.fsrsReviewTimestampMicros = 0,
   });
 
   final String cardId;
@@ -23,6 +28,13 @@ class CrdtCardRecord extends Equatable {
   final int timestampMicros;
   final bool isDeleted;
 
+  // FSRS memory state parameters for CRDT sync reconciliation
+  final double fsrsStability;
+  final double fsrsDifficulty;
+  final int fsrsState;
+  final int fsrsLapses;
+  final int fsrsReviewTimestampMicros;
+
   FlashcardEntity toEntity(String deckId) {
     return FlashcardEntity(
       id: cardId,
@@ -31,20 +43,32 @@ class CrdtCardRecord extends Equatable {
       back: back,
       frontLatex: frontLatex,
       backLatex: backLatex,
+      fsrsStability: fsrsStability,
+      fsrsDifficulty: fsrsDifficulty,
+      fsrsState: fsrsState,
+      fsrsLapses: fsrsLapses,
+      lastReviewed: fsrsReviewTimestampMicros > 0
+          ? DateTime.fromMicrosecondsSinceEpoch(fsrsReviewTimestampMicros)
+          : null,
     );
   }
 
   @override
   List<Object?> get props => [
-    cardId,
-    front,
-    back,
-    frontLatex,
-    backLatex,
-    authorId,
-    timestampMicros,
-    isDeleted,
-  ];
+        cardId,
+        front,
+        back,
+        frontLatex,
+        backLatex,
+        authorId,
+        timestampMicros,
+        isDeleted,
+        fsrsStability,
+        fsrsDifficulty,
+        fsrsState,
+        fsrsLapses,
+        fsrsReviewTimestampMicros,
+      ];
 }
 
 class CrdtDeckState extends Equatable {
@@ -81,14 +105,17 @@ class CrdtDeckMerger {
     final updatedCards = Map<String, CrdtCardRecord>.from(currentState.cards);
     final existing = updatedCards[newRecord.cardId];
 
-    if (existing == null || _isNewer(newRecord, existing)) {
+    if (existing == null) {
       updatedCards[newRecord.cardId] = newRecord;
+    } else {
+      updatedCards[newRecord.cardId] = _mergeRecords(existing, newRecord);
     }
 
     return currentState.copyWith(cards: updatedCards);
   }
 
-  /// Merges two divergent deck states into a deterministic converged state.
+  /// Merges two divergent deck states into a deterministic converged state,
+  /// preserving both the latest content edits and the latest FSRS review states.
   CrdtDeckState merge(
     CrdtDeckState localState,
     CrdtDeckState remoteState,
@@ -108,8 +135,7 @@ class CrdtDeckMerger {
       } else if (local != null && remote == null) {
         mergedCards[cardId] = local;
       } else if (local != null && remote != null) {
-        // Last-Write-Wins comparison
-        mergedCards[cardId] = _isNewer(remote, local) ? remote : local;
+        mergedCards[cardId] = _mergeRecords(local, remote);
       }
     }
 
@@ -117,6 +143,49 @@ class CrdtDeckMerger {
       deckId: localState.deckId,
       cards: mergedCards,
     );
+  }
+
+  /// Merges two card records by picking the newest content payload and
+  /// the newest FSRS review memory state independently.
+  CrdtCardRecord _mergeRecords(CrdtCardRecord recA, CrdtCardRecord recB) {
+    final contentRecord = _isContentNewer(recB, recA) ? recB : recA;
+    final fsrsRecord = _isFsrsNewer(recB, recA) ? recB : recA;
+
+    return CrdtCardRecord(
+      cardId: contentRecord.cardId,
+      front: contentRecord.front,
+      back: contentRecord.back,
+      frontLatex: contentRecord.frontLatex,
+      backLatex: contentRecord.backLatex,
+      authorId: contentRecord.authorId,
+      timestampMicros: contentRecord.timestampMicros,
+      isDeleted: (recA.isDeleted || recB.isDeleted) && _isTombstoneNewer(recA, recB),
+      fsrsStability: fsrsRecord.fsrsStability,
+      fsrsDifficulty: fsrsRecord.fsrsDifficulty,
+      fsrsState: fsrsRecord.fsrsState,
+      fsrsLapses: fsrsRecord.fsrsLapses,
+      fsrsReviewTimestampMicros: fsrsRecord.fsrsReviewTimestampMicros,
+    );
+  }
+
+  bool _isContentNewer(CrdtCardRecord candidate, CrdtCardRecord current) {
+    if (candidate.timestampMicros != current.timestampMicros) {
+      return candidate.timestampMicros > current.timestampMicros;
+    }
+    return candidate.authorId.compareTo(current.authorId) > 0;
+  }
+
+  bool _isFsrsNewer(CrdtCardRecord candidate, CrdtCardRecord current) {
+    if (candidate.fsrsReviewTimestampMicros != current.fsrsReviewTimestampMicros) {
+      return candidate.fsrsReviewTimestampMicros > current.fsrsReviewTimestampMicros;
+    }
+    return _isContentNewer(candidate, current);
+  }
+
+  bool _isTombstoneNewer(CrdtCardRecord recA, CrdtCardRecord recB) {
+    if (recA.isDeleted && !recB.isDeleted) return recA.timestampMicros >= recB.timestampMicros;
+    if (!recA.isDeleted && recB.isDeleted) return recB.timestampMicros >= recA.timestampMicros;
+    return recA.isDeleted || recB.isDeleted;
   }
 
   /// Converts CRDT state to DeckEntity, filtering out deleted tombstones.
@@ -143,17 +212,5 @@ class CrdtDeckMerger {
       masteryRate: 0,
       cards: activeCards,
     );
-  }
-
-  bool _isNewer(CrdtCardRecord candidate, CrdtCardRecord current) {
-    if (candidate.timestampMicros != current.timestampMicros) {
-      return candidate.timestampMicros > current.timestampMicros;
-    }
-    // Precedence rule: Tombstone (deletion) takes priority on identical timestamps to prevent card resurrection
-    if (candidate.isDeleted != current.isDeleted) {
-      return candidate.isDeleted;
-    }
-    // Deterministic tie-breaker: authorId lexicographical comparison
-    return candidate.authorId.compareTo(current.authorId) > 0;
   }
 }

@@ -86,11 +86,31 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                       color: readinessResult.statusColor.withAlpha(100),
                     ),
                   ),
-                  child: Text(
-                    readinessResult.statusLabel,
-                    style: typography.caption.bold.copyWith(
-                      color: readinessResult.statusColor,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        readinessResult.statusLabel,
+                        style: typography.caption.bold.copyWith(
+                          color: readinessResult.statusColor,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: readinessResult.statusColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          readinessResult.projectedGrade,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

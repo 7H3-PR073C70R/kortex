@@ -54,11 +54,23 @@ class AudioPronounceButton extends HookWidget {
           borderRadius: BorderRadius.circular(size / 2),
           onTap: () async {
             AppFeedback.selection();
-            if (isSpeaking) {
-              await handler.stop();
-            } else {
-              if (textToPronounce.trim().isNotEmpty) {
-                await handler.speak(textToPronounce);
+            try {
+              if (isSpeaking) {
+                await handler.stop();
+              } else {
+                if (textToPronounce.trim().isNotEmpty) {
+                  await handler.speak(textToPronounce);
+                }
+              }
+            } on Object catch (_) {
+              AppFeedback.incorrect();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Audio pronunciation unavailable offline.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               }
             }
           },

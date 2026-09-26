@@ -17,6 +17,7 @@ import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/upload_past_questions_view.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_ingestion_service.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
@@ -470,6 +471,7 @@ class CreateDeckPage extends HookWidget {
                             'Manual Cards',
                             'AI Generator',
                             'Upload Notes',
+                            'Past Questions',
                           ],
                           selectedIndex: selectedTabIndex.value,
                           onTabSelected: (index) {
@@ -689,7 +691,7 @@ class CreateDeckPage extends HookWidget {
                                 ),
                               ]
                               // Tab 3: Upload Study Document
-                              else ...[
+                              else if (selectedTabIndex.value == 2) ...[
                                 Container(
                                   padding: const EdgeInsets.all(18),
                                   decoration: BoxDecoration(
@@ -830,13 +832,39 @@ class CreateDeckPage extends HookWidget {
                                     ],
                                   ),
                                 ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+                               ]
+                               else ...[
+                                 Container(
+                                   padding: const EdgeInsets.all(18),
+                                   decoration: BoxDecoration(
+                                     color: isDark
+                                         ? colors.surfaceSecondary.withAlpha(120)
+                                         : colors.surfacePrimary,
+                                     borderRadius: AppRadius.radiusPanel,
+                                     border: Border.all(
+                                       color: isDark
+                                           ? colors.surfaceBorderHighlight
+                                                 .withAlpha(50)
+                                           : colors.surfaceBorder.withAlpha(120),
+                                     ),
+                                   ),
+                                   child: UploadPastQuestionsView(
+                                     pickedFile: pickedDoc,
+                                     isCalibrating: isDocIngesting.value,
+                                     statusText: docStatus.value.isNotEmpty
+                                         ? docStatus.value
+                                         : 'Calibrating past question asset...',
+                                     progress: isDocIngesting.value ? 0.65 : 0.0,
+                                     onExecuteCalibration: ingestDocumentCards,
+                                   ),
+                                 ),
+                               ],
+                             ],
+                           ),
+                         ),
+                         const SizedBox(height: 24),
 
-                        // Cards in this Deck Section
+                         // Cards in this Deck Section
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
