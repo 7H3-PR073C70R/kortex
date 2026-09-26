@@ -375,6 +375,9 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   // Local view: roomId → Map<userId, participant>
   final Map<String, Map<String, EphemeralParticipant>> _roomParticipants = {};
 
+  // Track local user ID per room
+  final Map<String, String> _localUserIds = {};
+
   // Stream controllers per room
   final Map<String, StreamController<List<EphemeralParticipant>>>
   _participantControllers = {};
@@ -420,11 +423,8 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
 
               // If a new peer joined, reply by re-broadcasting local presence state
               if (action == 'join') {
-                final localUserId = _roomParticipants[roomId]?.keys.firstWhere(
-                  (id) => id != userId,
-                  orElse: () => '',
-                );
-                if (localUserId != null && localUserId.isNotEmpty) {
+                final localUserId = _localUserIds[roomId];
+                if (localUserId != null && localUserId != userId) {
                   final localP = _roomParticipants[roomId]?[localUserId];
                   if (localP != null) {
                     _realtime.broadcastPresence(
@@ -442,17 +442,20 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
             }
             _notifyParticipants(roomId);
           } else if (type == 'request_presence') {
-            final localP = _roomParticipants[roomId]?.values.firstOrNull;
-            if (localP != null) {
-              _realtime.broadcastPresence(
-                channelName: channel,
-                payload: {
-                  'data': {
-                    'action': 'announce',
-                    ...localP.toJson(),
+            final localUserId = _localUserIds[roomId];
+            if (localUserId != null) {
+              final localP = _roomParticipants[roomId]?[localUserId];
+              if (localP != null) {
+                _realtime.broadcastPresence(
+                  channelName: channel,
+                  payload: {
+                    'data': {
+                      'action': 'announce',
+                      ...localP.toJson(),
+                    },
                   },
-                },
-              );
+                );
+              }
             }
           } else if (type == 'card_progress') {
             final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
@@ -542,6 +545,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     String? activeGoal,
   }) async {
     _ensureRoomListening(roomId);
+    _localUserIds[roomId] = userId;
     final participant = EphemeralParticipant(
       userId: userId,
       displayName: displayName,
@@ -572,13 +576,12 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
 
   @override
   Future<void> leaveRoomPresence(String roomId) async {
-    final participants = _roomParticipants[roomId] ?? {};
-    if (participants.isNotEmpty) {
-      final userId = participants.keys.first;
+    final localUserId = _localUserIds.remove(roomId);
+    if (localUserId != null && localUserId.isNotEmpty) {
       _realtime.broadcastPresence(
         channelName: _channelName(roomId),
         payload: {
-          'data': {'action': 'leave', 'userId': userId},
+          'data': {'action': 'leave', 'userId': localUserId},
         },
       );
     }

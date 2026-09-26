@@ -1767,6 +1767,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     final res = await _client.generateLiveKitToken({
       'room_id': roomId,
       'user_id': userId,
+      'canPublish': true,
+      'is_voice_pod': true,
     });
     final dynamic data = res.data;
     if (data is Map<String, dynamic> && data['token'] != null) {

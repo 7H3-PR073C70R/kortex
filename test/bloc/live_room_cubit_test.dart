@@ -888,4 +888,36 @@ void main() {
       await cubit.close();
     });
   });
+
+  group('EphemeralPresenceClientImpl Presence Unit Test', () {
+    test('tracks localUserId correctly and formats participant stream', () async {
+      final client = EphemeralPresenceClientImpl();
+      const roomId = 'room-presence-test';
+
+      // Start watching participants
+      final participantStream = client.watchParticipants(roomId);
+      final events = <List<EphemeralParticipant>>[];
+      final sub = participantStream.listen(events.add);
+
+      // Local user joins
+      await client.joinRoomPresence(
+        roomId: roomId,
+        userId: 'user_local_123',
+        displayName: 'Local Scholar',
+        avatarUrl: 'https://example.com/avatar.png',
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(events.isNotEmpty, isTrue);
+      final lastEvent = events.last;
+      expect(lastEvent.length, equals(1));
+      expect(lastEvent.first.userId, equals('user_local_123'));
+      expect(lastEvent.first.displayName, equals('Local Scholar'));
+
+      // Clean leave
+      await client.leaveRoomPresence(roomId);
+      await sub.cancel();
+    });
+  });
 }

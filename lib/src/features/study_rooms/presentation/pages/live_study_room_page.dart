@@ -1817,8 +1817,7 @@ class _FocusCockpitSection extends StatelessWidget {
                           isDark: cIsDark,
                           isSpeaking:
                               isVoicePodEnabled &&
-                              (activeSpeakerIds.contains(p.userId) ||
-                                  (!p.isMuted && activeSpeakerIds.isEmpty)),
+                              activeSpeakerIds.contains(p.userId),
                           isVoicePodEnabled: isVoicePodEnabled,
                         ),
                       )
@@ -2172,12 +2171,15 @@ class _ActiveSpeakersBanner extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
 
+    if (speakerIds.isEmpty) return const SizedBox.shrink();
+
     final speakingUsers = participants
         .where((p) => speakerIds.contains(p.userId))
         .toList();
-    if (speakingUsers.isEmpty) return const SizedBox.shrink();
 
-    final names = speakingUsers.map((p) => p.displayName).join(', ');
+    final names = speakingUsers.isNotEmpty
+        ? speakingUsers.map((p) => p.displayName).join(', ')
+        : 'Peer';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

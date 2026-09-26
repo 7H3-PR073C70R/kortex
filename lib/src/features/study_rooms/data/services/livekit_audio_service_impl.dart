@@ -136,6 +136,30 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
             .toSet();
         _speakingParticipantsController.add(speakers);
       })
+      ..on<lk.TrackSubscribedEvent>((event) {
+        developer.log(
+          'LiveKitAudioService: Remote audio track subscribed (${event.track.sid} from ${event.participant.identity})',
+          name: 'LiveKitAudio',
+        );
+      })
+      ..on<lk.TrackUnsubscribedEvent>((event) {
+        developer.log(
+          'LiveKitAudioService: Remote audio track unsubscribed (${event.track.sid} from ${event.participant.identity})',
+          name: 'LiveKitAudio',
+        );
+      })
+      ..on<lk.ParticipantConnectedEvent>((event) {
+        developer.log(
+          'LiveKitAudioService: Peer connected to RTC room: ${event.participant.identity}',
+          name: 'LiveKitAudio',
+        );
+      })
+      ..on<lk.ParticipantDisconnectedEvent>((event) {
+        developer.log(
+          'LiveKitAudioService: Peer disconnected from RTC room: ${event.participant.identity}',
+          name: 'LiveKitAudio',
+        );
+      })
       ..on<lk.RoomDisconnectedEvent>((_) {
         _isConnected = false;
         _connectionStateController.add(LiveAudioConnectionState.disconnected);
@@ -144,9 +168,19 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
       ..on<lk.RoomReconnectingEvent>((_) {
         _connectionStateController.add(LiveAudioConnectionState.reconnecting);
       })
-      ..on<lk.RoomReconnectedEvent>((_) {
+      ..on<lk.RoomReconnectedEvent>((_) async {
         _isConnected = true;
         _connectionStateController.add(LiveAudioConnectionState.connected);
+        if (_isMicEnabled) {
+          try {
+            await _room?.localParticipant?.setMicrophoneEnabled(true);
+          } on Object catch (e) {
+            developer.log(
+              'LiveKitAudioService: Re-publish mic track error post-reconnect: $e',
+              name: 'LiveKitAudio',
+            );
+          }
+        }
       });
   }
 
