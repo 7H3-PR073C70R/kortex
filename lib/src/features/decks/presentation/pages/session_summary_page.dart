@@ -9,6 +9,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/cbt_readiness_impact_card.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_retrievability_visualizer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
@@ -320,7 +321,12 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      // CBT Readiness Score Impact Banner
+                      CbtReadinessImpactCard(
+                        cardsReviewed: cardsReviewed,
+                        retentionScore: retentionScore,
+                      ),
+                      const SizedBox(height: 16),
 
                       // FSRS Memory Forgetting Curve Visualizer
                       FsrsRetrievabilityVisualizer(

@@ -3,7 +3,7 @@ import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart'
 
 part 'study_session_state.freezed.dart';
 
-enum StudySessionStatus { initial, loading, studying, finished, error }
+enum StudySessionStatus { initial, loading, studying, finishing, finished, error }
 
 @freezed
 abstract class StudySessionState with _$StudySessionState {

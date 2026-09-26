@@ -57,12 +57,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     }
   }
 
-  bool _isValidUuid(String id) {
-    final uuidRegex = RegExp(
-      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-    );
-    return uuidRegex.hasMatch(id);
+  bool _isValidId(String id) {
+    if (id.trim().isEmpty) return false;
+    final clean = id.trim();
+    if (clean == 'all' || clean == 'all_decks' || clean == 'cross_deck') {
+      return false;
+    }
+    if (clean.contains(':')) return false;
+    final validIdRegex = RegExp(r'^[a-zA-Z0-9_\-]+$');
+    return validIdRegex.hasMatch(clean);
   }
+
+  bool _isValidUuid(String id) => _isValidId(id);
 
   void _persistLocalDecksToStorage() {
     try {
@@ -246,6 +252,9 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
       final resultList = <DeckModel>[...merged];
 
+      // Background offline pre-fetching of top due decks to guarantee 100% offline study availability
+      unawaited(_prefetchTopDueDecks(updatedRemote));
+
       return resultList.map(DeckTitleResolver.enrichDeckModel).toList();
     } on Object catch (e, stack) {
       if (_crashlyticsService != null) {
@@ -268,6 +277,23 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
       final fallbackList = <DeckModel>[..._localCreatedDecks];
       return fallbackList.map(DeckTitleResolver.enrichDeckModel).toList();
+    }
+  }
+
+  Future<void> _prefetchTopDueDecks(List<DeckModel> decks) async {
+    final dueDecks =
+        decks.where((d) => d.dueCards > 0 && _isValidId(d.id)).take(3);
+    for (final deck in dueDecks) {
+      if (!_localDeckCards.containsKey(deck.id) ||
+          _localDeckCards[deck.id]!.isEmpty) {
+        try {
+          final cards = await _client.getDeckCards(deck.id);
+          if (cards.isNotEmpty) {
+            _localDeckCards[deck.id] = cards;
+            unawaited(_localDataSource?.saveCards(deck.id, cards));
+          }
+        } on Object catch (_) {}
+      }
     }
   }
 

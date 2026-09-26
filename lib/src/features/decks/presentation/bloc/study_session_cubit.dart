@@ -604,52 +604,69 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       final remainingDue = updatedCards.where((c) => c.isDueToday).length;
       final calculatedMasteryRate = finalRetention.clamp(0.0, 1.0);
 
-      // 1. Record in UserActivityService for persistent analytics & streak calculation
+      // Emit finishing state instantly to present responsive loading/waiting state to the user
+      emit(
+        state.copyWith(
+          status: StudySessionStatus.finishing,
+          cards: updatedCards,
+          againCount: newAgain,
+          hardCount: newHard,
+          goodCount: newGood,
+          easyCount: newEasy,
+          correctCount: newCorrect,
+        ),
+      );
+
+      // Execute all persistence operations concurrently in parallel
       try {
-        await locator<UserActivityService>().recordStudySession(
-          cardsReviewed: totalReviewed,
-          durationSeconds: state.elapsedSeconds,
-          retentionScore: finalRetention.clamp(0.0, 1.0),
-          masteredCards: mastered,
-        );
+        await Future.wait([
+          if (locator.isRegistered<UserActivityService>())
+            locator<UserActivityService>().recordStudySession(
+              cardsReviewed: totalReviewed,
+              durationSeconds: state.elapsedSeconds,
+              retentionScore: finalRetention.clamp(0.0, 1.0),
+              masteredCards: mastered,
+            )
+          else
+            Future<void>.value(),
+          if (locator.isRegistered<DecksRemoteDataSource>())
+            locator<DecksRemoteDataSource>().updateDeckCards(
+              state.deckId,
+              updatedCards.map(FlashcardModel.fromEntity).toList(),
+            )
+          else
+            Future<void>.value(),
+          _saveSessionResultsUseCase(
+            SaveSessionResultsParams(
+              deckId: state.deckId,
+              cardsReviewed: totalReviewed,
+              durationSeconds: state.elapsedSeconds,
+              retentionScore: finalRetention.clamp(0.0, 1.0),
+              masteryRate: calculatedMasteryRate,
+              dueCards: remainingDue,
+              updatedCards: updatedCards,
+            ),
+          ),
+        ]);
       } on Object catch (_) {}
 
-      // 2. Persist updated cards locally and in-memory
+      // Increment streak in AuthBloc
       try {
-        if (locator.isRegistered<DecksRemoteDataSource>()) {
-          await locator<DecksRemoteDataSource>().updateDeckCards(
-            state.deckId,
-            updatedCards.map(FlashcardModel.fromEntity).toList(),
-          );
+        if (locator.isRegistered<AuthBloc>()) {
+          locator<AuthBloc>().add(const AuthStreakIncremented());
         }
       } on Object catch (_) {}
 
-      // 3. Save session results to backend API & recalculate deck mastery
+      // Trigger live refresh on DecksBloc and DashboardBloc
       try {
-        await _saveSessionResultsUseCase(
-          SaveSessionResultsParams(
-            deckId: state.deckId,
-            cardsReviewed: totalReviewed,
-            durationSeconds: state.elapsedSeconds,
-            retentionScore: finalRetention.clamp(0.0, 1.0),
-            masteryRate: calculatedMasteryRate,
-            dueCards: remainingDue,
-            updatedCards: updatedCards,
-          ),
-        );
-      } on Object catch (_) {}
-
-      // 4. Increment streak in AuthBloc
-      try {
-        locator<AuthBloc>().add(const AuthStreakIncremented());
-      } on Object catch (_) {}
-
-      // 5. Trigger live refresh on DecksBloc and DashboardBloc
-      try {
-        locator<DecksBloc>().add(const DecksRefreshed());
+        if (locator.isRegistered<DecksBloc>()) {
+          locator<DecksBloc>().add(const DecksRefreshed());
+        }
       } on Object catch (_) {}
       try {
-        locator<DashboardBloc>().add(const DashboardRefreshed());
+        if (locator.isRegistered<DashboardBloc>()) {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
+        }
       } on Object catch (_) {}
       try {
         if (locator.isRegistered<CramPlannerCubit>()) {
@@ -657,27 +674,31 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         }
       } on Object catch (_) {}
 
-      // 6. Telemetry: Performance trace and Crashlytics completion metrics
+      // Telemetry: Performance trace and Crashlytics completion metrics
       try {
-        final crashlytics = locator<CrashlyticsService>();
-        unawaited(
-          crashlytics.log(
-            'Study session completed: deckId=${state.deckId}, cards=$totalReviewed, '
-            'duration=${state.elapsedSeconds}s, retention=$finalRetention',
-          ),
-        );
-        unawaited(crashlytics.setCustomKey('last_study_deck', state.deckId));
-        unawaited(crashlytics.setCustomKey('last_study_cards', totalReviewed));
+        if (locator.isRegistered<CrashlyticsService>()) {
+          final crashlytics = locator<CrashlyticsService>();
+          unawaited(
+            crashlytics.log(
+              'Study session completed: deckId=${state.deckId}, cards=$totalReviewed, '
+              'duration=${state.elapsedSeconds}s, retention=$finalRetention',
+            ),
+          );
+          unawaited(crashlytics.setCustomKey('last_study_deck', state.deckId));
+          unawaited(crashlytics.setCustomKey('last_study_cards', totalReviewed));
+        }
 
-        final performance = locator<PerformanceService>();
-        final trace = performance.newTrace('study_session_completion')
-          ..putAttribute('deck_id', state.deckId)
-          ..setMetric('cards_reviewed', totalReviewed)
-          ..setMetric('duration_seconds', state.elapsedSeconds);
-        unawaited(trace.start().then((_) => trace.stop()));
+        if (locator.isRegistered<PerformanceService>()) {
+          final performance = locator<PerformanceService>();
+          final trace = performance.newTrace('study_session_completion')
+            ..putAttribute('deck_id', state.deckId)
+            ..setMetric('cards_reviewed', totalReviewed)
+            ..setMetric('duration_seconds', state.elapsedSeconds);
+          unawaited(trace.start().then((_) => trace.stop()));
+        }
       } on Object catch (_) {}
 
-      // 7. Trigger flush of queued card reviews upon session completion
+      // Flush queued card reviews upon session completion
       unawaited(_cardSyncQueue.flushPendingLogs());
 
       // Clear checkpoint when all cards in deck are fully reviewed
@@ -731,6 +752,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       return;
     }
 
+    emit(state.copyWith(status: StudySessionStatus.finishing));
+
     final finalRetention =
         ((state.hardCount * 0.7) +
             (state.goodCount * 1.0) +
@@ -741,45 +764,51 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     final calculatedMasteryRate = finalRetention.clamp(0.0, 1.0);
 
     try {
-      await locator<UserActivityService>().recordStudySession(
-        cardsReviewed: totalReviewed,
-        durationSeconds: state.elapsedSeconds,
-        retentionScore: finalRetention.clamp(0.0, 1.0),
-        masteredCards: mastered,
-      );
+      await Future.wait([
+        if (locator.isRegistered<UserActivityService>())
+          locator<UserActivityService>().recordStudySession(
+            cardsReviewed: totalReviewed,
+            durationSeconds: state.elapsedSeconds,
+            retentionScore: finalRetention.clamp(0.0, 1.0),
+            masteredCards: mastered,
+          )
+        else
+          Future<void>.value(),
+        if (locator.isRegistered<DecksRemoteDataSource>())
+          locator<DecksRemoteDataSource>().updateDeckCards(
+            state.deckId,
+            state.cards.map(FlashcardModel.fromEntity).toList(),
+          )
+        else
+          Future<void>.value(),
+        _saveSessionResultsUseCase(
+          SaveSessionResultsParams(
+            deckId: state.deckId,
+            cardsReviewed: totalReviewed,
+            durationSeconds: state.elapsedSeconds,
+            retentionScore: finalRetention.clamp(0.0, 1.0),
+            masteryRate: calculatedMasteryRate,
+            dueCards: remainingDue,
+            updatedCards: state.cards,
+          ),
+        ),
+      ]);
     } on Object catch (_) {}
 
     try {
-      if (locator.isRegistered<DecksRemoteDataSource>()) {
-        await locator<DecksRemoteDataSource>().updateDeckCards(
-          state.deckId,
-          state.cards.map(FlashcardModel.fromEntity).toList(),
-        );
+      if (locator.isRegistered<AuthBloc>()) {
+        locator<AuthBloc>().add(const AuthStreakIncremented());
       }
     } on Object catch (_) {}
-
     try {
-      await _saveSessionResultsUseCase(
-        SaveSessionResultsParams(
-          deckId: state.deckId,
-          cardsReviewed: totalReviewed,
-          durationSeconds: state.elapsedSeconds,
-          retentionScore: finalRetention.clamp(0.0, 1.0),
-          masteryRate: calculatedMasteryRate,
-          dueCards: remainingDue,
-          updatedCards: state.cards,
-        ),
-      );
-    } on Object catch (_) {}
-
-    try {
-      locator<AuthBloc>().add(const AuthStreakIncremented());
+      if (locator.isRegistered<DecksBloc>()) {
+        locator<DecksBloc>().add(const DecksRefreshed());
+      }
     } on Object catch (_) {}
     try {
-      locator<DecksBloc>().add(const DecksRefreshed());
-    } on Object catch (_) {}
-    try {
-      locator<DashboardBloc>().add(const DashboardRefreshed());
+      if (locator.isRegistered<DashboardBloc>()) {
+        locator<DashboardBloc>().add(const DashboardRefreshed());
+      }
     } on Object catch (_) {}
 
     unawaited(_cardSyncQueue.flushPendingLogs());

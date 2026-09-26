@@ -192,7 +192,7 @@ class DeckListTileCard extends StatelessWidget {
                     // Row 1: Subject & course tags + overflow menu
                     Row(
                       children: [
-                        Flexible(
+                        Expanded(
                           child: Wrap(
                             spacing: 6,
                             runSpacing: 6,

@@ -18,6 +18,7 @@ import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
 import 'package:kortex/src/features/decks/presentation/pages/focus_workspace_page.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/feynman_active_recall_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture_canvas.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/sprint_milestone_banner.dart';
@@ -660,9 +661,12 @@ class _StudySessionView extends HookWidget {
                             child: !state.isFlipped
                                 ? Container(
                                     key: const ValueKey('study-hint'),
-                                    height: 52,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 2,
+                                    ),
                                     alignment: Alignment.center,
                                     child: Column(
+                                      mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
@@ -671,20 +675,55 @@ class _StudySessionView extends HookWidget {
                                           style: typography.footnote.regular
                                               .copyWith(
                                                 color: colors.textMuted,
-                                                fontSize: 12,
+                                                fontSize: 11.5,
                                               ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
-                                          style: typography.caption.regular
-                                              .copyWith(
-                                                color: colors.primary.withAlpha(
-                                                  isDark ? 210 : 170,
-                                                ),
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.w500,
+                                        const SizedBox(height: 2),
+                                        ShrinkableButton(
+                                          onTap: () {
+                                            unawaited(
+                                              FeynmanActiveRecallSheet.show(
+                                                context,
+                                                card: currentCard,
+                                                onRevealCard: () {
+                                                  context
+                                                      .read<StudySessionCubit>()
+                                                      .toggleFlip();
+                                                },
                                               ),
+                                            );
+                                          },
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
+                                                  style: typography.caption.regular
+                                                      .copyWith(
+                                                        color: colors.primary
+                                                            .withAlpha(
+                                                          isDark ? 210 : 170,
+                                                        ),
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.mic_rounded,
+                                                size: 12,
+                                                color: colors.primary,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
