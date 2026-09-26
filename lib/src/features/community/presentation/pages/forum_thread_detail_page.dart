@@ -3405,7 +3405,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                   if (isQuestion &&
                       !parentReply.isVerifiedSolution &&
                       (!hasVerifiedSolution || isAuthor)) ...[
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     ShrinkableButton(
                       onTap: onVerifySolution,
                       child: Container(

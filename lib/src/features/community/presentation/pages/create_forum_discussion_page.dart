@@ -785,30 +785,33 @@ class CreateForumDiscussionPage extends HookWidget {
           ),
         ),
         centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.success,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.success,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'New Discussion',
-              style: typography.headline.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 16,
+              const SizedBox(width: 6),
+              Text(
+                'New Discussion',
+                style: typography.headline.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 16,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
             child: PlatformHoverBuilder(
               builder: (context, isHovered, child) => AnimatedScale(
                 scale: isHovered ? 1.03 : 1.0,
@@ -887,90 +890,93 @@ class CreateForumDiscussionPage extends HookWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Channel / Track Dropdown & Public Discourse Pill
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 35 : 20),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: selectedTrack.value,
-                                isDense: true,
-                                icon: Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  size: 18,
-                                  color: colors.primary,
-                                ),
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 13,
-                                ),
-                                dropdownColor: isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfacePrimary,
-                                items: availableTracks
-                                    .map(
-                                      (t) => DropdownMenuItem(
-                                        value: t,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.chat_bubble_outline_rounded,
-                                              size: 14,
-                                              color: colors.primary,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text('c/$t'),
-                                          ],
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 35 : 20),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: selectedTrack.value,
+                                  isDense: true,
+                                  icon: Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 18,
+                                    color: colors.primary,
+                                  ),
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 13,
+                                  ),
+                                  dropdownColor: isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfacePrimary,
+                                  items: availableTracks
+                                      .map(
+                                        (t) => DropdownMenuItem(
+                                          value: t,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.chat_bubble_outline_rounded,
+                                                size: 14,
+                                                color: colors.primary,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text('c/$t'),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (val) {
-                                  if (val != null) selectedTrack.value = val;
-                                },
+                                      )
+                                      .toList(),
+                                  onChanged: (val) {
+                                    if (val != null) selectedTrack.value = val;
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary
-                                  : colors.surfaceSecondary.withAlpha(140),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.public_rounded,
-                                  size: 13,
-                                  color: colors.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Public Discourse',
-                                  style: typography.caption.medium.copyWith(
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfaceSecondary.withAlpha(140),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.public_rounded,
+                                    size: 13,
                                     color: colors.textSecondary,
-                                    fontSize: 11,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Public Discourse',
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       // Author Info Row with Anonymous Switch
                       Row(
@@ -2022,15 +2028,18 @@ class CreateForumDiscussionPage extends HookWidget {
                         size: 16,
                         color: colors.textSecondary,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Draft saved automatically (${lastSavedTime.value})',
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11.5,
+                      Expanded(
+                        child: Text(
+                          'Draft saved automatically (${lastSavedTime.value})',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Text(
                         '${characterCount.value} characters',
                         style: typography.caption.regular.copyWith(

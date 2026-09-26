@@ -487,19 +487,23 @@ class _SyllabotChatView extends HookWidget {
                 )
               : const AppBackButton(),
           titleSpacing: 0,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SyllabotAvatar(size: 32),
-              const SizedBox(width: 10),
-              Text(
-                l10n.syllabotTitle,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 17,
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SyllabotAvatar(size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.syllabotTitle,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             // 1. Interactive Voice Dialogue Mode Action

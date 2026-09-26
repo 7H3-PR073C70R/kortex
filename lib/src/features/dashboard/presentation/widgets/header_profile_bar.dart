@@ -11,7 +11,6 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
-import 'package:kortex/src/features/dashboard/presentation/widgets/track_selection_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -253,99 +252,6 @@ class HeaderProfileBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children:
                   <Widget>[
-                        // Academic Track Chip / Quick Switcher
-                        Semantics(
-                          label: 'Academic Track: ${authProfile?.targetTrack.isNotEmpty == true ? authProfile!.targetTrack : "Select Track"}',
-                          button: true,
-                          child: PlatformHoverBuilder(
-                            builder: (context, isHovered, child) {
-                              final track = authProfile?.targetTrack;
-                              final hasTrack =
-                                  track != null && track.trim().isNotEmpty;
-                              return ShrinkableButton(
-                                onTap: () {
-                                  unawaited(HapticFeedback.lightImpact());
-                                  unawaited(
-                                    TrackSelectionModalSheet.show(
-                                      context,
-                                      currentTrackId: track,
-                                    ),
-                                  );
-                                },
-                                child: AnimatedContainer(
-                                  duration: AppMotion.snappy,
-                                  curve: AppMotion.easeOutCubic,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: hasTrack
-                                        ? neural.obsidian850.withAlpha(
-                                            isHovered ? 255 : 220,
-                                          )
-                                        : colors.primary.withAlpha(
-                                            isDark ? 60 : 30,
-                                          ),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: hasTrack
-                                          ? neural.emerald400.withAlpha(
-                                              isHovered ? 150 : 80,
-                                            )
-                                          : colors.primary.withAlpha(
-                                              isHovered ? 200 : 120,
-                                            ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        hasTrack
-                                            ? Icons.school_rounded
-                                            : Icons.track_changes_rounded,
-                                        size: 13,
-                                        color: hasTrack
-                                            ? neural.emerald400
-                                            : colors.primary,
-                                      ),
-                                      const SizedBox(width: 3),
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 55,
-                                        ),
-                                        child: Text(
-                                          hasTrack ? track : 'Track',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: hasTrack
-                                                    ? neural.slate200
-                                                    : colors.primary,
-                                                fontSize: 11,
-                                                letterSpacing: 0.1,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 1),
-                                      Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        size: 13,
-                                        color: hasTrack
-                                            ? neural.slate400
-                                            : colors.primary,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-
                         // Notifications Shortcut
                         _HeaderIconButton(
                           icon: Icons.notifications_outlined,

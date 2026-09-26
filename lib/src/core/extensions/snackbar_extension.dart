@@ -19,6 +19,8 @@ enum SnackBarType {
 extension BuildContextExtension on BuildContext {
   void showSnackBar({
     required String message,
+    String? title,
+    IconData? icon,
     SnackBarType type = SnackBarType.info,
     Duration duration = const Duration(milliseconds: 4500),
     VoidCallback? onTap,
@@ -57,6 +59,8 @@ extension BuildContextExtension on BuildContext {
       overlayState,
       _ThemedDistinctSnackBar(
         message: message,
+        title: title,
+        icon: icon,
         type: type,
         onTap: onTap,
         onDownloadComplete: onDownloadComplete,
@@ -91,11 +95,15 @@ class _ThemedDistinctSnackBar extends StatefulWidget {
   const _ThemedDistinctSnackBar({
     required this.message,
     required this.type,
+    this.title,
+    this.icon,
     this.onTap,
     this.onDownloadComplete,
   });
 
   final String message;
+  final String? title;
+  final IconData? icon;
   final SnackBarType type;
   final VoidCallback? onTap;
   final VoidCallback? onDownloadComplete;
@@ -198,8 +206,8 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
       Color accentColor,
       Color bgTint,
       Color borderColor,
-      IconData icon,
-      String title,
+      IconData defaultIcon,
+      String defaultTitle,
     ) = switch (effectiveType) {
       SnackBarType.error => (
         colors.error,
@@ -219,10 +227,15 @@ class _ThemedDistinctSnackBarState extends State<_ThemedDistinctSnackBar>
         colors.primary,
         colors.primary.withAlpha(isDark ? 50 : 30),
         colors.primary.withAlpha(isDark ? 150 : 110),
-        Icons.download_rounded,
-        'Downloading Model',
+        _isModelDownloadMessage
+            ? Icons.download_rounded
+            : Icons.info_outline_rounded,
+        _isModelDownloadMessage ? 'Downloading Model' : 'Notice',
       ),
     };
+
+    final title = widget.title ?? defaultTitle;
+    final icon = widget.icon ?? defaultIcon;
 
     return Center(
       child: Material(

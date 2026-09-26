@@ -99,6 +99,20 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
         'LiveKitAudioService: Connected to room $roomId successfully',
         name: 'LiveKitAudio',
       );
+
+      if (_isMicEnabled) {
+        try {
+          final local = room.localParticipant;
+          if (local != null) {
+            await local.setMicrophoneEnabled(true);
+          }
+        } on Object catch (e) {
+          developer.log(
+            'LiveKit post-connect setMicrophoneEnabled error: $e',
+            name: 'LiveKitAudio',
+          );
+        }
+      }
     } on Object catch (e, s) {
       developer.log(
         'LiveKitAudioService: Connection error: $e',
@@ -156,8 +170,9 @@ class LiveKitAudioServiceImpl implements LiveKitAudioService {
     _micStateController.add(enabled);
 
     try {
-      final local = _room?.localParticipant;
-      if (local != null) {
+      final room = _room;
+      final local = room?.localParticipant;
+      if (local != null && room?.connectionState == lk.ConnectionState.connected) {
         await local.setMicrophoneEnabled(enabled);
       }
       return true;

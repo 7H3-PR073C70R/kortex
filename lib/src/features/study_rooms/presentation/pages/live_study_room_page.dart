@@ -805,7 +805,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               !_announcedHandRaises.contains(p.userId)) {
             _announcedHandRaises.add(p.userId);
             context.showSnackBar(
+              title: 'Hand Raised',
               message: l10n.handRaisedNotice(p.displayName),
+              icon: Icons.front_hand_rounded,
             );
           } else if (!p.isHandRaised) {
             _announcedHandRaises.remove(p.userId);
@@ -827,9 +829,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         }
       },
       builder: (context, state) {
-        final audience = state.ephemeralParticipants
-            .where((p) => !p.isHandRaised)
-            .toList();
+        final audience = state.ephemeralParticipants;
 
         final hasEphemeral = state.ephemeralParticipants.isNotEmpty;
 
@@ -884,35 +884,36 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        AppPulsingBeacon(
-                          color: colors.error,
-                          size: 5,
-                          pulseSpread: 3,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'LIVE',
-                          style: typography.caption.bold.copyWith(
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          AppPulsingBeacon(
                             color: colors.error,
-                            fontSize: 10,
-                            letterSpacing: 0.8,
-                            fontWeight: FontWeight.w800,
+                            size: 5,
+                            pulseSpread: 3,
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            '•',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary.withAlpha(120),
+                          const SizedBox(width: 4),
+                          Text(
+                            'LIVE',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.error,
                               fontSize: 10,
+                              letterSpacing: 0.8,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                        ),
-                        Flexible(
-                          child: Text(
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              '•',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary.withAlpha(120),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          Text(
                             state.room.subject,
                             style: typography.caption.regular.copyWith(
                               color: colors.textSecondary,
@@ -921,36 +922,36 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            '•',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary.withAlpha(120),
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.timer_outlined,
-                              size: 11,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              state.formattedTimer,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 11,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              '•',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary.withAlpha(120),
+                                fontSize: 10,
                               ),
                             ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.timer_outlined,
+                                size: 11,
+                                color: colors.primary,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                state.formattedTimer,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1209,35 +1210,38 @@ class _CoOpSprintBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'CO-OP SPRINT',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.warning,
-                        fontSize: 9.5,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.warning.withAlpha(40),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        state.formattedSprintTimer,
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(
+                        'CO-OP SPRINT',
                         style: typography.caption.bold.copyWith(
                           color: colors.warning,
-                          fontSize: 10,
+                          fontSize: 9.5,
+                          letterSpacing: 0.8,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.warning.withAlpha(40),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          state.formattedSprintTimer,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.warning,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1252,14 +1256,14 @@ class _CoOpSprintBanner extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           ShrinkableButton(
             onTap: () {
               unawaited(HapticFeedback.mediumImpact());
               context.read<LiveRoomCubit>().logCardReviewed();
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
                 color: colors.warning,
                 borderRadius: BorderRadius.circular(10),
@@ -1270,21 +1274,21 @@ class _CoOpSprintBanner extends StatelessWidget {
                   Icon(
                     Icons.check_rounded,
                     color: colors.white,
-                    size: 14,
+                    size: 13,
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 2),
                   Text(
                     '+1 Card',
                     style: typography.caption.bold.copyWith(
                       color: colors.white,
-                      fontSize: 11,
+                      fontSize: 10.5,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           IconButton(
             icon: Icon(
               Icons.close_rounded,
@@ -1864,7 +1868,10 @@ class _FocusParticipantTile extends StatelessWidget {
     final String statusLabel;
     final Color statusColor;
 
-    if (participant.isAway) {
+    if (participant.isHandRaised) {
+      statusLabel = 'Hand Raised';
+      statusColor = cColors.warning;
+    } else if (participant.isAway) {
       statusLabel = 'Away';
       statusColor = cColors.warning;
     } else if (participant.isAiBuddy) {
@@ -1893,6 +1900,29 @@ class _FocusParticipantTile extends StatelessWidget {
               isDark: cIsDark,
               glowColor: statusColor,
             ),
+            if (participant.isHandRaised)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: cColors.warning,
+                    boxShadow: [
+                      BoxShadow(
+                        color: cColors.warning.withAlpha(120),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    '✋',
+                    style: TextStyle(fontSize: 10),
+                  ),
+                ),
+              ),
             if (isVoicePodEnabled &&
                 !participant.isMuted &&
                 !participant.isAway)
@@ -1945,7 +1975,9 @@ class _FocusParticipantTile extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (participant.isAiBuddy) ...[
+              if (participant.isHandRaised) ...[
+                Text('✋ ', style: context.typography.body.regular.copyWith(fontSize: 8)),
+              ] else if (participant.isAiBuddy) ...[
                 Text('🤖 ', style: context.typography.body.regular.copyWith(fontSize: 8)),
               ] else if (participant.isAway) ...[
                 Text('⏳ ', style: context.typography.body.regular.copyWith(fontSize: 8)),

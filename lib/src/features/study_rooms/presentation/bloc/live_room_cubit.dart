@@ -48,15 +48,6 @@ List<String> extractEmojis(String text) {
     }
   }
 
-  if (emojis.isEmpty && text.trim().length <= 8) {
-    for (final char in text.characters) {
-      final t = char.trim();
-      if (t.isNotEmpty) {
-        emojis.add(t);
-      }
-    }
-  }
-
   return emojis;
 }
 
@@ -644,11 +635,10 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           ...state.recentActivityTicker.take(4),
         ];
         final extracted = extractEmojis(chatMsg.text);
-        final isEmojiOrReaction = chatMsg.isReaction || extracted.isNotEmpty;
-        final reactionEvent = isEmojiOrReaction
+        final reactionEvent = extracted.isNotEmpty
             ? LiveRoomReactionEvent(
                 id: '${chatMsg.id}_${DateTime.now().microsecondsSinceEpoch}',
-                emojis: extracted.isNotEmpty ? extracted : [chatMsg.text],
+                emojis: extracted,
                 senderId: chatMsg.senderId,
                 senderName: chatMsg.senderName,
               )
@@ -659,8 +649,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
             chatMessages: [...state.chatMessages, chatMsg],
             unreadChatCount: state.unreadChatCount + 1,
             recentActivityTicker: updatedTicker,
-            lastReactionEmoji: isEmojiOrReaction
-                ? chatMsg.text
+            lastReactionEmoji: extracted.isNotEmpty
+                ? extracted.first
                 : state.lastReactionEmoji,
             lastReactionEvent: reactionEvent ?? state.lastReactionEvent,
           ),
@@ -943,20 +933,40 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   }
 
   Future<void> toggleMicMute() async {
+    if (isClosed) return;
     final nextMuted = !state.isMuted;
 
     // If unmuting, attempt to enable microphone track first
     if (!nextMuted && _audioService != null) {
       final success = await _audioService.setMicrophoneEnabled(enabled: true);
+      if (isClosed) return;
+
       if (!success) {
-        // Check if permission is permanently denied to guide user to settings
         final isPermanentlyDenied = await _audioService
             .isMicrophonePermissionPermanentlyDenied();
+        if (isClosed) return;
+
+        // Check whether microphone permission is actually missing before showing prompt
+        final granted = await _audioService.requestMicrophonePermission();
+        if (isClosed) return;
+
+        if (!granted) {
+          emit(
+            state.copyWith(
+              isMuted: true,
+              microphonePermissionDenied: true,
+              isPermanentlyDeniedMic: isPermanentlyDenied,
+            ),
+          );
+          return;
+        }
+
+        // Permission is granted, but track publishing failed (e.g. room connecting/network issue)
         emit(
           state.copyWith(
             isMuted: true,
-            microphonePermissionDenied: true,
-            isPermanentlyDeniedMic: isPermanentlyDenied,
+            microphonePermissionDenied: false,
+            isPermanentlyDeniedMic: false,
           ),
         );
         return;
@@ -964,6 +974,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     } else if (nextMuted && _audioService != null) {
       unawaited(_audioService.setMicrophoneEnabled(enabled: false));
     }
+
+    if (isClosed) return;
 
     final updatedList = state.ephemeralParticipants.map((p) {
       if (p.userId == _currentUserId) {
@@ -1004,6 +1016,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   }
 
   void dismissMicPermissionPrompt() {
+    if (isClosed) return;
     emit(
       state.copyWith(
         microphonePermissionDenied: false,
@@ -1016,11 +1029,15 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     dismissMicPermissionPrompt();
     if (_audioService != null) {
       final granted = await _audioService.requestMicrophonePermission();
+      if (isClosed) return;
+
       if (granted) {
         await toggleMicMute();
       } else {
         final isPerm = await _audioService
             .isMicrophonePermissionPermanentlyDenied();
+        if (isClosed) return;
+
         emit(
           state.copyWith(
             isMuted: true,
