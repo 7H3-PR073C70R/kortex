@@ -12,6 +12,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart'
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_review_tab.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
@@ -32,6 +33,8 @@ class QuizDuelArenaPage extends HookWidget {
     final floatingEmotes = useState<List<String>>([]);
     final hasCelebrated = useState(false);
     final lastEmoteTs = useState<int?>(null);
+    final activePostMatchTab = useState<int>(0);
+    final lastEmoteSentMs = useState<int>(0);
 
     void onSelectOption(int index) {
       AppFeedback.selection();
@@ -39,6 +42,10 @@ class QuizDuelArenaPage extends HookWidget {
     }
 
     void onSendEmote(String emote) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (now - lastEmoteSentMs.value < 900) return;
+      lastEmoteSentMs.value = now;
+
       AppFeedback.light();
       unawaited(context.read<QuizDuelCubit>().sendEmote(emote));
       floatingEmotes.value = [...floatingEmotes.value, emote];
@@ -550,10 +557,98 @@ class QuizDuelArenaPage extends HookWidget {
                             color: colors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
 
-                        // Synchronized Real-Time Scoreboard Card
+                        // Post-Match 2-Tab Segmented Control
                         Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius: BorderRadius.circular(AppRadius.dialog),
+                            border: Border.all(
+                              color: colors.surfaceBorder.withAlpha(80),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    AppFeedback.selection();
+                                    activePostMatchTab.value = 0;
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: AppMotion.snappy,
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: activePostMatchTab.value == 0
+                                          ? colors.primary.withAlpha(isDark ? 50 : 25)
+                                          : colors.transparent,
+                                      borderRadius: BorderRadius.circular(AppRadius.card),
+                                      border: activePostMatchTab.value == 0
+                                          ? Border.all(color: colors.primary.withAlpha(120))
+                                          : null,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '🏆 Scoreboard',
+                                        style: typography.caption.bold.copyWith(
+                                          color: activePostMatchTab.value == 0
+                                              ? colors.primary
+                                              : colors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    AppFeedback.selection();
+                                    activePostMatchTab.value = 1;
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: AppMotion.snappy,
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: activePostMatchTab.value == 1
+                                          ? colors.primary.withAlpha(isDark ? 50 : 25)
+                                          : colors.transparent,
+                                      borderRadius: BorderRadius.circular(AppRadius.card),
+                                      border: activePostMatchTab.value == 1
+                                          ? Border.all(color: colors.primary.withAlpha(120))
+                                          : null,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '📚 Study Review',
+                                        style: typography.caption.bold.copyWith(
+                                          color: activePostMatchTab.value == 1
+                                              ? colors.primary
+                                              : colors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        if (activePostMatchTab.value == 1 && match != null)
+                          SizedBox(
+                            height: 440,
+                            child: QuizDuelReviewTab(
+                              match: match,
+                              currentUserId: state.currentUserId,
+                            ),
+                          )
+                        else
+                          // Synchronized Real-Time Scoreboard Card
+                          Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             color: colors.surfacePrimary,
@@ -719,7 +814,7 @@ class QuizDuelArenaPage extends HookWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
 
                         if (forfeitByRival) ...[
                           AppButton(
@@ -968,9 +1063,31 @@ class QuizDuelArenaPage extends HookWidget {
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      AppAvatar(
-                                        name: opponent.displayName,
-                                        customDimension: 36,
+                                      AnimatedContainer(
+                                        duration: AppMotion.snappy,
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: rivalLocked
+                                              ? Border.all(
+                                                  color: colors.success,
+                                                  width: 2,
+                                                )
+                                              : null,
+                                          boxShadow: rivalLocked
+                                              ? [
+                                                  BoxShadow(
+                                                    color: colors.success.withAlpha(140),
+                                                    blurRadius: 8,
+                                                    spreadRadius: 1,
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: AppAvatar(
+                                          name: opponent.displayName,
+                                          customDimension: 36,
+                                        ),
                                       ),
                                     ],
                                   ),

@@ -92,10 +92,16 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
                 (previousStatus != QuizDuelStatus.inRound ||
                     previousQuestionIdx != match.currentQuestionIndex);
 
+            final isJustFinished =
+                match.status == QuizDuelStatus.finished &&
+                previousStatus != QuizDuelStatus.finished;
+
             if (isMatchCountdown) {
               _startLobbyCountdown(3);
             } else if (isNewRound) {
               _startQuestionCountdown(match.durationPerQuestionSeconds);
+            } else if (isJustFinished) {
+              unawaited(_repository.recordDuelOutcome(match));
             }
 
             emit(

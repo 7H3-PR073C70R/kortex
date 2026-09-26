@@ -79,6 +79,21 @@ class QuizDuelParticipant extends Equatable {
     };
   }
 
+  QuizDuelParticipant resetForNewRound({required int questionIndex}) {
+    return QuizDuelParticipant(
+      userId: userId,
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+      score: score,
+      currentQuestionIndex: questionIndex,
+      comboStreak: comboStreak,
+      isReady: isReady,
+      isAiOpponent: isAiOpponent,
+      hasFinished: hasFinished,
+      eloRating: eloRating,
+    );
+  }
+
   QuizDuelParticipant copyWith({
     String? userId,
     String? displayName,

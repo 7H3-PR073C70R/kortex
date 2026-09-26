@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -10,11 +11,12 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_elo_tier.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
 import 'package:kortex/src/features/quiz/presentation/pages/quiz_duel_arena_page.dart';
-import 'package:kortex/src/shared/widgets/app_badge.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_leaderboard_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 /// Modal bottom sheet for searching and joining a 1v1 Quiz Duel match (QZ-13).
@@ -157,6 +159,10 @@ class QuizDuelMatchmakingSheet extends HookWidget {
       );
     }
 
+    final userProfile = authBloc?.state.userProfile;
+    final userElo = userProfile?.eloRating ?? 1250;
+    final eloTier = QuizDuelEloTier.fromElo(userElo);
+
     return BlocListener<QuizDuelCubit, QuizDuelState>(
       listener: (context, state) {
         if (state.status == QuizDuelStatus.countdown ||
@@ -253,9 +259,39 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                           ],
                         ),
                       ),
-                      const AppBadge(
-                        label: 'Live 1v1',
-                        variant: AppBadgeVariant.success,
+                      GestureDetector(
+                        onTap: () => QuizDuelLeaderboardSheet.show(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: eloTier.color.withAlpha(isDark ? 35 : 20),
+                            borderRadius: BorderRadius.circular(AppRadius.micro),
+                            border: Border.all(
+                              color: eloTier.color.withAlpha(100),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${eloTier.label} • $userElo ELO',
+                                style: typography.caption.bold.copyWith(
+                                  color: eloTier.color,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.leaderboard_rounded,
+                                size: 12,
+                                color: eloTier.color,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -495,6 +531,29 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                     AppButton(
                       text: 'Find a classmate',
                       onPressed: startMatchmaking,
+                    ),
+                    const SizedBox(height: 10),
+                    AppButton(
+                      text: 'Invite via Link',
+                      variant: AppButtonVariant.secondary,
+                      onPressed: () {
+                        AppFeedback.selection();
+                        unawaited(
+                          Clipboard.setData(
+                            ClipboardData(
+                              text: 'https://kortex.app/duel/join?subject=${selectedSubject.value}',
+                            ),
+                          ),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Copied ${selectedSubject.value} duel challenge link! Share with a friend.',
+                            ),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ],

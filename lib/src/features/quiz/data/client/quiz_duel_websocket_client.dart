@@ -405,23 +405,24 @@ class QuizDuelWebSocketClient {
 
     _matchingTimers[duelId]?.cancel();
 
-    final aiNames = [
-      'Syllabot Scholar',
-      'Wuke Anjolaoluwa Omotoyosi ⚡',
-      'Kortex Rival',
-      'Newton Mind',
-      'Curie Intellect',
+    final aiPersonalities = [
+      ('⚡ Speedy Scholar', '🧠'),
+      ('🎯 Calculated Genius', '💡'),
+      ('🚀 Formula Prodigy', '🚀'),
+      ('👑 Syllabot Rival', '🏆'),
+      ('🛡️ Master Duelist', '⚡'),
     ];
-    final aiAvatars = ['🧠', '🚀', '⚡', '🏆', '💡'];
-    final pick = _random.nextInt(aiNames.length);
+    final pick = aiPersonalities[_random.nextInt(aiPersonalities.length)];
+    final p1Elo = current.player1.eloRating;
+    final aiElo = (p1Elo + (_random.nextInt(101) - 50)).clamp(1000, 2200);
 
     final player2 = QuizDuelParticipant(
       userId: 'ai_bot_${_random.nextInt(9999)}',
-      displayName: aiNames[pick],
-      avatarUrl: aiAvatars[pick],
+      displayName: pick.$1,
+      avatarUrl: pick.$2,
       isReady: true,
       isAiOpponent: true,
-      eloRating: 1200 + _random.nextInt(150),
+      eloRating: aiElo,
     );
 
     final updated = current.copyWith(
@@ -469,11 +470,11 @@ class QuizDuelWebSocketClient {
       return;
     }
 
-    final p1 = current.player1.copyWith(
-      currentQuestionIndex: questionIndex,
+    final p1 = current.player1.resetForNewRound(
+      questionIndex: questionIndex,
     );
-    final p2 = current.player2?.copyWith(
-      currentQuestionIndex: questionIndex,
+    final p2 = current.player2?.resetForNewRound(
+      questionIndex: questionIndex,
     );
 
     final updated = current.copyWith(
@@ -502,23 +503,34 @@ class QuizDuelWebSocketClient {
 
   void _scheduleAiAnswer(String duelId, int questionIndex) {
     _aiActionTimers[duelId]?.cancel();
-    final delayMs = 600 + _random.nextInt(800); // 0.6s to 1.4s fast response
-    _aiActionTimers[duelId] = Timer(Duration(milliseconds: delayMs), () {
-      final current = _activeMatches[duelId];
-      if (current == null ||
-          current.status != QuizDuelStatus.inRound ||
-          current.currentQuestionIndex != questionIndex) {
+
+    final current = _activeMatches[duelId];
+    final aiParticipant = current?.player2;
+    final aiElo = aiParticipant?.eloRating ?? 1200;
+
+    // Accuracy ranges from 65% (Bronze) up to 90% (Legend)
+    final accuracy = (0.65 + ((aiElo - 1000) / 1200) * 0.25).clamp(0.60, 0.92);
+
+    // Response time ranges from 700ms - 1500ms for high ELO, 1800ms - 3200ms for lower ELO
+    final baseDelayMs = aiElo >= 1500
+        ? (600 + _random.nextInt(800))
+        : (1500 + _random.nextInt(1500));
+
+    _aiActionTimers[duelId] = Timer(Duration(milliseconds: baseDelayMs), () {
+      final activeMatch = _activeMatches[duelId];
+      if (activeMatch == null ||
+          activeMatch.status != QuizDuelStatus.inRound ||
+          activeMatch.currentQuestionIndex != questionIndex) {
         return;
       }
 
-      final q = current.currentQuestion;
+      final q = activeMatch.currentQuestion;
       if (q == null) return;
 
       final correctIndex = q.options.indexOf(q.correctAnswer);
       final validCorrectIdx = correctIndex >= 0 ? correctIndex : 0;
 
-      // 80% chance of correct answer for AI
-      final willBeCorrect = _random.nextDouble() < 0.80;
+      final willBeCorrect = _random.nextDouble() < accuracy;
       final selectedOption = willBeCorrect
           ? validCorrectIdx
           : (validCorrectIdx + 1) % q.options.length;
@@ -526,10 +538,10 @@ class QuizDuelWebSocketClient {
       unawaited(
         submitDuelAnswer(
           duelId: duelId,
-          userId: current.player2!.userId,
+          userId: activeMatch.player2!.userId,
           questionIndex: questionIndex,
           optionIndex: selectedOption,
-          responseTimeMs: delayMs,
+          responseTimeMs: baseDelayMs,
         ),
       );
     });
