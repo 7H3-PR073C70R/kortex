@@ -234,11 +234,15 @@ class StudyCircleCard extends StatelessWidget {
                       children: [
                         Icon(Icons.smart_toy_rounded, size: 12, color: colors.syllabotAccent),
                         const SizedBox(width: 4),
-                        Text(
-                          '🤖 Syllabot AI Partner Active (Looking for 5 track peers)',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.syllabotAccent,
-                            fontSize: 10,
+                        Flexible(
+                          child: Text(
+                            '🤖 Syllabot AI Partner Active (Looking for 5 track peers)',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.syllabotAccent,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -291,11 +295,15 @@ class StudyCircleCard extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    member.userName,
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.textPrimary,
-                                      fontSize: 10,
+                                  Flexible(
+                                    child: Text(
+                                      member.userName,
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 10,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
