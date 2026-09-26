@@ -1217,7 +1217,7 @@ class QuizDuelArenaPage extends HookWidget {
                                             ? McqOptionState.selected
                                             : McqOptionState.idle);
 
-                                  final String? trailingLabel = isRoundSummary
+                                  final trailingLabel = isRoundSummary
                                       ? (isSelected
                                           ? (isCorrectOption
                                               ? 'Your Answer'

@@ -56,6 +56,9 @@ void _initServices() {
     ..registerLazySingleton<FilePickerService>(
       FilePickerService.new,
     )
+    ..registerLazySingleton<MediaUploadService>(
+      MediaUploadService.new,
+    )
     ..registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(storageService: locator()),
     )

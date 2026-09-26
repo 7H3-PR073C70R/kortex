@@ -320,13 +320,13 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
                 'subject': match.subject,
                 'exam_board': match.examBoard,
                 'player1_id': validP1,
-                if (validP2 != null) 'player2_id': validP2,
+                'player2_id': ?validP2,
                 'player1_score': match.player1.score,
                 'player2_score': match.player2?.score ?? 0,
-                if (validWinner != null) 'winner_user_id': validWinner,
+                'winner_user_id': ?validWinner,
                 'is_draw': match.isDraw,
                 'is_forfeit': match.forfeitUserId != null,
-                if (validForfeit != null) 'forfeit_user_id': validForfeit,
+                'forfeit_user_id': ?validForfeit,
               },
             );
             return const Right(<String, dynamic>{'status': 'inserted_via_fallback'});

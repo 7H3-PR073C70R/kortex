@@ -11,6 +11,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -2487,6 +2488,48 @@ class ForumThreadDetailPage extends HookWidget {
                                           final targetParentId =
                                               replyingToReply.value?.id;
                                           isSubmitting.value = true;
+
+                                          var finalReplyImages = <String>[];
+                                          if (replyImages.value.isNotEmpty &&
+                                              locator.isRegistered<MediaUploadService>()) {
+                                            final uploadService = locator<MediaUploadService>();
+                                            for (final imgPath in replyImages.value) {
+                                              if (imgPath.startsWith('http://') ||
+                                                  imgPath.startsWith('https://')) {
+                                                finalReplyImages.add(imgPath);
+                                              } else if (File(imgPath).existsSync()) {
+                                                try {
+                                                  final r2Url = await uploadService.uploadMedia(
+                                                    file: File(imgPath),
+                                                    mediaType: ForumMediaType.image,
+                                                  );
+                                                  finalReplyImages.add(r2Url);
+                                                } on Object catch (_) {
+                                                  finalReplyImages.add(imgPath);
+                                                }
+                                              }
+                                            }
+                                          } else {
+                                            finalReplyImages = replyImages.value;
+                                          }
+
+                                          var finalReplyVoiceNoteUrl = replyVoiceNoteUrl.value;
+                                          if (finalReplyVoiceNoteUrl != null &&
+                                              !finalReplyVoiceNoteUrl.startsWith('http://') &&
+                                              !finalReplyVoiceNoteUrl.startsWith('https://') &&
+                                              locator.isRegistered<MediaUploadService>()) {
+                                            final uploadService = locator<MediaUploadService>();
+                                            if (File(finalReplyVoiceNoteUrl).existsSync()) {
+                                              try {
+                                                final r2Url = await uploadService.uploadMedia(
+                                                  file: File(finalReplyVoiceNoteUrl),
+                                                  mediaType: ForumMediaType.voice,
+                                                );
+                                                finalReplyVoiceNoteUrl = r2Url;
+                                              } on Object catch (_) {}
+                                            }
+                                          }
+
                                           final res = await repo
                                               .replyToForumPost(
                                                 postId: currentPost.value.id,
@@ -2494,9 +2537,8 @@ class ForumThreadDetailPage extends HookWidget {
                                                     ? text
                                                     : 'Shared media attachment',
                                                 parentReplyId: targetParentId,
-                                                mediaUrls: replyImages.value,
-                                                voiceNoteUrl:
-                                                    replyVoiceNoteUrl.value,
+                                                mediaUrls: finalReplyImages,
+                                                voiceNoteUrl: finalReplyVoiceNoteUrl,
                                                 voiceNoteDurationSeconds:
                                                     replyVoiceNoteDuration
                                                             .value >

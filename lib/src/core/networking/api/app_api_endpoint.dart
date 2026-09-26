@@ -98,6 +98,7 @@ class AppApiEndpoint {
   static const String leaderboards = '/rest/v1/leaderboards';
   static const String claimWeeklyXpRpc = '/rest/v1/rpc/claim_weekly_xp';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
+  static const String uploadForumMedia = '/functions/v1/upload-forum-media';
   static const String rateSharedDeckRpc = '/rest/v1/rpc/rate_shared_deck';
   static const String verifyForumReplyRpc = '/rest/v1/rpc/verify_forum_reply';
   static const String voteForumPostAtomicRpc =

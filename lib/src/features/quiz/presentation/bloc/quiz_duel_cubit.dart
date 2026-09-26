@@ -105,9 +105,9 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
               _startQuestionCountdown(match.durationPerQuestionSeconds);
             } else if (match.status == QuizDuelStatus.roundSummary) {
               _summarySafetyTimer?.cancel();
-              _summarySafetyTimer = Timer(const Duration(milliseconds: 2800), () {
+              _summarySafetyTimer = Timer(const Duration(milliseconds: 2800), () async {
                 if (!isClosed && state.status == QuizDuelStatus.roundSummary && state.match != null) {
-                  _repository.submitDuelAnswer(
+                  await _repository.submitDuelAnswer(
                     duelId: state.match!.duelId,
                     userId: state.currentUserId,
                     questionIndex: state.match!.currentQuestionIndex,

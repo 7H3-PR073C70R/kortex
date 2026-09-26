@@ -9,6 +9,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -656,6 +657,47 @@ class CreateForumDiscussionPage extends HookWidget {
 
       showPublishingLoaderDialog();
 
+      // Server-side R2 upload for local image & voice note files
+      var finalMediaUrls = <String>[];
+      if (attachedImages.value.isNotEmpty &&
+          locator.isRegistered<MediaUploadService>()) {
+        final uploadService = locator<MediaUploadService>();
+        for (final imgPath in attachedImages.value) {
+          if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+            finalMediaUrls.add(imgPath);
+          } else if (File(imgPath).existsSync()) {
+            try {
+              final r2Url = await uploadService.uploadMedia(
+                file: File(imgPath),
+                mediaType: ForumMediaType.image,
+              );
+              finalMediaUrls.add(r2Url);
+            } on Object catch (_) {
+              finalMediaUrls.add(imgPath);
+            }
+          }
+        }
+      } else {
+        finalMediaUrls = attachedImages.value;
+      }
+
+      var finalVoiceNoteUrl = recordedVoiceNoteUrl.value;
+      if (finalVoiceNoteUrl != null &&
+          !finalVoiceNoteUrl.startsWith('http://') &&
+          !finalVoiceNoteUrl.startsWith('https://') &&
+          locator.isRegistered<MediaUploadService>()) {
+        final uploadService = locator<MediaUploadService>();
+        if (File(finalVoiceNoteUrl).existsSync()) {
+          try {
+            final r2Url = await uploadService.uploadMedia(
+              file: File(finalVoiceNoteUrl),
+              mediaType: ForumMediaType.voice,
+            );
+            finalVoiceNoteUrl = r2Url;
+          } on Object catch (_) {}
+        }
+      }
+
       if (onSubmit != null) {
         onSubmit!(
           title: title,
@@ -665,8 +707,8 @@ class CreateForumDiscussionPage extends HookWidget {
           isQuestion: true,
           syllabusTag: tags.value.isNotEmpty ? tags.value.first : 'General',
           tags: tags.value,
-          mediaUrls: attachedImages.value,
-          voiceNoteUrl: recordedVoiceNoteUrl.value,
+          mediaUrls: finalMediaUrls,
+          voiceNoteUrl: finalVoiceNoteUrl,
           voiceNoteDurationSeconds: voiceNoteDurationSeconds.value > 0
               ? voiceNoteDurationSeconds.value
               : null,
@@ -693,8 +735,8 @@ class CreateForumDiscussionPage extends HookWidget {
           isQuestion: true,
           syllabusTag: tags.value.isNotEmpty ? tags.value.first : 'General',
           tags: tags.value,
-          mediaUrls: attachedImages.value,
-          voiceNoteUrl: recordedVoiceNoteUrl.value,
+          mediaUrls: finalMediaUrls,
+          voiceNoteUrl: finalVoiceNoteUrl,
           voiceNoteDurationSeconds: voiceNoteDurationSeconds.value > 0
               ? voiceNoteDurationSeconds.value
               : null,
