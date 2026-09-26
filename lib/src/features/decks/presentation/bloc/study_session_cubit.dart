@@ -626,6 +626,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
               durationSeconds: state.elapsedSeconds,
               retentionScore: finalRetention.clamp(0.0, 1.0),
               masteredCards: mastered,
+              activityCategory: 'flashcard',
+              subject: state.deckId,
             )
           else
             Future<void>.value(),
@@ -771,6 +773,8 @@ class StudySessionCubit extends Cubit<StudySessionState> {
             durationSeconds: state.elapsedSeconds,
             retentionScore: finalRetention.clamp(0.0, 1.0),
             masteredCards: mastered,
+            activityCategory: 'flashcard',
+            subject: state.deckId,
           )
         else
           Future<void>.value(),

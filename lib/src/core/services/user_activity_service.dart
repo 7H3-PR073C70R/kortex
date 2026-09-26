@@ -15,7 +15,13 @@ abstract class UserActivityService {
     required int durationSeconds,
     required double retentionScore,
     int masteredCards = 0,
+    String? activityCategory,
+    String? subject,
+    String? topicId,
   });
+
+  Stream<AnalyticsSummaryModel> get analyticsSummaryStream;
+  Map<String, ({int totalItems, double avgRetention, int minutes})> getSubjectBreakdown();
 
   int getCurrentStreak();
   int getLongestStreak();
@@ -43,6 +49,8 @@ class UserActivityServiceImpl implements UserActivityService {
   UserActivityServiceImpl(this._localStorageService);
 
   final LocalStorageService _localStorageService;
+  final StreamController<AnalyticsSummaryModel> _analyticsStreamController =
+      StreamController<AnalyticsSummaryModel>.broadcast();
 
   static const String _sessionsKey = '__kortex_study_sessions';
   static const String _streakCurrentKey = '__kortex_streak_current';
@@ -51,6 +59,51 @@ class UserActivityServiceImpl implements UserActivityService {
   static const String _streakFreezesKey = '__kortex_streak_freezes';
   static const String _spentXpKey = '__kortex_spent_xp';
   static const String _bonusKarmaKey = '__kortex_bonus_karma';
+
+  @override
+  Stream<AnalyticsSummaryModel> get analyticsSummaryStream =>
+      _analyticsStreamController.stream;
+
+  void _notifyAnalyticsUpdated() {
+    if (!_analyticsStreamController.isClosed) {
+      _analyticsStreamController.add(getAnalyticsSummary());
+    }
+  }
+
+  @override
+  Map<String, ({int totalItems, double avgRetention, int minutes})> getSubjectBreakdown() {
+    final sessions = _getSessions();
+    final map = <String, ({int totalItems, double totalRetentionSum, int count, int seconds})>{};
+
+    for (final s in sessions) {
+      final subj = (s['subject'] as String?)?.trim();
+      if (subj == null || subj.isEmpty) continue;
+      final cards = (s['cardsReviewed'] as num?)?.toInt() ?? 0;
+      final retention = (s['retentionScore'] as num?)?.toDouble() ?? 0.85;
+      final seconds = (s['durationSeconds'] as num?)?.toInt() ?? 0;
+
+      final prev = map[subj] ?? (totalItems: 0, totalRetentionSum: 0.0, count: 0, seconds: 0);
+      map[subj] = (
+        totalItems: prev.totalItems + cards,
+        totalRetentionSum: prev.totalRetentionSum + retention,
+        count: prev.count + 1,
+        seconds: prev.seconds + seconds,
+      );
+    }
+
+    final result = <String, ({int totalItems, double avgRetention, int minutes})>{};
+    for (final entry in map.entries) {
+      final count = entry.value.count == 0 ? 1 : entry.value.count;
+      final avgRet = (entry.value.totalRetentionSum / count).clamp(0.0, 1.0);
+      final mins = entry.value.seconds > 0 ? math.max(1, (entry.value.seconds / 60).round()) : 0;
+      result[entry.key] = (
+        totalItems: entry.value.totalItems,
+        avgRetention: avgRet,
+        minutes: mins,
+      );
+    }
+    return result;
+  }
 
   @override
   int getStreakFreezes() {
@@ -65,6 +118,7 @@ class UserActivityServiceImpl implements UserActivityService {
       key: _streakFreezesKey,
       data: count.toString(),
     );
+    _notifyAnalyticsUpdated();
   }
 
   @override
@@ -97,6 +151,7 @@ class UserActivityServiceImpl implements UserActivityService {
 
     await _recordSpentXp(costXp);
     await setStreakFreezes(getStreakFreezes() + 1);
+    _notifyAnalyticsUpdated();
     return true;
   }
 
@@ -106,6 +161,9 @@ class UserActivityServiceImpl implements UserActivityService {
     required int durationSeconds,
     required double retentionScore,
     int masteredCards = 0,
+    String? activityCategory,
+    String? subject,
+    String? topicId,
   }) async {
     final now = DateTime.now();
 
@@ -117,6 +175,9 @@ class UserActivityServiceImpl implements UserActivityService {
       'durationSeconds': durationSeconds,
       'retentionScore': retentionScore,
       'masteredCards': masteredCards > 0 ? masteredCards : cardsReviewed,
+      'category': ?activityCategory,
+      'subject': ?subject,
+      'topicId': ?topicId,
     };
     sessions.add(newSession);
 
@@ -131,6 +192,9 @@ class UserActivityServiceImpl implements UserActivityService {
 
     // 2. Update daily study streak
     await _updateStreak(now);
+
+    // 3. Emit real-time telemetry update event
+    _notifyAnalyticsUpdated();
   }
 
   Future<void> _updateStreak(DateTime now) async {

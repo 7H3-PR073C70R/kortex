@@ -436,6 +436,8 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
           durationSeconds: state.elapsedSeconds,
           retentionScore: finalRetention.clamp(0.0, 1.0),
           masteredCards: mastered,
+          activityCategory: 'focus_session',
+          subject: state.deckTitle,
         );
       }
     } on Object catch (_) {}

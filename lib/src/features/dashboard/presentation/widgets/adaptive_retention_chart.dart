@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/ebbinghaus_decay_calculator.dart';
@@ -9,10 +10,12 @@ import 'package:kortex/src/l10n/l10n.dart';
 class AdaptiveRetentionChart extends StatefulWidget {
   const AdaptiveRetentionChart({
     required this.points,
+    this.onTriggerNeuralRepair,
     super.key,
   });
 
   final List<DailyRetentionPoint> points;
+  final void Function(int day, double retrievability)? onTriggerNeuralRepair;
 
   @override
   State<AdaptiveRetentionChart> createState() => _AdaptiveRetentionChartState();
@@ -40,6 +43,12 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
         : 0;
     final pointDay = selectedPoint?.day ?? 1;
     final pointDue = selectedPoint?.dueCardsCount ?? 0;
+
+    final (statusText, statusColor) = pointRetention >= 85
+        ? ('Memory Locked In', colors.success)
+        : pointRetention >= 70
+        ? ('Moderate Decay - Review Soon', colors.warning)
+        : ('Fading Fast - Neural Repair Needed', colors.error);
 
     return Semantics(
       container: true,
@@ -111,31 +120,99 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
 
-                // Selected Point Inspection Pill
+                // Selected Point Inspection Row & 1-Tap Neural Repair CTA
                 if (selectedPoint != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withAlpha(isDark ? 35 : 18),
-                      borderRadius: BorderRadius.circular(AppRadius.badge),
-                      border: Border.all(
-                        color: colors.primary.withAlpha(isDark ? 70 : 35),
-                        width: 0.8,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withAlpha(isDark ? 35 : 18),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          border: Border.all(
+                            color: statusColor.withAlpha(isDark ? 80 : 45),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Day $pointDay: $pointRetention% • $statusText ($pointDue Due)',
+                              style: typography.caption.bold.copyWith(
+                                color: statusColor,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Day $pointDay: $pointRetention% '
-                      'Retention • $pointDue Due Cards',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        fontSize: 11.5,
-                      ),
-                    ),
+                      if (widget.onTriggerNeuralRepair != null)
+                        InkWell(
+                          onTap: () {
+                            AppFeedback.celebration();
+                            widget.onTriggerNeuralRepair?.call(
+                              pointDay,
+                              selectedPoint.predictedRetention,
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [colors.primary, colors.secondary],
+                              ),
+                              borderRadius: BorderRadius.circular(AppRadius.badge),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.primary.withAlpha(80),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.bolt_rounded,
+                                  size: 13,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '1-Tap Neural Repair',
+                                  style: typography.caption.bold.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
 
                 const SizedBox(height: 16),
@@ -282,9 +359,12 @@ class _AdaptiveRetentionChartState extends State<AdaptiveRetentionChart> {
     final chartWidth = totalWidth - (padding * 2);
     final ratio = (localPosition.dx / chartWidth).clamp(0.0, 1.0);
     final index = (ratio * (widget.points.length - 1)).round();
-    setState(() {
-      _selectedDayIndex = index;
-    });
+    if (_selectedDayIndex != index) {
+      AppFeedback.selection();
+      setState(() {
+        _selectedDayIndex = index;
+      });
+    }
   }
 }
 

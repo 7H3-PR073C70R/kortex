@@ -548,6 +548,8 @@ class QuizRepositoryImpl implements QuizRepository {
                 ? (correctCount / total).clamp(0.0, 1.0)
                 : 0.0,
             masteredCards: correctCount,
+            activityCategory: 'quiz',
+            subject: quizTitle,
           );
         }
       } on Object catch (activityErr) {
