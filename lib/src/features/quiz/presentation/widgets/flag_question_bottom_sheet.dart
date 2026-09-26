@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
 /// Categories of quality issues reported for past questions.
@@ -251,6 +253,46 @@ class FlagQuestionBottomSheet extends HookWidget {
                       Navigator.of(context).pop();
                     }
                   },
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    AppFeedback.light();
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                    unawaited(
+                      CreatePostBottomSheet.show(
+                        context,
+                        onSubmit: ({
+                          required title,
+                          required content,
+                          required track,
+                          latexContent,
+                          isQuestion = true,
+                          syllabusTag = 'General',
+                          isAnonymous = false,
+                        }) {},
+                        initialTitle: 'Past Question Discussion',
+                        initialContent: 'Needs help with past question:\n\n'
+                            '"$questionSnippet"\n\n'
+                            'Reason: ${selectedReason.value.label}. What is the correct solution?',
+                        initialIsQuestion: true,
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.forum_rounded, size: 18, color: colors.primary),
+                  label: Text(
+                    'Discuss on Community Forum',
+                    style: typography.callout.bold.copyWith(color: colors.primary),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    side: BorderSide(color: colors.primary.withAlpha(120)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                    ),
+                  ),
                 ),
               ],
             ),

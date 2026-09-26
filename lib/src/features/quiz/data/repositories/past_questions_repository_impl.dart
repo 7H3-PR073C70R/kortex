@@ -77,7 +77,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     String? courseCode,
   }) {
     return Future<List<PastQuestionEntity>>.sync(() async {
-      // 1. Fetch remote data from Supabase actively
+      Object? remoteError;
       var remote = <PastQuestionModel>[];
       try {
         remote = await _remoteDataSource.getPastQuestions(
@@ -93,7 +93,9 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           // Write-through caching to local SQLite database so subsequent queries work offline
           unawaited(_effectiveLocalDataSource.savePastQuestions(remote));
         }
-      } on Object catch (_) {}
+      } on Object catch (e) {
+        remoteError = e;
+      }
 
       // 2. Fetch local offline/cached questions
       var local = <PastQuestionModel>[];
@@ -108,7 +110,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         );
       } on Object catch (_) {}
 
-      // 3. Merge results, preferring remote/updated items
+      // 3. Merge results: remote items take precedence over local items for matching IDs
       final seenIds = <String>{};
       final merged = <PastQuestionModel>[];
 
@@ -121,6 +123,13 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         if (seenIds.add(q.id)) {
           merged.add(q);
         }
+      }
+
+      if (merged.isEmpty && remoteError != null) {
+        if (remoteError is Exception) {
+          throw remoteError;
+        }
+        throw Exception(remoteError.toString());
       }
 
       return merged.map((m) {

@@ -1,12 +1,14 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Where an option currently stands in the answer loop.
 ///
@@ -99,9 +101,14 @@ class McqOptionCard extends StatelessWidget {
       isEnabled: _isInteractive,
       builder: (context, isHovered, child) {
         final hoverLift = _isInteractive && isHovered;
-        return InkWell(
-          onTap: _isInteractive ? onTap : null,
-          borderRadius: AppRadius.radiusCard,
+        return ShrinkableButton(
+          shrinkScale: 0.98,
+          onTap: _isInteractive
+              ? () {
+                  AppFeedback.light();
+                  onTap();
+                }
+              : null,
           child: AnimatedContainer(
             duration: reduceMotion ? Duration.zero : AppMotion.standard,
             curve: AppMotion.easeOutCubic,
