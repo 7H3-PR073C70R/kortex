@@ -24,3 +24,10 @@ class CacheFailure extends Failure {
     int? statusCode,
   }) : super(message, statusCode);
 }
+
+class AuthFailure extends Failure {
+  const AuthFailure({
+    String? message,
+    int? statusCode,
+  }) : super(message, statusCode);
+}

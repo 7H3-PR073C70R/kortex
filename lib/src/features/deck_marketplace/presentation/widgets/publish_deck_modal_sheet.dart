@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/deck_marketplace/domain/services/content_safety_moderation_service.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -393,18 +395,42 @@ class PublishDeckModalSheet extends HookWidget {
                                 } on Object catch (_) {}
                               }
 
-                              onSubmit(
+                              // Perform content safety moderation & personal note stripping
+                              const moderationService = ContentSafetyModerationService();
+                              final moderationResult = moderationService.moderateAndSanitize(
                                 title: title,
+                                description: desc.isNotEmpty ? desc : 'Community Deck',
+                                cardsJson: cardsJson,
+                              );
+
+                              if (!moderationResult.isApproved) {
+                                isSubmitting.value = false;
+                                if (context.mounted) {
+                                  context.showSnackBar(
+                                    message: moderationResult.flaggedReason ??
+                                        'Content safety check failed.',
+                                    type: SnackBarType.error,
+                                  );
+                                }
+                                return;
+                              }
+
+                              onSubmit(
+                                title: moderationResult.sanitizedTitle,
                                 subject: subject,
-                                description: desc.isNotEmpty
-                                    ? desc
-                                    : 'Community Deck',
+                                description: moderationResult.sanitizedDescription,
                                 category: selectedCategory.value,
                                 syllabusTag: tag.isNotEmpty ? tag : 'General',
                                 totalCards: totalCards,
-                                cardsJson: cardsJson,
+                                cardsJson: moderationResult.sanitizedCards,
                               );
                               if (context.mounted) {
+                                if (moderationResult.personalNotesStrippedCount > 0) {
+                                  context.showSnackBar(
+                                    message:
+                                        'Deck shared! ${moderationResult.personalNotesStrippedCount} private note(s) auto-stripped.',
+                                  );
+                                }
                                 Navigator.of(context).pop();
                               }
                             },

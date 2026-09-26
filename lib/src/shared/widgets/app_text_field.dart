@@ -216,12 +216,27 @@ class _AppTextFieldState extends State<AppTextField> {
             width: 48,
             height: 48,
             child: IconButton(
-              icon: Icon(
-                _obscureText
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: _isFocused ? colors.primary : colors.textMuted,
-                size: 20,
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, animation) {
+                  return ScaleTransition(
+                    scale: Tween<double>(begin: 0.25, end: 1).animate(
+                      CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutQuint,
+                      ),
+                    ),
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: Icon(
+                  _obscureText
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  key: ValueKey<bool>(_obscureText),
+                  color: _isFocused ? colors.primary : colors.textMuted,
+                  size: 20,
+                ),
               ),
               onPressed: _toggleObscureText,
               splashRadius: 20,

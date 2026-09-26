@@ -153,21 +153,41 @@ class ActiveSessionsListWidget extends HookWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: session.isCurrentDevice
-                              ? colors.primary.withValues(alpha: 0.12)
-                              : colors.surfaceSecondary,
-                          borderRadius: AppRadius.radiusCard,
-                        ),
-                        child: Icon(
-                          _getDeviceIcon(session.osType),
-                          size: 24,
-                          color: session.isCurrentDevice
-                              ? colors.primary
-                              : colors.textSecondary,
-                        ),
+                      Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: session.isCurrentDevice
+                                  ? colors.primary.withValues(alpha: 0.12)
+                                  : colors.surfaceSecondary,
+                              borderRadius: AppRadius.radiusCard,
+                            ),
+                            child: Icon(
+                              _getDeviceIcon(session.osType),
+                              size: 24,
+                              color: session.isCurrentDevice
+                                  ? colors.primary
+                                  : colors.textSecondary,
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: colors.success,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: colors.surfacePrimary,
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -195,7 +215,7 @@ class ActiveSessionsListWidget extends HookWidget {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              '${session.location} • ${session.ipAddress}',
+                              '${session.location} • ${_maskIpAddress(session.ipAddress)}',
                               style: typography.caption.regular.copyWith(
                                 color: colors.textSecondary,
                               ),
@@ -219,5 +239,26 @@ class ActiveSessionsListWidget extends HookWidget {
         ),
       ],
     );
+  }
+
+  static String _maskIpAddress(String ip) {
+    if (ip.contains('(')) {
+      final parts = ip.split(' ');
+      final masked = _maskIpAddress(parts.first);
+      return '$masked ${parts.sublist(1).join(" ")}';
+    }
+    if (ip.contains('.')) {
+      final segments = ip.split('.');
+      if (segments.length == 4) {
+        return '${segments[0]}.${segments[1]}.${segments[2]}.***';
+      }
+    }
+    if (ip.contains(':')) {
+      final segments = ip.split(':');
+      if (segments.length >= 2) {
+        return '${segments.first}:****:****:${segments.last}';
+      }
+    }
+    return ip;
   }
 }

@@ -176,6 +176,9 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_flashcards_next_due_date ON flashcards(next_due_date);',
     );
     await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_flashcards_deck_due ON flashcards(deck_id, next_due_date);',
+    );
+    await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_decks_course_id ON decks(course_id);',
     );
     await customStatement(
@@ -198,6 +201,18 @@ class AppDatabase extends _$AppDatabase {
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_syllabot_messages_session_id ON syllabot_messages(session_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_exam_events_user_id ON exam_events(user_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_syllabot_sessions_user_id ON syllabot_sessions(user_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_syllabot_messages_user_id ON syllabot_messages(user_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_thought_parking_lots_user_id ON thought_parking_lots(user_id);',
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_exam_events_target_date ON exam_events(target_date);',

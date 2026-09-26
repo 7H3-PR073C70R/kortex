@@ -16,12 +16,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/goal_calibration_slider.dart';
-import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_parameter_tuning_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
@@ -310,33 +306,11 @@ class AcademicTrackSettingsPage extends HookWidget {
                                 context: context,
                                 title: 'Switch Academic Track?',
                                 description:
-                                    'Switching from "$currentTrack" to "${selectedTrack.value}" is destructive.\n\n'
-                                    'To keep your database clean and aligned with your new curriculum, all curated courses, study decks, flashcards, and uploaded documents associated with your previous track will be permanently deleted.',
-                                primaryActionText: 'Switch & Reset',
-                                isDestructive: true,
+                                    'Switching your primary focus to "${selectedTrack.value}".\n\n'
+                                    'Your historical study logs, flashcard decks, and day streak will be fully preserved.',
+                                primaryActionText: 'Switch Track',
                                 onPrimaryAction: () async {
-                                  AppFeedback.heavy();
-                                  // 1. Wipe previous track's curated courses
-                                  if (locator
-                                      .isRegistered<
-                                        DashboardRemoteDataSource
-                                      >()) {
-                                    await locator<DashboardRemoteDataSource>()
-                                        .deleteAllCuratedCourses();
-                                  }
-                                  // 2. Wipe previous track's study decks & flashcards
-                                  if (locator
-                                      .isRegistered<DecksRemoteDataSource>()) {
-                                    await locator<DecksRemoteDataSource>()
-                                        .deleteAllDecks();
-                                  }
-                                  // 3. Refresh DecksBloc
-                                  if (locator.isRegistered<DecksBloc>()) {
-                                    locator<DecksBloc>().add(
-                                      const DecksRefreshed(),
-                                    );
-                                  }
-                                  // 4. Update Profile in AuthBloc
+                                  AppFeedback.medium();
                                   if (context.mounted) {
                                     context.read<AuthBloc>().add(
                                       AuthUpdateCourseTrackRequested(
@@ -346,7 +320,6 @@ class AcademicTrackSettingsPage extends HookWidget {
                                             retentionBenchmark.value,
                                       ),
                                     );
-                                    // 5. Refresh Dashboard Feed
                                     if (locator.isRegistered<DashboardBloc>()) {
                                       locator<DashboardBloc>().add(
                                         const DashboardRefreshed(),
@@ -354,7 +327,8 @@ class AcademicTrackSettingsPage extends HookWidget {
                                     }
                                     context.showSnackBar(
                                       message:
-                                          'Switched track to ${selectedTrack.value}. Previous track data cleared.',
+                                          'Switched academic track to ${selectedTrack.value}. Study history preserved!',
+                                      type: SnackBarType.success,
                                     );
                                     Navigator.of(context).pop();
                                   }

@@ -68,9 +68,30 @@ class SyllabotAiSettingsPage extends HookWidget {
       return 1.0;
     }();
 
+    final initialPersona = () {
+      final raw = storage?.getPreference(key: '__syllabot_tutor_persona');
+      return raw ?? 'Socratic Tutor';
+    }();
+
     final socraticMode = useState<SocraticMode>(initialMode);
     final voiceGender = useState<VoiceGender>(initialGender);
     final speechRate = useState<double>(initialRate);
+    final tutorPersona = useState<String>(initialPersona);
+    final isPlayingPreview = useState<bool>(false);
+
+    final ttsHandler = useMemoized(
+      () => TextToSpeechHandler(
+        localStorageService: storage,
+        onSpeakingChanged: (speaking) {
+          isPlayingPreview.value = speaking;
+        },
+      ),
+      const [],
+    );
+
+    useEffect(() {
+      return ttsHandler.stop;
+    }, const []);
 
     final activeMode = socraticMode.value;
 
@@ -280,14 +301,157 @@ class SyllabotAiSettingsPage extends HookWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Section 2: Voice Dialogue Persona
+                  // Section 2: Voice Dialogue Persona & AI Character
                   _buildSectionContainer(
-                    title: 'VOICE DIALOGUE PERSONA',
-                    subtitle: 'Audio characteristics for spoken interactions',
+                    title: 'VOICE DIALOGUE & TUTOR PERSONA',
+                    subtitle: 'Select personality archetype and audio characteristics',
                     colors: colors,
                     typography: typography,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Persona Archetype Selector Cards
+                        Text(
+                          'TUTOR ARCHETYPE',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textSecondary.withAlpha(140),
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Column(
+                          children: [
+                            {
+                              'title': 'Socratic Tutor',
+                              'icon': '🏛️',
+                              'desc': 'Scaffolded questions & deep conceptual breakdown.',
+                              'sample': 'Hello! I am your Socratic AI Tutor. What concept would you like to explore today?'
+                            },
+                            {
+                              'title': 'Strict Exam Coach',
+                              'icon': '⏱️',
+                              'desc': 'High precision, timed drill pressure & direct feedback.',
+                              'sample': 'Welcome scholar. Let us jump right into your exam drill questions and master key formulas.'
+                            },
+                            {
+                              'title': 'Friendly Peer',
+                              'icon': '🤝',
+                              'desc': 'Encouraging tone with relatable study analogies.',
+                              'sample': 'Hey there! Ready to crush some study flashcards together? We got this!'
+                            },
+                          ].map((p) {
+                            final title = p['title']!;
+                            final isSelected = tutorPersona.value == title;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return AnimatedScale(
+                                    scale: isHovered && !isSelected ? 1.01 : 1.0,
+                                    duration: AppMotion.snappy,
+                                    curve: Curves.easeOutCubic,
+                                    child: child,
+                                  );
+                                },
+                                child: ShrinkableButton(
+                                  onTap: () {
+                                    AppFeedback.selection();
+                                    tutorPersona.value = title;
+                                    if (storage != null) {
+                                      unawaited(
+                                        storage.savePreference(
+                                          key: '__syllabot_tutor_persona',
+                                          data: title,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? colors.primary.withAlpha(isDark ? 40 : 20)
+                                          : colors.surfaceSecondary,
+                                      borderRadius: AppRadius.radiusCard,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? colors.primary
+                                            : colors.surfaceBorder.withAlpha(70),
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(p['icon']!, style: const TextStyle(fontSize: 20)),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                title,
+                                                style: typography.body.bold.copyWith(
+                                                  color: isSelected ? colors.primary : colors.textPrimary,
+                                                  fontSize: 13.5,
+                                                ),
+                                              ),
+                                              Text(
+                                                p['desc']!,
+                                                style: typography.caption.regular.copyWith(
+                                                  color: colors.textSecondary,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        ShrinkableButton(
+                                          onTap: () async {
+                                            AppFeedback.light();
+                                            if (isPlayingPreview.value) {
+                                              await ttsHandler.stop();
+                                            } else {
+                                              await ttsHandler.setSpeechRate(speechRate.value);
+                                              await ttsHandler.setVoiceGender(voiceGender.value);
+                                              await ttsHandler.speak(p['sample']!);
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary.withAlpha(30),
+                                              borderRadius: AppRadius.radiusBadge,
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  isPlayingPreview.value ? Icons.stop_rounded : Icons.volume_up_rounded,
+                                                  size: 14,
+                                                  color: colors.primary,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Sample',
+                                                  style: typography.caption.bold.copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 10.5,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const Divider(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -471,6 +635,10 @@ class SyllabotAiSettingsPage extends HookWidget {
                           await storage.savePreference(
                             key: PrefKeys.syllabotSpeechRate,
                             data: speechRate.value.toString(),
+                          );
+                          await storage.savePreference(
+                            key: '__syllabot_tutor_persona',
+                            data: tutorPersona.value,
                           );
                         }
                         if (context.mounted) {

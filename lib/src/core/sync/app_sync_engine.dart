@@ -147,12 +147,49 @@ class AppSyncEngine {
     });
   }
 
+  /// CRDT Field-Level Delta Merge helper
+  AppSyncPayload mergeCrdtPayload(AppSyncPayload existing, AppSyncPayload incoming) {
+    final mergedData = Map<String, dynamic>.from(existing.data);
+
+    void mergeMap(Map<String, dynamic> target, Map<String, dynamic> source) {
+      for (final entry in source.entries) {
+        if (target.containsKey(entry.key) &&
+            target[entry.key] is Map<String, dynamic> &&
+            entry.value is Map<String, dynamic>) {
+          mergeMap(
+            target[entry.key] as Map<String, dynamic>,
+            entry.value as Map<String, dynamic>,
+          );
+        } else {
+          target[entry.key] = entry.value;
+        }
+      }
+    }
+
+    if (incoming.timestampEpoch >= existing.timestampEpoch) {
+      mergeMap(mergedData, incoming.data);
+    } else {
+      final temp = Map<String, dynamic>.from(incoming.data);
+      mergeMap(temp, mergedData);
+      mergedData.addAll(temp);
+    }
+
+    final latestTimestamp = incoming.timestampEpoch > existing.timestampEpoch
+        ? incoming.timestampEpoch
+        : existing.timestampEpoch;
+
+    return AppSyncPayload(
+      id: incoming.id,
+      type: incoming.type,
+      data: mergedData,
+      timestampEpoch: latestTimestamp,
+    );
+  }
+
   Future<void> enqueue(AppSyncPayload payload) async {
     final existingIndex = _queue.indexWhere((p) => p.id == payload.id && p.type == payload.type);
     if (existingIndex != -1) {
-      if (payload.timestampEpoch > _queue[existingIndex].timestampEpoch) {
-        _queue[existingIndex] = payload;
-      }
+      _queue[existingIndex] = mergeCrdtPayload(_queue[existingIndex], payload);
     } else {
       _queue.add(payload);
     }
@@ -174,28 +211,54 @@ class AppSyncEngine {
     }
 
     final toSync = List<AppSyncPayload>.from(_queue);
-    
+
     try {
       for (var i = 0; i < toSync.length; i += syncBatchSize) {
         final end = (i + syncBatchSize < toSync.length) ? i + syncBatchSize : toSync.length;
         final batch = toSync.sublist(i, end);
-        
+
         final requestPayload = batch.map((p) => p.toMap()).toList();
-        
-        await _dio.post<dynamic>(
-          '${AppApiEndpoint.baseUri}/rest/v1/rpc/app_sync_engine_upsert',
+
+        await _postWithExponentialBackoff(
+          url: '${AppApiEndpoint.baseUri}/rest/v1/rpc/app_sync_engine_upsert',
           data: {'payloads': requestPayload},
-          options: Options(headers: headers),
+          headers: headers,
         );
-        
+
         _queue.removeWhere((p) => batch.any((b) => b.id == p.id));
       }
     } on Object catch (e, stack) {
-      debugPrint('[AppSyncEngine] Flush error: $e\n$stack');
+      debugPrint('[AppSyncEngine] Flush error after retries: $e\n$stack');
     } finally {
       await _persistQueue();
       _isSyncing = false;
       _syncStatusController.add(_queue.isEmpty ? SyncStatus.online : SyncStatus.offline);
+    }
+  }
+
+  Future<void> _postWithExponentialBackoff({
+    required String url,
+    required Map<String, dynamic> data,
+    required Map<String, String> headers,
+    int maxRetries = 3,
+  }) async {
+    var attempts = 0;
+    while (true) {
+      try {
+        await _dio.post<dynamic>(
+          url,
+          data: data,
+          options: Options(headers: headers),
+        );
+        return;
+      } on Object catch (_) {
+        attempts++;
+        if (attempts > maxRetries) {
+          rethrow;
+        }
+        final backoffMs = 150 * (1 << attempts);
+        await Future<void>.delayed(Duration(milliseconds: backoffMs));
+      }
     }
   }
 
