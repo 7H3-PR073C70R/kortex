@@ -545,6 +545,7 @@ class LatexCardContentViewer extends StatelessWidget {
       children: [
         // 1. Primary Prompt Text with LaTeX support
         LatexRichViewer(
+          key: ValueKey(displayPrompt),
           text: displayPrompt,
           textAlign: TextAlign.center,
           style: baseStyle.copyWith(

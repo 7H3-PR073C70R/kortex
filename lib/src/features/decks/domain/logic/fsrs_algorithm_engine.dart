@@ -7,12 +7,13 @@ import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart'
 class FsrsAlgorithmEngine {
   FsrsAlgorithmEngine({
     List<double>? weights,
-    this.desiredRetention = 0.90,
-  }) : weights = weights ?? defaultWeights,
-       _scheduler = scheduler.FsrsScheduler(
-         requestRetention: desiredRetention,
-         weights: weights ?? defaultWeights,
-       );
+    double desiredRetention = 0.90,
+  })  : desiredRetention = desiredRetention.clamp(0.70, 0.98),
+        weights = weights ?? defaultWeights,
+        _scheduler = scheduler.FsrsScheduler(
+          requestRetention: desiredRetention.clamp(0.70, 0.98),
+          weights: weights ?? defaultWeights,
+        );
 
   /// Standard FSRS-6 21-parameter weights vector.
   static const List<double> defaultWeights =

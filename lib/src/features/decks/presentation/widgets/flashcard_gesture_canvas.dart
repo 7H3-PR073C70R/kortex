@@ -63,12 +63,25 @@ class FlashcardGestureCanvas extends HookWidget {
     final motionController = useAnimationController(
       duration: AppMotion.standard,
     );
-    final snapStartOffset = useRef<Offset>(Offset.zero);
-    final snapTargetOffset = useRef<Offset>(Offset.zero);
 
     // 2D Swipe Offset State for drag gestures
     final dragOffset = useState<Offset>(Offset.zero);
     final isDragging = useState<bool>(false);
+
+    // Reset motion & gesture state when card ID changes to prevent ghost flickering
+    useEffect(
+      () {
+        dragOffset.value = Offset.zero;
+        if (motionController.isAnimating) {
+          motionController.stop();
+        }
+        motionController.reset();
+        return null;
+      },
+      [card.id],
+    );
+    final snapStartOffset = useRef<Offset>(Offset.zero);
+    final snapTargetOffset = useRef<Offset>(Offset.zero);
 
     final dx = dragOffset.value.dx;
     final dy = dragOffset.value.dy;
@@ -182,7 +195,6 @@ class FlashcardGestureCanvas extends HookWidget {
             )!;
             if (motionController.isCompleted) {
               motionController.removeListener(flyListener);
-              dragOffset.value = Offset.zero;
               swipeCallback!();
             }
           }

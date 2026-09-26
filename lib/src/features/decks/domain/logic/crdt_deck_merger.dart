@@ -149,6 +149,10 @@ class CrdtDeckMerger {
     if (candidate.timestampMicros != current.timestampMicros) {
       return candidate.timestampMicros > current.timestampMicros;
     }
+    // Precedence rule: Tombstone (deletion) takes priority on identical timestamps to prevent card resurrection
+    if (candidate.isDeleted != current.isDeleted) {
+      return candidate.isDeleted;
+    }
     // Deterministic tie-breaker: authorId lexicographical comparison
     return candidate.authorId.compareTo(current.authorId) > 0;
   }
