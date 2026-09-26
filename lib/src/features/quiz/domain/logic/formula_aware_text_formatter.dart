@@ -222,8 +222,8 @@ class FormulaAwareTextFormatter {
     // 3. Pure fraction or factorial fraction (e.g. "3/4", "-1/2", "x/2", "11!/(9! 2!)")
     final fracMatch = _fractionRegex.firstMatch(body.trim());
     if (fracMatch != null && !_commonEnglishWordsRegex.hasMatch(body)) {
-      var num = _cleanFractionTerm(fracMatch.group(1)!);
-      var den = _cleanFractionTerm(fracMatch.group(2)!);
+      final num = _cleanFractionTerm(fracMatch.group(1)!);
+      final den = _cleanFractionTerm(fracMatch.group(2)!);
       return '$prefix\$\\frac{$num}{$den}\$';
     }
 

@@ -63,7 +63,7 @@ class QuizDuelWebSocketClient {
         ],
         correctAnswer: '11!/(2! 2! 2!)',
         explanation:
-            'MATHEMATICS has 11 letters with 2 M\'s, 2 A\'s, and 2 T\'s.',
+            "MATHEMATICS has 11 letters with 2 M's, 2 A's, and 2 T's.",
         subTopic: 'Permutations',
       ),
     ];
@@ -103,7 +103,7 @@ class QuizDuelWebSocketClient {
                       (data['subject'] as String? ?? '').trim().toLowerCase() &&
                   localMatch.examBoard.trim().toLowerCase() ==
                       (data['examBoard'] as String? ?? '').trim().toLowerCase()) {
-                final QuizDuelMatch remoteMatch = remoteMatchJson != null
+                final remoteMatch = remoteMatchJson != null
                     ? QuizDuelMatch.fromJson(remoteMatchJson)
                     : QuizDuelMatch(
                         duelId: remoteDuelId,
@@ -162,7 +162,6 @@ class QuizDuelWebSocketClient {
             }
           } else if (type == 'match_joined') {
             final matchJson = data['match'] as Map<String, dynamic>?;
-            final duelId = data['duelId'] as String?;
 
             if (matchJson != null) {
               final syncedMatch = QuizDuelMatch.fromJson(matchJson);
@@ -472,15 +471,9 @@ class QuizDuelWebSocketClient {
 
     final p1 = current.player1.copyWith(
       currentQuestionIndex: questionIndex,
-      selectedOptionIndex: null,
-      answeredInMs: null,
-      isAnswerCorrect: null,
     );
     final p2 = current.player2?.copyWith(
       currentQuestionIndex: questionIndex,
-      selectedOptionIndex: null,
-      answeredInMs: null,
-      isAnswerCorrect: null,
     );
 
     final updated = current.copyWith(
