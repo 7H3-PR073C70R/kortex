@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -177,22 +178,21 @@ class QuizDuelMatchmakingSheet extends HookWidget {
       );
 
       try {
-        await Share.share(
-          'Join my 1v1 ${selectedSubject.value} Quiz Duel on Kortex! Click here to accept: $inviteUrl',
-          subject: '1v1 Quiz Duel Challenge',
+        await SharePlus.instance.share(
+          ShareParams(
+            text:
+                'Join my 1v1 ${selectedSubject.value} Quiz Duel on Kortex! Click here to accept: $inviteUrl',
+            subject: '1v1 Quiz Duel Challenge',
+          ),
         );
-      } catch (_) {
+      } on Exception catch (_) {
         // Fallback gracefully if share sheet is unsupported
       }
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Private duel room created! Link copied to clipboard.',
-            ),
-            duration: const Duration(seconds: 3),
-          ),
+        context.showSnackBar(
+          message: 'Private duel room created! Link copied to clipboard.',
+          type: SnackBarType.success,
         );
       }
     }

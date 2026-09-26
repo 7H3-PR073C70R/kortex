@@ -1050,12 +1050,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       // Share failed — fall back to clipboard.
       await Clipboard.setData(ClipboardData(text: message));
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.quizResultCopied),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
+        context.showSnackBar(
+          message: context.l10n.quizResultCopied,
+          type: SnackBarType.success,
         );
       }
     }

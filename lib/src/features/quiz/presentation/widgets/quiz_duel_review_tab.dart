@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -60,7 +61,7 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
           courseCode: widget.match.subject,
         );
       }
-    } catch (_) {
+    } on Object catch (_) {
       // Fallback state handling
     }
 
@@ -73,13 +74,11 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
       }
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
+    if (!context.mounted) return;
+    context.showSnackBar(
+      message:
           'Saved ${targetQuestions.length} ${targetQuestions.length == 1 ? 'question' : 'questions'} from ${widget.match.subject} duel to Flashcards!',
-        ),
-        duration: const Duration(seconds: 2),
-      ),
+      type: SnackBarType.success,
     );
   }
 
@@ -93,15 +92,11 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
       }
     });
     final isSaved = _savedQuestionIds.contains(questionId);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isSaved
-              ? 'Saved question to Flashcards!'
-              : 'Removed question from Flashcards',
-        ),
-        duration: const Duration(seconds: 1),
-      ),
+    context.showSnackBar(
+      message: isSaved
+          ? 'Saved question to Flashcards!'
+          : 'Removed question from Flashcards',
+      type: isSaved ? SnackBarType.success : SnackBarType.info,
     );
   }
 

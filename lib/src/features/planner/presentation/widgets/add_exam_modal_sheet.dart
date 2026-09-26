@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -455,11 +456,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
       Navigator.of(context).pop();
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not save countdown: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
+        context.showSnackBar(
+          message: 'Could not save countdown: $e',
+          type: SnackBarType.error,
         );
       }
     }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -140,14 +141,9 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Academic track switched to ${track.name}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
+      context.showSnackBar(
+        message: 'Academic track switched to ${track.name}',
+        type: SnackBarType.success,
       );
       Navigator.of(context).pop();
     }

@@ -117,8 +117,11 @@ class QuizDuelWebSocketClient {
                         data['displayName'] as String? ?? 'Scholar',
                     avatarUrl: data['avatarUrl'] as String? ?? '',
                     isReady: true,
-                    eloRating: remoteMatchJson != null
-                        ? (remoteMatchJson['player1']?['eloRating'] as int? ??
+                    eloRating: (remoteMatchJson != null &&
+                            remoteMatchJson['player1'] is Map<String, dynamic>)
+                        ? ((remoteMatchJson['player1']
+                                    as Map<String, dynamic>)['eloRating']
+                                as int? ??
                             1250)
                         : 1250,
                   );

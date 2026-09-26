@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -146,17 +147,9 @@ class LmsImportModalSheet extends HookWidget {
                 connectedAccount.value = null;
                 if (state.errorMessage != null &&
                     state.errorMessage!.isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        state.errorMessage!,
-                        style: typography.caption.medium.copyWith(
-                          color: colors.white,
-                        ),
-                      ),
-                      backgroundColor: colors.error,
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  context.showSnackBar(
+                    message: state.errorMessage!,
+                    type: SnackBarType.error,
                   );
                 }
               }
