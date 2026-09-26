@@ -245,10 +245,11 @@ class ExamCountdownBanner extends StatelessWidget {
 
         final isTopPriority = exam.id == state.topPriorityExamId;
         final readinessResult = const CbtReadinessCalculator().compute(
-          syllabusCoverage: 0.78,
-          fsrsRetentionRate: 0.86,
-          mockScoreRatio: 0.80,
+          syllabusCoverage: exam.completionProgress,
+          fsrsRetentionRate: (exam.achievedScorePercent ?? 0.80).clamp(0.0, 1.0),
+          mockScoreRatio: (exam.achievedScorePercent ?? 0.75).clamp(0.0, 1.0),
           daysRemaining: days,
+          explicitWeakestTopic: exam.examName,
         );
 
         // Headline calculation with sub-daily granularity

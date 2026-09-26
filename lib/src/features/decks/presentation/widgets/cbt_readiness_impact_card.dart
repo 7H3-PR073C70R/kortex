@@ -37,6 +37,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
       fsrsRetentionRate: retentionScore,
       mockScoreRatio: mockScore,
       daysRemaining: 30,
+      explicitWeakestTopic: topicName,
     );
 
     final scoreGain = (cardsReviewed * 0.12 * retentionScore).clamp(0.4, 4.2);
@@ -241,6 +242,38 @@ class CbtReadinessImpactCard extends StatelessWidget {
               ],
             ),
           ),
+          if (result.remediationSuggestion.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colors.primary.withAlpha(isDark ? 25 : 12),
+                borderRadius: BorderRadius.circular(AppRadius.badge),
+                border: Border.all(
+                  color: colors.primary.withAlpha(isDark ? 60 : 30),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 14,
+                    color: colors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Next Step: ${result.remediationSuggestion}',
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

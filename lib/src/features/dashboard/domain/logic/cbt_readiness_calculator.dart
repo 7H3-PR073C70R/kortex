@@ -10,6 +10,8 @@ class CbtReadinessResult {
     required this.syllabusCoverage,
     required this.fsrsRetentionRate,
     required this.mockScoreRatio,
+    this.remediationSuggestion = '',
+    this.weakestAreaLabel = '',
   });
 
   /// Overall readiness index (0 to 100)
@@ -24,6 +26,12 @@ class CbtReadinessResult {
   final double syllabusCoverage;
   final double fsrsRetentionRate;
   final double mockScoreRatio;
+
+  /// Actionable Socratic recommendation to boost score
+  final String remediationSuggestion;
+
+  /// Diagnostic identification of the primary bottleneck
+  final String weakestAreaLabel;
 }
 
 class CbtReadinessCalculator {
@@ -40,6 +48,7 @@ class CbtReadinessCalculator {
     required double fsrsRetentionRate,
     required double mockScoreRatio,
     required int daysRemaining,
+    String? explicitWeakestTopic,
   }) {
     final cov = syllabusCoverage.clamp(0.0, 1.0);
     final ret = fsrsRetentionRate.clamp(0.0, 1.0);
@@ -75,6 +84,30 @@ class CbtReadinessCalculator {
       color = const Color(0xFFEF4444); // Crimson/Rose
     }
 
+    // Determine primary bottleneck diagnostic
+    var weakestArea = explicitWeakestTopic ?? '';
+    if (weakestArea.isEmpty) {
+      if (ret < cov && ret < mock) {
+        weakestArea = 'FSRS Memory Retention';
+      } else if (cov < ret && cov < mock) {
+        weakestArea = 'Syllabus Module Coverage';
+      } else {
+        weakestArea = 'Mock Test Speed & Accuracy';
+      }
+    }
+
+    // Actionable Socratic remediation suggestion
+    final String remediation;
+    if (finalPercent >= 80) {
+      remediation = 'Maintain momentum with a 10-minute timed mock sprint to lock in retention.';
+    } else if (ret < 0.70) {
+      remediation = 'Review 15 high-priority FSRS flashcards to repair decaying memory stability.';
+    } else if (cov < 0.60) {
+      remediation = 'Complete 1 new syllabus topic module to boost overall syllabus coverage.';
+    } else {
+      remediation = 'Take a 15-question CBT Practice Test to improve timed exam confidence.';
+    }
+
     return CbtReadinessResult(
       scorePercent: finalPercent,
       statusLabel: label,
@@ -82,6 +115,8 @@ class CbtReadinessCalculator {
       syllabusCoverage: cov,
       fsrsRetentionRate: ret,
       mockScoreRatio: mock,
+      remediationSuggestion: remediation,
+      weakestAreaLabel: weakestArea,
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/decks/domain/entities/fsrs_card_state.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
@@ -194,14 +194,19 @@ class AssessmentOrchestratorService {
   }
 
   /// Calculates a composite Academic Readiness Index (0.0 to 100.0) combining
-  /// recent quiz performance and historical user study retention.
-  double calculateReadinessIndex({required double recentScorePercent}) {
+  /// recent quiz performance, FSRS retention rate, and syllabus progress.
+  double calculateReadinessIndex({required double recentScorePercent, int daysRemaining = 14}) {
     final overallRetention = _userActivityService.getOverallRetentionRate();
-    final historicalPercent = overallRetention * 100;
-    
-    // Weighted composite: 60% historical retention rate, 40% latest assessment score
-    final composite = (historicalPercent * 0.60) + (recentScorePercent.clamp(0, 100) * 0.40);
-    return math.min(100, math.max(0, composite));
+    final mockRatio = (recentScorePercent / 100).clamp(0.0, 1.0);
+    final coverage = (overallRetention * 0.90).clamp(0.0, 1.0);
+
+    final result = const CbtReadinessCalculator().compute(
+      syllabusCoverage: coverage,
+      fsrsRetentionRate: overallRetention,
+      mockScoreRatio: mockRatio,
+      daysRemaining: daysRemaining,
+    );
+    return result.scorePercent.toDouble();
   }
 
   /// Recalibrates compressed FSRS card intervals when an exam date is edited,
