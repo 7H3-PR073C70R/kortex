@@ -74,30 +74,37 @@ class StudyStatisticsSummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: neural.amber400.withValues(alpha: isDark ? 0.15 : 0.1),
-                      borderRadius: AppRadius.radiusBadge,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: neural.amber400.withValues(alpha: isDark ? 0.15 : 0.1),
+                        borderRadius: AppRadius.radiusBadge,
+                      ),
+                      child: Icon(
+                        Icons.insights_rounded,
+                        size: 16,
+                        color: neural.amber400,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.insights_rounded,
-                      size: 16,
-                      color: neural.amber400,
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        'Study Analytics Summary',
+                        style: typography.body.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Study Analytics Summary',
-                    style: typography.body.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -129,7 +136,7 @@ class StudyStatisticsSummaryCard extends StatelessWidget {
                   color: neural.cyan400,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _StatTile(
                   label: 'Cards Mastered',
@@ -153,7 +160,7 @@ class StudyStatisticsSummaryCard extends StatelessWidget {
                   color: const Color.fromRGBO(192, 132, 252, 1),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _StatTile(
                   label: 'Retention Rate',
@@ -199,7 +206,7 @@ class _StatTile extends StatelessWidget {
         return AnimatedContainer(
           duration: AppMotion.snappy,
           curve: AppMotion.easeOutCubic,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
             color: isHovered
                 ? colors.surfaceSecondary
@@ -223,32 +230,37 @@ class _StatTile extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 16, color: color),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          value,
-                          style: typography.title3.bold.copyWith(
-                            color: colors.textPrimary,
-                            fontSize: 16,
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            value,
+                            style: typography.title3.bold.copyWith(
+                              color: colors.textPrimary,
+                              fontSize: 16,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          unit,
-                          style: typography.caption.regular.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 10,
+                          const SizedBox(width: 3),
+                          Text(
+                            unit,
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textMuted,
+                              fontSize: 10,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     Text(
                       label,

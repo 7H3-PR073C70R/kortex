@@ -90,7 +90,7 @@ class _DocumentIngestionView extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: colors.transparent,
+      backgroundColor: colors.backgroundPrimary,
       body: BlocConsumer<IngestionBloc, IngestionState>(
         listener: (context, state) {
           if (state.status == ProcessingStatus.completed) {
@@ -253,8 +253,8 @@ class _DocumentIngestionView extends HookWidget {
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? colors.surfaceSecondary.withAlpha(120)
-                                  : colors.surfacePrimary.withAlpha(150),
+                                  ? colors.surfaceSecondary
+                                  : colors.surfacePrimary,
                               borderRadius: AppRadius.radiusPanel,
                               border: Border.all(
                                 color: colors.primary.withAlpha(isDark ? 40 : 20),

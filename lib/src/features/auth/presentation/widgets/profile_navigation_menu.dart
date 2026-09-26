@@ -351,11 +351,15 @@ class _NavTile extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                title,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 14,
+                              Flexible(
+                                child: Text(
+                                  title,
+                                  style: typography.body.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               if (badge != null) ...[

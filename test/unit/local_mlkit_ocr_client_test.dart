@@ -15,7 +15,7 @@ void main() {
     const mlkitChannel =
         MethodChannel('google_mlkit_text_recognizer');
 
-    Future<Object?> pathHandler(MethodCall call) async =>
+    Future<Object?> pathHandler(call) async =>
         Directory.systemTemp.path;
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
