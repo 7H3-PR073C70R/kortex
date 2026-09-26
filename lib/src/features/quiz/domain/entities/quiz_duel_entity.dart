@@ -138,12 +138,13 @@ class QuizDuelMatch extends Equatable {
     required this.questions,
     required this.player1,
     this.currentQuestionIndex = 0,
-    this.durationPerQuestionSeconds = 60,
+    this.durationPerQuestionSeconds = 15,
     this.player2,
     this.status = QuizDuelStatus.matching,
     this.winnerUserId,
     this.isDraw = false,
     this.createdAt,
+    this.forfeitUserId,
     this.latestEmote,
     this.latestEmoteSenderId,
     this.latestEmoteTimestamp,
@@ -192,6 +193,7 @@ class QuizDuelMatch extends Equatable {
       ),
       winnerUserId: json['winnerUserId'] as String?,
       isDraw: json['isDraw'] as bool? ?? false,
+      forfeitUserId: json['forfeitUserId'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,
@@ -212,6 +214,7 @@ class QuizDuelMatch extends Equatable {
   final QuizDuelStatus status;
   final String? winnerUserId;
   final bool isDraw;
+  final String? forfeitUserId;
   final DateTime? createdAt;
   final String? latestEmote;
   final String? latestEmoteSenderId;
@@ -225,6 +228,8 @@ class QuizDuelMatch extends Equatable {
   int get totalQuestions => questions.length;
 
   bool get isMatchOver => status == QuizDuelStatus.finished;
+
+  bool get isForfeit => forfeitUserId != null && forfeitUserId!.isNotEmpty;
 
   Map<String, dynamic> toJson() {
     return {
@@ -250,6 +255,7 @@ class QuizDuelMatch extends Equatable {
       'status': status.name,
       if (winnerUserId != null) 'winnerUserId': winnerUserId,
       'isDraw': isDraw,
+      if (forfeitUserId != null) 'forfeitUserId': forfeitUserId,
       'createdAt': (createdAt ?? DateTime.now()).toIso8601String(),
       if (latestEmote != null) 'latestEmote': latestEmote,
       if (latestEmoteSenderId != null)
@@ -271,6 +277,7 @@ class QuizDuelMatch extends Equatable {
     QuizDuelStatus? status,
     String? winnerUserId,
     bool? isDraw,
+    String? forfeitUserId,
     DateTime? createdAt,
     String? latestEmote,
     String? latestEmoteSenderId,
@@ -289,6 +296,7 @@ class QuizDuelMatch extends Equatable {
       status: status ?? this.status,
       winnerUserId: winnerUserId ?? this.winnerUserId,
       isDraw: isDraw ?? this.isDraw,
+      forfeitUserId: forfeitUserId ?? this.forfeitUserId,
       createdAt: createdAt ?? this.createdAt,
       latestEmote: latestEmote ?? this.latestEmote,
       latestEmoteSenderId: latestEmoteSenderId ?? this.latestEmoteSenderId,
@@ -309,6 +317,7 @@ class QuizDuelMatch extends Equatable {
     status,
     winnerUserId,
     isDraw,
+    forfeitUserId,
     createdAt,
     latestEmote,
     latestEmoteSenderId,

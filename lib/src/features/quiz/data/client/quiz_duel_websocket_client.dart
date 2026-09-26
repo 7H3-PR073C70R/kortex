@@ -32,15 +32,41 @@ class QuizDuelWebSocketClient {
   /// Points configuration
   static const int baseCorrectPoints = 100;
   static const int maxSpeedBonus = 50;
-  static const int defaultQuestionTimeSeconds = 60;
+  static const int defaultQuestionTimeSeconds = 15;
 
-  /// Returns passed questions or an empty bank (dynamic curation handled via repositories).
+  /// Returns default question bank when dynamic question loading is not active.
   static List<QuizQuestionEntity> getDefaultDuelQuestions(
     String subject,
     String examBoard, {
     int count = 10,
   }) {
-    return const [];
+    return [
+      const QuizQuestionEntity(
+        id: 'q1',
+        prompt: 'What is the SI unit of electric potential difference?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Volt', 'Ampere', 'Ohm', 'Watt'],
+        correctAnswer: 'Volt',
+        explanation:
+            'Voltage or electric potential difference is measured in Volts (V).',
+        subTopic: 'Electricity',
+      ),
+      const QuizQuestionEntity(
+        id: 'q2',
+        prompt: 'In how many ways can the word MATHEMATICS be arranged?',
+        type: QuizQuestionType.multipleChoice,
+        options: [
+          '11!/(9! 2!)',
+          '11!/(9! 2! 2!)',
+          '11!/(2! 2! 2!)',
+          '11!/(2! 2!)',
+        ],
+        correctAnswer: '11!/(2! 2! 2!)',
+        explanation:
+            'MATHEMATICS has 11 letters with 2 M\'s, 2 A\'s, and 2 T\'s.',
+        subTopic: 'Permutations',
+      ),
+    ];
   }
   bool _matchmakingListenerInitialized = false;
   final Set<String> _listenedDuelChannels = {};
@@ -64,101 +90,106 @@ class QuizDuelWebSocketClient {
 
           if (type == 'search') {
             final remoteDuelId = data['duelId'] as String?;
-            final remoteSubject =
-                (data['subject'] as String? ?? '').trim().toLowerCase();
-            final remoteExamBoard =
-                (data['examBoard'] as String? ?? '').trim().toLowerCase();
             final remoteUserId = data['userId'] as String?;
-            final remoteDisplayName =
-                data['displayName'] as String? ?? 'Scholar';
-            final remoteAvatarUrl = data['avatarUrl'] as String? ?? '';
+            final remoteMatchJson = data['match'] as Map<String, dynamic>?;
 
             if (remoteDuelId == null || remoteUserId == null) return;
 
-            for (final localMatch in _activeMatches.values) {
+            for (final localMatch in _activeMatches.values.toList()) {
               if (localMatch.status == QuizDuelStatus.matching &&
-                  localMatch.subject.trim().toLowerCase() == remoteSubject &&
-                  localMatch.examBoard.trim().toLowerCase() ==
-                      remoteExamBoard &&
                   localMatch.player1.userId != remoteUserId &&
-                  localMatch.player2 == null) {
-                final player2 = QuizDuelParticipant(
-                  userId: remoteUserId,
-                  displayName: remoteDisplayName,
-                  avatarUrl: remoteAvatarUrl,
+                  localMatch.player2 == null &&
+                  localMatch.subject.trim().toLowerCase() ==
+                      (data['subject'] as String? ?? '').trim().toLowerCase() &&
+                  localMatch.examBoard.trim().toLowerCase() ==
+                      (data['examBoard'] as String? ?? '').trim().toLowerCase()) {
+                final QuizDuelMatch remoteMatch = remoteMatchJson != null
+                    ? QuizDuelMatch.fromJson(remoteMatchJson)
+                    : QuizDuelMatch(
+                        duelId: remoteDuelId,
+                        subject: localMatch.subject,
+                        examBoard: localMatch.examBoard,
+                        questions: localMatch.questions,
+                        player1: QuizDuelParticipant(
+                          userId: remoteUserId,
+                          displayName:
+                              data['displayName'] as String? ?? 'Scholar',
+                          avatarUrl: data['avatarUrl'] as String? ?? '',
+                          isReady: true,
+                          eloRating: 1250,
+                        ),
+                      );
+
+                final localP2 = QuizDuelParticipant(
+                  userId: localMatch.player1.userId,
+                  displayName: localMatch.player1.displayName,
+                  avatarUrl: localMatch.player1.avatarUrl,
                   isReady: true,
-                  eloRating: 1250,
+                  eloRating: localMatch.player1.eloRating,
                 );
 
-                _matchingTimers[localMatch.duelId]?.cancel();
-
-                final matched = localMatch.copyWith(
-                  player2: player2,
+                final syncedMatch = remoteMatch.copyWith(
+                  player2: localP2,
                   status: QuizDuelStatus.countdown,
                 );
 
-                _updateMatch(localMatch.duelId, matched);
-                _listenToDuelChannel(localMatch.duelId);
+                _matchingTimers[localMatch.duelId]?.cancel();
+                _matchingTimers[syncedMatch.duelId]?.cancel();
+
+                _activeMatches[syncedMatch.duelId] = syncedMatch;
+                _updateMatch(localMatch.duelId, syncedMatch);
+                _updateMatch(syncedMatch.duelId, syncedMatch);
+                _listenToDuelChannel(syncedMatch.duelId);
 
                 _realtimeClient.broadcastPresence(
                   channelName: 'realtime:quiz_duel_matchmaking',
                   payload: {
                     'type': 'match_joined',
                     'data': {
-                      'duelId': localMatch.duelId,
+                      'duelId': syncedMatch.duelId,
                       'matchedUserId': remoteUserId,
-                      'match': matched.toJson(),
+                      'player2': localP2.toJson(),
+                      'match': syncedMatch.toJson(),
                     },
                   },
                 );
 
-                Timer(const Duration(milliseconds: 2500), () {
-                  _startRound(localMatch.duelId, 0);
+                Timer(const Duration(milliseconds: 3000), () {
+                  _startRound(syncedMatch.duelId, 0);
                 });
                 break;
               }
             }
           } else if (type == 'match_joined') {
-            final matchedUserId = data['matchedUserId'] as String?;
             final matchJson = data['match'] as Map<String, dynamic>?;
+            final duelId = data['duelId'] as String?;
 
-            for (final localMatch in _activeMatches.values.toList()) {
-              if (localMatch.status == QuizDuelStatus.matching &&
-                  (matchedUserId == localMatch.player1.userId || matchJson != null)) {
-                _matchingTimers[localMatch.duelId]?.cancel();
+            if (matchJson != null) {
+              final syncedMatch = QuizDuelMatch.fromJson(matchJson);
 
-                final QuizDuelMatch syncedMatch;
-                if (matchJson != null) {
-                  syncedMatch = QuizDuelMatch.fromJson(matchJson);
-                } else {
-                  final duelId = data['duelId'] as String? ?? localMatch.duelId;
-                  final player2Data = data['player2'] as Map<String, dynamic>?;
-                  final p2 = player2Data != null
-                      ? QuizDuelParticipant.fromJson(player2Data)
-                      : QuizDuelParticipant(
-                          userId: matchedUserId ?? 'p2',
-                          displayName: 'Opponent',
-                          avatarUrl: '',
-                          isReady: true,
-                          eloRating: 1250,
-                        );
-                  syncedMatch = localMatch.copyWith(
-                    duelId: duelId,
-                    player2: p2,
-                    status: QuizDuelStatus.countdown,
-                  );
+              for (final localMatch in _activeMatches.values.toList()) {
+                if (localMatch.status == QuizDuelStatus.matching &&
+                    (localMatch.duelId == syncedMatch.duelId ||
+                        localMatch.player1.userId ==
+                            syncedMatch.player1.userId ||
+                        localMatch.player1.userId ==
+                            syncedMatch.player2?.userId)) {
+                  _matchingTimers[localMatch.duelId]?.cancel();
+                  _matchingTimers[syncedMatch.duelId]?.cancel();
+
+                  _activeMatches[syncedMatch.duelId] = syncedMatch;
+                  _updateMatch(localMatch.duelId, syncedMatch);
+                  _updateMatch(syncedMatch.duelId, syncedMatch);
+                  _listenToDuelChannel(syncedMatch.duelId);
+
+                  Timer(const Duration(milliseconds: 3000), () {
+                    if (_activeMatches[syncedMatch.duelId]?.status ==
+                        QuizDuelStatus.countdown) {
+                      _startRound(syncedMatch.duelId, 0);
+                    }
+                  });
+                  break;
                 }
-
-                _activeMatches[syncedMatch.duelId] = syncedMatch;
-                _listenToDuelChannel(syncedMatch.duelId);
-
-                _updateMatch(localMatch.duelId, syncedMatch);
-                _updateMatch(syncedMatch.duelId, syncedMatch);
-
-                Timer(const Duration(milliseconds: 2500), () {
-                  _startRound(syncedMatch.duelId, 0);
-                });
-                break;
               }
             }
           } else if (type == 'announcement_request') {
@@ -175,6 +206,7 @@ class QuizDuelWebSocketClient {
                       'userId': m.player1.userId,
                       'displayName': m.player1.displayName,
                       'avatarUrl': m.player1.avatarUrl,
+                      'match': m.toJson(),
                     },
                   },
                 );
@@ -217,6 +249,12 @@ class QuizDuelWebSocketClient {
                 responseTimeMs: responseTimeMs,
               );
             }
+          } else if (type == 'start_round') {
+            final questionIndex = data['questionIndex'] as int? ?? 0;
+            _applyStartRoundLocally(duelId, questionIndex);
+          } else if (type == 'conclude_round') {
+            final questionIndex = data['questionIndex'] as int? ?? 0;
+            _concludeRound(duelId, questionIndex);
           } else if (type == 'send_emote') {
             final userId = data['userId'] as String?;
             final emote = data['emote'] as String?;
@@ -287,16 +325,13 @@ class QuizDuelWebSocketClient {
           'data': {
             'duelId': existingMatch.duelId,
             'matchedUserId': userId,
-            'player2': {
-              'userId': userId,
-              'displayName': displayName,
-              'avatarUrl': avatarUrl,
-            },
+            'player2': player2.toJson(),
+            'match': matched.toJson(),
           },
         },
       );
 
-      Timer(const Duration(milliseconds: 2500), () {
+      Timer(const Duration(milliseconds: 3000), () {
         _startRound(existingMatch!.duelId, 0);
       });
 
@@ -344,6 +379,7 @@ class QuizDuelWebSocketClient {
             'userId': userId,
             'displayName': displayName,
             'avatarUrl': avatarUrl,
+            'match': match.toJson(),
           },
         },
       )
@@ -408,17 +444,43 @@ class QuizDuelWebSocketClient {
   }
 
   void _startRound(String duelId, int questionIndex) {
+    _applyStartRoundLocally(duelId, questionIndex);
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'start_round',
+        'data': {
+          'duelId': duelId,
+          'questionIndex': questionIndex,
+        },
+      },
+    );
+  }
+
+  void _applyStartRoundLocally(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null || questionIndex >= current.questions.length) {
       _finalizeMatch(duelId);
       return;
     }
 
+    if (current.status == QuizDuelStatus.inRound &&
+        current.currentQuestionIndex == questionIndex) {
+      return;
+    }
+
     final p1 = current.player1.copyWith(
       currentQuestionIndex: questionIndex,
+      selectedOptionIndex: null,
+      answeredInMs: null,
+      isAnswerCorrect: null,
     );
     final p2 = current.player2?.copyWith(
       currentQuestionIndex: questionIndex,
+      selectedOptionIndex: null,
+      answeredInMs: null,
+      isAnswerCorrect: null,
     );
 
     final updated = current.copyWith(
@@ -447,7 +509,7 @@ class QuizDuelWebSocketClient {
 
   void _scheduleAiAnswer(String duelId, int questionIndex) {
     _aiActionTimers[duelId]?.cancel();
-    final delayMs = 3000 + _random.nextInt(4500); // 3s to 7.5s
+    final delayMs = 600 + _random.nextInt(800); // 0.6s to 1.4s fast response
     _aiActionTimers[duelId] = Timer(Duration(milliseconds: delayMs), () {
       final current = _activeMatches[duelId];
       if (current == null ||
@@ -589,12 +651,24 @@ class QuizDuelWebSocketClient {
   void _concludeRound(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null) return;
+    if (current.status == QuizDuelStatus.roundSummary) return;
 
     final updated = current.copyWith(status: QuizDuelStatus.roundSummary);
     _updateMatch(duelId, updated);
 
-    // Show round summary briefly (600ms), then proceed immediately to next question
-    Timer(const Duration(milliseconds: 600), () {
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'conclude_round',
+        'data': {
+          'duelId': duelId,
+          'questionIndex': questionIndex,
+        },
+      },
+    );
+
+    // Show round summary briefly (800ms for clear visual feedback), then proceed smoothly to next question
+    Timer(const Duration(milliseconds: 800), () {
       final nextIdx = questionIndex + 1;
       if (nextIdx < current.questions.length) {
         _startRound(duelId, nextIdx);
@@ -722,6 +796,7 @@ class QuizDuelWebSocketClient {
           status: QuizDuelStatus.finished,
           winnerUserId: winnerId,
           isDraw: winnerId == null,
+          forfeitUserId: userId,
         );
         _updateMatch(duelId, finished);
       }
@@ -747,6 +822,14 @@ class QuizDuelWebSocketClient {
     );
   }
 
+  final Map<String, Set<String>> _duelAliases = {};
+
+  void _recordAlias(String aliasId, String canonicalId) {
+    if (aliasId == canonicalId) return;
+    _duelAliases.putIfAbsent(canonicalId, () => {}).add(aliasId);
+    _duelAliases.putIfAbsent(aliasId, () => {}).add(canonicalId);
+  }
+
   StreamController<QuizDuelMatch> _getOrCreateController(String duelId) {
     return _matchControllers.putIfAbsent(
       duelId,
@@ -756,9 +839,21 @@ class QuizDuelWebSocketClient {
 
   void _updateMatch(String duelId, QuizDuelMatch match) {
     _activeMatches[duelId] = match;
-    final ctrl = _matchControllers[duelId];
-    if (ctrl != null && !ctrl.isClosed) {
-      ctrl.add(match);
+    _activeMatches[match.duelId] = match;
+    _recordAlias(duelId, match.duelId);
+
+    final targetIds = <String>{
+      duelId,
+      match.duelId,
+      ...?_duelAliases[duelId],
+      ...?_duelAliases[match.duelId],
+    };
+
+    for (final id in targetIds) {
+      final ctrl = _matchControllers[id];
+      if (ctrl != null && !ctrl.isClosed) {
+        ctrl.add(match);
+      }
     }
   }
 

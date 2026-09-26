@@ -69,6 +69,8 @@ class QuizDuelArenaPage extends HookWidget {
           hasCelebrated.value = true;
           final isWinner = state.isWinner;
           final isDraw = state.isDraw;
+          final isForfeit = state.match?.isForfeit ?? false;
+          final forfeitByRival = isForfeit && state.match?.forfeitUserId != state.currentUserId;
           final myScore = state.myParticipant?.score ?? 0;
           final opponentScore = state.opponentParticipant?.score ?? 0;
           final opponentName =
@@ -79,14 +81,29 @@ class QuizDuelArenaPage extends HookWidget {
           final String emoji;
           final String badge;
           final int xp;
+          final String buttonText;
+          final VoidCallback? onDismissAction;
 
-          if (isWinner) {
+          if (forfeitByRival) {
+            emoji = '🏆';
+            title = 'Rival Forfeited!';
+            subtitle =
+                '$opponentName left the arena. You have been awarded +500 victory points!';
+            badge = '🏳️ Default Victory (+500 pts)';
+            xp = 200;
+            buttonText = 'Return to Dashboard';
+            onDismissAction = () {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            };
+          } else if (isWinner) {
             emoji = '🏆';
             title = 'Duel Victory!';
             subtitle =
                 'Fast and accurate! You triumphed over $opponentName in the competitive arena.';
             badge = '🏆 Arena Champion';
             xp = 150;
+            buttonText = 'View Scoreboard';
+            onDismissAction = null;
           } else if (isDraw) {
             emoji = '⚔️';
             title = 'Even Match!';
@@ -94,6 +111,8 @@ class QuizDuelArenaPage extends HookWidget {
                 'Incredible duel! Both you and $opponentName finished tied on points.';
             badge = '⚔️ Steel Sharpens Steel';
             xp = 80;
+            buttonText = 'View Scoreboard';
+            onDismissAction = null;
           } else {
             emoji = '🛡️';
             title = 'Fierce Battle!';
@@ -101,6 +120,8 @@ class QuizDuelArenaPage extends HookWidget {
                 'Close duel! Every round makes the next victory closer.';
             badge = '💪 Experience Banked';
             xp = 40;
+            buttonText = 'View Scoreboard';
+            onDismissAction = null;
           }
 
           unawaited(
@@ -111,12 +132,13 @@ class QuizDuelArenaPage extends HookWidget {
               primaryStatLabel: 'Your Score',
               primaryStatValue: '$myScore pts',
               secondaryStatLabel: 'Rival',
-              secondaryStatValue: '$opponentScore pts',
+              secondaryStatValue: isForfeit ? 'Forfeited' : '$opponentScore pts',
               tertiaryStatLabel: 'Duel XP',
               tertiaryStatValue: '+$xp',
               xpEarned: xp,
               motivationalBadge: badge,
-              buttonText: 'View Scoreboard',
+              buttonText: buttonText,
+              onDismiss: onDismissAction,
               emoji: emoji,
             ),
           );
@@ -423,7 +445,7 @@ class QuizDuelArenaPage extends HookWidget {
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                'Starting in 3 seconds...',
+                                'Starting in ${state.remainingSeconds > 0 ? state.remainingSeconds : 1} second${state.remainingSeconds == 1 ? '' : 's'}...',
                                 style: typography.body.bold.copyWith(
                                   color: colors.primary,
                                   fontSize: 14,
@@ -461,19 +483,27 @@ class QuizDuelArenaPage extends HookWidget {
                   : 'Neither';
           final winnerScore = p1Won ? p1Score : p2Score;
 
+          final isForfeit = match?.isForfeit ?? false;
+          final forfeitByRival = isForfeit && match?.forfeitUserId != state.currentUserId;
+          final opponentName = p1?.userId == state.currentUserId
+              ? (p2?.displayName ?? 'Opponent')
+              : (p1?.displayName ?? 'Opponent');
+
           return Scaffold(
             backgroundColor: isDark
                 ? colors.surfaceSecondary
                 : colors.surfacePrimary,
             body: SafeArea(
               child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 620),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 620),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                         // Winner Emblem Header
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -492,9 +522,13 @@ class QuizDuelArenaPage extends HookWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          isDraw
-                              ? "It's a Draw!"
-                              : '$winnerName Won the Duel!',
+                          forfeitByRival
+                              ? 'Rival Forfeited! Victory Awarded'
+                              : isForfeit
+                                  ? 'Match Forfeited'
+                                  : isDraw
+                                      ? "It's a Draw!"
+                                      : '$winnerName Won the Duel!',
                           textAlign: TextAlign.center,
                           style: typography.largeTitle.bold.copyWith(
                             color: isDraw
@@ -504,9 +538,13 @@ class QuizDuelArenaPage extends HookWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          isDraw
-                              ? 'Both scholars tied with $p1Score pts in a fierce battle.'
-                              : 'Winner declared with $winnerScore pts in real-time!',
+                          forfeitByRival
+                              ? '$opponentName left the arena. You have been awarded +500 victory points!'
+                              : isForfeit
+                                  ? 'A player left the match early.'
+                                  : isDraw
+                                      ? 'Both scholars tied with $p1Score pts in a fierce battle.'
+                                      : 'Winner declared with $winnerScore pts in real-time!',
                           textAlign: TextAlign.center,
                           style: typography.body.regular.copyWith(
                             color: colors.textSecondary,
@@ -683,36 +721,46 @@ class QuizDuelArenaPage extends HookWidget {
                         ),
                         const SizedBox(height: 40),
 
-                        AppButton(
-                          text: 'Rematch',
-                          onPressed: () async {
-                            await context
-                                .read<QuizDuelCubit>()
-                                .startMatchmaking(
-                                  subject: match?.subject ?? 'Physics',
-                                  examBoard: match?.examBoard ?? 'WAEC',
-                                  userId: state.currentUserId,
-                                  displayName: myPlayer.displayName,
-                                  avatarUrl: myPlayer.avatarUrl,
-                                );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        AppButton(
-                          text: 'Leave arena',
-                          variant: AppButtonVariant.secondary,
-                          onPressed: () {
-                            Navigator.of(context).popUntil((route) => route.isFirst);
-                          },
-                        ),
+                        if (forfeitByRival) ...[
+                          AppButton(
+                            text: 'Return to Dashboard',
+                            onPressed: () {
+                              Navigator.of(context).popUntil((route) => route.isFirst);
+                            },
+                          ),
+                        ] else ...[
+                          AppButton(
+                            text: 'Rematch',
+                            onPressed: () async {
+                              await context
+                                  .read<QuizDuelCubit>()
+                                  .startMatchmaking(
+                                    subject: match?.subject ?? 'Physics',
+                                    examBoard: match?.examBoard ?? 'WAEC',
+                                    userId: state.currentUserId,
+                                    displayName: myPlayer.displayName,
+                                    avatarUrl: myPlayer.avatarUrl,
+                                  );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            text: 'Return to Dashboard',
+                            variant: AppButtonVariant.secondary,
+                            onPressed: () {
+                              Navigator.of(context).popUntil((route) => route.isFirst);
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-          );
-        }
+          ),
+        );
+      }
 
         // Active Duel Round & Summary View
         final totalSeconds = (match?.durationPerQuestionSeconds ?? 60).toDouble();

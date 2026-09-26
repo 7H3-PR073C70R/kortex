@@ -119,7 +119,7 @@ class FormulaAwareTextFormatter {
   );
 
   static final RegExp _fractionRegex = RegExp(
-    r'^\s*([-+]?[a-zA-Z0-9\(\)]+)\s*\/\s*([a-zA-Z0-9\(\)]+)\s*$',
+    r'^\s*([-+]?[a-zA-Z0-9\!\s\(\)\+\-\*\^\cdot]+?)\s*\/\s*([-+]?[a-zA-Z0-9\!\s\(\)\+\-\*\^\cdot]+?)\s*$',
   );
 
   static final RegExp _scientificNotationRegex = RegExp(
@@ -131,8 +131,9 @@ class FormulaAwareTextFormatter {
     var upperCount = 0;
     for (var i = 0; i < s.length; i++) {
       final c = s.codeUnitAt(i);
-      // Math/formula symbols: '$' (36), '\' (92), '^' (94), '_' (95), '/' (47), '+' (43), '=' (61), '>' (62), '<' (60), '(', ')', '[', ']', or non-ascii (e.g. '→', '⇌')
-      if (c == 36 ||
+      // Math/formula symbols: '!' (33), '$' (36), '\' (92), '^' (94), '_' (95), '/' (47), '+' (43), '=' (61), '>' (62), '<' (60), '(', ')', '[', ']', or non-ascii (e.g. '→', '⇌')
+      if (c == 33 ||
+          c == 36 ||
           c == 92 ||
           c == 94 ||
           c == 95 ||
@@ -218,11 +219,11 @@ class FormulaAwareTextFormatter {
       return prefix + formatted;
     }
 
-    // 3. Pure fraction (e.g. "3/4" or "-1/2" or "x/2")
+    // 3. Pure fraction or factorial fraction (e.g. "3/4", "-1/2", "x/2", "11!/(9! 2!)")
     final fracMatch = _fractionRegex.firstMatch(body.trim());
     if (fracMatch != null && !_commonEnglishWordsRegex.hasMatch(body)) {
-      final num = fracMatch.group(1);
-      final den = fracMatch.group(2);
+      var num = _cleanFractionTerm(fracMatch.group(1)!);
+      var den = _cleanFractionTerm(fracMatch.group(2)!);
       return '$prefix\$\\frac{$num}{$den}\$';
     }
 
@@ -239,6 +240,29 @@ class FormulaAwareTextFormatter {
     }
 
     return line;
+  }
+
+  static String _cleanFractionTerm(String term) {
+    var t = term.trim();
+    if (t.startsWith('(') && t.endsWith(')')) {
+      final inner = t.substring(1, t.length - 1).trim();
+      if (_hasBalancedParens(inner)) {
+        t = inner;
+      }
+    }
+    return t;
+  }
+
+  static bool _hasBalancedParens(String s) {
+    var depth = 0;
+    for (var i = 0; i < s.length; i++) {
+      if (s[i] == '(') depth++;
+      if (s[i] == ')') {
+        depth--;
+        if (depth < 0) return false;
+      }
+    }
+    return depth == 0;
   }
 
   /// Normalizes spaced chemical subscripts in already-delimited math (e.g. `\mathrm{Cu(NO 3 ) 2}`)

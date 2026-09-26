@@ -64,21 +64,37 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     );
   }
 
+  String? _subscribedDuelId;
+
   void _subscribeToMatchStream(String duelId) {
+    if (_subscribedDuelId == duelId && _duelSubscription != null) return;
+    _subscribedDuelId = duelId;
+
     unawaited(_duelSubscription?.cancel());
     _duelSubscription = _repository
         .streamDuel(duelId)
         .listen(
           (match) {
+            if (match.duelId.isNotEmpty && match.duelId != duelId) {
+              _subscribeToMatchStream(match.duelId);
+            }
+
             final previousStatus = state.status;
             final previousQuestionIdx = state.match?.currentQuestionIndex;
+
+            final isMatchCountdown =
+                match.status == QuizDuelStatus.countdown &&
+                (previousStatus != QuizDuelStatus.countdown ||
+                    state.remainingSeconds <= 0);
 
             final isNewRound =
                 match.status == QuizDuelStatus.inRound &&
                 (previousStatus != QuizDuelStatus.inRound ||
                     previousQuestionIdx != match.currentQuestionIndex);
 
-            if (isNewRound) {
+            if (isMatchCountdown) {
+              _startLobbyCountdown(3);
+            } else if (isNewRound) {
               _startQuestionCountdown(match.durationPerQuestionSeconds);
             }
 
@@ -98,6 +114,29 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
             );
           },
         );
+  }
+
+  void _startLobbyCountdown(int durationSeconds) {
+    _countdownTimer?.cancel();
+    emit(
+      state.copyWith(
+        remainingSeconds: durationSeconds,
+      ),
+    );
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (state.status != QuizDuelStatus.countdown) {
+        timer.cancel();
+        return;
+      }
+      final current = state.remainingSeconds;
+      if (current <= 1) {
+        timer.cancel();
+        emit(state.copyWith(remainingSeconds: 0));
+      } else {
+        emit(state.copyWith(remainingSeconds: current - 1));
+      }
+    });
   }
 
   void _startQuestionCountdown(int durationSeconds) {
