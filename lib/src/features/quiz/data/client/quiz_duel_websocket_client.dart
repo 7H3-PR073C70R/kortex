@@ -42,6 +42,7 @@ class QuizDuelWebSocketClient {
   final Map<String, StreamController<QuizDuelMatch>> _matchControllers = {};
   final Map<String, QuizDuelMatch> _activeMatches = {};
   final Map<String, Timer> _roundTimers = {};
+  final Map<String, Timer> _transitionTimers = {};
   final Map<String, Timer> _aiActionTimers = {};
   final Map<String, Timer> _matchingTimers = {};
 
@@ -108,7 +109,7 @@ class QuizDuelWebSocketClient {
     String examBoard, {
     int count = 10,
   }) {
-    return [
+    final pool = [
       const QuizQuestionEntity(
         id: 'q1',
         prompt: 'What is the SI unit of electric potential difference?',
@@ -121,7 +122,7 @@ class QuizDuelWebSocketClient {
       ),
       const QuizQuestionEntity(
         id: 'q2',
-        prompt: 'In how many ways can the word MATHEMATICS be arranged?',
+        prompt: 'In how many ways can the letters of the word MATHEMATICS be arranged?',
         type: QuizQuestionType.multipleChoice,
         options: [
           '11!/(9! 2!)',
@@ -134,7 +135,90 @@ class QuizDuelWebSocketClient {
             "MATHEMATICS has 11 letters with 2 M's, 2 A's, and 2 T's.",
         subTopic: 'Permutations',
       ),
+      const QuizQuestionEntity(
+        id: 'q3',
+        prompt: 'Which organelle is known as the powerhouse of the eukaryotic cell?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Ribosome', 'Mitochondrion', 'Golgi apparatus', 'Lysosome'],
+        correctAnswer: 'Mitochondrion',
+        explanation:
+            'Mitochondria generate most of the chemical energy (ATP) needed by the cell.',
+        subTopic: 'Cell Biology',
+      ),
+      const QuizQuestionEntity(
+        id: 'q4',
+        prompt: 'Complete the sentence: The spokesman assured him that they were well disposed .... him.',
+        type: QuizQuestionType.multipleChoice,
+        options: ['to', 'towards', 'around', 'about'],
+        correctAnswer: 'towards',
+        explanation:
+            'The idiomatic preposition following "disposed" in this context is "towards" or "to".',
+        subTopic: 'Grammar',
+      ),
+      const QuizQuestionEntity(
+        id: 'q5',
+        prompt: 'What is the derivative of f(x) = x^3 - 4x + 7 with respect to x?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['3x^2 - 4', '3x^2 + 4', 'x^2 - 4', '3x^3 - 4'],
+        correctAnswer: '3x^2 - 4',
+        explanation:
+            'Using the power rule: d/dx(x^3) = 3x^2 and d/dx(-4x) = -4.',
+        subTopic: 'Calculus',
+      ),
+      const QuizQuestionEntity(
+        id: 'q6',
+        prompt: 'Which gas is evolved when zinc metal reacts with dilute hydrochloric acid?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Oxygen', 'Carbon dioxide', 'Hydrogen', 'Nitrogen'],
+        correctAnswer: 'Hydrogen',
+        explanation:
+            'Reactive metals react with acids to produce salt and hydrogen gas (Zn + 2HCl -> ZnCl2 + H2).',
+        subTopic: 'Inorganic Chemistry',
+      ),
+      const QuizQuestionEntity(
+        id: 'q7',
+        prompt: 'What is Newton’s Second Law of Motion represented as mathematically?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['F = m / a', 'F = m * a', 'F = m + a', 'F = 1/2 m v^2'],
+        correctAnswer: 'F = m * a',
+        explanation:
+            'Force equals mass times acceleration (F = ma).',
+        subTopic: 'Mechanics',
+      ),
+      const QuizQuestionEntity(
+        id: 'q8',
+        prompt: 'Which figure of speech is used in the phrase "the smiling sun"?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Metaphor', 'Personification', 'Simile', 'Hyperbole'],
+        correctAnswer: 'Personification',
+        explanation:
+            'Attributing human traits like "smiling" to a non-human object is personification.',
+        subTopic: 'Literary Devices',
+      ),
+      const QuizQuestionEntity(
+        id: 'q9',
+        prompt: 'What is the value of sin(30°) + cos(60°)?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['0.5', '1.0', '1.5', 'sqrt(3)/2'],
+        correctAnswer: '1.0',
+        explanation:
+            'sin(30°) = 0.5 and cos(60°) = 0.5. 0.5 + 0.5 = 1.0.',
+        subTopic: 'Trigonometry',
+      ),
+      const QuizQuestionEntity(
+        id: 'q10',
+        prompt: 'Which process converts glucose into pyruvate in cell respiration?',
+        type: QuizQuestionType.multipleChoice,
+        options: ['Glycolysis', 'Krebs cycle', 'Calvin cycle', 'Fermentation'],
+        correctAnswer: 'Glycolysis',
+        explanation:
+            'Glycolysis is the metabolic pathway that breaks down glucose into pyruvate.',
+        subTopic: 'Biochemistry',
+      ),
     ];
+
+    final targetCount = count.clamp(1, pool.length);
+    return pool.take(targetCount).toList();
   }
   bool _matchmakingListenerInitialized = false;
   final Set<String> _listenedDuelChannels = {};
@@ -789,10 +873,16 @@ class QuizDuelWebSocketClient {
   void _concludeRound(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null) return;
+
     if (current.status == QuizDuelStatus.roundSummary &&
         current.currentQuestionIndex == questionIndex) {
+      if (!(_transitionTimers[duelId]?.isActive ?? false)) {
+        _scheduleRoundTransition(duelId, questionIndex);
+      }
       return;
     }
+
+    _roundTimers[duelId]?.cancel();
 
     final updated = current.copyWith(status: QuizDuelStatus.roundSummary);
     _updateMatch(duelId, updated);
@@ -808,13 +898,20 @@ class QuizDuelWebSocketClient {
       },
     );
 
-    // Show round summary briefly (800ms for clear visual feedback), then proceed smoothly to next question
-    _roundTimers[duelId]?.cancel();
-    _roundTimers[duelId] = Timer(const Duration(milliseconds: 800), () {
+    _scheduleRoundTransition(duelId, questionIndex);
+  }
+
+  void _scheduleRoundTransition(String duelId, int questionIndex) {
+    _transitionTimers[duelId]?.cancel();
+    _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1500), () {
       final latest = _activeMatches[duelId];
-      if (latest == null || latest.currentQuestionIndex != questionIndex) {
+      if (latest == null) return;
+
+      if (latest.status != QuizDuelStatus.roundSummary ||
+          latest.currentQuestionIndex != questionIndex) {
         return;
       }
+
       final nextIdx = questionIndex + 1;
       if (nextIdx < latest.questions.length) {
         _startRound(duelId, nextIdx);
@@ -855,22 +952,60 @@ class QuizDuelWebSocketClient {
   Future<void> _submitQuizResultsToBackend(QuizDuelMatch match) async {
     final client = _effectiveDio;
     if (client == null || AppApiEndpoint.baseUri.isEmpty) return;
+
+    final p1Id = match.player1.userId;
+    final p2Id = match.player2?.userId;
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+
+    final validP1 = uuidRegex.hasMatch(p1Id) ? p1Id : null;
+    final validP2 = (p2Id != null && uuidRegex.hasMatch(p2Id)) ? p2Id : null;
+    final validWinner = (match.winnerUserId != null &&
+            uuidRegex.hasMatch(match.winnerUserId!))
+        ? match.winnerUserId
+        : null;
+    final validForfeit = (match.forfeitUserId != null &&
+            uuidRegex.hasMatch(match.forfeitUserId!))
+        ? match.forfeitUserId
+        : null;
+
     try {
       await client.post<dynamic>(
         '${AppApiEndpoint.baseUri}${AppApiEndpoint.submitQuizResultsRpc}',
         data: {
-          'duel_id': match.duelId,
-          'subject': match.subject,
-          'exam_board': match.examBoard,
-          'player1_id': match.player1.userId,
-          'player1_score': match.player1.score,
-          'player2_id': match.player2?.userId,
-          'player2_score': match.player2?.score ?? 0,
-          'winner_user_id': match.winnerUserId,
-          'is_draw': match.isDraw,
-          'completed_at': DateTime.now().toIso8601String(),
+          'p_duel_id': match.duelId,
+          'p_player1_id': validP1,
+          'p_player2_id': validP2,
+          'p_player1_score': match.player1.score,
+          'p_player2_score': match.player2?.score ?? 0,
+          'p_winner_id': validWinner,
+          'p_is_draw': match.isDraw,
+          'p_is_forfeit': match.forfeitUserId != null,
+          'p_forfeit_user_id': validForfeit,
         },
       );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 && validP1 != null) {
+        try {
+          await client.post<dynamic>(
+            '${AppApiEndpoint.baseUri}/rest/v1/quiz_duels',
+            data: {
+              'duel_id': match.duelId,
+              'subject': match.subject,
+              'exam_board': match.examBoard,
+              'player1_id': validP1,
+              'player2_id': ?validP2,
+              'player1_score': match.player1.score,
+              'player2_score': match.player2?.score ?? 0,
+              'winner_user_id': ?validWinner,
+              'is_draw': match.isDraw,
+              'is_forfeit': match.forfeitUserId != null,
+              'forfeit_user_id': ?validForfeit,
+            },
+          );
+        } on Object catch (_) {}
+      }
     } on Object catch (_) {}
   }
 
@@ -930,6 +1065,7 @@ class QuizDuelWebSocketClient {
   }) {
     _matchingTimers[duelId]?.cancel();
     _roundTimers[duelId]?.cancel();
+    _transitionTimers[duelId]?.cancel();
     _aiActionTimers[duelId]?.cancel();
     final current = _activeMatches[duelId];
     if (current != null) {
@@ -1035,6 +1171,10 @@ class QuizDuelWebSocketClient {
       timer.cancel();
     }
     _roundTimers.clear();
+    for (final timer in _transitionTimers.values) {
+      timer.cancel();
+    }
+    _transitionTimers.clear();
     for (final timer in _aiActionTimers.values) {
       timer.cancel();
     }

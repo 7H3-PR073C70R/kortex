@@ -134,7 +134,7 @@ class AppApiEndpoint {
   static const String generateDuelQuestionsRpc =
       '/rest/v1/rpc/generate_duel_questions';
   static const String submitQuizResultsRpc =
-      '/rest/v1/rpc/submit_quiz_results';
+      '/rest/v1/rpc/fn_process_quiz_duel_outcome';
   static const String quizzes = '/rest/v1/quizzes';
 
   // Planner & Exam Countdown Timetable

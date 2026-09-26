@@ -1,8 +1,7 @@
--- Migration: 20260925020000_create_nudge_study_circle_rpc.sql
--- RPC to nudge all other members of a study circle.
--- Inserts a notification row into public.notifications for every scholar in the pod except the sender.
+-- Migration: 20260926010000_fix_nudge_study_circle_rpc_category.sql
+-- Fixes notifications_category_check constraint failure in nudge_study_circle_rpc by using valid category 'room_invite'.
 
-CREATE OR REPLACE FUNCTION nudge_study_circle_rpc(
+CREATE OR REPLACE FUNCTION public.nudge_study_circle_rpc(
     p_circle_id UUID
 )
 RETURNS JSONB
@@ -46,7 +45,7 @@ BEGIN
         RAISE EXCEPTION 'You must be a member of this circle to nudge your pod';
     END IF;
 
-    -- Insert notifications for all other members in the pod
+    -- Insert notifications for all other members in the pod using valid 'room_invite' category
     FOR v_member IN
         SELECT user_id FROM study_circle_members
         WHERE circle_id = p_circle_id AND user_id <> v_sender_id
@@ -82,4 +81,3 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.nudge_study_circle_rpc(UUID) TO authenticated, anon, service_role;
 NOTIFY pgrst, 'reload schema';
-

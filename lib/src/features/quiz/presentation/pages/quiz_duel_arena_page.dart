@@ -1034,6 +1034,8 @@ class QuizDuelArenaPage extends HookWidget {
                           ),
                           const SizedBox(height: 10),
 
+                          const SizedBox(height: 10),
+
                           // A calm presence line: you can tell the rival is
                           // still in it without watching a number tick.
                           if (state.status == QuizDuelStatus.inRound)
@@ -1061,6 +1063,77 @@ class QuizDuelArenaPage extends HookWidget {
                                 ),
                               ],
                             ),
+
+                          if (state.status == QuizDuelStatus.roundSummary &&
+                              currentQuestion != null) ...[
+                            Builder(
+                              builder: (context) {
+                                final mySelection = state.selectedOptionIndex;
+                                final userHasSelected = mySelection != null;
+                                final isUserCorrect = userHasSelected &&
+                                    (currentQuestion.options.length > mySelection &&
+                                        currentQuestion.options[mySelection] ==
+                                            currentQuestion.correctAnswer);
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isUserCorrect
+                                        ? colors.success.withAlpha(isDark ? 50 : 25)
+                                        : userHasSelected
+                                            ? colors.error.withAlpha(isDark ? 50 : 25)
+                                            : colors.warning.withAlpha(isDark ? 50 : 25),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.micro,
+                                    ),
+                                    border: Border.all(
+                                      color: isUserCorrect
+                                          ? colors.success.withAlpha(120)
+                                          : userHasSelected
+                                              ? colors.error.withAlpha(120)
+                                              : colors.warning.withAlpha(120),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        isUserCorrect
+                                            ? Icons.check_circle_rounded
+                                            : userHasSelected
+                                                ? Icons.cancel_rounded
+                                                : Icons.access_time_filled_rounded,
+                                        size: 16,
+                                        color: isUserCorrect
+                                            ? colors.success
+                                            : userHasSelected
+                                                ? colors.error
+                                                : colors.warning,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        isUserCorrect
+                                            ? 'ROUND VERDICT • Correct Answer!'
+                                            : userHasSelected
+                                                ? 'ROUND VERDICT • Incorrect Answer'
+                                                : 'ROUND VERDICT • Time Expired',
+                                        style: typography.caption.bold.copyWith(
+                                          color: isUserCorrect
+                                              ? colors.success
+                                              : userHasSelected
+                                                  ? colors.error
+                                                  : colors.warning,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 10),
 
                           // Countdown Timer Progress Bar
@@ -1131,21 +1204,28 @@ class QuizDuelArenaPage extends HookWidget {
                                   final isRoundSummary =
                                       state.status ==
                                       QuizDuelStatus.roundSummary;
+                                  final isCorrectOption =
+                                      option == currentQuestion.correctAnswer;
 
-                                  // Round summary reuses the shared verdict
-                                  // states: the right answer pops green, your
-                                  // wrong pick shakes red, the rest dim out.
                                   final optionState = isRoundSummary
                                       ? McqOptionCard.resolveState(
                                           isSelected: isSelected,
                                           isAnswered: true,
-                                          isCorrect:
-                                              option ==
-                                              currentQuestion.correctAnswer,
+                                          isCorrect: isCorrectOption,
                                         )
                                       : (isSelected
                                             ? McqOptionState.selected
                                             : McqOptionState.idle);
+
+                                  final String? trailingLabel = isRoundSummary
+                                      ? (isSelected
+                                          ? (isCorrectOption
+                                              ? 'Your Answer'
+                                              : 'Your Pick')
+                                          : (isCorrectOption
+                                              ? 'Correct Answer'
+                                              : null))
+                                      : null;
 
                                   return QuizStaggeredFade(
                                     key: ValueKey(
@@ -1158,6 +1238,7 @@ class QuizDuelArenaPage extends HookWidget {
                                       optionText: option,
                                       index: index,
                                       state: optionState,
+                                      trailingLabel: trailingLabel,
                                       reduceMotion: reduceMotion,
                                       onTap: () {
                                         if (state.isMyAnswerLocked ||

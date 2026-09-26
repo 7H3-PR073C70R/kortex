@@ -311,6 +311,27 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
         final data = response.data ?? <String, dynamic>{};
         return Right(data);
       } on DioException catch (e) {
+        if (e.response?.statusCode == 404 && validP1 != null) {
+          try {
+            await dio.post<dynamic>(
+              '/rest/v1/quiz_duels',
+              data: {
+                'duel_id': match.duelId,
+                'subject': match.subject,
+                'exam_board': match.examBoard,
+                'player1_id': validP1,
+                if (validP2 != null) 'player2_id': validP2,
+                'player1_score': match.player1.score,
+                'player2_score': match.player2?.score ?? 0,
+                if (validWinner != null) 'winner_user_id': validWinner,
+                'is_draw': match.isDraw,
+                'is_forfeit': match.forfeitUserId != null,
+                if (validForfeit != null) 'forfeit_user_id': validForfeit,
+              },
+            );
+            return const Right(<String, dynamic>{'status': 'inserted_via_fallback'});
+          } on Object catch (_) {}
+        }
         return Left(
           ServerFailure(
             message:
