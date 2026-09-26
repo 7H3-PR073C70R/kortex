@@ -641,6 +641,27 @@ class QuizDuelWebSocketClient {
     );
   }
 
+  /// Calculates dynamic round duration based on question prompt length and LaTeX/math complexity.
+  static int calculateAdaptiveQuestionDuration(QuizQuestionEntity question) {
+    final promptLength = question.prompt.length;
+    final hasLatex = question.prompt.contains(r'\') ||
+        question.options.any((o) => o.contains(r'\')) ||
+        question.prompt.contains('^') ||
+        question.prompt.contains('_');
+    final topic = question.subTopic.toLowerCase();
+    final hasMathOrPhysics = topic.contains('math') ||
+        topic.contains('phys') ||
+        topic.contains('calc') ||
+        topic.contains('chem');
+
+    var duration = 15;
+    duration += ((promptLength / 50) * 3).round();
+    if (hasLatex) duration += 8;
+    if (hasMathOrPhysics) duration += 5;
+
+    return duration.clamp(15, 45);
+  }
+
   void _applyStartRoundLocally(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null || questionIndex >= current.questions.length) {
@@ -660,8 +681,12 @@ class QuizDuelWebSocketClient {
       questionIndex: questionIndex,
     );
 
+    final targetQuestion = current.questions[questionIndex];
+    final adaptiveSeconds = calculateAdaptiveQuestionDuration(targetQuestion);
+
     final updated = current.copyWith(
       currentQuestionIndex: questionIndex,
+      durationPerQuestionSeconds: adaptiveSeconds,
       status: QuizDuelStatus.inRound,
       player1: p1,
       player2: p2,
@@ -677,7 +702,7 @@ class QuizDuelWebSocketClient {
     // Schedule round timeout
     _roundTimers[duelId]?.cancel();
     _roundTimers[duelId] = Timer(
-      Duration(seconds: current.durationPerQuestionSeconds),
+      Duration(seconds: adaptiveSeconds),
       () {
         _onRoundTimeExpired(duelId, questionIndex);
       },
@@ -765,9 +790,10 @@ class QuizDuelWebSocketClient {
     final selectedText = (optionIndex >= 0 && optionIndex < q.options.length)
         ? q.options[optionIndex]
         : '';
-    final isCorrect = selectedText == q.correctAnswer;
+    final isCorrect = optionIndex >= 0 && selectedText == q.correctAnswer;
     final timeLimitMs = current.durationPerQuestionSeconds * 1000;
-    final remainingMs = max(0, timeLimitMs - responseTimeMs);
+    final clampedMs = responseTimeMs.clamp(400, timeLimitMs);
+    final remainingMs = max(0, timeLimitMs - clampedMs);
     final speedBonus = isCorrect
         ? ((remainingMs / timeLimitMs) * maxSpeedBonus).round()
         : 0;
@@ -780,7 +806,7 @@ class QuizDuelWebSocketClient {
       final streak = isCorrect ? current.player1.comboStreak + 1 : 0;
       updatedP1 = current.player1.copyWith(
         selectedOptionIndex: optionIndex,
-        answeredInMs: responseTimeMs,
+        answeredInMs: clampedMs,
         isAnswerCorrect: isCorrect,
         score: current.player1.score + earnedPoints,
         comboStreak: streak,
@@ -789,7 +815,7 @@ class QuizDuelWebSocketClient {
       final streak = isCorrect ? current.player2!.comboStreak + 1 : 0;
       updatedP2 = current.player2!.copyWith(
         selectedOptionIndex: optionIndex,
-        answeredInMs: responseTimeMs,
+        answeredInMs: clampedMs,
         isAnswerCorrect: isCorrect,
         score: current.player2!.score + earnedPoints,
         comboStreak: streak,
@@ -824,12 +850,13 @@ class QuizDuelWebSocketClient {
     int? earnedPoints;
     if (match != null && match.currentQuestion != null) {
       final q = match.currentQuestion!;
+      final timeLimitMs = match.durationPerQuestionSeconds * 1000;
+      final clampedMs = responseTimeMs.clamp(400, timeLimitMs);
       final selectedText = (optionIndex >= 0 && optionIndex < q.options.length)
           ? q.options[optionIndex]
           : '';
-      final isCorrect = selectedText == q.correctAnswer;
-      final timeLimitMs = match.durationPerQuestionSeconds * 1000;
-      final remainingMs = max(0, timeLimitMs - responseTimeMs);
+      final isCorrect = optionIndex >= 0 && selectedText == q.correctAnswer;
+      final remainingMs = max(0, timeLimitMs - clampedMs);
       final speedBonus = isCorrect
           ? ((remainingMs / timeLimitMs) * maxSpeedBonus).round()
           : 0;

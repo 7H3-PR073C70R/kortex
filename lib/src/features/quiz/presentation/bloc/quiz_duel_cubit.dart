@@ -111,7 +111,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
                     duelId: state.match!.duelId,
                     userId: state.currentUserId,
                     questionIndex: state.match!.currentQuestionIndex,
-                    optionIndex: state.selectedOptionIndex ?? 0,
+                    optionIndex: state.selectedOptionIndex ?? -1,
                     responseTimeMs: 15000,
                   );
                 }

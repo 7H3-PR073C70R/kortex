@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -917,117 +918,171 @@ class QuizDuelArenaPage extends HookWidget {
                                 ),
                               ),
                             ),
-                            child: Row(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                // My info
-                                Expanded(
-                                  child: Row(
-                                    children: [
-                                      AppAvatar(
-                                        name: myPlayer.displayName,
-                                        customDimension: 36,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
+                                Row(
+                                  children: [
+                                    // My info
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          AppAvatar(
+                                            name: myPlayer.displayName,
+                                            customDimension: 36,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  myPlayer.displayName,
+                                                  style: typography.caption.bold,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  '${myPlayer.score} pts',
+                                                  style: typography.body.bold
+                                                      .copyWith(
+                                                        color: colors.primary,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          if (myPlayer.comboStreak > 1)
                                             Text(
-                                              myPlayer.displayName,
+                                              '🔥x${myPlayer.comboStreak}',
                                               style: typography.caption.bold,
-                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            Text(
-                                              '${myPlayer.score} pts',
-                                              style: typography.body.bold
-                                                  .copyWith(
-                                                    color: colors.primary,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
+                                        ],
                                       ),
-                                      if (myPlayer.comboStreak > 1)
-                                        Text(
-                                          '🔥x${myPlayer.comboStreak}',
-                                          style: typography.caption.bold,
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                // VS Center Badge
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
-                                  child: Text(
-                                    'VS',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.textSecondary,
                                     ),
-                                  ),
-                                ),
-                                // Opponent info
-                                Expanded(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      if (opponent.comboStreak > 1)
-                                        Text(
-                                          '🔥x${opponent.comboStreak}',
-                                          style: typography.caption.bold,
+                                    // VS Center Badge
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: Text(
+                                        'VS',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.textSecondary,
                                         ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
+                                      ),
+                                    ),
+                                    // Opponent info
+                                    Expanded(
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          if (opponent.comboStreak > 1)
                                             Text(
-                                              opponent.displayName,
+                                              '🔥x${opponent.comboStreak}',
                                               style: typography.caption.bold,
-                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            Text(
-                                              '${opponent.score} pts',
-                                              style: typography.body.bold
-                                                  .copyWith(
-                                                    color: colors.secondary,
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  opponent.displayName,
+                                                  style: typography.caption.bold,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  '${opponent.score} pts',
+                                                  style: typography.body.bold
+                                                      .copyWith(
+                                                        color: colors.secondary,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          AnimatedContainer(
+                                            duration: AppMotion.snappy,
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border: rivalLocked
+                                                  ? Border.all(
+                                                      color: colors.success,
+                                                      width: 2,
+                                                    )
+                                                  : null,
+                                              boxShadow: rivalLocked
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: colors.success.withAlpha(140),
+                                                        blurRadius: 8,
+                                                        spreadRadius: 1,
+                                                      ),
+                                                    ]
+                                                  : null,
+                                            ),
+                                            child: AppAvatar(
+                                              name: opponent.displayName,
+                                              customDimension: 36,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                // Live Tug-of-War Score Gauge Bar
+                                Builder(
+                                  builder: (_) {
+                                    final p1Pts = myPlayer.score;
+                                    final p2Pts = opponent.score;
+                                    final totalPts = max(1, p1Pts + p2Pts);
+                                    final p1Share = (p1Pts / totalPts).clamp(0.08, 0.92);
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                                      child: SizedBox(
+                                        height: 5,
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              flex: (p1Share * 100).round(),
+                                              child: AnimatedContainer(
+                                                duration: AppMotion.snappy,
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      colors.primary,
+                                                      colors.primary.withAlpha(200),
+                                                    ],
                                                   ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 2),
+                                            Expanded(
+                                              flex: ((1 - p1Share) * 100).round(),
+                                              child: AnimatedContainer(
+                                                duration: AppMotion.snappy,
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      colors.secondary.withAlpha(200),
+                                                      colors.secondary,
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
-                                      AnimatedContainer(
-                                        duration: AppMotion.snappy,
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: rivalLocked
-                                              ? Border.all(
-                                                  color: colors.success,
-                                                  width: 2,
-                                                )
-                                              : null,
-                                          boxShadow: rivalLocked
-                                              ? [
-                                                  BoxShadow(
-                                                    color: colors.success.withAlpha(140),
-                                                    blurRadius: 8,
-                                                    spreadRadius: 1,
-                                                  ),
-                                                ]
-                                              : null,
-                                        ),
-                                        child: AppAvatar(
-                                          name: opponent.displayName,
-                                          customDimension: 36,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
