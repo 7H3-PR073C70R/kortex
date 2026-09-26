@@ -176,8 +176,25 @@ abstract class CommunityRepository {
   /// Clones a community shared deck into user's private decks and flashcards.
   Future<Either<Failure, DeckEntity>> cloneSharedDeck(String sharedDeckId);
 
+  /// Rates a community shared deck.
+  Future<Either<Failure, bool>> rateSharedDeck({
+    required String sharedDeckId,
+    required double rating,
+  });
+
+  /// Toggles bookmark state for a community shared deck.
+  Future<Either<Failure, bool>> toggleBookmarkSharedDeck(String sharedDeckId);
+
+  /// Retrieves bookmarked shared deck IDs.
+  Future<Either<Failure, List<String>>> getBookmarkedSharedDeckIds();
+
   /// Streams leaderboard rankings across tracks in real time.
   Stream<List<LeaderboardEntryEntity>> streamLeaderboards({String? track});
+
+  /// Claims weekly XP via backend RPC.
+  Future<Either<Failure, Map<String, dynamic>>> claimWeeklyXp({
+    required int xpAmount,
+  });
 
   /// Fetches snapshot of leaderboard rankings.
   Future<Either<Failure, List<LeaderboardEntryEntity>>> fetchLeaderboards({

@@ -1280,17 +1280,18 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         ? '🎯 Micro-Goal Achieved: "$goal" (+50 XP) 🔥'
         : '💪 Good progress on: "$goal". Next round awaits!';
     final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
+    final reactionEmoji = completed ? '🎉' : '👏';
 
     emit(
       state.copyWith(
         isGoalAchieved: completed,
         showGoalVerificationModal: false,
         recentActivityTicker: updatedTicker,
-        lastReactionEmoji: completed ? '🎉' : '👏',
+        lastReactionEmoji: reactionEmoji,
       ),
     );
 
-    sendChatMessage(tickerMsg, isReaction: true);
+    sendChatMessage(reactionEmoji, isReaction: true);
   }
 
   void dismissGoalVerification() {

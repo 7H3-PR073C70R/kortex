@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -97,6 +98,13 @@ class MockLiveKitAudioService implements LiveKitAudioService {
   @override
   Future<bool> openAppSettings() async => true;
 
+  @override
+  Future<bool> setCloudRecordingEnabled({required bool enabled}) async => true;
+
+  @override
+  Future<String> generateSessionTranscriptSummary({required String roomId}) async =>
+      'Summary of test room';
+
   void simulateHardwareMicState({required bool enabled}) {
     _isMicEnabled = enabled;
     if (!_micStateController.isClosed) {
@@ -172,6 +180,10 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
       const Stream.empty();
 
   @override
+  Stream<String> watchWhiteboardUndo(String roomId) =>
+      const Stream.empty();
+
+  @override
   Stream<void> watchWhiteboardClear(String roomId) => const Stream.empty();
 
   final List<RoomChatMessage> sentChatMessages = [];
@@ -217,6 +229,19 @@ class MockCommunityRepository implements CommunityRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers.global'),
+      (call) async => null,
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers'),
+      (call) async => null,
+    );
+  });
 
   late MockLiveKitAudioService mockAudioService;
   late MockEphemeralRoomRepository mockEphemeralRepo;
@@ -363,7 +388,8 @@ void main() {
     test(
       'toggleMicMute when audioService returns false sets microphonePermissionDenied to true',
       () async {
-        mockAudioService.shouldSucceedSetMic = false;
+        mockAudioService..shouldSucceedSetMic = false
+        ..requestPermissionResult = false;
         final cubit = LiveRoomCubit(
           initialRoom: testRoom,
           repository: mockCommunityRepo,

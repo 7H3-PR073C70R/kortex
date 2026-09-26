@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:dio/dio.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 
@@ -11,14 +14,27 @@ class QuizDuelWebSocketClient {
     RealtimeClient? realtimeClient,
     Random? random,
     Duration? matchmakingTimeout,
+    Dio? dio,
   }) : _realtimeClient = realtimeClient ?? RealtimeClient.instance,
        _random = random ?? Random(),
-       matchmakingTimeout = matchmakingTimeout ?? defaultMatchmakingTimeout;
+       matchmakingTimeout = matchmakingTimeout ?? defaultMatchmakingTimeout,
+       _dio = dio;
   static const Duration defaultMatchmakingTimeout = Duration(minutes: 2);
   final Duration matchmakingTimeout;
 
   final RealtimeClient _realtimeClient;
   final Random _random;
+  final Dio? _dio;
+
+  Dio? get _effectiveDio {
+    if (_dio != null) return _dio;
+    try {
+      if (locator.isRegistered<Dio>()) {
+        return locator<Dio>();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
 
   /// Supabase Realtime client reference
   RealtimeClient get realtimeClient => _realtimeClient;
@@ -33,6 +49,58 @@ class QuizDuelWebSocketClient {
   static const int baseCorrectPoints = 100;
   static const int maxSpeedBonus = 50;
   static const int defaultQuestionTimeSeconds = 15;
+
+  /// Returns dynamic question bank from backend RPC, falling back to local questions if offline.
+  Future<List<QuizQuestionEntity>> fetchRemoteDuelQuestions(
+    String subject,
+    String examBoard, {
+    int count = 10,
+  }) async {
+    final client = _effectiveDio;
+    if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
+      try {
+        final response = await client.post<dynamic>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateDuelQuestionsRpc}',
+          data: {
+            'subject': subject,
+            'exam_board': examBoard,
+            'count': count,
+          },
+        );
+        if (response.statusCode == 200 && response.data is List) {
+          final rawList = response.data as List<dynamic>;
+          if (rawList.isNotEmpty) {
+            return rawList.map((item) {
+              final map = item as Map<String, dynamic>;
+              return QuizQuestionEntity(
+                id: map['id']?.toString() ?? 'q_${Random().nextInt(99999)}',
+                prompt:
+                    map['prompt']?.toString() ??
+                    map['question']?.toString() ??
+                    '',
+                type: QuizQuestionType.multipleChoice,
+                options:
+                    (map['options'] as List<dynamic>?)
+                        ?.map((e) => e.toString())
+                        .toList() ??
+                    const [],
+                correctAnswer:
+                    map['correct_answer']?.toString() ??
+                    map['answer']?.toString() ??
+                    '',
+                explanation: map['explanation']?.toString() ?? '',
+                subTopic:
+                    map['sub_topic']?.toString() ??
+                    map['topic']?.toString() ??
+                    subject,
+              );
+            }).toList();
+          }
+        }
+      } on Object catch (_) {}
+    }
+    return getDefaultDuelQuestions(subject, examBoard, count: count);
+  }
 
   /// Returns default question bank when dynamic question loading is not active.
   static List<QuizQuestionEntity> getDefaultDuelQuestions(
@@ -373,7 +441,7 @@ class QuizDuelWebSocketClient {
         'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
     final questions = (customQuestions != null && customQuestions.isNotEmpty)
         ? customQuestions
-        : getDefaultDuelQuestions(subject, examBoard, count: questionCount);
+        : await fetchRemoteDuelQuestions(subject, examBoard, count: questionCount);
 
     final player1 = QuizDuelParticipant(
       userId: userId,
@@ -781,6 +849,29 @@ class QuizDuelWebSocketClient {
     );
 
     _updateMatch(duelId, finished);
+    unawaited(_submitQuizResultsToBackend(finished));
+  }
+
+  Future<void> _submitQuizResultsToBackend(QuizDuelMatch match) async {
+    final client = _effectiveDio;
+    if (client == null || AppApiEndpoint.baseUri.isEmpty) return;
+    try {
+      await client.post<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.submitQuizResultsRpc}',
+        data: {
+          'duel_id': match.duelId,
+          'subject': match.subject,
+          'exam_board': match.examBoard,
+          'player1_id': match.player1.userId,
+          'player1_score': match.player1.score,
+          'player2_id': match.player2?.userId,
+          'player2_score': match.player2?.score ?? 0,
+          'winner_user_id': match.winnerUserId,
+          'is_draw': match.isDraw,
+          'completed_at': DateTime.now().toIso8601String(),
+        },
+      );
+    } on Object catch (_) {}
   }
 
   void _applyEmoteLocally({

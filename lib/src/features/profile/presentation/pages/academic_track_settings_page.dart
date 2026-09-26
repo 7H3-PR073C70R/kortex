@@ -22,6 +22,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/fsrs_parameter_tuning_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
@@ -195,6 +196,91 @@ class AcademicTrackSettingsPage extends HookWidget {
                         AppFeedback.selection();
                         retentionBenchmark.value = val;
                       },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 2b. Advanced FSRS & Reminder Tuning Entry
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6, bottom: 8),
+                      child: Text(
+                        'ADVANCED ALGORITHM & REMINDERS',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textSecondary.withAlpha(170),
+                          fontSize: 11,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.005 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: Curves.easeOutCubic,
+                          child: child,
+                        );
+                      },
+                      child: ShrinkableButton(
+                        onTap: () {
+                          AppFeedback.light();
+                          unawaited(FsrsParameterTuningSheet.show(context));
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceSecondary,
+                            borderRadius: AppRadius.radiusCard,
+                            border: Border.all(
+                              color: colors.surfaceBorder.withAlpha(60),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(30),
+                                  borderRadius: AppRadius.radiusBadge,
+                                ),
+                                child: Icon(
+                                  Icons.tune_rounded,
+                                  color: colors.primary,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'FSRS Tuning & Daily Reminders',
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Calibrate desired retention, request interval optimization, and schedule daily review reminders.',
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: colors.textSecondary,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 28),
 
@@ -562,20 +648,58 @@ class AcademicTrackSettingsPage extends HookWidget {
                         ],
                       ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: StatefulBuilder(
+                        builder: (ctx, setSheetState) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                onChanged: (q) => setSheetState(() {}),
+                                decoration: InputDecoration(
+                                  hintText: 'Search exam track, university, or department...',
+                                  hintStyle: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    color: colors.textSecondary,
+                                    size: 18,
+                                  ),
+                                  filled: true,
+                                  fillColor: colors.surfaceSecondary,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: AppRadius.radiusCard,
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
                     Divider(
                       height: 1,
                       color: colors.surfaceBorder.withAlpha(60),
                     ),
                     Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        itemCount: tracks.length,
-                        itemBuilder: (context, index) {
-                          final track = tracks[index];
-                          final isSelected = selectedTrack.value == track.id;
+                      child: StatefulBuilder(
+                        builder: (ctx, setListState) {
+                          return ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            itemCount: tracks.length,
+                            itemBuilder: (context, index) {
+                              final track = tracks[index];
+                              final isSelected = selectedTrack.value == track.id;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: PlatformHoverBuilder(
@@ -702,8 +826,10 @@ class AcademicTrackSettingsPage extends HookWidget {
                             ),
                           );
                         },
-                      ),
-                    ),
+                      );
+                    },
+                  ),
+                ),
                   ],
                 ),
               ),

@@ -21,9 +21,11 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness_gauge_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/curated_course_carousel.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
@@ -534,7 +536,27 @@ class _CompactDashboardLayout extends StatelessWidget {
                 _StudyCirclePodPulseCard(targetTrack: targetTrack),
                 const SizedBox(height: 16),
 
-                // 7. Retention Heat Map & Mastery Stats
+                // 7. CBT Readiness Score Progress Gauge
+                CbtReadinessGaugeCard(
+                  readinessResult: const CbtReadinessCalculator().compute(
+                    syllabusCoverage:
+                        (feed.analyticsSummary.overallRetentionRate * 0.95)
+                            .clamp(0.0, 1.0),
+                    fsrsRetentionRate:
+                        feed.analyticsSummary.overallRetentionRate,
+                    mockScoreRatio:
+                        (feed.analyticsSummary.overallRetentionRate * 0.90)
+                            .clamp(0.0, 1.0),
+                    daysRemaining: 14,
+                  ),
+                  examTitle: (targetTrack ?? '').trim().isNotEmpty
+                      ? targetTrack!
+                      : 'Standardized CBT Track',
+                  daysRemaining: 14,
+                ),
+                const SizedBox(height: 16),
+
+                // 8. Retention Heat Map & Mastery Stats
                 RetentionHeatMapWidget(analytics: feed.analyticsSummary),
               ]
               .animate(interval: 80.ms)

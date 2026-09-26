@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -11,6 +13,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -898,6 +901,15 @@ class SecuritySettingsPage extends HookWidget {
                   colors: colors,
                   typography: typography,
                 ),
+                const Divider(height: 1),
+                _buildExportOption(
+                  icon: Icons.download_for_offline_outlined,
+                  title: 'Export Account Data (GDPR JSON Bundle)',
+                  subtitle: 'Download complete structured JSON archive of all study progress',
+                  onTap: () => _exportGdprDataBundle(context),
+                  colors: colors,
+                  typography: typography,
+                ),
               ],
             ),
           ),
@@ -1277,6 +1289,86 @@ class SecuritySettingsPage extends HookWidget {
         },
       ),
     );
+  }
+
+  Future<void> _exportGdprDataBundle(BuildContext context) async {
+    AppFeedback.medium();
+    final userProfile = locator.isRegistered<AuthBloc>()
+        ? locator<AuthBloc>().state.userProfile
+        : null;
+    final user = locator.isRegistered<AuthBloc>()
+        ? locator<AuthBloc>().state.user
+        : null;
+
+    final analyticsSummary = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>().getAnalyticsSummary()
+        : null;
+    final heatMapData = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>().getHeatMapData()
+        : null;
+
+    var decks = <DeckEntity>[];
+    if (locator.isRegistered<GetUserDecksUseCase>()) {
+      final decksRes = await locator<GetUserDecksUseCase>()();
+      decksRes.fold((_) {}, (list) => decks = list);
+    }
+
+    final dataBundle = {
+      'export_metadata': {
+        'format': 'Kortex GDPR Data Export',
+        'version': '1.0',
+        'exported_at': DateTime.now().toIso8601String(),
+      },
+      'profile': {
+        'id': user?.id ?? userProfile?.id,
+        'email': user?.email ?? userProfile?.email,
+        'displayName': userProfile?.displayName ?? user?.displayName,
+        'targetTrack': userProfile?.targetTrack,
+        'dailyCardTarget': userProfile?.dailyCardTarget,
+        'streakDays': userProfile?.streakDays,
+        'level': userProfile?.level,
+        'isPro': userProfile?.isPro,
+      },
+      'study_analytics': analyticsSummary != null
+          ? {
+              'weeklyMinutesStudied': analyticsSummary.weeklyMinutesStudied,
+              'totalCardsMastered': analyticsSummary.totalCardsMastered,
+              'overallRetentionRate': analyticsSummary.overallRetentionRate,
+              'currentStreakDays': analyticsSummary.currentStreakDays,
+              'xpPoints': analyticsSummary.xpPoints,
+              'academicRank': analyticsSummary.academicRank,
+            }
+          : null,
+      'heat_map_activity': heatMapData
+          ?.map((h) => {
+                'dateIso': h.dateIso,
+                'cardsReviewed': h.cardsReviewed,
+                'minutesStudied': h.minutesStudied,
+                'intensityLevel': h.intensityLevel,
+              })
+          .toList(),
+      'decks_count': decks.length,
+      'decks': decks
+          .map((d) => {
+                'id': d.id,
+                'title': d.title,
+                'subject': d.subject,
+                'totalCards': d.totalCards,
+                'dueCards': d.dueCards,
+                'masteryRate': d.masteryRate,
+              })
+          .toList(),
+    };
+
+    final jsonString = const JsonEncoder.withIndent('  ').convert(dataBundle);
+    await Clipboard.setData(ClipboardData(text: jsonString));
+
+    if (context.mounted) {
+      context.showSnackBar(
+        message: 'GDPR Data Bundle copied to Clipboard (${jsonString.length} bytes)',
+        type: SnackBarType.success,
+      );
+    }
   }
 
   Future<void> _exportDeckFlow(BuildContext context) async {

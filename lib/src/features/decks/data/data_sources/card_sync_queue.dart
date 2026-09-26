@@ -288,13 +288,45 @@ class CardSyncQueue {
           return p;
         }).toList();
 
-        try {
-          await _dio.post<dynamic>(
-            '${AppApiEndpoint.baseUri}/rest/v1/rpc/upsert_fsrs_review_batch',
-            data: {'reviews': payload},
-            options: Options(headers: headers),
-          );
+        var retryCount = 0;
+        var batchSynced = false;
+        while (retryCount < 3 && !batchSynced) {
+          try {
+            await _dio.post<dynamic>(
+              '${AppApiEndpoint.baseUri}/rest/v1/rpc/upsert_fsrs_review_batch',
+              data: {'reviews': payload},
+              options: Options(headers: headers),
+            );
+            batchSynced = true;
+          } on Object catch (_) {
+            retryCount++;
+            if (retryCount < 3) {
+              await Future<void>.delayed(
+                Duration(milliseconds: 500 * (1 << retryCount)),
+              );
+            } else {
+              try {
+                await _dio.post<dynamic>(
+                  '${AppApiEndpoint.baseUri}/rest/v1/study_review_logs',
+                  data: payload,
+                  options: Options(
+                    headers: {
+                      ...headers,
+                      'Prefer': 'resolution=merge-duplicates',
+                    },
+                  ),
+                );
+                batchSynced = true;
+              } on Object catch (fallbackErr) {
+                debugPrint(
+                  '[CardSyncQueue] Direct upsert fallback error: $fallbackErr',
+                );
+              }
+            }
+          }
+        }
 
+        if (batchSynced) {
           for (final syncedLog in batch) {
             final index = _inMemoryLogBuffer.indexWhere(
               (l) => l.transactionUuid == syncedLog.transactionUuid,
@@ -316,54 +348,10 @@ class CardSyncQueue {
               );
             }
           }
-
           syncedCount += batch.length;
           debugPrint(
-            '[CardSyncQueue] Idempotent RPC synced batch of '
-            '${batch.length} logs.',
+            '[CardSyncQueue] Idempotent RPC synced batch of ${batch.length} logs.',
           );
-        } on Object catch (rpcErr) {
-          debugPrint('[CardSyncQueue] RPC sync failed: $rpcErr');
-
-          try {
-            await _dio.post<dynamic>(
-              '${AppApiEndpoint.baseUri}/rest/v1/study_review_logs',
-              data: payload,
-              options: Options(
-                headers: {
-                  ...headers,
-                  'Prefer': 'resolution=merge-duplicates',
-                },
-              ),
-            );
-            for (final syncedLog in batch) {
-              final index = _inMemoryLogBuffer.indexWhere(
-                (l) => l.transactionUuid == syncedLog.transactionUuid,
-              );
-              if (index != -1) {
-                _inMemoryLogBuffer[index] = FsrsReviewLog(
-                  id: syncedLog.id,
-                  transactionUuid: syncedLog.transactionUuid,
-                  cardId: syncedLog.cardId,
-                  rating: syncedLog.rating,
-                  stability: syncedLog.stability,
-                  difficulty: syncedLog.difficulty,
-                  elapsedDays: syncedLog.elapsedDays,
-                  scheduledDays: syncedLog.scheduledDays,
-                  reviewedAtUtc: syncedLog.reviewedAtUtc,
-                  reviewedAtEpoch: syncedLog.reviewedAtEpoch,
-                  state: syncedLog.state,
-                  isSynced: true,
-                );
-              }
-            }
-            syncedCount += batch.length;
-          } on Object catch (fallbackErr) {
-            debugPrint(
-              '[CardSyncQueue] Direct upsert fallback error: $fallbackErr',
-            );
-            break;
-          }
         }
       }
       await _persistLogs();

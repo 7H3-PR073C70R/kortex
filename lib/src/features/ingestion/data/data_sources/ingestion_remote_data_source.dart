@@ -40,6 +40,12 @@ abstract class IngestionRemoteDataSource {
 
   Future<List<OcrExtractionModel>> fetchExtractedSnippets(String documentId);
 
+  Future<String> transcribeAudio({
+    required Uint8List audioBytes,
+    required String filename,
+    void Function(double progress)? onProgress,
+  });
+
   Future<List<DocumentUploadModel>> fetchUserDocuments();
   Future<void> deleteDocument(String documentId);
   void cacheDocumentBytes(

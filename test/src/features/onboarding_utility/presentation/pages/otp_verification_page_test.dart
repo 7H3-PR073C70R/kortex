@@ -64,7 +64,7 @@ void main() {
           const OtpVerificationPage(email: 'scholar@kortex.ai'),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Check your inbox'), findsOneWidget);
       expect(
@@ -87,7 +87,7 @@ void main() {
           const OtpVerificationPage(email: 'scholar@kortex.ai'),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Resend in 45s'), findsOneWidget);
     });
@@ -104,7 +104,7 @@ void main() {
           const OtpVerificationPage(email: 'scholar@kortex.ai'),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Resend Code'), findsOneWidget);
     });

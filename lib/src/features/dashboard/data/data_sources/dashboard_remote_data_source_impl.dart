@@ -664,6 +664,28 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     );
   }
 
+  @override
+  Future<AnalyticsSummaryModel> getDashboardAnalyticsSummary() async {
+    try {
+      return await _client.getDashboardAnalyticsSummary();
+    } on Object catch (_) {
+      final liveAnalytics = _userActivityService?.getAnalyticsSummary();
+      if (liveAnalytics != null) {
+        return liveAnalytics;
+      }
+      return AnalyticsSummaryModel(
+        currentStreakDays: 0,
+        longestStreakDays: 0,
+        weeklyMinutesStudied: 0,
+        overallRetentionRate: 0,
+        totalCardsMastered: 0,
+        heatMapData: _generateEmptyHeatMap(),
+        xpPoints: 0,
+        academicRank: 'Neural Scholar I',
+      );
+    }
+  }
+
   DashboardFeedModel _generateFallbackFeedModel(
     AnalyticsSummaryModel? liveAnalytics, {
     List<StudyDeckModel>? fallbackDecks,

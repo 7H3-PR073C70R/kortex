@@ -26,7 +26,7 @@ class App extends StatefulWidget {
   State<App> createState() => _AppState();
 }
 
-class _AppState extends State<App> {
+class _AppState extends State<App> with WidgetsBindingObserver {
   late final AppRouter _appRouter;
   late final RouterConfig<UrlState> _routerConfig;
   StreamSubscription<String>? _sessionExpiredSubscription;
@@ -35,6 +35,7 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _appRouter = locator<AppRouter>();
     _routerConfig = _appRouter.config(
       reevaluateListenable: ReevaluateListenable.stream(
@@ -186,7 +187,17 @@ class _AppState extends State<App> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (locator.isRegistered<AuthBloc>()) {
+        locator<AuthBloc>().add(const AuthAppResumed());
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_sessionExpiredSubscription?.cancel());
     unawaited(_notificationPayloadSubscription?.cancel());
     super.dispose();

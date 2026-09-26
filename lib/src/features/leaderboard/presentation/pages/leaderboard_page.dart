@@ -362,8 +362,9 @@ class _FilterSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
-              'FILTER BY LEAGUE',
+              'FILTER BY LEAGUE TIER',
               style: t.caption.bold.copyWith(
                 color: c.textSecondary.withAlpha(170),
                 fontSize: 11,
@@ -412,6 +413,43 @@ class _FilterSheet extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'REGION & ACADEMIC SCOPE',
+              style: t.caption.bold.copyWith(
+                color: c.textSecondary.withAlpha(170),
+                fontSize: 11,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: const ['Global Cohort', 'Regional / National', 'University Department']
+                  .map((scope) {
+                final isSelected = scope == 'Global Cohort';
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? c.primary.withAlpha(25)
+                        : c.surfaceSecondary,
+                    borderRadius: AppRadius.radiusCard,
+                    border: Border.all(
+                      color: isSelected ? c.primary : c.surfaceBorder,
+                    ),
+                  ),
+                  child: Text(
+                    scope,
+                    style: t.caption.bold.copyWith(
+                      color: isSelected ? c.primary : c.textSecondary,
+                      fontSize: 12,
                     ),
                   ),
                 );

@@ -249,6 +249,26 @@ class MockCommunityRepository implements CommunityRepository {
   Future<Either<Failure, bool>> toggleBookmarkForumPost(String postId) async =>
       const Right(true);
 
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> claimWeeklyXp({
+    required int xpAmount,
+  }) async => const Right({});
+
+  @override
+  Future<Either<Failure, List<String>>> getBookmarkedSharedDeckIds() async =>
+      const Right([]);
+
+  @override
+  Future<Either<Failure, bool>> rateSharedDeck({
+    required String sharedDeckId,
+    required double rating,
+  }) async => const Right(true);
+
+  @override
+  Future<Either<Failure, bool>> toggleBookmarkSharedDeck(
+    String sharedDeckId,
+  ) async => const Right(true);
+
   Future<void> dispose() async {
     await _roomController.close();
   }
@@ -279,6 +299,13 @@ class MockLiveKitAudioService implements LiveKitAudioService {
   @override
   Stream<LiveAudioConnectionState> get connectionStateStream =>
       _connController.stream;
+
+  @override
+  Future<bool> setCloudRecordingEnabled({required bool enabled}) async => true;
+
+  @override
+  Future<String> generateSessionTranscriptSummary({required String roomId}) async =>
+      'Summary of test room';
 
   @override
   Future<void> connect({

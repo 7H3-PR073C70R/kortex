@@ -43,6 +43,7 @@ class LocalLlmCapacityPromptModalSheet extends StatefulWidget {
 
 class _LocalLlmCapacityPromptModalSheetState
     extends State<LocalLlmCapacityPromptModalSheet> {
+  int _selectedModelIndex = 0;
   // ignore: use_late_for_private_fields_and_variables - report is null until audit completes
   DeviceCapabilityReport? _report;
   bool _isLoadingReport = true;
@@ -212,7 +213,101 @@ class _LocalLlmCapacityPromptModalSheetState
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+
+              // Model Choice Cards
+              Row(
+                children: [
+                  Expanded(
+                    child: ShrinkableButton(
+                      onTap: () => setState(() => _selectedModelIndex = 0),
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _selectedModelIndex == 0
+                              ? colors.primary.withAlpha(isDark ? 40 : 20)
+                              : colors.surfaceSecondary,
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: _selectedModelIndex == 0
+                                ? colors.primary
+                                : colors.surfaceBorder.withAlpha(60),
+                            width: _selectedModelIndex == 0 ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'TinyLlama 1.1B',
+                              style: typography.caption.bold.copyWith(
+                                color: _selectedModelIndex == 0
+                                    ? colors.primary
+                                    : colors.textPrimary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '248 MB • Fast & Lightweight',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ShrinkableButton(
+                      onTap: () => setState(() => _selectedModelIndex = 1),
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _selectedModelIndex == 1
+                              ? colors.primary.withAlpha(isDark ? 40 : 20)
+                              : colors.surfaceSecondary,
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: _selectedModelIndex == 1
+                                ? colors.primary
+                                : colors.surfaceBorder.withAlpha(60),
+                            width: _selectedModelIndex == 1 ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Gemma 2B',
+                              style: typography.caption.bold.copyWith(
+                                color: _selectedModelIndex == 1
+                                    ? colors.primary
+                                    : colors.textPrimary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '1.2 GB • Deep STEM Reasoning',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
 
               // Device Capability Audit Box
               Container(

@@ -9,6 +9,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/notification_background_handler.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
@@ -533,6 +534,42 @@ class NotificationService {
         'NotificationService: failed to cancel study reminder: $e',
       );
     }
+  }
+
+  /// Calculates peak study hours from user's historical study sessions
+  /// and schedules a smart daily reminder at their optimal retention window.
+  Future<void> schedulePeakRetentionSmartReminder({
+    required int defaultHour,
+    required int defaultMinute,
+  }) async {
+    var computedHour = defaultHour;
+    try {
+      if (locator.isRegistered<UserActivityService>()) {
+        final activity = locator<UserActivityService>();
+        final summary = activity.getAnalyticsSummary();
+        if (summary.heatMapData.isNotEmpty) {
+          final bestDay = summary.heatMapData
+              .reduce((a, b) => a.intensityLevel > b.intensityLevel ? a : b);
+          if (bestDay.intensityLevel > 0) {
+            final dt = DateTime.tryParse(bestDay.dateIso);
+            if (dt != null) {
+              computedHour = dt.hour == 0 ? 19 : dt.hour;
+            }
+          }
+        }
+      }
+    } on Object catch (_) {}
+    final targetHour = computedHour;
+    final targetMinute = defaultMinute;
+
+    await scheduleStudyReminder(
+      hour: targetHour,
+      minute: targetMinute,
+      title: 'Optimal Study Window 🧠',
+      body:
+          'Your peak retention window is active. Solve a session to lock in memory!',
+      payload: '/decks',
+    );
   }
 
   // ── Local Permissions ────────────────────────────────────────────────────────

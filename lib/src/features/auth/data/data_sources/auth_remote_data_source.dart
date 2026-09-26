@@ -22,4 +22,5 @@ abstract class AuthRemoteDataSource {
     bool isOnboarded = true,
   });
   Future<List<CourseTrackModel>> fetchCourseTracks();
+  Future<UserModel> refreshSession(String refreshToken);
 }

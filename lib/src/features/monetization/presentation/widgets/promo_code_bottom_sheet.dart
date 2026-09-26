@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/monetization/data/datasources/promo_code_remote_data_source.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 
@@ -42,7 +48,7 @@ class PromoCodeBottomSheet extends HookWidget {
     final errorMessage = useState<String?>(null);
     final successMessage = useState<String?>(null);
 
-    void redeemCode() {
+    Future<void> redeemCode() async {
       final code = codeController.text.trim().toUpperCase();
       if (code.isEmpty) {
         errorMessage.value = 'Please enter a voucher or promo code.';
@@ -53,18 +59,52 @@ class PromoCodeBottomSheet extends HookWidget {
       isValidating.value = true;
       errorMessage.value = null;
 
-      // Validate standard or institutional codes
+      try {
+        if (locator.isRegistered<PromoCodeRemoteDataSource>()) {
+          final remote = locator<PromoCodeRemoteDataSource>();
+          final res = await remote.redeemPromoCode(code: code);
+          isValidating.value = false;
+
+          if (res.success) {
+            successMessage.value =
+                res.message ?? 'Successfully redeemed! Kortex Pro unlocked.';
+            if (locator.isRegistered<UserStorageService>()) {
+              await locator<UserStorageService>().saveProStatus(isPro: true);
+            }
+            if (locator.isRegistered<SubscriptionGuard>()) {
+              unawaited(locator<SubscriptionGuard>().isProAuthoritative());
+            }
+            AppFeedback.correct();
+            onCodeRedeemed?.call(code);
+            return;
+          } else {
+            errorMessage.value =
+                res.message ?? 'Invalid or expired promotional code.';
+            AppFeedback.incorrect();
+            return;
+          }
+        }
+      } on Object catch (e) {
+        isValidating.value = false;
+        errorMessage.value = 'Failed to redeem promo code: $e';
+        AppFeedback.incorrect();
+        return;
+      }
+
+      // Fallback verification for demo/testing codes if remote datasource isn't registered
+      isValidating.value = false;
       if (code.contains('PRO') ||
           code.contains('KORTEX') ||
           code.contains('STEM') ||
           code.contains('SCHOLAR')) {
-        isValidating.value = false;
         successMessage.value =
             'Successfully redeemed! Kortex Pro features unlocked.';
+        if (locator.isRegistered<UserStorageService>()) {
+          await locator<UserStorageService>().saveProStatus(isPro: true);
+        }
         AppFeedback.correct();
         onCodeRedeemed?.call(code);
       } else {
-        isValidating.value = false;
         errorMessage.value =
             'Invalid or expired promotional code. Please check and retry.';
         AppFeedback.incorrect();

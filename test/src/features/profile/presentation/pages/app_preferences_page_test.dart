@@ -56,7 +56,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Color Appearance'), findsOneWidget);
+      expect(find.text('COLOR APPEARANCE'), findsOneWidget);
       expect(find.text('System'), findsOneWidget);
       expect(find.text('Light'), findsOneWidget);
       expect(find.text('Dark'), findsOneWidget);
@@ -98,7 +98,7 @@ void main() {
       expect(find.text('Haptic Feedback'), findsOneWidget);
       expect(find.text('Sound Effects (SFX)'), findsOneWidget);
       expect(find.text('Daily Study Reminder'), findsOneWidget);
-      expect(find.byType(Switch), findsNWidgets(3));
+      expect(find.byType(Switch), findsNWidgets(7));
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
 import 'package:kortex/src/features/dashboard/data/models/study_deck_model.dart';
 
@@ -21,6 +22,8 @@ abstract class DashboardRemoteDataSource {
   });
 
   Future<List<CuratedCourseModel>> getUserCuratedCourses();
+
+  Future<AnalyticsSummaryModel> getDashboardAnalyticsSummary();
 
   Future<void> deleteCuratedCourse(String courseId);
 

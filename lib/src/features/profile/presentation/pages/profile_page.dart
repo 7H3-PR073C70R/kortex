@@ -22,6 +22,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/profile_navigation_menu.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/scholar_hub_card.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/study_statistics_summary_card.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
@@ -275,11 +276,15 @@ class _ProfileView extends HookWidget {
                                       const SizedBox(height: 20),
 
                                       // 2. Navigation Block (Grouped Settings)
-                                      ProfileNavigationMenu(
-                                        key: AppTourKeys.profileCardKey,
-                                        targetTrack: targetTrack,
-                                        dailyTarget: dailyTarget,
-                                      ),
+                                       StudyStatisticsSummaryCard(
+                                         profile: profile,
+                                       ),
+                                       const SizedBox(height: 20),
+                                       ProfileNavigationMenu(
+                                         key: AppTourKeys.profileCardKey,
+                                         targetTrack: targetTrack,
+                                         dailyTarget: dailyTarget,
+                                       ),
                                       const SizedBox(height: 28),
 
                                       // 3. Danger Zone (Sign Out)

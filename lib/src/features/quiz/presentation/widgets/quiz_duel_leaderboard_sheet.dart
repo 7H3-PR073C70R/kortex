@@ -222,6 +222,13 @@ class QuizDuelLeaderboardSheet extends HookWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Seasonal Rewards Banner Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _SeasonalRewardCard(userTier: userTier),
+            ),
             const SizedBox(height: 16),
 
             // Subject Filter Bar
@@ -435,6 +442,124 @@ class QuizDuelLeaderboardSheet extends HookWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _SeasonalRewardCard extends HookWidget {
+  const _SeasonalRewardCard({required this.userTier});
+
+  final QuizDuelEloTier userTier;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+    final claimed = useState<bool>(false);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color.fromRGBO(24, 24, 27, 0.8) : colors.surfaceSecondary,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(
+          color: userTier.color.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: userTier.color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.card_membership_rounded,
+              size: 20,
+              color: userTier.color,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Season 4 Rewards',
+                      style: typography.body.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.micro),
+                      ),
+                      child: Text(
+                        '+${userTier.seasonalRewardXp} XP',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  userTier.seasonalTitleReward,
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 11.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: claimed.value
+                ? null
+                : () {
+                    claimed.value = true;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Claimed ${userTier.seasonalTitleReward} & +${userTier.seasonalRewardXp} XP!',
+                        ),
+                        backgroundColor: colors.primary,
+                      ),
+                    );
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: claimed.value ? colors.surfaceBorder : userTier.color,
+              foregroundColor: colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.micro),
+              ),
+            ),
+            child: Text(
+              claimed.value ? 'Claimed' : 'Claim',
+              style: typography.caption.bold.copyWith(
+                color: colors.white,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

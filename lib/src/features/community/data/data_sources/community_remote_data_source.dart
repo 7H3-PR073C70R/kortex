@@ -143,10 +143,21 @@ abstract class CommunityRemoteDataSource {
 
   Future<Map<String, dynamic>> cloneSharedDeck(String sharedDeckId);
 
+  Future<bool> rateSharedDeck({
+    required String sharedDeckId,
+    required double rating,
+  });
+
+  Future<bool> toggleBookmarkSharedDeck(String sharedDeckId);
+
+  Future<List<String>> getBookmarkedSharedDeckIds();
+
   /// Real-time stream of leaderboard entries via WebSocket.
   Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track});
 
   Future<List<LeaderboardEntryModel>> fetchLeaderboards({String? track});
+
+  Future<Map<String, dynamic>> claimWeeklyXp({required int xpAmount});
 
   Future<StudyCommunityModel> autoProvisionCommunity({
     required String courseCode,

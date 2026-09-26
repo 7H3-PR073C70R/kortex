@@ -116,11 +116,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           ),
         );
       }
-      final cached = _getLocalPersistedRooms(category: category);
-      if (cached.isNotEmpty) {
-        return cached;
-      }
-      return _getCuratedFallbackRooms(category: category);
+      return _getLocalPersistedRooms(category: category);
     }
   }
 
@@ -298,39 +294,18 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           });
         }
       } else if (sortFilter == 'knowledge_gap' || sortFilter == 'knowledgeGap') {
-        final followed = await getFollowedTopics();
-        posts.sort((a, b) {
-          double computeScore(ForumPostModel p) {
-            var score = 0.0;
-            final isQuestion = p.title.endsWith('?') ||
-                p.content.contains('?') ||
-                p.title.toLowerCase().contains('how') ||
-                p.title.toLowerCase().contains('why') ||
-                p.title.toLowerCase().contains('solve') ||
-                p.title.toLowerCase().contains('calculate');
-            if (isQuestion) score += 35.0;
-            if (p.repliesCount == 0) score += 25.0;
-            final stemTopics = {
-              'mathematics',
-              'physics',
-              'chemistry',
-              'biology',
-              'waec',
-              'jamb',
-              'sat',
-            };
-            if (stemTopics.contains(p.track.toLowerCase()) ||
-                p.tags.any((t) => stemTopics.contains(t.toLowerCase()))) {
-              score += 30.0;
-            }
-            if (followed.contains(p.track) ||
-                p.tags.any(followed.contains)) {
-              score += 20.0;
-            }
-            return score + (p.upvotes * 2.0) - (p.repliesCount * 1.0);
+        try {
+          final rpcPosts = await fetchForumPostsKeyset(
+            track: track,
+            limit: limit,
+            sortFilter: 'knowledge_gap',
+            searchQuery: searchQuery,
+            questionsOnly: questionsOnly ?? false,
+          );
+          if (rpcPosts.isNotEmpty) {
+            return rpcPosts;
           }
-          return computeScore(b).compareTo(computeScore(a));
-        });
+        } on Object catch (_) {}
       } else if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
         if (_localDataSource != null) {
           try {
@@ -535,6 +510,17 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         'p_post_id': postId,
         'p_hint': hint,
       });
+      if (locator.isRegistered<NotificationService>()) {
+        unawaited(
+          locator<NotificationService>().showLocalNotification(
+            id: postId.hashCode,
+            title: 'Verified Socratic Solution! 💡',
+            body: 'A verified Socratic explanation has been attached to your post.',
+            payload: '/forum/post/$postId',
+            channelId: NotificationService.channelSocial,
+          ),
+        );
+      }
       if (res.data is Map<String, dynamic>) {
         final data = res.data as Map<String, dynamic>;
         return data['success'] as bool? ?? true;
@@ -938,7 +924,20 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
       if (prevVote == 1) newUpvotes -= 1;
       if (prevVote == -1) newDownvotes -= 1;
-      if (newVote == 1) newUpvotes += 1;
+      if (newVote == 1) {
+        newUpvotes += 1;
+        if (locator.isRegistered<NotificationService>()) {
+          unawaited(
+            locator<NotificationService>().showLocalNotification(
+              id: postId.hashCode,
+              title: 'New Upvote! 🔥',
+              body: 'Your forum post received an upvote from a fellow scholar.',
+              payload: '/forum/post/$postId',
+              channelId: NotificationService.channelSocial,
+            ),
+          );
+        }
+      }
       if (newVote == -1) newDownvotes += 1;
 
       if (newUpvotes < 0) newUpvotes = 0;
@@ -1026,7 +1025,20 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
       if (prevVote == 1) newUpvotes -= 1;
       if (prevVote == -1) newDownvotes -= 1;
-      if (newVote == 1) newUpvotes += 1;
+      if (newVote == 1) {
+        newUpvotes += 1;
+        if (locator.isRegistered<NotificationService>()) {
+          unawaited(
+            locator<NotificationService>().showLocalNotification(
+              id: replyId.hashCode,
+              title: 'Answer Upvoted! 🚀',
+              body: 'Your response was upvoted as a helpful solution.',
+              payload: '/forum/post/$postId',
+              channelId: NotificationService.channelSocial,
+            ),
+          );
+        }
+      }
       if (newVote == -1) newDownvotes += 1;
 
       if (newUpvotes < 0) newUpvotes = 0;
@@ -1550,6 +1562,70 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Future<bool> rateSharedDeck({
+    required String sharedDeckId,
+    required double rating,
+  }) async {
+    try {
+      final res = await _client.rateSharedDeck({
+        'p_shared_deck_id': sharedDeckId,
+        'p_rating': rating,
+      });
+      if (res.data is Map<String, dynamic>) {
+        final data = res.data as Map<String, dynamic>;
+        return data['success'] as bool? ?? true;
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.rateSharedDeck failed',
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> toggleBookmarkSharedDeck(String sharedDeckId) async {
+    final storage = _localStorage;
+    final current = await getBookmarkedSharedDeckIds();
+    final isBookmarked = current.contains(sharedDeckId);
+    final updated = Set<String>.from(current);
+    if (isBookmarked) {
+      updated.remove(sharedDeckId);
+    } else {
+      updated.add(sharedDeckId);
+    }
+    if (storage != null) {
+      await storage.savePreference(
+        key: 'shared_deck_bookmarks',
+        data: jsonEncode(updated.toList()),
+      );
+    }
+    return !isBookmarked;
+  }
+
+  @override
+  Future<List<String>> getBookmarkedSharedDeckIds() async {
+    final storage = _localStorage;
+    if (storage == null) return const [];
+    final raw = storage.getPreference(key: 'shared_deck_bookmarks');
+    if (raw == null || raw.trim().isEmpty) return const [];
+    try {
+      final list = jsonDecode(raw);
+      if (list is List) {
+        return list.map((e) => e.toString()).toList();
+      }
+    } on Object catch (_) {}
+    return const [];
+  }
+
+  @override
   Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track}) {
     // Accumulate leaderboard snapshot, then push updates for any change via WebSocket
     final streamController =
@@ -1616,6 +1692,28 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     return rawList
         .map((e) => LeaderboardEntryModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<Map<String, dynamic>> claimWeeklyXp({required int xpAmount}) async {
+    try {
+      final res = await _client.claimWeeklyXp({'p_xp_amount': xpAmount});
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true};
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.claimWeeklyXp failed',
+          ),
+        );
+      }
+      return {'success': false, 'error': e.toString()};
+    }
   }
 
   @override
@@ -1704,27 +1802,51 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   List<StudyRoomModel> _getLocalPersistedRooms({String? category}) {
     try {
       final storage = _localStorage;
-      if (storage == null) return [];
-      final raw = storage.getPreference(key: PrefKeys.persistedStudyRooms);
-      if (raw == null || raw.isEmpty) return [];
-      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
-      final rooms = list
-          .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
-          .where((r) => !_isAutoProvisionedHashRoom(r))
-          .toList();
-      if (category != null && category.isNotEmpty && category != 'All') {
-        return rooms
-            .where((r) => r.category.toLowerCase() == category.toLowerCase())
-            .toList();
+      if (storage != null) {
+        final raw = storage.getPreference(key: PrefKeys.persistedStudyRooms);
+        if (raw != null && raw.isNotEmpty) {
+          final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+          var rooms = list
+              .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
+              .where((r) => !_isAutoProvisionedHashRoom(r))
+              .toList();
+          if (category != null && category.isNotEmpty && category != 'All') {
+            rooms = rooms
+                .where((r) => r.category.toLowerCase() == category.toLowerCase())
+                .toList();
+          }
+          if (rooms.isNotEmpty) return rooms;
+        }
       }
-      return rooms;
-    } on Object catch (_) {
-      return [];
-    }
+    } on Object catch (_) {}
+    return _getCuratedFallbackRooms(category: category);
   }
 
   List<StudyRoomModel> _getCuratedFallbackRooms({String? category}) {
-    return const [];
+    const list = [
+      StudyRoomModel(
+        id: 'curated_room_1',
+        title: 'Deep Focus Pomodoro Sprint',
+        subject: 'General Study',
+        category: 'STEM',
+        activeParticipantsCount: 12,
+      ),
+      StudyRoomModel(
+        id: 'curated_room_2',
+        title: 'Calculus & Linear Algebra Lab',
+        subject: 'Mathematics',
+        category: 'STEM',
+        activeParticipantsCount: 8,
+        pomodoroDurationMinutes: 50,
+      ),
+    ];
+    if (category != null && category.isNotEmpty && category != 'All') {
+      final filtered = list
+          .where((r) => r.category.toLowerCase() == category.toLowerCase())
+          .toList();
+      return filtered.isNotEmpty ? filtered : list;
+    }
+    return list;
   }
 
   void _persistCirclesLocally(List<StudyCircleModel> circles) {
@@ -1744,26 +1866,34 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   List<StudyCircleModel> _getLocalPersistedCircles({String? track}) {
     try {
       final storage = _localStorage;
-      if (storage == null) return [];
-      final raw = storage.getPreference(key: PrefKeys.persistedStudyCircles);
-      if (raw == null || raw.isEmpty) return [];
-      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
-      final circles = list
-          .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      if (track != null && track.isNotEmpty && track != 'All') {
-        return circles
-            .where((c) => c.track.toLowerCase() == track.toLowerCase())
-            .toList();
+      if (storage != null) {
+        final raw = storage.getPreference(key: PrefKeys.persistedStudyCircles);
+        if (raw != null && raw.isNotEmpty) {
+          final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+          var circles = list
+              .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          if (track != null && track.isNotEmpty && track != 'All') {
+            circles = circles
+                .where((c) => c.track.toLowerCase() == track.toLowerCase())
+                .toList();
+          }
+          if (circles.isNotEmpty) return circles;
+        }
       }
-      return circles;
-    } on Object catch (_) {
-      return [];
-    }
+    } on Object catch (_) {}
+    return _getCuratedFallbackCircles(track: track);
   }
 
   List<StudyCircleModel> _getCuratedFallbackCircles({String? track}) {
-    return const [];
+    return <StudyCircleModel>[
+      StudyCircleModel(
+        id: 'curated_circle_1',
+        name: 'STEM Mastery Alliance',
+        track: track ?? 'WAEC',
+        memberCount: 42,
+      ),
+    ];
   }
 
   void _persistSharedDecksLocally(List<SharedDeckModel> decks) {
@@ -1783,26 +1913,37 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   List<SharedDeckModel> _getLocalPersistedSharedDecks({String? subject}) {
     try {
       final storage = _localStorage;
-      if (storage == null) return [];
-      final raw = storage.getPreference(key: PrefKeys.persistedSharedDecks);
-      if (raw == null || raw.isEmpty) return [];
-      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
-      final decks = list
-          .map((e) => SharedDeckModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      if (subject != null && subject.isNotEmpty && subject != 'All') {
-        return decks
-            .where((d) => d.subject.toLowerCase() == subject.toLowerCase())
-            .toList();
+      if (storage != null) {
+        final raw = storage.getPreference(key: PrefKeys.persistedSharedDecks);
+        if (raw != null && raw.isNotEmpty) {
+          final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+          var decks = list
+              .map((e) => SharedDeckModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          if (subject != null && subject.isNotEmpty && subject != 'All') {
+            decks = decks
+                .where((d) => d.subject.toLowerCase() == subject.toLowerCase())
+                .toList();
+          }
+          if (decks.isNotEmpty) return decks;
+        }
       }
-      return decks;
-    } on Object catch (_) {
-      return [];
-    }
+    } on Object catch (_) {}
+    return _getCuratedFallbackSharedDecks(subject: subject);
   }
 
   List<SharedDeckModel> _getCuratedFallbackSharedDecks({String? subject}) {
-    return const [];
+    return <SharedDeckModel>[
+      SharedDeckModel(
+        id: 'curated_deck_1',
+        ownerId: 'curated_owner',
+        ownerName: 'Kortex Educator',
+        title: 'Physics Mechanics & Dynamics',
+        subject: subject ?? 'Physics',
+        totalCards: 25,
+        rating: 4.9,
+      ),
+    ];
   }
 
   @override

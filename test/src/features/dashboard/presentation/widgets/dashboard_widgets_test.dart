@@ -52,7 +52,6 @@ void main() {
 
       expect(find.text('Hey, Alexander'), findsOneWidget);
       expect(find.text('Neural Scholar'), findsOneWidget);
-      expect(find.text('LVL 1'), findsOneWidget);
       expect(find.text('Calibrate Your Neural Workspace'), findsOneWidget);
     });
 

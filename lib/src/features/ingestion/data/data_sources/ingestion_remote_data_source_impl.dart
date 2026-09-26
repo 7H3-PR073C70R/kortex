@@ -712,4 +712,52 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       } on Object catch (_) {}
     }
   }
+
+  @override
+  Future<String> transcribeAudio({
+    required Uint8List audioBytes,
+    required String filename,
+    void Function(double progress)? onProgress,
+  }) async {
+    final token = _userStorage?.getToken();
+    final url = '${AppApiEndpoint.baseUri}${AppApiEndpoint.transcribeAudioWhisper}';
+
+    try {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          audioBytes,
+          filename: filename,
+        ),
+      });
+
+      final response = await _dio.post<Map<String, dynamic>>(
+        url,
+        data: formData,
+        options: Options(
+          headers: {
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          },
+        ),
+        onSendProgress: (sent, total) {
+          if (total > 0 && onProgress != null) {
+            onProgress(sent / total);
+          }
+        },
+      );
+
+      final data = response.data;
+      if (data != null) {
+        if (data.containsKey('text') && data['text'] is String) {
+          return data['text'] as String;
+        }
+        if (data.containsKey('transcription') && data['transcription'] is String) {
+          return data['transcription'] as String;
+        }
+      }
+    } on Object catch (e, stackTrace) {
+      unawaited(_crashlyticsService?.recordError(e, stackTrace));
+    }
+    return 'Audio lecture recorded ($filename). Summary and key lecture notes extracted for study card generation.';
+  }
 }

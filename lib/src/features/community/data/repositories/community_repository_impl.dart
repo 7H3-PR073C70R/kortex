@@ -559,6 +559,28 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<Either<Failure, bool>> rateSharedDeck({
+    required String sharedDeckId,
+    required double rating,
+  }) {
+    return _remoteDataSource
+        .rateSharedDeck(sharedDeckId: sharedDeckId, rating: rating)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> toggleBookmarkSharedDeck(String sharedDeckId) {
+    return _remoteDataSource
+        .toggleBookmarkSharedDeck(sharedDeckId)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, List<String>>> getBookmarkedSharedDeckIds() {
+    return _remoteDataSource.getBookmarkedSharedDeckIds().makeRequest();
+  }
+
+  @override
   Stream<List<LeaderboardEntryEntity>> streamLeaderboards({String? track}) {
     final currentUserId = _userStorage?.getUserId() ?? '';
     return _remoteDataSource.streamLeaderboards(track: track).map(
@@ -622,6 +644,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
     return list;
   }
 
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> claimWeeklyXp({
+    required int xpAmount,
+  }) {
+    return _remoteDataSource
+        .claimWeeklyXp(xpAmount: xpAmount)
+        .makeRequest();
+  }
 
   @override
   Future<Either<Failure, StudyCommunityEntity>> autoProvisionCommunity({

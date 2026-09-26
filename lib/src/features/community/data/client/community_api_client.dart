@@ -172,9 +172,19 @@ abstract class CommunityApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  @POST(AppApiEndpoint.rateSharedDeckRpc)
+  Future<HttpResponse<dynamic>> rateSharedDeck(
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET(AppApiEndpoint.leaderboards)
   Future<HttpResponse<dynamic>> fetchLeaderboards(
     @Queries() Map<String, dynamic> query,
+  );
+
+  @POST(AppApiEndpoint.claimWeeklyXpRpc)
+  Future<HttpResponse<dynamic>> claimWeeklyXp(
+    @Body() Map<String, dynamic> body,
   );
 
   @POST(AppApiEndpoint.autoProvisionCommunityRpc)

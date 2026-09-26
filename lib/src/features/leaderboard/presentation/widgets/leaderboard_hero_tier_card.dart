@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/leaderboard/presentation/widgets/leaderboard_league_rules_sheet.dart';
+import 'package:kortex/src/features/leaderboard/presentation/widgets/streak_freeze_shield_sheet.dart';
 
 class LeaderboardHeroTierCard extends StatelessWidget {
   const LeaderboardHeroTierCard({
@@ -99,33 +100,41 @@ class LeaderboardHeroTierCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (streakFreezeCount > 0) ...[
+            if (streakFreezeCount >= 0) ...[
               const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.syllabotAccent.withAlpha(isDark ? 35 : 20),
-                  borderRadius: AppRadius.radiusBadge,
-                  border: Border.all(
-                    color: colors.syllabotAccent.withAlpha(60),
+              GestureDetector(
+                onTap: () => StreakFreezeShieldSheet.show(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('🛡️', style: context.typography.body.regular.copyWith(fontSize: 13)),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$streakFreezeCount Streak Freeze Active',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.syllabotAccent,
-                        fontSize: 11,
-                      ),
+                  decoration: BoxDecoration(
+                    color: colors.syllabotAccent.withAlpha(isDark ? 35 : 20),
+                    borderRadius: AppRadius.radiusBadge,
+                    border: Border.all(
+                      color: colors.syllabotAccent.withAlpha(60),
                     ),
-                  ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '🛡️',
+                        style: context.typography.body.regular.copyWith(
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$streakFreezeCount Streak Freeze Shield${streakFreezeCount == 1 ? "" : "s"} • Tap to equip',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.syllabotAccent,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

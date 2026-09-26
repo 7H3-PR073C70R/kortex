@@ -54,4 +54,10 @@ abstract class LiveKitAudioService {
 
   /// Stream of WebRTC connection status updates
   Stream<LiveAudioConnectionState> get connectionStateStream;
+
+  /// Toggles LiveKit egress cloud recording for room.
+  Future<bool> setCloudRecordingEnabled({required bool enabled}) async => false;
+
+  /// Generates an automated AI transcript summary of the recorded study session.
+  Future<String> generateSessionTranscriptSummary({required String roomId}) async => '';
 }

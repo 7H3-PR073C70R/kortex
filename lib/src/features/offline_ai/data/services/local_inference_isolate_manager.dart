@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_llama/flutter_llama.dart';
+import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 
 class InferenceTimeoutException implements Exception {
   const InferenceTimeoutException(this.message);
@@ -107,9 +108,16 @@ class LocalInferenceIsolateManager {
     required String topic,
     String? sourceText,
   }) async {
-    final file = File(modelPath);
+    var effectivePath = modelPath;
+    if (!File(effectivePath).existsSync()) {
+      final sharedPath = await LocalLlmEngineClient.findSharedModelPath();
+      if (sharedPath != null && File(sharedPath).existsSync()) {
+        effectivePath = sharedPath;
+      }
+    }
+    final file = File(effectivePath);
     if (!file.existsSync()) {
-      throw FileSystemException('GGUF model file not found at $modelPath');
+      throw FileSystemException('GGUF model file not found at $effectivePath');
     }
 
     // 1. Primary: Genuine on-device GGUF inference via FlutterLlama native runtime

@@ -300,43 +300,11 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'target_score_percent': targetScorePercent,
             if (userId.isNotEmpty) 'user_id': userId,
           };
-          Response<dynamic> response;
-          try {
-            response = await client.post<dynamic>(
-              '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
-              data: payload,
-              options: Options(headers: {'Prefer': 'return=representation'}),
-            );
-          } on DioException catch (dioErr) {
-            final errBody = dioErr.response?.data?.toString() ?? '';
-            final isSchemaMismatch = dioErr.response?.statusCode == 400 &&
-                (errBody.contains('assessment_type') ||
-                    errBody.contains('schema cache') ||
-                    errBody.contains('column'));
-            if (isSchemaMismatch) {
-              developer.log(
-                'Supabase missing assessment_type column; retrying with legacy schema fields',
-              );
-              final legacyPayload = <String, dynamic>{
-                'exam_name': examName,
-                'target_date': targetDate.toIso8601String().split('T').first,
-                'subject_track': subjectTrack,
-                'total_cards_count': totalCardsCount,
-                'mastered_cards_count': 0,
-                'total_lapses': 0,
-                'daily_target': dailyTarget,
-                'target_score_percent': targetScorePercent,
-                if (userId.isNotEmpty) 'user_id': userId,
-              };
-              response = await client.post<dynamic>(
-                '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
-                data: legacyPayload,
-                options: Options(headers: {'Prefer': 'return=representation'}),
-              );
-            } else {
-              rethrow;
-            }
-          }
+          final response = await client.post<dynamic>(
+            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
+            data: payload,
+            options: Options(headers: {'Prefer': 'return=representation'}),
+          );
 
           if (response.statusCode == 201 || response.statusCode == 200) {
             if (response.data is List && (response.data as List).isNotEmpty) {
@@ -462,39 +430,10 @@ class PlannerRepositoryImpl implements PlannerRepository {
           final uri = userId.isNotEmpty
               ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId&user_id=eq.$userId'
               : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId';
-          try {
-            await client.patch<dynamic>(
-              uri,
-              data: payload,
-            );
-          } on DioException catch (dioErr) {
-            final errBody = dioErr.response?.data?.toString() ?? '';
-            final isSchemaMismatch = dioErr.response?.statusCode == 400 &&
-                (errBody.contains('assessment_type') ||
-                    errBody.contains('schema cache') ||
-                    errBody.contains('column'));
-            if (isSchemaMismatch) {
-              developer.log(
-                'Supabase missing assessment_type column; retrying patch with legacy schema fields',
-              );
-              final legacyPayload = <String, dynamic>{
-                'exam_name': examName,
-                'target_date': targetDate.toIso8601String().split('T').first,
-                'subject_track': subjectTrack,
-                'total_cards_count': ?totalCardsCount,
-                'target_score_percent': ?targetScorePercent,
-                'daily_target': dailyTarget,
-                'updated_at': DateTime.now().toIso8601String(),
-                if (userId.isNotEmpty) 'user_id': userId,
-              };
-              await client.patch<dynamic>(
-                uri,
-                data: legacyPayload,
-              );
-            } else {
-              rethrow;
-            }
-          }
+          await client.patch<dynamic>(
+            uri,
+            data: payload,
+          );
         } on Object catch (e) {
           developer.log('Failed to patch exam in Supabase: $e');
         }
