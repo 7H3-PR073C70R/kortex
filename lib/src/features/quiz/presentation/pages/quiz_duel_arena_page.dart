@@ -17,6 +17,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 
 /// Full-screen competitive arena for 1v1 Real-Time Quiz Duels (QZ-13).
@@ -559,82 +560,18 @@ class QuizDuelArenaPage extends HookWidget {
                         ),
                         const SizedBox(height: 24),
 
-                        // Post-Match 2-Tab Segmented Control
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: colors.surfacePrimary,
-                            borderRadius: BorderRadius.circular(AppRadius.dialog),
-                            border: Border.all(
-                              color: colors.surfaceBorder.withAlpha(80),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    AppFeedback.selection();
-                                    activePostMatchTab.value = 0;
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: AppMotion.snappy,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: activePostMatchTab.value == 0
-                                          ? colors.primary.withAlpha(isDark ? 50 : 25)
-                                          : colors.transparent,
-                                      borderRadius: BorderRadius.circular(AppRadius.card),
-                                      border: activePostMatchTab.value == 0
-                                          ? Border.all(color: colors.primary.withAlpha(120))
-                                          : null,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '🏆 Scoreboard',
-                                        style: typography.caption.bold.copyWith(
-                                          color: activePostMatchTab.value == 0
-                                              ? colors.primary
-                                              : colors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    AppFeedback.selection();
-                                    activePostMatchTab.value = 1;
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: AppMotion.snappy,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: activePostMatchTab.value == 1
-                                          ? colors.primary.withAlpha(isDark ? 50 : 25)
-                                          : colors.transparent,
-                                      borderRadius: BorderRadius.circular(AppRadius.card),
-                                      border: activePostMatchTab.value == 1
-                                          ? Border.all(color: colors.primary.withAlpha(120))
-                                          : null,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '📚 Study Review',
-                                        style: typography.caption.bold.copyWith(
-                                          color: activePostMatchTab.value == 1
-                                              ? colors.primary
-                                              : colors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                        // Post-Match Liquid Glass Tab Bar
+                        AppLiquidGlassTabBar(
+                          tabs: const ['Scoreboard', 'Study Review'],
+                          icons: const [
+                            Icons.emoji_events_rounded,
+                            Icons.menu_book_rounded,
+                          ],
+                          selectedIndex: activePostMatchTab.value,
+                          onTabSelected: (index) {
+                            AppFeedback.selection();
+                            activePostMatchTab.value = index;
+                          },
                         ),
                         const SizedBox(height: 20),
 

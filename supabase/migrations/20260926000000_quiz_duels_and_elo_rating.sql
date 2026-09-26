@@ -140,3 +140,9 @@ BEGIN
     RETURN v_result;
 END;
 $$;
+
+-- Grant EXECUTE permission to authenticated users, anon, and service_role for PostgREST RPC access
+GRANT EXECUTE ON FUNCTION public.fn_process_quiz_duel_outcome(
+    TEXT, UUID, UUID, INT, INT, UUID, BOOLEAN, BOOLEAN, UUID
+) TO authenticated, anon, service_role;
+

@@ -292,27 +292,32 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
           ? match.forfeitUserId
           : null;
 
-      if (validP1 == null) {
-        return const Right({});
+      try {
+        final response = await dio.post<Map<String, dynamic>>(
+          '/rest/v1/rpc/fn_process_quiz_duel_outcome',
+          data: {
+            'p_duel_id': match.duelId,
+            'p_player1_id': validP1,
+            'p_player2_id': validP2,
+            'p_player1_score': match.player1.score,
+            'p_player2_score': match.player2?.score ?? 0,
+            'p_winner_id': validWinner,
+            'p_is_draw': match.isDraw,
+            'p_is_forfeit': match.forfeitUserId != null,
+            'p_forfeit_user_id': validForfeit,
+          },
+        );
+
+        final data = response.data ?? <String, dynamic>{};
+        return Right(data);
+      } on DioException catch (e) {
+        return Left(
+          ServerFailure(
+            message:
+                'RPC fn_process_quiz_duel_outcome not available (${e.response?.statusCode}): ${e.message}',
+          ),
+        );
       }
-
-      final response = await dio.post<Map<String, dynamic>>(
-        '/rest/v1/rpc/fn_process_quiz_duel_outcome',
-        data: {
-          'p_duel_id': match.duelId,
-          'p_player1_id': validP1,
-          'p_player2_id': validP2,
-          'p_player1_score': match.player1.score,
-          'p_player2_score': match.player2?.score ?? 0,
-          'p_winner_id': validWinner,
-          'p_is_draw': match.isDraw,
-          'p_is_forfeit': match.forfeitUserId != null,
-          'p_forfeit_user_id': validForfeit,
-        },
-      );
-
-      final data = response.data ?? <String, dynamic>{};
-      return Right(data);
     } on Exception catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
@@ -452,13 +457,11 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
               userId: p1Id,
               displayName: 'Challenger',
               avatarUrl: '',
-              eloRating: 1200,
             ),
             player2: QuizDuelParticipant(
               userId: userId,
               displayName: 'You',
               avatarUrl: '',
-              eloRating: 1200,
             ),
             questions: const [],
           ),
@@ -471,4 +474,3 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     }
   }
 }
-

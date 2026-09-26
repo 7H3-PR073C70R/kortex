@@ -211,4 +211,3 @@ class AppFeedback {
     } on Object catch (_) {}
   }
 }
-

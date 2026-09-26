@@ -103,35 +103,61 @@ class QuizDuelWebSocketClient {
                       (data['subject'] as String? ?? '').trim().toLowerCase() &&
                   localMatch.examBoard.trim().toLowerCase() ==
                       (data['examBoard'] as String? ?? '').trim().toLowerCase()) {
-                final remoteMatch = remoteMatchJson != null
-                    ? QuizDuelMatch.fromJson(remoteMatchJson)
-                    : QuizDuelMatch(
-                        duelId: remoteDuelId,
-                        subject: localMatch.subject,
-                        examBoard: localMatch.examBoard,
-                        questions: localMatch.questions,
-                        player1: QuizDuelParticipant(
-                          userId: remoteUserId,
-                          displayName:
-                              data['displayName'] as String? ?? 'Scholar',
-                          avatarUrl: data['avatarUrl'] as String? ?? '',
-                          isReady: true,
-                          eloRating: 1250,
-                        ),
-                      );
+                // Deterministic host tie-breaker:
+                // Compare localDuelId vs remoteDuelId. The smaller duelId lexicographically is the host room.
+                // Both clients agree on the exact same host duelId and host question set.
+                final isLocalHost =
+                    localMatch.duelId.compareTo(remoteDuelId) <= 0;
 
-                final localP2 = QuizDuelParticipant(
-                  userId: localMatch.player1.userId,
-                  displayName: localMatch.player1.displayName,
-                  avatarUrl: localMatch.player1.avatarUrl,
-                  isReady: true,
-                  eloRating: localMatch.player1.eloRating,
-                );
+                final QuizDuelMatch syncedMatch;
+                if (isLocalHost) {
+                  final remoteP2 = QuizDuelParticipant(
+                    userId: remoteUserId,
+                    displayName:
+                        data['displayName'] as String? ?? 'Scholar',
+                    avatarUrl: data['avatarUrl'] as String? ?? '',
+                    isReady: true,
+                    eloRating: remoteMatchJson != null
+                        ? (remoteMatchJson['player1']?['eloRating'] as int? ??
+                            1250)
+                        : 1250,
+                  );
 
-                final syncedMatch = remoteMatch.copyWith(
-                  player2: localP2,
-                  status: QuizDuelStatus.countdown,
-                );
+                  syncedMatch = localMatch.copyWith(
+                    player2: remoteP2,
+                    status: QuizDuelStatus.countdown,
+                  );
+                } else {
+                  final remoteMatch = remoteMatchJson != null
+                      ? QuizDuelMatch.fromJson(remoteMatchJson)
+                      : QuizDuelMatch(
+                          duelId: remoteDuelId,
+                          subject: localMatch.subject,
+                          examBoard: localMatch.examBoard,
+                          questions: localMatch.questions,
+                          player1: QuizDuelParticipant(
+                            userId: remoteUserId,
+                            displayName:
+                                data['displayName'] as String? ?? 'Scholar',
+                            avatarUrl: data['avatarUrl'] as String? ?? '',
+                            isReady: true,
+                            eloRating: 1250,
+                          ),
+                        );
+
+                  final localP2 = QuizDuelParticipant(
+                    userId: localMatch.player1.userId,
+                    displayName: localMatch.player1.displayName,
+                    avatarUrl: localMatch.player1.avatarUrl,
+                    isReady: true,
+                    eloRating: localMatch.player1.eloRating,
+                  );
+
+                  syncedMatch = remoteMatch.copyWith(
+                    player2: localP2,
+                    status: QuizDuelStatus.countdown,
+                  );
+                }
 
                 _matchingTimers[localMatch.duelId]?.cancel();
                 _matchingTimers[syncedMatch.duelId]?.cancel();
@@ -148,7 +174,7 @@ class QuizDuelWebSocketClient {
                     'data': {
                       'duelId': syncedMatch.duelId,
                       'matchedUserId': remoteUserId,
-                      'player2': localP2.toJson(),
+                      'player2': syncedMatch.player2?.toJson(),
                       'match': syncedMatch.toJson(),
                     },
                   },
@@ -238,6 +264,7 @@ class QuizDuelWebSocketClient {
             final questionIndex = data['questionIndex'] as int? ?? 0;
             final optionIndex = data['optionIndex'] as int? ?? 0;
             final responseTimeMs = data['responseTimeMs'] as int? ?? 1000;
+            final earnedPoints = data['earnedPoints'] as int?;
 
             if (userId != null) {
               _applyDuelAnswerLocally(
@@ -246,6 +273,7 @@ class QuizDuelWebSocketClient {
                 questionIndex: questionIndex,
                 optionIndex: optionIndex,
                 responseTimeMs: responseTimeMs,
+                earnedPointsOverride: earnedPoints,
               );
             }
           } else if (type == 'start_round') {
@@ -553,11 +581,26 @@ class QuizDuelWebSocketClient {
     required int questionIndex,
     required int optionIndex,
     required int responseTimeMs,
+    int? earnedPointsOverride,
   }) {
     final current = _activeMatches[duelId];
     if (current == null ||
-        current.status != QuizDuelStatus.inRound ||
         current.currentQuestionIndex != questionIndex) {
+      return;
+    }
+
+    if (current.status != QuizDuelStatus.inRound &&
+        current.status != QuizDuelStatus.roundSummary) {
+      return;
+    }
+
+    final isPlayer1 = current.player1.userId == userId;
+    final isPlayer2 = current.player2?.userId == userId;
+    if (!isPlayer1 && !isPlayer2) return;
+
+    final targetPlayer = isPlayer1 ? current.player1 : current.player2!;
+    if (targetPlayer.selectedOptionIndex != null) {
+      // Idempotency: Ignore duplicate submission or broadcast echo for an already answered question
       return;
     }
 
@@ -573,12 +616,12 @@ class QuizDuelWebSocketClient {
     final speedBonus = isCorrect
         ? ((remainingMs / timeLimitMs) * maxSpeedBonus).round()
         : 0;
-    final earnedPoints = isCorrect ? (baseCorrectPoints + speedBonus) : 0;
+    final earnedPoints = earnedPointsOverride ?? (isCorrect ? (baseCorrectPoints + speedBonus) : 0);
 
     QuizDuelParticipant? updatedP1 = current.player1;
     var updatedP2 = current.player2;
 
-    if (current.player1.userId == userId) {
+    if (isPlayer1) {
       final streak = isCorrect ? current.player1.comboStreak + 1 : 0;
       updatedP1 = current.player1.copyWith(
         selectedOptionIndex: optionIndex,
@@ -587,7 +630,7 @@ class QuizDuelWebSocketClient {
         score: current.player1.score + earnedPoints,
         comboStreak: streak,
       );
-    } else if (current.player2?.userId == userId) {
+    } else if (isPlayer2) {
       final streak = isCorrect ? current.player2!.comboStreak + 1 : 0;
       updatedP2 = current.player2!.copyWith(
         selectedOptionIndex: optionIndex,
@@ -605,8 +648,9 @@ class QuizDuelWebSocketClient {
 
     _updateMatch(duelId, updated);
 
-    // If both players have answered, conclude round early
-    if (updated.player1.selectedOptionIndex != null &&
+    // If both players have answered and status is inRound, conclude round early
+    if (updated.status == QuizDuelStatus.inRound &&
+        updated.player1.selectedOptionIndex != null &&
         updated.player2?.selectedOptionIndex != null) {
       _roundTimers[duelId]?.cancel();
       _concludeRound(duelId, questionIndex);
@@ -621,12 +665,29 @@ class QuizDuelWebSocketClient {
     required int optionIndex,
     required int responseTimeMs,
   }) async {
+    final match = _activeMatches[duelId];
+    int? earnedPoints;
+    if (match != null && match.currentQuestion != null) {
+      final q = match.currentQuestion!;
+      final selectedText = (optionIndex >= 0 && optionIndex < q.options.length)
+          ? q.options[optionIndex]
+          : '';
+      final isCorrect = selectedText == q.correctAnswer;
+      final timeLimitMs = match.durationPerQuestionSeconds * 1000;
+      final remainingMs = max(0, timeLimitMs - responseTimeMs);
+      final speedBonus = isCorrect
+          ? ((remainingMs / timeLimitMs) * maxSpeedBonus).round()
+          : 0;
+      earnedPoints = isCorrect ? (baseCorrectPoints + speedBonus) : 0;
+    }
+
     _applyDuelAnswerLocally(
       duelId: duelId,
       userId: userId,
       questionIndex: questionIndex,
       optionIndex: optionIndex,
       responseTimeMs: responseTimeMs,
+      earnedPointsOverride: earnedPoints,
     );
 
     _realtimeClient.broadcastPresence(
@@ -639,6 +700,7 @@ class QuizDuelWebSocketClient {
           'questionIndex': questionIndex,
           'optionIndex': optionIndex,
           'responseTimeMs': responseTimeMs,
+          'earnedPoints': ?earnedPoints,
         },
       },
     );
@@ -656,7 +718,10 @@ class QuizDuelWebSocketClient {
   void _concludeRound(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null) return;
-    if (current.status == QuizDuelStatus.roundSummary) return;
+    if (current.status == QuizDuelStatus.roundSummary &&
+        current.currentQuestionIndex == questionIndex) {
+      return;
+    }
 
     final updated = current.copyWith(status: QuizDuelStatus.roundSummary);
     _updateMatch(duelId, updated);
@@ -673,9 +738,14 @@ class QuizDuelWebSocketClient {
     );
 
     // Show round summary briefly (800ms for clear visual feedback), then proceed smoothly to next question
-    Timer(const Duration(milliseconds: 800), () {
+    _roundTimers[duelId]?.cancel();
+    _roundTimers[duelId] = Timer(const Duration(milliseconds: 800), () {
+      final latest = _activeMatches[duelId];
+      if (latest == null || latest.currentQuestionIndex != questionIndex) {
+        return;
+      }
       final nextIdx = questionIndex + 1;
-      if (nextIdx < current.questions.length) {
+      if (nextIdx < latest.questions.length) {
         _startRound(duelId, nextIdx);
       } else {
         _finalizeMatch(duelId);

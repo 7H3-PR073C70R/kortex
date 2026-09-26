@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -38,9 +40,9 @@ class QuizDuelLeaderboardSheet extends HookWidget {
       const AsyncSnapshot.waiting(),
     );
 
-    void fetchLeaderboard() {
+    Future<void> fetchLeaderboard() async {
       leaderboardState.value = const AsyncSnapshot.waiting();
-      repo
+      await repo
           .getEloLeaderboard(
             subject: selectedSubject.value == 'All' ? null : selectedSubject.value,
             limit: 25,
@@ -64,7 +66,7 @@ class QuizDuelLeaderboardSheet extends HookWidget {
     }
 
     useEffect(() {
-      fetchLeaderboard();
+      unawaited(fetchLeaderboard());
       return null;
     }, [selectedSubject.value]);
 

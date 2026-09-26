@@ -260,6 +260,8 @@ class QuizDuelMatch extends Equatable {
               'correctAnswer': q.correctAnswer,
               'explanation': q.explanation,
               'subTopic': q.subTopic,
+              if (q.latexFormula != null) 'latexFormula': q.latexFormula,
+              if (q.imageUrl != null) 'imageUrl': q.imageUrl,
             },
           )
           .toList(),
