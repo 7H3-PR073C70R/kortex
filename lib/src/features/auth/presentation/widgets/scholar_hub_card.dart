@@ -57,7 +57,7 @@ class ScholarHubCard extends StatelessWidget {
 
       final xp = userActivity.getXpPoints();
       if (xp > 0) {
-        final calcLevel = (xp / 300).floor() + 1;
+        final calcLevel = userActivity.getLevelForXp(xp);
         level = math.max(level, calcLevel);
       }
     } on Object catch (_) {}

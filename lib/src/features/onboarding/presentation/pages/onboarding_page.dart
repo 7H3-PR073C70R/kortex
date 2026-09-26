@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_draft_cubit.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
@@ -74,6 +75,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _completeOnboarding() async {
     await _dataSource.markOnboardingCompleted();
+    if (locator.isRegistered<AuthRepository>()) {
+      try {
+        final profileRes = await locator<AuthRepository>().getUserProfile();
+        await profileRes.fold<dynamic>(
+          (_) async {},
+          (profile) async {
+            if (profile.id.isNotEmpty) {
+              await locator<AuthRepository>().completeOnboarding(
+                track: profile.targetTrack.isNotEmpty
+                    ? profile.targetTrack
+                    : 'general',
+                dailyTarget: profile.dailyCardTarget > 0
+                    ? profile.dailyCardTarget
+                    : 20,
+              );
+            }
+          },
+        );
+      } on Object catch (_) {}
+    }
     if (!mounted) return;
     await context.router.replace(const AuthRoute());
   }
@@ -158,10 +179,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ? l10n.onboardingGetStartedSemantics
         : l10n.onboardingNextSemantics;
 
-    return Scaffold(
-      backgroundColor: colors.surfacePrimary,
-      body: Stack(
-        fit: StackFit.expand,
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): _onBack,
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+            _onNext(slides.length, useRocketFinale: true),
+        const SingleActivator(LogicalKeyboardKey.enter): () =>
+            _onNext(slides.length, useRocketFinale: true),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: colors.surfacePrimary,
+          body: Stack(
+            fit: StackFit.expand,
         children: [
           // ==============================================
           //    BASE LAYER: Onboarding Carousel
@@ -258,7 +289,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   // ==========================================================================

@@ -130,8 +130,31 @@ abstract class CommunityApiClient {
   @POST(AppApiEndpoint.studyCircleMembers)
   Future<HttpResponse<dynamic>> joinStudyCircle(
     @Body() Map<String, dynamic> body, {
-    @Header('Prefer') String prefer = 'return=representation',
+    @Header('Prefer') String prefer = 'resolution=ignore-duplicates,return=representation',
   });
+
+  @DELETE(AppApiEndpoint.studyCircleMembers)
+  Future<HttpResponse<dynamic>> leaveStudyCircle(
+    @Queries() Map<String, dynamic> query,
+  );
+
+  @POST(AppApiEndpoint.nudgeStudyCircleRpc)
+  @Extra({'silent': true})
+  Future<HttpResponse<dynamic>> nudgeStudyCircle(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.recordPodFocusMinutesRpc)
+  @Extra({'silent': true})
+  Future<HttpResponse<dynamic>> recordPodFocusMinutes(
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST(AppApiEndpoint.notifications)
+  @Extra({'silent': true})
+  Future<HttpResponse<dynamic>> createNotification(
+    @Body() Map<String, dynamic> body,
+  );
 
   @GET(AppApiEndpoint.sharedDecks)
   Future<HttpResponse<dynamic>> fetchSharedDecks(
@@ -149,9 +172,19 @@ abstract class CommunityApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  @POST(AppApiEndpoint.rateSharedDeckRpc)
+  Future<HttpResponse<dynamic>> rateSharedDeck(
+    @Body() Map<String, dynamic> body,
+  );
+
   @GET(AppApiEndpoint.leaderboards)
   Future<HttpResponse<dynamic>> fetchLeaderboards(
     @Queries() Map<String, dynamic> query,
+  );
+
+  @POST(AppApiEndpoint.claimWeeklyXpRpc)
+  Future<HttpResponse<dynamic>> claimWeeklyXp(
+    @Body() Map<String, dynamic> body,
   );
 
   @POST(AppApiEndpoint.autoProvisionCommunityRpc)

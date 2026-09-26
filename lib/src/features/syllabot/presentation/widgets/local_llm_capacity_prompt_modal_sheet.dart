@@ -8,6 +8,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -42,6 +43,7 @@ class LocalLlmCapacityPromptModalSheet extends StatefulWidget {
 
 class _LocalLlmCapacityPromptModalSheetState
     extends State<LocalLlmCapacityPromptModalSheet> {
+  int _selectedModelIndex = 0;
   // ignore: use_late_for_private_fields_and_variables - report is null until audit completes
   DeviceCapabilityReport? _report;
   bool _isLoadingReport = true;
@@ -120,6 +122,7 @@ class _LocalLlmCapacityPromptModalSheetState
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -210,7 +213,101 @@ class _LocalLlmCapacityPromptModalSheetState
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+
+              // Model Choice Cards
+              Row(
+                children: [
+                  Expanded(
+                    child: ShrinkableButton(
+                      onTap: () => setState(() => _selectedModelIndex = 0),
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _selectedModelIndex == 0
+                              ? colors.primary.withAlpha(isDark ? 40 : 20)
+                              : colors.surfaceSecondary,
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: _selectedModelIndex == 0
+                                ? colors.primary
+                                : colors.surfaceBorder.withAlpha(60),
+                            width: _selectedModelIndex == 0 ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'TinyLlama 1.1B',
+                              style: typography.caption.bold.copyWith(
+                                color: _selectedModelIndex == 0
+                                    ? colors.primary
+                                    : colors.textPrimary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '248 MB • Fast & Lightweight',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ShrinkableButton(
+                      onTap: () => setState(() => _selectedModelIndex = 1),
+                      child: AnimatedContainer(
+                        duration: AppMotion.snappy,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _selectedModelIndex == 1
+                              ? colors.primary.withAlpha(isDark ? 40 : 20)
+                              : colors.surfaceSecondary,
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: _selectedModelIndex == 1
+                                ? colors.primary
+                                : colors.surfaceBorder.withAlpha(60),
+                            width: _selectedModelIndex == 1 ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Gemma 2B',
+                              style: typography.caption.bold.copyWith(
+                                color: _selectedModelIndex == 1
+                                    ? colors.primary
+                                    : colors.textPrimary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '1.2 GB • Deep STEM Reasoning',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
 
               // Device Capability Audit Box
               Container(
@@ -238,7 +335,7 @@ class _LocalLlmCapacityPromptModalSheetState
                             iconColor: _report!.hasSufficientStorage
                                 ? colors.success
                                 : colors.error,
-                            title: 'Storage Space',
+                            title: l10n.syllabotCapStorageSpace,
                             subtitle: _report!.storageStatusText,
                             statusBadge: _report!.hasSufficientStorage
                                 ? 'Ready'
@@ -251,7 +348,7 @@ class _LocalLlmCapacityPromptModalSheetState
                           _AuditRow(
                             icon: Icons.speed_rounded,
                             iconColor: colors.primary,
-                            title: 'Processor & Cores',
+                            title: l10n.syllabotCapProcessorCores,
                             subtitle:
                                 '${_report!.cpuCores} CPU Cores • ${_report!.performanceTier}',
                             statusBadge: 'Optimized',
@@ -261,7 +358,7 @@ class _LocalLlmCapacityPromptModalSheetState
                           _AuditRow(
                             icon: Icons.psychology_rounded,
                             iconColor: colors.syllabotAccent,
-                            title: 'RAM & Battery Guard',
+                            title: l10n.syllabotCapRamBatteryGuard,
                             subtitle:
                                 '~350MB Peak RAM • Optimized for energy efficiency',
                             statusBadge: 'Optimal',

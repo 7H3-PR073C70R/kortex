@@ -22,6 +22,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -96,14 +97,7 @@ class AllCuratedCoursesPage extends HookWidget {
               backgroundColor: colors.backgroundPrimary,
               elevation: 0,
               scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: colors.textPrimary,
-                  size: 18,
-                ),
-                onPressed: () => context.router.pop(),
-              ),
+              leading: const AppBackButton(),
               title: Text(
                 'Enrolled Curated Courses',
                 style: typography.title3.bold.copyWith(

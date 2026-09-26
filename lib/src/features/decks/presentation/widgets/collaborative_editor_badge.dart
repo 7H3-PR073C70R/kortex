@@ -5,11 +5,17 @@ import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_c
 class CollaborativeEditorBadge extends StatelessWidget {
   const CollaborativeEditorBadge({
     required this.editors,
+    this.activeCardId,
+    this.isCardLockedByPeer = false,
+    this.lockedByUserName,
     this.onTap,
     super.key,
   });
 
   final List<EphemeralParticipant> editors;
+  final String? activeCardId;
+  final bool isCardLockedByPeer;
+  final String? lockedByUserName;
   final VoidCallback? onTap;
 
   @override
@@ -119,12 +125,22 @@ class CollaborativeEditorBadge extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Live Editing',
+                isCardLockedByPeer
+                    ? 'Card Locked by ${lockedByUserName ?? "Peer"}'
+                    : 'Live Editing',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: colors.success,
+                  color: isCardLockedByPeer ? colors.warning : colors.success,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (isCardLockedByPeer) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.lock_rounded,
+                  size: 12,
+                  color: colors.warning,
+                ),
+              ],
             ],
           ),
         ),

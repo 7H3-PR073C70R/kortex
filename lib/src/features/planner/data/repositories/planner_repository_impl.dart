@@ -300,43 +300,11 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'target_score_percent': targetScorePercent,
             if (userId.isNotEmpty) 'user_id': userId,
           };
-          Response<dynamic> response;
-          try {
-            response = await client.post<dynamic>(
-              '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
-              data: payload,
-              options: Options(headers: {'Prefer': 'return=representation'}),
-            );
-          } on DioException catch (dioErr) {
-            final errBody = dioErr.response?.data?.toString() ?? '';
-            final isSchemaMismatch = dioErr.response?.statusCode == 400 &&
-                (errBody.contains('assessment_type') ||
-                    errBody.contains('schema cache') ||
-                    errBody.contains('column'));
-            if (isSchemaMismatch) {
-              developer.log(
-                'Supabase missing assessment_type column; retrying with legacy schema fields',
-              );
-              final legacyPayload = <String, dynamic>{
-                'exam_name': examName,
-                'target_date': targetDate.toIso8601String().split('T').first,
-                'subject_track': subjectTrack,
-                'total_cards_count': totalCardsCount,
-                'mastered_cards_count': 0,
-                'total_lapses': 0,
-                'daily_target': dailyTarget,
-                'target_score_percent': targetScorePercent,
-                if (userId.isNotEmpty) 'user_id': userId,
-              };
-              response = await client.post<dynamic>(
-                '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
-                data: legacyPayload,
-                options: Options(headers: {'Prefer': 'return=representation'}),
-              );
-            } else {
-              rethrow;
-            }
-          }
+          final response = await client.post<dynamic>(
+            '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
+            data: payload,
+            options: Options(headers: {'Prefer': 'return=representation'}),
+          );
 
           if (response.statusCode == 201 || response.statusCode == 200) {
             if (response.data is List && (response.data as List).isNotEmpty) {
@@ -395,6 +363,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
     double? targetScorePercent,
     bool? isCompleted,
     double? achievedScorePercent,
+    bool? isPostponed,
+    DateTime? originalTargetDate,
+    String? postponedReason,
+    bool? isCancelled,
+    DateTime? cancelledAt,
+    String? cancellationReason,
   }) {
     return Future<ExamEventEntity>.sync(() async {
       final idx = _cachedExams.indexWhere((e) => e.id == examId);
@@ -424,6 +398,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
       final effWeight = weightPercent ?? existing?.weightPercent;
       final effCompleted = isCompleted ?? existing?.isCompleted ?? false;
       final effAchieved = achievedScorePercent ?? existing?.achievedScorePercent;
+      final effPostponed = isPostponed ?? existing?.isPostponed ?? false;
+      final effOrigTarget = originalTargetDate ?? existing?.originalTargetDate;
+      final effPostponedReason = postponedReason ?? existing?.postponedReason;
+      final effCancelled = isCancelled ?? existing?.isCancelled ?? false;
+      final effCancelledAt = cancelledAt ?? existing?.cancelledAt;
+      final effCancellationReason = cancellationReason ?? existing?.cancellationReason;
 
       final client = _effectiveDio;
       final userId = _userStorage?.getUserId() ?? '';
@@ -442,45 +422,18 @@ class PlannerRepositoryImpl implements PlannerRepository {
             'daily_target': dailyTarget,
             'is_completed': effCompleted,
             'achieved_score_percent': ?effAchieved,
+            'is_postponed': effPostponed,
+            'is_cancelled': effCancelled,
             'updated_at': DateTime.now().toIso8601String(),
             if (userId.isNotEmpty) 'user_id': userId,
           };
           final uri = userId.isNotEmpty
               ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId&user_id=eq.$userId'
               : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId';
-          try {
-            await client.patch<dynamic>(
-              uri,
-              data: payload,
-            );
-          } on DioException catch (dioErr) {
-            final errBody = dioErr.response?.data?.toString() ?? '';
-            final isSchemaMismatch = dioErr.response?.statusCode == 400 &&
-                (errBody.contains('assessment_type') ||
-                    errBody.contains('schema cache') ||
-                    errBody.contains('column'));
-            if (isSchemaMismatch) {
-              developer.log(
-                'Supabase missing assessment_type column; retrying patch with legacy schema fields',
-              );
-              final legacyPayload = <String, dynamic>{
-                'exam_name': examName,
-                'target_date': targetDate.toIso8601String().split('T').first,
-                'subject_track': subjectTrack,
-                'total_cards_count': ?totalCardsCount,
-                'target_score_percent': ?targetScorePercent,
-                'daily_target': dailyTarget,
-                'updated_at': DateTime.now().toIso8601String(),
-                if (userId.isNotEmpty) 'user_id': userId,
-              };
-              await client.patch<dynamic>(
-                uri,
-                data: legacyPayload,
-              );
-            } else {
-              rethrow;
-            }
-          }
+          await client.patch<dynamic>(
+            uri,
+            data: payload,
+          );
         } on Object catch (e) {
           developer.log('Failed to patch exam in Supabase: $e');
         }
@@ -507,6 +460,12 @@ class PlannerRepositoryImpl implements PlannerRepository {
         achievedScorePercent: effAchieved,
         completedAt: existing?.completedAt,
         createdAt: existing?.createdAt ?? DateTime.now(),
+        isPostponed: effPostponed,
+        originalTargetDate: effOrigTarget,
+        postponedReason: effPostponedReason,
+        isCancelled: effCancelled,
+        cancelledAt: effCancelledAt,
+        cancellationReason: effCancellationReason,
       );
 
       if (idx >= 0) {
@@ -518,6 +477,94 @@ class PlannerRepositoryImpl implements PlannerRepository {
       _saveToStorage();
       return updated;
     }).makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> postponeExam({
+    required String examId,
+    required DateTime newTargetDate,
+    String? reason,
+  }) async {
+    final idx = _cachedExams.indexWhere((e) => e.id == examId);
+    if (idx < 0) {
+      return const Left(CacheFailure(message: 'Exam not found'));
+    }
+    final existing = _cachedExams[idx];
+    return updateExam(
+      examId: examId,
+      examName: existing.examName,
+      targetDate: newTargetDate,
+      subjectTrack: existing.subjectTrack,
+      assessmentType: existing.assessmentType,
+      scopedDeckIds: existing.scopedDeckIds,
+      scopedTopics: existing.scopedTopics,
+      weightPercent: existing.weightPercent,
+      totalCardsCount: existing.totalCardsCount,
+      masteredCardsCount: existing.masteredCardsCount,
+      totalLapses: existing.totalLapses,
+      targetScorePercent: existing.targetScorePercent,
+      isCompleted: false,
+      isCancelled: false,
+      isPostponed: true,
+      originalTargetDate: existing.originalTargetDate ?? existing.targetDate,
+      postponedReason: reason,
+    );
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> cancelExam({
+    required String examId,
+    String? reason,
+  }) async {
+    final idx = _cachedExams.indexWhere((e) => e.id == examId);
+    if (idx < 0) {
+      return const Left(CacheFailure(message: 'Exam not found'));
+    }
+    final existing = _cachedExams[idx];
+    return updateExam(
+      examId: examId,
+      examName: existing.examName,
+      targetDate: existing.targetDate,
+      subjectTrack: existing.subjectTrack,
+      assessmentType: existing.assessmentType,
+      scopedDeckIds: existing.scopedDeckIds,
+      scopedTopics: existing.scopedTopics,
+      weightPercent: existing.weightPercent,
+      totalCardsCount: existing.totalCardsCount,
+      masteredCardsCount: existing.masteredCardsCount,
+      totalLapses: existing.totalLapses,
+      targetScorePercent: existing.targetScorePercent,
+      isCompleted: false,
+      isCancelled: true,
+      cancelledAt: DateTime.now(),
+      cancellationReason: reason,
+    );
+  }
+
+  @override
+  Future<Either<Failure, ExamEventEntity>> restoreExam(String examId) async {
+    final idx = _cachedExams.indexWhere((e) => e.id == examId);
+    if (idx < 0) {
+      return const Left(CacheFailure(message: 'Exam not found'));
+    }
+    final existing = _cachedExams[idx];
+    return updateExam(
+      examId: examId,
+      examName: existing.examName,
+      targetDate: existing.targetDate,
+      subjectTrack: existing.subjectTrack,
+      assessmentType: existing.assessmentType,
+      scopedDeckIds: existing.scopedDeckIds,
+      scopedTopics: existing.scopedTopics,
+      weightPercent: existing.weightPercent,
+      totalCardsCount: existing.totalCardsCount,
+      masteredCardsCount: existing.masteredCardsCount,
+      totalLapses: existing.totalLapses,
+      targetScorePercent: existing.targetScorePercent,
+      isCompleted: false,
+      isCancelled: false,
+      isPostponed: false,
+    );
   }
 
   @override

@@ -48,7 +48,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithTheme(const PermissionsPage()),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('KORTEXIFY'), findsOneWidget);
       expect(find.text('Skip for now'), findsNWidgets(2));
@@ -59,7 +59,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithTheme(const PermissionsPage()),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Push Notifications'), findsOneWidget);
       expect(find.text('Camera & Storage Access'), findsOneWidget);

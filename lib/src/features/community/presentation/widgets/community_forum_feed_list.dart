@@ -143,7 +143,7 @@ class CommunityForumFeedList extends HookWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {

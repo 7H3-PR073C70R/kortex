@@ -59,6 +59,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthStreakIncremented>(_onStreakIncremented);
     on<AuthSignOutRequested>(_onSignOutRequested);
     on<AuthSubscriptionUpdated>(_onSubscriptionUpdated);
+    on<AuthAppResumed>(_onAppResumed);
 
     _authSubscription = _observeAuthStateUseCase().listen((status) {
       if (!isClosed) {
@@ -184,6 +185,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             : AuthStatus.unauthenticated,
       ),
     );
+  }
+
+  Future<void> _onAppResumed(
+    AuthAppResumed event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (locator.isRegistered<UserStorageService>()) {
+      final storage = locator<UserStorageService>();
+      if (storage.isTokenExpired()) {
+        final refreshRes = await _authRepository.refreshSession();
+        await refreshRes.fold(
+          (failure) async {
+            emit(
+              state.copyWith(
+                status: AuthStatus.unauthenticated,
+                sessionStatus: AuthSessionStatus.unauthenticated,
+              ),
+            );
+          },
+          (_) async {
+            add(const AuthCheckRequested());
+          },
+        );
+        return;
+      }
+    }
+    add(const AuthCheckRequested());
   }
 
   void _syncDeviceToken([String? userId]) {

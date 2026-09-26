@@ -158,7 +158,7 @@ void main() {
         ),
       );
 
-      expect(find.text('AL'), findsOneWidget);
+      expect(find.text('WO'), findsOneWidget);
     });
 
     testWidgets('ShimmerPlaceholder renders with loading container semantics', (

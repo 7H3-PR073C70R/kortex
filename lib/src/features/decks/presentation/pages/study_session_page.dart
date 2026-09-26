@@ -22,7 +22,9 @@ import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/sprint_milestone_banner.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/thought_parking_lot_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -197,32 +199,7 @@ class _StudySessionView extends HookWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Semantics(
-                          button: true,
-                          label: 'Back',
-                          child: IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: colors.surfaceSecondary.withAlpha(
-                                  isDark ? 180 : 120,
-                                ),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: colors.primary.withAlpha(
-                                    isDark ? 50 : 25,
-                                  ),
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.arrow_back_rounded,
-                                color: colors.textPrimary,
-                                size: 20,
-                              ),
-                            ),
-                            onPressed: () => context.router.pop(),
-                          ),
-                        ),
+                        const AppBackButton(),
                         Text(
                           'Study Session',
                           style: typography.subhead.bold.copyWith(
@@ -432,35 +409,35 @@ class _StudySessionView extends HookWidget {
               return const SizedBox.shrink();
             }
 
+            final cubit = context.read<StudySessionCubit>();
+
             return KeyboardListener(
               focusNode: focusNode,
               autofocus: true,
               onKeyEvent: (event) {
                 if (event is KeyDownEvent) {
                   final key = event.logicalKey;
-                  if (key == LogicalKeyboardKey.space) {
-                    context.read<StudySessionCubit>().toggleFlip();
+                  if (key == LogicalKeyboardKey.keyZ) {
+                    if (cubit.canUndo) {
+                      cubit.undoLastRating();
+                      context.showSnackBar(message: 'Rating undone ↩️');
+                    }
+                  } else if (key == LogicalKeyboardKey.space ||
+                      key == LogicalKeyboardKey.enter) {
+                    cubit.toggleFlip();
                   } else if (state.isFlipped) {
                     if (key == LogicalKeyboardKey.digit1 ||
                         key == LogicalKeyboardKey.numpad1) {
-                      unawaited(
-                        context.read<StudySessionCubit>().rateCard(0),
-                      );
+                      unawaited(cubit.rateCard(0));
                     } else if (key == LogicalKeyboardKey.digit2 ||
                         key == LogicalKeyboardKey.numpad2) {
-                      unawaited(
-                        context.read<StudySessionCubit>().rateCard(3),
-                      );
+                      unawaited(cubit.rateCard(3));
                     } else if (key == LogicalKeyboardKey.digit3 ||
                         key == LogicalKeyboardKey.numpad3) {
-                      unawaited(
-                        context.read<StudySessionCubit>().rateCard(4),
-                      );
+                      unawaited(cubit.rateCard(4));
                     } else if (key == LogicalKeyboardKey.digit4 ||
                         key == LogicalKeyboardKey.numpad4) {
-                      unawaited(
-                        context.read<StudySessionCubit>().rateCard(5),
-                      );
+                      unawaited(cubit.rateCard(5));
                     }
                   }
                 }
@@ -476,18 +453,21 @@ class _StudySessionView extends HookWidget {
                         StudyProgressTopBar(
                           currentIndex: state.currentIndex,
                           totalCards: state.totalCards,
-                          elapsedTimeFormatted:
-                              context.read<StudySessionCubit>().isSpeedRun
-                              ? context
-                                    .read<StudySessionCubit>()
-                                    .formattedRemainingTime(
-                                      state.elapsedSeconds,
-                                    )
+                          canUndo: cubit.canUndo,
+                          onUndo: () {
+                            cubit.undoLastRating();
+                            context.showSnackBar(message: 'Rating undone ↩️');
+                          },
+                          onThoughtParkingLot: () {
+                            unawaited(ThoughtParkingLotSheet.show(context));
+                          },
+                          elapsedTimeFormatted: cubit.isSpeedRun
+                              ? cubit.formattedRemainingTime(
+                                  state.elapsedSeconds,
+                                )
                               : state.formattedElapsedTime,
                           onClose: () async {
-                            await context
-                                .read<StudySessionCubit>()
-                                .saveSessionCheckpoint();
+                            await cubit.saveSessionCheckpoint();
                             if (context.mounted) {
                               unawaited(context.router.maybePop());
                             }

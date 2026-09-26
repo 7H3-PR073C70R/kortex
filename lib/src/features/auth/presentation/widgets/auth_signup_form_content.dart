@@ -117,18 +117,56 @@ class AuthSignupFormContent extends StatelessWidget {
             size: 20,
           ),
         ),
-        if (showPromoField.value || promoCodeController.text.isNotEmpty) ...[
-          const SizedBox(height: 18),
-          AppTextField(
-            label: l10n.authPromoCodeOptionalLabel,
-            hintText: l10n.authPromoCodeHint,
-            controller: promoCodeController,
-            prefixIcon: const Icon(
-              Icons.card_giftcard_rounded,
-              size: 20,
-            ),
-          ),
-        ],
+        ValueListenableBuilder<bool>(
+          valueListenable: showPromoField,
+          builder: (context, isVisible, child) {
+            final hasPromoText = promoCodeController.text.isNotEmpty;
+            if (isVisible || hasPromoText) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 18),
+                child: AppTextField(
+                  label: l10n.authPromoCodeOptionalLabel,
+                  hintText: l10n.authPromoCodeHint,
+                  controller: promoCodeController,
+                  prefixIcon: const Icon(
+                    Icons.card_giftcard_rounded,
+                    size: 20,
+                  ),
+                ),
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () {
+                    showPromoField.value = true;
+                  },
+                  icon: Icon(
+                    Icons.card_giftcard_rounded,
+                    size: 16,
+                    color: colors.primary,
+                  ),
+                  label: Text(
+                    'Have a promo or referral code?',
+                    style: typography.caption.semiBold.copyWith(
+                      color: colors.primary,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 44),
         AppButton(
           text: 'Signup',

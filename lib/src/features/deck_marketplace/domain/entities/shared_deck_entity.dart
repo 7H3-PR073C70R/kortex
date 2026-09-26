@@ -17,6 +17,7 @@ class SharedDeckEntity extends Equatable {
     this.rating = 4.8,
     this.cards = const [],
     this.originalDeckId,
+    this.isPremiumTier = false,
   });
 
   final String id;
@@ -32,6 +33,7 @@ class SharedDeckEntity extends Equatable {
   final double rating;
   final List<FlashcardEntity> cards;
   final String? originalDeckId;
+  final bool isPremiumTier;
 
   SharedDeckEntity copyWith({
     String? id,
@@ -47,6 +49,7 @@ class SharedDeckEntity extends Equatable {
     double? rating,
     List<FlashcardEntity>? cards,
     String? originalDeckId,
+    bool? isPremiumTier,
   }) {
     return SharedDeckEntity(
       id: id ?? this.id,
@@ -62,6 +65,7 @@ class SharedDeckEntity extends Equatable {
       rating: rating ?? this.rating,
       cards: cards ?? this.cards,
       originalDeckId: originalDeckId ?? this.originalDeckId,
+      isPremiumTier: isPremiumTier ?? this.isPremiumTier,
     );
   }
 
@@ -80,5 +84,6 @@ class SharedDeckEntity extends Equatable {
     rating,
     cards,
     originalDeckId,
+    isPremiumTier,
   ];
 }

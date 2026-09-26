@@ -79,7 +79,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
   (int totalDaily, int estMinutes, String? topPriorityId) _computeAggregates(
     List<ExamEventEntity> exams,
   ) {
-    final active = exams.where((e) => !e.isCompleted && !e.isPast).toList();
+    final active = exams.where((e) => !e.isCompleted && !e.isPast && !e.isCancelled).toList();
     final totalDaily = _calculator.calculateTotalDailyWorkload(active);
     final estMinutes = _calculator.calculateEstimatedDailyMinutes(totalDaily);
 
@@ -525,18 +525,21 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
       rolloverWeakCards: rolloverWeakCards,
     );
 
-    result.fold(
-      (failure) => emit(
-        state.copyWith(
-          status: CramPlannerStatus.error,
-          errorMessage: failure.message,
-        ),
-      ),
-      (completedExam) {
+    await result.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.error,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (completedExam) async {
+        // Auto-delete completed assessment from persistent storage
+        await _repository.deleteExam(examId);
+
         final updatedList =
-            state.activeExams
-                .map((e) => e.id == examId ? completedExam : e)
-                .toList()
+            state.activeExams.where((e) => e.id != examId).toList()
               ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
 
         // Primary becomes the next upcoming uncompleted exam if available
@@ -671,6 +674,171 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
             activeExams: updatedList,
             selectedExam: primary,
             clearSelectedExam: primary == null,
+            dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
+            urgencyLevel: urgency,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Postpones an assessment to a new target date with an optional reason.
+  Future<void> postponeAssessment({
+    required String examId,
+    required DateTime newTargetDate,
+    String? reason,
+  }) async {
+    emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    final result = await _repository.postponeExam(
+      examId: examId,
+      newTargetDate: newTargetDate,
+      reason: reason,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CramPlannerStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (updatedExam) {
+        final rawList = state.activeExams
+            .map((e) => e.id == examId ? updatedExam : e)
+            .toList();
+        final updatedList = _calibrateExamsWithLiveData(rawList)
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+        final primary = updatedList.firstWhere(
+          (e) => e.id == examId,
+          orElse: () =>
+              updatedList.isNotEmpty ? updatedList.first : updatedExam,
+        );
+
+        final pace = primary.dailyTarget;
+        final urgency = _calculator.getUrgencyLevel(
+          primary.daysRemaining,
+          type: primary.assessmentType,
+        );
+
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.loaded,
+            activeExams: updatedList,
+            selectedExam: primary,
+            dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
+            urgencyLevel: urgency,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Cancels an assessment with an optional reason.
+  Future<void> cancelAssessment({
+    required String examId,
+    String? reason,
+  }) async {
+    emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    final result = await _repository.cancelExam(
+      examId: examId,
+      reason: reason,
+    );
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CramPlannerStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (cancelledExam) {
+        final rawList = state.activeExams
+            .map((e) => e.id == examId ? cancelledExam : e)
+            .toList();
+        final updatedList = _calibrateExamsWithLiveData(rawList)
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+        final active = updatedList.where((e) => e.isActive).toList();
+        final primary = active.isNotEmpty ? active.first : null;
+
+        var pace = 20;
+        var urgency = ExamUrgencyLevel.normal;
+
+        if (primary != null) {
+          pace = primary.dailyTarget;
+          urgency = _calculator.getUrgencyLevel(
+            primary.daysRemaining,
+            type: primary.assessmentType,
+          );
+        }
+
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.loaded,
+            activeExams: updatedList,
+            selectedExam: primary,
+            clearSelectedExam: primary == null,
+            dynamicDailyTarget: pace,
+            totalCombinedDailyTarget: totalDaily,
+            estimatedDailyMinutes: estMins,
+            topPriorityExamId: topPriorityId,
+            urgencyLevel: urgency,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Restores a cancelled or postponed assessment back to active schedule.
+  Future<void> restoreAssessment(String examId) async {
+    emit(state.copyWith(status: CramPlannerStatus.loading));
+
+    final result = await _repository.restoreExam(examId);
+
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          status: CramPlannerStatus.error,
+          errorMessage: failure.message,
+        ),
+      ),
+      (restoredExam) {
+        final rawList = state.activeExams
+            .map((e) => e.id == examId ? restoredExam : e)
+            .toList();
+        final updatedList = _calibrateExamsWithLiveData(rawList)
+          ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+
+        final primary = restoredExam;
+        final pace = primary.dailyTarget;
+        final urgency = _calculator.getUrgencyLevel(
+          primary.daysRemaining,
+          type: primary.assessmentType,
+        );
+
+        final (totalDaily, estMins, topPriorityId) =
+            _computeAggregates(updatedList);
+
+        emit(
+          state.copyWith(
+            status: CramPlannerStatus.loaded,
+            activeExams: updatedList,
+            selectedExam: primary,
             dynamicDailyTarget: pace,
             totalCombinedDailyTarget: totalDaily,
             estimatedDailyMinutes: estMins,

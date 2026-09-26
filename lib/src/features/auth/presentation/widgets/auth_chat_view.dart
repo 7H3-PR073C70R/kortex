@@ -39,6 +39,7 @@ enum _ChatFlowStep {
   signUpName,
   signUpEmail,
   signUpPassword,
+  signUpPromoCode,
   loginEmail,
   loginPassword,
   forgotPasswordEmail,
@@ -265,6 +266,44 @@ class AuthChatView extends HookWidget {
       });
     }
 
+    void submitRegistration({String? promoOverride}) {
+      currentFlow.value = _ChatFlowStep.submitting;
+
+      isThinking.value = true;
+      thinkingLabel.value = 'Creating your Kortexify neural profile...';
+      scrollToBottom(animate: true);
+
+      final regEmail = draftState.email;
+      final regPassword = draftState.password;
+      final regName = draftState.displayName;
+      final regPromo = (promoOverride ?? draftState.promoCode).trim();
+
+      lastRetryDescription.value = 'Sign Up';
+      lastRetryAction.value = () {
+        currentFlow.value = _ChatFlowStep.submitting;
+        isThinking.value = true;
+        thinkingLabel.value = 'Creating your Kortexify neural profile...';
+        scrollToBottom(animate: true);
+        context.read<AuthBloc>().add(
+          AuthRegisterRequested(
+            email: regEmail,
+            password: regPassword,
+            displayName: regName.isNotEmpty ? regName : null,
+            promoCode: regPromo.isNotEmpty ? regPromo : null,
+          ),
+        );
+      };
+
+      context.read<AuthBloc>().add(
+        AuthRegisterRequested(
+          email: regEmail,
+          password: regPassword,
+          displayName: regName.isNotEmpty ? regName : null,
+          promoCode: regPromo.isNotEmpty ? regPromo : null,
+        ),
+      );
+    }
+
     void handleSend() {
       final input = textController.text.trim();
       if (input.isEmpty || isThinking.value || isTyping.value) return;
@@ -339,38 +378,22 @@ class AuthChatView extends HookWidget {
           addUserMessage(input, isPassword: true);
           draftCubit.updatePassword(input);
           textController.clear();
-          currentFlow.value = _ChatFlowStep.submitting;
 
-          isThinking.value = true;
-          thinkingLabel.value = 'Creating your Kortexify neural profile...';
-          scrollToBottom(animate: true);
-
-          final regEmail = draftState.email;
-          final regPassword = input;
-          final regName = draftState.displayName;
-
-          lastRetryDescription.value = 'Sign Up';
-          lastRetryAction.value = () {
-            currentFlow.value = _ChatFlowStep.submitting;
-            isThinking.value = true;
-            thinkingLabel.value = 'Creating your Kortexify neural profile...';
-            scrollToBottom(animate: true);
-            context.read<AuthBloc>().add(
-              AuthRegisterRequested(
-                email: regEmail,
-                password: regPassword,
-                displayName: regName,
-              ),
+          if (draftState.promoCode.isNotEmpty) {
+            submitRegistration();
+          } else {
+            currentFlow.value = _ChatFlowStep.signUpPromoCode;
+            simulateBotReply(
+              'Got a promo or referral code? Enter it below, or tap "Skip & Register" to finish creating your account.',
+              thinkingText: 'Checking for promo code...',
             );
-          };
+          }
 
-          context.read<AuthBloc>().add(
-            AuthRegisterRequested(
-              email: regEmail,
-              password: regPassword,
-              displayName: regName,
-            ),
-          );
+        case _ChatFlowStep.signUpPromoCode:
+          addUserMessage(input);
+          draftCubit.updatePromoCode(input);
+          textController.clear();
+          submitRegistration(promoOverride: input);
 
         case _ChatFlowStep.loginEmail:
           if (!_emailRegex.hasMatch(input)) {
@@ -540,6 +563,8 @@ class AuthChatView extends HookWidget {
           return 'Enter your email address';
         case _ChatFlowStep.signUpPassword:
           return 'Enter secure password (min. 8 chars)';
+        case _ChatFlowStep.signUpPromoCode:
+          return 'Enter promo code (optional)';
         case _ChatFlowStep.loginEmail:
           return 'Enter your registered email';
         case _ChatFlowStep.loginPassword:
@@ -970,6 +995,52 @@ class AuthChatView extends HookWidget {
                                     },
                               ),
                               const SizedBox(height: 4),
+                            ] else if (currentFlow.value ==
+                                _ChatFlowStep.signUpPromoCode) ...[
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _ActionChipButton(
+                                      icon: Icons.card_giftcard_rounded,
+                                      label: '🎁 Have Promo Code',
+                                      isPrimary: true,
+                                      onTap: () {
+                                        simulateBotReply(
+                                          'Please type your promo code in the text field below and press Send.',
+                                          thinkingText: 'Awaiting promo code...',
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _ActionChipButton(
+                                      icon: Icons.rocket_launch_rounded,
+                                      label: 'Skip & Register 🚀',
+                                      onTap: () {
+                                        addUserMessage('Skip Promo Code');
+                                        submitRegistration(promoOverride: '');
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              _ActionChipButton(
+                                icon: Icons.arrow_back_rounded,
+                                label: 'Start Over / Choose Other Option',
+                                isFullWidth: true,
+                                onTap: () {
+                                  lastRetryAction.value = null;
+                                  addUserMessage('Start Over');
+                                  currentFlow.value = _ChatFlowStep.initial;
+                                  simulateBotReply(
+                                    'No problem! How would you like to '
+                                    'get started?',
+                                    thinkingText: 'Resetting...',
+                                  );
+                                },
+                              ),
                             ] else if (currentFlow.value ==
                                 _ChatFlowStep.needsEmailConfirmation) ...[
                               // 1. Resend 6-Digit Code

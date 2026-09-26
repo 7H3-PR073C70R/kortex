@@ -302,16 +302,16 @@ class QuizVerdictPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (isCorrect)
-                        Text(
-                          'Nice, you got it! Correct answer: ${question.correctAnswer}',
+                        LatexRichViewer(
+                          text: 'Nice, you got it! Correct answer: ${question.correctAnswer}',
                           style: typography.footnote.bold.copyWith(
                             color: colors.success,
                           ),
                         )
                       else ...[
                         if (hasUserAnswer) ...[
-                          Text(
-                            'Your answer: ${question.userSelectedAnswer}',
+                          LatexRichViewer(
+                            text: 'Your answer: ${question.userSelectedAnswer}',
                             style: typography.footnote.bold.copyWith(
                               color: colors.error,
                             ),
@@ -326,8 +326,8 @@ class QuizVerdictPanel extends StatelessWidget {
                           ),
                           const SizedBox(height: 3),
                         ],
-                        Text(
-                          'Correct answer: ${question.correctAnswer}',
+                        LatexRichViewer(
+                          text: 'Correct answer: ${question.correctAnswer}',
                           style: typography.footnote.bold.copyWith(
                             color: colors.success,
                           ),

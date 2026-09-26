@@ -25,6 +25,7 @@ import 'package:kortex/src/features/community/presentation/widgets/community_hub
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -166,6 +167,7 @@ class _CommunityHubView extends HookWidget {
                     activeFilterCount: activeFilterCount,
                   )
                 : CommunityStandardHeader(
+                    key: AppTourKeys.communityHeroKey,
                     title: l10n.forumTab,
                     selectedTrack: hubState.selectedTrack,
                     selectedForumFilter: hubState.selectedForumFilter,
@@ -237,6 +239,7 @@ class _CommunityHubView extends HookWidget {
                           }
                         },
                         child: Container(
+                          key: AppTourKeys.communityPostBtnKey,
                           height: 38,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
@@ -294,7 +297,7 @@ class _CommunityHubView extends HookWidget {
                       (r) => r.id == roomId,
                       orElse: () => StudyRoomEntity(
                         id: roomId,
-                        title: 'Focus Room',
+                        title: context.l10n.communityFocusRoomTitle,
                         subject: 'General Study',
                       ),
                     );
@@ -386,8 +389,8 @@ class _CommunityNotificationAction extends StatelessWidget {
                 ),
                 if (unreadCount > 0)
                   Positioned(
-                    top: -2,
-                    right: -2,
+                    top: 1,
+                    right: 1,
                     child: Container(
                       width: 8,
                       height: 8,

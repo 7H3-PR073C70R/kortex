@@ -7,6 +7,7 @@ import 'package:kortex/src/features/decks/domain/entities/thought_entry.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_sheet_scaffold.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 class ThoughtParkingLotSheet extends StatefulWidget {
   const ThoughtParkingLotSheet({super.key});
@@ -63,10 +64,11 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
     final colors = context.colors;
     final typography = context.typography;
     final cubit = context.read<FocusSessionCubit>();
+    final l10n = context.l10n;
 
     return DeckSheetScaffold(
-      title: 'Thought Parking Lot',
-      subtitle: 'Dump intrusive thoughts in 5s. Clear your working memory.',
+      title: l10n.thoughtParkingLotTitle,
+      subtitle: l10n.thoughtParkingLotSubtitle,
       maxWidth: 580,
       maxHeightFactor: 0.8,
       scrollable: false,
@@ -94,7 +96,7 @@ class _ThoughtParkingLotSheetState extends State<ThoughtParkingLotSheet> {
                   color: colors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Park an intrusive thought...',
+                  hintText: l10n.thoughtParkingLotHint,
                   hintStyle: typography.body.regular.copyWith(
                     color: colors.textMuted,
                   ),

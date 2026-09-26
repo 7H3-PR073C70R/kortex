@@ -2,6 +2,9 @@ part of 'locator.dart';
 
 void _initServices() {
   locator
+    ..registerLazySingleton<AppSyncEngine>(
+      AppSyncEngine.new,
+    )
     ..registerLazySingleton<CrashlyticsService>(
       CrashlyticsService.new,
     )
@@ -52,6 +55,9 @@ void _initServices() {
     )
     ..registerLazySingleton<FilePickerService>(
       FilePickerService.new,
+    )
+    ..registerLazySingleton<MediaUploadService>(
+      MediaUploadService.new,
     )
     ..registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(storageService: locator()),

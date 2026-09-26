@@ -701,20 +701,24 @@ class _AnimatedXpPill extends StatelessWidget {
             size: 20,
           ),
           const SizedBox(width: 4),
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: xpEarned.toDouble()),
-            duration: const Duration(milliseconds: 1200),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, _) {
-              return Text(
-                '+${value.toInt()} Scholar XP Earned',
-                style: typography.caption.bold.copyWith(
-                  color: colors.warning,
-                  fontSize: 13,
-                  letterSpacing: 0.2,
-                ),
-              );
-            },
+          Flexible(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: xpEarned.toDouble()),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, _) {
+                return Text(
+                  '+${value.toInt()} Scholar XP Earned',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.caption.bold.copyWith(
+                    color: colors.warning,
+                    fontSize: 13,
+                    letterSpacing: 0.2,
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),

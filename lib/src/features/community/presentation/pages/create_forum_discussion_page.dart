@@ -9,11 +9,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/spoken_math_converter.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
@@ -23,6 +25,7 @@ import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_ty
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -32,11 +35,19 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class CreateForumDiscussionPage extends HookWidget {
   const CreateForumDiscussionPage({
     this.initialTrack = 'WAEC',
+    this.initialTitle,
+    this.initialContent,
+    this.initialTags,
+    this.karmaBounty = 0,
     this.onSubmit,
     super.key,
   });
 
   final String initialTrack;
+  final String? initialTitle;
+  final String? initialContent;
+  final List<String>? initialTags;
+  final int karmaBounty;
   final void Function({
     required String title,
     required String content,
@@ -57,23 +68,20 @@ class CreateForumDiscussionPage extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     final userStorage = locator<UserStorageService>();
     final userDisplayName = userStorage.getUserDisplayName() ?? 'Elena Rostova';
     final userHandle = userDisplayName.toLowerCase().replaceAll(' ', '_');
 
-    final titleController = useTextEditingController();
-    final contentController = useTextEditingController();
+    final titleController = useTextEditingController(text: initialTitle ?? '');
+    final contentController = useTextEditingController(text: initialContent ?? '');
     final tagInputController = useTextEditingController();
 
     final selectedTrack = useState<String>(
       initialTrack.isEmpty ? 'WAEC' : initialTrack,
     );
-    final tags = useState<List<String>>([
-      'vector-search',
-      'math-latex',
-      'algorithms',
-    ]);
+    final tags = useState<List<String>>(initialTags ?? []);
     final isAnonymous = useState<bool>(false);
     final isRichPreview = useState<bool>(false);
     final isAiBannerVisible = useState<bool>(true);
@@ -91,18 +99,20 @@ class CreateForumDiscussionPage extends HookWidget {
     final recordingTimer = useRef<Timer?>(null);
 
     final characterCount = useState<int>(0);
-    final lastSavedTime = useState<String>('2s ago');
+    final lastSavedTime = useState<String>('Draft');
 
-    // Speech to Text handler for live voice-to-text dictation
+    // Speech to Text handler for live voice-to-text dictation with math KaTeX conversion
     final sttHandler = useMemoized(
       () => SpeechToTextHandler(
         onResult: (words) {
           if (words.trim().isNotEmpty) {
+            final convertedMath =
+                SpokenMathToKaTeXConverter.convertSpokenMathToKaTeX(words);
             final current = contentController.text;
             if (current.isEmpty) {
-              contentController.text = words;
-            } else if (!current.contains(words)) {
-              contentController.text = '$current $words';
+              contentController.text = convertedMath;
+            } else if (!current.contains(convertedMath)) {
+              contentController.text = '$current $convertedMath';
             }
           }
         },
@@ -647,6 +657,47 @@ class CreateForumDiscussionPage extends HookWidget {
 
       showPublishingLoaderDialog();
 
+      // Server-side R2 upload for local image & voice note files
+      var finalMediaUrls = <String>[];
+      if (attachedImages.value.isNotEmpty &&
+          locator.isRegistered<MediaUploadService>()) {
+        final uploadService = locator<MediaUploadService>();
+        for (final imgPath in attachedImages.value) {
+          if (imgPath.startsWith('http://') || imgPath.startsWith('https://')) {
+            finalMediaUrls.add(imgPath);
+          } else if (File(imgPath).existsSync()) {
+            try {
+              final r2Url = await uploadService.uploadMedia(
+                file: File(imgPath),
+                mediaType: ForumMediaType.image,
+              );
+              finalMediaUrls.add(r2Url);
+            } on Object catch (_) {
+              finalMediaUrls.add(imgPath);
+            }
+          }
+        }
+      } else {
+        finalMediaUrls = attachedImages.value;
+      }
+
+      var finalVoiceNoteUrl = recordedVoiceNoteUrl.value;
+      if (finalVoiceNoteUrl != null &&
+          !finalVoiceNoteUrl.startsWith('http://') &&
+          !finalVoiceNoteUrl.startsWith('https://') &&
+          locator.isRegistered<MediaUploadService>()) {
+        final uploadService = locator<MediaUploadService>();
+        if (File(finalVoiceNoteUrl).existsSync()) {
+          try {
+            final r2Url = await uploadService.uploadMedia(
+              file: File(finalVoiceNoteUrl),
+              mediaType: ForumMediaType.voice,
+            );
+            finalVoiceNoteUrl = r2Url;
+          } on Object catch (_) {}
+        }
+      }
+
       if (onSubmit != null) {
         onSubmit!(
           title: title,
@@ -656,8 +707,8 @@ class CreateForumDiscussionPage extends HookWidget {
           isQuestion: true,
           syllabusTag: tags.value.isNotEmpty ? tags.value.first : 'General',
           tags: tags.value,
-          mediaUrls: attachedImages.value,
-          voiceNoteUrl: recordedVoiceNoteUrl.value,
+          mediaUrls: finalMediaUrls,
+          voiceNoteUrl: finalVoiceNoteUrl,
           voiceNoteDurationSeconds: voiceNoteDurationSeconds.value > 0
               ? voiceNoteDurationSeconds.value
               : null,
@@ -684,8 +735,8 @@ class CreateForumDiscussionPage extends HookWidget {
           isQuestion: true,
           syllabusTag: tags.value.isNotEmpty ? tags.value.first : 'General',
           tags: tags.value,
-          mediaUrls: attachedImages.value,
-          voiceNoteUrl: recordedVoiceNoteUrl.value,
+          mediaUrls: finalMediaUrls,
+          voiceNoteUrl: finalVoiceNoteUrl,
           voiceNoteDurationSeconds: voiceNoteDurationSeconds.value > 0
               ? voiceNoteDurationSeconds.value
               : null,
@@ -776,30 +827,33 @@ class CreateForumDiscussionPage extends HookWidget {
           ),
         ),
         centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colors.success,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.success,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'New Discussion',
-              style: typography.headline.bold.copyWith(
-                color: colors.textPrimary,
-                fontSize: 16,
+              const SizedBox(width: 6),
+              Text(
+                'New Discussion',
+                style: typography.headline.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 16,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+            padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
             child: PlatformHoverBuilder(
               builder: (context, isHovered, child) => AnimatedScale(
                 scale: isHovered ? 1.03 : 1.0,
@@ -878,90 +932,93 @@ class CreateForumDiscussionPage extends HookWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Channel / Track Dropdown & Public Discourse Pill
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.primary.withAlpha(isDark ? 35 : 20),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: selectedTrack.value,
-                                isDense: true,
-                                icon: Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  size: 18,
-                                  color: colors.primary,
-                                ),
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 13,
-                                ),
-                                dropdownColor: isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfacePrimary,
-                                items: availableTracks
-                                    .map(
-                                      (t) => DropdownMenuItem(
-                                        value: t,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.chat_bubble_outline_rounded,
-                                              size: 14,
-                                              color: colors.primary,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text('c/$t'),
-                                          ],
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 35 : 20),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: selectedTrack.value,
+                                  isDense: true,
+                                  icon: Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 18,
+                                    color: colors.primary,
+                                  ),
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 13,
+                                  ),
+                                  dropdownColor: isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfacePrimary,
+                                  items: availableTracks
+                                      .map(
+                                        (t) => DropdownMenuItem(
+                                          value: t,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.chat_bubble_outline_rounded,
+                                                size: 14,
+                                                color: colors.primary,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text('c/$t'),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (val) {
-                                  if (val != null) selectedTrack.value = val;
-                                },
+                                      )
+                                      .toList(),
+                                  onChanged: (val) {
+                                    if (val != null) selectedTrack.value = val;
+                                  },
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colors.surfaceSecondary
-                                  : colors.surfaceSecondary.withAlpha(140),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.public_rounded,
-                                  size: 13,
-                                  color: colors.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Public Discourse',
-                                  style: typography.caption.medium.copyWith(
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfaceSecondary.withAlpha(140),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.public_rounded,
+                                    size: 13,
                                     color: colors.textSecondary,
-                                    fontSize: 11,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Public Discourse',
+                                    style: typography.caption.medium.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       // Author Info Row with Anonymous Switch
                       Row(
@@ -1324,72 +1381,72 @@ class CreateForumDiscussionPage extends HookWidget {
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_bold_rounded,
-                                      tooltip: 'Bold',
+                                      tooltip: l10n.tooltipBold,
                                       onTap: () => applyFormatting('**', '**'),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_italic_rounded,
-                                      tooltip: 'Italic',
+                                      tooltip: l10n.tooltipItalic,
                                       onTap: () => applyFormatting('*', '*'),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.strikethrough_s_rounded,
-                                      tooltip: 'Strikethrough',
+                                      tooltip: l10n.tooltipStrikethrough,
                                       onTap: () => applyFormatting('~~', '~~'),
                                     ),
                                     _buildFormatDivider(context),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.title_rounded,
-                                      tooltip: 'Heading',
+                                      tooltip: l10n.tooltipHeading,
                                       onTap: () => applyFormatting('### '),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.code_rounded,
-                                      tooltip: 'Code Block',
+                                      tooltip: l10n.tooltipCodeBlock,
                                       onTap: () =>
                                           applyFormatting('```\n', '\n```'),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_list_bulleted_rounded,
-                                      tooltip: 'Bullet List',
+                                      tooltip: l10n.tooltipBulletList,
                                       onTap: () => applyFormatting('- '),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_list_numbered_rounded,
-                                      tooltip: 'Numbered List',
+                                      tooltip: l10n.tooltipNumberedList,
                                       onTap: () => applyFormatting('1. '),
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.format_quote_rounded,
-                                      tooltip: 'Quote',
+                                      tooltip: l10n.tooltipQuote,
                                       onTap: () => applyFormatting('> '),
                                     ),
                                     _buildFormatDivider(context),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.functions_rounded,
-                                      tooltip: 'LaTeX Math',
+                                      tooltip: l10n.tooltipLatexMath,
                                       label: 'Σ',
                                       onTap: showMathFormulaSheet,
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.pie_chart_outline_rounded,
-                                      tooltip: 'Greek / Math Symbols',
+                                      tooltip: l10n.tooltipMathSymbols,
                                       label: 'π',
                                       onTap: showSymbolSheet,
                                     ),
                                     _buildFormatActionBtn(
                                       context: context,
                                       icon: Icons.auto_awesome_rounded,
-                                      tooltip: 'AI Format Assist',
+                                      tooltip: l10n.tooltipAiFormatAssist,
                                       isAccent: true,
                                       onTap: runAiFormatAssist,
                                     ),
@@ -2013,15 +2070,18 @@ class CreateForumDiscussionPage extends HookWidget {
                         size: 16,
                         color: colors.textSecondary,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Draft saved automatically (${lastSavedTime.value})',
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11.5,
+                      Expanded(
+                        child: Text(
+                          'Draft saved automatically (${lastSavedTime.value})',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       Text(
                         '${characterCount.value} characters',
                         style: typography.caption.regular.copyWith(

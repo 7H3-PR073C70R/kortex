@@ -10,12 +10,14 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
 
   final _whiteboardStrokeController =
       StreamController<WhiteboardStroke>.broadcast();
+  final _whiteboardUndoController = StreamController<String>.broadcast();
   final _whiteboardClearController = StreamController<void>.broadcast();
   final _chatMessageController = StreamController<RoomChatMessage>.broadcast();
 
   final List<EphemeralParticipant> joinedParticipants = [];
   final List<PomodoroSyncEvent> broadcastedTicks = [];
   final List<WhiteboardStroke> broadcastedStrokes = [];
+  final List<String> broadcastedUndos = [];
   final List<RoomChatMessage> broadcastedMessages = [];
   bool whiteboardCleared = false;
   bool handRaised = false;
@@ -138,6 +140,15 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   }
 
   @override
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  }) async {
+    broadcastedUndos.add(strokeId);
+    _whiteboardUndoController.add(strokeId);
+  }
+
+  @override
   Future<void> broadcastWhiteboardClear({required String roomId}) async {
     whiteboardCleared = true;
     _whiteboardClearController.add(null);
@@ -146,6 +157,11 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
   @override
   Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId) {
     return _whiteboardStrokeController.stream;
+  }
+
+  @override
+  Stream<String> watchWhiteboardUndo(String roomId) {
+    return _whiteboardUndoController.stream;
   }
 
   @override
@@ -181,6 +197,7 @@ class FakeEphemeralPresenceClient implements EphemeralPresenceClient {
     await _participantsController.close();
     await _pomodoroController.close();
     await _whiteboardStrokeController.close();
+    await _whiteboardUndoController.close();
     await _whiteboardClearController.close();
     await _chatMessageController.close();
   }

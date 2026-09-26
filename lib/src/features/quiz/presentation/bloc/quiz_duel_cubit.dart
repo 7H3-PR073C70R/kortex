@@ -15,6 +15,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   final QuizDuelRepository _repository;
   StreamSubscription<QuizDuelMatch>? _duelSubscription;
   Timer? _countdownTimer;
+  Timer? _summarySafetyTimer;
   DateTime? _roundStartTime;
 
   /// Starts searching for a real-time peer or AI study-buddy.
@@ -64,22 +65,60 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     );
   }
 
+  String? _subscribedDuelId;
+
   void _subscribeToMatchStream(String duelId) {
+    if (_subscribedDuelId == duelId && _duelSubscription != null) return;
+    _subscribedDuelId = duelId;
+
     unawaited(_duelSubscription?.cancel());
     _duelSubscription = _repository
         .streamDuel(duelId)
         .listen(
           (match) {
+            if (match.duelId.isNotEmpty && match.duelId != duelId) {
+              _subscribeToMatchStream(match.duelId);
+            }
+
             final previousStatus = state.status;
             final previousQuestionIdx = state.match?.currentQuestionIndex;
+
+            final isMatchCountdown =
+                match.status == QuizDuelStatus.countdown &&
+                (previousStatus != QuizDuelStatus.countdown ||
+                    state.remainingSeconds <= 0);
 
             final isNewRound =
                 match.status == QuizDuelStatus.inRound &&
                 (previousStatus != QuizDuelStatus.inRound ||
                     previousQuestionIdx != match.currentQuestionIndex);
 
-            if (isNewRound) {
+            final isJustFinished =
+                match.status == QuizDuelStatus.finished &&
+                previousStatus != QuizDuelStatus.finished;
+
+            if (isMatchCountdown) {
+              _summarySafetyTimer?.cancel();
+              _startLobbyCountdown(3);
+            } else if (isNewRound) {
+              _summarySafetyTimer?.cancel();
               _startQuestionCountdown(match.durationPerQuestionSeconds);
+            } else if (match.status == QuizDuelStatus.roundSummary) {
+              _summarySafetyTimer?.cancel();
+              _summarySafetyTimer = Timer(const Duration(milliseconds: 2800), () async {
+                if (!isClosed && state.status == QuizDuelStatus.roundSummary && state.match != null) {
+                  await _repository.submitDuelAnswer(
+                    duelId: state.match!.duelId,
+                    userId: state.currentUserId,
+                    questionIndex: state.match!.currentQuestionIndex,
+                    optionIndex: state.selectedOptionIndex ?? -1,
+                    responseTimeMs: 15000,
+                  );
+                }
+              });
+            } else if (isJustFinished) {
+              _summarySafetyTimer?.cancel();
+              unawaited(_repository.recordDuelOutcome(match));
             }
 
             emit(
@@ -98,6 +137,29 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
             );
           },
         );
+  }
+
+  void _startLobbyCountdown(int durationSeconds) {
+    _countdownTimer?.cancel();
+    emit(
+      state.copyWith(
+        remainingSeconds: durationSeconds,
+      ),
+    );
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (state.status != QuizDuelStatus.countdown) {
+        timer.cancel();
+        return;
+      }
+      final current = state.remainingSeconds;
+      if (current <= 1) {
+        timer.cancel();
+        emit(state.copyWith(remainingSeconds: 0));
+      } else {
+        emit(state.copyWith(remainingSeconds: current - 1));
+      }
+    });
   }
 
   void _startQuestionCountdown(int durationSeconds) {
@@ -164,6 +226,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   /// Exits the current match and frees resources.
   Future<void> leaveMatch() async {
     _countdownTimer?.cancel();
+    _summarySafetyTimer?.cancel();
     if (state.match != null) {
       await _repository.leaveDuel(
         duelId: state.match!.duelId,
@@ -183,6 +246,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   @override
   Future<void> close() {
     _countdownTimer?.cancel();
+    _summarySafetyTimer?.cancel();
     unawaited(_duelSubscription?.cancel());
     return super.close();
   }

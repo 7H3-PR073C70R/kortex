@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -14,8 +15,15 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class CreateStudyRoomSheet extends HookWidget {
   const CreateStudyRoomSheet({
     required this.onSubmit,
+    this.initialTitle,
+    this.initialSubject,
+    this.initialCategory,
     super.key,
   });
+
+  final String? initialTitle;
+  final String? initialSubject;
+  final String? initialCategory;
 
   final void Function({
     required String title,
@@ -40,12 +48,20 @@ class CreateStudyRoomSheet extends HookWidget {
       bool isSilentFocus,
     })
     onSubmit,
+    String? initialTitle,
+    String? initialSubject,
+    String? initialCategory,
   }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.transparent,
-      builder: (ctx) => CreateStudyRoomSheet(onSubmit: onSubmit),
+      builder: (ctx) => CreateStudyRoomSheet(
+        onSubmit: onSubmit,
+        initialTitle: initialTitle,
+        initialSubject: initialSubject,
+        initialCategory: initialCategory,
+      ),
     );
   }
 
@@ -56,10 +72,10 @@ class CreateStudyRoomSheet extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final titleController = useTextEditingController();
-    final subjectController = useTextEditingController();
+    final titleController = useTextEditingController(text: initialTitle);
+    final subjectController = useTextEditingController(text: initialSubject);
     final goalController = useTextEditingController();
-    final selectedCategory = useState<String>('STEM');
+    final selectedCategory = useState<String>(initialCategory ?? 'STEM');
     final selectedDuration = useState<int>(25);
     final selectedAmbient = useState<String>('lofi');
 
@@ -302,7 +318,13 @@ class CreateStudyRoomSheet extends HookWidget {
                       onTap: () {
                         final title = titleController.text.trim();
                         final subject = subjectController.text.trim();
-                        if (title.isEmpty || subject.isEmpty) return;
+                        if (title.isEmpty || subject.isEmpty) {
+                          context.showSnackBar(
+                            message: 'Please enter a room title and subject.',
+                            type: SnackBarType.error,
+                          );
+                          return;
+                        }
 
                         unawaited(HapticFeedback.mediumImpact());
                         onSubmit(

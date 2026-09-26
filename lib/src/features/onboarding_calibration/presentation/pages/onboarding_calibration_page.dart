@@ -20,7 +20,6 @@ import 'package:kortex/src/features/onboarding_calibration/domain/entities/calib
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_cubit.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/bloc/calibration_state.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/academic_focus_step.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_glass_card.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/calibration_step_tracker.dart';
 import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/high_school_exam_step.dart';
@@ -92,186 +91,183 @@ class _CalibrationView extends StatelessWidget {
         );
       },
       child: Scaffold(
-        body: AuraMeshNebula(
-          showBackgroundImage: true,
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Top Bar with Logo, Step Tracker, Skip & Mode Switch Toggle
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Row(
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top Bar with Logo, Step Tracker, Skip & Mode Switch Toggle
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AppAssets.svgs.kortexLogo.svg(
+                            width: 24,
+                            height: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.appName,
+                            style: typography.caption.bold.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                              fontSize: 13,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    BlocBuilder<CalibrationCubit, CalibrationState>(
+                      builder: (ctx, state) {
+                        return Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            AppAssets.svgs.kortexLogo.svg(
-                              width: 24,
-                              height: 24,
+                            CalibrationStepTracker(
+                              currentStep: state.currentStepIndex,
+                              totalSteps: state.totalSteps,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              l10n.appName,
-                              style: typography.caption.bold.copyWith(
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                                fontSize: 13,
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      BlocBuilder<CalibrationCubit, CalibrationState>(
-                        builder: (ctx, state) {
-                          return Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CalibrationStepTracker(
-                                currentStep: state.currentStepIndex,
-                                totalSteps: state.totalSteps,
-                              ),
-                              const SizedBox(width: 8),
-                              PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return Semantics(
-                                    button: true,
-                                    label: 'Redeem Promo Code',
-                                    child: GestureDetector(
-                                      onTap: () => unawaited(
-                                        PromoCodeModalSheet.show(context),
+                            PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return Semantics(
+                                  button: true,
+                                  label: 'Redeem Promo Code',
+                                  child: GestureDetector(
+                                    onTap: () => unawaited(
+                                      PromoCodeModalSheet.show(context),
+                                    ),
+                                    behavior: HitTestBehavior.opaque,
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 5,
                                       ),
-                                      behavior: HitTestBehavior.opaque,
-                                      child: AnimatedContainer(
-                                        duration: AppMotion.snappy,
-                                        curve: AppMotion.easeOutCubic,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 9,
-                                          vertical: 5,
+                                      decoration: BoxDecoration(
+                                        color: colors.primary.withAlpha(
+                                          context.isDarkMode
+                                              ? (isHovered ? 60 : 35)
+                                              : (isHovered ? 45 : 25),
                                         ),
-                                        decoration: BoxDecoration(
+                                        borderRadius: AppRadius.radiusBadge,
+                                        border: Border.all(
                                           color: colors.primary.withAlpha(
                                             context.isDarkMode
-                                                ? (isHovered ? 60 : 35)
-                                                : (isHovered ? 45 : 25),
+                                                ? (isHovered ? 130 : 90)
+                                                : (isHovered ? 100 : 70),
                                           ),
-                                          borderRadius: AppRadius.radiusBadge,
-                                          border: Border.all(
-                                            color: colors.primary.withAlpha(
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.card_giftcard_rounded,
+                                            size: 13,
+                                            color: colors.primary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Promo',
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.primary,
+                                                  fontSize: 12,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return Semantics(
+                                  button: true,
+                                  label: l10n.calibrationSkipSemantics,
+                                  child: GestureDetector(
+                                    onTap: () => unawaited(
+                                      ctx
+                                          .read<CalibrationCubit>()
+                                          .skipCalibration(),
+                                    ),
+                                    behavior: HitTestBehavior.opaque,
+                                    child: AnimatedContainer(
+                                      duration: AppMotion.snappy,
+                                      curve: AppMotion.easeOutCubic,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.surfaceSecondary
+                                            .withAlpha(
                                               context.isDarkMode
-                                                  ? (isHovered ? 130 : 90)
-                                                  : (isHovered ? 100 : 70),
+                                                  ? (isHovered ? 160 : 100)
+                                                  : (isHovered ? 230 : 180),
                                             ),
-                                          ),
+                                        borderRadius: AppRadius.radiusBadge,
+                                        border: Border.all(
+                                          color: context.isDarkMode
+                                              ? colors.surfaceBorderHighlight
+                                                    .withAlpha(
+                                                      isHovered ? 100 : 60,
+                                                    )
+                                              : colors.surfaceBorder,
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.card_giftcard_rounded,
-                                              size: 13,
-                                              color: colors.primary,
+                                      ),
+                                      child: Text(
+                                        l10n.calibrationSkip,
+                                        style: typography.caption.bold
+                                            .copyWith(
+                                              color: isHovered
+                                                  ? colors.textPrimary
+                                                  : colors.textSecondary,
+                                              fontSize: 12,
                                             ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Promo',
-                                              style: typography.caption.bold
-                                                  .copyWith(
-                                                    color: colors.primary,
-                                                    fontSize: 12,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              PlatformHoverBuilder(
-                                builder: (context, isHovered, child) {
-                                  return Semantics(
-                                    button: true,
-                                    label: l10n.calibrationSkipSemantics,
-                                    child: GestureDetector(
-                                      onTap: () => unawaited(
-                                        ctx
-                                            .read<CalibrationCubit>()
-                                            .skipCalibration(),
-                                      ),
-                                      behavior: HitTestBehavior.opaque,
-                                      child: AnimatedContainer(
-                                        duration: AppMotion.snappy,
-                                        curve: AppMotion.easeOutCubic,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colors.surfaceSecondary
-                                              .withAlpha(
-                                                context.isDarkMode
-                                                    ? (isHovered ? 160 : 100)
-                                                    : (isHovered ? 230 : 180),
-                                              ),
-                                          borderRadius: AppRadius.radiusBadge,
-                                          border: Border.all(
-                                            color: context.isDarkMode
-                                                ? colors.surfaceBorderHighlight
-                                                      .withAlpha(
-                                                        isHovered ? 100 : 60,
-                                                      )
-                                                : colors.surfaceBorder,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          l10n.calibrationSkip,
-                                          style: typography.caption.bold
-                                              .copyWith(
-                                                color: isHovered
-                                                    ? colors.textPrimary
-                                                    : colors.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (constraints.maxWidth >= 1024) {
-                        return const _DesktopCalibrationSplitLayout();
-                      } else if (constraints.maxWidth >= 600) {
-                        return const Center(
-                          child: SizedBox(
-                            width: 520,
-                            child: _MobileCalibrationLayout(),
-                          ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         );
-                      } else {
-                        return const _MobileCalibrationLayout();
-                      }
-                    },
-                  ),
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    if (constraints.maxWidth >= 1024) {
+                      return const _DesktopCalibrationSplitLayout();
+                    } else if (constraints.maxWidth >= 600) {
+                      return const Center(
+                        child: SizedBox(
+                          width: 520,
+                          child: _MobileCalibrationLayout(),
+                        ),
+                      );
+                    } else {
+                      return const _MobileCalibrationLayout();
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),

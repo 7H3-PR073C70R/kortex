@@ -35,9 +35,11 @@ void main() {
       expect(FormulaAwareTextFormatter.formatFormulaAware('2^x = 32'), r'$2^x = 32$');
     });
 
-    test('formats numeric and algebraic fractions', () {
+    test('formats numeric, algebraic, and factorial fractions', () {
       expect(FormulaAwareTextFormatter.formatFormulaAware('B. 3/4'), r'B. $\frac{3}{4}$');
       expect(FormulaAwareTextFormatter.formatFormulaAware('x/2'), r'$\frac{x}{2}$');
+      expect(FormulaAwareTextFormatter.formatFormulaAware('11!/(9! 2!)'), r'$\frac{11!}{9! 2!}$');
+      expect(FormulaAwareTextFormatter.formatFormulaAware('11!/(2! 2! 2!)'), r'$\frac{11!}{2! 2! 2!}$');
     });
 
     test('wraps raw LaTeX command without delimiters', () {

@@ -22,6 +22,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -140,13 +141,7 @@ class DeckMarketplaceDetailPage extends HookWidget {
             color: colors.textPrimary,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-          ),
-          onPressed: () => unawaited(context.router.maybePop()),
-        ),
+        leading: const AppBackButton(),
       ),
       bottomNavigationBar: SafeArea(
         child: Center(

@@ -43,4 +43,30 @@ abstract class QuizDuelRepository {
   Future<Either<Failure, void>> matchWithAiImmediately({
     required String duelId,
   });
+
+  /// Persists match outcome to remote database and updates ELO ratings via `fn_process_quiz_duel_outcome`.
+  Future<Either<Failure, Map<String, dynamic>>> recordDuelOutcome(
+    QuizDuelMatch match,
+  );
+
+  /// Fetches top ranked duelists sorted by ELO rating.
+  Future<Either<Failure, List<Map<String, dynamic>>>> getEloLeaderboard({
+    String? subject,
+    int limit = 20,
+  });
+
+  /// Creates a 24-hour asynchronous duel challenge for an offline peer.
+  Future<Either<Failure, QuizDuelMatch>> createAsyncChallenge({
+    required String subject,
+    required String examBoard,
+    required String userId,
+    required String targetUserId,
+    required String displayName,
+    required String avatarUrl,
+  });
+
+  /// Fetches pending 24-hour asynchronous challenges for a user.
+  Future<Either<Failure, List<QuizDuelMatch>>> getPendingAsyncChallenges(
+    String userId,
+  );
 }

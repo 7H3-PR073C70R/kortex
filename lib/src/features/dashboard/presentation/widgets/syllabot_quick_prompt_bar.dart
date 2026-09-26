@@ -50,10 +50,8 @@ class SyllabotQuickPromptBar extends HookWidget {
       unawaited(HapticFeedback.lightImpact());
       controller.clear();
       unawaited(
-        context.navigateTo(
-          MainRoute(
-            children: [SyllabotChatRoute(initialPrompt: text)],
-          ),
+        context.router.push(
+          SyllabotChatRoute(initialPrompt: text),
         ),
       );
     }
@@ -149,6 +147,41 @@ class SyllabotQuickPromptBar extends HookWidget {
                                   enabledBorder: InputBorder.none,
                                   contentPadding: const EdgeInsets.symmetric(
                                     vertical: 8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Semantics(
+                              button: true,
+                              label: 'Voice prompt for Syllabot',
+                              child: ShrinkableButton(
+                                onTap: () {
+                                  unawaited(HapticFeedback.mediumImpact());
+                                  unawaited(
+                                    context.router.push(
+                                      SyllabotChatRoute(
+                                        initialPrompt: 'Voice Assistant Query',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: AnimatedContainer(
+                                  duration: AppMotion.snappy,
+                                  curve: AppMotion.easeOutCubic,
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isDark
+                                        ? colors.surfaceBorder.withAlpha(50)
+                                        : colors.surfaceBorder.withAlpha(35),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.mic_rounded,
+                                    size: 17,
+                                    color: colors.syllabotAccent,
                                   ),
                                 ),
                               ),

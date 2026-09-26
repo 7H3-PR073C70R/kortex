@@ -24,8 +24,8 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.d
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/generated_card_preview_tile.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -124,255 +124,236 @@ class _GeneratedCardsReviewView extends HookWidget {
       );
     }
 
-    return AuraMeshNebula(
-      child: Scaffold(
-        backgroundColor: colors.transparent,
-        extendBody: true,
-        body: BlocConsumer<IngestionBloc, IngestionState>(
-          listener: (context, state) {
-            if (state.status == ProcessingStatus.completed &&
-                state.generatedDeck != null) {
-              if (locator.isRegistered<DecksBloc>()) {
-                locator<DecksBloc>().add(const DecksRefreshed());
-              }
-              if (locator.isRegistered<DashboardBloc>()) {
-                locator<DashboardBloc>().add(const DashboardRefreshed());
-              }
-
-              final generatedDeckId = state.generatedDeck!.id;
-
-              unawaited(
-                context.router.replaceAll([
-                  const MainRoute(),
-                  StudySessionRoute(deckId: generatedDeckId),
-                ]),
-              );
-
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                final navContext =
-                    locator<AppRouter>().navigatorKey.currentContext;
-                if (navContext != null && navContext.mounted) {
-                  navContext.showSnackBar(
-                    message: l10n.deckCreatedSuccessTap,
-                    type: SnackBarType.success,
-                    duration: const Duration(seconds: 5),
-                    onTap: () {
-                      unawaited(
-                        locator<AppRouter>().navigate(
-                          const MainRoute(children: [DecksRoute()]),
-                        ),
-                      );
-                    },
-                  );
-                }
-              });
+    return Scaffold(
+      backgroundColor: colors.transparent,
+      extendBody: true,
+      body: BlocConsumer<IngestionBloc, IngestionState>(
+        listener: (context, state) {
+          if (state.status == ProcessingStatus.completed &&
+              state.generatedDeck != null) {
+            if (locator.isRegistered<DecksBloc>()) {
+              locator<DecksBloc>().add(const DecksRefreshed());
             }
-          },
-          builder: (context, state) {
-            return CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  backgroundColor: colors.transparent,
-                  elevation: 0,
-                  pinned: true,
-                  leading: PlatformHoverBuilder(
+            if (locator.isRegistered<DashboardBloc>()) {
+              locator<DashboardBloc>().add(const DashboardRefreshed());
+            }
+    
+            final generatedDeckId = state.generatedDeck!.id;
+    
+            unawaited(
+              context.router.replaceAll([
+                const MainRoute(),
+                StudySessionRoute(deckId: generatedDeckId),
+              ]),
+            );
+    
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final navContext =
+                  locator<AppRouter>().navigatorKey.currentContext;
+              if (navContext != null && navContext.mounted) {
+                navContext.showSnackBar(
+                  message: l10n.deckCreatedSuccessTap,
+                  type: SnackBarType.success,
+                  duration: const Duration(seconds: 5),
+                  onTap: () {
+                    unawaited(
+                      locator<AppRouter>().navigate(
+                        const MainRoute(children: [DecksRoute()]),
+                      ),
+                    );
+                  },
+                );
+              }
+            });
+          }
+        },
+        builder: (context, state) {
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                backgroundColor: colors.transparent,
+                elevation: 0,
+                pinned: true,
+                leading: const AppBackButton(),
+                flexibleSpace: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(color: colors.backgroundPrimary.withValues(alpha: 0.7)),
+                  ),
+                ),
+                title: Text(
+                  l10n.reviewCardsTitle,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Deck Metadata Inputs Card
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6, bottom: 8),
+                            child: Text(
+                              'DECK METADATA',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary.withAlpha(170),
+                                fontSize: 11,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
+                          
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary
+                                  : colors.surfacePrimary,
+                              borderRadius: AppRadius.radiusDialog,
+                              border: Border.all(
+                                color: colors.primary.withAlpha(isDark ? 30 : 15),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.black.withAlpha(isDark ? 30 : 10),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppTextField(
+                                  controller: titleController,
+                                  label: l10n.deckNameLabel,
+                                ),
+                                const SizedBox(height: 12),
+                                AppTextField(
+                                  controller: subjectController,
+                                  label: l10n.subjectOrCourseLabel,
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn(duration: 400.ms, delay: 50.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
+                          
+                          const SizedBox(height: 32),
+    
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6, bottom: 12),
+                            child: Text(
+                              l10n.previewAndEditCardsTitle(cards.value.length).toUpperCase(),
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary.withAlpha(170),
+                                fontSize: 11,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
+    
+                          // Cards List
+                          ...List.generate(cards.value.length, (index) {
+                            final card = cards.value[index];
+                            return GeneratedCardPreviewTile(
+                              index: index,
+                              card: card,
+                              onChanged: (updated) {
+                                final updatedList =
+                                    List<GeneratedCardPreviewItem>.from(
+                                      cards.value,
+                                    );
+                                updatedList[index] = updated;
+                                cards.value = updatedList;
+                              },
+                            ).animate().fadeIn(
+                              duration: 400.ms,
+                              delay: (150 + (index * 50)).ms,
+                            ).slideY(
+                              begin: 0.1, 
+                              end: 0, 
+                              curve: Curves.easeOutCubic
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          decoration: BoxDecoration(
+            color: colors.backgroundPrimary.withValues(alpha: 0.85),
+            border: Border(
+              top: BorderSide(
+                color: colors.primary.withAlpha(isDark ? 30 : 15),
+              ),
+            ),
+          ),
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: PlatformHoverBuilder(
                     builder: (context, isHovered, child) {
                       return AnimatedScale(
-                        scale: isHovered ? 1.08 : 1.0,
+                        scale: isHovered ? 1.02 : 1.0,
                         duration: AppMotion.snappy,
                         curve: AppMotion.easeOutCubic,
                         child: child,
                       );
                     },
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: colors.textPrimary,
-                        size: 20,
-                      ),
-                      onPressed: () => unawaited(Navigator.of(context).maybePop()),
-                    ),
-                  ),
-                  flexibleSpace: ClipRect(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(color: colors.backgroundPrimary.withValues(alpha: 0.7)),
-                    ),
-                  ),
-                  title: Text(
-                    l10n.reviewCardsTitle,
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 760),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Deck Metadata Inputs Card
-                            Padding(
-                              padding: const EdgeInsets.only(left: 6, bottom: 8),
-                              child: Text(
-                                'DECK METADATA',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary.withAlpha(170),
-                                  fontSize: 11,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
-                            
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary
-                                    : colors.surfacePrimary,
-                                borderRadius: AppRadius.radiusDialog,
-                                border: Border.all(
-                                  color: colors.primary.withAlpha(isDark ? 30 : 15),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: colors.black.withAlpha(isDark ? 30 : 10),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  AppTextField(
-                                    controller: titleController,
-                                    label: l10n.deckNameLabel,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  AppTextField(
-                                    controller: subjectController,
-                                    label: l10n.subjectOrCourseLabel,
-                                  ),
-                                ],
-                              ),
-                            ).animate().fadeIn(duration: 400.ms, delay: 50.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
-                            
-                            const SizedBox(height: 32),
-
-                            Padding(
-                              padding: const EdgeInsets.only(left: 6, bottom: 12),
-                              child: Text(
-                                l10n.previewAndEditCardsTitle(cards.value.length).toUpperCase(),
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary.withAlpha(170),
-                                  fontSize: 11,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ).animate().fadeIn(duration: 400.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
-
-                            // Cards List
-                            ...List.generate(cards.value.length, (index) {
-                              final card = cards.value[index];
-                              return GeneratedCardPreviewTile(
-                                index: index,
-                                card: card,
-                                onChanged: (updated) {
-                                  final updatedList =
-                                      List<GeneratedCardPreviewItem>.from(
-                                        cards.value,
-                                      );
-                                  updatedList[index] = updated;
-                                  cards.value = updatedList;
-                                },
-                              ).animate().fadeIn(
-                                duration: 400.ms,
-                                delay: (150 + (index * 50)).ms,
-                              ).slideY(
-                                begin: 0.1, 
-                                end: 0, 
-                                curve: Curves.easeOutCubic
-                              );
-                            }),
+                    child: ShrinkableButton(
+                      onTap: handleConfirmAndStudy,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colors.primary,
+                              colors.primary.withAlpha(220),
+                            ],
+                          ),
+                          borderRadius: AppRadius.radiusCard,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(isDark ? 60 : 40),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        bottomNavigationBar: SafeArea(
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            decoration: BoxDecoration(
-              color: colors.backgroundPrimary.withValues(alpha: 0.85),
-              border: Border(
-                top: BorderSide(
-                  color: colors.primary.withAlpha(isDark ? 30 : 15),
-                ),
-              ),
-            ),
-            child: ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 760),
-                    child: PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.02 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: AppMotion.easeOutCubic,
-                          child: child,
-                        );
-                      },
-                      child: ShrinkableButton(
-                        onTap: handleConfirmAndStudy,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                colors.primary,
-                                colors.primary.withAlpha(220),
-                              ],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.play_arrow_rounded,
+                              color: colors.white,
+                              size: 22,
                             ),
-                            borderRadius: AppRadius.radiusCard,
-                            boxShadow: [
-                              BoxShadow(
-                                color: colors.primary.withAlpha(isDark ? 60 : 40),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.play_arrow_rounded,
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.confirmAndStudyAction,
+                              style: typography.body.bold.copyWith(
                                 color: colors.white,
-                                size: 22,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.confirmAndStudyAction,
-                                style: typography.body.bold.copyWith(
-                                  color: colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -381,8 +362,8 @@ class _GeneratedCardsReviewView extends HookWidget {
               ),
             ),
           ),
-        ).animate().fadeIn(duration: 500.ms, delay: 300.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
-      ),
+        ),
+      ).animate().fadeIn(duration: 500.ms, delay: 300.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOutCubic),
     );
   }
 }

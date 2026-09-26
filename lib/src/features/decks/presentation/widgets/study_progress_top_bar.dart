@@ -10,6 +10,9 @@ class StudyProgressTopBar extends StatelessWidget {
     required this.totalCards,
     required this.elapsedTimeFormatted,
     required this.onClose,
+    this.canUndo = false,
+    this.onUndo,
+    this.onThoughtParkingLot,
     super.key,
   });
 
@@ -17,6 +20,9 @@ class StudyProgressTopBar extends StatelessWidget {
   final int totalCards;
   final String elapsedTimeFormatted;
   final VoidCallback onClose;
+  final bool canUndo;
+  final VoidCallback? onUndo;
+  final VoidCallback? onThoughtParkingLot;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +44,26 @@ class StudyProgressTopBar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Exit button
-                IconButton(
-                  icon: Icon(Icons.close_rounded, color: colors.textPrimary),
-                  onPressed: onClose,
+                // Left Action Group: Exit + Undo
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: colors.textPrimary),
+                      tooltip: l10n.tooltipExitSession,
+                      onPressed: onClose,
+                    ),
+                    if (canUndo && onUndo != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.undo_rounded,
+                          color: colors.primary,
+                          size: 20,
+                        ),
+                        tooltip: l10n.tooltipUndoRating,
+                        onPressed: onUndo,
+                      ),
+                  ],
                 ),
 
                 // Card index tracker
@@ -70,36 +92,52 @@ class StudyProgressTopBar extends StatelessWidget {
                   ),
                 ),
 
-                // Timer Pill
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(isDark ? 45 : 20),
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 100 : 60),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        size: 14,
-                        color: colors.primary,
+                // Right Action Group: Thought Parking Lot + Timer Pill
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onThoughtParkingLot != null)
+                      IconButton(
+                        icon: Icon(
+                          Icons.psychology_outlined,
+                          color: colors.textSecondary,
+                          size: 20,
+                        ),
+                        tooltip: l10n.tooltipThoughtParkingLot,
+                        onPressed: onThoughtParkingLot,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        elapsedTimeFormatted,
-                        style: typography.footnote.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 12,
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 45 : 20),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(isDark ? 100 : 60),
                         ),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 14,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            elapsedTimeFormatted,
+                            style: typography.footnote.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

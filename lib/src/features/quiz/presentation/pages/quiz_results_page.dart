@@ -28,6 +28,7 @@ import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -247,10 +248,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           result.quizTitle,
           style: typography.title3.bold.copyWith(
@@ -682,15 +680,17 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
                       Icon(
                         Icons.verified_rounded,
                         size: 16,
                         color: gradeResult.gradeColor,
                       ),
-                      const SizedBox(width: 6),
                       Text(
                         'Real-World Grade: ${gradeResult.grade}',
                         style: typography.callout.bold.copyWith(
@@ -698,25 +698,24 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                           fontSize: 14,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: gradeResult.gradeColor.withAlpha(
+                            isDark ? 50 : 30,
                           ),
-                          decoration: BoxDecoration(
-                            color: gradeResult.gradeColor.withAlpha(
-                              isDark ? 50 : 30,
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            gradeResult.classification,
-                            style: typography.caption.bold.copyWith(
-                              color: gradeResult.gradeColor,
-                              fontSize: 10.5,
-                            ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          gradeResult.classification,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: typography.caption.bold.copyWith(
+                            color: gradeResult.gradeColor,
+                            fontSize: 10.5,
                           ),
                         ),
                       ),
@@ -1051,12 +1050,9 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
       // Share failed — fall back to clipboard.
       await Clipboard.setData(ClipboardData(text: message));
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Result copied to clipboard!'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
+        context.showSnackBar(
+          message: context.l10n.quizResultCopied,
+          type: SnackBarType.success,
         );
       }
     }

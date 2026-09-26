@@ -160,3 +160,8 @@ class AuthSubscriptionUpdated extends AuthEvent {
   @override
   List<Object?> get props => [isPro];
 }
+
+/// Dispatched on app resume from background to check session and refresh tokens dynamically.
+class AuthAppResumed extends AuthEvent {
+  const AuthAppResumed();
+}

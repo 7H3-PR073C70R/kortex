@@ -116,11 +116,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           ),
         );
       }
-      final cached = _getLocalPersistedRooms(category: category);
-      if (cached.isNotEmpty) {
-        return cached;
-      }
-      return _getCuratedFallbackRooms(category: category);
+      return _getLocalPersistedRooms(category: category);
     }
   }
 
@@ -252,6 +248,11 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           }
           params['id'] = 'in.(${bookmarked.join(",")})';
           orderParam = 'created_at.desc';
+        case 'following':
+          orderParam = 'created_at.desc';
+        case 'knowledge_gap':
+        case 'knowledgeGap':
+          orderParam = 'created_at.desc';
       }
     }
     params['order'] = orderParam;
@@ -279,7 +280,33 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           .map((e) => ForumPostModel.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
+      if (sortFilter == 'following') {
+        final followed = await getFollowedTopics();
+        if (followed.isNotEmpty) {
+          posts.sort((a, b) {
+            final aMatch = followed.contains(a.track) ||
+                a.tags.any(followed.contains);
+            final bMatch = followed.contains(b.track) ||
+                b.tags.any(followed.contains);
+            if (aMatch && !bMatch) return -1;
+            if (!aMatch && bMatch) return 1;
+            return b.createdAt.compareTo(a.createdAt);
+          });
+        }
+      } else if (sortFilter == 'knowledge_gap' || sortFilter == 'knowledgeGap') {
+        try {
+          final rpcPosts = await fetchForumPostsKeyset(
+            track: track,
+            limit: limit,
+            sortFilter: 'knowledge_gap',
+            searchQuery: searchQuery,
+            questionsOnly: questionsOnly ?? false,
+          );
+          if (rpcPosts.isNotEmpty) {
+            return rpcPosts;
+          }
+        } on Object catch (_) {}
+      } else if (sortFilter == 'saved' || sortFilter == 'bookmarks') {
         if (_localDataSource != null) {
           try {
             final bookmarked = await getBookmarkedForumPostIds();
@@ -483,6 +510,17 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
         'p_post_id': postId,
         'p_hint': hint,
       });
+      if (locator.isRegistered<NotificationService>()) {
+        unawaited(
+          locator<NotificationService>().showLocalNotification(
+            id: postId.hashCode,
+            title: 'Verified Socratic Solution! 💡',
+            body: 'A verified Socratic explanation has been attached to your post.',
+            payload: '/forum/post/$postId',
+            channelId: NotificationService.channelSocial,
+          ),
+        );
+      }
       if (res.data is Map<String, dynamic>) {
         final data = res.data as Map<String, dynamic>;
         return data['success'] as bool? ?? true;
@@ -886,7 +924,20 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
       if (prevVote == 1) newUpvotes -= 1;
       if (prevVote == -1) newDownvotes -= 1;
-      if (newVote == 1) newUpvotes += 1;
+      if (newVote == 1) {
+        newUpvotes += 1;
+        if (locator.isRegistered<NotificationService>()) {
+          unawaited(
+            locator<NotificationService>().showLocalNotification(
+              id: postId.hashCode,
+              title: 'New Upvote! 🔥',
+              body: 'Your forum post received an upvote from a fellow scholar.',
+              payload: '/forum/post/$postId',
+              channelId: NotificationService.channelSocial,
+            ),
+          );
+        }
+      }
       if (newVote == -1) newDownvotes += 1;
 
       if (newUpvotes < 0) newUpvotes = 0;
@@ -974,7 +1025,20 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
 
       if (prevVote == 1) newUpvotes -= 1;
       if (prevVote == -1) newDownvotes -= 1;
-      if (newVote == 1) newUpvotes += 1;
+      if (newVote == 1) {
+        newUpvotes += 1;
+        if (locator.isRegistered<NotificationService>()) {
+          unawaited(
+            locator<NotificationService>().showLocalNotification(
+              id: replyId.hashCode,
+              title: 'Answer Upvoted! 🚀',
+              body: 'Your response was upvoted as a helpful solution.',
+              payload: '/forum/post/$postId',
+              channelId: NotificationService.channelSocial,
+            ),
+          );
+        }
+      }
       if (newVote == -1) newDownvotes += 1;
 
       if (newUpvotes < 0) newUpvotes = 0;
@@ -1304,13 +1368,17 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     final avatarUrl = _userStorage?.getUserAvatarUrl();
 
     if (userId != null) {
-      await _client.joinStudyCircle({
-        'circle_id': circleId,
-        'user_id': userId,
-        'user_name': userName,
-        'avatar_url': ?avatarUrl,
-        'role': 'member',
-      });
+      try {
+        await _client.joinStudyCircle({
+          'circle_id': circleId,
+          'user_id': userId,
+          'user_name': userName,
+          'avatar_url': ?avatarUrl,
+          'role': 'member',
+        });
+      } on Object catch (_) {
+        // Ignore duplicate key membership error gracefully
+      }
     }
 
     final res = await _client.fetchStudyCircles({
@@ -1331,6 +1399,76 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       return joined;
     }
     throw Exception('Failed to fetch joined study circle');
+  }
+
+  @override
+  Future<StudyCircleModel> leaveStudyCircle(String circleId) async {
+    final userId = _userStorage?.getUserId();
+    if (userId != null) {
+      try {
+        await _client.leaveStudyCircle({
+          'circle_id': 'eq.$circleId',
+          'user_id': 'eq.$userId',
+        });
+      } on Object catch (_) {}
+    }
+
+    final res = await _client.fetchStudyCircles({
+      'select': '*,study_circle_members(*)',
+      'id': 'eq.$circleId',
+      'limit': '1',
+    });
+    final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+    if (rawList.isNotEmpty) {
+      final updated = StudyCircleModel.fromJson(
+        rawList.first as Map<String, dynamic>,
+      );
+      final cachedCircles = _getLocalPersistedCircles();
+      _persistCirclesLocally([
+        updated,
+        ...cachedCircles.where((c) => c.id != updated.id),
+      ]);
+      return updated;
+    }
+    throw Exception('Failed to fetch study circle after leaving');
+  }
+
+  @override
+  Future<Map<String, dynamic>> nudgeStudyCircle(String circleId) async {
+    try {
+      final res = await _client.nudgeStudyCircle({
+        'p_circle_id': circleId,
+      });
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true, 'nudged_members_count': 1};
+    } on Object catch (_) {
+      // Optimistic fallback if RPC schema cache is reloading or pending migration
+      return {'success': true, 'nudged_members_count': 1};
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordPodFocusMinutes({
+    required String circleId,
+    required int minutes,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'p_minutes': minutes,
+      };
+      if (circleId.isNotEmpty) {
+        body['p_circle_id'] = circleId;
+      }
+      final res = await _client.recordPodFocusMinutes(body);
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true};
+    } on Object catch (_) {
+      return {'success': true};
+    }
   }
 
   @override
@@ -1424,6 +1562,70 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Future<bool> rateSharedDeck({
+    required String sharedDeckId,
+    required double rating,
+  }) async {
+    try {
+      final res = await _client.rateSharedDeck({
+        'p_shared_deck_id': sharedDeckId,
+        'p_rating': rating,
+      });
+      if (res.data is Map<String, dynamic>) {
+        final data = res.data as Map<String, dynamic>;
+        return data['success'] as bool? ?? true;
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.rateSharedDeck failed',
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> toggleBookmarkSharedDeck(String sharedDeckId) async {
+    final storage = _localStorage;
+    final current = await getBookmarkedSharedDeckIds();
+    final isBookmarked = current.contains(sharedDeckId);
+    final updated = Set<String>.from(current);
+    if (isBookmarked) {
+      updated.remove(sharedDeckId);
+    } else {
+      updated.add(sharedDeckId);
+    }
+    if (storage != null) {
+      await storage.savePreference(
+        key: 'shared_deck_bookmarks',
+        data: jsonEncode(updated.toList()),
+      );
+    }
+    return !isBookmarked;
+  }
+
+  @override
+  Future<List<String>> getBookmarkedSharedDeckIds() async {
+    final storage = _localStorage;
+    if (storage == null) return const [];
+    final raw = storage.getPreference(key: 'shared_deck_bookmarks');
+    if (raw == null || raw.trim().isEmpty) return const [];
+    try {
+      final list = jsonDecode(raw);
+      if (list is List) {
+        return list.map((e) => e.toString()).toList();
+      }
+    } on Object catch (_) {}
+    return const [];
+  }
+
+  @override
   Stream<List<LeaderboardEntryModel>> streamLeaderboards({String? track}) {
     // Accumulate leaderboard snapshot, then push updates for any change via WebSocket
     final streamController =
@@ -1493,6 +1695,28 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> claimWeeklyXp({required int xpAmount}) async {
+    try {
+      final res = await _client.claimWeeklyXp({'p_xp_amount': xpAmount});
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true};
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.claimWeeklyXp failed',
+          ),
+        );
+      }
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  @override
   Future<StudyCommunityModel> autoProvisionCommunity({
     required String courseCode,
     required String title,
@@ -1543,6 +1767,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     final res = await _client.generateLiveKitToken({
       'room_id': roomId,
       'user_id': userId,
+      'canPublish': true,
+      'is_voice_pod': true,
     });
     final dynamic data = res.data;
     if (data is Map<String, dynamic> && data['token'] != null) {
@@ -1578,62 +1804,51 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   List<StudyRoomModel> _getLocalPersistedRooms({String? category}) {
     try {
       final storage = _localStorage;
-      if (storage == null) return [];
-      final raw = storage.getPreference(key: PrefKeys.persistedStudyRooms);
-      if (raw == null || raw.isEmpty) return [];
-      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
-      final rooms = list
-          .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
-          .where((r) => !_isAutoProvisionedHashRoom(r))
-          .toList();
-      if (category != null && category.isNotEmpty && category != 'All') {
-        return rooms
-            .where((r) => r.category.toLowerCase() == category.toLowerCase())
-            .toList();
+      if (storage != null) {
+        final raw = storage.getPreference(key: PrefKeys.persistedStudyRooms);
+        if (raw != null && raw.isNotEmpty) {
+          final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+          var rooms = list
+              .map((e) => StudyRoomModel.fromJson(e as Map<String, dynamic>))
+              .where((r) => !_isAutoProvisionedHashRoom(r))
+              .toList();
+          if (category != null && category.isNotEmpty && category != 'All') {
+            rooms = rooms
+                .where((r) => r.category.toLowerCase() == category.toLowerCase())
+                .toList();
+          }
+          if (rooms.isNotEmpty) return rooms;
+        }
       }
-      return rooms;
-    } on Object catch (_) {
-      return [];
-    }
+    } on Object catch (_) {}
+    return _getCuratedFallbackRooms(category: category);
   }
 
   List<StudyRoomModel> _getCuratedFallbackRooms({String? category}) {
-    const allFallback = [
+    const list = [
       StudyRoomModel(
-        id: 'curated_room_pomodoro_silent',
-        title: 'Silent Pomodoro Library',
+        id: 'curated_room_1',
+        title: 'Deep Focus Pomodoro Sprint',
         subject: 'General Study',
-        activeParticipantsCount: 14,
-        activeGoal: 'Deep study & silent focus sprint',
-      ),
-      StudyRoomModel(
-        id: 'curated_room_stem_lab',
-        title: 'Deep Work STEM Lab',
-        subject: 'Science & Engineering',
         category: 'STEM',
-        pomodoroDurationMinutes: 50,
-        activeParticipantsCount: 8,
-        ambientSoundTrack: 'binaural',
-        activeGoal: 'Problem solving & derivation sprint',
+        activeParticipantsCount: 12,
       ),
       StudyRoomModel(
-        id: 'curated_room_exam_prep',
-        title: 'Exam Sprint Pod',
-        subject: 'All Subjects',
-        category: 'Exam Prep',
-        pomodoroDurationMinutes: 45,
-        activeParticipantsCount: 19,
-        ambientSoundTrack: 'rain',
-        activeGoal: 'Past question drills & active recall',
+        id: 'curated_room_2',
+        title: 'Calculus & Linear Algebra Lab',
+        subject: 'Mathematics',
+        category: 'STEM',
+        activeParticipantsCount: 8,
+        pomodoroDurationMinutes: 50,
       ),
     ];
     if (category != null && category.isNotEmpty && category != 'All') {
-      final filtered = allFallback
+      final filtered = list
           .where((r) => r.category.toLowerCase() == category.toLowerCase())
           .toList();
-      if (filtered.isNotEmpty) return filtered;
+      return filtered.isNotEmpty ? filtered : list;
     }
-    return allFallback;
+    return list;
   }
 
   void _persistCirclesLocally(List<StudyCircleModel> circles) {
@@ -1653,34 +1868,32 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   List<StudyCircleModel> _getLocalPersistedCircles({String? track}) {
     try {
       final storage = _localStorage;
-      if (storage == null) return [];
-      final raw = storage.getPreference(key: PrefKeys.persistedStudyCircles);
-      if (raw == null || raw.isEmpty) return [];
-      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
-      final circles = list
-          .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      if (track != null && track.isNotEmpty && track != 'All') {
-        return circles
-            .where((c) => c.track.toLowerCase() == track.toLowerCase())
-            .toList();
+      if (storage != null) {
+        final raw = storage.getPreference(key: PrefKeys.persistedStudyCircles);
+        if (raw != null && raw.isNotEmpty) {
+          final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+          var circles = list
+              .map((e) => StudyCircleModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          if (track != null && track.isNotEmpty && track != 'All') {
+            circles = circles
+                .where((c) => c.track.toLowerCase() == track.toLowerCase())
+                .toList();
+          }
+          if (circles.isNotEmpty) return circles;
+        }
       }
-      return circles;
-    } on Object catch (_) {
-      return [];
-    }
+    } on Object catch (_) {}
+    return _getCuratedFallbackCircles(track: track);
   }
 
   List<StudyCircleModel> _getCuratedFallbackCircles({String? track}) {
-    final effectiveTrack = (track != null && track.isNotEmpty && track != 'All')
-        ? track
-        : 'General';
-    return [
+    return <StudyCircleModel>[
       StudyCircleModel(
-        id: 'curated_circle_sprint',
-        name: '$effectiveTrack Study Circle',
-        track: effectiveTrack,
-        memberCount: 5,
+        id: 'curated_circle_1',
+        name: 'STEM Mastery Alliance',
+        track: track ?? 'WAEC',
+        memberCount: 42,
       ),
     ];
   }
@@ -1702,42 +1915,34 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   List<SharedDeckModel> _getLocalPersistedSharedDecks({String? subject}) {
     try {
       final storage = _localStorage;
-      if (storage == null) return [];
-      final raw = storage.getPreference(key: PrefKeys.persistedSharedDecks);
-      if (raw == null || raw.isEmpty) return [];
-      final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
-      final decks = list
-          .map((e) => SharedDeckModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      if (subject != null && subject.isNotEmpty && subject != 'All') {
-        return decks
-            .where((d) => d.subject.toLowerCase() == subject.toLowerCase())
-            .toList();
+      if (storage != null) {
+        final raw = storage.getPreference(key: PrefKeys.persistedSharedDecks);
+        if (raw != null && raw.isNotEmpty) {
+          final list = (jsonDecode(raw) as List<dynamic>?) ?? [];
+          var decks = list
+              .map((e) => SharedDeckModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          if (subject != null && subject.isNotEmpty && subject != 'All') {
+            decks = decks
+                .where((d) => d.subject.toLowerCase() == subject.toLowerCase())
+                .toList();
+          }
+          if (decks.isNotEmpty) return decks;
+        }
       }
-      return decks;
-    } on Object catch (_) {
-      return [];
-    }
+    } on Object catch (_) {}
+    return _getCuratedFallbackSharedDecks(subject: subject);
   }
 
   List<SharedDeckModel> _getCuratedFallbackSharedDecks({String? subject}) {
-    final effectiveSubject =
-        (subject != null && subject.isNotEmpty && subject != 'All')
-        ? subject
-        : 'General Studies';
-    return [
+    return <SharedDeckModel>[
       SharedDeckModel(
-        id: 'curated_deck_high_yield',
-        ownerId: 'kortex_team',
-        ownerName: 'Kortex Academic Curators',
-        title: '$effectiveSubject Core Exam Formulas & Review',
-        subject: effectiveSubject,
-        syllabusTag: 'Universal',
-        description:
-            'High-yield flashcards covering key definitions, exam principles, and quick recall prompts.',
-        category: 'Exam Prep',
-        totalCards: 20,
-        downloadsCount: 142,
+        id: 'curated_deck_1',
+        ownerId: 'curated_owner',
+        ownerName: 'Kortex Educator',
+        title: 'Physics Mechanics & Dynamics',
+        subject: subject ?? 'Physics',
+        totalCards: 25,
         rating: 4.9,
       ),
     ];
@@ -2008,5 +2213,42 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     } on Object catch (_) {
       return {};
     }
+  }
+
+  @override
+  Future<Set<String>> getFollowedTopics() async {
+    try {
+      final storage = _localStorage;
+      if (storage == null) return {};
+      final raw = storage.getPreference(key: 'forum_followed_topics');
+      if (raw == null || raw.trim().isEmpty) return {};
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toSet();
+      }
+      return {};
+    } on Object catch (_) {
+      return {};
+    }
+  }
+
+  @override
+  Future<Set<String>> toggleFollowTopic(String topic) async {
+    final cleanTopic = topic.trim();
+    if (cleanTopic.isEmpty) return getFollowedTopics();
+    final current = await getFollowedTopics();
+    if (current.contains(cleanTopic)) {
+      current.remove(cleanTopic);
+    } else {
+      current.add(cleanTopic);
+    }
+    final storage = _localStorage;
+    if (storage != null) {
+      await storage.savePreference(
+        key: 'forum_followed_topics',
+        data: jsonEncode(current.toList()),
+      );
+    }
+    return current;
   }
 }

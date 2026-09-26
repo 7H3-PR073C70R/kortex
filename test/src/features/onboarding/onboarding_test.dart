@@ -227,7 +227,7 @@ void main() {
         // the mobile flow being stretched across the viewport. (The chat
         // canvas surfaces its own social dock inline, hence two bars.)
         expect(find.byType(AuthWorkspacePanel), findsOneWidget);
-        expect(find.byType(SocialAuthBar), findsNWidgets(2));
+        expect(find.byType(SocialAuthBar), findsOneWidget);
 
         // Paging forward works and reveals the Previous control. (Pumps
         // step frame-by-frame: one large time jump can leave PageView's

@@ -3,11 +3,12 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/constants/app_spacing.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -16,11 +17,12 @@ import 'package:kortex/src/core/themes/typography/typography_theme_extension.dar
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
-/// Subpage for Syllabot AI settings, reasoning preferences,
-/// and offline weights manager.
+/// Subpage for Syllabot AI settings, consolidated Socratic reasoning preferences,
+/// and voice dialogue controls.
 @RoutePage()
 class SyllabotAiSettingsPage extends HookWidget {
   const SyllabotAiSettingsPage({super.key});
@@ -29,6 +31,7 @@ class SyllabotAiSettingsPage extends HookWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
+    final isDark = context.isDarkMode;
 
     final storage = locator.isRegistered<LocalStorageService>()
         ? locator<LocalStorageService>()
@@ -69,19 +72,14 @@ class SyllabotAiSettingsPage extends HookWidget {
     final voiceGender = useState<VoiceGender>(initialGender);
     final speechRate = useState<double>(initialRate);
 
+    final activeMode = socraticMode.value;
+
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
         backgroundColor: colors.backgroundPrimary,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-            size: 18,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           'Syllabot AI & Neural Engine',
           style: typography.title3.bold.copyWith(
@@ -99,106 +97,193 @@ class SyllabotAiSettingsPage extends HookWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Socratic Reasoning Mode
-                  _buildSectionCard(
-                    title: 'Socratic Reasoning Preference',
-                    subtitle: 'Controls how Syllabot structures explanations',
+                  // Section 1: Socratic Reasoning Preference (Consolidated)
+                  _buildSectionContainer(
+                    title: 'SOCRATIC REASONING ENGINE',
+                    subtitle:
+                        'Select how Syllabot structures tutoring & explanations',
                     colors: colors,
                     typography: typography,
                     child: Column(
-                      children: SocraticMode.values.map((mode) {
-                        final isSelected = mode == socraticMode.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: PlatformHoverBuilder(
-                            builder: (context, isHovered, child) {
-                              return AnimatedContainer(
-                                duration: AppMotion.snappy,
-                                curve: Curves.easeOutCubic,
-                                transform: isHovered
-                                    ? Matrix4.translationValues(4, 0, 0)
-                                    : Matrix4.identity(),
-                                child: child,
-                              );
-                            },
-                            child: ShrinkableButton(
-                              onTap: () {
-                                socraticMode.value = mode;
-                                unawaited(
-                                  storage?.savePreference(
-                                    key: PrefKeys.syllabotSocraticMode,
-                                    data: mode.name,
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Active Mode Hero Display Card
+                        AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withAlpha(isDark ? 35 : 20),
+                            borderRadius: AppRadius.radiusPanel,
+                            border: Border.all(
+                              color: colors.primary.withAlpha(
+                                isDark ? 110 : 80,
+                              ),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
                                 decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? colors.primary.withAlpha(25)
-                                      : colors.surfaceSecondary,
+                                  color: colors.primary.withAlpha(40),
                                   borderRadius: AppRadius.radiusCard,
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? colors.primary
-                                        : colors.surfaceBorder.withAlpha(80),
-                                    width: isSelected ? 1.5 : 1,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _getModeIcon(activeMode),
+                                    style: const TextStyle(fontSize: 22),
                                   ),
                                 ),
-                                child: Row(
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      _getModeIcon(mode),
-                                      style: context.typography.body.regular.copyWith(fontSize: 18),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            mode.nameString,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            activeMode.label,
                                             style: typography.body.bold
                                                 .copyWith(
-                                                  color: isSelected
-                                                      ? colors.primary
-                                                      : colors.textPrimary,
-                                                  fontSize: 13.5,
+                                                  color: colors.primary,
+                                                  fontSize: 15,
                                                 ),
                                           ),
-                                          Text(
-                                            _getModeSubtitle(mode),
-                                            style: typography.caption.regular
+                                        ),
+                                        AppSpacing.horizontalSpaceSmall,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.primary,
+                                            borderRadius: AppRadius.radiusMicro,
+                                          ),
+                                          child: Text(
+                                            'ACTIVE',
+                                            style: typography.caption.bold
                                                 .copyWith(
-                                                  color: colors.textSecondary,
-                                                  fontSize: 11.5,
+                                                  color: colors.white,
+                                                  fontSize: 9.5,
+                                                  letterSpacing: 0.8,
                                                 ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                    if (isSelected)
-                                      Icon(
-                                        Icons.check_circle_rounded,
-                                        color: colors.primary,
-                                        size: 18,
-                                      ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      activeMode.description,
+                                      style: typography.caption.regular
+                                          .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 12.5,
+                                            height: 1.35,
+                                          ),
+                                    ),
                                   ],
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                        );
-                      }).toList(),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Mode Selector Chips Grid (2 Rows)
+                        Text(
+                          'CHOOSE STRATEGY',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textSecondary.withAlpha(140),
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: SocraticMode.values.map((mode) {
+                            final isSelected = mode == activeMode;
+                            return PlatformHoverBuilder(
+                              builder: (context, isHovered, child) {
+                                return AnimatedScale(
+                                  scale: isHovered && !isSelected ? 1.02 : 1.0,
+                                  duration: AppMotion.snappy,
+                                  curve: Curves.easeOutCubic,
+                                  child: child,
+                                );
+                              },
+                              child: ShrinkableButton(
+                                onTap: () {
+                                  AppFeedback.selection();
+                                  socraticMode.value = mode;
+                                  if (storage != null) {
+                                    unawaited(
+                                      storage.savePreference(
+                                        key: PrefKeys.syllabotSocraticMode,
+                                        data: mode.name,
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: AnimatedContainer(
+                                  duration: AppMotion.snappy,
+                                  curve: Curves.easeOutCubic,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 9,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? colors.primary
+                                        : colors.surfaceSecondary,
+                                    borderRadius: AppRadius.radiusCard,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? colors.primary
+                                          : colors.surfaceBorder.withAlpha(80),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _getModeIcon(mode),
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        mode.label,
+                                        style: typography.caption.bold.copyWith(
+                                          color: isSelected
+                                              ? colors.white
+                                              : colors.textPrimary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  // 2. Voice Dialogue Persona & Speech Speed
-                  _buildSectionCard(
-                    title: 'Voice Dialogue Persona',
-                    subtitle: 'Audio characteristics for spoken conversations',
+                  // Section 2: Voice Dialogue Persona
+                  _buildSectionContainer(
+                    title: 'VOICE DIALOGUE PERSONA',
+                    subtitle: 'Audio characteristics for spoken interactions',
                     colors: colors,
                     typography: typography,
                     child: Column(
@@ -213,34 +298,45 @@ class SyllabotAiSettingsPage extends HookWidget {
                                 fontSize: 13.5,
                               ),
                             ),
-                            SegmentedButton<VoiceGender>(
-                              segments: [
-                                ButtonSegment(
-                                  value: VoiceGender.female,
-                                  label: Text(
-                                    'Female',
-                                    style: context.typography.body.regular.copyWith(fontSize: 11),
+                            AppSpacing.horizontalSpaceMedium,
+                            Expanded(
+                              child: SegmentedButton<VoiceGender>(
+                                showSelectedIcon: false,
+                                segments: [
+                                  ButtonSegment(
+                                    value: VoiceGender.female,
+                                    label: Text(
+                                      'Female',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                ButtonSegment(
-                                  value: VoiceGender.male,
-                                  label: Text(
-                                    'Male',
-                                    style: context.typography.body.regular.copyWith(fontSize: 11),
+                                  ButtonSegment(
+                                    value: VoiceGender.male,
+                                    label: Text(
+                                      'Male',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                              selected: {voiceGender.value},
-                              onSelectionChanged: (set) {
-                                final g = set.first;
-                                voiceGender.value = g;
-                                unawaited(
-                                  storage?.savePreference(
-                                    key: PrefKeys.syllabotVoiceGender,
-                                    data: g.name,
-                                  ),
-                                );
-                              },
+                                ],
+                                selected: {voiceGender.value},
+                                onSelectionChanged: (set) {
+                                  AppFeedback.selection();
+                                  final g = set.first;
+                                  voiceGender.value = g;
+                                  if (storage != null) {
+                                    unawaited(
+                                      storage.savePreference(
+                                        key: PrefKeys.syllabotVoiceGender,
+                                        data: g.name,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -255,41 +351,55 @@ class SyllabotAiSettingsPage extends HookWidget {
                                 fontSize: 13.5,
                               ),
                             ),
-                            SegmentedButton<double>(
-                              segments: [
-                                ButtonSegment(
-                                  value: 0.8,
-                                  label: Text(
-                                    '0.8x',
-                                    style: context.typography.body.regular.copyWith(fontSize: 11),
+                            AppSpacing.horizontalSpaceMedium,
+
+                            Expanded(
+                              child: SegmentedButton<double>(
+                                showSelectedIcon: false,
+                                segments: [
+                                  ButtonSegment(
+                                    value: 0.8,
+                                    label: Text(
+                                      '0.8x',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                ButtonSegment(
-                                  value: 1,
-                                  label: Text(
-                                    '1.0x',
-                                    style: context.typography.body.regular.copyWith(fontSize: 11),
+                                  ButtonSegment(
+                                    value: 1,
+                                    label: Text(
+                                      '1.0x',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                ButtonSegment(
-                                  value: 1.2,
-                                  label: Text(
-                                    '1.2x',
-                                    style: context.typography.body.regular.copyWith(fontSize: 11),
+                                  ButtonSegment(
+                                    value: 1.2,
+                                    label: Text(
+                                      '1.2x',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 11,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                              selected: {speechRate.value},
-                              onSelectionChanged: (set) {
-                                final r = set.first;
-                                speechRate.value = r;
-                                unawaited(
-                                  storage?.savePreference(
-                                    key: PrefKeys.syllabotSpeechRate,
-                                    data: r.toString(),
-                                  ),
-                                );
-                              },
+                                ],
+                                selected: {speechRate.value},
+                                onSelectionChanged: (set) {
+                                  AppFeedback.selection();
+                                  final r = set.first;
+                                  speechRate.value = r;
+                                  if (storage != null) {
+                                    unawaited(
+                                      storage.savePreference(
+                                        key: PrefKeys.syllabotSpeechRate,
+                                        data: r.toString(),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -297,7 +407,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                     ),
                   ),
                   if (!kIsWeb && Platform.isIOS) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
@@ -321,7 +431,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'For the most natural voice, go to Settings → '
+                              'For the most natural voice quality, navigate to Settings → '
                               'Accessibility → Spoken Content → Voices → English '
                               'and download an Enhanced or Premium voice.',
                               style: typography.caption.regular.copyWith(
@@ -334,9 +444,9 @@ class SyllabotAiSettingsPage extends HookWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
 
-                  // Save Action
+                  // Apply Preferences Primary Action Button
                   PlatformHoverBuilder(
                     builder: (context, isHovered, child) {
                       return AnimatedScale(
@@ -348,7 +458,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                     },
                     child: ShrinkableButton(
                       onTap: () async {
-                        unawaited(HapticFeedback.lightImpact());
+                        AppFeedback.light();
                         if (storage != null) {
                           await storage.savePreference(
                             key: PrefKeys.syllabotSocraticMode,
@@ -365,7 +475,8 @@ class SyllabotAiSettingsPage extends HookWidget {
                         }
                         if (context.mounted) {
                           context.showSnackBar(
-                            message: 'AI preferences saved successfully!',
+                            message:
+                                'Syllabot AI preferences updated successfully!',
                             type: SnackBarType.success,
                           );
                           Navigator.of(context).pop();
@@ -377,10 +488,17 @@ class SyllabotAiSettingsPage extends HookWidget {
                         decoration: BoxDecoration(
                           color: colors.primary,
                           borderRadius: AppRadius.radiusPanel,
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.primary.withAlpha(50),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Text(
-                            'Apply Preferences',
+                            'Save Neural Preferences',
                             style: typography.body.bold.copyWith(
                               color: colors.white,
                               fontSize: 15,
@@ -399,7 +517,7 @@ class SyllabotAiSettingsPage extends HookWidget {
     );
   }
 
-  Widget _buildSectionCard({
+  Widget _buildSectionContainer({
     required String title,
     required String subtitle,
     required Widget child,
@@ -462,21 +580,6 @@ class SyllabotAiSettingsPage extends HookWidget {
         return '🔬';
       case SocraticMode.feynmanTeachBack:
         return '🧠';
-    }
-  }
-
-  String _getModeSubtitle(SocraticMode mode) {
-    switch (mode) {
-      case SocraticMode.stepByStep:
-        return 'Guided probing questions to build first-principles intuition';
-      case SocraticMode.directAnswer:
-        return 'Concise, high-yield academic answers with key takeaways';
-      case SocraticMode.examSim:
-        return 'Strict examiner rubric grading with mark breakdown';
-      case SocraticMode.deepResearch:
-        return 'Rigorous derivations, proofs, and multi-source context';
-      case SocraticMode.feynmanTeachBack:
-        return 'Explain simply to Syllabot; AI identifies gaps, jargon, and tests mastery';
     }
   }
 }

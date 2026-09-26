@@ -18,6 +18,7 @@ import 'package:kortex/src/features/community/presentation/widgets/forum_media_a
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -52,6 +53,7 @@ class TrackForumPostCard extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final l10n = context.l10n;
 
     unawaited(
       showModalBottomSheet<void>(
@@ -231,7 +233,7 @@ class TrackForumPostCard extends HookWidget {
                                     ),
                                     onPressed: () =>
                                         Navigator.of(dialogCtx).pop(true),
-                                    child: const Text('Delete'),
+                                    child: Text(l10n.commonDelete),
                                   ),
                                 ],
                               ),
@@ -401,31 +403,73 @@ class TrackForumPostCard extends HookWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Channel & Options Header: [Dot + c/Track] ... [more_horiz]
+                    // Channel & Options Header: [Dot + c/Track] ... [Badges] [more_horiz]
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            AppPulsingBeacon(
-                              color: colors.primary,
-                              size: 6,
-                              pulseSpread: 3,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'c/${post.track}',
-                              style: typography.caption.bold.copyWith(
+                        Expanded(
+                          child: Row(
+                            children: [
+                              AppPulsingBeacon(
                                 color: colors.primary,
-                                fontSize: 12.5,
+                                size: 6,
+                                pulseSpread: 3,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'c/${post.track}',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 12.5,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 6),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            if (post.isQuestion || post.title.endsWith('?') || post.repliesCount == 0)
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary.withAlpha(
+                                    isDark ? 35 : 20,
+                                  ),
+                                  borderRadius: AppRadius.radiusMicro,
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 70 : 40,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome_rounded,
+                                      size: 11,
+                                      color: colors.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Knowledge Gap',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             if (post.isVerifiedSolution)
                               Container(
                                 margin: const EdgeInsets.only(right: 6),
@@ -750,6 +794,38 @@ class TrackForumPostCard extends HookWidget {
                               ),
                             ),
                           ),
+                        if (post.karmaBounty > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.syllabotAccent.withValues(alpha: 0.15),
+                              borderRadius: AppRadius.radiusBadge,
+                              border: Border.all(
+                                color: colors.syllabotAccent.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.monetization_on_rounded,
+                                  size: 12,
+                                  color: colors.syllabotAccent,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '💰 ${post.karmaBounty} XP Bounty',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.syllabotAccent,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         if (post.isQuestion)
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -779,203 +855,211 @@ class TrackForumPostCard extends HookWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Left actions: Votes & Replies
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Upvote / Downvote Capsule
-                            Container(
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: (isUpvoted || isDownvoted)
-                                    ? (isUpvoted
-                                          ? colors.primary.withAlpha(
-                                              isDark ? 35 : 20,
-                                            )
-                                          : colors.error.withAlpha(
-                                              isDark ? 35 : 20,
-                                            ))
-                                    : (isDark
-                                          ? colors.surfacePrimary.withAlpha(180)
-                                          : colors.surfaceSecondary.withAlpha(
-                                              120,
-                                            )),
-                                borderRadius: AppRadius.radiusBadge,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ShrinkableButton(
-                                    onTap: onUpvoteTap == null
-                                        ? null
-                                        : () {
-                                            unawaited(
-                                              HapticFeedback.selectionClick(),
-                                            );
-                                            onUpvoteTap!();
-                                          },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 4,
-                                      ),
-                                      child: AnimatedSwitcher(
-                                        duration: AppMotion.snappy,
-                                        transitionBuilder:
-                                            (child, anim) => ScaleTransition(
-                                              scale: Tween<double>(
-                                                begin: 0.8,
-                                                end: 1,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: anim,
-                                                  curve: AppMotion.easeOutCubic,
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Upvote / Downvote Capsule
+                              Container(
+                                height: 32,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: (isUpvoted || isDownvoted)
+                                      ? (isUpvoted
+                                            ? colors.primary.withAlpha(
+                                                isDark ? 35 : 20,
+                                              )
+                                            : colors.error.withAlpha(
+                                                isDark ? 35 : 20,
+                                              ))
+                                      : (isDark
+                                            ? colors.surfacePrimary.withAlpha(180)
+                                            : colors.surfaceSecondary.withAlpha(
+                                                120,
+                                              )),
+                                  borderRadius: AppRadius.radiusBadge,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ShrinkableButton(
+                                      onTap: onUpvoteTap == null
+                                          ? null
+                                          : () {
+                                              unawaited(
+                                                HapticFeedback.selectionClick(),
+                                              );
+                                              onUpvoteTap!();
+                                            },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 4,
+                                        ),
+                                        child: AnimatedSwitcher(
+                                          duration: AppMotion.snappy,
+                                          transitionBuilder:
+                                              (child, anim) => ScaleTransition(
+                                                scale: Tween<double>(
+                                                  begin: 0.8,
+                                                  end: 1,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: anim,
+                                                    curve: AppMotion.easeOutCubic,
+                                                  ),
+                                                ),
+                                                child: FadeTransition(
+                                                  opacity: anim,
+                                                  child: child,
                                                 ),
                                               ),
-                                              child: FadeTransition(
-                                                opacity: anim,
-                                                child: child,
-                                              ),
-                                            ),
-                                        child: Icon(
-                                          isUpvoted
-                                              ? Icons.arrow_circle_up_rounded
-                                              : Icons.keyboard_arrow_up_rounded,
-                                          key: ValueKey<bool>(isUpvoted),
-                                          size: 18,
+                                          child: Icon(
+                                            isUpvoted
+                                                ? Icons.arrow_circle_up_rounded
+                                                : Icons.keyboard_arrow_up_rounded,
+                                            key: ValueKey<bool>(isUpvoted),
+                                            size: 18,
+                                            color: isUpvoted
+                                                ? colors.primary
+                                                : colors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                      ),
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: AppMotion.snappy,
+                                        curve: AppMotion.easeOutCubic,
+                                        style: typography.caption.bold.copyWith(
                                           color: isUpvoted
                                               ? colors.primary
-                                              : colors.textSecondary,
+                                              : isDownvoted
+                                              ? colors.error
+                                              : colors.textPrimary,
+                                          fontSize: 12,
                                         ),
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 2,
-                                    ),
-                                    child: AnimatedDefaultTextStyle(
-                                      duration: AppMotion.snappy,
-                                      curve: AppMotion.easeOutCubic,
-                                      style: typography.caption.bold.copyWith(
-                                        color: isUpvoted
-                                            ? colors.primary
-                                            : isDownvoted
-                                            ? colors.error
-                                            : colors.textPrimary,
-                                        fontSize: 12,
-                                      ),
-                                      child: AnimatedSwitcher(
-                                        duration: AppMotion.snappy,
-                                        transitionBuilder:
-                                            (child, anim) => ScaleTransition(
-                                          scale: Tween<double>(
-                                            begin: 0.85,
-                                            end: 1,
-                                          ).animate(
-                                            CurvedAnimation(
-                                              parent: anim,
-                                              curve: AppMotion.easeOutCubic,
+                                        child: AnimatedSwitcher(
+                                          duration: AppMotion.snappy,
+                                          transitionBuilder:
+                                              (child, anim) => ScaleTransition(
+                                            scale: Tween<double>(
+                                              begin: 0.85,
+                                              end: 1,
+                                            ).animate(
+                                              CurvedAnimation(
+                                                parent: anim,
+                                                curve: AppMotion.easeOutCubic,
+                                              ),
+                                            ),
+                                            child: FadeTransition(
+                                              opacity: anim,
+                                              child: child,
                                             ),
                                           ),
-                                          child: FadeTransition(
-                                            opacity: anim,
-                                            child: child,
+                                          child: Text(
+                                            '${post.netVotes}',
+                                            key: ValueKey<int>(post.netVotes),
                                           ),
-                                        ),
-                                        child: Text(
-                                          '${post.netVotes}',
-                                          key: ValueKey<int>(post.netVotes),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  ShrinkableButton(
-                                    onTap: onDownvoteTap == null
-                                        ? null
-                                        : () {
-                                            unawaited(
-                                              HapticFeedback.selectionClick(),
-                                            );
-                                            onDownvoteTap!();
-                                          },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 4,
-                                      ),
-                                      child: AnimatedSwitcher(
-                                        duration: AppMotion.snappy,
-                                        transitionBuilder:
-                                            (child, anim) => ScaleTransition(
-                                              scale: Tween<double>(
-                                                begin: 0.8,
-                                                end: 1,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: anim,
-                                                  curve: AppMotion.easeOutCubic,
+                                    ShrinkableButton(
+                                      onTap: onDownvoteTap == null
+                                          ? null
+                                          : () {
+                                              unawaited(
+                                                HapticFeedback.selectionClick(),
+                                              );
+                                              onDownvoteTap!();
+                                            },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 4,
+                                        ),
+                                        child: AnimatedSwitcher(
+                                          duration: AppMotion.snappy,
+                                          transitionBuilder:
+                                              (child, anim) => ScaleTransition(
+                                                scale: Tween<double>(
+                                                  begin: 0.8,
+                                                  end: 1,
+                                                ).animate(
+                                                  CurvedAnimation(
+                                                    parent: anim,
+                                                    curve: AppMotion.easeOutCubic,
+                                                  ),
+                                                ),
+                                                child: FadeTransition(
+                                                  opacity: anim,
+                                                  child: child,
                                                 ),
                                               ),
-                                              child: FadeTransition(
-                                                opacity: anim,
-                                                child: child,
-                                              ),
-                                            ),
-                                        child: Icon(
-                                          isDownvoted
-                                              ? Icons.arrow_circle_down_rounded
-                                              : Icons.keyboard_arrow_down_rounded,
-                                          key: ValueKey<bool>(isDownvoted),
-                                          size: 18,
-                                          color: isDownvoted
-                                              ? colors.error
-                                              : colors.textSecondary,
+                                          child: Icon(
+                                            isDownvoted
+                                                ? Icons.arrow_circle_down_rounded
+                                                : Icons.keyboard_arrow_down_rounded,
+                                            key: ValueKey<bool>(isDownvoted),
+                                            size: 18,
+                                            color: isDownvoted
+                                                ? colors.error
+                                                : colors.textSecondary,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
+                              const SizedBox(width: 8),
 
-                            // Reply Pill
-                            Container(
-                              height: 32,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfacePrimary.withAlpha(180)
-                                    : colors.surfaceSecondary.withAlpha(120),
-                                borderRadius: AppRadius.radiusBadge,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble_outline_rounded,
-                                    size: 14,
-                                    color: colors.textSecondary,
+                              // Reply Pill
+                              Flexible(
+                                child: Container(
+                                  height: 32,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
                                   ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    post.topLevelRepliesCount == 1
-                                        ? '1 reply'
-                                        : '${post.topLevelRepliesCount} replies',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 12,
-                                    ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colors.surfacePrimary.withAlpha(180)
+                                        : colors.surfaceSecondary.withAlpha(120),
+                                    borderRadius: AppRadius.radiusBadge,
                                   ),
-                                ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.chat_bubble_outline_rounded,
+                                        size: 14,
+                                        color: colors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          post.topLevelRepliesCount == 1
+                                              ? '1 reply'
+                                              : '${post.topLevelRepliesCount} replies',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
 
                         // Right actions: Share & Bookmark

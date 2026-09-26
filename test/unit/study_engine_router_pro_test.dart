@@ -49,7 +49,7 @@ void main() {
       expect(mode, equals(StudyEngineExecutionMode.cloudRemote));
     });
 
-    test('Online Free user: Routes to offlineOnDevice without 1.5GB download locks', () async {
+    test('Online Free user: Routes to cloudRemote', () async {
       when(() => mockConnectivity.checkConnectivity()).thenAnswer(
         (_) async => [ConnectivityResult.wifi],
       );
@@ -62,7 +62,7 @@ void main() {
       );
 
       final mode = await router.getExecutionMode();
-      expect(mode, equals(StudyEngineExecutionMode.offlineOnDevice));
+      expect(mode, equals(StudyEngineExecutionMode.cloudRemote));
     });
 
     test('Offline Free or Pro user: Always routes to offlineOnDevice', () async {

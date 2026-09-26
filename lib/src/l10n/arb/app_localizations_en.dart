@@ -3347,4 +3347,211 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'Next review batch in about $_temp0';
   }
+
+  @override
+  String get commonDelete => 'Delete';
+
+  @override
+  String get commonEdit => 'Edit';
+
+  @override
+  String get commonAddNew => 'Add New';
+
+  @override
+  String get tooltipBold => 'Bold';
+
+  @override
+  String get tooltipItalic => 'Italic';
+
+  @override
+  String get tooltipStrikethrough => 'Strikethrough';
+
+  @override
+  String get tooltipHeading => 'Heading';
+
+  @override
+  String get tooltipCodeBlock => 'Code Block';
+
+  @override
+  String get tooltipBulletList => 'Bullet List';
+
+  @override
+  String get tooltipNumberedList => 'Numbered List';
+
+  @override
+  String get tooltipQuote => 'Quote';
+
+  @override
+  String get tooltipLatexMath => 'LaTeX Math';
+
+  @override
+  String get tooltipMathSymbols => 'Greek / Math Symbols';
+
+  @override
+  String get tooltipAiFormatAssist => 'AI Format Assist';
+
+  @override
+  String get tooltipReportThread => 'Report Thread';
+
+  @override
+  String get tooltipShareThread => 'Share Thread';
+
+  @override
+  String get tooltipSortReplies => 'Sort Replies';
+
+  @override
+  String get tooltipAttachImage => 'Attach Image';
+
+  @override
+  String get communityFocusRoomTitle => 'Focus Room';
+
+  @override
+  String get socraticHintLevel1 => 'Level 1: Core Concept Clue';
+
+  @override
+  String get socraticHintLevel2 => 'Level 2: Method & Strategy Direction';
+
+  @override
+  String get socraticHintLevel3 => 'Level 3: Formula & Pitfall Warning';
+
+  @override
+  String get communitySearchHint => 'Search discussions, topics, tags...';
+
+  @override
+  String get createPostSyllabusHint =>
+      'Syllabus Topic (e.g. Thermodynamics, Calculus I)';
+
+  @override
+  String get quizLeaveDialogTitle => 'Leave this quiz?';
+
+  @override
+  String get quizKeepGoing => 'Keep going';
+
+  @override
+  String get quizFinishDialogTitle => 'Finish and mark your answers?';
+
+  @override
+  String get quizFinishDialogSub => 'Here is where you stand.';
+
+  @override
+  String get quizGoBack => 'Go back';
+
+  @override
+  String get quizSeeResults => 'See results';
+
+  @override
+  String get quizAllYearsRandom => 'All Years (Random)';
+
+  @override
+  String get quizResultCopied => 'Result copied to clipboard!';
+
+  @override
+  String get plannerDeleteAssessment => 'Delete Assessment';
+
+  @override
+  String get plannerCreateStudyDeck => 'Create Study Deck';
+
+  @override
+  String get plannerStartDiagnosticMock => 'Start Diagnostic Practice Mock';
+
+  @override
+  String get plannerCreateNewDeck => 'Create New Deck';
+
+  @override
+  String get plannerSaveArchiveMilestone => 'Save & Archive Milestone';
+
+  @override
+  String get plannerReopenMilestone => 'Reopen Milestone';
+
+  @override
+  String get plannerConcludeMilestone => 'Log Grade & Conclude Milestone';
+
+  @override
+  String get ingestionUpgradeTier => 'Upgrade Tier';
+
+  @override
+  String get ingestionReExtract => 'Re-extract';
+
+  @override
+  String get securityTimeoutImmediately => 'Immediately';
+
+  @override
+  String get securityTimeout15s => '15 seconds';
+
+  @override
+  String get securityTimeout30sDefault => '30 seconds (Default)';
+
+  @override
+  String get securityTimeout1m => '1 minute';
+
+  @override
+  String get securityTimeout5m => '5 minutes';
+
+  @override
+  String get studyHubViewAllTracks => 'View All Tracks';
+
+  @override
+  String get syllabotCapStorageSpace => 'Storage Space';
+
+  @override
+  String get syllabotCapProcessorCores => 'Processor & Cores';
+
+  @override
+  String get syllabotCapRamBatteryGuard => 'RAM & Battery Guard';
+
+  @override
+  String get tooltipUndoStroke => 'Undo last stroke';
+
+  @override
+  String get tooltipClearCanvas => 'Clear canvas';
+
+  @override
+  String get tooltipShareInsight => 'Share Insight to Study Circle';
+
+  @override
+  String get tooltipChatHistory => 'Chat History';
+
+  @override
+  String get monetizationPromoHint => 'e.g. SCHOLAR2026, UNILAG_STEM';
+
+  @override
+  String get focusModeTitle => 'Hyperdrive Focus Mode';
+
+  @override
+  String get focusModeSubtitle =>
+      'ADHD-calibrated micro-sprints to beat task paralysis.';
+
+  @override
+  String get focusModeCatchUpRescuer => 'Soft Catch-Up Rescuer';
+
+  @override
+  String get focusModeReadAloud => 'Read Aloud (TTS)';
+
+  @override
+  String get focusModeHideClock => 'Hide Clock / Counter';
+
+  @override
+  String get thoughtParkingLotTitle => 'Thought Parking Lot';
+
+  @override
+  String get thoughtParkingLotSubtitle =>
+      'Dump intrusive thoughts in 5s. Clear your working memory.';
+
+  @override
+  String get thoughtParkingLotHint => 'Park an intrusive thought...';
+
+  @override
+  String get tooltipRemoveCard => 'Remove Card';
+
+  @override
+  String get subdeckSearchHint => 'Search hierarchy & sub-decks...';
+
+  @override
+  String get tooltipExitSession => 'Exit Session';
+
+  @override
+  String get tooltipUndoRating => 'Undo Last Rating (Cmd+Z / Z)';
+
+  @override
+  String get tooltipThoughtParkingLot => 'Thought Parking Lot';
 }

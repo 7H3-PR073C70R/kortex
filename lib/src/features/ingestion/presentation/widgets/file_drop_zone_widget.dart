@@ -125,7 +125,9 @@ class FileDropZoneWidget extends HookWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: colors.surfacePrimary,
+        backgroundColor: context.isDarkMode
+            ? colors.surfaceSecondary
+            : colors.surfacePrimary,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.radiusDialog,
           side: BorderSide(color: colors.primary.withAlpha(60)),
@@ -177,7 +179,7 @@ class FileDropZoneWidget extends HookWidget {
               ),
             ),
             icon: const Icon(Icons.star_rounded, size: 18),
-            label: const Text('Upgrade Tier'),
+            label: Text(context.l10n.ingestionUpgradeTier),
             onPressed: () {
               Navigator.of(dialogCtx).pop();
               unawaited(
@@ -197,7 +199,9 @@ class FileDropZoneWidget extends HookWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: colors.surfacePrimary,
+        backgroundColor: context.isDarkMode
+            ? colors.surfaceSecondary
+            : colors.surfacePrimary,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.radiusDialog,
           side: BorderSide(color: colors.primary.withAlpha(60)),
@@ -249,7 +253,7 @@ class FileDropZoneWidget extends HookWidget {
               ),
             ),
             icon: const Icon(Icons.star_rounded, size: 18),
-            label: const Text('Upgrade Tier'),
+            label: Text(context.l10n.ingestionUpgradeTier),
             onPressed: () {
               Navigator.of(dialogCtx).pop();
               unawaited(
@@ -274,7 +278,9 @@ class FileDropZoneWidget extends HookWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        backgroundColor: colors.surfacePrimary,
+        backgroundColor: context.isDarkMode
+            ? colors.surfaceSecondary
+            : colors.surfacePrimary,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.radiusDialog,
           side: BorderSide(color: colors.primary.withAlpha(60)),
@@ -331,7 +337,7 @@ class FileDropZoneWidget extends HookWidget {
               Navigator.of(dialogCtx).pop();
               onReExtract();
             },
-            child: const Text('Re-extract'),
+            child: Text(context.l10n.ingestionReExtract),
           ),
           if (courseId != null)
             FilledButton.icon(
@@ -495,18 +501,14 @@ class FileDropZoneWidget extends HookWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           decoration: BoxDecoration(
-            color: isDark
-                ? (isHovering.value
-                      ? colors.primary.withAlpha(30)
-                      : colors.surfaceSecondary.withAlpha(160))
-                : (isHovering.value
-                      ? colors.primary.withAlpha(20)
-                      : colors.surfacePrimary.withAlpha(200)),
+            color: isHovering.value
+                ? colors.surfaceSecondary
+                : (isDark ? colors.surfaceSecondary : colors.surfacePrimary),
             borderRadius: AppRadius.radiusDialog,
             border: Border.all(
               color: isHovering.value
                   ? colors.primary
-                  : colors.primary.withAlpha(isDark ? 80 : 50),
+                  : colors.primary.withAlpha(isDark ? 80 : 40),
               width: 1.5,
             ),
           ),
@@ -519,13 +521,9 @@ class FileDropZoneWidget extends HookWidget {
                 height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      colors.primary.withAlpha(isDark ? 80 : 40),
-                      colors.syllabotAccent.withAlpha(isDark ? 60 : 30),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                  color: colors.primary.withAlpha(isDark ? 30 : 20),
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 60 : 40),
                   ),
                 ),
                 child: Center(
@@ -636,8 +634,8 @@ class FileDropZoneWidget extends HookWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfacePrimary,
+                                ? colors.surfaceTertiary
+                                : colors.surfaceSecondary,
                             borderRadius: AppRadius.radiusCard,
                             border: Border.all(
                               color: colors.primary.withAlpha(isDark ? 90 : 60),
@@ -682,8 +680,8 @@ class FileDropZoneWidget extends HookWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? colors.surfaceSecondary
-                                : colors.surfacePrimary,
+                                ? colors.surfaceTertiary
+                                : colors.surfaceSecondary,
                             borderRadius: AppRadius.radiusCard,
                             border: Border.all(
                               color: colors.primary.withAlpha(isDark ? 90 : 60),

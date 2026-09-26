@@ -137,11 +137,40 @@ void main() {
         ),
       );
 
-      expect(find.text('You won this one'), findsOneWidget);
+      expect(find.text('Scholar One Won the Duel!'), findsOneWidget);
       expect(find.text('450 pts'), findsOneWidget);
       expect(find.text('300 pts'), findsOneWidget);
       expect(find.text('Rematch'), findsOneWidget);
-      expect(find.text('Leave arena'), findsOneWidget);
+      expect(find.text('Return to Dashboard'), findsOneWidget);
+    });
+
+    testWidgets('renders forfeit victory screen when rival forfeits', (
+      tester,
+    ) async {
+      when(() => mockCubit.state).thenReturn(
+        QuizDuelState(
+          status: QuizDuelStatus.finished,
+          currentUserId: 'user_1',
+          match: testMatch.copyWith(
+            status: QuizDuelStatus.finished,
+            winnerUserId: 'user_1',
+            forfeitUserId: 'ai_bot_1',
+            player1: testMatch.player1.copyWith(score: 620),
+            player2: testMatch.player2?.copyWith(score: 95),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          cubit: mockCubit,
+          child: const QuizDuelArenaPage(),
+        ),
+      );
+
+      expect(find.text('Rival Forfeited! Victory Awarded'), findsOneWidget);
+      expect(find.text('Syllabot Rival left the arena. You have been awarded +500 victory points!'), findsOneWidget);
+      expect(find.text('Return to Dashboard'), findsOneWidget);
     });
   });
 }

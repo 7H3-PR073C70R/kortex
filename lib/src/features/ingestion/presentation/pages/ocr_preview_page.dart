@@ -10,9 +10,9 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/ocr_latex_live_editor.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -109,159 +109,140 @@ class OcrPreviewPage extends HookWidget {
       );
     }
 
-    return AuraMeshNebula(
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: colors.transparent,
+      appBar: AppBar(
         backgroundColor: colors.transparent,
-        appBar: AppBar(
-          backgroundColor: colors.transparent,
-          elevation: 0,
-          leading: PlatformHoverBuilder(
-            builder: (context, isHovered, child) {
-              return AnimatedScale(
-                scale: isHovered ? 1.08 : 1.0,
-                duration: AppMotion.snappy,
-                curve: AppMotion.easeOutCubic,
-                child: child,
-              );
-            },
-            child: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: colors.textPrimary,
-                size: 20,
-              ),
-              onPressed: () => unawaited(Navigator.of(context).maybePop()),
-            ),
-          ),
-          title: Text(
-            l10n.ocrPreviewTitle,
-            style: typography.title3.bold.copyWith(
-              color: colors.textPrimary,
-            ),
+        elevation: 0,
+        leading: const AppBackButton(),
+        title: Text(
+          l10n.ocrPreviewTitle,
+          style: typography.title3.bold.copyWith(
+            color: colors.textPrimary,
           ),
         ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              children: [
-                // Extracted Snippets Count Banner
-                Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: Column(
+            children: [
+              // Extracted Snippets Count Banner
+              Container(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.primary.withAlpha(isDark ? 40 : 25),
+                  borderRadius: AppRadius.radiusCard,
+                  border: Border.all(
+                    color: colors.primary.withAlpha(isDark ? 80 : 50),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(isDark ? 40 : 25),
-                    borderRadius: AppRadius.radiusCard,
-                    border: Border.all(
-                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      color: colors.primary,
+                      size: 18,
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        color: colors.primary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          l10n.extractedSnippetsCount(
-                            currentSnippets.value.length,
-                          ),
-                          style: typography.footnote.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l10n.extractedSnippetsCount(
+                          currentSnippets.value.length,
+                        ),
+                        style: typography.footnote.bold.copyWith(
+                          color: colors.textPrimary,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-
-                // Live Editors List
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    itemCount: currentSnippets.value.length,
-                    itemBuilder: (context, index) {
-                      final snippet = currentSnippets.value[index];
-                      return OcrLatexLiveEditor(
-                        snippet: snippet,
-                        availableImageUrls: availableImageUrls,
-                        onChanged: (updated) {
-                          final updatedList = List<OcrExtractionEntity>.from(
-                            currentSnippets.value,
-                          );
-                          updatedList[index] = updated;
-                          currentSnippets.value = updatedList;
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        bottomNavigationBar: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.02 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: AppMotion.easeOutCubic,
-                      child: child,
+              ),
+    
+              // Live Editors List
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemCount: currentSnippets.value.length,
+                  itemBuilder: (context, index) {
+                    final snippet = currentSnippets.value[index];
+                    return OcrLatexLiveEditor(
+                      snippet: snippet,
+                      availableImageUrls: availableImageUrls,
+                      onChanged: (updated) {
+                        final updatedList = List<OcrExtractionEntity>.from(
+                          currentSnippets.value,
+                        );
+                        updatedList[index] = updated;
+                        currentSnippets.value = updatedList;
+                      },
                     );
                   },
-                  child: ShrinkableButton(
-                    onTap: handleGenerateCards,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            colors.primary,
-                            colors.primary.withAlpha(220),
-                          ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return AnimatedScale(
+                    scale: isHovered ? 1.02 : 1.0,
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.easeOutCubic,
+                    child: child,
+                  );
+                },
+                child: ShrinkableButton(
+                  onTap: handleGenerateCards,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.primary,
+                          colors.primary.withAlpha(220),
+                        ],
+                      ),
+                      borderRadius: AppRadius.radiusCard,
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 50 : 20),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
                         ),
-                        borderRadius: AppRadius.radiusCard,
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.black.withAlpha(isDark ? 50 : 20),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.style_rounded,
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.style_rounded,
+                          color: colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.generateCardsAction,
+                          style: typography.body.bold.copyWith(
                             color: colors.white,
-                            size: 20,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.generateCardsAction,
-                            style: typography.body.bold.copyWith(
-                              color: colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

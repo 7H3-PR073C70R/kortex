@@ -166,11 +166,14 @@ class TailoredBiometricLockView extends StatelessWidget {
                                 color: colors.white,
                               ),
                               const SizedBox(width: 10),
-                              Text(
-                                'Unlock with Face ID / Touch ID',
-                                style: typography.body.bold.copyWith(
-                                  color: colors.white,
-                                  fontSize: 14.5,
+                              Flexible(
+                                child: Text(
+                                  'Unlock with Face ID / Touch ID',
+                                  style: typography.body.bold.copyWith(
+                                    color: colors.white,
+                                    fontSize: 14.5,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],

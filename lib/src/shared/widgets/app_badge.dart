@@ -148,13 +148,17 @@ class AppBadge extends StatelessWidget {
             if (displayText != null) const SizedBox(width: 4),
           ],
           if (displayText != null)
-            ExcludeSemantics(
-              child: Text(
-                displayText,
-                style: typography.caption.semiBold.copyWith(
-                  fontSize: 11,
-                  color: resolvedFg,
-                  height: 1.1,
+            Flexible(
+              child: ExcludeSemantics(
+                child: Text(
+                  displayText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.caption.semiBold.copyWith(
+                    fontSize: 11,
+                    color: resolvedFg,
+                    height: 1.1,
+                  ),
                 ),
               ),
             ),

@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:dio/dio.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 
@@ -11,14 +14,27 @@ class QuizDuelWebSocketClient {
     RealtimeClient? realtimeClient,
     Random? random,
     Duration? matchmakingTimeout,
+    Dio? dio,
   }) : _realtimeClient = realtimeClient ?? RealtimeClient.instance,
        _random = random ?? Random(),
-       matchmakingTimeout = matchmakingTimeout ?? defaultMatchmakingTimeout;
+       matchmakingTimeout = matchmakingTimeout ?? defaultMatchmakingTimeout,
+       _dio = dio;
   static const Duration defaultMatchmakingTimeout = Duration(minutes: 2);
   final Duration matchmakingTimeout;
 
   final RealtimeClient _realtimeClient;
   final Random _random;
+  final Dio? _dio;
+
+  Dio? get _effectiveDio {
+    if (_dio != null) return _dio;
+    try {
+      if (locator.isRegistered<Dio>()) {
+        return locator<Dio>();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
 
   /// Supabase Realtime client reference
   RealtimeClient get realtimeClient => _realtimeClient;
@@ -26,6 +42,7 @@ class QuizDuelWebSocketClient {
   final Map<String, StreamController<QuizDuelMatch>> _matchControllers = {};
   final Map<String, QuizDuelMatch> _activeMatches = {};
   final Map<String, Timer> _roundTimers = {};
+  final Map<String, Timer> _transitionTimers = {};
   final Map<String, Timer> _aiActionTimers = {};
   final Map<String, Timer> _matchingTimers = {};
 
@@ -34,213 +51,408 @@ class QuizDuelWebSocketClient {
   static const int maxSpeedBonus = 50;
   static const int defaultQuestionTimeSeconds = 15;
 
-  /// Default fallback past questions when starting a duel
+  /// Returns dynamic question bank from backend RPC, falling back to local questions if offline.
+  Future<List<QuizQuestionEntity>> fetchRemoteDuelQuestions(
+    String subject,
+    String examBoard, {
+    int count = 10,
+  }) async {
+    final client = _effectiveDio;
+    if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
+      try {
+        final response = await client.post<dynamic>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateDuelQuestionsRpc}',
+          data: {
+            'subject': subject,
+            'exam_board': examBoard,
+            'count': count,
+          },
+        );
+        if (response.statusCode == 200 && response.data is List) {
+          final rawList = response.data as List<dynamic>;
+          if (rawList.isNotEmpty) {
+            return rawList.map((item) {
+              final map = item as Map<String, dynamic>;
+              return QuizQuestionEntity(
+                id: map['id']?.toString() ?? 'q_${Random().nextInt(99999)}',
+                prompt:
+                    map['prompt']?.toString() ??
+                    map['question']?.toString() ??
+                    '',
+                type: QuizQuestionType.multipleChoice,
+                options:
+                    (map['options'] as List<dynamic>?)
+                        ?.map((e) => e.toString())
+                        .toList() ??
+                    const [],
+                correctAnswer:
+                    map['correct_answer']?.toString() ??
+                    map['answer']?.toString() ??
+                    '',
+                explanation: map['explanation']?.toString() ?? '',
+                subTopic:
+                    map['sub_topic']?.toString() ??
+                    map['topic']?.toString() ??
+                    subject,
+              );
+            }).toList();
+          }
+        }
+      } on Object catch (_) {}
+    }
+    return getDefaultDuelQuestions(subject, examBoard, count: count);
+  }
+
+  /// Returns default question bank when dynamic question loading is not active.
   static List<QuizQuestionEntity> getDefaultDuelQuestions(
     String subject,
     String examBoard, {
     int count = 10,
   }) {
-    final bank = [
+    final pool = [
       const QuizQuestionEntity(
-        id: 'duel_q_1',
+        id: 'q1',
         prompt: 'What is the SI unit of electric potential difference?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Ampere', 'Volt', 'Ohm', 'Joule'],
+        options: ['Volt', 'Ampere', 'Ohm', 'Watt'],
         correctAnswer: 'Volt',
         explanation:
-            'The SI unit of electric potential difference (voltage) is the Volt (V), defined as one joule per coulomb.',
-        subTopic: 'Current Electricity',
+            'Voltage or electric potential difference is measured in Volts (V).',
+        subTopic: 'Electricity',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_2',
-        prompt: r'Evaluate the integral: \(\int 2x\,dx\)',
+        id: 'q2',
+        prompt: 'In how many ways can the letters of the word MATHEMATICS be arranged?',
         type: QuizQuestionType.multipleChoice,
-        options: [r'\(2x^2 + C\)', r'\(x^2 + C\)', r'\(x + C\)', r'\(2 + C\)'],
-        correctAnswer: r'\(x^2 + C\)',
+        options: [
+          '11!/(9! 2!)',
+          '11!/(9! 2! 2!)',
+          '11!/(2! 2! 2!)',
+          '11!/(2! 2!)',
+        ],
+        correctAnswer: '11!/(2! 2! 2!)',
         explanation:
-            r'Integrating \(2x\) with respect to \(x\) gives \(2 \cdot \frac{x^2}{2} + C = x^2 + C\).',
-        subTopic: 'Calculus',
+            "MATHEMATICS has 11 letters with 2 M's, 2 A's, and 2 T's.",
+        subTopic: 'Permutations',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_3',
-        prompt: 'Which organelle is known as the powerhouse of the cell?',
+        id: 'q3',
+        prompt: 'Which organelle is known as the powerhouse of the eukaryotic cell?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Ribosome', 'Golgi apparatus', 'Mitochondria', 'Nucleus'],
-        correctAnswer: 'Mitochondria',
+        options: ['Ribosome', 'Mitochondrion', 'Golgi apparatus', 'Lysosome'],
+        correctAnswer: 'Mitochondrion',
         explanation:
-            'Mitochondria generate most of the chemical energy needed to power biochemical reactions via ATP synthesis.',
+            'Mitochondria generate most of the chemical energy (ATP) needed by the cell.',
         subTopic: 'Cell Biology',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_4',
-        prompt: 'In economics, what happens when demand exceeds supply?',
+        id: 'q4',
+        prompt: 'Complete the sentence: The spokesman assured him that they were well disposed .... him.',
         type: QuizQuestionType.multipleChoice,
-        options: [
-          'Price falls',
-          'Price rises',
-          'Supply shifts left',
-          'Equilibrium unchanged',
-        ],
-        correctAnswer: 'Price rises',
+        options: ['to', 'towards', 'around', 'about'],
+        correctAnswer: 'towards',
         explanation:
-            'Excess demand creates upward price pressure until a new market equilibrium is established.',
-        subTopic: 'Price Theory',
+            'The idiomatic preposition following "disposed" in this context is "towards" or "to".',
+        subTopic: 'Grammar',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_5',
-        prompt: 'Which law states that energy cannot be created or destroyed?',
+        id: 'q5',
+        prompt: 'What is the derivative of f(x) = x^3 - 4x + 7 with respect to x?',
         type: QuizQuestionType.multipleChoice,
-        options: [
-          'First Law of Thermodynamics',
-          'Second Law of Thermodynamics',
-          "Newton's Third Law",
-          "Hooke's Law",
-        ],
-        correctAnswer: 'First Law of Thermodynamics',
+        options: ['3x^2 - 4', '3x^2 + 4', 'x^2 - 4', '3x^3 - 4'],
+        correctAnswer: '3x^2 - 4',
         explanation:
-            'The Law of Conservation of Energy (First Law of Thermodynamics) states energy can only change forms.',
-        subTopic: 'Thermodynamics',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_6',
-        prompt:
-            'In Computer Science, what is the average time complexity of searching in a Balanced Binary Search Tree (AVL/Red-Black)?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          r'\(O(1)\)',
-          r'\(O(\log n)\)',
-          r'\(O(n)\)',
-          r'\(O(n \log n)\)',
-        ],
-        correctAnswer: r'\(O(\log n)\)',
-        explanation:
-            'Balanced BST operations divide the search space in half at each step, yielding logarithmic time O(log n).',
-        subTopic: 'Data Structures & Algorithms',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_7',
-        prompt:
-            'Which gas is released during photosynthesis when water molecules are split in the light reaction?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['Carbon dioxide', 'Oxygen', 'Nitrogen', 'Methane'],
-        correctAnswer: 'Oxygen',
-        explanation:
-            'Photolysis of water in the thylakoid membrane during the light-dependent reactions produces oxygen gas.',
-        subTopic: 'Biochemistry & Botany',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_8',
-        prompt: r'What is the derivative of \(f(x) = \sin(3x)\)?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          r'\(3\cos(3x)\)',
-          r'\(-\cos(3x)\)',
-          r'\(3\sin(3x)\)',
-          r'\(-3\cos(3x)\)',
-        ],
-        correctAnswer: r'\(3\cos(3x)\)',
-        explanation:
-            r'Applying the chain rule: \(\frac{d}{dx}[\sin(3x)] = \cos(3x) \cdot 3 = 3\cos(3x)\).',
+            'Using the power rule: d/dx(x^3) = 3x^2 and d/dx(-4x) = -4.',
         subTopic: 'Calculus',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_9',
-        prompt: 'What is the pH of a neutral aqueous solution at 25°C?',
+        id: 'q6',
+        prompt: 'Which gas is evolved when zinc metal reacts with dilute hydrochloric acid?',
         type: QuizQuestionType.multipleChoice,
-        options: ['0', '7', '14', '10'],
-        correctAnswer: '7',
+        options: ['Oxygen', 'Carbon dioxide', 'Hydrogen', 'Nitrogen'],
+        correctAnswer: 'Hydrogen',
         explanation:
-            'At 25°C, pure neutral water has equal hydronium and hydroxide concentrations of 10^-7 M, corresponding to pH 7.',
-        subTopic: 'Physical Chemistry',
+            'Reactive metals react with acids to produce salt and hydrogen gas (Zn + 2HCl -> ZnCl2 + H2).',
+        subTopic: 'Inorganic Chemistry',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_10',
-        prompt:
-            'Which legal principle states that no one can be judged twice for the same offense?',
+        id: 'q7',
+        prompt: 'What is Newton’s Second Law of Motion represented as mathematically?',
         type: QuizQuestionType.multipleChoice,
-        options: [
-          'Double Jeopardy',
-          'Habeas Corpus',
-          'Mens Rea',
-          'Stare Decisis',
-        ],
-        correctAnswer: 'Double Jeopardy',
+        options: ['F = m / a', 'F = m * a', 'F = m + a', 'F = 1/2 m v^2'],
+        correctAnswer: 'F = m * a',
         explanation:
-            'The doctrine against double jeopardy prevents an accused person from being tried again on the same or similar charges and on the same facts.',
-        subTopic: 'Jurisprudence & Constitutional Law',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_11',
-        prompt:
-            'Which normal human organ filters blood and produces urine as a byproduct?',
-        type: QuizQuestionType.multipleChoice,
-        options: ['Liver', 'Kidney', 'Pancreas', 'Spleen'],
-        correctAnswer: 'Kidney',
-        explanation:
-            'The nephrons inside the kidneys filter metabolic waste from the bloodstream to form urine.',
-        subTopic: 'Human Anatomy & Physiology',
-      ),
-      const QuizQuestionEntity(
-        id: 'duel_q_12',
-        prompt:
-            'Which acceleration is experienced by an object in uniform circular motion with velocity v and radius r?',
-        type: QuizQuestionType.multipleChoice,
-        options: [
-          r'\(a = \frac{v^2}{r}\)',
-          r'\(a = v \cdot r\)',
-          r'\(a = \frac{r}{v^2}\)',
-          r'\(a = \frac{1}{2}vr\)',
-        ],
-        correctAnswer: r'\(a = \frac{v^2}{r}\)',
-        explanation:
-            r'Centripetal acceleration is directed toward the center of curvature and equals \(v^2 / r\).',
+            'Force equals mass times acceleration (F = ma).',
         subTopic: 'Mechanics',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_13',
-        prompt: 'In macroeconomics, what does GDP stand for?',
+        id: 'q8',
+        prompt: 'Which figure of speech is used in the phrase "the smiling sun"?',
         type: QuizQuestionType.multipleChoice,
-        options: [
-          'Gross Domestic Product',
-          'General Development Price',
-          'Global Domestic Performance',
-          'Government Debt Percentage',
-        ],
-        correctAnswer: 'Gross Domestic Product',
+        options: ['Metaphor', 'Personification', 'Simile', 'Hyperbole'],
+        correctAnswer: 'Personification',
         explanation:
-            'Gross Domestic Product (GDP) is the total monetary or market value of all finished goods and services produced within a country.',
-        subTopic: 'Macroeconomics',
+            'Attributing human traits like "smiling" to a non-human object is personification.',
+        subTopic: 'Literary Devices',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_14',
-        prompt:
-            'Which type of bond is formed by the sharing of electron pairs between atoms?',
+        id: 'q9',
+        prompt: 'What is the value of sin(30°) + cos(60°)?',
         type: QuizQuestionType.multipleChoice,
-        options: [
-          'Ionic bond',
-          'Covalent bond',
-          'Hydrogen bond',
-          'Metallic bond',
-        ],
-        correctAnswer: 'Covalent bond',
+        options: ['0.5', '1.0', '1.5', 'sqrt(3)/2'],
+        correctAnswer: '1.0',
         explanation:
-            'A covalent bond consists of the mutual sharing of one or more pairs of electrons between two non-metallic atoms.',
-        subTopic: 'Chemical Bonding',
+            'sin(30°) = 0.5 and cos(60°) = 0.5. 0.5 + 0.5 = 1.0.',
+        subTopic: 'Trigonometry',
       ),
       const QuizQuestionEntity(
-        id: 'duel_q_15',
-        prompt:
-            'Which of the following is a fundamental principle of Object-Oriented Programming (OOP)?',
+        id: 'q10',
+        prompt: 'Which process converts glucose into pyruvate in cell respiration?',
         type: QuizQuestionType.multipleChoice,
-        options: ['Encapsulation', 'Compilation', 'Paging', 'Quantization'],
-        correctAnswer: 'Encapsulation',
+        options: ['Glycolysis', 'Krebs cycle', 'Calvin cycle', 'Fermentation'],
+        correctAnswer: 'Glycolysis',
         explanation:
-            'The four core pillars of OOP are Encapsulation, Abstraction, Inheritance, and Polymorphism.',
-        subTopic: 'Software Engineering',
+            'Glycolysis is the metabolic pathway that breaks down glucose into pyruvate.',
+        subTopic: 'Biochemistry',
       ),
     ];
 
-    return bank.take(count.clamp(1, bank.length)).toList();
+    final targetCount = count.clamp(1, pool.length);
+    return pool.take(targetCount).toList();
+  }
+  bool _matchmakingListenerInitialized = false;
+  final Set<String> _listenedDuelChannels = {};
+
+  void _initMatchmakingRealtime() {
+    if (_matchmakingListenerInitialized) return;
+    _matchmakingListenerInitialized = true;
+
+    _realtimeClient
+        .watchPresence('realtime:quiz_duel_matchmaking')
+        .listen((msg) {
+      try {
+        final event = msg['event'] as String?;
+        final payload = msg['payload'] as Map<String, dynamic>? ?? {};
+
+        if (event == 'broadcast') {
+          final inner =
+              (payload['payload'] as Map<String, dynamic>?) ?? payload;
+          final type = inner['type'] as String?;
+          final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+
+          if (type == 'search') {
+            final remoteDuelId = data['duelId'] as String?;
+            final remoteUserId = data['userId'] as String?;
+            final remoteMatchJson = data['match'] as Map<String, dynamic>?;
+
+            if (remoteDuelId == null || remoteUserId == null) return;
+
+            for (final localMatch in _activeMatches.values.toList()) {
+              if (localMatch.status == QuizDuelStatus.matching &&
+                  localMatch.player1.userId != remoteUserId &&
+                  localMatch.player2 == null &&
+                  localMatch.subject.trim().toLowerCase() ==
+                      (data['subject'] as String? ?? '').trim().toLowerCase() &&
+                  localMatch.examBoard.trim().toLowerCase() ==
+                      (data['examBoard'] as String? ?? '').trim().toLowerCase()) {
+                // Deterministic host tie-breaker:
+                // Compare localDuelId vs remoteDuelId. The smaller duelId lexicographically is the host room.
+                // Both clients agree on the exact same host duelId and host question set.
+                final isLocalHost =
+                    localMatch.duelId.compareTo(remoteDuelId) <= 0;
+
+                final QuizDuelMatch syncedMatch;
+                if (isLocalHost) {
+                  final remoteP2 = QuizDuelParticipant(
+                    userId: remoteUserId,
+                    displayName:
+                        data['displayName'] as String? ?? 'Scholar',
+                    avatarUrl: data['avatarUrl'] as String? ?? '',
+                    isReady: true,
+                    eloRating: (remoteMatchJson != null &&
+                            remoteMatchJson['player1'] is Map<String, dynamic>)
+                        ? ((remoteMatchJson['player1']
+                                    as Map<String, dynamic>)['eloRating']
+                                as int? ??
+                            1250)
+                        : 1250,
+                  );
+
+                  syncedMatch = localMatch.copyWith(
+                    player2: remoteP2,
+                    status: QuizDuelStatus.countdown,
+                  );
+                } else {
+                  final remoteMatch = remoteMatchJson != null
+                      ? QuizDuelMatch.fromJson(remoteMatchJson)
+                      : QuizDuelMatch(
+                          duelId: remoteDuelId,
+                          subject: localMatch.subject,
+                          examBoard: localMatch.examBoard,
+                          questions: localMatch.questions,
+                          player1: QuizDuelParticipant(
+                            userId: remoteUserId,
+                            displayName:
+                                data['displayName'] as String? ?? 'Scholar',
+                            avatarUrl: data['avatarUrl'] as String? ?? '',
+                            isReady: true,
+                            eloRating: 1250,
+                          ),
+                        );
+
+                  final localP2 = QuizDuelParticipant(
+                    userId: localMatch.player1.userId,
+                    displayName: localMatch.player1.displayName,
+                    avatarUrl: localMatch.player1.avatarUrl,
+                    isReady: true,
+                    eloRating: localMatch.player1.eloRating,
+                  );
+
+                  syncedMatch = remoteMatch.copyWith(
+                    player2: localP2,
+                    status: QuizDuelStatus.countdown,
+                  );
+                }
+
+                _matchingTimers[localMatch.duelId]?.cancel();
+                _matchingTimers[syncedMatch.duelId]?.cancel();
+
+                _activeMatches[syncedMatch.duelId] = syncedMatch;
+                _updateMatch(localMatch.duelId, syncedMatch);
+                _updateMatch(syncedMatch.duelId, syncedMatch);
+                _listenToDuelChannel(syncedMatch.duelId);
+
+                _realtimeClient.broadcastPresence(
+                  channelName: 'realtime:quiz_duel_matchmaking',
+                  payload: {
+                    'type': 'match_joined',
+                    'data': {
+                      'duelId': syncedMatch.duelId,
+                      'matchedUserId': remoteUserId,
+                      'player2': syncedMatch.player2?.toJson(),
+                      'match': syncedMatch.toJson(),
+                    },
+                  },
+                );
+
+                Timer(const Duration(milliseconds: 3000), () {
+                  _startRound(syncedMatch.duelId, 0);
+                });
+                break;
+              }
+            }
+          } else if (type == 'match_joined') {
+            final matchJson = data['match'] as Map<String, dynamic>?;
+
+            if (matchJson != null) {
+              final syncedMatch = QuizDuelMatch.fromJson(matchJson);
+
+              for (final localMatch in _activeMatches.values.toList()) {
+                if (localMatch.status == QuizDuelStatus.matching &&
+                    (localMatch.duelId == syncedMatch.duelId ||
+                        localMatch.player1.userId ==
+                            syncedMatch.player1.userId ||
+                        localMatch.player1.userId ==
+                            syncedMatch.player2?.userId)) {
+                  _matchingTimers[localMatch.duelId]?.cancel();
+                  _matchingTimers[syncedMatch.duelId]?.cancel();
+
+                  _activeMatches[syncedMatch.duelId] = syncedMatch;
+                  _updateMatch(localMatch.duelId, syncedMatch);
+                  _updateMatch(syncedMatch.duelId, syncedMatch);
+                  _listenToDuelChannel(syncedMatch.duelId);
+
+                  Timer(const Duration(milliseconds: 3000), () {
+                    if (_activeMatches[syncedMatch.duelId]?.status ==
+                        QuizDuelStatus.countdown) {
+                      _startRound(syncedMatch.duelId, 0);
+                    }
+                  });
+                  break;
+                }
+              }
+            }
+          } else if (type == 'announcement_request') {
+            for (final m in _activeMatches.values) {
+              if (m.status == QuizDuelStatus.matching && m.player2 == null) {
+                _realtimeClient.broadcastPresence(
+                  channelName: 'realtime:quiz_duel_matchmaking',
+                  payload: {
+                    'type': 'search',
+                    'data': {
+                      'duelId': m.duelId,
+                      'subject': m.subject,
+                      'examBoard': m.examBoard,
+                      'userId': m.player1.userId,
+                      'displayName': m.player1.displayName,
+                      'avatarUrl': m.player1.avatarUrl,
+                      'match': m.toJson(),
+                    },
+                  },
+                );
+              }
+            }
+          }
+        }
+      } on Exception catch (_) {}
+    });
+  }
+
+  void _listenToDuelChannel(String duelId) {
+    if (_listenedDuelChannels.contains(duelId)) return;
+    _listenedDuelChannels.add(duelId);
+
+    final channel = 'realtime:quiz_duel:$duelId';
+    _realtimeClient.watchPresence(channel).listen((msg) {
+      try {
+        final event = msg['event'] as String?;
+        final payload = msg['payload'] as Map<String, dynamic>? ?? {};
+
+        if (event == 'broadcast') {
+          final inner =
+              (payload['payload'] as Map<String, dynamic>?) ?? payload;
+          final type = inner['type'] as String?;
+          final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+
+          if (type == 'submit_answer') {
+            final userId = data['userId'] as String?;
+            final questionIndex = data['questionIndex'] as int? ?? 0;
+            final optionIndex = data['optionIndex'] as int? ?? 0;
+            final responseTimeMs = data['responseTimeMs'] as int? ?? 1000;
+            final earnedPoints = data['earnedPoints'] as int?;
+
+            if (userId != null) {
+              _applyDuelAnswerLocally(
+                duelId: duelId,
+                userId: userId,
+                questionIndex: questionIndex,
+                optionIndex: optionIndex,
+                responseTimeMs: responseTimeMs,
+                earnedPointsOverride: earnedPoints,
+              );
+            }
+          } else if (type == 'start_round') {
+            final questionIndex = data['questionIndex'] as int? ?? 0;
+            _applyStartRoundLocally(duelId, questionIndex);
+          } else if (type == 'conclude_round') {
+            final questionIndex = data['questionIndex'] as int? ?? 0;
+            _concludeRound(duelId, questionIndex);
+          } else if (type == 'send_emote') {
+            final userId = data['userId'] as String?;
+            final emote = data['emote'] as String?;
+            final timestamp = data['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+            if (userId != null && emote != null) {
+              _applyEmoteLocally(duelId: duelId, userId: userId, emote: emote, timestamp: timestamp);
+            }
+          } else if (type == 'leave_duel') {
+            final userId = data['userId'] as String?;
+            if (userId != null) {
+              _applyLeaveLocally(duelId: duelId, userId: userId);
+            }
+          }
+        }
+      } on Exception catch (_) {}
+    });
   }
 
   /// Finds or creates a duel match room.
@@ -254,7 +466,9 @@ class QuizDuelWebSocketClient {
     int questionCount = 10,
     List<QuizQuestionEntity>? customQuestions,
   }) async {
-    // 1. Check if another real player is already waiting in matchmaking for this track/subject
+    _initMatchmakingRealtime();
+
+    // 1. Check if another real player is already waiting in matchmaking locally
     QuizDuelMatch? existingMatch;
     for (final m in _activeMatches.values) {
       if (m.status == QuizDuelStatus.matching &&
@@ -284,21 +498,34 @@ class QuizDuelWebSocketClient {
       );
 
       _updateMatch(existingMatch.duelId, matched);
+      _listenToDuelChannel(existingMatch.duelId);
 
-      // Start round 1 after 2.5s countdown
-      Timer(const Duration(milliseconds: 2500), () {
+      _realtimeClient.broadcastPresence(
+        channelName: 'realtime:quiz_duel_matchmaking',
+        payload: {
+          'type': 'match_joined',
+          'data': {
+            'duelId': existingMatch.duelId,
+            'matchedUserId': userId,
+            'player2': player2.toJson(),
+            'match': matched.toJson(),
+          },
+        },
+      );
+
+      Timer(const Duration(milliseconds: 3000), () {
         _startRound(existingMatch!.duelId, 0);
       });
 
       return matched;
     }
 
-    // 2. No open room found: Create new match and wait for real opponent for 2 minutes
+    // 2. No open room found locally: Create new match and broadcast search event to peers
     final duelId =
         'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
     final questions = (customQuestions != null && customQuestions.isNotEmpty)
         ? customQuestions
-        : getDefaultDuelQuestions(subject, examBoard, count: questionCount);
+        : await fetchRemoteDuelQuestions(subject, examBoard, count: questionCount);
 
     final player1 = QuizDuelParticipant(
       userId: userId,
@@ -319,6 +546,29 @@ class QuizDuelWebSocketClient {
 
     _activeMatches[duelId] = match;
     _getOrCreateController(duelId).add(match);
+    _listenToDuelChannel(duelId);
+
+    // Broadcast search query over Realtime
+    _realtimeClient
+      ..broadcastPresence(
+        channelName: 'realtime:quiz_duel_matchmaking',
+        payload: {
+          'type': 'search',
+          'data': {
+            'duelId': duelId,
+            'subject': subject,
+            'examBoard': examBoard,
+            'userId': userId,
+            'displayName': displayName,
+            'avatarUrl': avatarUrl,
+            'match': match.toJson(),
+          },
+        },
+      )
+      ..broadcastPresence(
+        channelName: 'realtime:quiz_duel_matchmaking',
+        payload: {'type': 'announcement_request'},
+      );
 
     // Schedule AI match if no real player joins within matchmakingTimeout (default 2 minutes)
     _matchingTimers[duelId]?.cancel();
@@ -338,23 +588,24 @@ class QuizDuelWebSocketClient {
 
     _matchingTimers[duelId]?.cancel();
 
-    final aiNames = [
-      'Syllabot Scholar',
-      'Wuke Anjolaoluwa Omotoyosi ⚡',
-      'Kortex Rival',
-      'Newton Mind',
-      'Curie Intellect',
+    final aiPersonalities = [
+      ('⚡ Speedy Scholar', '🧠'),
+      ('🎯 Calculated Genius', '💡'),
+      ('🚀 Formula Prodigy', '🚀'),
+      ('👑 Syllabot Rival', '🏆'),
+      ('🛡️ Master Duelist', '⚡'),
     ];
-    final aiAvatars = ['🧠', '🚀', '⚡', '🏆', '💡'];
-    final pick = _random.nextInt(aiNames.length);
+    final pick = aiPersonalities[_random.nextInt(aiPersonalities.length)];
+    final p1Elo = current.player1.eloRating;
+    final aiElo = (p1Elo + (_random.nextInt(101) - 50)).clamp(1000, 2200);
 
     final player2 = QuizDuelParticipant(
       userId: 'ai_bot_${_random.nextInt(9999)}',
-      displayName: aiNames[pick],
-      avatarUrl: aiAvatars[pick],
+      displayName: pick.$1,
+      avatarUrl: pick.$2,
       isReady: true,
       isAiOpponent: true,
-      eloRating: 1200 + _random.nextInt(150),
+      eloRating: aiElo,
     );
 
     final updated = current.copyWith(
@@ -376,21 +627,66 @@ class QuizDuelWebSocketClient {
   }
 
   void _startRound(String duelId, int questionIndex) {
+    _applyStartRoundLocally(duelId, questionIndex);
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'start_round',
+        'data': {
+          'duelId': duelId,
+          'questionIndex': questionIndex,
+        },
+      },
+    );
+  }
+
+  /// Calculates dynamic round duration based on question prompt length and LaTeX/math complexity.
+  static int calculateAdaptiveQuestionDuration(QuizQuestionEntity question) {
+    final promptLength = question.prompt.length;
+    final hasLatex = question.prompt.contains(r'\') ||
+        question.options.any((o) => o.contains(r'\')) ||
+        question.prompt.contains('^') ||
+        question.prompt.contains('_');
+    final topic = question.subTopic.toLowerCase();
+    final hasMathOrPhysics = topic.contains('math') ||
+        topic.contains('phys') ||
+        topic.contains('calc') ||
+        topic.contains('chem');
+
+    var duration = 15;
+    duration += ((promptLength / 50) * 3).round();
+    if (hasLatex) duration += 8;
+    if (hasMathOrPhysics) duration += 5;
+
+    return duration.clamp(15, 45);
+  }
+
+  void _applyStartRoundLocally(String duelId, int questionIndex) {
     final current = _activeMatches[duelId];
     if (current == null || questionIndex >= current.questions.length) {
       _finalizeMatch(duelId);
       return;
     }
 
-    final p1 = current.player1.copyWith(
-      currentQuestionIndex: questionIndex,
+    if (current.status == QuizDuelStatus.inRound &&
+        current.currentQuestionIndex == questionIndex) {
+      return;
+    }
+
+    final p1 = current.player1.resetForNewRound(
+      questionIndex: questionIndex,
     );
-    final p2 = current.player2?.copyWith(
-      currentQuestionIndex: questionIndex,
+    final p2 = current.player2?.resetForNewRound(
+      questionIndex: questionIndex,
     );
+
+    final targetQuestion = current.questions[questionIndex];
+    final adaptiveSeconds = calculateAdaptiveQuestionDuration(targetQuestion);
 
     final updated = current.copyWith(
       currentQuestionIndex: questionIndex,
+      durationPerQuestionSeconds: adaptiveSeconds,
       status: QuizDuelStatus.inRound,
       player1: p1,
       player2: p2,
@@ -406,7 +702,7 @@ class QuizDuelWebSocketClient {
     // Schedule round timeout
     _roundTimers[duelId]?.cancel();
     _roundTimers[duelId] = Timer(
-      Duration(seconds: current.durationPerQuestionSeconds),
+      Duration(seconds: adaptiveSeconds),
       () {
         _onRoundTimeExpired(duelId, questionIndex);
       },
@@ -415,23 +711,34 @@ class QuizDuelWebSocketClient {
 
   void _scheduleAiAnswer(String duelId, int questionIndex) {
     _aiActionTimers[duelId]?.cancel();
-    final delayMs = 3000 + _random.nextInt(4500); // 3s to 7.5s
-    _aiActionTimers[duelId] = Timer(Duration(milliseconds: delayMs), () {
-      final current = _activeMatches[duelId];
-      if (current == null ||
-          current.status != QuizDuelStatus.inRound ||
-          current.currentQuestionIndex != questionIndex) {
+
+    final current = _activeMatches[duelId];
+    final aiParticipant = current?.player2;
+    final aiElo = aiParticipant?.eloRating ?? 1200;
+
+    // Accuracy ranges from 65% (Bronze) up to 90% (Legend)
+    final accuracy = (0.65 + ((aiElo - 1000) / 1200) * 0.25).clamp(0.60, 0.92);
+
+    // Response time ranges from 700ms - 1500ms for high ELO, 1800ms - 3200ms for lower ELO
+    final baseDelayMs = aiElo >= 1500
+        ? (600 + _random.nextInt(800))
+        : (1500 + _random.nextInt(1500));
+
+    _aiActionTimers[duelId] = Timer(Duration(milliseconds: baseDelayMs), () {
+      final activeMatch = _activeMatches[duelId];
+      if (activeMatch == null ||
+          activeMatch.status != QuizDuelStatus.inRound ||
+          activeMatch.currentQuestionIndex != questionIndex) {
         return;
       }
 
-      final q = current.currentQuestion;
+      final q = activeMatch.currentQuestion;
       if (q == null) return;
 
       final correctIndex = q.options.indexOf(q.correctAnswer);
       final validCorrectIdx = correctIndex >= 0 ? correctIndex : 0;
 
-      // 80% chance of correct answer for AI
-      final willBeCorrect = _random.nextDouble() < 0.80;
+      final willBeCorrect = _random.nextDouble() < accuracy;
       final selectedOption = willBeCorrect
           ? validCorrectIdx
           : (validCorrectIdx + 1) % q.options.length;
@@ -439,27 +746,41 @@ class QuizDuelWebSocketClient {
       unawaited(
         submitDuelAnswer(
           duelId: duelId,
-          userId: current.player2!.userId,
+          userId: activeMatch.player2!.userId,
           questionIndex: questionIndex,
           optionIndex: selectedOption,
-          responseTimeMs: delayMs,
+          responseTimeMs: baseDelayMs,
         ),
       );
     });
   }
 
-  /// Submits an answer for player 1 or player 2.
-  Future<void> submitDuelAnswer({
+  void _applyDuelAnswerLocally({
     required String duelId,
     required String userId,
     required int questionIndex,
     required int optionIndex,
     required int responseTimeMs,
-  }) async {
+    int? earnedPointsOverride,
+  }) {
     final current = _activeMatches[duelId];
     if (current == null ||
-        current.status != QuizDuelStatus.inRound ||
         current.currentQuestionIndex != questionIndex) {
+      return;
+    }
+
+    if (current.status != QuizDuelStatus.inRound &&
+        current.status != QuizDuelStatus.roundSummary) {
+      return;
+    }
+
+    final isPlayer1 = current.player1.userId == userId;
+    final isPlayer2 = current.player2?.userId == userId;
+    if (!isPlayer1 && !isPlayer2) return;
+
+    final targetPlayer = isPlayer1 ? current.player1 : current.player2!;
+    if (targetPlayer.selectedOptionIndex != null) {
+      // Idempotency: Ignore duplicate submission or broadcast echo for an already answered question
       return;
     }
 
@@ -469,31 +790,32 @@ class QuizDuelWebSocketClient {
     final selectedText = (optionIndex >= 0 && optionIndex < q.options.length)
         ? q.options[optionIndex]
         : '';
-    final isCorrect = selectedText == q.correctAnswer;
+    final isCorrect = optionIndex >= 0 && selectedText == q.correctAnswer;
     final timeLimitMs = current.durationPerQuestionSeconds * 1000;
-    final remainingMs = max(0, timeLimitMs - responseTimeMs);
+    final clampedMs = responseTimeMs.clamp(400, timeLimitMs);
+    final remainingMs = max(0, timeLimitMs - clampedMs);
     final speedBonus = isCorrect
         ? ((remainingMs / timeLimitMs) * maxSpeedBonus).round()
         : 0;
-    final earnedPoints = isCorrect ? (baseCorrectPoints + speedBonus) : 0;
+    final earnedPoints = earnedPointsOverride ?? (isCorrect ? (baseCorrectPoints + speedBonus) : 0);
 
     QuizDuelParticipant? updatedP1 = current.player1;
     var updatedP2 = current.player2;
 
-    if (current.player1.userId == userId) {
+    if (isPlayer1) {
       final streak = isCorrect ? current.player1.comboStreak + 1 : 0;
       updatedP1 = current.player1.copyWith(
         selectedOptionIndex: optionIndex,
-        answeredInMs: responseTimeMs,
+        answeredInMs: clampedMs,
         isAnswerCorrect: isCorrect,
         score: current.player1.score + earnedPoints,
         comboStreak: streak,
       );
-    } else if (current.player2?.userId == userId) {
+    } else if (isPlayer2) {
       final streak = isCorrect ? current.player2!.comboStreak + 1 : 0;
       updatedP2 = current.player2!.copyWith(
         selectedOptionIndex: optionIndex,
-        answeredInMs: responseTimeMs,
+        answeredInMs: clampedMs,
         isAnswerCorrect: isCorrect,
         score: current.player2!.score + earnedPoints,
         comboStreak: streak,
@@ -507,12 +829,63 @@ class QuizDuelWebSocketClient {
 
     _updateMatch(duelId, updated);
 
-    // If both players have answered, conclude round early
-    if (updated.player1.selectedOptionIndex != null &&
+    // If both players have answered and status is inRound, conclude round early
+    if (updated.status == QuizDuelStatus.inRound &&
+        updated.player1.selectedOptionIndex != null &&
         updated.player2?.selectedOptionIndex != null) {
       _roundTimers[duelId]?.cancel();
       _concludeRound(duelId, questionIndex);
     }
+  }
+
+  /// Submits an answer for player 1 or player 2.
+  Future<void> submitDuelAnswer({
+    required String duelId,
+    required String userId,
+    required int questionIndex,
+    required int optionIndex,
+    required int responseTimeMs,
+  }) async {
+    final match = _activeMatches[duelId];
+    int? earnedPoints;
+    if (match != null && match.currentQuestion != null) {
+      final q = match.currentQuestion!;
+      final timeLimitMs = match.durationPerQuestionSeconds * 1000;
+      final clampedMs = responseTimeMs.clamp(400, timeLimitMs);
+      final selectedText = (optionIndex >= 0 && optionIndex < q.options.length)
+          ? q.options[optionIndex]
+          : '';
+      final isCorrect = optionIndex >= 0 && selectedText == q.correctAnswer;
+      final remainingMs = max(0, timeLimitMs - clampedMs);
+      final speedBonus = isCorrect
+          ? ((remainingMs / timeLimitMs) * maxSpeedBonus).round()
+          : 0;
+      earnedPoints = isCorrect ? (baseCorrectPoints + speedBonus) : 0;
+    }
+
+    _applyDuelAnswerLocally(
+      duelId: duelId,
+      userId: userId,
+      questionIndex: questionIndex,
+      optionIndex: optionIndex,
+      responseTimeMs: responseTimeMs,
+      earnedPointsOverride: earnedPoints,
+    );
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'submit_answer',
+        'data': {
+          'duelId': duelId,
+          'userId': userId,
+          'questionIndex': questionIndex,
+          'optionIndex': optionIndex,
+          'responseTimeMs': responseTimeMs,
+          'earnedPoints': ?earnedPoints,
+        },
+      },
+    );
   }
 
   void _onRoundTimeExpired(String duelId, int questionIndex) {
@@ -528,13 +901,46 @@ class QuizDuelWebSocketClient {
     final current = _activeMatches[duelId];
     if (current == null) return;
 
+    if (current.status == QuizDuelStatus.roundSummary &&
+        current.currentQuestionIndex == questionIndex) {
+      if (!(_transitionTimers[duelId]?.isActive ?? false)) {
+        _scheduleRoundTransition(duelId, questionIndex);
+      }
+      return;
+    }
+
+    _roundTimers[duelId]?.cancel();
+
     final updated = current.copyWith(status: QuizDuelStatus.roundSummary);
     _updateMatch(duelId, updated);
 
-    // Show round summary for 2.8s, then proceed to next question
-    Timer(const Duration(milliseconds: 2800), () {
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'conclude_round',
+        'data': {
+          'duelId': duelId,
+          'questionIndex': questionIndex,
+        },
+      },
+    );
+
+    _scheduleRoundTransition(duelId, questionIndex);
+  }
+
+  void _scheduleRoundTransition(String duelId, int questionIndex) {
+    _transitionTimers[duelId]?.cancel();
+    _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1500), () {
+      final latest = _activeMatches[duelId];
+      if (latest == null) return;
+
+      if (latest.status != QuizDuelStatus.roundSummary ||
+          latest.currentQuestionIndex != questionIndex) {
+        return;
+      }
+
       final nextIdx = questionIndex + 1;
-      if (nextIdx < current.questions.length) {
+      if (nextIdx < latest.questions.length) {
         _startRound(duelId, nextIdx);
       } else {
         _finalizeMatch(duelId);
@@ -567,6 +973,84 @@ class QuizDuelWebSocketClient {
     );
 
     _updateMatch(duelId, finished);
+    unawaited(_submitQuizResultsToBackend(finished));
+  }
+
+  Future<void> _submitQuizResultsToBackend(QuizDuelMatch match) async {
+    final client = _effectiveDio;
+    if (client == null || AppApiEndpoint.baseUri.isEmpty) return;
+
+    final p1Id = match.player1.userId;
+    final p2Id = match.player2?.userId;
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+
+    final validP1 = uuidRegex.hasMatch(p1Id) ? p1Id : null;
+    final validP2 = (p2Id != null && uuidRegex.hasMatch(p2Id)) ? p2Id : null;
+    final validWinner = (match.winnerUserId != null &&
+            uuidRegex.hasMatch(match.winnerUserId!))
+        ? match.winnerUserId
+        : null;
+    final validForfeit = (match.forfeitUserId != null &&
+            uuidRegex.hasMatch(match.forfeitUserId!))
+        ? match.forfeitUserId
+        : null;
+
+    try {
+      await client.post<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.submitQuizResultsRpc}',
+        data: {
+          'p_duel_id': match.duelId,
+          'p_player1_id': validP1,
+          'p_player2_id': validP2,
+          'p_player1_score': match.player1.score,
+          'p_player2_score': match.player2?.score ?? 0,
+          'p_winner_id': validWinner,
+          'p_is_draw': match.isDraw,
+          'p_is_forfeit': match.forfeitUserId != null,
+          'p_forfeit_user_id': validForfeit,
+        },
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 && validP1 != null) {
+        try {
+          await client.post<dynamic>(
+            '${AppApiEndpoint.baseUri}/rest/v1/quiz_duels',
+            data: {
+              'duel_id': match.duelId,
+              'subject': match.subject,
+              'exam_board': match.examBoard,
+              'player1_id': validP1,
+              'player2_id': ?validP2,
+              'player1_score': match.player1.score,
+              'player2_score': match.player2?.score ?? 0,
+              'winner_user_id': ?validWinner,
+              'is_draw': match.isDraw,
+              'is_forfeit': match.forfeitUserId != null,
+              'forfeit_user_id': ?validForfeit,
+            },
+          );
+        } on Object catch (_) {}
+      }
+    } on Object catch (_) {}
+  }
+
+  void _applyEmoteLocally({
+    required String duelId,
+    required String userId,
+    required String emote,
+    int? timestamp,
+  }) {
+    final current = _activeMatches[duelId];
+    if (current == null) return;
+
+    final updated = current.copyWith(
+      latestEmote: emote,
+      latestEmoteSenderId: userId,
+      latestEmoteTimestamp: timestamp ?? DateTime.now().millisecondsSinceEpoch,
+    );
+    _updateMatch(duelId, updated);
   }
 
   /// Sends a real-time reaction emote.
@@ -575,14 +1059,21 @@ class QuizDuelWebSocketClient {
     required String userId,
     required String emote,
   }) async {
-    final current = _activeMatches[duelId];
-    if (current == null) return;
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    _applyEmoteLocally(duelId: duelId, userId: userId, emote: emote, timestamp: timestamp);
 
-    final updated = current.copyWith(
-      latestEmote: emote,
-      latestEmoteSenderId: userId,
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'send_emote',
+        'data': {
+          'duelId': duelId,
+          'userId': userId,
+          'emote': emote,
+          'timestamp': timestamp,
+        },
+      },
     );
-    _updateMatch(duelId, updated);
   }
 
   /// Streams real-time updates for a duel.
@@ -595,19 +1086,80 @@ class QuizDuelWebSocketClient {
     yield* ctrl.stream;
   }
 
+  void _applyLeaveLocally({
+    required String duelId,
+    required String userId,
+  }) {
+    _matchingTimers[duelId]?.cancel();
+    _roundTimers[duelId]?.cancel();
+    _transitionTimers[duelId]?.cancel();
+    _aiActionTimers[duelId]?.cancel();
+    final current = _activeMatches[duelId];
+    if (current != null) {
+      if (current.status == QuizDuelStatus.matching) {
+        final cancelled = current.copyWith(status: QuizDuelStatus.cancelled);
+        _updateMatch(duelId, cancelled);
+      } else if (current.status != QuizDuelStatus.finished) {
+        // Active match: player forfeits by leaving. Award victory and bonus points to remaining player.
+        final winnerId = current.player1.userId == userId
+            ? current.player2?.userId
+            : current.player1.userId;
+
+        var p1 = current.player1;
+        var p2 = current.player2;
+
+        if (winnerId != null) {
+          if (p1.userId == winnerId) {
+            p1 = p1.copyWith(
+              score: p1.score + 500,
+              hasFinished: true,
+            );
+          } else if (p2?.userId == winnerId) {
+            p2 = p2!.copyWith(
+              score: p2.score + 500,
+              hasFinished: true,
+            );
+          }
+        }
+
+        final finished = current.copyWith(
+          player1: p1,
+          player2: p2,
+          status: QuizDuelStatus.finished,
+          winnerUserId: winnerId,
+          isDraw: winnerId == null,
+          forfeitUserId: userId,
+        );
+        _updateMatch(duelId, finished);
+      }
+    }
+  }
+
   /// Leaves or terminates a duel match.
   Future<void> leaveDuel({
     required String duelId,
     required String userId,
   }) async {
-    _matchingTimers[duelId]?.cancel();
-    _roundTimers[duelId]?.cancel();
-    _aiActionTimers[duelId]?.cancel();
-    final current = _activeMatches[duelId];
-    if (current != null) {
-      final cancelled = current.copyWith(status: QuizDuelStatus.cancelled);
-      _updateMatch(duelId, cancelled);
-    }
+    _applyLeaveLocally(duelId: duelId, userId: userId);
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'leave_duel',
+        'data': {
+          'duelId': duelId,
+          'userId': userId,
+        },
+      },
+    );
+  }
+
+  final Map<String, Set<String>> _duelAliases = {};
+
+  void _recordAlias(String aliasId, String canonicalId) {
+    if (aliasId == canonicalId) return;
+    _duelAliases.putIfAbsent(canonicalId, () => {}).add(aliasId);
+    _duelAliases.putIfAbsent(aliasId, () => {}).add(canonicalId);
   }
 
   StreamController<QuizDuelMatch> _getOrCreateController(String duelId) {
@@ -619,9 +1171,21 @@ class QuizDuelWebSocketClient {
 
   void _updateMatch(String duelId, QuizDuelMatch match) {
     _activeMatches[duelId] = match;
-    final ctrl = _matchControllers[duelId];
-    if (ctrl != null && !ctrl.isClosed) {
-      ctrl.add(match);
+    _activeMatches[match.duelId] = match;
+    _recordAlias(duelId, match.duelId);
+
+    final targetIds = <String>{
+      duelId,
+      match.duelId,
+      ...?_duelAliases[duelId],
+      ...?_duelAliases[match.duelId],
+    };
+
+    for (final id in targetIds) {
+      final ctrl = _matchControllers[id];
+      if (ctrl != null && !ctrl.isClosed) {
+        ctrl.add(match);
+      }
     }
   }
 
@@ -634,6 +1198,10 @@ class QuizDuelWebSocketClient {
       timer.cancel();
     }
     _roundTimers.clear();
+    for (final timer in _transitionTimers.values) {
+      timer.cancel();
+    }
+    _transitionTimers.clear();
     for (final timer in _aiActionTimers.values) {
       timer.cancel();
     }

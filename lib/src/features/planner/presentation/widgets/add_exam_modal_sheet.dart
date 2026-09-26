@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -44,13 +45,15 @@ class AddExamModalSheet extends StatefulWidget {
     String? preselectedCourseCode,
     String? preselectedCourseTitle,
     AssessmentType? preselectedType,
+    CramPlannerCubit? cubit,
   }) {
+    final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.transparent,
       builder: (sheetContext) => BlocProvider.value(
-        value: context.read<CramPlannerCubit>(),
+        value: cramPlannerCubit,
         child: Align(
           alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
@@ -177,9 +180,15 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
           widget.preselectedCourseCode ?? widget.initialExam?.subjectTrack;
       if (targetCode != null && targetCode.isNotEmpty) {
         _selectedCourse = _registeredCourses.firstWhere(
-          (c) =>
-              c.courseCode.toLowerCase() == targetCode.toLowerCase() ||
-              c.title.toLowerCase() == targetCode.toLowerCase(),
+          (c) {
+            final t = targetCode.toLowerCase();
+            final code = c.courseCode.toLowerCase();
+            final title = c.title.toLowerCase();
+            return code == t ||
+                title == t ||
+                t.contains(code) ||
+                t.contains(title);
+          },
           orElse: () => _registeredCourses.first,
         );
       } else {
@@ -447,11 +456,9 @@ class _AddExamModalSheetState extends State<AddExamModalSheet> {
       Navigator.of(context).pop();
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not save countdown: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
+        context.showSnackBar(
+          message: 'Could not save countdown: $e',
+          type: SnackBarType.error,
         );
       }
     }

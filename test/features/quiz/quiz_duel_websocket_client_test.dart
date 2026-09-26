@@ -108,5 +108,83 @@ void main() {
       expect(updatedMatch.latestEmote, equals('🔥'));
       expect(updatedMatch.latestEmoteSenderId, equals('test_user_1'));
     });
+
+    test('submitDuelAnswer is idempotent and prevents double scoring', () async {
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'test_user_1',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+      );
+
+      client.forceStartRound(match.duelId);
+
+      final correctIdx = match.questions.first.options.indexOf(match.questions.first.correctAnswer);
+      final optionToSubmit = correctIdx >= 0 ? correctIdx : 0;
+
+      // Submit once
+      await client.submitDuelAnswer(
+        duelId: match.duelId,
+        userId: 'test_user_1',
+        questionIndex: 0,
+        optionIndex: optionToSubmit,
+        responseTimeMs: 1500,
+      );
+
+      final firstMatch = await client.streamDuel(match.duelId).first;
+      final initialScore = firstMatch.player1.score;
+      expect(initialScore, greaterThan(0));
+
+      // Submit second time for same user and question (simulating duplicate echo)
+      await client.submitDuelAnswer(
+        duelId: match.duelId,
+        userId: 'test_user_1',
+        questionIndex: 0,
+        optionIndex: optionToSubmit,
+        responseTimeMs: 1500,
+      );
+
+      final secondMatch = await client.streamDuel(match.duelId).first;
+      expect(secondMatch.player1.score, equals(initialScore));
+    });
+
+    test('submitDuelAnswer records score even if received during roundSummary phase', () async {
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+      );
+
+      // Force start round 0
+      client.forceStartRound(match.duelId);
+
+      // Player 1 answers, concluding round locally
+      final correctIdx = match.questions.first.options.indexOf(match.questions.first.correctAnswer);
+      final optionIdx = correctIdx >= 0 ? correctIdx : 0;
+
+      await client.submitDuelAnswer(
+        duelId: match.duelId,
+        userId: 'player1_id',
+        questionIndex: 0,
+        optionIndex: optionIdx,
+        responseTimeMs: 1000,
+      );
+
+      // Now Player 2 (or late broadcast) submits answer for questionIndex 0
+      // even if match status turned to roundSummary
+      await client.submitDuelAnswer(
+        duelId: match.duelId,
+        userId: 'player1_id', // tested user
+        questionIndex: 0,
+        optionIndex: optionIdx,
+        responseTimeMs: 1000,
+      );
+
+      final currentMatch = await client.streamDuel(match.duelId).first;
+      expect(currentMatch.player1.score, greaterThan(0));
+    });
   });
 }

@@ -60,4 +60,7 @@ abstract class AuthRepository {
 
   /// Clears session and logs user out.
   Future<Either<Failure, void>> signOut();
+
+  /// Refreshes session tokens in background.
+  Future<Either<Failure, UserEntity>> refreshSession();
 }

@@ -172,15 +172,15 @@ class WhiteboardStroke {
 
   factory WhiteboardStroke.fromJson(Map<String, dynamic> json) {
     final List<WhiteboardPoint> parsedPoints;
-    if (json['deltas'] is List) {
-      parsedPoints = WhiteboardCompression.decodeDelta(
-        json['deltas'] as List<dynamic>,
-      );
-    } else if (json['points'] is List) {
+    if (json['points'] is List && (json['points'] as List).isNotEmpty) {
       parsedPoints = (json['points'] as List<dynamic>)
           .cast<Map<String, dynamic>>()
           .map(WhiteboardPoint.fromJson)
           .toList();
+    } else if (json['deltas'] is List) {
+      parsedPoints = WhiteboardCompression.decodeDelta(
+        json['deltas'] as List<dynamic>,
+      );
     } else {
       parsedPoints = const [];
     }
@@ -228,6 +228,7 @@ class WhiteboardStroke {
       if (text != null) 'text': text,
       if (fontSize != null) 'fontSize': fontSize,
       'deltas': WhiteboardCompression.encodeDelta(points),
+      'points': points.map((p) => p.toJson()).toList(),
     };
   }
 }
@@ -332,6 +333,11 @@ abstract class EphemeralPresenceClient {
     required WhiteboardStroke stroke,
   });
 
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  });
+
   Future<void> broadcastWhiteboardClear({required String roomId});
 
   Future<void> broadcastChatMessage({
@@ -344,6 +350,8 @@ abstract class EphemeralPresenceClient {
   Stream<PomodoroSyncEvent> watchPomodoroSync(String roomId);
 
   Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId);
+
+  Stream<String> watchWhiteboardUndo(String roomId);
 
   Stream<void> watchWhiteboardClear(String roomId);
 
@@ -367,6 +375,9 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   // Local view: roomId → Map<userId, participant>
   final Map<String, Map<String, EphemeralParticipant>> _roomParticipants = {};
 
+  // Track local user ID per room
+  final Map<String, String> _localUserIds = {};
+
   // Stream controllers per room
   final Map<String, StreamController<List<EphemeralParticipant>>>
   _participantControllers = {};
@@ -374,13 +385,14 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
       {};
   final Map<String, StreamController<WhiteboardStroke>> _whiteboardControllers =
       {};
+  final Map<String, StreamController<String>> _whiteboardUndoControllers = {};
   final Map<String, StreamController<void>> _whiteboardClearControllers = {};
   final Map<String, StreamController<RoomChatMessage>> _chatControllers = {};
 
   // WS subscriptions per room
   final Map<String, StreamSubscription<Map<String, dynamic>>> _wsSubs = {};
 
-  String _channelName(String roomId) => 'room:$roomId';
+  String _channelName(String roomId) => 'realtime:room:$roomId';
 
   void _ensureRoomListening(String roomId) {
     if (_wsSubs.containsKey(roomId)) return;
@@ -406,10 +418,45 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
             if (action == 'leave') {
               _roomParticipants[roomId]!.remove(userId);
             } else {
-              _roomParticipants[roomId]![userId] =
-                  EphemeralParticipant.fromJson(data);
+              final newParticipant = EphemeralParticipant.fromJson(data);
+              _roomParticipants[roomId]![userId] = newParticipant;
+
+              // If a new peer joined, reply by re-broadcasting local presence state
+              if (action == 'join') {
+                final localUserId = _localUserIds[roomId];
+                if (localUserId != null && localUserId != userId) {
+                  final localP = _roomParticipants[roomId]?[localUserId];
+                  if (localP != null) {
+                    _realtime.broadcastPresence(
+                      channelName: channel,
+                      payload: {
+                        'data': {
+                          'action': 'announce',
+                          ...localP.toJson(),
+                        },
+                      },
+                    );
+                  }
+                }
+              }
             }
             _notifyParticipants(roomId);
+          } else if (type == 'request_presence') {
+            final localUserId = _localUserIds[roomId];
+            if (localUserId != null) {
+              final localP = _roomParticipants[roomId]?[localUserId];
+              if (localP != null) {
+                _realtime.broadcastPresence(
+                  channelName: channel,
+                  payload: {
+                    'data': {
+                      'action': 'announce',
+                      ...localP.toJson(),
+                    },
+                  },
+                );
+              }
+            }
           } else if (type == 'card_progress') {
             final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final userId = data['userId'] as String?;
@@ -433,6 +480,12 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
             final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
             final stroke = WhiteboardStroke.fromJson(data);
             _whiteboardControllers[roomId]?.add(stroke);
+          } else if (type == 'whiteboard_undo') {
+            final data = (inner['data'] as Map<String, dynamic>?) ?? inner;
+            final strokeId = data['strokeId'] as String?;
+            if (strokeId != null) {
+              _whiteboardUndoControllers[roomId]?.add(strokeId);
+            }
           } else if (type == 'whiteboard_clear') {
             _whiteboardClearControllers[roomId]?.add(null);
           } else if (type == 'chat_message') {
@@ -492,6 +545,7 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     String? activeGoal,
   }) async {
     _ensureRoomListening(roomId);
+    _localUserIds[roomId] = userId;
     final participant = EphemeralParticipant(
       userId: userId,
       displayName: displayName,
@@ -503,26 +557,31 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     _roomParticipants[roomId]![userId] = participant;
     _notifyParticipants(roomId);
 
-    _realtime.broadcastPresence(
-      channelName: _channelName(roomId),
-      payload: {
-        'data': {
-          'action': 'join',
-          ...participant.toJson(),
+    _realtime
+      ..broadcastPresence(
+        channelName: _channelName(roomId),
+        payload: {
+          'data': {
+            'action': 'join',
+            ...participant.toJson(),
+          },
         },
-      },
-    );
+      )
+      // Prompt existing peers in room to announce their presence to the new joiner
+      ..broadcastPresence(
+        channelName: _channelName(roomId),
+        payload: {'type': 'request_presence'},
+      );
   }
 
   @override
   Future<void> leaveRoomPresence(String roomId) async {
-    final participants = _roomParticipants[roomId] ?? {};
-    if (participants.isNotEmpty) {
-      final userId = participants.keys.first;
+    final localUserId = _localUserIds.remove(roomId);
+    if (localUserId != null && localUserId.isNotEmpty) {
       _realtime.broadcastPresence(
         channelName: _channelName(roomId),
         payload: {
-          'data': {'action': 'leave', 'userId': userId},
+          'data': {'action': 'leave', 'userId': localUserId},
         },
       );
     }
@@ -536,6 +595,10 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
     );
     unawaited(
       _whiteboardControllers.remove(roomId)?.close() ?? Future<void>.value(),
+    );
+    unawaited(
+      _whiteboardUndoControllers.remove(roomId)?.close() ??
+          Future<void>.value(),
     );
     unawaited(
       _whiteboardClearControllers.remove(roomId)?.close() ??
@@ -714,6 +777,20 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
   }
 
   @override
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  }) async {
+    _realtime.broadcastPresence(
+      channelName: _channelName(roomId),
+      payload: {
+        'type': 'whiteboard_undo',
+        'data': {'strokeId': strokeId},
+      },
+    );
+  }
+
+  @override
   Future<void> broadcastWhiteboardClear({required String roomId}) async {
     _realtime.broadcastPresence(
       channelName: _channelName(roomId),
@@ -768,6 +845,16 @@ class EphemeralPresenceClientImpl implements EphemeralPresenceClient {
           StreamController<WhiteboardStroke>.broadcast();
     }
     return _whiteboardControllers[roomId]!.stream;
+  }
+
+  @override
+  Stream<String> watchWhiteboardUndo(String roomId) {
+    _ensureRoomListening(roomId);
+    if (!_whiteboardUndoControllers.containsKey(roomId)) {
+      _whiteboardUndoControllers[roomId] =
+          StreamController<String>.broadcast();
+    }
+    return _whiteboardUndoControllers[roomId]!.stream;
   }
 
   @override

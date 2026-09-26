@@ -74,6 +74,9 @@ void main() {
     when(
       () => mockRepository.getBookmarkedForumPostIds(),
     ).thenAnswer((_) async => const Right(<String>{}));
+    when(
+      () => mockRepository.getFollowedTopics(),
+    ).thenAnswer((_) async => const Right(<String>{}));
     bloc = CommunityHubBloc(repository: mockRepository);
   });
 

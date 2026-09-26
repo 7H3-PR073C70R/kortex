@@ -71,4 +71,30 @@ class AnkiExportService {
   List<int> generateAnkiExportBytes(DeckEntity deck) {
     return utf8.encode(generateAnkiCsv(deck));
   }
+
+  /// Exports full structured deck JSON schema with metadata & FSRS attributes
+  List<int> generateAnkiJsonExportBytes(DeckEntity deck) {
+    final payload = {
+      'version': '2.0',
+      'title': deck.title,
+      'subject': deck.subject,
+      'category': deck.category,
+      'masteryRate': deck.masteryRate,
+      'totalCards': deck.totalCards,
+      'cards': deck.cards.map((c) => {
+        'id': c.id,
+        'front': c.front,
+        'back': c.back,
+        'frontLatex': c.frontLatex,
+        'backLatex': c.backLatex,
+        'sourceTopic': c.sourceTopic,
+        'interval': c.interval,
+        'repetitions': c.repetitions,
+        'easeFactor': c.easeFactor,
+        'nextDueDate': c.nextDueDate?.toIso8601String(),
+      }).toList(),
+      'exportedAt': DateTime.now().toIso8601String(),
+    };
+    return utf8.encode(jsonEncode(payload));
+  }
 }

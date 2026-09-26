@@ -420,7 +420,9 @@ class _QuizWorkspaceView extends HookWidget {
                         // Where you are, and what this question covers.
                         QuizStaggeredFade(
                           reduceMotion: reduceMotion,
-                          child: Row(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
                             children: [
                               Text(
                                 l10n.quizQuestionProgress(
@@ -518,7 +520,7 @@ class _QuizWorkspaceView extends HookWidget {
                                     icon: Icons.help_outline_rounded,
                                   ),
                               ],
-                              const Spacer(),
+                              const SizedBox(width: 12),
                               QuizTagPill(
                                 label: current.subTopic,
                                 color: colors.primary,
@@ -526,6 +528,7 @@ class _QuizWorkspaceView extends HookWidget {
                               ),
                             ],
                           ),
+                        ),
                         ),
                         const SizedBox(height: 6),
                         // The rules for this session, stated once in plain
@@ -874,7 +877,7 @@ class _QuizWorkspaceView extends HookWidget {
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          title: const Text('Leave this quiz?'),
+          title: Text(context.l10n.quizLeaveDialogTitle),
           content: Text(
             'You have answered ${state.answeredCount} of ${state.totalQuestions}.\n\n'
             'If you come back to this deck later you can start again in a minute.',
@@ -882,7 +885,7 @@ class _QuizWorkspaceView extends HookWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Keep going'),
+              child: Text(context.l10n.quizKeepGoing),
             ),
             ElevatedButton(
               onPressed: () {
@@ -906,12 +909,12 @@ class _QuizWorkspaceView extends HookWidget {
       showDialog<void>(
         context: context,
         builder: (dialogCtx) => AlertDialog(
-          title: const Text('Finish and mark your answers?'),
+          title: Text(context.l10n.quizFinishDialogTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Here is where you stand.'),
+              Text(context.l10n.quizFinishDialogSub),
               const SizedBox(height: 14),
               Text(
                 '• Answered: ${state.answeredCount} of ${state.totalQuestions}',
@@ -924,7 +927,7 @@ class _QuizWorkspaceView extends HookWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Go back'),
+              child: Text(context.l10n.quizGoBack),
             ),
             ElevatedButton(
               onPressed: () {
@@ -935,7 +938,7 @@ class _QuizWorkspaceView extends HookWidget {
                 backgroundColor: context.colors.primary,
                 foregroundColor: context.colors.white,
               ),
-              child: const Text('See results'),
+              child: Text(context.l10n.quizSeeResults),
             ),
           ],
         ),

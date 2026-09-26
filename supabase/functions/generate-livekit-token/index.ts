@@ -96,8 +96,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const isVoicePod = body.isVoicePodEnabled === true || body.is_voice_pod === true;
-    const canPublishAudio = body.canPublish ?? isVoicePod;
+    const canPublishAudio = body.canPublish ?? true;
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: userId,

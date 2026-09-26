@@ -26,6 +26,7 @@ import 'package:kortex/src/features/study_rooms/presentation/widgets/whiteboard_
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -83,6 +84,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
   final FloatingReactionController _reactionController =
       FloatingReactionController();
   String? _lastReaction;
+  String? _lastProcessedReactionId;
 
   @override
   void initState() {
@@ -261,6 +263,67 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
   }
 
   void _handleExit(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.directions_run_rounded, color: colors.error, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Leave Study Room?',
+                style: typography.subhead.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to leave this study session? Your active presence and progress will be saved.',
+            style: typography.caption.regular.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: Text(
+                'Cancel',
+                style: typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.error,
+                foregroundColor: colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogCtx).pop();
+                _performExit(context);
+              },
+              child: const Text('Leave Room'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _performExit(BuildContext context) {
     final cubit = context.read<LiveRoomCubit>();
     final state = cubit.state;
 
@@ -338,78 +401,80 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Define what you intend to finish during this silent focus session.',
-                style: typography.caption.regular.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                maxLines: 5,
-                minLines: 1,
-                style: typography.body.regular.copyWith(
-                  color: colors.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'e.g. Review 15 flashcards',
-                  hintStyle: typography.caption.regular.copyWith(
-                    color: colors.textMuted,
-                  ),
-                  filled: true,
-                  fillColor: colors.primary.withAlpha(20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: colors.primary.withAlpha(50)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Define what you intend to finish during this silent focus session.',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children:
-                    [
-                      'Review 15 flashcards',
-                      'Deep Focus 25 mins',
-                      'Master 10 concepts',
-                      'Complete 1 Quiz',
-                    ].map((preset) {
-                      return ShrinkableButton(
-                        onTap: () {
-                          unawaited(HapticFeedback.selectionClick());
-                          controller.text = preset;
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: colors.primary.withAlpha(40),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  maxLines: 5,
+                  minLines: 1,
+                  style: typography.body.regular.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Review 15 flashcards',
+                    hintStyle: typography.caption.regular.copyWith(
+                      color: colors.textMuted,
+                    ),
+                    filled: true,
+                    fillColor: colors.primary.withAlpha(20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colors.primary.withAlpha(50)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children:
+                      [
+                        'Review 15 flashcards',
+                        'Deep Focus 25 mins',
+                        'Master 10 concepts',
+                        'Complete 1 Quiz',
+                      ].map((preset) {
+                        return ShrinkableButton(
+                          onTap: () {
+                            unawaited(HapticFeedback.selectionClick());
+                            controller.text = preset;
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(40),
+                              ),
+                            ),
+                            child: Text(
+                              preset,
+                              style: typography.caption.bold.copyWith(
+                                fontSize: 10.5,
+                                color: colors.primary,
+                              ),
                             ),
                           ),
-                          child: Text(
-                            preset,
-                            style: typography.caption.bold.copyWith(
-                              fontSize: 10.5,
-                              color: colors.primary,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-              ),
-            ],
+                        );
+                      }).toList(),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -681,7 +746,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                 Navigator.of(dialogCtx).pop();
                 cubit.dismissMicPermissionPrompt();
                 if (isPermanentlyDenied) {
-                  await openAppSettings();
+                  await cubit.openAppSettingsForMic();
                 } else {
                   final status = await Permission.microphone.request();
                   if (status.isGranted && context.mounted) {
@@ -724,7 +789,11 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
 
     return BlocConsumer<LiveRoomCubit, LiveRoomState>(
       listener: (context, state) {
-        if (state.lastReactionEmoji != null &&
+        if (state.lastReactionEvent != null &&
+            state.lastReactionEvent!.id != _lastProcessedReactionId) {
+          _lastProcessedReactionId = state.lastReactionEvent!.id;
+          _reactionController.spawnMultiple(state.lastReactionEvent!.emojis);
+        } else if (state.lastReactionEmoji != null &&
             state.lastReactionEmoji != _lastReaction) {
           _lastReaction = state.lastReactionEmoji;
           _reactionController.spawn(state.lastReactionEmoji!);
@@ -736,7 +805,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               !_announcedHandRaises.contains(p.userId)) {
             _announcedHandRaises.add(p.userId);
             context.showSnackBar(
+              title: 'Hand Raised',
               message: l10n.handRaisedNotice(p.displayName),
+              icon: Icons.front_hand_rounded,
             );
           } else if (!p.isHandRaised) {
             _announcedHandRaises.remove(p.userId);
@@ -750,6 +821,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         }
 
         if (state.microphonePermissionDenied) {
+          context.read<LiveRoomCubit>().dismissMicPermissionPrompt();
           _showMicrophonePermissionDialog(
             context,
             isPermanentlyDenied: state.isPermanentlyDeniedMic,
@@ -757,9 +829,7 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
         }
       },
       builder: (context, state) {
-        final audience = state.ephemeralParticipants
-            .where((p) => !p.isHandRaised)
-            .toList();
+        final audience = state.ephemeralParticipants;
 
         final hasEphemeral = state.ephemeralParticipants.isNotEmpty;
 
@@ -793,16 +863,14 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               appBar: AppBar(
                 backgroundColor: colors.transparent,
                 elevation: 0,
-                leading: Builder(
-                  builder: (drawerCtx) => IconButton(
-                    icon: Icon(
-                      Icons.tune_rounded,
-                      color: colors.textPrimary,
-                      size: 22,
-                    ),
-                    tooltip: 'Room Tools & Audio',
-                    onPressed: () => Scaffold.of(drawerCtx).openDrawer(),
+                leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_rounded,
+                    color: colors.textPrimary,
+                    size: 22,
                   ),
+                  tooltip: 'Leave Room',
+                  onPressed: () => _handleExit(context),
                 ),
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -815,23 +883,79 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      state.room.subject,
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
+                    const SizedBox(height: 2),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          AppPulsingBeacon(
+                            color: colors.error,
+                            size: 5,
+                            pulseSpread: 3,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'LIVE',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.error,
+                              fontSize: 10,
+                              letterSpacing: 0.8,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              '•',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary.withAlpha(120),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            state.room.subject,
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              '•',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary.withAlpha(120),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.timer_outlined,
+                                size: 11,
+                                color: colors.primary,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                state.formattedTimer,
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.primary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
                 actions: [
-                  _LivePulseBadge(colors: colors),
-                  const SizedBox(width: 6),
-                  _PomodoroMiniPill(
-                    state: state,
-                    colors: colors,
-                    typography: typography,
-                  ),
-                  const SizedBox(width: 4),
                   // Chat trigger with unread badge
                   Stack(
                     clipBehavior: Clip.none,
@@ -875,16 +999,18 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                         ),
                     ],
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.logout_rounded,
-                      color: colors.error.withAlpha(220),
-                      size: 20,
+                  Builder(
+                    builder: (drawerCtx) => IconButton(
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        color: colors.textPrimary,
+                        size: 21,
+                      ),
+                      tooltip: 'Room Tools & Controls',
+                      onPressed: () => Scaffold.of(drawerCtx).openDrawer(),
                     ),
-                    tooltip: 'Leave Room',
-                    onPressed: () => _handleExit(context),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                 ],
               ),
               body: SafeArea(
@@ -1003,8 +1129,6 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                       typography: typography,
                       isDark: isDark,
                       onReact: (emoji) {
-                        _lastReaction = emoji;
-                        _reactionController.spawn(emoji);
                         context.read<LiveRoomCubit>().triggerMicroReaction(
                           emoji,
                         );
@@ -1086,35 +1210,38 @@ class _CoOpSprintBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'CO-OP SPRINT',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.warning,
-                        fontSize: 9.5,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.warning.withAlpha(40),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        state.formattedSprintTimer,
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      Text(
+                        'CO-OP SPRINT',
                         style: typography.caption.bold.copyWith(
                           color: colors.warning,
-                          fontSize: 10,
+                          fontSize: 9.5,
+                          letterSpacing: 0.8,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.warning.withAlpha(40),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          state.formattedSprintTimer,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.warning,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1129,14 +1256,14 @@ class _CoOpSprintBanner extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           ShrinkableButton(
             onTap: () {
               unawaited(HapticFeedback.mediumImpact());
               context.read<LiveRoomCubit>().logCardReviewed();
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               decoration: BoxDecoration(
                 color: colors.warning,
                 borderRadius: BorderRadius.circular(10),
@@ -1147,21 +1274,21 @@ class _CoOpSprintBanner extends StatelessWidget {
                   Icon(
                     Icons.check_rounded,
                     color: colors.white,
-                    size: 14,
+                    size: 13,
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 2),
                   Text(
                     '+1 Card',
                     style: typography.caption.bold.copyWith(
                       color: colors.white,
-                      fontSize: 11,
+                      fontSize: 10.5,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           IconButton(
             icon: Icon(
               Icons.close_rounded,
@@ -1690,8 +1817,7 @@ class _FocusCockpitSection extends StatelessWidget {
                           isDark: cIsDark,
                           isSpeaking:
                               isVoicePodEnabled &&
-                              (activeSpeakerIds.contains(p.userId) ||
-                                  (!p.isMuted && activeSpeakerIds.isEmpty)),
+                              activeSpeakerIds.contains(p.userId),
                           isVoicePodEnabled: isVoicePodEnabled,
                         ),
                       )
@@ -1741,7 +1867,10 @@ class _FocusParticipantTile extends StatelessWidget {
     final String statusLabel;
     final Color statusColor;
 
-    if (participant.isAway) {
+    if (participant.isHandRaised) {
+      statusLabel = 'Hand Raised';
+      statusColor = cColors.warning;
+    } else if (participant.isAway) {
       statusLabel = 'Away';
       statusColor = cColors.warning;
     } else if (participant.isAiBuddy) {
@@ -1770,6 +1899,29 @@ class _FocusParticipantTile extends StatelessWidget {
               isDark: cIsDark,
               glowColor: statusColor,
             ),
+            if (participant.isHandRaised)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: cColors.warning,
+                    boxShadow: [
+                      BoxShadow(
+                        color: cColors.warning.withAlpha(120),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    '✋',
+                    style: TextStyle(fontSize: 10),
+                  ),
+                ),
+              ),
             if (isVoicePodEnabled &&
                 !participant.isMuted &&
                 !participant.isAway)
@@ -1822,7 +1974,9 @@ class _FocusParticipantTile extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (participant.isAiBuddy) ...[
+              if (participant.isHandRaised) ...[
+                Text('✋ ', style: context.typography.body.regular.copyWith(fontSize: 8)),
+              ] else if (participant.isAiBuddy) ...[
                 Text('🤖 ', style: context.typography.body.regular.copyWith(fontSize: 8)),
               ] else if (participant.isAway) ...[
                 Text('⏳ ', style: context.typography.body.regular.copyWith(fontSize: 8)),
@@ -2017,12 +2171,15 @@ class _ActiveSpeakersBanner extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
 
+    if (speakerIds.isEmpty) return const SizedBox.shrink();
+
     final speakingUsers = participants
         .where((p) => speakerIds.contains(p.userId))
         .toList();
-    if (speakingUsers.isEmpty) return const SizedBox.shrink();
 
-    final names = speakingUsers.map((p) => p.displayName).join(', ');
+    final names = speakingUsers.isNotEmpty
+        ? speakingUsers.map((p) => p.displayName).join(', ')
+        : 'Peer';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -2252,47 +2409,6 @@ class _LivePulseBadge extends StatelessWidget {
   }
 }
 
-// ── Pomodoro mini pill ────────────────────────────────────────────────────────
-
-class _PomodoroMiniPill extends StatelessWidget {
-  const _PomodoroMiniPill({
-    required this.state,
-    required this.colors,
-    required this.typography,
-  });
-
-  final LiveRoomState state;
-  final dynamic colors;
-  final dynamic typography;
-
-  @override
-  Widget build(BuildContext context) {
-    final cColors = context.colors;
-    final cTypography = context.typography;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: cColors.surfaceSecondary,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cColors.primary.withAlpha(40)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.timer_outlined, size: 13, color: cColors.primary),
-          const SizedBox(width: 4),
-          Text(
-            state.formattedTimer,
-            style: cTypography.caption.bold.copyWith(
-              color: cColors.primary,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ── In-Room Mode Switcher Bar ──────────────────────────────────────────────────
 
@@ -2309,136 +2425,37 @@ class _InRoomModeSwitcherBar extends StatelessWidget {
   final bool isDark;
   final int cardsReviewed;
 
+  static const List<RoomViewMode> _modes = [
+    RoomViewMode.stage,
+    RoomViewMode.deckStudy,
+    RoomViewMode.whiteboard,
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
+    final l10n = context.l10n;
+    final tabs = [
+      'Focus Pod',
+      'Study Deck',
+      l10n.whiteboardTabLabel,
+    ];
+    const icons = [
+      Icons.group_rounded,
+      Icons.style_rounded,
+      Icons.draw_rounded,
+    ];
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(3.5),
-      decoration: BoxDecoration(
-        color: colors.surfacePrimary.withAlpha(isDark ? 160 : 220),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colors.primary.withAlpha(isDark ? 50 : 25),
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildSegment(
-            context,
-            mode: RoomViewMode.stage,
-            icon: Icons.group_rounded,
-            label: 'Focus Pod',
-            isActive: activeMode == RoomViewMode.stage,
-            colors: colors,
-            typography: typography,
-          ),
-          const SizedBox(width: 4),
-          _buildSegment(
-            context,
-            mode: RoomViewMode.deckStudy,
-            icon: Icons.style_rounded,
-            label: 'Study Deck',
-            badge: cardsReviewed > 0 ? '$cardsReviewed' : null,
-            isActive: activeMode == RoomViewMode.deckStudy,
-            colors: colors,
-            typography: typography,
-          ),
-          const SizedBox(width: 4),
-          _buildSegment(
-            context,
-            mode: RoomViewMode.whiteboard,
-            icon: Icons.draw_rounded,
-            label: context.l10n.whiteboardTabLabel,
-            isActive: activeMode == RoomViewMode.whiteboard,
-            colors: colors,
-            typography: typography,
-          ),
-        ],
-      ),
-    );
-  }
+    final currentIndex = _modes.indexOf(activeMode).clamp(0, 2);
 
-  Widget _buildSegment(
-    BuildContext context, {
-    required RoomViewMode mode,
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-    String? badge,
-  }) {
-    return Expanded(
-      child: ShrinkableButton(
-        onTap: () {
-          unawaited(HapticFeedback.selectionClick());
-          onSelectMode(mode);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 7),
-          decoration: BoxDecoration(
-            color: isActive ? colors.primary : colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: colors.black.withAlpha(isDark ? 40 : 15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: isActive ? colors.white : colors.textSecondary,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style:
-                    (isActive
-                            ? typography.caption.bold
-                            : typography.caption.medium)
-                        .copyWith(
-                          color: isActive ? colors.white : colors.textSecondary,
-                          fontSize: 11,
-                        ),
-              ),
-              if (badge != null) ...[
-                const SizedBox(width: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? colors.white.withAlpha(50)
-                        : colors.recallEasy.withAlpha(isDark ? 50 : 30),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    badge,
-                    style: typography.caption.bold.copyWith(
-                      fontSize: 9,
-                      color: isActive ? colors.white : colors.recallEasy,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+    return AppLiquidGlassTabBar(
+      tabs: tabs,
+      icons: icons,
+      selectedIndex: currentIndex,
+      onTabSelected: (index) {
+        unawaited(HapticFeedback.selectionClick());
+        onSelectMode(_modes[index]);
+      },
+      padding: const EdgeInsets.symmetric(horizontal: 16),
     );
   }
 }
@@ -2471,19 +2488,21 @@ class _MinimalInRoomBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
         border: Border(
           top: BorderSide(color: colors.primary.withAlpha(isDark ? 40 : 20)),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               // Drawer trigger button
               ShrinkableButton(
                 onTap: onOpenDrawer,
@@ -2582,8 +2601,9 @@ class _MinimalInRoomBottomBar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ── Room Control Drawer ──────────────────────────────────────────────────────

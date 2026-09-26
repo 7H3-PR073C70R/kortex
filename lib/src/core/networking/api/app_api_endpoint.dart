@@ -38,6 +38,8 @@ class AppApiEndpoint {
 
   // Dashboard Endpoints
   static const String dashboardFeed = '/rest/v1/rpc/get_dashboard_feed';
+  static const String dashboardAnalyticsSummaryRpc =
+      '/rest/v1/rpc/get_dashboard_analytics_summary';
   static const String dashboardReviewQueue =
       '/rest/v1/decks?due_cards=gt.0&order=due_cards.desc&limit=5';
   static const String dashboardStartExam = '/rest/v1/rpc/start_mock_exam';
@@ -76,6 +78,8 @@ class AppApiEndpoint {
   static const String documents = '/rest/v1/documents';
   static const String extractedSnippets = '/rest/v1/extracted_snippets';
   static const String parseStemOcr = '/functions/v1/parse-stem-ocr';
+  static const String transcribeAudioWhisper =
+      '/functions/v1/transcribe-audio-whisper';
   static const String findOrCreateDocumentReference =
       '/rest/v1/rpc/find_or_create_document_reference';
   static const String claimOrCreateDocumentPreflight =
@@ -92,7 +96,10 @@ class AppApiEndpoint {
   static const String studyCircleMembers = '/rest/v1/study_circle_members';
   static const String sharedDecks = '/rest/v1/shared_decks';
   static const String leaderboards = '/rest/v1/leaderboards';
+  static const String claimWeeklyXpRpc = '/rest/v1/rpc/claim_weekly_xp';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
+  static const String uploadForumMedia = '/functions/v1/upload-forum-media';
+  static const String rateSharedDeckRpc = '/rest/v1/rpc/rate_shared_deck';
   static const String verifyForumReplyRpc = '/rest/v1/rpc/verify_forum_reply';
   static const String voteForumPostAtomicRpc =
       '/rest/v1/rpc/vote_forum_post_atomic';
@@ -100,6 +107,11 @@ class AppApiEndpoint {
       '/rest/v1/rpc/vote_forum_reply_atomic';
   static const String autoProvisionCommunityRpc =
       '/rest/v1/rpc/auto_provision_community_rpc';
+  static const String nudgeStudyCircleRpc =
+      '/rest/v1/rpc/nudge_study_circle_rpc';
+  static const String recordPodFocusMinutesRpc =
+      '/rest/v1/rpc/record_pod_focus_minutes_rpc';
+  static const String notifications = '/rest/v1/notifications';
   static const String studyCommunities = '/rest/v1/study_communities';
   static const String forumPostSubscriptions =
       '/rest/v1/forum_post_subscriptions';
@@ -120,6 +132,10 @@ class AppApiEndpoint {
   static const String pastQuestions = '/rest/v1/past_questions';
   static const String generateQuizQuestions =
       '/functions/v1/generate-quiz-questions';
+  static const String generateDuelQuestionsRpc =
+      '/rest/v1/rpc/generate_duel_questions';
+  static const String submitQuizResultsRpc =
+      '/rest/v1/rpc/fn_process_quiz_duel_outcome';
   static const String quizzes = '/rest/v1/quizzes';
 
   // Planner & Exam Countdown Timetable

@@ -7,7 +7,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/core/extensions/num_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -19,6 +18,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/background_ingestion_indicator.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_sync_beacon.dart';
 import 'package:kortex/src/shared/widgets/floating_syllabot_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -147,10 +147,7 @@ class MainPage extends HookWidget {
                       bottom: false,
                       child: FadeTransition(
                         opacity: animation,
-                        child: Padding(
-                          padding: EdgeInsets.only(bottom: 76.height),
-                          child: child,
-                        ),
+                        child: child,
                       ),
                     );
                   },
@@ -168,6 +165,7 @@ class MainPage extends HookWidget {
             },
           ),
           const BackgroundIngestionIndicator(),
+          const AppSyncBeacon(),
         ],
       ),
     );
@@ -585,9 +583,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
     const dockHeight = 66.0;
     const dockRadius = 33.0;
     const capsuleInsetV = 6.0;
-    const capsuleInsetH = 4.0;
     const capsuleHeight = dockHeight - (capsuleInsetV * 2); // 54dp
-    const capsuleRadius = dockRadius - capsuleInsetV; // 27dp concentric
 
     // Velocity-based jelly stretch & squash
     final velocityStretch = _isDragging
@@ -600,6 +596,15 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
     final dockSwayX =
         _isDragging ? (_dragVelocityX * 0.0012).clamp(-2.0, 2.0) : 0.0;
 
+    // Calculate transition weight (1.0 = sliding/dragging mirror lens, 0.0 = 3D popping pill)
+    final targetNearest = _currentUnitPosition.round();
+    final distFromNearest = (_currentUnitPosition - targetNearest).abs();
+    final transitionWeight = _isDragging
+        ? 1.0
+        : (_animController.isAnimating
+            ? (distFromNearest * 2.5).clamp(0.0, 1.0)
+            : (distFromNearest > 0.02 ? 1.0 : 0.0));
+
     return Semantics(
       container: true,
       label: l10n.navBarSemanticsLabel,
@@ -607,70 +612,118 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
         padding: dockMargin,
         child: Transform.translate(
           offset: Offset(dockSwayX, 0),
-          child: Container(
+          child: SizedBox(
             height: dockHeight,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(dockRadius),
-              boxShadow: [
-                // Deep contact shadow for 3D elevation
-                BoxShadow(
-                  color: isDark
-                      ? colors.black.withAlpha(120)
-                      : colors.black.withAlpha(22),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                  spreadRadius: isDark ? -2 : -4,
-                ),
-                // Ambient brand primary aura
-                BoxShadow(
-                  color: isDark
-                      ? colors.primary.withAlpha(35)
-                      : colors.primary.withAlpha(20),
-                  blurRadius: 28,
-                  offset: const Offset(0, 4),
-                  spreadRadius: -4,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(dockRadius),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-                child: Container(
-                  decoration: BoxDecoration(
-                    // Multi-layer frosted liquid glass gradient
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? [
-                              colors.surfaceSecondary.withAlpha(145),
-                              colors.surfaceSecondary.withAlpha(95),
-                            ]
-                          : [
-                              colors.white.withAlpha(210),
-                              colors.white.withAlpha(170),
-                            ],
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // -----------------------------------------------
+                // 0. Base Neutral 3D Liquid Glass Dock Track
+                // -----------------------------------------------
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(dockRadius),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 85 : 20),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                    borderRadius: BorderRadius.circular(dockRadius),
-                    // Specular perimeter light rim
-                    border: Border.all(
-                      color: isDark
-                          ? colors.white.withAlpha(48)
-                          : colors.white.withAlpha(220),
-                      width: 1.2,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(dockRadius),
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? colors.black.withAlpha(35)
+                                : colors.white.withAlpha(125),
+                            borderRadius: BorderRadius.circular(dockRadius),
+                            border: Border.all(
+                              color: isDark
+                                  ? colors.white.withAlpha(40)
+                                  : colors.white.withAlpha(180),
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              // Pure Neutral 3D Specular Top Glass Crest Line
+                              Positioned(
+                                top: 0,
+                                left: 20,
+                                right: 20,
+                                height: 1.8,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colors.transparent,
+                                        colors.white.withAlpha(isDark ? 120 : 200),
+                                        colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Bottom Glass Rim Inset Shadow for 3D Volume
+                              Positioned(
+                                bottom: 0,
+                                left: 20,
+                                right: 20,
+                                height: 1.2,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        colors.transparent,
+                                        colors.black.withAlpha(isDark ? 50 : 20),
+                                        colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
+                ),
+
+                // -----------------------------------------------
+                // 1. Dock Content (Tab Row + WhatsApp 1-1 Overflowing Lens)
+                // -----------------------------------------------
+                Positioned.fill(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final totalWidth = constraints.maxWidth;
                       final tabCount = _kNavItems.length;
                       final tabWidth = totalWidth / tabCount;
-                      final capsuleWidth = tabWidth - (capsuleInsetH * 2);
 
-                      // Calculate sliding capsule left offset
-                      final capsuleLeft = capsuleInsetH +
-                          (_currentUnitPosition * tabWidth);
+                      // Dynamic Lerp Geometry for WhatsApp 1-1 Transition Expansion
+                      final currentInsetV =
+                          ui.lerpDouble(6.0, -5.0, transitionWeight)!;
+                      final currentHeight =
+                          ui.lerpDouble(54.0, 76.0, transitionWeight)!;
+                      final currentRadius =
+                          ui.lerpDouble(27.0, 38.0, transitionWeight)!;
+
+                      // Expand width horizontally in transition
+                      final settledCapsuleWidth = tabWidth - 8.0;
+                      final transitionCapsuleWidth = tabWidth + 22.0;
+                      final capsuleWidth = ui.lerpDouble(
+                        settledCapsuleWidth,
+                        transitionCapsuleWidth,
+                        transitionWeight,
+                      )!;
+                      final capsuleLeft = 4.0 +
+                          (_currentUnitPosition * tabWidth) -
+                          ((capsuleWidth - settledCapsuleWidth) / 2);
 
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
@@ -685,72 +738,21 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                           clipBehavior: Clip.none,
                           children: [
                             // -----------------------------------------------
-                            // 1. Unified Draggable Liquid Glass Active Capsule
-                            // Identical shape, padding, and styling across ALL tabs
+                            // Top Dock Specular Reflection Line
                             // -----------------------------------------------
                             Positioned(
-                              left: capsuleLeft,
-                              top: capsuleInsetV,
-                              width: capsuleWidth,
-                              height: capsuleHeight,
-                              child: Transform.scale(
-                                scaleX: jellyScaleX,
-                                scaleY: jellyScaleY,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    // Liquid glass tint with gentle vertical gradient
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: isDark
-                                          ? [
-                                              colors.primary.withAlpha(68),
-                                              colors.primary.withAlpha(42),
-                                            ]
-                                          : [
-                                              colors.primary.withAlpha(45),
-                                              colors.primary.withAlpha(26),
-                                            ],
-                                    ),
-                                    borderRadius:
-                                        BorderRadius.circular(capsuleRadius),
-                                    // Precision specular border around the active capsule
-                                    border: Border.all(
-                                      color: colors.primary
-                                          .withAlpha(isDark ? 110 : 80),
-                                      width: 1.2,
-                                    ),
-                                    boxShadow: [
-                                      // Soft sub-capsule glow
-                                      BoxShadow(
-                                        color: colors.primary
-                                            .withAlpha(isDark ? 55 : 28),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      // Specular top highlight sheen
-                                      Positioned(
-                                        top: 1,
-                                        left: 8,
-                                        right: 8,
-                                        height: 1,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                colors.transparent,
-                                                (isDark ? colors.white : colors.white)
-                                                    .withAlpha(isDark ? 50 : 120),
-                                                colors.transparent,
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                              top: 0,
+                              left: 20,
+                              right: 20,
+                              height: 1.8,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      colors.transparent,
+                                      colors.white
+                                          .withAlpha(isDark ? 100 : 190),
+                                      colors.transparent,
                                     ],
                                   ),
                                 ),
@@ -758,7 +760,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                             ),
 
                             // -----------------------------------------------
-                            // 2. Tab Items Row with Dynamic Interpolated Polish
+                            // Base Tab Items Row (High Transparency Visibility Under Lens)
                             // -----------------------------------------------
                             Positioned.fill(
                               child: Row(
@@ -766,29 +768,24 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                   final item = _kNavItems[index];
                                   final label = item.labelBuilder(l10n);
 
-                                  // Interpolate selection weight based on distance to indicator
                                   final distance =
                                       (_currentUnitPosition - index).abs();
                                   final activeWeight =
                                       (1.0 - distance).clamp(0.0, 1.0);
                                   final isSelected = activeWeight > 0.5;
 
-                                  final iconColor = Color.lerp(
-                                    colors.textSecondary,
-                                    colors.primary,
-                                    activeWeight,
-                                  )!;
-
-                                  final textColor = Color.lerp(
-                                    colors.textSecondary.withAlpha(210),
-                                    colors.primary,
-                                    activeWeight,
-                                  )!;
+                                  final iconColor = isSelected && transitionWeight <= 0.01
+                                      ? colors.transparent
+                                      : (isSelected ? colors.textPrimary : colors.textSecondary);
+                                  final textColor = isSelected && transitionWeight <= 0.01
+                                      ? colors.transparent
+                                      : (isSelected ? colors.textPrimary : colors.textSecondary);
 
                                   return Expanded(
                                     child: Semantics(
                                       button: true,
-                                      selected: widget.tabsRouter.activeIndex == index,
+                                      selected:
+                                          widget.tabsRouter.activeIndex == index,
                                       label: l10n.navTabSemantics(
                                         label,
                                         index + 1,
@@ -803,31 +800,12 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                                 MainAxisAlignment.center,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              // Animated icon with subtle scale bounce
-                                              Transform.scale(
-                                                scale: 1.0 +
-                                                    (0.08 * activeWeight),
-                                                child: AnimatedSwitcher(
-                                                  duration: const Duration(
-                                                    milliseconds: 200,
-                                                  ),
-                                                  transitionBuilder:
-                                                      (child, anim) =>
-                                                          FadeTransition(
-                                                    opacity: anim,
-                                                    child: child,
-                                                  ),
-                                                  child: Icon(
-                                                    isSelected
-                                                        ? item.activeIcon
-                                                        : item.icon,
-                                                    key: ValueKey(
-                                                      '${item.icon}_$isSelected',
-                                                    ),
-                                                    size: 21,
-                                                    color: iconColor,
-                                                  ),
-                                                ),
+                                              Icon(
+                                                isSelected && transitionWeight <= 0.01
+                                                    ? item.activeIcon
+                                                    : item.icon,
+                                                size: 21,
+                                                color: iconColor,
                                               ),
                                               const SizedBox(height: 3),
                                               FittedBox(
@@ -835,8 +813,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                                 child: Text(
                                                   label,
                                                   maxLines: 1,
-                                                  style: typography
-                                                      .caption.medium
+                                                  style: typography.caption.medium
                                                       .copyWith(
                                                     fontSize: 10.5,
                                                     height: 1.1,
@@ -856,18 +833,252 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                 }),
                               ),
                             ),
+
+                            // -----------------------------------------------
+                            // Translucent Glass Lens (Transition) vs 3D Popping Pill (Settled)
+                            // -----------------------------------------------
+                            Positioned(
+                              left: capsuleLeft,
+                              top: currentInsetV,
+                              width: capsuleWidth,
+                              height: currentHeight,
+                              child: Transform.scale(
+                                scaleX: jellyScaleX,
+                                scaleY: jellyScaleY,
+                                child: ClipRRect(
+                                  borderRadius:
+                                      BorderRadius.circular(currentRadius),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: transitionWeight > 0.01
+                                          ? LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: isDark
+                                                  ? [
+                                                      colors.white.withAlpha(
+                                                        (22 * transitionWeight)
+                                                            .toInt(),
+                                                      ),
+                                                      colors.white.withAlpha(
+                                                        (8 * transitionWeight)
+                                                            .toInt(),
+                                                      ),
+                                                    ]
+                                                  : [
+                                                      colors.white.withAlpha(
+                                                        (45 * transitionWeight)
+                                                            .toInt(),
+                                                      ),
+                                                      colors.white.withAlpha(
+                                                        (18 * transitionWeight)
+                                                            .toInt(),
+                                                      ),
+                                                    ],
+                                            )
+                                          : LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: isDark
+                                                  ? [
+                                                      colors.primary,
+                                                      colors.primary
+                                                          .withAlpha(190),
+                                                    ]
+                                                  : [
+                                                      colors.primary,
+                                                      colors.primary
+                                                          .withAlpha(240),
+                                                    ],
+                                            ),
+                                      borderRadius:
+                                          BorderRadius.circular(currentRadius),
+                                      border: Border.all(
+                                        color: transitionWeight > 0.01
+                                            ? colors.white.withAlpha(
+                                                (220 * transitionWeight).toInt(),
+                                              )
+                                            : colors.primary.withAlpha(
+                                                isDark ? 160 : 120,
+                                              ),
+                                        width: transitionWeight > 0.01 ? 1.5 : 1.4,
+                                      ),
+                                      boxShadow: transitionWeight > 0.01
+                                          ? const []
+                                          : [
+                                              BoxShadow(
+                                                color: colors.primary.withAlpha(
+                                                  isDark ? 120 : 80,
+                                                ),
+                                                blurRadius: 18,
+                                                spreadRadius: 2,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                            ],
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        // Chromatic Liquid Edge Refraction Arcs during transition
+                                        Positioned.fill(
+                                          child: CustomPaint(
+                                            painter: _LiquidLensEdgePainter(
+                                              opacity: transitionWeight,
+                                              cyan: context.neural.cyan,
+                                              fuchsia: context.neural.fuchsia500,
+                                              amber: context.neural.amber400,
+                                            ),
+                                          ),
+                                        ),
+
+                                        // 3D Bevel Top Specular Crest when settled
+                                        if (transitionWeight <= 0.01)
+                                          Positioned(
+                                            top: 0,
+                                            left: 10,
+                                            right: 10,
+                                            height: 2.2,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(1),
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    colors.transparent,
+                                                    colors.white.withAlpha(220),
+                                                    colors.transparent,
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // -----------------------------------------------
+                            // Active 3D Popping Tab Item Overlay (Settled)
+                            // -----------------------------------------------
+                            if (transitionWeight <= 0.01)
+                              Positioned(
+                                left: capsuleLeft,
+                                top: currentInsetV,
+                                width: capsuleWidth,
+                                height: capsuleHeight,
+                                child: IgnorePointer(
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _kNavItems[widget.tabsRouter.activeIndex]
+                                              .activeIcon,
+                                          size: 21,
+                                          color: colors.white,
+                                        ),
+                                        const SizedBox(height: 3),
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            _kNavItems[widget.tabsRouter.activeIndex]
+                                                .labelBuilder(l10n),
+                                            maxLines: 1,
+                                            style: typography.caption.bold.copyWith(
+                                              fontSize: 10.5,
+                                              height: 1.1,
+                                              color: colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       );
                     },
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+}
+
+/// Chromatic liquid glass edge arc painter for sliding mirror lens transition (Images 2 & 3)
+class _LiquidLensEdgePainter extends CustomPainter {
+  const _LiquidLensEdgePainter({
+    required this.opacity,
+    required this.cyan,
+    required this.fuchsia,
+    required this.amber,
+  });
+
+  final double opacity;
+  final Color cyan;
+  final Color fuchsia;
+  final Color amber;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (opacity <= 0.01) return;
+
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final rrect = RRect.fromRectAndRadius(
+      rect,
+      Radius.circular(size.height / 2),
+    );
+
+    // Top iridescent liquid glass arc
+    final topPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.transparent,
+          cyan.withAlpha((210 * opacity).toInt()),
+          Colors.white.withAlpha((255 * opacity).toInt()),
+          amber.withAlpha((210 * opacity).toInt()),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, 6))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    // Bottom iridescent liquid glass arc
+    final bottomPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.transparent,
+          fuchsia.withAlpha((210 * opacity).toInt()),
+          cyan.withAlpha((230 * opacity).toInt()),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromLTWH(0, size.height - 6, size.width, 6))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0;
+
+    canvas
+      ..drawPath(
+        Path()..addRRect(rrect),
+        topPaint,
+      )
+      ..drawPath(
+        Path()..addRRect(rrect),
+        bottomPaint,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LiquidLensEdgePainter oldDelegate) {
+    return oldDelegate.opacity != opacity;
   }
 }
 

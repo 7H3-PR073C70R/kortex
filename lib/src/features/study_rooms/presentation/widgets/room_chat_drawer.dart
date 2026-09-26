@@ -21,15 +21,20 @@ class RoomChatDrawer extends StatefulWidget {
 
   final String currentUserId;
 
-  static void show(BuildContext context, {required String currentUserId}) {
-    context.read<LiveRoomCubit>().markChatAsRead();
+  static void show(
+    BuildContext context, {
+    required String currentUserId,
+    LiveRoomCubit? cubit,
+  }) {
+    final liveRoomCubit = cubit ?? context.read<LiveRoomCubit>()
+    ..markChatAsRead();
     unawaited(
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         backgroundColor: context.colors.transparent,
         builder: (_) => BlocProvider.value(
-          value: context.read<LiveRoomCubit>(),
+          value: liveRoomCubit,
           child: RoomChatDrawer(currentUserId: currentUserId),
         ),
       ),
@@ -55,6 +60,20 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
     '✨',
   ];
 
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        unawaited(
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent + 100,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          ),
+        );
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +85,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
         });
       }
     });
+    _scrollToBottom();
   }
 
   @override
@@ -89,18 +109,7 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
       _textController.clear();
     }
 
-    // Scroll to bottom on sending
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        unawaited(
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent + 60,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-          ),
-        );
-      }
-    });
+    _scrollToBottom();
   }
 
   @override
@@ -200,29 +209,33 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
 
           // Quick Emoji Tap Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             decoration: BoxDecoration(
               color: colors.surfaceTertiary,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: _quickReactions.map((emoji) {
-                return ShrinkableButton(
-                  onTap: () =>
-                      _sendMessage(explicitText: emoji, isReaction: true),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: _quickReactions.map((emoji) {
+                  return ShrinkableButton(
+                    onTap: () =>
+                        _sendMessage(explicitText: emoji, isReaction: true),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        emoji,
+                        style: context.typography.body.regular.copyWith(fontSize: 18),
+                      ),
                     ),
-                    child: Text(
-                      emoji,
-                      style: context.typography.body.regular.copyWith(fontSize: 18),
-                    ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
 
@@ -230,7 +243,12 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
 
           // Messages Timeline (WhatsApp-styled bubbles)
           Expanded(
-            child: BlocBuilder<LiveRoomCubit, LiveRoomState>(
+            child: BlocConsumer<LiveRoomCubit, LiveRoomState>(
+              listenWhen: (previous, current) =>
+                  previous.chatMessages.length != current.chatMessages.length,
+              listener: (context, state) {
+                _scrollToBottom();
+              },
               builder: (context, state) {
                 if (state.chatMessages.isEmpty) {
                   return Center(
@@ -285,41 +303,39 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 4,
+                child: TextField(
+                  controller: _textController,
+                  maxLines: 4,
+                  minLines: 1,
+                  keyboardType: TextInputType.multiline,
+                  textCapitalization: TextCapitalization.sentences,
+                  onSubmitted: (_) => _sendMessage(),
+                  style: context.typography.body.regular.copyWith(
+                    fontSize: 13.5,
+                    color: colors.textPrimary,
+                    height: 1.3,
                   ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? colors.surfaceTertiary
-                        : colors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: colors.surfaceBorder.withAlpha(isDark ? 90 : 60),
+                  decoration: InputDecoration(
+                    hintText: l10n.chatInputHint,
+                    filled: true,
+                    fillColor:   isDark
+                      ? colors.surfaceTertiary
+                      : colors.surfaceSecondary,
+                    hintStyle: context.typography.body.regular.copyWith(
+                      fontSize: 13,
+                      color: colors.textSecondary.withAlpha(180),
                     ),
-                  ),
-                  child: TextField(
-                    controller: _textController,
-                    maxLines: 4,
-                    minLines: 1,
-                    keyboardType: TextInputType.multiline,
-                    textCapitalization: TextCapitalization.sentences,
-                    onSubmitted: (_) => _sendMessage(),
-                    style: context.typography.body.regular.copyWith(
-                      fontSize: 13.5,
-                      color: colors.textPrimary,
-                      height: 1.3,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(100),
+                      borderSide: BorderSide.none,
                     ),
-                    decoration: InputDecoration(
-                      hintText: l10n.chatInputHint,
-                      hintStyle: context.typography.body.regular.copyWith(
-                        fontSize: 13,
-                        color: colors.textSecondary.withAlpha(180),
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(100),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 14,
                     ),
                   ),
                 ),

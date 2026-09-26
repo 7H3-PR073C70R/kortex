@@ -147,59 +147,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           .map((e) => CourseTrackModel.fromJson(e as Map<String, dynamic>))
           .toList();
     }
-    return const [
-      CourseTrackModel(
-        id: 'WAEC',
-        name: 'WAEC / WASSCE',
-        description:
-            'Senior secondary core curriculum (Sciences, Arts & Commercial)',
-        iconName: 'school',
-      ),
-      CourseTrackModel(
-        id: 'JAMB',
-        name: 'JAMB / UTME Prep',
-        description: 'Comprehensive past questions & high-yield revision',
-        iconName: 'timer',
-        defaultDailyTarget: 30,
-        examCountdownDays: 45,
-      ),
-      CourseTrackModel(
-        id: 'Sciences',
-        name: 'Pure & Applied Sciences',
-        description:
-            'Physics, mathematics, chemistry, biology & general sciences',
-        iconName: 'calculate',
-        defaultDailyTarget: 25,
-        examCountdownDays: 90,
-      ),
-      CourseTrackModel(
-        id: 'Medicine',
-        name: 'Medicine & Health Sciences',
-        description: 'Pre-clinical anatomy, physiology & pharmacology review',
-        iconName: 'medical_services',
-        defaultDailyTarget: 30,
-      ),
-      CourseTrackModel(
-        id: 'Engineering',
-        name: 'Engineering & Physical Sciences',
-        description: 'Engineering mathematics, thermodynamics & coding theory',
-        iconName: 'engineering',
-        defaultDailyTarget: 25,
-      ),
-      CourseTrackModel(
-        id: 'Law',
-        name: 'Law & Jurisprudence',
-        description:
-            'Constitutional law, torts, criminal law cases & precedents',
-        iconName: 'gavel',
-      ),
-      CourseTrackModel(
-        id: 'General',
-        name: 'General University Prep',
-        description: 'General studies (GST), research methods & critical logic',
-        iconName: 'auto_stories',
-        examCountdownDays: 30,
-      ),
-    ];
+    return const [];
+  }
+
+  @override
+  Future<UserModel> refreshSession(String refreshToken) async {
+    final response = await _authClient.refreshAuthToken({
+      'refresh_token': refreshToken,
+      'grant_type': 'refresh_token',
+    });
+    if (response.token != null && response.token!.isNotEmpty) {
+      if (response.refreshToken != null && response.refreshToken!.isNotEmpty) {
+        await _userStorage.saveAuthTokens(
+          accessToken: response.token!,
+          refreshToken: response.refreshToken!,
+        );
+      } else {
+        await _userStorage.saveToken(response.token!);
+      }
+    }
+    return response;
   }
 }

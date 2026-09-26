@@ -37,6 +37,7 @@ class McqOptionCard extends StatelessWidget {
     required this.index,
     required this.state,
     required this.onTap,
+    this.trailingLabel,
     this.reduceMotion = false,
     super.key,
   });
@@ -61,6 +62,7 @@ class McqOptionCard extends StatelessWidget {
   final int index;
   final McqOptionState state;
   final VoidCallback onTap;
+  final String? trailingLabel;
   final bool reduceMotion;
 
   bool get _isInteractive =>
@@ -138,7 +140,11 @@ class McqOptionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                _TrailingMark(state: state, palette: palette),
+                _TrailingMark(
+                  state: state,
+                  palette: palette,
+                  label: trailingLabel,
+                ),
               ],
             ),
           ),
@@ -333,10 +339,15 @@ class _LetterBadge extends StatelessWidget {
 
 /// Trailing confirmation mark, kept subtle so color does most of the talking.
 class _TrailingMark extends StatelessWidget {
-  const _TrailingMark({required this.state, required this.palette});
+  const _TrailingMark({
+    required this.state,
+    required this.palette,
+    this.label,
+  });
 
   final McqOptionState state;
   final _OptionPalette palette;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -345,11 +356,34 @@ class _TrailingMark extends StatelessWidget {
       McqOptionState.wrongReveal => Icons.cancel_rounded,
       _ => null,
     };
-    if (icon == null) return const SizedBox.shrink();
+    if (icon == null && (label == null || label!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    final textStyle = context.typography.caption.bold.copyWith(
+      color: palette.accent,
+      fontSize: 11,
+    );
 
     return Padding(
       padding: const EdgeInsets.only(left: 8),
-      child: Icon(icon, color: palette.accent, size: 20),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (label != null && label!.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: palette.accent.withAlpha(25),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(label!, style: textStyle),
+            ),
+            const SizedBox(width: 4),
+          ],
+          if (icon != null) Icon(icon, color: palette.accent, size: 18),
+        ],
+      ),
     );
   }
 }

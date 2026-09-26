@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -170,7 +171,7 @@ class ChatLatexScratchpadWidget extends HookWidget {
                         color: isHovered
                             ? colors.primary
                             : colors.textSecondary,
-                        tooltip: 'Undo last stroke',
+                        tooltip: context.l10n.tooltipUndoStroke,
                         onPressed: strokes.value.isEmpty ? null : undoStroke,
                       );
                     },
@@ -183,7 +184,7 @@ class ChatLatexScratchpadWidget extends HookWidget {
                           size: 20,
                         ),
                         color: colors.error,
-                        tooltip: 'Clear canvas',
+                        tooltip: context.l10n.tooltipClearCanvas,
                         onPressed: strokes.value.isEmpty ? null : clearAll,
                       );
                     },

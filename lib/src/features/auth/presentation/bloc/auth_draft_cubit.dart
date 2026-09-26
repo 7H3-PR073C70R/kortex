@@ -8,26 +8,30 @@ class AuthDraftState extends Equatable {
     this.email = '',
     this.password = '',
     this.displayName = '',
+    this.promoCode = '',
   });
 
   final String email;
   final String password;
   final String displayName;
+  final String promoCode;
 
   AuthDraftState copyWith({
     String? email,
     String? password,
     String? displayName,
+    String? promoCode,
   }) {
     return AuthDraftState(
       email: email ?? this.email,
       password: password ?? this.password,
       displayName: displayName ?? this.displayName,
+      promoCode: promoCode ?? this.promoCode,
     );
   }
 
   @override
-  List<Object?> get props => [email, password, displayName];
+  List<Object?> get props => [email, password, displayName, promoCode];
 }
 
 /// Cubit synchronizing credentials between conversational AI chat
@@ -45,6 +49,10 @@ class AuthDraftCubit extends Cubit<AuthDraftState> {
 
   void updateDisplayName(String displayName) {
     emit(state.copyWith(displayName: displayName));
+  }
+
+  void updatePromoCode(String promoCode) {
+    emit(state.copyWith(promoCode: promoCode));
   }
 
   void clear() {

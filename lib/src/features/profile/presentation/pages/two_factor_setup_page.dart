@@ -17,6 +17,7 @@ import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/profile_security_use_cases.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -127,12 +128,7 @@ class TwoFactorSetupPage extends HookWidget {
         backgroundColor: colors.backgroundPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: colors.textPrimary,
-            size: 18,
-          ),
+        leading: AppBackButton(
           onPressed: () => Navigator.of(context).pop(false),
         ),
         title: Text(

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -90,6 +91,10 @@ class MockEphemeralRepository implements EphemeralRoomRepository {
       whiteboardCtrl.stream;
 
   @override
+  Stream<String> watchWhiteboardUndo(String roomId) =>
+      const Stream.empty();
+
+  @override
   Stream<void> watchWhiteboardClear(String roomId) =>
       whiteboardClearCtrl.stream;
 
@@ -136,6 +141,19 @@ class MockEphemeralRepository implements EphemeralRoomRepository {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers.global'),
+      (call) async => null,
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers'),
+      (call) async => null,
+    );
+  });
 
   late MockCommunityRepository mockRepo;
   late MockEphemeralRepository mockEphemeral;

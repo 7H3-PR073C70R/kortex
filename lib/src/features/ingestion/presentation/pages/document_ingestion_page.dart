@@ -23,9 +23,9 @@ import 'package:kortex/src/features/ingestion/presentation/widgets/camera_scanne
 import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone_widget.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/lms_import_modal_sheet.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 @RoutePage()
@@ -89,501 +89,482 @@ class _DocumentIngestionView extends HookWidget {
       );
     }
 
-    return AuraMeshNebula(
-      child: Scaffold(
-        backgroundColor: colors.transparent,
-        body: BlocConsumer<IngestionBloc, IngestionState>(
-          listener: (context, state) {
-            if (state.status == ProcessingStatus.completed) {
-              if (state.wasDeduplicated &&
-                  state.generatedDeck != null &&
-                  state.snippets.isEmpty) {
+    return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
+      body: BlocConsumer<IngestionBloc, IngestionState>(
+        listener: (context, state) {
+          if (state.status == ProcessingStatus.completed) {
+            if (state.wasDeduplicated &&
+                state.generatedDeck != null &&
+                state.snippets.isEmpty) {
+              context.showSnackBar(
+                message:
+                    (state.stageMessage != null &&
+                        state.stageMessage!.isNotEmpty)
+                    ? state.stageMessage!
+                    : l10n.dedupExistingDeckAssigned,
+                type: SnackBarType.success,
+              );
+            } else if (state.snippets.isNotEmpty &&
+                state.currentDocument != null) {
+              if (state.wasDeduplicated) {
                 context.showSnackBar(
-                  message:
-                      (state.stageMessage != null &&
-                          state.stageMessage!.isNotEmpty)
-                      ? state.stageMessage!
-                      : l10n.dedupExistingDeckAssigned,
+                  message: l10n.dedupExistingDeckAssigned,
                   type: SnackBarType.success,
                 );
-              } else if (state.snippets.isNotEmpty &&
-                  state.currentDocument != null) {
-                if (state.wasDeduplicated) {
-                  context.showSnackBar(
-                    message: l10n.dedupExistingDeckAssigned,
-                    type: SnackBarType.success,
-                  );
-                }
-
-                final doc = state.currentDocument!;
-                final rawSubject = doc.filename.split('.').first;
-                final cleanCode = rawSubject
-                    .replaceAll(RegExp(r'[^a-zA-Z0-9\s_-]'), '')
-                    .trim();
-
-                // Background pgvector RAG auto-chunking & embeddings generation
-                if (state.snippets.isNotEmpty &&
-                    locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
-                  unawaited(
-                    locator<GenerateDocumentEmbeddingsUseCase>()(
-                      documentId: doc.id,
-                      snippets: state.snippets,
-                      metadata: {
-                        'filename': doc.filename,
-                        'documentTitle': doc.filename.split('.').first,
-                        'courseCode': cleanCode.isNotEmpty
-                            ? cleanCode
-                            : (courseCode ?? 'GENERAL'),
-                        'extractedSnippetsCount': state.snippets.length,
-                      },
-                    ),
-                  );
-                }
-
-                // Navigate to STEM OCR Live Preview & Editor
+              }
+    
+              final doc = state.currentDocument!;
+              final rawSubject = doc.filename.split('.').first;
+              final cleanCode = rawSubject
+                  .replaceAll(RegExp(r'[^a-zA-Z0-9\s_-]'), '')
+                  .trim();
+    
+              // Background pgvector RAG auto-chunking & embeddings generation
+              if (state.snippets.isNotEmpty &&
+                  locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
                 unawaited(
-                  context.router.push(
-                    OcrPreviewRoute(
-                      documentId: state.currentDocument!.id,
-                      filename: state.currentDocument!.filename,
-                      snippets: state.snippets,
-                      courseId: courseId,
-                      courseCode: courseCode,
-                      courseTitle: courseTitle,
-                    ),
+                  locator<GenerateDocumentEmbeddingsUseCase>()(
+                    documentId: doc.id,
+                    snippets: state.snippets,
+                    metadata: {
+                      'filename': doc.filename,
+                      'documentTitle': doc.filename.split('.').first,
+                      'courseCode': cleanCode.isNotEmpty
+                          ? cleanCode
+                          : (courseCode ?? 'GENERAL'),
+                      'extractedSnippetsCount': state.snippets.length,
+                    },
                   ),
                 );
               }
-            }
-          },
-          builder: (context, state) {
-            return CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  backgroundColor: colors.transparent,
-                  elevation: 0,
-                  pinned: true,
-                  leading: PlatformHoverBuilder(
-                    builder: (context, isHovered, child) {
-                      return AnimatedScale(
-                        scale: isHovered ? 1.08 : 1.0,
-                        duration: AppMotion.snappy,
-                        curve: AppMotion.easeOutCubic,
-                        child: child,
-                      );
-                    },
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: colors.textPrimary,
-                        size: 20,
-                      ),
-                      onPressed: () => unawaited(Navigator.of(context).maybePop()),
-                    ),
+    
+              // Navigate to STEM OCR Live Preview & Editor
+              unawaited(
+                context.router.push(
+                  OcrPreviewRoute(
+                    documentId: state.currentDocument!.id,
+                    filename: state.currentDocument!.filename,
+                    snippets: state.snippets,
+                    courseId: courseId,
+                    courseCode: courseCode,
+                    courseTitle: courseTitle,
                   ),
-                  flexibleSpace: ClipRect(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(color: colors.backgroundPrimary.withValues(alpha: 0.7)),
-                    ),
-                  ),
-                  title: Text(
-                    l10n.ingestionTitle,
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  centerTitle: false,
                 ),
-                SliverToBoxAdapter(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isDesktop = constraints.maxWidth >= 1024;
-
-                      final uploadSection = Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // File drop zone
-                          FileDropZoneWidget(
-                            courseId: courseId,
-                            courseCode: courseCode,
-                            courseTitle: courseTitle,
-                            onFilePicked:
-                                ({
-                                  required filename,
-                                  required fileType,
-                                  required fileBytes,
-                                }) {
-                                  context.read<IngestionBloc>().add(
-                                    PickAndUploadFileEvent(
-                                      filename: filename,
-                                      fileType: fileType,
-                                      fileBytes: fileBytes,
-                                      courseId: courseId,
-                                      courseCode: courseCode,
-                                      courseTitle: courseTitle,
-                                    ),
-                                  );
-                                },
-                            onCameraScanTap: () => isScanningCamera.value = true,
-                            onLmsImportTap: () =>
-                                unawaited(LmsImportModalSheet.show(context)),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Progress card if active
-                          if (state.status != ProcessingStatus.idle)
-                            UploadProgressCard(
-                              filename:
-                                  state.currentDocument?.filename ??
-                                  'Selected Document',
-                              status: state.status,
-                              progress: state.uploadProgress,
-                              stageMessage: state.stageMessage,
-                              wasDeduplicated: state.wasDeduplicated,
-                              errorMessage: state.errorMessage,
-                              onRetry: () {
+              );
+            }
+          }
+        },
+        builder: (context, state) {
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                backgroundColor: colors.transparent,
+                elevation: 0,
+                pinned: true,
+                leading: const AppBackButton(),
+                flexibleSpace: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(color: colors.backgroundPrimary.withValues(alpha: 0.7)),
+                  ),
+                ),
+                title: Text(
+                  l10n.ingestionTitle,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                centerTitle: false,
+              ),
+              SliverToBoxAdapter(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isDesktop = constraints.maxWidth >= 1024;
+    
+                    final uploadSection = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // File drop zone
+                        FileDropZoneWidget(
+                          courseId: courseId,
+                          courseCode: courseCode,
+                          courseTitle: courseTitle,
+                          onFilePicked:
+                              ({
+                                required filename,
+                                required fileType,
+                                required fileBytes,
+                              }) {
                                 context.read<IngestionBloc>().add(
-                                  const ResetIngestionStateEvent(),
+                                  PickAndUploadFileEvent(
+                                    filename: filename,
+                                    fileType: fileType,
+                                    fileBytes: fileBytes,
+                                    courseId: courseId,
+                                    courseCode: courseCode,
+                                    courseTitle: courseTitle,
+                                  ),
                                 );
                               },
-                            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
-                        ],
-                      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0, curve: Curves.easeOutCubic);
-
-                      final recentDocsSection = Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 6, bottom: 8),
-                            child: Text(
-                              'RECENTLY INGESTED DOCUMENTS',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textSecondary.withAlpha(170),
-                                fontSize: 11,
-                                letterSpacing: 0.8,
-                              ),
+                          onCameraScanTap: () => isScanningCamera.value = true,
+                          onLmsImportTap: () =>
+                              unawaited(LmsImportModalSheet.show(context)),
+                        ),
+                        const SizedBox(height: 20),
+    
+                        // Progress card if active
+                        if (state.status != ProcessingStatus.idle)
+                          UploadProgressCard(
+                            filename:
+                                state.currentDocument?.filename ??
+                                'Selected Document',
+                            status: state.status,
+                            progress: state.uploadProgress,
+                            stageMessage: state.stageMessage,
+                            wasDeduplicated: state.wasDeduplicated,
+                            errorMessage: state.errorMessage,
+                            onRetry: () {
+                              context.read<IngestionBloc>().add(
+                                const ResetIngestionStateEvent(),
+                              );
+                            },
+                          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
+                      ],
+                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0, curve: Curves.easeOutCubic);
+    
+                    final recentDocsSection = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6, bottom: 8),
+                          child: Text(
+                            'RECENTLY INGESTED DOCUMENTS',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textSecondary.withAlpha(170),
+                              fontSize: 11,
+                              letterSpacing: 0.8,
                             ),
                           ),
-                          if (state.userDocuments.isEmpty)
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? colors.surfaceSecondary.withAlpha(120)
-                                    : colors.surfacePrimary.withAlpha(150),
-                                borderRadius: AppRadius.radiusPanel,
-                                border: Border.all(
-                                  color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        ),
+                        if (state.userDocuments.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary
+                                  : colors.surfacePrimary,
+                              borderRadius: AppRadius.radiusPanel,
+                              border: Border.all(
+                                color: colors.primary.withAlpha(isDark ? 40 : 20),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'No documents ingested yet. '
+                                'Upload lecture notes above to start.',
+                                textAlign: TextAlign.center,
+                                style: typography.footnote.regular.copyWith(
+                                  color: colors.textSecondary,
                                 ),
                               ),
-                              child: Center(
-                                child: Text(
-                                  'No documents ingested yet. '
-                                  'Upload lecture notes above to start.',
-                                  textAlign: TextAlign.center,
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: state.userDocuments.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                final doc = state.userDocuments[index];
-                                final kbSize = (doc.fileSizeBytes / 1024)
-                                    .toStringAsFixed(1);
-                                final hasCourseContext =
-                                    (courseCode != null && courseCode!.isNotEmpty) ||
-                                    (courseId != null && courseId!.isNotEmpty);
-                                final baseName = doc.filename
-                                    .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
-                                    .toLowerCase()
-                                    .trim();
-                                final isAlreadyAttached =
-                                    hasCourseContext &&
-                                    (state.attachedDocumentIds.contains(doc.id) ||
-                                        (courseCode != null &&
-                                            (state.attachedDocumentIds.contains(
-                                                  '${doc.id}_$courseCode',
-                                                ) ||
-                                                state.attachedDocumentIds.contains(
-                                                  '${doc.contentHash}_$courseCode',
-                                                ) ||
-                                                state.attachedDocumentIds.contains(
-                                                  '${baseName}_$courseCode',
-                                                ))) ||
-                                        (courseId != null &&
-                                            (state.attachedDocumentIds.contains(
-                                                  '${doc.id}_$courseId',
-                                                ) ||
-                                                state.attachedDocumentIds.contains(
-                                                  '${doc.contentHash}_$courseId',
-                                                ) ||
-                                                state.attachedDocumentIds.contains(
-                                                  '${baseName}_$courseId',
-                                                ))) ||
-                                        _checkIsDocAttachedLocally(
-                                          doc: doc,
-                                          courseId: courseId,
-                                          courseCode: courseCode,
-                                        ));
-
-                                return Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? colors.surfaceSecondary
-                                        : colors.surfacePrimary,
-                                    borderRadius: AppRadius.radiusCard,
-                                    border: Border.all(
-                                      color: colors.primary.withAlpha(
-                                        isDark ? 50 : 25,
-                                      ),
+                            ),
+                          )
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: state.userDocuments.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final doc = state.userDocuments[index];
+                              final kbSize = (doc.fileSizeBytes / 1024)
+                                  .toStringAsFixed(1);
+                              final hasCourseContext =
+                                  (courseCode != null && courseCode!.isNotEmpty) ||
+                                  (courseId != null && courseId!.isNotEmpty);
+                              final baseName = doc.filename
+                                  .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+                                  .toLowerCase()
+                                  .trim();
+                              final isAlreadyAttached =
+                                  hasCourseContext &&
+                                  (state.attachedDocumentIds.contains(doc.id) ||
+                                      (courseCode != null &&
+                                          (state.attachedDocumentIds.contains(
+                                                '${doc.id}_$courseCode',
+                                              ) ||
+                                              state.attachedDocumentIds.contains(
+                                                '${doc.contentHash}_$courseCode',
+                                              ) ||
+                                              state.attachedDocumentIds.contains(
+                                                '${baseName}_$courseCode',
+                                              ))) ||
+                                      (courseId != null &&
+                                          (state.attachedDocumentIds.contains(
+                                                '${doc.id}_$courseId',
+                                              ) ||
+                                              state.attachedDocumentIds.contains(
+                                                '${doc.contentHash}_$courseId',
+                                              ) ||
+                                              state.attachedDocumentIds.contains(
+                                                '${baseName}_$courseId',
+                                              ))) ||
+                                      _checkIsDocAttachedLocally(
+                                        doc: doc,
+                                        courseId: courseId,
+                                        courseCode: courseCode,
+                                      ));
+    
+                              return Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfacePrimary,
+                                  borderRadius: AppRadius.radiusCard,
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 50 : 25,
                                     ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.description_outlined,
-                                            color: colors.primary,
-                                            size: 24,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.description_outlined,
+                                          color: colors.primary,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                doc.filename,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: typography.body.bold
+                                                    .copyWith(
+                                                      color: colors.textPrimary,
+                                                    ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '${doc.fileType.toUpperCase()} • '
+                                                '$kbSize KB',
+                                                style: typography.caption.medium
+                                                    .copyWith(
+                                                      color: colors.textSecondary,
+                                                    ),
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  doc.filename,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: typography.body.bold
-                                                      .copyWith(
-                                                        color: colors.textPrimary,
-                                                      ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.success.withAlpha(25),
+                                            borderRadius: AppRadius.radiusBadge,
+                                          ),
+                                          child: Text(
+                                            'Ready',
+                                            style: typography.caption.bold.copyWith(
+                                              color: colors.success,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        PlatformHoverBuilder(
+                                          builder: (context, isHovered, child) {
+                                            return AnimatedScale(
+                                              scale: isHovered ? 1.12 : 1.0,
+                                              duration: AppMotion.snappy,
+                                              curve: AppMotion.easeOutCubic,
+                                              child: child,
+                                            );
+                                          },
+                                          child: IconButton(
+                                            icon: Icon(
+                                              Icons.delete_outline_rounded,
+                                              color: colors.textSecondary.withAlpha(
+                                                180,
+                                              ),
+                                              size: 20,
+                                            ),
+                                            tooltip: 'Delete Document',
+                                            visualDensity: VisualDensity.compact,
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(
+                                              minWidth: 32,
+                                              minHeight: 32,
+                                            ),
+                                            onPressed: () => _confirmDeleteDocument(
+                                              context: context,
+                                              doc: doc,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (hasCourseContext) ...[
+                                      const SizedBox(height: 10),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: isAlreadyAttached
+                                            ? Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 6,
                                                 ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  '${doc.fileType.toUpperCase()} • '
-                                                  '$kbSize KB',
-                                                  style: typography.caption.medium
-                                                      .copyWith(
-                                                        color: colors.textSecondary,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: colors.success.withAlpha(25),
-                                              borderRadius: AppRadius.radiusBadge,
-                                            ),
-                                            child: Text(
-                                              'Ready',
-                                              style: typography.caption.bold.copyWith(
-                                                color: colors.success,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          PlatformHoverBuilder(
-                                            builder: (context, isHovered, child) {
-                                              return AnimatedScale(
-                                                scale: isHovered ? 1.12 : 1.0,
-                                                duration: AppMotion.snappy,
-                                                curve: AppMotion.easeOutCubic,
-                                                child: child,
-                                              );
-                                            },
-                                            child: IconButton(
-                                              icon: Icon(
-                                                Icons.delete_outline_rounded,
-                                                color: colors.textSecondary.withAlpha(
-                                                  180,
-                                                ),
-                                                size: 20,
-                                              ),
-                                              tooltip: 'Delete Document',
-                                              visualDensity: VisualDensity.compact,
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(
-                                                minWidth: 32,
-                                                minHeight: 32,
-                                              ),
-                                              onPressed: () => _confirmDeleteDocument(
-                                                context: context,
-                                                doc: doc,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (hasCourseContext) ...[
-                                        const SizedBox(height: 10),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: isAlreadyAttached
-                                              ? Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
+                                                decoration: BoxDecoration(
+                                                  color: colors.primary.withAlpha(
+                                                    20,
                                                   ),
-                                                  decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      AppRadius.radiusBadge,
+                                                  border: Border.all(
                                                     color: colors.primary.withAlpha(
-                                                      20,
-                                                    ),
-                                                    borderRadius:
-                                                        AppRadius.radiusBadge,
-                                                    border: Border.all(
-                                                      color: colors.primary.withAlpha(
-                                                        60,
-                                                      ),
+                                                      60,
                                                     ),
                                                   ),
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.check_circle_rounded,
-                                                        color: colors.primary,
-                                                        size: 14,
-                                                      ),
-                                                      const SizedBox(width: 5),
-                                                      Text(
-                                                        'Attached to ${courseCode ?? "Course"}',
-                                                        style: typography.caption.bold
-                                                            .copyWith(
-                                                              color: colors.primary,
-                                                              fontSize: 11,
-                                                            ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                )
-                                              : PlatformHoverBuilder(
-                                                  builder:
-                                                      (context, isHovered, child) {
-                                                        return AnimatedScale(
-                                                          scale: isHovered
-                                                              ? 1.03
-                                                              : 1.0,
-                                                          duration: AppMotion.snappy,
-                                                          curve:
-                                                              AppMotion.easeOutCubic,
-                                                          child: child,
-                                                        );
-                                                      },
-                                                  child: OutlinedButton.icon(
-                                                    style: OutlinedButton.styleFrom(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 12,
-                                                            vertical: 6,
-                                                          ),
-                                                      side: BorderSide(
-                                                        color: colors.primary
-                                                            .withAlpha(80),
-                                                      ),
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            AppRadius.radiusBadge,
-                                                      ),
-                                                    ),
-                                                    onPressed: () {
-                                                      context.read<IngestionBloc>().add(
-                                                        AttachDocumentToCourseEvent(
-                                                          doc: doc,
-                                                          courseId: courseId,
-                                                          courseCode: courseCode,
-                                                          courseTitle: courseTitle,
-                                                        ),
-                                                      );
-                                                    },
-                                                    icon: Icon(
-                                                      Icons.bookmark_add_outlined,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.check_circle_rounded,
                                                       color: colors.primary,
                                                       size: 14,
                                                     ),
-                                                    label: Text(
-                                                      'Attach to ${courseCode ?? "Course"}',
+                                                    const SizedBox(width: 5),
+                                                    Text(
+                                                      'Attached to ${courseCode ?? "Course"}',
                                                       style: typography.caption.bold
                                                           .copyWith(
                                                             color: colors.primary,
                                                             fontSize: 11,
                                                           ),
                                                     ),
+                                                  ],
+                                                ),
+                                              )
+                                            : PlatformHoverBuilder(
+                                                builder:
+                                                    (context, isHovered, child) {
+                                                      return AnimatedScale(
+                                                        scale: isHovered
+                                                            ? 1.03
+                                                            : 1.0,
+                                                        duration: AppMotion.snappy,
+                                                        curve:
+                                                            AppMotion.easeOutCubic,
+                                                        child: child,
+                                                      );
+                                                    },
+                                                child: OutlinedButton.icon(
+                                                  style: OutlinedButton.styleFrom(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 6,
+                                                        ),
+                                                    side: BorderSide(
+                                                      color: colors.primary
+                                                          .withAlpha(80),
+                                                    ),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          AppRadius.radiusBadge,
+                                                    ),
+                                                  ),
+                                                  onPressed: () {
+                                                    context.read<IngestionBloc>().add(
+                                                      AttachDocumentToCourseEvent(
+                                                        doc: doc,
+                                                        courseId: courseId,
+                                                        courseCode: courseCode,
+                                                        courseTitle: courseTitle,
+                                                      ),
+                                                    );
+                                                  },
+                                                  icon: Icon(
+                                                    Icons.bookmark_add_outlined,
+                                                    color: colors.primary,
+                                                    size: 14,
+                                                  ),
+                                                  label: Text(
+                                                    'Attach to ${courseCode ?? "Course"}',
+                                                    style: typography.caption.bold
+                                                        .copyWith(
+                                                          color: colors.primary,
+                                                          fontSize: 11,
+                                                        ),
                                                   ),
                                                 ),
-                                        ),
-                                      ],
+                                              ),
+                                      ),
                                     ],
-                                  ),
-                                );
-                              },
-                            ),
-                        ],
-                      ).animate().fadeIn(duration: 400.ms, delay: 150.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
-
-                      if (isDesktop) {
-                        return Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 1080),
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(flex: 5, child: uploadSection),
-                                  const SizedBox(width: 28),
-                                  Expanded(flex: 4, child: recentDocsSection),
-                                ],
-                              ),
-                            ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      }
-
+                      ],
+                    ).animate().fadeIn(duration: 400.ms, delay: 150.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
+    
+                    if (isDesktop) {
                       return Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 680),
+                          constraints: const BoxConstraints(maxWidth: 1080),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
+                            padding: const EdgeInsets.all(24),
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                uploadSection,
-                                const SizedBox(height: 28),
-                                recentDocsSection,
+                                Expanded(flex: 5, child: uploadSection),
+                                const SizedBox(width: 28),
+                                Expanded(flex: 4, child: recentDocsSection),
                               ],
                             ),
                           ),
                         ),
                       );
-                    },
-                  ),
+                    }
+    
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 680),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              uploadSection,
+                              const SizedBox(height: 28),
+                              recentDocsSection,
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -666,7 +647,7 @@ class _DocumentIngestionView extends HookWidget {
               ),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.commonDelete),
           ),
         ],
       ),

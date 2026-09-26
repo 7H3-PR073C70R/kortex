@@ -71,9 +71,8 @@ class LiveFocusRoomCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row: Category badge + Live indicator
+                // Top Row: Category badge + Soundtrack Chip + Live presence indicator
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -92,6 +91,43 @@ class LiveFocusRoomCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (room.ambientSoundTrack.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfaceTertiary.withAlpha(160)
+                              : colors.surfaceSecondary,
+                          borderRadius: AppRadius.radiusBadge,
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 40 : 25),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.music_note_rounded,
+                              size: 11,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              room.ambientSoundTrack,
+                              style: typography.caption.medium.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 10.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
                     Row(
                       children: [
                         Container(
@@ -100,6 +136,13 @@ class LiveFocusRoomCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: colors.recallEasy,
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.recallEasy.withAlpha(150),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
                         ).animate(onPlay: (controller) => controller.repeat())
                          .fadeIn(duration: 800.ms)

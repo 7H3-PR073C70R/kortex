@@ -221,12 +221,53 @@ class MockCommunityRepository implements CommunityRepository {
   }) async => const Right('authenticated_livekit_test_token');
 
   @override
+  Future<Either<Failure, Map<String, dynamic>>> nudgeStudyCircle(String circleId) async =>
+      const Right({'nudged_count': 1, 'nudge_cooldown_until': null});
+
+  @override
+  Future<Either<Failure, StudyCircleEntity>> leaveStudyCircle(String circleId) async =>
+      const Left(ServerFailure(message: 'Unimplemented'));
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
+    required int minutes, String? circleId,
+  }) async => const Right({'success': true});
+
+  @override
+  Future<Either<Failure, Set<String>>> getFollowedTopics() async =>
+      const Right({});
+
+  @override
+  Future<Either<Failure, Set<String>>> toggleFollowTopic(String topic) async =>
+      const Right({});
+
+  @override
   Future<Either<Failure, Set<String>>> getBookmarkedForumPostIds() async =>
       const Right({});
 
   @override
   Future<Either<Failure, bool>> toggleBookmarkForumPost(String postId) async =>
       const Right(true);
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> claimWeeklyXp({
+    required int xpAmount,
+  }) async => const Right({});
+
+  @override
+  Future<Either<Failure, List<String>>> getBookmarkedSharedDeckIds() async =>
+      const Right([]);
+
+  @override
+  Future<Either<Failure, bool>> rateSharedDeck({
+    required String sharedDeckId,
+    required double rating,
+  }) async => const Right(true);
+
+  @override
+  Future<Either<Failure, bool>> toggleBookmarkSharedDeck(
+    String sharedDeckId,
+  ) async => const Right(true);
 
   Future<void> dispose() async {
     await _roomController.close();
@@ -258,6 +299,13 @@ class MockLiveKitAudioService implements LiveKitAudioService {
   @override
   Stream<LiveAudioConnectionState> get connectionStateStream =>
       _connController.stream;
+
+  @override
+  Future<bool> setCloudRecordingEnabled({required bool enabled}) async => true;
+
+  @override
+  Future<String> generateSessionTranscriptSummary({required String roomId}) async =>
+      'Summary of test room';
 
   @override
   Future<void> connect({
@@ -318,11 +366,13 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   final _syncController = StreamController<PomodoroSyncEvent>.broadcast();
   final _whiteboardStrokeController =
       StreamController<WhiteboardStroke>.broadcast();
+  final _whiteboardUndoController = StreamController<String>.broadcast();
   final _whiteboardClearController = StreamController<void>.broadcast();
   final _chatMessageController = StreamController<RoomChatMessage>.broadcast();
 
   final List<EphemeralParticipant> participants = [];
   final List<WhiteboardStroke> broadcastedStrokes = [];
+  final List<String> broadcastedUndos = [];
   final List<RoomChatMessage> broadcastedMessages = [];
   bool whiteboardCleared = false;
   bool handRaised = false;
@@ -431,6 +481,14 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  }) async {
+    broadcastedUndos.add(strokeId);
+  }
+
+  @override
   Future<void> broadcastWhiteboardClear({required String roomId}) async {
     whiteboardCleared = true;
   }
@@ -438,6 +496,10 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
   @override
   Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId) =>
       _whiteboardStrokeController.stream;
+
+  @override
+  Stream<String> watchWhiteboardUndo(String roomId) =>
+      _whiteboardUndoController.stream;
 
   @override
   Stream<void> watchWhiteboardClear(String roomId) =>
@@ -486,6 +548,7 @@ class MockEphemeralRoomRepository implements EphemeralRoomRepository {
     await _participantsController.close();
     await _syncController.close();
     await _whiteboardStrokeController.close();
+    await _whiteboardUndoController.close();
     await _whiteboardClearController.close();
     await _chatMessageController.close();
   }
@@ -823,6 +886,38 @@ void main() {
       expect(cubit.state.remainingSeconds, equals(1450));
 
       await cubit.close();
+    });
+  });
+
+  group('EphemeralPresenceClientImpl Presence Unit Test', () {
+    test('tracks localUserId correctly and formats participant stream', () async {
+      final client = EphemeralPresenceClientImpl();
+      const roomId = 'room-presence-test';
+
+      // Start watching participants
+      final participantStream = client.watchParticipants(roomId);
+      final events = <List<EphemeralParticipant>>[];
+      final sub = participantStream.listen(events.add);
+
+      // Local user joins
+      await client.joinRoomPresence(
+        roomId: roomId,
+        userId: 'user_local_123',
+        displayName: 'Local Scholar',
+        avatarUrl: 'https://example.com/avatar.png',
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(events.isNotEmpty, isTrue);
+      final lastEvent = events.last;
+      expect(lastEvent.length, equals(1));
+      expect(lastEvent.first.userId, equals('user_local_123'));
+      expect(lastEvent.first.displayName, equals('Local Scholar'));
+
+      // Clean leave
+      await client.leaveRoomPresence(roomId);
+      await sub.cancel();
     });
   });
 }

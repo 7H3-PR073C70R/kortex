@@ -474,6 +474,19 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     return result;
   }
 
+  final List<StudySessionState> _stateHistory = [];
+
+  /// Whether there is a card rating in history that can be undone.
+  bool get canUndo => _stateHistory.isNotEmpty;
+
+  /// Reverts the previous card rating and restores state.
+  void undoLastRating() {
+    if (_stateHistory.isEmpty) return;
+    AppFeedback.medium();
+    final previousState = _stateHistory.removeLast();
+    emit(previousState);
+  }
+
   void setFlipped({required bool isFlipped}) {
     if (state.status != StudySessionStatus.studying) return;
     AppFeedback.selection();
@@ -485,6 +498,11 @@ class StudySessionCubit extends Cubit<StudySessionState> {
 
     final currentCard = state.currentCard;
     if (currentCard == null) return;
+
+    _stateHistory.add(state);
+    if (_stateHistory.length > 10) {
+      _stateHistory.removeAt(0);
+    }
 
     // 1. Resolve input rating directly to FsrsRating
     final FsrsRating fsrsRating;

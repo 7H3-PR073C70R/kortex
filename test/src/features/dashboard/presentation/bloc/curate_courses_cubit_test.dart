@@ -213,63 +213,43 @@ void main() {
       },
     );
 
-    test('activeTrack strictly filters courses to target track and excludes other exam tracks', () {
+    test('allCourses unifies single subjects and deduplicates across tracks', () {
       final mixedCatalog = [
         const CuratedCourseEntity(
-          id: 'waec-mth',
+          id: 'course-mth',
           courseCode: 'MTH',
           title: 'Mathematics',
-          department: 'WAEC - Core',
+          department: 'Secondary School Board',
           totalMaterials: 20,
           hasActivePastPapers: true,
           iconName: 'calculate',
           colorHex: '#6366F1',
         ),
         const CuratedCourseEntity(
-          id: 'jamb-mth',
+          id: 'dup-mth',
           courseCode: 'MTH',
           title: 'Mathematics',
-          department: 'JAMB - Core',
+          department: 'Secondary School Board',
           totalMaterials: 20,
           hasActivePastPapers: true,
           iconName: 'calculate',
           colorHex: '#6366F1',
         ),
         const CuratedCourseEntity(
-          id: 'neco-mth',
-          courseCode: 'MTH',
-          title: 'Mathematics',
-          department: 'NECO - Core',
-          totalMaterials: 20,
-          hasActivePastPapers: true,
-          iconName: 'calculate',
-          colorHex: '#6366F1',
-        ),
-        const CuratedCourseEntity(
-          id: 'waec-bio',
+          id: 'course-bio',
           courseCode: 'BIO',
           title: 'Biology',
-          department: 'WAEC - Sciences',
+          department: 'Secondary School Board',
           totalMaterials: 15,
           hasActivePastPapers: true,
           iconName: 'eco',
           colorHex: '#10B981',
         ),
         const CuratedCourseEntity(
-          id: 'neco-bio',
-          courseCode: 'BIO',
-          title: 'Biology',
-          department: 'NECO - Sciences',
-          totalMaterials: 15,
-          hasActivePastPapers: true,
-          iconName: 'eco',
-          colorHex: '#10B981',
-        ),
-        const CuratedCourseEntity(
-          id: 'jamb-eng',
+          id: 'course-eng',
           courseCode: 'ENG',
           title: 'English Language',
-          department: 'JAMB - Core',
+          department: 'Secondary School Board',
           totalMaterials: 25,
           hasActivePastPapers: true,
           iconName: 'auto_stories',
@@ -277,40 +257,17 @@ void main() {
         ),
       ];
 
-      final waecState = CurateCoursesState(
-        status: CurateCoursesStatus.loaded,
-        catalogCourses: mixedCatalog,
-      );
-
-      final waecCourses = waecState.filteredCourses;
-      expect(waecCourses.length, equals(2));
-      expect(waecCourses.every((c) => c.department.startsWith('WAEC')), isTrue);
-      expect(waecCourses.any((c) => c.department.startsWith('JAMB')), isFalse);
-      expect(waecCourses.any((c) => c.department.startsWith('NECO')), isFalse);
-
-      final jambState = CurateCoursesState(
+      final state = CurateCoursesState(
         status: CurateCoursesStatus.loaded,
         catalogCourses: mixedCatalog,
         activeTrack: 'JAMB',
       );
 
-      final jambCourses = jambState.filteredCourses;
-      expect(jambCourses.length, equals(2));
-      expect(jambCourses.every((c) => c.department.startsWith('JAMB')), isTrue);
-      expect(jambCourses.any((c) => c.department.startsWith('WAEC')), isFalse);
-      expect(jambCourses.any((c) => c.department.startsWith('NECO')), isFalse);
-
-      final necoState = CurateCoursesState(
-        status: CurateCoursesStatus.loaded,
-        catalogCourses: mixedCatalog,
-        activeTrack: 'NECO',
-      );
-
-      final necoCourses = necoState.filteredCourses;
-      expect(necoCourses.length, equals(2));
-      expect(necoCourses.every((c) => c.department.startsWith('NECO')), isTrue);
-      expect(necoCourses.any((c) => c.department.startsWith('WAEC')), isFalse);
-      expect(necoCourses.any((c) => c.department.startsWith('JAMB')), isFalse);
+      final unifiedCourses = state.filteredCourses;
+      expect(unifiedCourses.length, equals(3));
+      final codes = unifiedCourses.map((c) => c.courseCode).toList();
+      expect(codes, containsAll(['MTH', 'BIO', 'ENG']));
+      expect(codes.where((c) => c == 'MTH').length, equals(1));
     });
 
     test('deleteCourse only removes the target course without wiping all courses', () async {

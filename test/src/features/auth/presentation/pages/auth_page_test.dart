@@ -210,6 +210,7 @@ void main() {
         final toLoginFinder =
             find.byKey(const ValueKey<String>('auth_to_login_button'));
         expect(toLoginFinder, findsOneWidget);
+        await tester.ensureVisible(toLoginFinder);
         await tester.tap(toLoginFinder);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 700));
@@ -236,16 +237,16 @@ void main() {
         expect(googleFinder, findsOneWidget);
 
         final googleSize = tester.getSize(googleFinder);
-        expect(googleSize.width, 48.0);
-        expect(googleSize.height, 48.0);
+        expect(googleSize.width, 56.0);
+        expect(googleSize.height, 56.0);
 
         final appleFinder =
             find.byKey(const ValueKey<String>('auth_apple_button'));
         expect(appleFinder, findsOneWidget);
 
         final appleSize = tester.getSize(appleFinder);
-        expect(appleSize.width, 48.0);
-        expect(appleSize.height, 48.0);
+        expect(appleSize.width, 56.0);
+        expect(appleSize.height, 56.0);
       },
     );
   });

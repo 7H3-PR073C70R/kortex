@@ -43,6 +43,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_histo
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/voice_dialogue_modal.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 import 'package:kortex/src/shared/widgets/syllabot_avatar.dart';
@@ -461,53 +462,48 @@ class _SyllabotChatView extends HookWidget {
           backgroundColor: colors.backgroundPrimary,
           elevation: 0,
           scrolledUnderElevation: 0,
-          leading: PlatformHoverBuilder(
-            builder: (context, isHovered, child) {
-              return AnimatedContainer(
-                duration: AppMotion.snappy,
-                margin: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: isHovered
-                      ? colors.surfaceSecondary
-                      : context.colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.badge),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    onCollapse != null
-                        ? Icons.keyboard_arrow_down_rounded
-                        : Icons.arrow_back_ios_new_rounded,
-                    color: colors.textPrimary,
-                    size: onCollapse != null ? 28 : 20,
-                  ),
-                  tooltip: onCollapse != null
-                      ? l10n.minimizeChatTooltip
-                      : l10n.backButton,
-                  onPressed: () {
-                    if (onCollapse != null) {
-                      onCollapse!();
-                    } else {
-                      unawaited(context.router.maybePop());
-                    }
+          leading: onCollapse != null
+              ? PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      margin: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.surfaceSecondary
+                            : context.colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 28,
+                        ),
+                        tooltip: l10n.minimizeChatTooltip,
+                        onPressed: onCollapse,
+                      ),
+                    );
                   },
-                ),
-              );
-            },
-          ),
+                )
+              : const AppBackButton(),
           titleSpacing: 0,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SyllabotAvatar(size: 32),
-              const SizedBox(width: 10),
-              Text(
-                l10n.syllabotTitle,
-                style: typography.title3.bold.copyWith(
-                  color: colors.textPrimary,
-                  fontSize: 17,
+          title: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SyllabotAvatar(size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.syllabotTitle,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             // 1. Interactive Voice Dialogue Mode Action
@@ -589,7 +585,7 @@ class _SyllabotChatView extends HookWidget {
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: IconButton(
-                        tooltip: 'Share Insight to Study Circle',
+                        tooltip: l10n.tooltipShareInsight,
                         icon: Icon(
                           Icons.share_outlined,
                           color: colors.syllabotAccent,
@@ -657,7 +653,7 @@ class _SyllabotChatView extends HookWidget {
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
                       child: IconButton(
-                        tooltip: 'Chat History',
+                        tooltip: l10n.tooltipChatHistory,
                         icon: Icon(
                           Icons.history_rounded,
                           color: colors.textPrimary,

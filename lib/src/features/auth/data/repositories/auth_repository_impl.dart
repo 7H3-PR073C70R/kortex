@@ -208,4 +208,30 @@ class AuthRepositoryImpl implements AuthRepository {
       _authStateController.add(AuthSessionStatus.unauthenticated);
     }).makeRequest();
   }
+
+  @override
+  Future<Either<Failure, UserEntity>> refreshSession() async {
+    final refreshToken = _userStorageService.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return const Left(CacheFailure(message: 'No refresh token available'));
+    }
+    return _remoteDataSource
+        .refreshSession(refreshToken)
+        .then((model) async {
+          final entity = model.toEntity();
+          if (entity.token != null) {
+            if (entity.refreshToken != null) {
+              await _userStorageService.saveAuthTokens(
+                accessToken: entity.token!,
+                refreshToken: entity.refreshToken!,
+              );
+            } else {
+              await _userStorageService.saveToken(entity.token!);
+            }
+          }
+          _authStateController.add(AuthSessionStatus.authenticatedComplete);
+          return entity;
+        })
+        .makeRequest();
+  }
 }

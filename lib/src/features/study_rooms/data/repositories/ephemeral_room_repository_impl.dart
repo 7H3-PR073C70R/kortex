@@ -131,6 +131,17 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   }
 
   @override
+  Future<void> broadcastWhiteboardUndo({
+    required String roomId,
+    required String strokeId,
+  }) async {
+    await _presenceClient.broadcastWhiteboardUndo(
+      roomId: roomId,
+      strokeId: strokeId,
+    );
+  }
+
+  @override
   Future<void> broadcastWhiteboardClear({required String roomId}) async {
     await _presenceClient.broadcastWhiteboardClear(roomId: roomId);
   }
@@ -159,6 +170,11 @@ class EphemeralRoomRepositoryImpl implements EphemeralRoomRepository {
   @override
   Stream<WhiteboardStroke> watchWhiteboardStrokes(String roomId) {
     return _presenceClient.watchWhiteboardStrokes(roomId);
+  }
+
+  @override
+  Stream<String> watchWhiteboardUndo(String roomId) {
+    return _presenceClient.watchWhiteboardUndo(roomId);
   }
 
   @override

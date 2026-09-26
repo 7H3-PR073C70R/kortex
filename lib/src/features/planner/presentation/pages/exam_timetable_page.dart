@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -25,6 +26,7 @@ import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -103,6 +105,41 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
     } on Object catch (_) {}
   }
 
+  void _exportIcalTimetable(BuildContext context, List<ExamEventEntity> exams) {
+    AppFeedback.light();
+    final buffer = StringBuffer()
+      ..writeln('BEGIN:VCALENDAR')
+      ..writeln('VERSION:2.0')
+      ..writeln('PRODID:-//Kortexify//Exam Timetable//EN');
+
+    for (final exam in exams) {
+      final dt = exam.targetDate.toUtc();
+      final dtStr = DateFormat("yyyyMMdd'T'HHmmss'Z'").format(dt);
+      final weight = (exam.effectiveWeightPercent > 1.0
+              ? exam.effectiveWeightPercent
+              : exam.effectiveWeightPercent * 100)
+          .toInt();
+      buffer
+        ..writeln('BEGIN:VEVENT')
+        ..writeln('SUMMARY:${exam.examName} (${exam.subjectTrack})')
+        ..writeln(
+          'DESCRIPTION:Assessment (${exam.assessmentType.displayName}) - Weight: $weight%',
+        )
+        ..writeln('DTSTART:$dtStr')
+        ..writeln('DTEND:$dtStr')
+        ..writeln('STATUS:CONFIRMED')
+        ..writeln('END:VEVENT');
+    }
+    buffer.writeln('END:VCALENDAR');
+
+    unawaited(Clipboard.setData(ClipboardData(text: buffer.toString())));
+    context.showSnackBar(
+      message:
+          'iCal timetable (.ics) copied to clipboard! Ready for Google Calendar.',
+      type: SnackBarType.success,
+    );
+  }
+
   Future<void> _confirmDelete(
     BuildContext context,
     ExamEventEntity exam,
@@ -141,7 +178,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
               ),
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete Assessment'),
+            child: Text(context.l10n.plannerDeleteAssessment),
           ),
         ],
       ),
@@ -252,7 +289,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   );
                 },
                 icon: const Icon(Icons.add_circle_outline_rounded),
-                label: const Text('Create Study Deck'),
+                label: Text(context.l10n.plannerCreateStudyDeck),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
@@ -269,7 +306,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                   );
                 },
                 icon: const Icon(Icons.school_outlined),
-                label: const Text('Start Diagnostic Practice Mock'),
+                label: Text(context.l10n.plannerStartDiagnosticMock),
               ),
             ],
           ),
@@ -605,7 +642,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                       );
                     },
                     icon: const Icon(Icons.add_rounded, size: 18),
-                    label: const Text('Create New Deck'),
+                    label: Text(context.l10n.plannerCreateNewDeck),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -640,13 +677,7 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             appBar: AppBar(
               backgroundColor: colors.backgroundPrimary,
               elevation: 0,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: colors.textPrimary,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+              leading: const AppBackButton(),
               title: Text(
                 'Exam Timetable',
                 style: typography.headline.bold.copyWith(
@@ -654,6 +685,17 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                 ),
               ),
               actions: [
+                IconButton(
+                  icon: Icon(
+                    Icons.calendar_month_outlined,
+                    color: colors.primary,
+                  ),
+                  tooltip: 'Export iCal Timetable (.ics)',
+                  onPressed: () {
+                    final state = context.read<CramPlannerCubit>().state;
+                    _exportIcalTimetable(context, state.activeExams);
+                  },
+                ),
                 IconButton(
                   icon: Icon(
                     Icons.add_circle_outline_rounded,

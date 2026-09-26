@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -54,6 +55,7 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
   late final ScrollController _scrollController;
   String _searchQuery = '';
   String? _selectedTrackId;
+  String _selectedCategory = 'ALL';
 
   @override
   void initState() {
@@ -61,6 +63,15 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
     _selectedTrackId = widget.currentTrackId;
     _searchController = TextEditingController();
     _scrollController = ScrollController();
+
+    final cur = _selectedTrackId?.trim().toLowerCase() ?? '';
+    if (cur.contains('jamb') || cur.contains('utme')) {
+      _selectedCategory = 'JAMB';
+    } else if (cur.contains('waec') || cur.contains('neco') || cur.contains('ssce')) {
+      _selectedCategory = 'SSCE';
+    } else if (cur.contains('bsc') || cur.contains('msc') || cur.contains('phd') || cur.contains('stem') || cur.contains('b.sc')) {
+      _selectedCategory = 'DEGREE';
+    }
   }
 
   @override
@@ -68,6 +79,23 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  bool _isTrackSelected(CourseTrackEntity track) {
+    if (_selectedTrackId == null || _selectedTrackId!.trim().isEmpty) {
+      return false;
+    }
+    final cur = _selectedTrackId!.trim().toLowerCase();
+    final id = track.id.trim().toLowerCase();
+    final name = track.name.trim().toLowerCase();
+
+    return cur == id ||
+        cur == name ||
+        name.startsWith(cur) ||
+        cur.startsWith(id) ||
+        (cur.contains('jamb') && (id == 'jamb' || name.contains('jamb'))) ||
+        (cur.contains('waec') && (id == 'waec' || name.contains('waec'))) ||
+        (cur.contains('neco') && (id == 'neco' || name.contains('neco')));
   }
 
   IconData _resolveIcon(String iconName) {
@@ -113,14 +141,9 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Academic track switched to ${track.name}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          duration: const Duration(seconds: 2),
-        ),
+      context.showSnackBar(
+        message: 'Academic track switched to ${track.name}',
+        type: SnackBarType.success,
       );
       Navigator.of(context).pop();
     }
@@ -133,14 +156,42 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
     final isDark = context.isDarkMode;
 
     const allTracks = CourseTrackEntity.defaultTracks;
-    final filteredTracks = _searchQuery.isEmpty
-        ? allTracks
-        : allTracks.where((t) {
-            final q = _searchQuery.toLowerCase();
-            return t.name.toLowerCase().contains(q) ||
-                t.description.toLowerCase().contains(q) ||
-                t.id.toLowerCase().contains(q);
-          }).toList();
+    final filteredTracks = allTracks.where((t) {
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        return t.name.toLowerCase().contains(q) ||
+            t.description.toLowerCase().contains(q) ||
+            t.id.toLowerCase().contains(q);
+      }
+
+      switch (_selectedCategory) {
+        case 'JAMB':
+          return t.id.toUpperCase() == 'JAMB' ||
+              t.name.toUpperCase().contains('JAMB') ||
+              t.name.toUpperCase().contains('UTME');
+        case 'SSCE':
+          return t.id.toUpperCase() == 'WAEC' ||
+              t.id.toUpperCase() == 'NECO' ||
+              t.name.toUpperCase().contains('SSCE') ||
+              t.name.toUpperCase().contains('WASSCE');
+        case 'DEGREE':
+          return t.id.toUpperCase() == 'BSC' ||
+              t.id.toUpperCase() == 'MSC' ||
+              t.id.toUpperCase() == 'PHD' ||
+              t.id.toUpperCase().contains('HND') ||
+              t.id.toUpperCase().contains('OND');
+        case 'ALL':
+        default:
+          return true;
+      }
+    }).toList()
+      ..sort((a, b) {
+        final aSel = _isTrackSelected(a);
+        final bSel = _isTrackSelected(b);
+        if (aSel && !bSel) return -1;
+        if (!aSel && bSel) return 1;
+        return 0;
+      });
 
     final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
 
@@ -279,6 +330,74 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
               ),
             ),
 
+            // Category Filter Chips
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip(
+                      context,
+                      label: 'JAMB / UTME',
+                      isSelected: _selectedCategory == 'JAMB' && _searchQuery.isEmpty,
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _selectedCategory = 'JAMB';
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      context,
+                      label: 'WAEC / SSCE',
+                      isSelected: _selectedCategory == 'SSCE' && _searchQuery.isEmpty,
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _selectedCategory = 'SSCE';
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      context,
+                      label: 'University Degree / STEM',
+                      isSelected: _selectedCategory == 'DEGREE' && _searchQuery.isEmpty,
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _selectedCategory = 'DEGREE';
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      context,
+                      label: 'All Tracks',
+                      isSelected: _selectedCategory == 'ALL' || _searchQuery.isNotEmpty,
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _selectedCategory = 'ALL';
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             const Divider(height: 1),
 
             // Track list with Scrollbar
@@ -317,7 +436,7 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
                             const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final track = filteredTracks[index];
-                          final isSelected = track.id == _selectedTrackId;
+                          final isSelected = _isTrackSelected(track);
 
                           return PlatformHoverBuilder(
                             builder: (context, isHovered, child) {
@@ -460,6 +579,47 @@ class _TrackSelectionModalSheetState extends State<TrackSelectionModalSheet> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(
+    BuildContext context, {
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.badge),
+      child: AnimatedContainer(
+        duration: AppMotion.snappy,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.primary.withAlpha(isDark ? 60 : 35)
+              : (isDark
+                    ? colors.surfaceSecondary.withAlpha(140)
+                    : colors.surfacePrimary.withAlpha(200)),
+          borderRadius: BorderRadius.circular(AppRadius.badge),
+          border: Border.all(
+            color: isSelected
+                ? colors.primary
+                : colors.surfaceBorder.withAlpha(isDark ? 60 : 40),
+            width: isSelected ? 1.4 : 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: typography.caption.bold.copyWith(
+            color: isSelected ? colors.primary : colors.textSecondary,
+            fontSize: 12,
+          ),
         ),
       ),
     );

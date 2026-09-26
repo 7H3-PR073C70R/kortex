@@ -1,15 +1,19 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/app_spacing.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -30,8 +34,13 @@ import 'package:kortex/src/features/profile/domain/use_cases/profile_security_us
 import 'package:kortex/src/features/profile/domain/use_cases/send_password_reset_email_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/profile/domain/use_cases/update_password_use_case.dart';
+import 'package:kortex/src/features/profile/presentation/widgets/active_sessions_list_widget.dart';
+import 'package:kortex/src/l10n/l10n.dart';
+
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -127,14 +136,7 @@ class SecuritySettingsPage extends HookWidget {
           appBar: AppBar(
             backgroundColor: colors.backgroundPrimary,
             elevation: 0,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: colors.textPrimary,
-                size: 18,
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            leading: const AppBackButton(),
             title: Text(
               'Account & Security',
               style: typography.title3.bold.copyWith(
@@ -149,11 +151,16 @@ class SecuritySettingsPage extends HookWidget {
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: Column(
                   children: [
-                    // Top Segmented Pill Tab Bar
-                    _buildSegmentBar(
-                      selectedTab: selectedTabIndex,
-                      colors: colors,
-                      typography: typography,
+                    // Top Segmented Liquid Glass Pill Tab Bar
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      child: AppLiquidGlassTabBar(
+                        tabs: const ['Security & Access', 'Account & Data'],
+                        selectedIndex: selectedTabIndex.value,
+                        onTabSelected: (index) {
+                          selectedTabIndex.value = index;
+                        },
+                      ),
                     ),
 
                     // Tab Content
@@ -206,114 +213,6 @@ class SecuritySettingsPage extends HookWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSegmentBar({
-    required ValueNotifier<int> selectedTab,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.surfaceSecondary,
-        borderRadius: AppRadius.radiusPanel,
-        border: Border.all(
-          color: colors.surfaceBorder.withAlpha(60),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildSegmentButton(
-              title: 'Security & Access',
-              icon: Icons.shield_outlined,
-              isSelected: selectedTab.value == 0,
-              onTap: () {
-                AppFeedback.selection();
-                selectedTab.value = 0;
-              },
-              colors: colors,
-              typography: typography,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _buildSegmentButton(
-              title: 'Account & Data',
-              icon: Icons.person_outline_rounded,
-              isSelected: selectedTab.value == 1,
-              onTap: () {
-                AppFeedback.selection();
-                selectedTab.value = 1;
-              },
-              colors: colors,
-              typography: typography,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentButton({
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required AppThemeColorsExtension colors,
-    required TypographyThemeExtension typography,
-  }) {
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, child) {
-        return AnimatedScale(
-          scale: isHovered && !isSelected ? 1.02 : 1.0,
-          duration: AppMotion.snappy,
-          curve: Curves.easeOutCubic,
-          child: child,
-        );
-      },
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: AppMotion.snappy,
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: isSelected ? colors.primary : colors.transparent,
-            borderRadius: AppRadius.radiusCard,
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: colors.black.withAlpha(25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: isSelected ? colors.white : colors.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: typography.caption.bold.copyWith(
-                  color: isSelected ? colors.white : colors.textSecondary,
-                  fontSize: 12.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -724,26 +623,26 @@ class SecuritySettingsPage extends HookWidget {
                               );
                             }
                           },
-                          items: const [
+                          items: [
                             DropdownMenuItem(
                               value: 0,
-                              child: Text('Immediately'),
+                              child: Text(context.l10n.securityTimeoutImmediately),
                             ),
                             DropdownMenuItem(
                               value: 15,
-                              child: Text('15 seconds'),
+                              child: Text(context.l10n.securityTimeout15s),
                             ),
                             DropdownMenuItem(
                               value: 30,
-                              child: Text('30 seconds (Default)'),
+                              child: Text(context.l10n.securityTimeout30sDefault),
                             ),
                             DropdownMenuItem(
                               value: 60,
-                              child: Text('1 minute'),
+                              child: Text(context.l10n.securityTimeout1m),
                             ),
                             DropdownMenuItem(
                               value: 300,
-                              child: Text('5 minutes'),
+                              child: Text(context.l10n.securityTimeout5m),
                             ),
                           ],
                         ),
@@ -813,116 +712,55 @@ class SecuritySettingsPage extends HookWidget {
             subtitle: 'Review authorized devices connected to your account',
             colors: colors,
             typography: typography,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.surfacePrimary,
-                    borderRadius: AppRadius.radiusCard,
-                    border: Border.all(
-                      color: colors.surfaceBorder.withAlpha(70),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: colors.success.withAlpha(25),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.phone_iphone_rounded,
-                          color: colors.success,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Current Mobile Device',
-                              style: typography.body.bold.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 13,
-                              ),
-                            ),
-                            Text(
-                              'Active Now • Authorized Session',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.success,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return AnimatedScale(
-                      scale: isHovered ? 1.02 : 1.0,
-                      duration: AppMotion.snappy,
-                      curve: Curves.easeOutCubic,
-                      child: child,
-                    );
-                  },
-                  child: ShrinkableButton(
-                    onTap: () async {
-                      AppFeedback.medium();
-                      final result =
-                          await locator<SignOutOtherSessionsUseCase>()(
-                            const NoParams(),
-                          );
-                      if (result.isLeft) {
-                        final failure = (result as Left<Failure, void>).value;
-                        if (context.mounted) {
-                          context.showSnackBar(
-                            message: failure.message ?? 'Sign out failed',
-                            type: SnackBarType.error,
-                          );
-                        }
-                      } else {
-                        if (context.mounted) {
-                          context.showSnackBar(
-                            message: 'Signed out of all other active sessions!',
-                            type: SnackBarType.success,
-                          );
-                        }
-                      }
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: colors.error.withAlpha(20),
-                        borderRadius: AppRadius.radiusCard,
-                        border: Border.all(
-                          color: colors.error.withAlpha(80),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Sign Out All Other Devices',
-                          style: typography.caption.bold.copyWith(
-                            color: colors.error,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+            child: ActiveSessionsListWidget(
+              sessions: [
+                DeviceSession(
+                  id: 'current_session',
+                  deviceName: Theme.of(context).platform == TargetPlatform.macOS
+                      ? 'MacBook Pro / Desktop Workstation'
+                      : Theme.of(context).platform == TargetPlatform.iOS
+                      ? 'iPhone Scholar Workstation'
+                      : Theme.of(context).platform == TargetPlatform.android
+                      ? 'Android Scholar Device'
+                      : 'Kortexify Web Client',
+                  osType: Theme.of(context).platform == TargetPlatform.macOS
+                      ? 'macos'
+                      : Theme.of(context).platform == TargetPlatform.iOS
+                      ? 'ios'
+                      : Theme.of(context).platform == TargetPlatform.android
+                      ? 'android'
+                      : 'web',
+                  ipAddress: '127.0.0.1 (Encrypted TLS)',
+                  location: 'Current Device • Primary Session',
+                  lastActive: DateTime.now(),
+                  isCurrentDevice: true,
                 ),
               ],
+              onRevokeAllOthers: () async {
+                AppFeedback.medium();
+                final result = await locator<SignOutOtherSessionsUseCase>()(
+                  const NoParams(),
+                );
+                if (result.isLeft) {
+                  final failure = (result as Left<Failure, void>).value;
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message: failure.message ?? 'Sign out failed',
+                      type: SnackBarType.error,
+                    );
+                  }
+                } else {
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message: 'Signed out of all other active sessions!',
+                      type: SnackBarType.success,
+                    );
+                  }
+                }
+              },
             ),
           ),
+
           const SizedBox(height: 20),
 
           // 4. Danger Zone: Delete Account
@@ -1063,6 +901,15 @@ class SecuritySettingsPage extends HookWidget {
                   colors: colors,
                   typography: typography,
                 ),
+                const Divider(height: 1),
+                _buildExportOption(
+                  icon: Icons.download_for_offline_outlined,
+                  title: 'Export Account Data (GDPR JSON Bundle)',
+                  subtitle: 'Download complete structured JSON archive of all study progress',
+                  onTap: () => _exportGdprDataBundle(context),
+                  colors: colors,
+                  typography: typography,
+                ),
               ],
             ),
           ),
@@ -1077,25 +924,28 @@ class SecuritySettingsPage extends HookWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Syllabot & Image Cache',
-                      style: typography.body.medium.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 13.5,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Syllabot & Image Cache',
+                        style: typography.body.medium.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 13.5,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Temporary audio, token & image buffers',
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textSecondary,
-                        fontSize: 11,
+                      Text(
+                        'Temporary audio, token & image buffers',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 11,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                AppSpacing.horizontalSpaceSmall,
                 PlatformHoverBuilder(
                   builder: (context, isHovered, child) {
                     return AnimatedScale(
@@ -1166,10 +1016,9 @@ class SecuritySettingsPage extends HookWidget {
             children: [
               Text(
                 title.toUpperCase(),
-                style: typography.caption.bold.copyWith(
-                  color: colors.textSecondary.withAlpha(170),
-                  fontSize: 11,
-                  letterSpacing: 0.8,
+                style: typography.headline.bold.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 14,
                 ),
               ),
               if (subtitle.isNotEmpty) ...[
@@ -1177,8 +1026,8 @@ class SecuritySettingsPage extends HookWidget {
                 Text(
                   subtitle,
                   style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary.withAlpha(120),
-                    fontSize: 11,
+                    color: colors.textSecondary.withAlpha(200),
+                    fontSize: 12,
                   ),
                 ),
               ],
@@ -1442,6 +1291,86 @@ class SecuritySettingsPage extends HookWidget {
     );
   }
 
+  Future<void> _exportGdprDataBundle(BuildContext context) async {
+    AppFeedback.medium();
+    final userProfile = locator.isRegistered<AuthBloc>()
+        ? locator<AuthBloc>().state.userProfile
+        : null;
+    final user = locator.isRegistered<AuthBloc>()
+        ? locator<AuthBloc>().state.user
+        : null;
+
+    final analyticsSummary = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>().getAnalyticsSummary()
+        : null;
+    final heatMapData = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>().getHeatMapData()
+        : null;
+
+    var decks = <DeckEntity>[];
+    if (locator.isRegistered<GetUserDecksUseCase>()) {
+      final decksRes = await locator<GetUserDecksUseCase>()();
+      decksRes.fold((_) {}, (list) => decks = list);
+    }
+
+    final dataBundle = {
+      'export_metadata': {
+        'format': 'Kortex GDPR Data Export',
+        'version': '1.0',
+        'exported_at': DateTime.now().toIso8601String(),
+      },
+      'profile': {
+        'id': user?.id ?? userProfile?.id,
+        'email': user?.email ?? userProfile?.email,
+        'displayName': userProfile?.displayName ?? user?.displayName,
+        'targetTrack': userProfile?.targetTrack,
+        'dailyCardTarget': userProfile?.dailyCardTarget,
+        'streakDays': userProfile?.streakDays,
+        'level': userProfile?.level,
+        'isPro': userProfile?.isPro,
+      },
+      'study_analytics': analyticsSummary != null
+          ? {
+              'weeklyMinutesStudied': analyticsSummary.weeklyMinutesStudied,
+              'totalCardsMastered': analyticsSummary.totalCardsMastered,
+              'overallRetentionRate': analyticsSummary.overallRetentionRate,
+              'currentStreakDays': analyticsSummary.currentStreakDays,
+              'xpPoints': analyticsSummary.xpPoints,
+              'academicRank': analyticsSummary.academicRank,
+            }
+          : null,
+      'heat_map_activity': heatMapData
+          ?.map((h) => {
+                'dateIso': h.dateIso,
+                'cardsReviewed': h.cardsReviewed,
+                'minutesStudied': h.minutesStudied,
+                'intensityLevel': h.intensityLevel,
+              })
+          .toList(),
+      'decks_count': decks.length,
+      'decks': decks
+          .map((d) => {
+                'id': d.id,
+                'title': d.title,
+                'subject': d.subject,
+                'totalCards': d.totalCards,
+                'dueCards': d.dueCards,
+                'masteryRate': d.masteryRate,
+              })
+          .toList(),
+    };
+
+    final jsonString = const JsonEncoder.withIndent('  ').convert(dataBundle);
+    await Clipboard.setData(ClipboardData(text: jsonString));
+
+    if (context.mounted) {
+      context.showSnackBar(
+        message: 'GDPR Data Bundle copied to Clipboard (${jsonString.length} bytes)',
+        type: SnackBarType.success,
+      );
+    }
+  }
+
   Future<void> _exportDeckFlow(BuildContext context) async {
     AppFeedback.light();
     if (!locator.isRegistered<GetUserDecksUseCase>()) {
@@ -1652,7 +1581,9 @@ class SecuritySettingsPage extends HookWidget {
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text(
                 'Cancel',
-                style: context.typography.body.regular.copyWith(color: colors.textSecondary),
+                style: context.typography.body.regular.copyWith(
+                  color: colors.textSecondary,
+                ),
               ),
             ),
             TextButton(

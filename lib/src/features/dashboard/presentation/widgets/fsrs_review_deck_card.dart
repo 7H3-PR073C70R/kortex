@@ -316,6 +316,51 @@ class FsrsReviewDeckCard extends StatelessWidget {
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      InkWell(
+                                        onTap: () {
+                                          unawaited(HapticFeedback.lightImpact());
+                                          unawaited(
+                                            context.router.push(
+                                              StudySessionRoute(
+                                                deckId: 'quick5:${deck.id}',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colors.primary.withAlpha(25),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: colors.primary.withAlpha(60),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.bolt_rounded,
+                                                size: 11,
+                                                color: colors.primary,
+                                              ),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                'Quick 5',
+                                                style: typography.caption.bold.copyWith(
+                                                  color: colors.primary,
+                                                  fontSize: 10.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         l10n.dashboardReviewDeck,
                                         style: typography.caption.bold.copyWith(

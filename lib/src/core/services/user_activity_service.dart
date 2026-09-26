@@ -28,6 +28,9 @@ abstract class UserActivityService {
   int getWeeklyMinutesStudied();
   double getOverallRetentionRate();
   int getXpPoints();
+  int getLevelForXp(int xp);
+  int getXpForLevel(int level);
+  String getAvatarFrameForLevel(int level);
   int getBonusKarma();
   Future<void> addBonusKarma(int amount);
   String getAcademicRank();
@@ -354,6 +357,27 @@ class UserActivityServiceImpl implements UserActivityService {
     final streak = getCurrentStreak();
     final totalEarned = xp + (streak * 30) + getBonusKarma();
     return (totalEarned - getSpentXp()).clamp(0, 9999999);
+  }
+
+  @override
+  int getLevelForXp(int xp) {
+    if (xp <= 0) return 1;
+    final rawLevel = math.pow(xp / 100.0, 1.0 / 1.4).floor() + 1;
+    return math.max(1, rawLevel);
+  }
+
+  @override
+  int getXpForLevel(int level) {
+    if (level <= 1) return 0;
+    return (100 * math.pow(level, 1.4)).round();
+  }
+
+  @override
+  String getAvatarFrameForLevel(int level) {
+    if (level >= 15) return 'Diamond Scholar Frame';
+    if (level >= 10) return 'Gold Alchemist Frame';
+    if (level >= 5) return 'Emerald Novice Frame';
+    return 'Bronze Pioneer Frame';
   }
 
   @override

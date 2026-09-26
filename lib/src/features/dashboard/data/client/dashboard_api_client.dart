@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
+import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
 import 'package:kortex/src/features/dashboard/data/models/study_deck_model.dart';
 import 'package:retrofit/retrofit.dart';
@@ -38,4 +39,7 @@ abstract class DashboardApiClient {
 
   @POST(AppApiEndpoint.getUserCuratedCoursesRpc)
   Future<List<CuratedCourseModel>> getUserCuratedCourses();
+
+  @POST(AppApiEndpoint.dashboardAnalyticsSummaryRpc)
+  Future<AnalyticsSummaryModel> getDashboardAnalyticsSummary();
 }

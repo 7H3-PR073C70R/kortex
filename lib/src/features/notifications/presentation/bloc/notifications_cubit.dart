@@ -171,9 +171,17 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     try {
       final dio = _dio ??
           (locator.isRegistered<Dio>() ? locator<Dio>() : null);
+      final userStore = _userStorageService ??
+          (locator.isRegistered<UserStorageService>()
+              ? locator<UserStorageService>()
+              : null);
+      final userId = userStore?.getUserId();
       if (dio != null) {
+        final query = (userId != null && userId.isNotEmpty)
+            ? 'id=eq.$id&user_id=eq.$userId'
+            : 'id=eq.$id';
         await dio.patch<dynamic>(
-          '${AppApiEndpoint.baseUri}/rest/v1/notifications?id=eq.$id',
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.notifications}?$query',
           data: {'read': true},
         );
       }
@@ -201,7 +209,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             ? 'user_id=eq.$userId&read=eq.false'
             : 'read=eq.false';
         await dio.patch<dynamic>(
-          '${AppApiEndpoint.baseUri}/rest/v1/notifications?$query',
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.notifications}?$query',
           data: {'read': true},
         );
       }

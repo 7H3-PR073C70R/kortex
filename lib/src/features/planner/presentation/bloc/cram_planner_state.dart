@@ -33,13 +33,19 @@ class CramPlannerState extends Equatable {
   final String? errorMessage;
 
   List<ExamEventEntity> get upcomingUncompletedExams =>
-      activeExams.where((e) => !e.isCompleted && !e.isPast).toList();
+      activeExams.where((e) => !e.isCompleted && !e.isPast && !e.isCancelled).toList();
+
+  List<ExamEventEntity> get postponedExams =>
+      activeExams.where((e) => e.isPostponed && !e.isCancelled && !e.isCompleted).toList();
+
+  List<ExamEventEntity> get cancelledExams =>
+      activeExams.where((e) => e.isCancelled).toList();
 
   List<ExamEventEntity> get completedExams =>
       activeExams.where((e) => e.isCompleted).toList();
 
   List<ExamEventEntity> get concludedUnloggedExams =>
-      activeExams.where((e) => e.isPast && !e.isCompleted).toList();
+      activeExams.where((e) => e.isPast && !e.isCompleted && !e.isCancelled).toList();
 
   CramPlannerState copyWith({
     CramPlannerStatus? status,

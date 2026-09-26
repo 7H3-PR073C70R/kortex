@@ -275,6 +275,41 @@ class JoinStudyCircleEvent extends CommunityEvent {
   List<Object?> get props => [circleId];
 }
 
+class LeaveStudyCircleEvent extends CommunityEvent {
+  const LeaveStudyCircleEvent(this.circleId);
+
+  final String circleId;
+
+  @override
+  List<Object?> get props => [circleId];
+}
+
+class NudgeStudyCircleEvent extends CommunityEvent {
+  const NudgeStudyCircleEvent({
+    required this.circleId,
+    required this.circleName,
+  });
+
+  final String circleId;
+  final String circleName;
+
+  @override
+  List<Object?> get props => [circleId, circleName];
+}
+
+class RecordPodFocusMinutesEvent extends CommunityEvent {
+  const RecordPodFocusMinutesEvent({
+    required this.circleId,
+    required this.minutes,
+  });
+
+  final String circleId;
+  final int minutes;
+
+  @override
+  List<Object?> get props => [circleId, minutes];
+}
+
 class CloneDeckEvent extends CommunityEvent {
   const CloneDeckEvent(this.sharedDeckId);
 
@@ -342,4 +377,13 @@ class ToggleBookmarkForumPostEvent extends CommunityEvent {
 
   @override
   List<Object?> get props => [postId];
+}
+
+class ToggleFollowTopicEvent extends CommunityEvent {
+  const ToggleFollowTopicEvent(this.topic);
+
+  final String topic;
+
+  @override
+  List<Object?> get props => [topic];
 }

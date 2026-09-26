@@ -37,6 +37,7 @@ class CurateCoursesState extends Equatable {
   bool get isSubmitting => status == CurateCoursesStatus.submitting;
 
   /// Combined courses (catalog + user custom additions), strictly filtered to the user's active academic track.
+  /// Combined courses (catalog + user custom additions), unified as single subjects regardless of track.
   List<CuratedCourseEntity> get allCourses {
     final ids = <String>{};
     final combined = <CuratedCourseEntity>[];
@@ -47,88 +48,13 @@ class CurateCoursesState extends Equatable {
       if (ids.add(c.id)) combined.add(c);
     }
 
-    if (activeTrack.isEmpty || activeTrack == 'All') {
-      return combined;
-    }
-
-    final trackUpper = activeTrack.toUpperCase();
-    final isWaec = trackUpper.contains('WAEC') || trackUpper.contains('WASSCE');
-    final isJamb = trackUpper.contains('JAMB') || trackUpper.contains('UTME');
-    final isNeco = trackUpper.contains('NECO') || trackUpper.contains('SSCE');
-    final isSat = trackUpper.contains('SAT');
-
-    final trackFiltered = combined.where((c) {
-      // Custom courses added by user are always shown
-      if (c.id.startsWith('custom_')) {
-        return true;
-      }
-
-      final deptUpper = c.department.toUpperCase();
-      final idLower = c.id.toLowerCase();
-
-      if (isWaec) {
-        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) {
-          return false;
-        }
-        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) {
-          return false;
-        }
-        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) {
-          return false;
-        }
-        return deptUpper.contains('WAEC') || idLower.startsWith('waec-');
-      }
-
-      if (isJamb) {
-        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) {
-          return false;
-        }
-        if (deptUpper.contains('NECO') || idLower.startsWith('neco-')) {
-          return false;
-        }
-        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) {
-          return false;
-        }
-        return deptUpper.contains('JAMB') || idLower.startsWith('jamb-');
-      }
-
-      if (isNeco) {
-        if (deptUpper.contains('WAEC') || idLower.startsWith('waec-')) {
-          return false;
-        }
-        if (deptUpper.contains('JAMB') || idLower.startsWith('jamb-')) {
-          return false;
-        }
-        if (deptUpper.contains('SAT') || idLower.startsWith('sat-')) {
-          return false;
-        }
-        return deptUpper.contains('NECO') || idLower.startsWith('neco-');
-      }
-
-      if (isSat) {
-        return deptUpper.contains('SAT') || idLower.startsWith('sat-');
-      }
-
-      // Higher Education / Polytechnic / Vocational / Post-Secondary tracks
-      // (BSC, MSC, PhD, OND I/II, HND I/II, Vocational, Professional, etc.)
-      final isHighSchoolExam =
-          deptUpper.contains('WAEC') ||
-          deptUpper.contains('JAMB') ||
-          deptUpper.contains('NECO') ||
-          deptUpper.contains('SAT') ||
-          idLower.startsWith('waec-') ||
-          idLower.startsWith('jamb-') ||
-          idLower.startsWith('neco-') ||
-          idLower.startsWith('sat-');
-      return !isHighSchoolExam;
-    }).toList();
-
-    // Deduplicate any duplicate course codes or identical subjects within the track
+    // Deduplicate any duplicate course codes or identical subjects
     final seenKeys = <String>{};
     final deduplicated = <CuratedCourseEntity>[];
-    for (final c in (trackFiltered.isNotEmpty ? trackFiltered : combined)) {
-      final key =
-          '${c.courseCode.trim().toUpperCase()}_${c.title.trim().toLowerCase()}';
+    for (final c in combined) {
+      final normCode = c.courseCode.replaceAll(RegExp('[^A-Z0-9]'), '').toUpperCase();
+      final normTitle = c.title.trim().toLowerCase();
+      final key = normCode.isNotEmpty ? normCode : normTitle;
       if (seenKeys.add(key)) {
         deduplicated.add(c);
       }

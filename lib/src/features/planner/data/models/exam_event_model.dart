@@ -21,6 +21,12 @@ class ExamEventModel extends ExamEventEntity {
     super.achievedScorePercent,
     super.completedAt,
     super.createdAt,
+    super.isPostponed = false,
+    super.originalTargetDate,
+    super.postponedReason,
+    super.isCancelled = false,
+    super.cancelledAt,
+    super.cancellationReason,
   });
 
   factory ExamEventModel.fromJson(Map<String, dynamic> json) {
@@ -57,6 +63,16 @@ class ExamEventModel extends ExamEventEntity {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
+      isPostponed: json['is_postponed'] as bool? ?? false,
+      originalTargetDate: json['original_target_date'] != null
+          ? DateTime.parse(json['original_target_date'] as String)
+          : null,
+      postponedReason: json['postponed_reason']?.toString(),
+      isCancelled: json['is_cancelled'] as bool? ?? false,
+      cancelledAt: json['cancelled_at'] != null
+          ? DateTime.parse(json['cancelled_at'] as String)
+          : null,
+      cancellationReason: json['cancellation_reason']?.toString(),
     );
   }
 
@@ -80,6 +96,12 @@ class ExamEventModel extends ExamEventEntity {
       achievedScorePercent: entity.achievedScorePercent,
       completedAt: entity.completedAt,
       createdAt: entity.createdAt,
+      isPostponed: entity.isPostponed,
+      originalTargetDate: entity.originalTargetDate,
+      postponedReason: entity.postponedReason,
+      isCancelled: entity.isCancelled,
+      cancelledAt: entity.cancelledAt,
+      cancellationReason: entity.cancellationReason,
     );
   }
 
@@ -103,6 +125,12 @@ class ExamEventModel extends ExamEventEntity {
     double? achievedScorePercent,
     DateTime? completedAt,
     DateTime? createdAt,
+    bool? isPostponed,
+    DateTime? originalTargetDate,
+    String? postponedReason,
+    bool? isCancelled,
+    DateTime? cancelledAt,
+    String? cancellationReason,
   }) {
     return ExamEventModel(
       id: id ?? this.id,
@@ -123,6 +151,12 @@ class ExamEventModel extends ExamEventEntity {
       achievedScorePercent: achievedScorePercent ?? this.achievedScorePercent,
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
+      isPostponed: isPostponed ?? this.isPostponed,
+      originalTargetDate: originalTargetDate ?? this.originalTargetDate,
+      postponedReason: postponedReason ?? this.postponedReason,
+      isCancelled: isCancelled ?? this.isCancelled,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
     );
   }
 
@@ -147,6 +181,14 @@ class ExamEventModel extends ExamEventEntity {
         'achieved_score_percent': achievedScorePercent,
       if (completedAt != null) 'completed_at': completedAt?.toIso8601String(),
       'created_at': createdAt?.toIso8601String(),
+      'is_postponed': isPostponed,
+      if (originalTargetDate != null)
+        'original_target_date': originalTargetDate?.toIso8601String(),
+      if (postponedReason != null) 'postponed_reason': postponedReason,
+      'is_cancelled': isCancelled,
+      if (cancelledAt != null) 'cancelled_at': cancelledAt?.toIso8601String(),
+      if (cancellationReason != null)
+        'cancellation_reason': cancellationReason,
     };
   }
 }

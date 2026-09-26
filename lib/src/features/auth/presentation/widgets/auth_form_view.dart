@@ -50,8 +50,10 @@ class AuthFormView extends HookWidget {
     final nameController = useTextEditingController(
       text: draftState.displayName,
     );
-    final promoCodeController = useTextEditingController();
-    final showPromoField = useState<bool>(false);
+    final promoCodeController = useTextEditingController(
+      text: draftState.promoCode,
+    );
+    final showPromoField = useState<bool>(draftState.promoCode.isNotEmpty);
     final otpController = useTextEditingController();
     final errorMessageState = useState<String?>(null);
 
@@ -65,26 +67,45 @@ class AuthFormView extends HookWidget {
       if (nameController.text != draftState.displayName) {
         nameController.text = draftState.displayName;
       }
+      if (promoCodeController.text != draftState.promoCode) {
+        promoCodeController.text = draftState.promoCode;
+      }
+      if (draftState.promoCode.isNotEmpty) {
+        showPromoField.value = true;
+      }
       return null;
-    }, [draftState.email, draftState.password, draftState.displayName]);
+    }, [
+      draftState.email,
+      draftState.password,
+      draftState.displayName,
+      draftState.promoCode,
+    ]);
 
     useEffect(() {
       void listener() {
         draftCubit
           ..updateEmail(emailController.text)
           ..updatePassword(passwordController.text)
-          ..updateDisplayName(nameController.text);
+          ..updateDisplayName(nameController.text)
+          ..updatePromoCode(promoCodeController.text);
       }
 
       emailController.addListener(listener);
       passwordController.addListener(listener);
       nameController.addListener(listener);
+      promoCodeController.addListener(listener);
       return () {
         emailController.removeListener(listener);
         passwordController.removeListener(listener);
         nameController.removeListener(listener);
+        promoCodeController.removeListener(listener);
       };
-    }, [emailController, passwordController, nameController]);
+    }, [
+      emailController,
+      passwordController,
+      nameController,
+      promoCodeController,
+    ]);
 
     final animController = useAnimationController(
       duration: const Duration(milliseconds: 580),

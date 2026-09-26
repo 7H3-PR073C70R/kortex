@@ -17,8 +17,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/presentation/widgets/promo_code_modal_sheet.dart';
-import 'package:kortex/src/features/onboarding_calibration/presentation/widgets/aura_mesh_nebula.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -268,135 +268,154 @@ class _PaywallScreenState extends State<PaywallScreen> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    return AuraMeshNebula(
-      child: Scaffold(
-        backgroundColor: colors.transparent,
-        appBar: AppBar(
-          backgroundColor: colors.transparent,
-          elevation: 0,
-          leading: PlatformHoverBuilder(
-            builder: (context, isHovered, child) {
-              return IconButton(
-                icon: AnimatedContainer(
-                  duration: AppMotion.snappy,
-                  curve: AppMotion.easeOutCubic,
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
+    return Scaffold(
+      backgroundColor: colors.backgroundPrimary,
+      appBar: AppBar(
+        backgroundColor: colors.backgroundPrimary,
+
+        elevation: 0,
+        leading: PlatformHoverBuilder(
+          builder: (context, isHovered, child) {
+            return IconButton(
+              icon: AnimatedContainer(
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: isHovered
+                      ? (isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfacePrimary)
+                      : (isDark
+                            ? colors.surfaceSecondary.withAlpha(180)
+                            : colors.surfacePrimary.withAlpha(200)),
+                  shape: BoxShape.circle,
+                  border: Border.all(
                     color: isHovered
-                        ? (isDark
-                              ? colors.surfaceSecondary
-                              : colors.surfacePrimary)
-                        : (isDark
-                              ? colors.surfaceSecondary.withAlpha(180)
-                              : colors.surfacePrimary.withAlpha(200)),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isHovered
-                          ? colors.primary.withAlpha(120)
-                          : colors.surfaceBorder.withAlpha(80),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.close_rounded,
-                    color: isHovered ? colors.primary : colors.textPrimary,
-                    size: 18,
+                        ? colors.primary.withAlpha(120)
+                        : colors.surfaceBorder.withAlpha(80),
                   ),
                 ),
-                onPressed: () => Navigator.of(context).maybePop(false),
-              );
-            },
-          ),
-          actions: [
-            if (!kIsWeb)
-              Padding(
-                padding: EdgeInsets.only(right: 8.w),
-                child: PlatformHoverBuilder(
-                  builder: (context, isHovered, child) {
-                    return TextButton(
-                      onPressed: _isProcessing ? null : _handleRestore,
-                      child: Text(
-                        l10n.paywallRestore,
-                        style: typography.callout.bold.copyWith(
-                          color: isHovered
-                              ? colors.textPrimary
-                              : colors.primary,
-                          fontSize: 13.sp,
-                          decoration: isHovered
-                              ? TextDecoration.underline
-                              : TextDecoration.none,
-                        ),
-                      ),
-                    );
-                  },
+                child: Icon(
+                  Icons.close_rounded,
+                  color: isHovered ? colors.primary : colors.textPrimary,
+                  size: 18,
                 ),
               ),
-          ],
+              onPressed: () => Navigator.of(context).maybePop(false),
+            );
+          },
         ),
-        // Persistent Sticky Bottom Dock ensures primary CTA and promo code are always 1-tap accessible
-        bottomNavigationBar: _isLoading
-            ? null
+        actions: [
+          if (!kIsWeb)
+            Padding(
+              padding: EdgeInsets.only(right: 8.w),
+              child: PlatformHoverBuilder(
+                builder: (context, isHovered, child) {
+                  return TextButton(
+                    onPressed: _isProcessing ? null : _handleRestore,
+                    child: Text(
+                      l10n.paywallRestore,
+                      style: typography.callout.bold.copyWith(
+                        color: isHovered ? colors.textPrimary : colors.primary,
+                        fontSize: 13.sp,
+                        decoration: isHovered
+                            ? TextDecoration.underline
+                            : TextDecoration.none,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+      // Persistent Sticky Bottom Dock ensures primary CTA and promo code are always 1-tap accessible
+      bottomNavigationBar: _isLoading
+          ? null
+          : Center(
+              heightFactor: 1,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: _buildStickyBottomDock(
+                  colors,
+                  typography,
+                  l10n,
+                  isDark,
+                ),
+              ),
+            ),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(
+                child: AppLogoLoader(size: 56),
+              )
             : Center(
-                heightFactor: 1,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 680),
-                  child: _buildStickyBottomDock(
-                    colors,
-                    typography,
-                    l10n,
-                    isDark,
-                  ),
-                ),
-              ),
-        body: SafeArea(
-          child: _isLoading
-              ? const Center(
-                  child: AppLogoLoader(size: 56),
-                )
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 680),
-                    child: SingleChildScrollView(
-                      physics: const ClampingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20.w,
-                        vertical: 4.h,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildHeroHeader(colors, typography, l10n, isDark),
-                          SizedBox(height: 14.h),
-                          _buildSocialProofStrip(
-                            colors,
-                            typography,
-                            l10n,
-                            isDark,
-                          ),
-                          SizedBox(height: 18.h),
-                          _buildTierPlansSelector(
-                            colors,
-                            typography,
-                            l10n,
-                            isDark,
-                          ),
-                          SizedBox(height: 16.h),
-                          _buildTransparentTimeline(
-                            colors,
-                            typography,
-                            l10n,
-                            isDark,
-                          ),
-                          SizedBox(height: 18.h),
-                          _buildFeatureMatrix(colors, typography, l10n, isDark),
-                          SizedBox(height: 16.h),
-                          _buildFooter(colors, typography, l10n),
-                          SizedBox(height: 16.h),
-                        ].animate(interval: 80.ms).fadeIn(duration: 300.ms, curve: Curves.easeOutCubic).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOutCubic),
-                      ),
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20.w,
+                      vertical: 4.h,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children:
+                          [
+                                _buildHeroHeader(
+                                  colors,
+                                  typography,
+                                  l10n,
+                                  isDark,
+                                ),
+                                SizedBox(height: 14.h),
+                                _buildSocialProofStrip(
+                                  colors,
+                                  typography,
+                                  l10n,
+                                  isDark,
+                                ),
+                                SizedBox(height: 18.h),
+                                _buildTierPlansSelector(
+                                  colors,
+                                  typography,
+                                  l10n,
+                                  isDark,
+                                ),
+                                SizedBox(height: 16.h),
+                                _buildTransparentTimeline(
+                                  colors,
+                                  typography,
+                                  l10n,
+                                  isDark,
+                                ),
+                                SizedBox(height: 18.h),
+                                _buildFeatureMatrix(
+                                  colors,
+                                  typography,
+                                  l10n,
+                                  isDark,
+                                ),
+                                SizedBox(height: 16.h),
+                                _buildFooter(colors, typography, l10n),
+                                SizedBox(height: 16.h),
+                              ]
+                              .animate(interval: 80.ms)
+                              .fadeIn(
+                                duration: 300.ms,
+                                curve: Curves.easeOutCubic,
+                              )
+                              .slideY(
+                                begin: 0.05,
+                                end: 0,
+                                duration: 300.ms,
+                                curve: Curves.easeOutCubic,
+                              ),
                     ),
                   ),
                 ),
-        ),
+              ),
       ),
     );
   }
@@ -498,36 +517,31 @@ class _PaywallScreenState extends State<PaywallScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildTrustBadge(
-            icon: Icons.star_rounded,
-            iconColor: colors.warning,
-            label: l10n.paywallSocialProofRating,
-            colors: colors,
-            typography: typography,
+          Expanded(
+            child: _buildTrustBadge(
+              icon: Icons.school_rounded,
+              iconColor: colors.success,
+              label: l10n.paywallSocialProofRetention,
+              colors: colors,
+              typography: typography,
+            ),
           ),
           Container(
             width: 1,
             height: 16.h,
             color: colors.surfaceBorder.withAlpha(90),
           ),
-          _buildTrustBadge(
-            icon: Icons.school_rounded,
-            iconColor: colors.success,
-            label: l10n.paywallSocialProofRetention,
-            colors: colors,
-            typography: typography,
-          ),
-          Container(
-            width: 1,
-            height: 16.h,
-            color: colors.surfaceBorder.withAlpha(90),
-          ),
-          _buildTrustBadge(
-            icon: Icons.bolt_rounded,
-            iconColor: colors.primary,
-            label: l10n.paywallSocialProofSpeed,
-            colors: colors,
-            typography: typography,
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _buildTrustBadge(
+                icon: Icons.bolt_rounded,
+                iconColor: colors.primary,
+                label: l10n.paywallSocialProofSpeed,
+                colors: colors,
+                typography: typography,
+              ),
+            ),
           ),
         ],
       ),
@@ -546,11 +560,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
       children: [
         Icon(icon, color: iconColor, size: 15),
         SizedBox(width: 4.w),
-        Text(
-          label,
-          style: typography.footnote.bold.copyWith(
-            color: colors.textPrimary,
-            fontSize: 10.5.sp,
+        Flexible(
+          child: Text(
+            label,
+            style: typography.footnote.bold.copyWith(
+              color: colors.textPrimary,
+              fontSize: 10.5.sp,
+            ),
           ),
         ),
       ],

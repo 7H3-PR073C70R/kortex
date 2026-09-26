@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -12,6 +13,43 @@ import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_ro
 import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 
 enum RoomViewMode { stage, whiteboard, deckStudy }
+
+/// A unique reaction event emitted when emojis are sent in a live study room.
+class LiveRoomReactionEvent extends Equatable {
+  const LiveRoomReactionEvent({
+    required this.id,
+    required this.emojis,
+    required this.senderId,
+    required this.senderName,
+  });
+
+  final String id;
+  final List<String> emojis;
+  final String senderId;
+  final String senderName;
+
+  @override
+  List<Object?> get props => [id, emojis, senderId, senderName];
+}
+
+/// Extracts individual emoji glyphs from a string, supporting multi-codepoint Unicode graphemes.
+List<String> extractEmojis(String text) {
+  if (text.trim().isEmpty) return const [];
+  final emojis = <String>[];
+
+  final emojiRegex = RegExp(
+    r'(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])',
+  );
+
+  for (final char in text.characters) {
+    final trimmed = char.trim();
+    if (trimmed.isNotEmpty && emojiRegex.hasMatch(trimmed)) {
+      emojis.add(trimmed);
+    }
+  }
+
+  return emojis;
+}
 
 class LiveRoomState extends Equatable {
   const LiveRoomState({
@@ -40,6 +78,7 @@ class LiveRoomState extends Equatable {
     this.cardsReviewedInSprint = 0,
     this.recentActivityTicker = const [],
     this.lastReactionEmoji,
+    this.lastReactionEvent,
     this.isCoOpSprintActive = false,
     this.coOpSprintDeckTitle,
     this.coOpSprintTargetCards = 10,
@@ -78,6 +117,7 @@ class LiveRoomState extends Equatable {
   final int cardsReviewedInSprint;
   final List<String> recentActivityTicker;
   final String? lastReactionEmoji;
+  final LiveRoomReactionEvent? lastReactionEvent;
   final bool isCoOpSprintActive;
   final String? coOpSprintDeckTitle;
   final int coOpSprintTargetCards;
@@ -141,6 +181,7 @@ class LiveRoomState extends Equatable {
     int? cardsReviewedInSprint,
     List<String>? recentActivityTicker,
     String? lastReactionEmoji,
+    LiveRoomReactionEvent? lastReactionEvent,
     bool? isCoOpSprintActive,
     String? coOpSprintDeckTitle,
     int? coOpSprintTargetCards,
@@ -186,6 +227,7 @@ class LiveRoomState extends Equatable {
           cardsReviewedInSprint ?? this.cardsReviewedInSprint,
       recentActivityTicker: recentActivityTicker ?? this.recentActivityTicker,
       lastReactionEmoji: lastReactionEmoji ?? this.lastReactionEmoji,
+      lastReactionEvent: lastReactionEvent ?? this.lastReactionEvent,
       isCoOpSprintActive: isCoOpSprintActive ?? this.isCoOpSprintActive,
       coOpSprintDeckTitle: coOpSprintDeckTitle ?? this.coOpSprintDeckTitle,
       coOpSprintTargetCards:
@@ -235,6 +277,7 @@ class LiveRoomState extends Equatable {
     cardsReviewedInSprint,
     recentActivityTicker,
     lastReactionEmoji,
+    lastReactionEvent,
     isCoOpSprintActive,
     coOpSprintDeckTitle,
     coOpSprintTargetCards,
@@ -313,6 +356,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   StreamSubscription<List<EphemeralParticipant>>? _presenceSubscription;
   StreamSubscription<PomodoroSyncEvent>? _syncSubscription;
   StreamSubscription<WhiteboardStroke>? _whiteboardSubscription;
+  StreamSubscription<String>? _whiteboardUndoSubscription;
   StreamSubscription<void>? _whiteboardClearSubscription;
   StreamSubscription<RoomChatMessage>? _chatSubscription;
   StreamSubscription<Set<String>>? _speakersSubscription;
@@ -547,6 +591,25 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       }
     });
 
+    _whiteboardUndoSubscription = ephemeral
+        .watchWhiteboardUndo(roomId)
+        .listen((strokeId) {
+          if (!isClosed) {
+            final updatedStrokes = state.whiteboardStrokes
+                .where((s) => s.id != strokeId)
+                .toList();
+            final updatedRedo = state.whiteboardRedoStack
+                .where((s) => s.id != strokeId)
+                .toList();
+            emit(
+              state.copyWith(
+                whiteboardStrokes: updatedStrokes,
+                whiteboardRedoStack: updatedRedo,
+              ),
+            );
+          }
+        });
+
     _whiteboardClearSubscription = ephemeral
         .watchWhiteboardClear(roomId)
         .listen(
@@ -571,14 +634,25 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           tickerMsg,
           ...state.recentActivityTicker.take(4),
         ];
+        final extracted = extractEmojis(chatMsg.text);
+        final reactionEvent = extracted.isNotEmpty
+            ? LiveRoomReactionEvent(
+                id: '${chatMsg.id}_${DateTime.now().microsecondsSinceEpoch}',
+                emojis: extracted,
+                senderId: chatMsg.senderId,
+                senderName: chatMsg.senderName,
+              )
+            : null;
+
         emit(
           state.copyWith(
             chatMessages: [...state.chatMessages, chatMsg],
             unreadChatCount: state.unreadChatCount + 1,
             recentActivityTicker: updatedTicker,
-            lastReactionEmoji: chatMsg.isReaction
-                ? chatMsg.text
+            lastReactionEmoji: extracted.isNotEmpty
+                ? extracted.first
                 : state.lastReactionEmoji,
+            lastReactionEvent: reactionEvent ?? state.lastReactionEvent,
           ),
         );
       }
@@ -732,9 +806,17 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   void triggerMicroReaction(String emoji) {
     final message = 'You sent $emoji';
     final updatedTicker = [message, ...state.recentActivityTicker.take(4)];
+    final extracted = extractEmojis(emoji);
+    final reactionEvent = LiveRoomReactionEvent(
+      id: 'local_${_currentUserId}_${DateTime.now().microsecondsSinceEpoch}',
+      emojis: extracted.isNotEmpty ? extracted : [emoji],
+      senderId: _currentUserId,
+      senderName: _currentUserName,
+    );
     emit(
       state.copyWith(
         lastReactionEmoji: emoji,
+        lastReactionEvent: reactionEvent,
         recentActivityTicker: updatedTicker,
       ),
     );
@@ -851,20 +933,40 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   }
 
   Future<void> toggleMicMute() async {
+    if (isClosed) return;
     final nextMuted = !state.isMuted;
 
     // If unmuting, attempt to enable microphone track first
     if (!nextMuted && _audioService != null) {
       final success = await _audioService.setMicrophoneEnabled(enabled: true);
+      if (isClosed) return;
+
       if (!success) {
-        // Check if permission is permanently denied to guide user to settings
         final isPermanentlyDenied = await _audioService
             .isMicrophonePermissionPermanentlyDenied();
+        if (isClosed) return;
+
+        // Check whether microphone permission is actually missing before showing prompt
+        final granted = await _audioService.requestMicrophonePermission();
+        if (isClosed) return;
+
+        if (!granted) {
+          emit(
+            state.copyWith(
+              isMuted: true,
+              microphonePermissionDenied: true,
+              isPermanentlyDeniedMic: isPermanentlyDenied,
+            ),
+          );
+          return;
+        }
+
+        // Permission is granted, but track publishing failed (e.g. room connecting/network issue)
         emit(
           state.copyWith(
             isMuted: true,
-            microphonePermissionDenied: true,
-            isPermanentlyDeniedMic: isPermanentlyDenied,
+            microphonePermissionDenied: false,
+            isPermanentlyDeniedMic: false,
           ),
         );
         return;
@@ -872,6 +974,8 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     } else if (nextMuted && _audioService != null) {
       unawaited(_audioService.setMicrophoneEnabled(enabled: false));
     }
+
+    if (isClosed) return;
 
     final updatedList = state.ephemeralParticipants.map((p) {
       if (p.userId == _currentUserId) {
@@ -912,6 +1016,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   }
 
   void dismissMicPermissionPrompt() {
+    if (isClosed) return;
     emit(
       state.copyWith(
         microphonePermissionDenied: false,
@@ -924,11 +1029,15 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     dismissMicPermissionPrompt();
     if (_audioService != null) {
       final granted = await _audioService.requestMicrophonePermission();
+      if (isClosed) return;
+
       if (granted) {
         await toggleMicMute();
       } else {
         final isPerm = await _audioService
             .isMicrophonePermissionPermanentlyDenied();
+        if (isClosed) return;
+
         emit(
           state.copyWith(
             isMuted: true,
@@ -988,6 +1097,12 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
           whiteboardRedoStack: updatedRedo,
         ),
       );
+      unawaited(
+        _ephemeralRepository?.broadcastWhiteboardUndo(
+          roomId: state.room.id,
+          strokeId: removed.id,
+        ),
+      );
     }
   }
 
@@ -1024,7 +1139,24 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
       isReaction: isReaction,
     );
     final updated = List<RoomChatMessage>.from(state.chatMessages)..add(msg);
-    emit(state.copyWith(chatMessages: updated));
+    final extracted = extractEmojis(trimmed);
+    final isEmojiOrReaction = isReaction || extracted.isNotEmpty;
+    final reactionEvent = isEmojiOrReaction
+        ? LiveRoomReactionEvent(
+            id: '${msg.id}_${DateTime.now().microsecondsSinceEpoch}',
+            emojis: extracted.isNotEmpty ? extracted : [trimmed],
+            senderId: _currentUserId,
+            senderName: _currentUserName,
+          )
+        : null;
+
+    emit(
+      state.copyWith(
+        chatMessages: updated,
+        lastReactionEmoji: isEmojiOrReaction ? trimmed : state.lastReactionEmoji,
+        lastReactionEvent: reactionEvent ?? state.lastReactionEvent,
+      ),
+    );
     unawaited(
       _ephemeralRepository?.broadcastChatMessage(
         roomId: state.room.id,
@@ -1148,17 +1280,18 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         ? '🎯 Micro-Goal Achieved: "$goal" (+50 XP) 🔥'
         : '💪 Good progress on: "$goal". Next round awaits!';
     final updatedTicker = [tickerMsg, ...state.recentActivityTicker.take(4)];
+    final reactionEmoji = completed ? '🎉' : '👏';
 
     emit(
       state.copyWith(
         isGoalAchieved: completed,
         showGoalVerificationModal: false,
         recentActivityTicker: updatedTicker,
-        lastReactionEmoji: completed ? '🎉' : '👏',
+        lastReactionEmoji: reactionEmoji,
       ),
     );
 
-    sendChatMessage(tickerMsg, isReaction: true);
+    sendChatMessage(reactionEmoji, isReaction: true);
   }
 
   void dismissGoalVerification() {
@@ -1174,6 +1307,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     await _presenceSubscription?.cancel();
     await _syncSubscription?.cancel();
     await _whiteboardSubscription?.cancel();
+    await _whiteboardUndoSubscription?.cancel();
     await _whiteboardClearSubscription?.cancel();
     await _chatSubscription?.cancel();
     await _speakersSubscription?.cancel();

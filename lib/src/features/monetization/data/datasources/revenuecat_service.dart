@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -15,10 +15,6 @@ class RevenueCatService {
   RevenueCatService._();
 
   static final RevenueCatService instance = RevenueCatService._();
-
-  static const String _webApiKey = 'rcb_your_revenuecat_web_stripe_key';
-  static const String _androidApiKey = 'goog_your_play_console_key';
-  static const String _appleApiKey = 'appl_your_app_store_key';
 
   static const String proEntitlementId = 'pro_access';
 
@@ -93,30 +89,20 @@ class RevenueCatService {
 
   String _resolveApiKey() {
     if (kIsWeb) {
-      final envKey = dotenv.isInitialized
-          ? dotenv.env['REVENUECAT_WEB_API_KEY']
-          : null;
-      return (envKey != null && envKey.isNotEmpty) ? envKey : _webApiKey;
+      return AppEnv.revenueCatWebApiKey;
     }
 
     try {
       if (Platform.isAndroid) {
-        final envKey = dotenv.isInitialized
-            ? dotenv.env['REVENUECAT_GOOGLE_API_KEY']
-            : null;
-        return (envKey != null && envKey.isNotEmpty) ? envKey : _androidApiKey;
+        return AppEnv.revenueCatGoogleApiKey;
       } else if (Platform.isIOS || Platform.isMacOS) {
-        final envKey = dotenv.isInitialized
-            ? dotenv.env['REVENUECAT_APPLE_API_KEY']
-            : null;
-        return (envKey != null && envKey.isNotEmpty) ? envKey : _appleApiKey;
+        return AppEnv.revenueCatAppleApiKey;
       }
     } on Object {
-      // Fallback for non-supported or desktop targets
-      return _appleApiKey;
+      return AppEnv.revenueCatAppleApiKey;
     }
 
-    return _appleApiKey;
+    return AppEnv.revenueCatAppleApiKey;
   }
 
   /// Retrieves current active offerings and package tiers.

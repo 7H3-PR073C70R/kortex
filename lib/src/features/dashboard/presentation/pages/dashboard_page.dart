@@ -21,9 +21,11 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
+import 'package:kortex/src/features/dashboard/presentation/widgets/cbt_readiness_gauge_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/curated_course_carousel.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
@@ -37,6 +39,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmak
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
+import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -182,19 +185,21 @@ class _DashboardView extends HookWidget {
           }
         }
 
-        // Automatic clean prompt for track selection if user hasn't selected a track yet
-        if ((targetTrack == null || targetTrack.trim().isEmpty) &&
-            context.mounted) {
-          final promptKey =
-              'prompted_track_${userId.isNotEmpty ? userId : "guest"}';
-          if (storage.getPreference(key: promptKey) != 'true') {
-            unawaited(storage.savePreference(key: promptKey, data: 'true'));
-            unawaited(TrackSelectionModalSheet.show(context));
-          }
+        final profileTrack = authState?.userProfile?.targetTrack;
+        final effectiveTrack = (profileTrack != null && profileTrack.trim().isNotEmpty)
+            ? profileTrack.trim()
+            : (targetTrack != null && targetTrack.trim().isNotEmpty
+                ? targetTrack.trim()
+                : '');
+        final hasTrack = effectiveTrack.isNotEmpty;
+
+        if (hasTrack && userId.isNotEmpty) {
+          final promptKey = 'prompted_track_$userId';
+          unawaited(storage.savePreference(key: promptKey, data: 'true'));
         }
       });
       return null;
-    }, const []);
+    }, [authState?.status, authState?.userProfile?.targetTrack, targetTrack]);
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
@@ -468,11 +473,12 @@ class _CompactDashboardLayout extends StatelessWidget {
       physics: const ClampingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 140),
       children:
           <Widget>[
                 // 1. User Profile Header (Identity & Streak Anchor)
                 HeaderProfileBar(
+                  key: AppTourKeys.headerProfileKey,
                   analytics: feed.analyticsSummary,
                   isProfileUncalibrated: feed.isProfileUncalibrated,
                   userName: userName,
@@ -494,7 +500,7 @@ class _CompactDashboardLayout extends StatelessWidget {
                   child: Column(
                     children: [
                       if (feed.curatedCourses.isNotEmpty) ...[
-                        const ExamCountdownBanner(),
+                        ExamCountdownBanner(key: AppTourKeys.countdownKey),
                         const SizedBox(height: 16),
                       ],
                       if (heavyDebtDeck != null) ...[
@@ -506,11 +512,15 @@ class _CompactDashboardLayout extends StatelessWidget {
                 ),
 
                 // 3. Daily Recall Status Banner ("All caught up!" / due-cards state)
-                _DailyRecallStatusBanner(feed: feed),
+                _DailyRecallStatusBanner(
+                  key: AppTourKeys.reviewQueueKey,
+                  feed: feed,
+                ),
+
                 const SizedBox(height: 16),
 
                 // 4. Quick Actions Grid (Upload Notes | Q-Bank | 1v1 Duel | New Deck)
-                const _QuickActionsGrid(),
+                _QuickActionsGrid(key: AppTourKeys.quickActionsKey),
                 const SizedBox(height: 16),
 
                 // 5. Curated Course Repositories
@@ -526,7 +536,27 @@ class _CompactDashboardLayout extends StatelessWidget {
                 _StudyCirclePodPulseCard(targetTrack: targetTrack),
                 const SizedBox(height: 16),
 
-                // 7. Retention Heat Map & Mastery Stats
+                // 7. CBT Readiness Score Progress Gauge
+                CbtReadinessGaugeCard(
+                  readinessResult: const CbtReadinessCalculator().compute(
+                    syllabusCoverage:
+                        (feed.analyticsSummary.overallRetentionRate * 0.95)
+                            .clamp(0.0, 1.0),
+                    fsrsRetentionRate:
+                        feed.analyticsSummary.overallRetentionRate,
+                    mockScoreRatio:
+                        (feed.analyticsSummary.overallRetentionRate * 0.90)
+                            .clamp(0.0, 1.0),
+                    daysRemaining: 14,
+                  ),
+                  examTitle: (targetTrack ?? '').trim().isNotEmpty
+                      ? targetTrack!
+                      : 'Standardized CBT Track',
+                  daysRemaining: 14,
+                ),
+                const SizedBox(height: 16),
+
+                // 8. Retention Heat Map & Mastery Stats
                 RetentionHeatMapWidget(analytics: feed.analyticsSummary),
               ]
               .animate(interval: 80.ms)
@@ -539,7 +569,7 @@ class _CompactDashboardLayout extends StatelessWidget {
 /// Glass "All caught up! SYNCED" banner — mirrors the Stitch DailyStatusRecallBanner.
 /// Shows due-card count + deck title when reviews are pending.
 class _DailyRecallStatusBanner extends StatelessWidget {
-  const _DailyRecallStatusBanner({required this.feed});
+  const _DailyRecallStatusBanner({required this.feed, super.key});
 
   final DashboardFeedEntity feed;
 
@@ -687,7 +717,7 @@ class _DailyRecallStatusBanner extends StatelessWidget {
 /// 4-column quick actions glass grid — mirrors the Stitch QuickActionsRow.
 /// Upload Notes | Q-Bank | 1v1 Duel | New Deck
 class _QuickActionsGrid extends StatelessWidget {
-  const _QuickActionsGrid();
+  const _QuickActionsGrid({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -771,11 +801,15 @@ class _QuickActionsGrid extends StatelessWidget {
                     accent: neural.violet,
                     onTap: () {
                       AppFeedback.light();
-                      unawaited(
-                        context.navigateTo(
-                          const MainRoute(children: [DecksRoute()]),
-                        ),
-                      );
+                      try {
+                        AutoTabsRouter.of(context).setActiveIndex(1);
+                      } on Object catch (_) {
+                        unawaited(
+                          context.navigateTo(
+                            const MainRoute(children: [DecksRoute()]),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),
@@ -1855,6 +1889,15 @@ class _StudyDebtTriageBanner extends StatelessWidget {
 
   final StudyDeckEntity deck;
 
+  void _startSprint(BuildContext context, int count) {
+    AppFeedback.medium();
+    unawaited(
+      context.router.push(
+        StudySessionRoute(deckId: 'sprint:$count:${deck.id}'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -1874,105 +1917,161 @@ class _StudyDebtTriageBanner extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: AppRadius.radiusPanel,
-        // Removed border
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: colors.warning.withAlpha(35),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.healing_rounded,
-              color: colors.warning,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: colors.warning.withAlpha(35),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.healing_rounded,
+                  color: colors.warning,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Text(
+                          l10n.backlogTriageTitle,
+                          style: typography.caption.bold.copyWith(
+                            color: colors.warning,
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withAlpha(30),
+                            borderRadius: AppRadius.radiusBadge,
+                          ),
+                          child: Text(
+                            l10n.dashboardDueCount(deck.dueCards),
+                            style: typography.caption.bold.copyWith(
+                              color: colors.warning,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
                     Text(
-                      l10n.backlogTriageTitle,
-                      style: typography.caption.bold.copyWith(
-                        color: colors.warning,
-                        fontSize: 10,
-                        letterSpacing: 0.8,
+                      l10n.backlogTriageSubtitle,
+                      style: typography.subhead.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 13,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.warning.withAlpha(30),
-                        borderRadius: AppRadius.radiusBadge,
-                      ),
-                      child: Text(
-                        l10n.dashboardDueCount(deck.dueCards),
-                        style: typography.caption.bold.copyWith(
-                          color: colors.warning,
-                          fontSize: 9,
-                        ),
+                    const SizedBox(height: 2),
+                    Text(
+                      l10n.backlogTriageBody(deck.title),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.caption.regular.copyWith(
+                        color: colors.textSecondary,
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.backlogTriageSubtitle,
-                  style: typography.subhead.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.backlogTriageBody(deck.title),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: typography.caption.regular.copyWith(
-                    color: colors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          ShrinkableButton(
-            onTap: () {
-              unawaited(HapticFeedback.mediumImpact());
-              unawaited(
-                context.router.push(
-                  StudySessionRoute(deckId: deck.id),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: colors.warning,
-                borderRadius: AppRadius.radiusCard,
-              ),
-              child: Text(
-                l10n.triageTenAction,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                'Sprint Triage:',
                 style: typography.caption.bold.copyWith(
-                  color: colors.white,
-                  fontSize: 11,
+                  color: colors.textSecondary,
+                  fontSize: 10.5,
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _SprintModeChip(
+                      label: '5 Cards',
+                      onTap: () => _startSprint(context, 5),
+                    ),
+                    const SizedBox(width: 6),
+                    _SprintModeChip(
+                      label: '10 Cards',
+                      isRecommended: true,
+                      onTap: () => _startSprint(context, 10),
+                    ),
+                    const SizedBox(width: 6),
+                    _SprintModeChip(
+                      label: '15 Cards',
+                      onTap: () => _startSprint(context, 15),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SprintModeChip extends StatelessWidget {
+  const _SprintModeChip({
+    required this.label,
+    required this.onTap,
+    this.isRecommended = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool isRecommended;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    return Expanded(
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(
+            color: isRecommended ? colors.warning : colors.warning.withAlpha(30),
+            borderRadius: AppRadius.radiusBadge,
+            border: Border.all(
+              color: colors.warning.withAlpha(isRecommended ? 255 : 80),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: typography.caption.bold.copyWith(
+              color: isRecommended ? colors.white : colors.warning,
+              fontSize: 10.5,
+            ),
+          ),
+        ),
       ),
     );
   }

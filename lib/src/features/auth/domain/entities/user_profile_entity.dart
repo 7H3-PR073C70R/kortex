@@ -18,6 +18,7 @@ class UserProfileEntity extends Equatable {
     this.xpPoints = 0,
     this.subscriptionTier = 'free',
     this.isOnboarded = false,
+    this.eloRating = 1200,
   });
 
   final String id;
@@ -34,6 +35,7 @@ class UserProfileEntity extends Equatable {
   final int xpPoints;
   final String subscriptionTier;
   final bool isOnboarded;
+  final int eloRating;
 
   bool get isPro => subscriptionTier.toLowerCase() == 'pro';
 
@@ -52,6 +54,7 @@ class UserProfileEntity extends Equatable {
     int? xpPoints,
     String? subscriptionTier,
     bool? isOnboarded,
+    int? eloRating,
   }) {
     return UserProfileEntity(
       id: id ?? this.id,
@@ -68,6 +71,7 @@ class UserProfileEntity extends Equatable {
       xpPoints: xpPoints ?? this.xpPoints,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       isOnboarded: isOnboarded ?? this.isOnboarded,
+      eloRating: eloRating ?? this.eloRating,
     );
   }
 
@@ -87,5 +91,6 @@ class UserProfileEntity extends Equatable {
     xpPoints,
     subscriptionTier,
     isOnboarded,
+    eloRating,
   ];
 }

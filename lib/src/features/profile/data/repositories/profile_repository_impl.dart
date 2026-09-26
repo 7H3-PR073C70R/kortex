@@ -4,6 +4,7 @@ import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/profile/data/data_sources/profile_remote_data_source.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_enroll_result_entity.dart';
 import 'package:kortex/src/features/profile/domain/entities/mfa_factor_entity.dart';
+import 'package:kortex/src/features/profile/domain/entities/notification_preferences_entity.dart';
 import 'package:kortex/src/features/profile/domain/repositories/profile_repository.dart';
 
 /// Implementation of [ProfileRepository].
@@ -73,5 +74,20 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<Either<Failure, void>> deleteAccount() {
     return _remoteDataSource.deleteAccount().makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, NotificationPreferencesEntity>>
+  getNotificationPreferences() {
+    return _remoteDataSource.getNotificationPreferences().makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, void>> updateNotificationPreferences(
+    NotificationPreferencesEntity preferences,
+  ) {
+    return _remoteDataSource
+        .updateNotificationPreferences(preferences)
+        .makeRequest();
   }
 }

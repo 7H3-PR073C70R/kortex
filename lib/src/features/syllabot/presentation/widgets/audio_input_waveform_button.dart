@@ -6,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -26,6 +27,30 @@ class AudioInputWaveformButton extends HookWidget {
 
     final isRecording = useState<bool>(false);
 
+    final sttHandler = useMemoized(
+      () => SpeechToTextHandler(
+        onResult: (words) {
+          if (words.trim().isNotEmpty) {
+            onTranscriptionResult(words);
+          }
+        },
+        onListeningChanged: (listening) {
+          isRecording.value = listening;
+        },
+        onError: (err) {
+          isRecording.value = false;
+          if (context.mounted) {
+            context.showSnackBar(message: err, type: SnackBarType.error);
+          }
+        },
+      ),
+    );
+
+    useEffect(
+      () => sttHandler.dispose,
+      [sttHandler],
+    );
+
     final pulseController = useAnimationController(
       duration: const Duration(milliseconds: 1000),
     );
@@ -44,22 +69,12 @@ class AudioInputWaveformButton extends HookWidget {
     void toggleRecording() {
       unawaited(HapticFeedback.mediumImpact());
       if (!isRecording.value) {
-        isRecording.value = true;
         context.showSnackBar(
           message: l10n.voiceInputListening,
         );
-
-        // Simulate voice transcription completion after 2.5s
-        Future.delayed(const Duration(milliseconds: 2500), () {
-          if (isRecording.value) {
-            isRecording.value = false;
-            onTranscriptionResult(
-              "Derive the Euler-Lagrange equation from Hamilton's principle",
-            );
-          }
-        });
+        unawaited(sttHandler.startListening());
       } else {
-        isRecording.value = false;
+        unawaited(sttHandler.stopListening());
       }
     }
 

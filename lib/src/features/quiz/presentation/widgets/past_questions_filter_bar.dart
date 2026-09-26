@@ -7,6 +7,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.dart';
+import 'package:kortex/src/l10n/l10n.dart';
 
 class SubjectFilterBar extends StatelessWidget {
   const SubjectFilterBar({super.key});
@@ -96,15 +97,15 @@ class YearFilterButton extends StatelessWidget {
           },
           itemBuilder: (context) {
             return [
-              const PopupMenuItem<int?>(
+              PopupMenuItem<int?>(
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.shuffle_rounded,
                       size: 16,
                     ),
-                    SizedBox(width: 8),
-                    Text('All Years (Random)'),
+                    const SizedBox(width: 8),
+                    Text(context.l10n.quizAllYearsRandom),
                   ],
                 ),
               ),

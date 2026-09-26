@@ -52,6 +52,28 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     }
   }
 
+  String _normalizeSubjectCode(String subject) {
+    final s = subject.trim().toLowerCase();
+    if (s.contains('english')) return 'ENG';
+    if (s.contains('math') && !s.contains('further')) return 'MTH';
+    if (s.contains('further math')) return 'FMTH';
+    if (s.contains('physic')) return 'PHY';
+    if (s.contains('chemis')) return 'CHM';
+    if (s.contains('biolog')) return 'BIO';
+    if (s.contains('econom')) return 'ECN';
+    if (s.contains('govern')) return 'GOV';
+    if (s.contains('literat')) return 'LIT';
+    if (s.contains('civic')) return 'CIV';
+    if (s.contains('agric')) return 'AGR';
+    if (s.contains('commer')) return 'COM';
+    if (s.contains('account')) return 'ACC';
+    if (s.contains('geograp')) return 'GEO';
+    if (s.contains('histor')) return 'HIS';
+    if (s.contains('data proc') || s.contains('computer')) return 'DPR';
+    final clean = subject.replaceAll(RegExp('[^a-zA-Z0-9]'), '').toUpperCase();
+    return clean.length > 4 ? clean.substring(0, 4) : (clean.isNotEmpty ? clean : 'SUBJ');
+  }
+
   List<CuratedCourseModel> _getLocallySavedCourses() {
     try {
       final raw = _storage?.getPreference(key: PrefKeys.userCuratedCourses);
@@ -60,7 +82,19 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         final courses = list
             .map((e) => CuratedCourseModel.fromJson(e as Map<String, dynamic>))
             .toList();
-        if (courses.isNotEmpty) return courses;
+        if (courses.isNotEmpty) {
+          final seenKeys = <String>{};
+          final deduplicated = <CuratedCourseModel>[];
+          for (final c in courses) {
+            final normCode = _normalizeSubjectCode(c.courseCode.isNotEmpty ? c.courseCode : c.title);
+            final normTitle = c.title.trim().toLowerCase();
+            final key = normCode.isNotEmpty ? normCode : normTitle;
+            if (seenKeys.add(key)) {
+              deduplicated.add(c);
+            }
+          }
+          return deduplicated;
+        }
       }
     } on Object catch (_) {}
     return _getCoursesFromCalibrationProfile();
@@ -77,13 +111,16 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                 .where((s) => s.isNotEmpty)
                 .toList() ??
             [];
-        final examName = (jsonMap['highSchoolExam'] as String?) ?? 'WAEC';
 
         if (subjects.isNotEmpty) {
           final catalog = _generateDefaultCatalogCourses();
           final matched = <CuratedCourseModel>[];
+          final seenKeys = <String>{};
 
           for (final subject in subjects) {
+            final code = _normalizeSubjectCode(subject);
+            if (!seenKeys.add(code)) continue;
+
             final lower = subject.toLowerCase().trim();
             CuratedCourseModel? bestMatch;
             for (final c in catalog) {
@@ -95,13 +132,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
                   c.courseCode.toLowerCase() == lower;
 
               if (isNameMatch) {
-                if (c.department.toLowerCase().contains(
-                  examName.toLowerCase(),
-                )) {
-                  bestMatch = c;
-                  break;
-                }
-                bestMatch ??= c;
+                bestMatch = c;
+                break;
               }
             }
 
@@ -112,12 +144,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
             } else {
               matched.add(
                 CuratedCourseModel(
-                  id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
-                  courseCode: subject.length > 4
-                      ? subject.substring(0, 4).toUpperCase()
-                      : subject.toUpperCase(),
+                  id: 'course_${code.toLowerCase()}',
+                  courseCode: code,
                   title: subject,
-                  department: '$examName - General Studies',
+                  department: 'Secondary School Board',
                   totalMaterials: 25,
                   hasActivePastPapers: true,
                   iconName: 'school',
@@ -500,6 +530,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       final catalog = _generateDefaultCatalogCourses();
       final matched = <CuratedCourseModel>[];
       for (final subject in subjects) {
+        final code = _normalizeSubjectCode(subject);
         final lower = subject.toLowerCase().trim();
         CuratedCourseModel? bestMatch;
         for (final c in catalog) {
@@ -511,11 +542,8 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
               c.courseCode.toLowerCase() == lower;
 
           if (isNameMatch) {
-            if (c.department.toLowerCase().contains(examName.toLowerCase())) {
-              bestMatch = c;
-              break;
-            }
-            bestMatch ??= c;
+            bestMatch = c;
+            break;
           }
         }
 
@@ -526,12 +554,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
         } else {
           matched.add(
             CuratedCourseModel(
-              id: 'course_${examName.toLowerCase()}_${subject.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}',
-              courseCode: subject.length > 4
-                  ? subject.substring(0, 4).toUpperCase()
-                  : subject.toUpperCase(),
+              id: 'course_${code.toLowerCase()}',
+              courseCode: code,
               title: subject,
-              department: '$examName - General Studies',
+              department: 'Secondary School Board',
               totalMaterials: 25,
               hasActivePastPapers: true,
               iconName: 'school',
@@ -542,10 +568,17 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       }
       if (matched.isNotEmpty) {
         final current = _getLocallySavedCourses();
-        final currentIds = {for (final c in current) c.id};
+        final currentKeys = {
+          for (final c in current)
+            _normalizeSubjectCode(c.courseCode.isNotEmpty ? c.courseCode : c.title)
+        };
         final merged = [
           ...current,
-          ...matched.where((m) => !currentIds.contains(m.id)),
+          ...matched.where(
+            (m) => !currentKeys.contains(
+              _normalizeSubjectCode(m.courseCode.isNotEmpty ? m.courseCode : m.title),
+            ),
+          ),
         ];
         final jsonStr = jsonEncode(merged.map((c) => c.toJson()).toList());
         await _storage?.savePreference(
@@ -631,6 +664,28 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     );
   }
 
+  @override
+  Future<AnalyticsSummaryModel> getDashboardAnalyticsSummary() async {
+    try {
+      return await _client.getDashboardAnalyticsSummary();
+    } on Object catch (_) {
+      final liveAnalytics = _userActivityService?.getAnalyticsSummary();
+      if (liveAnalytics != null) {
+        return liveAnalytics;
+      }
+      return AnalyticsSummaryModel(
+        currentStreakDays: 0,
+        longestStreakDays: 0,
+        weeklyMinutesStudied: 0,
+        overallRetentionRate: 0,
+        totalCardsMastered: 0,
+        heatMapData: _generateEmptyHeatMap(),
+        xpPoints: 0,
+        academicRank: 'Neural Scholar I',
+      );
+    }
+  }
+
   DashboardFeedModel _generateFallbackFeedModel(
     AnalyticsSummaryModel? liveAnalytics, {
     List<StudyDeckModel>? fallbackDecks,
@@ -680,588 +735,6 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
   }
 
   List<CuratedCourseModel> _generateDefaultCatalogCourses() {
-    const curatedSubjects = [
-      // Core
-      (
-        code: 'MTH',
-        title: 'Mathematics',
-        stream: 'Core',
-        icon: 'calculate',
-        color: '#6366F1',
-        materials: 48,
-        coverage: 0.95,
-      ),
-      (
-        code: 'ENG',
-        title: 'English Language',
-        stream: 'Core',
-        icon: 'auto_stories',
-        color: '#F59E0B',
-        materials: 52,
-        coverage: 0.92,
-      ),
-      (
-        code: 'CIV',
-        title: 'Civic Education',
-        stream: 'Core',
-        icon: 'policy',
-        color: '#10B981',
-        materials: 26,
-        coverage: 0.88,
-      ),
-      (
-        code: 'DPR',
-        title: 'Data Processing',
-        stream: 'Core',
-        icon: 'terminal',
-        color: '#8B5CF6',
-        materials: 28,
-        coverage: 0.85,
-      ),
-      (
-        code: 'CMP',
-        title: 'Computer Studies',
-        stream: 'Core',
-        icon: 'laptop',
-        color: '#06B6D4',
-        materials: 30,
-        coverage: 0.87,
-      ),
-
-      // Sciences
-      (
-        code: 'PHY',
-        title: 'Physics',
-        stream: 'Sciences',
-        icon: 'bolt',
-        color: '#06B6D4',
-        materials: 44,
-        coverage: 0.90,
-      ),
-      (
-        code: 'CHM',
-        title: 'Chemistry',
-        stream: 'Sciences',
-        icon: 'biotech',
-        color: '#EC4899',
-        materials: 40,
-        coverage: 0.89,
-      ),
-      (
-        code: 'BIO',
-        title: 'Biology',
-        stream: 'Sciences',
-        icon: 'eco',
-        color: '#10B981',
-        materials: 46,
-        coverage: 0.91,
-      ),
-      (
-        code: 'FMTH',
-        title: 'Further Mathematics',
-        stream: 'Sciences',
-        icon: 'functions',
-        color: '#4F46E5',
-        materials: 35,
-        coverage: 0.85,
-      ),
-      (
-        code: 'AGR',
-        title: 'Agricultural Science',
-        stream: 'Sciences',
-        icon: 'agriculture',
-        color: '#84CC16',
-        materials: 29,
-        coverage: 0.86,
-      ),
-      (
-        code: 'TD',
-        title: 'Technical Drawing',
-        stream: 'Sciences',
-        icon: 'architecture',
-        color: '#F97316',
-        materials: 24,
-        coverage: 0.82,
-      ),
-      (
-        code: 'ANH',
-        title: 'Animal Husbandry',
-        stream: 'Sciences',
-        icon: 'pets',
-        color: '#A855F7',
-        materials: 25,
-        coverage: 0.84,
-      ),
-      (
-        code: 'PHE',
-        title: 'Physical Education',
-        stream: 'Sciences',
-        icon: 'fitness_center',
-        color: '#14B8A6',
-        materials: 22,
-        coverage: 0.80,
-      ),
-
-      // Commercial
-      (
-        code: 'ECN',
-        title: 'Economics',
-        stream: 'Commercial',
-        icon: 'trending_up',
-        color: '#3B82F6',
-        materials: 38,
-        coverage: 0.87,
-      ),
-      (
-        code: 'COM',
-        title: 'Commerce',
-        stream: 'Commercial',
-        icon: 'storefront',
-        color: '#0284C7',
-        materials: 30,
-        coverage: 0.82,
-      ),
-      (
-        code: 'ACC',
-        title: 'Accounts - Principles of Accounts',
-        stream: 'Commercial',
-        icon: 'receipt_long',
-        color: '#2563EB',
-        materials: 34,
-        coverage: 0.84,
-      ),
-      (
-        code: 'BKP',
-        title: 'Book Keeping',
-        stream: 'Commercial',
-        icon: 'menu_book',
-        color: '#0D9488',
-        materials: 26,
-        coverage: 0.81,
-      ),
-      (
-        code: 'MKT',
-        title: 'Marketing',
-        stream: 'Commercial',
-        icon: 'campaign',
-        color: '#E11D48',
-        materials: 27,
-        coverage: 0.83,
-      ),
-      (
-        code: 'INS',
-        title: 'Insurance',
-        stream: 'Commercial',
-        icon: 'shield',
-        color: '#6D28D9',
-        materials: 24,
-        coverage: 0.80,
-      ),
-      (
-        code: 'OFP',
-        title: 'Office Practice',
-        stream: 'Commercial',
-        icon: 'business_center',
-        color: '#475569',
-        materials: 22,
-        coverage: 0.79,
-      ),
-
-      // Arts & Humanities
-      (
-        code: 'LIT',
-        title: 'Literature in English',
-        stream: 'Arts',
-        icon: 'menu_book',
-        color: '#D97706',
-        materials: 36,
-        coverage: 0.89,
-      ),
-      (
-        code: 'GOV',
-        title: 'Government',
-        stream: 'Arts',
-        icon: 'account_balance',
-        color: '#8B5CF6',
-        materials: 32,
-        coverage: 0.86,
-      ),
-      (
-        code: 'GEO',
-        title: 'Geography',
-        stream: 'Arts',
-        icon: 'public',
-        color: '#0D9488',
-        materials: 28,
-        coverage: 0.80,
-      ),
-      (
-        code: 'HIS',
-        title: 'History',
-        stream: 'Arts',
-        icon: 'history_edu',
-        color: '#78350F',
-        materials: 25,
-        coverage: 0.82,
-      ),
-      (
-        code: 'CRK',
-        title: 'Christian Religious Knowledge (CRK)',
-        stream: 'Arts',
-        icon: 'church',
-        color: '#B45309',
-        materials: 29,
-        coverage: 0.85,
-      ),
-      (
-        code: 'IRK',
-        title: 'Islamic Religious Knowledge (IRK)',
-        stream: 'Arts',
-        icon: 'mosque',
-        color: '#047857',
-        materials: 29,
-        coverage: 0.85,
-      ),
-      (
-        code: 'FRE',
-        title: 'French',
-        stream: 'Arts',
-        icon: 'translate',
-        color: '#3B82F6',
-        materials: 26,
-        coverage: 0.81,
-      ),
-      (
-        code: 'YOR',
-        title: 'Yoruba',
-        stream: 'Arts',
-        icon: 'language',
-        color: '#EA580C',
-        materials: 24,
-        coverage: 0.80,
-      ),
-      (
-        code: 'IGB',
-        title: 'Igbo',
-        stream: 'Arts',
-        icon: 'language',
-        color: '#16A34A',
-        materials: 24,
-        coverage: 0.80,
-      ),
-      (
-        code: 'HAU',
-        title: 'Hausa',
-        stream: 'Arts',
-        icon: 'language',
-        color: '#9333EA',
-        materials: 24,
-        coverage: 0.80,
-      ),
-      (
-        code: 'ARA',
-        title: 'Arabic',
-        stream: 'Arts',
-        icon: 'translate',
-        color: '#059669',
-        materials: 22,
-        coverage: 0.78,
-      ),
-      (
-        code: 'ART',
-        title: 'Fine Arts',
-        stream: 'Arts',
-        icon: 'palette',
-        color: '#BE185D',
-        materials: 25,
-        coverage: 0.83,
-      ),
-      (
-        code: 'MUS',
-        title: 'Music',
-        stream: 'Arts',
-        icon: 'music_note',
-        color: '#6366F1',
-        materials: 23,
-        coverage: 0.80,
-      ),
-      (
-        code: 'HEC',
-        title: 'Home Economics',
-        stream: 'Arts',
-        icon: 'home',
-        color: '#CA8A04',
-        materials: 25,
-        coverage: 0.81,
-      ),
-      (
-        code: 'FDN',
-        title: 'Food and Nutrition',
-        stream: 'Arts',
-        icon: 'restaurant',
-        color: '#E11D48',
-        materials: 26,
-        coverage: 0.82,
-      ),
-      (
-        code: 'CCP',
-        title: 'Catering Craft Practice',
-        stream: 'Arts',
-        icon: 'dinner_dining',
-        color: '#D97706',
-        materials: 24,
-        coverage: 0.79,
-      ),
-      (
-        code: 'HMG',
-        title: 'Home Management',
-        stream: 'Arts',
-        icon: 'roofing',
-        color: '#475569',
-        materials: 23,
-        coverage: 0.78,
-      ),
-    ];
-
-    final highSchoolCourses = <CuratedCourseModel>[];
-    for (final exam in const ['WAEC', 'JAMB', 'NECO']) {
-      final examLower = exam.toLowerCase();
-      for (final s in curatedSubjects) {
-        highSchoolCourses.add(
-          CuratedCourseModel(
-            id: '$examLower-${s.code.toLowerCase()}',
-            courseCode: s.code,
-            title: s.title,
-            department: '$exam - ${s.stream}',
-            totalMaterials: s.materials,
-            hasActivePastPapers: true,
-            iconName: s.icon,
-            colorHex: s.color,
-            syllabusCoverage: s.coverage,
-          ),
-        );
-      }
-    }
-
-    return [
-      ...highSchoolCourses,
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // 3. SAT Standardized Prep
-      // ═══════════════════════════════════════════════════════════════════════
-      const CuratedCourseModel(
-        id: 'sat-math-algebra',
-        courseCode: 'SAT-MTH',
-        title: 'SAT: Digital Math - Algebra & Advanced Math',
-        department: 'SAT Prep',
-        totalMaterials: 35,
-        hasActivePastPapers: true,
-        iconName: 'calculate',
-        colorHex: '#6366F1',
-        syllabusCoverage: 0.90,
-      ),
-      const CuratedCourseModel(
-        id: 'sat-reading-writing',
-        courseCode: 'SAT-RW',
-        title: 'SAT: Reading & Writing - Information & Ideas',
-        department: 'SAT Prep',
-        totalMaterials: 38,
-        hasActivePastPapers: true,
-        iconName: 'auto_stories',
-        colorHex: '#F59E0B',
-        syllabusCoverage: 0.92,
-      ),
-
-      // ═══════════════════════════════════════════════════════════════════════
-      // 4. University & Higher Education Disciplines
-      // ═══════════════════════════════════════════════════════════════════════
-      const CuratedCourseModel(
-        id: 'csc-201-data-structures',
-        courseCode: 'CSC 201',
-        title: 'Data Structures, Graph Algorithms & Asymptotic Complexity',
-        department: 'Computer Science',
-        totalMaterials: 40,
-        hasActivePastPapers: true,
-        iconName: 'terminal',
-        colorHex: '#8B5CF6',
-        syllabusCoverage: 0.88,
-      ),
-      const CuratedCourseModel(
-        id: 'csc-101-intro-computing',
-        courseCode: 'CSC 101',
-        title: 'Introduction to Computer Systems & Discrete Structures',
-        department: 'Computer Science',
-        totalMaterials: 32,
-        hasActivePastPapers: true,
-        iconName: 'laptop',
-        colorHex: '#6366F1',
-        syllabusCoverage: 0.85,
-      ),
-      const CuratedCourseModel(
-        id: 'med-anat-201',
-        courseCode: 'ANAT 201',
-        title: 'Gross Human Anatomy: Thorax, Abdomen & Musculoskeletal',
-        department: 'Medicine & Health',
-        totalMaterials: 36,
-        hasActivePastPapers: true,
-        iconName: 'medical_services',
-        colorHex: '#EC4899',
-        syllabusCoverage: 0.90,
-      ),
-      const CuratedCourseModel(
-        id: 'med-phs-201',
-        courseCode: 'PHS 201',
-        title: 'Medical Physiology: Cardiovascular & Renal Systems',
-        department: 'Medicine & Health',
-        totalMaterials: 30,
-        hasActivePastPapers: true,
-        iconName: 'favorite',
-        colorHex: '#EF4444',
-        syllabusCoverage: 0.87,
-      ),
-      const CuratedCourseModel(
-        id: 'law-101-nigerian-legal',
-        courseCode: 'LAW 101',
-        title: 'Legal Systems, Precedence, Statutes & Methods',
-        department: 'Law & Legal Studies',
-        totalMaterials: 28,
-        hasActivePastPapers: true,
-        iconName: 'gavel',
-        colorHex: '#7C3AED',
-        syllabusCoverage: 0.82,
-      ),
-      const CuratedCourseModel(
-        id: 'law-201-contract-law',
-        courseCode: 'LAW 201',
-        title: 'Law of Contract & Commercial Obligations',
-        department: 'Law & Legal Studies',
-        totalMaterials: 25,
-        hasActivePastPapers: true,
-        iconName: 'policy',
-        colorHex: '#8B5CF6',
-        syllabusCoverage: 0.88,
-      ),
-      const CuratedCourseModel(
-        id: 'eng-mth-301',
-        courseCode: 'MTH 301',
-        title: 'Engineering Mathematics: Differential Equations & Laplace',
-        department: 'Engineering',
-        totalMaterials: 24,
-        hasActivePastPapers: true,
-        iconName: 'engineering',
-        colorHex: '#0EA5E9',
-        syllabusCoverage: 0.85,
-      ),
-      const CuratedCourseModel(
-        id: 'eng-eee-201',
-        courseCode: 'EEE 201',
-        title: 'Circuit Theory & Linear Electrical Networks',
-        department: 'Engineering',
-        totalMaterials: 22,
-        hasActivePastPapers: true,
-        iconName: 'settings_input_component',
-        colorHex: '#06B6D4',
-        syllabusCoverage: 0.83,
-      ),
-      const CuratedCourseModel(
-        id: 'bus-acc-101',
-        courseCode: 'ACC 101',
-        title: 'Financial Accounting Principles & Balance Sheets',
-        department: 'Business & Management',
-        totalMaterials: 26,
-        hasActivePastPapers: true,
-        iconName: 'receipt_long',
-        colorHex: '#3B82F6',
-        syllabusCoverage: 0.80,
-      ),
-      const CuratedCourseModel(
-        id: 'bus-mgt-201',
-        courseCode: 'MGT 201',
-        title: 'Organizational Behavior & Strategic Leadership',
-        department: 'Business & Management',
-        totalMaterials: 19,
-        hasActivePastPapers: false,
-        iconName: 'corporate_fare',
-        colorHex: '#2563EB',
-        syllabusCoverage: 0.74,
-      ),
-      const CuratedCourseModel(
-        id: 'univ-gst-101',
-        courseCode: 'GST 101',
-        title: 'Use of English & Communication Skills',
-        department: 'General University Studies',
-        totalMaterials: 35,
-        hasActivePastPapers: true,
-        iconName: 'auto_stories',
-        colorHex: '#F59E0B',
-        syllabusCoverage: 0.90,
-      ),
-      const CuratedCourseModel(
-        id: 'univ-mth-101',
-        courseCode: 'MTH 101',
-        title: 'Elementary Mathematics I (Calculus & Algebra)',
-        department: 'University Sciences',
-        totalMaterials: 40,
-        hasActivePastPapers: true,
-        iconName: 'calculate',
-        colorHex: '#6366F1',
-        syllabusCoverage: 0.92,
-      ),
-      const CuratedCourseModel(
-        id: 'univ-phy-101',
-        courseCode: 'PHY 101',
-        title: 'General Physics I (Mechanics & Properties of Matter)',
-        department: 'University Sciences',
-        totalMaterials: 38,
-        hasActivePastPapers: true,
-        iconName: 'bolt',
-        colorHex: '#06B6D4',
-        syllabusCoverage: 0.89,
-      ),
-      const CuratedCourseModel(
-        id: 'univ-chm-101',
-        courseCode: 'CHM 101',
-        title: 'General Chemistry I (Physical & Inorganic Chemistry)',
-        department: 'University Sciences',
-        totalMaterials: 36,
-        hasActivePastPapers: true,
-        iconName: 'biotech',
-        colorHex: '#EC4899',
-        syllabusCoverage: 0.88,
-      ),
-      const CuratedCourseModel(
-        id: 'univ-bio-101',
-        courseCode: 'BIO 101',
-        title: 'General Biology I (Cell Biology & Genetics)',
-        department: 'University Sciences',
-        totalMaterials: 34,
-        hasActivePastPapers: true,
-        iconName: 'eco',
-        colorHex: '#10B981',
-        syllabusCoverage: 0.87,
-      ),
-      const CuratedCourseModel(
-        id: 'univ-ecn-101',
-        courseCode: 'ECN 101',
-        title: 'Introduction to Microeconomics & Macroeconomics',
-        department: 'Social Sciences',
-        totalMaterials: 32,
-        hasActivePastPapers: true,
-        iconName: 'trending_up',
-        colorHex: '#3B82F6',
-        syllabusCoverage: 0.85,
-      ),
-      const CuratedCourseModel(
-        id: 'soc-soc-101',
-        courseCode: 'SOC 101',
-        title: 'Introduction to Social Structure & Human Behavior',
-        department: 'Social Sciences',
-        totalMaterials: 15,
-        hasActivePastPapers: false,
-        iconName: 'groups',
-        colorHex: '#059669',
-        syllabusCoverage: 0.72,
-      ),
-    ];
+    return const [];
   }
 }

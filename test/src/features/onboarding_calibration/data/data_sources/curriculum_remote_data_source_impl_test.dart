@@ -45,7 +45,7 @@ void main() {
       expect(result.first.displayName, equals('JAMB / UTME'));
     });
 
-    test('fetchMetadataByCategory falls back to offline constants on Dio exception', () async {
+    test('fetchMetadataByCategory returns empty list on Dio exception', () async {
       when(
         () => mockDio.get<dynamic>(
           any(),
@@ -60,9 +60,7 @@ void main() {
 
       final result = await dataSource.fetchMetadataByCategory('standardized_exam');
 
-      expect(result.isNotEmpty, isTrue);
-      expect(result.any((e) => e.key == 'jamb'), isTrue);
-      expect(result.any((e) => e.key == 'waec'), isTrue);
+      expect(result.isEmpty, isTrue);
     });
 
     test('fetchAllMetadata returns parsed models on successful Dio response', () async {
@@ -99,7 +97,7 @@ void main() {
       expect(result[1].key, equals('cs'));
     });
 
-    test('fetchAllMetadata falls back to offline constants on network error', () async {
+    test('fetchAllMetadata returns empty list on network error', () async {
       when(
         () => mockDio.get<dynamic>(
           any(),
@@ -114,12 +112,7 @@ void main() {
 
       final result = await dataSource.fetchAllMetadata();
 
-      expect(result.isNotEmpty, isTrue);
-      expect(result.any((e) => e.category == 'standardized_exam'), isTrue);
-      expect(result.any((e) => e.category == 'faculty_track'), isTrue);
-      expect(result.any((e) => e.category == 'higher_ed_level'), isTrue);
-      expect(result.any((e) => e.category == 'study_goal'), isTrue);
-      expect(result.any((e) => e.category == 'high_school_subject'), isTrue);
+      expect(result.isEmpty, isTrue);
     });
   });
 }

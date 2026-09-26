@@ -24,8 +24,23 @@ abstract class StudyDeckModel with _$StudyDeckModel {
 
   const StudyDeckModel._();
 
-  factory StudyDeckModel.fromJson(Map<String, dynamic> json) =>
-      _$StudyDeckModelFromJson(json);
+  factory StudyDeckModel.fromJson(
+    Map<String, dynamic> json,
+  ) => StudyDeckModel(
+    id: (json['id'] as String?) ?? '',
+    title: (json['title'] ?? '') as String,
+    subject: (json['subject'] ?? 'General') as String,
+    totalCards: (json['totalCards'] ?? json['total_cards'] as num?)?.toInt() ?? 0,
+    dueCards: (json['dueCards'] ?? json['due_cards'] as num?)?.toInt() ?? 0,
+    retentionRate: (json['retentionRate'] ?? json['retention_rate'] ?? json['masteryRate'] ?? json['mastery_rate'] as num?)?.toDouble() ?? 0.0,
+    lastReviewedIso: (json['lastReviewedIso'] ?? json['last_reviewed_iso'] ?? json['lastStudied'] ?? json['last_studied'] as String?) ?? DateTime.now().toIso8601String(),
+    category: (json['category'] ?? 'General') as String,
+    coverImageUrl: (json['coverImageUrl'] ?? json['cover_image_url']) as String?,
+    estimatedMinutes: (json['estimatedMinutes'] ?? json['estimated_minutes'] as num?)?.toInt() ?? 10,
+    colorHex: (json['colorHex'] ?? json['color_hex']) as String?,
+    courseId: (json['courseId'] ?? json['course_id']) as String?,
+    courseCode: (json['courseCode'] ?? json['course_code']) as String?,
+  );
 
   StudyDeckEntity toEntity() => StudyDeckEntity(
     id: id,

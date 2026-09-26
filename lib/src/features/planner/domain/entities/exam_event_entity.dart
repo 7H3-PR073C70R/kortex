@@ -22,6 +22,12 @@ class ExamEventEntity extends Equatable {
     this.achievedScorePercent,
     this.completedAt,
     this.createdAt,
+    this.isPostponed = false,
+    this.originalTargetDate,
+    this.postponedReason,
+    this.isCancelled = false,
+    this.cancelledAt,
+    this.cancellationReason,
   });
 
   final String id;
@@ -42,6 +48,14 @@ class ExamEventEntity extends Equatable {
   final double? achievedScorePercent;
   final DateTime? completedAt;
   final DateTime? createdAt;
+  final bool isPostponed;
+  final DateTime? originalTargetDate;
+  final String? postponedReason;
+  final bool isCancelled;
+  final DateTime? cancelledAt;
+  final String? cancellationReason;
+
+  bool get isActive => !isCompleted && !isCancelled;
 
   int get daysRemaining {
     final now = DateTime.now();
@@ -62,15 +76,24 @@ class ExamEventEntity extends Equatable {
 
   bool get isPast => targetDate.isBefore(DateTime.now());
 
-  bool get isImminent => !isPast && !isCompleted && timeRemaining.inHours < 48;
+  bool get isImminent => !isPast && !isCompleted && !isCancelled && timeRemaining.inHours < 48;
 
   bool get isCriticalCrunch =>
-      !isPast && !isCompleted && timeRemaining.inHours < 24;
+      !isPast && !isCompleted && !isCancelled && timeRemaining.inHours < 24;
 
   double get effectiveWeightPercent =>
       weightPercent ?? assessmentType.defaultWeightPercent;
 
+  String get statusBadgeText {
+    if (isCancelled) return 'Cancelled';
+    if (isCompleted) return 'Completed';
+    if (isPostponed) return 'Postponed';
+    if (isPast) return 'Concluded';
+    return 'Active';
+  }
+
   String get formattedSubDailyCountdown {
+    if (isCancelled) return 'Cancelled';
     if (isCompleted) return 'Completed';
     if (isPast) return 'Concluded';
     final totalHours = timeRemaining.inHours;
@@ -89,6 +112,7 @@ class ExamEventEntity extends Equatable {
   }
 
   String get formattedCountdown {
+    if (isCancelled) return 'Cancelled';
     if (isCompleted) return 'Completed';
     if (isPast) return 'Concluded';
     final days = timeRemaining.inDays;
@@ -129,6 +153,12 @@ class ExamEventEntity extends Equatable {
     double? achievedScorePercent,
     DateTime? completedAt,
     DateTime? createdAt,
+    bool? isPostponed,
+    DateTime? originalTargetDate,
+    String? postponedReason,
+    bool? isCancelled,
+    DateTime? cancelledAt,
+    String? cancellationReason,
   }) {
     return ExamEventEntity(
       id: id ?? this.id,
@@ -149,6 +179,12 @@ class ExamEventEntity extends Equatable {
       achievedScorePercent: achievedScorePercent ?? this.achievedScorePercent,
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt ?? this.createdAt,
+      isPostponed: isPostponed ?? this.isPostponed,
+      originalTargetDate: originalTargetDate ?? this.originalTargetDate,
+      postponedReason: postponedReason ?? this.postponedReason,
+      isCancelled: isCancelled ?? this.isCancelled,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
     );
   }
 
@@ -172,5 +208,11 @@ class ExamEventEntity extends Equatable {
     achievedScorePercent,
     completedAt,
     createdAt,
+    isPostponed,
+    originalTargetDate,
+    postponedReason,
+    isCancelled,
+    cancelledAt,
+    cancellationReason,
   ];
 }

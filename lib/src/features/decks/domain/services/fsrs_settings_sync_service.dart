@@ -111,7 +111,8 @@ class FsrsSettingsSyncService {
 
   Future<String> _deviceTimezone() async {
     try {
-      return await FlutterTimezone.getLocalTimezone();
+      final info = await FlutterTimezone.getLocalTimezone();
+      return info.identifier;
     } on Object catch (_) {
       return 'UTC';
     }

@@ -18,6 +18,7 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -78,10 +79,7 @@ class MockExamLobbyPage extends HookWidget {
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-          onPressed: () => context.router.pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           l10n.mockExamLobbyTitle,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),
@@ -138,7 +136,51 @@ class MockExamLobbyPage extends HookWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  Text(
+                    'Quick Presets',
+                    style: typography.callout.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildPresetChip(
+                          context,
+                          label: '⚡ 15-Min Speed Drill',
+                          isSelected: selectedModeIndex.value == 2,
+                          onTap: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            selectedModeIndex.value = 2;
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildPresetChip(
+                          context,
+                          label: '📝 Standard UTME Exam',
+                          isSelected: selectedModeIndex.value == 0,
+                          onTap: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            selectedModeIndex.value = 0;
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildPresetChip(
+                          context,
+                          label: '🧠 Socratic Tutor',
+                          isSelected: selectedModeIndex.value == 1,
+                          onTap: () {
+                            unawaited(HapticFeedback.lightImpact());
+                            selectedModeIndex.value = 1;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
 
                   Text(
                     l10n.mockExamSelectMode,
@@ -498,5 +540,46 @@ class MockExamLobbyPage extends HookWidget {
       return ExamCategory.computerScience;
     }
     return null;
+  }
+
+  Widget _buildPresetChip(
+    BuildContext context, {
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.badge),
+      child: AnimatedContainer(
+        duration: AppMotion.snappy,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colors.primary.withAlpha(isDark ? 60 : 35)
+              : (isDark
+                    ? colors.surfaceSecondary.withAlpha(140)
+                    : colors.surfacePrimary.withAlpha(200)),
+          borderRadius: BorderRadius.circular(AppRadius.badge),
+          border: Border.all(
+            color: isSelected
+                ? colors.primary
+                : colors.surfaceBorder.withAlpha(isDark ? 60 : 40),
+            width: isSelected ? 1.4 : 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: typography.caption.bold.copyWith(
+            color: isSelected ? colors.primary : colors.textSecondary,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -9,4 +9,14 @@ class AppEnv {
   static String get liveKitUrl => dotenv.isInitialized
       ? (dotenv.env['LIVEKIT_URL'] ?? 'wss://kortexify-nj9viqjp.livekit.cloud')
       : 'wss://kortexify-nj9viqjp.livekit.cloud';
+
+  static String get revenueCatWebApiKey => dotenv.isInitialized
+      ? (dotenv.env['REVENUECAT_WEB_API_KEY'] ?? '')
+      : '';
+  static String get revenueCatGoogleApiKey => dotenv.isInitialized
+      ? (dotenv.env['REVENUECAT_GOOGLE_API_KEY'] ?? '')
+      : '';
+  static String get revenueCatAppleApiKey => dotenv.isInitialized
+      ? (dotenv.env['REVENUECAT_APPLE_API_KEY'] ?? '')
+      : '';
 }

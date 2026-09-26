@@ -29,6 +29,7 @@ class CommunityState extends Equatable {
     this.selectedForumFilter = 'trending',
     this.forumSearchQuery = '',
     this.bookmarkedPostIds = const {},
+    this.followedTopics = const {},
   });
 
   final CommunityStatus status;
@@ -40,6 +41,7 @@ class CommunityState extends Equatable {
   final String selectedForumFilter;
   final String forumSearchQuery;
   final Set<String> bookmarkedPostIds;
+  final Set<String> followedTopics;
   final List<StudyRoomEntity> studyRooms;
   final List<ForumPostEntity> forumPosts;
   final List<StudyCircleEntity> studyCircles;
@@ -62,6 +64,7 @@ class CommunityState extends Equatable {
     String? selectedForumFilter,
     String? forumSearchQuery,
     Set<String>? bookmarkedPostIds,
+    Set<String>? followedTopics,
     List<StudyRoomEntity>? studyRooms,
     List<ForumPostEntity>? forumPosts,
     List<StudyCircleEntity>? studyCircles,
@@ -84,6 +87,7 @@ class CommunityState extends Equatable {
       selectedForumFilter: selectedForumFilter ?? this.selectedForumFilter,
       forumSearchQuery: forumSearchQuery ?? this.forumSearchQuery,
       bookmarkedPostIds: bookmarkedPostIds ?? this.bookmarkedPostIds,
+      followedTopics: followedTopics ?? this.followedTopics,
       studyRooms: studyRooms ?? this.studyRooms,
       forumPosts: forumPosts ?? this.forumPosts,
       studyCircles: studyCircles ?? this.studyCircles,
@@ -111,6 +115,7 @@ class CommunityState extends Equatable {
     selectedForumFilter,
     forumSearchQuery,
     bookmarkedPostIds,
+    followedTopics,
     studyRooms,
     forumPosts,
     studyCircles,

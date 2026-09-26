@@ -26,6 +26,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.
 import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_retention_chart.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/streak_shield_indicator.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -81,10 +82,7 @@ class _AnalyticsDetailView extends HookWidget {
       appBar: AppBar(
         backgroundColor: colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: colors.textPrimary),
-          onPressed: () => context.router.pop(),
-        ),
+        leading: const AppBackButton(),
         title: Text(
           l10n.analyticsDetailTitle,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),
@@ -1306,32 +1304,44 @@ class _DetailedHeatMapCardState extends State<_DetailedHeatMapCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     if (_selectedDay != null) ...[
-                      Text(
-                        DateFormat('EEEE, MMM d').format(_selectedDay!.date),
-                        style: typography.footnote.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 11.5,
+                      Flexible(
+                        child: Text(
+                          DateFormat('EEEE, MMM d').format(_selectedDay!.date),
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 11.5,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        '${_selectedDay!.cardsReviewed} cards reviewed • '
-                        '${_selectedDay!.minutesStudied}m studied',
-                        style: typography.footnote.medium.copyWith(
-                          color: colors.primary,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '${_selectedDay!.cardsReviewed} cards reviewed • '
+                          '${_selectedDay!.minutesStudied}m studied',
+                          style: typography.footnote.medium.copyWith(
+                            color: colors.primary,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
                         ),
                       ),
                     ] else ...[
-                      Text(
-                        hasActivity
-                            ? 'Tap any day to inspect study performance'
-                            : 'No study activity in past 28 days',
-                        style: typography.footnote.regular.copyWith(
-                          color: colors.textSecondary,
-                          fontSize: 11,
+                      Expanded(
+                        child: Text(
+                          hasActivity
+                              ? 'Tap any day to inspect study performance'
+                              : 'No study activity in past 28 days',
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            fontSize: 11,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

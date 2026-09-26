@@ -158,4 +158,56 @@ class AppFeedback {
       unawaited(HapticFeedback.vibrate());
     } on Object catch (_) {}
   }
+
+  /// Low-friction tick haptic when round timer is under 5 seconds.
+  static void duelTimerTick() {
+    if (!isHapticsEnabled) return;
+    try {
+      unawaited(HapticFeedback.selectionClick());
+    } on Object catch (_) {}
+  }
+
+  /// Multi-stage pulse for active combo streaks (🔥x2, 🔥x3, etc.)
+  static void comboStreak(int streak) {
+    if (!isHapticsEnabled) return;
+    try {
+      unawaited(HapticFeedback.mediumImpact());
+      if (streak >= 3) {
+        Future.delayed(const Duration(milliseconds: 90), () {
+          if (isHapticsEnabled) {
+            try {
+              unawaited(HapticFeedback.heavyImpact());
+            } on Object catch (_) {}
+          }
+        });
+      }
+    } on Object catch (_) {}
+  }
+
+  /// Heavy tactile burst when locking in an answer within < 2 seconds.
+  static void buzzerBeater() {
+    if (isHapticsEnabled) {
+      try {
+        unawaited(HapticFeedback.heavyImpact());
+      } on Object catch (_) {}
+    }
+    if (isSfxEnabled) {
+      try {
+        unawaited(SystemSound.play(SystemSoundType.click));
+      } on Object catch (_) {}
+    }
+  }
+
+  /// Triumphant sensory sequence upon winning a duel.
+  static void duelVictory() {
+    celebration();
+  }
+
+  /// Encouraging tactile pattern for non-winning matches.
+  static void duelDefeat() {
+    if (!isHapticsEnabled) return;
+    try {
+      unawaited(HapticFeedback.lightImpact());
+    } on Object catch (_) {}
+  }
 }

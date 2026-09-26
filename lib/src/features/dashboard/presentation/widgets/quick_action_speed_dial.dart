@@ -98,16 +98,40 @@ class QuickActionSpeedDial extends StatelessWidget {
                           ),
                           _buildDivider(colors, isDark),
                           _ActionItem(
+                            icon: Icons.groups_rounded,
+                            label: 'Study Hub',
+                            color: colors.success,
+                            onTap: () {
+                              AppFeedback.light();
+                              try {
+                                AutoTabsRouter.of(context).setActiveIndex(2);
+                              } on Object catch (_) {
+                                unawaited(
+                                  context.navigateTo(
+                                    const MainRoute(
+                                      children: [CommunityHubRoute()],
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                          _buildDivider(colors, isDark),
+                          _ActionItem(
                             icon: Icons.add_to_photos_rounded,
                             label: l10n.dashboardNewDeck,
                             color: colors.secondary,
                             onTap: () {
                               AppFeedback.light();
-                              unawaited(
-                                context.navigateTo(
-                                  const MainRoute(children: [DecksRoute()]),
-                                ),
-                              );
+                              try {
+                                AutoTabsRouter.of(context).setActiveIndex(1);
+                              } on Object catch (_) {
+                                unawaited(
+                                  context.navigateTo(
+                                    const MainRoute(children: [DecksRoute()]),
+                                  ),
+                                );
+                              }
                             },
                           ),
                         ]
