@@ -47,6 +47,21 @@ void _initServices() {
     ..registerLazySingleton<UserActivityService>(
       () => UserActivityServiceImpl(locator<LocalStorageService>()),
     )
+    ..registerLazySingleton<AssessmentOrchestratorService>(
+      () => AssessmentOrchestratorService(
+        userActivityService: locator<UserActivityService>(),
+        userStorageService: locator<UserStorageService>(),
+        fsrsEngine: locator.isRegistered<FsrsAlgorithmEngine>()
+            ? locator<FsrsAlgorithmEngine>()
+            : null,
+        decksRepository: locator.isRegistered<DecksRepository>()
+            ? locator<DecksRepository>()
+            : null,
+        plannerRepository: locator.isRegistered<PlannerRepository>()
+            ? locator<PlannerRepository>()
+            : null,
+      ),
+    )
     ..registerLazySingleton<BiometricAuthService>(
       () => BiometricAuthServiceImpl(locator()),
     )

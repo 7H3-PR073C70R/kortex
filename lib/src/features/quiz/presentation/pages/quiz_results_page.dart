@@ -24,6 +24,7 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/domain/logic/academic_grade_evaluator.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
+import 'package:kortex/src/features/quiz/domain/services/assessment_orchestrator_service.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
@@ -69,6 +70,26 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+
+      // Process closed-loop telemetry, FSRS recalibration, & readiness index via AssessmentOrchestratorService
+      if (locator.isRegistered<AssessmentOrchestratorService>()) {
+        try {
+          final orchestrator = locator<AssessmentOrchestratorService>();
+          final activeTrack =
+              context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+          unawaited(
+            orchestrator.processQuizCompletion(
+              scorePercent: widget.result.scorePercent.toDouble(),
+              totalQuestions: widget.result.totalQuestions,
+              correctAnswers: widget.result.correctAnswers,
+              questions: widget.questions,
+              userAnswers: widget.questions.map((q) => q.isCorrect ? 1 : 0).toList(),
+              courseCode: widget.courseCode,
+              explicitTrack: activeTrack ?? widget.courseCode,
+            ),
+          );
+        } on Object catch (_) {}
+      }
 
       // If this quiz is associated with an active exam, update its empirical grade in CramPlannerCubit
       if (locator.isRegistered<CramPlannerCubit>()) {
@@ -322,6 +343,104 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 ],
               ),
 
+              // 2.2 Academic Readiness Index Card
+              if (locator.isRegistered<AssessmentOrchestratorService>())
+                Builder(
+                  builder: (context) {
+                    final orchestrator = locator<AssessmentOrchestratorService>();
+                    final readiness = orchestrator
+                        .calculateReadinessIndex(
+                          recentScorePercent:
+                              widget.result.scorePercent.toDouble(),
+                        )
+                        .round();
+                    final readinessColor = readiness >= 75
+                        ? colors.success
+                        : (readiness >= 55
+                              ? colors.syllabotAccent
+                              : colors.warning);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: readinessColor.withAlpha(isDark ? 30 : 15),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                            color: readinessColor.withAlpha(isDark ? 80 : 50),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: readinessColor.withAlpha(
+                                  isDark ? 50 : 25,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.speed_rounded,
+                                color: readinessColor,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Academic Readiness Index',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '$readiness% Final Exam Mastery',
+                                    style: typography.callout.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: readinessColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                readiness >= 75
+                                    ? 'Exam Ready'
+                                    : (readiness >= 55
+                                          ? 'Building Mastery'
+                                          : 'Action Required'),
+                                style: typography.caption.bold.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
               const SizedBox(height: 18),
 
               // 2.5. Seamless Quick Study Actions
@@ -392,6 +511,94 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                   ),
                 ),
               ),
+
+              // 2.8 Socratic AI Concept Remediation Banner
+              if (mistakes > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                          colors.primary.withAlpha(isDark ? 30 : 15),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: colors.syllabotAccent.withAlpha(isDark ? 90 : 60),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.psychology_rounded,
+                              color: colors.syllabotAccent,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Socratic AI Concept Remediation',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'You missed $mistakes question${mistakes > 1 ? 's' : ''}. '
+                          'Syllabot has extracted key concept rules into an instant FSRS recovery deck.',
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        InkWell(
+                          onTap: () => unawaited(
+                            _handlePracticeWeakFlashcards(context),
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.syllabotAccent,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Launch Socratic Recovery Deck',
+                                  style: typography.caption.bold.copyWith(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
               const SizedBox(height: 24),
 
