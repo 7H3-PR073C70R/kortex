@@ -1,9 +1,9 @@
 {
-  "total_synced": 3534,
+  "total_synced": 3539,
   "progress": {
     "jamb": {
       "mathematics": 29,
-      "english-language": 24,
+      "english-language": 25,
       "chemistry": 19,
       "physics": 19,
       "biology": 19,
@@ -68,5 +68,5 @@
       "computer-studies": 4
     }
   },
-  "last_updated": "2026-09-27T04:39:11Z"
+  "last_updated": "2026-09-27T04:40:00Z"
 }

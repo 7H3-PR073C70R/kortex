@@ -105478,5 +105478,125 @@
       "comments_count": 13
     },
     "image_url": null
+  },
+  {
+    "id": "jamb_1979_eng_q1342",
+    "fingerprint": "b87f56cd57726b6fb68346e79364ac30daa10ee5dcc8c2d3834cc3486bf74381",
+    "exam_type": "JAMB",
+    "subject": "English Language",
+    "year": 1979,
+    "question_number": 76,
+    "prompt": "Choose the word/expression which best completes each sentence : During the inaugural address, the president .... the activities of his government for the past four years",
+    "options": [
+      "A. reiterated",
+      "B. reviewed",
+      "C. restated",
+      "D. recited"
+    ],
+    "correct_option_index": 1,
+    "correct_option_label": "B",
+    "explanation": "To determine the correct word to complete the sentence, analyze the context and meaning of each option:\n- **Reiterated** means to repeat something that has been said before, emphasizing its importance.\n- **Reviewed** means to look back over and assess the progress or performance of something.\n- **Restated** means to state again, often in a different way to clarify or emphasize.\n- **Recited** means to repeat something from memory, often in a formal or public setting.\n\nGiven the context of the sentence, which refers to the president addressing the activities of his government over the past four years during an inaugural address, the most appropriate word is **reviewed**. This implies a comprehensive assessment and reflection on the government's activities, which aligns with the formal and evaluative nature of an inaugural address.\n\nTherefore, the correct option is **B. reviewed**.",
+    "topic": "Lexis & Structure",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 1342,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 2
+    },
+    "image_url": null
+  },
+  {
+    "id": "jamb_1979_eng_q1343",
+    "fingerprint": "4d14ce23a01adc2340e0ff94f1e5fe6360ab6c79682b5f401c2f19ee2af47837",
+    "exam_type": "JAMB",
+    "subject": "English Language",
+    "year": 1979,
+    "question_number": 77,
+    "prompt": "Choose the word/expression which best completes each sentence : The world bank team which visited the land-lock country .... a bleak economic future for it.",
+    "options": [
+      "A. forecast",
+      "B. thought of",
+      "C. discovered",
+      "D. prophesied"
+    ],
+    "correct_option_index": 0,
+    "correct_option_label": "A",
+    "explanation": "The correct word to complete the sentence \"The world bank team which visited the land-lock country .... a bleak economic future for it\" is **forecast**. This is because \"forecast\" accurately conveys the act of predicting or estimating future conditions based on current data and trends, which is a common practice for economic assessments by organizations like the World Bank. The other options do not fit as well: \"thought of\" is too casual, \"discovered\" implies finding something that already exists rather than predicting, and \"prophesied\" is too dramatic and implies a supernatural prediction rather than a professional economic analysis. Therefore, the correct option is **A**.",
+    "topic": "Lexis & Structure",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 1343,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 15
+    },
+    "image_url": null
+  },
+  {
+    "id": "jamb_1979_eng_q1344",
+    "fingerprint": "a18ece47270f395e555d346684b86314ae05a13bf11873fbd8803c917ae0b974",
+    "exam_type": "JAMB",
+    "subject": "English Language",
+    "year": 1979,
+    "question_number": 78,
+    "prompt": "Choose the word/expression which best completes each sentence : We travelled all night and arrived .... the oyo motor park at six o'clock in the morning",
+    "options": [
+      "A. by",
+      "B. inside",
+      "C. on",
+      "D. at"
+    ],
+    "correct_option_index": 3,
+    "correct_option_label": "D",
+    "explanation": "To determine the correct preposition to use in the sentence, consider the context and the meaning of each option. The sentence describes arriving at a specific location, which requires a preposition that indicates arrival at a destination. The options are:\nA. **by** - This preposition is used to indicate means of transportation or a limit of time, not a destination.\nB. **inside** - This preposition indicates being within the boundaries of a place, but it does not fit the context of arriving at a place.\nC. **on** - This preposition is used for transportation or positions on surfaces, but it does not fit the context of arriving at a specific location.\nD. **at** - This preposition is used to indicate the arrival at a specific point or location, which fits the context of arriving at the Oyo motor park.\n\nTherefore, the correct option is **D**.",
+    "topic": "Lexis & Structure",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 1344,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 2
+    },
+    "image_url": null
+  },
+  {
+    "id": "jamb_1979_eng_q1345",
+    "fingerprint": "fd8df407f981e52d041d25ff51914c6b9b14e514633ec2d2534071321d13b284",
+    "exam_type": "JAMB",
+    "subject": "English Language",
+    "year": 1979,
+    "question_number": 79,
+    "prompt": "Choose the word/expression which best completes each sentence : We ought to stay away .... the robbers come back",
+    "options": [
+      "A. provided",
+      "B. should in case",
+      "C. although",
+      "D. in case"
+    ],
+    "correct_option_index": 3,
+    "correct_option_label": "D",
+    "explanation": "The correct word to complete the sentence \"We ought to stay away .... the robbers come back\" is **in case**. This phrase is used to express a precautionary measure taken in anticipation of a possible future event. The other options do not fit the context of the sentence: \"provided\" suggests a condition that must be met, \"should in case\" is grammatically incorrect, and \"although\" indicates a contrast rather than a precaution. Therefore, the correct option is D.",
+    "topic": "Lexis & Structure",
+    "passage": null,
+    "latex_formula": null,
+    "difficulty": "Medium",
+    "metadata": {
+      "raw_id": 1345,
+      "image_url": null,
+      "is_synthetic": false,
+      "verification_status": "verified",
+      "comments_count": 8
+    },
+    "image_url": null
   }
 ]
