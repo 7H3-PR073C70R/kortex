@@ -234,6 +234,24 @@ void _initUseCaseLocator() {
         repository: locator<CommunityRepository>(),
       ),
     )
+    ..registerFactory<ForumCubit>(
+      () => ForumCubit(
+        repository: locator<CommunityRepository>(),
+      ),
+    )
+    ..registerFactory<StudyCircleCubit>(
+      () => StudyCircleCubit(
+        repository: locator<CommunityRepository>(),
+      ),
+    )
+    ..registerFactory<MarketplaceCubit>(
+      () => MarketplaceCubit(
+        repository: locator<CommunityRepository>(),
+      ),
+    )
+    ..registerLazySingleton<HubOverviewCubit>(
+      () => HubOverviewCubit(),
+    )
     ..registerLazySingleton<AutoCommunityCubit>(
       () => AutoCommunityCubit(
         autoProvisionCommunityUseCase: locator<AutoProvisionCommunityUseCase>(),

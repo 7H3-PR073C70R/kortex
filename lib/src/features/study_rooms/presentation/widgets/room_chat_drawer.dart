@@ -8,6 +8,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/study_rooms/presentation/bloc/live_room_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -196,6 +197,20 @@ class _RoomChatDrawerState extends State<RoomChatDrawer> {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.sports_esports_rounded, size: 20),
+                color: colors.primary,
+                tooltip: '1v1 Duel Challenge',
+                onPressed: () {
+                  final roomSubject = context.read<LiveRoomCubit>().state.room.subject;
+                  unawaited(
+                    QuizDuelMatchmakingSheet.show(
+                      context,
+                      initialSubject: roomSubject.isNotEmpty ? roomSubject : 'Physics',
+                    ),
+                  );
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.close_rounded, size: 20),

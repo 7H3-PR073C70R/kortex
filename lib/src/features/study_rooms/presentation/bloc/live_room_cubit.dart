@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_room_repository.dart';
@@ -90,6 +92,9 @@ class LiveRoomState extends Equatable {
     this.showGoalVerificationModal = false,
     this.microphonePermissionDenied = false,
     this.isPermanentlyDeniedMic = false,
+    this.isReconnecting = false,
+    this.reconnectAttempt = 0,
+    this.connectionQuality = 'excellent',
   });
 
   final StudyRoomEntity room;
@@ -129,6 +134,9 @@ class LiveRoomState extends Equatable {
   final bool showGoalVerificationModal;
   final bool microphonePermissionDenied;
   final bool isPermanentlyDeniedMic;
+  final bool isReconnecting;
+  final int reconnectAttempt;
+  final String connectionQuality;
 
   String get formattedTimer {
     final minutes = (remainingSeconds ~/ 60).toString().padLeft(2, '0');
@@ -193,6 +201,9 @@ class LiveRoomState extends Equatable {
     bool? showGoalVerificationModal,
     bool? microphonePermissionDenied,
     bool? isPermanentlyDeniedMic,
+    bool? isReconnecting,
+    int? reconnectAttempt,
+    String? connectionQuality,
   }) {
     return LiveRoomState(
       room: room ?? this.room,
@@ -247,6 +258,9 @@ class LiveRoomState extends Equatable {
           microphonePermissionDenied ?? this.microphonePermissionDenied,
       isPermanentlyDeniedMic:
           isPermanentlyDeniedMic ?? this.isPermanentlyDeniedMic,
+      isReconnecting: isReconnecting ?? this.isReconnecting,
+      reconnectAttempt: reconnectAttempt ?? this.reconnectAttempt,
+      connectionQuality: connectionQuality ?? this.connectionQuality,
     );
   }
 
@@ -289,6 +303,9 @@ class LiveRoomState extends Equatable {
     showGoalVerificationModal,
     microphonePermissionDenied,
     isPermanentlyDeniedMic,
+    isReconnecting,
+    reconnectAttempt,
+    connectionQuality,
   ];
 }
 
@@ -401,6 +418,9 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         durationMinutes: state.room.pomodoroDurationMinutes,
         subject: state.room.subject,
       );
+      if (locator.isRegistered<DashboardBloc>()) {
+        locator<DashboardBloc>().add(const DashboardRefreshed());
+      }
     }
 
     final hasGoal =
@@ -1296,6 +1316,40 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
 
   void dismissGoalVerification() {
     emit(state.copyWith(showGoalVerificationModal: false));
+  }
+
+  Future<void> retryAudioConnection() async {
+    if (_audioService == null) return;
+    emit(
+      state.copyWith(
+        isReconnecting: true,
+        reconnectAttempt: state.reconnectAttempt + 1,
+        connectionQuality: 'reconnecting',
+      ),
+    );
+    try {
+      final token = 'token_room_${state.room.id}_$_currentUserId';
+      await _audioService.connect(
+        url: AppEnv.liveKitUrl,
+        token: token,
+        roomId: state.room.id,
+        userId: _currentUserId,
+      );
+      emit(
+        state.copyWith(
+          isReconnecting: false,
+          isAudioConnected: true,
+          connectionQuality: 'excellent',
+        ),
+      );
+    } on Object catch (_) {
+      emit(
+        state.copyWith(
+          isReconnecting: false,
+          connectionQuality: 'poor',
+        ),
+      );
+    }
   }
 
   @override

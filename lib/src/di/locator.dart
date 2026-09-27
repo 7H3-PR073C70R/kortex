@@ -49,6 +49,10 @@ import 'package:kortex/src/features/community/domain/use_cases/fetch_course_comm
 import 'package:kortex/src/features/community/domain/use_cases/fetch_forum_posts_use_case.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/bloc/forum_cubit.dart';
+import 'package:kortex/src/features/community/presentation/bloc/hub_overview_cubit.dart';
+import 'package:kortex/src/features/deck_marketplace/presentation/bloc/marketplace_cubit.dart';
+import 'package:kortex/src/features/study_rooms/presentation/bloc/study_circle_cubit.dart';
 import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source_impl.dart';
