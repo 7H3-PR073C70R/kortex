@@ -231,167 +231,318 @@ class CbtReadinessGaugeCard extends StatelessWidget {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: colors.textMuted.withAlpha(100),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'CBT Readiness Breakdown',
-                    style: typography.title2.bold.copyWith(color: colors.textPrimary),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: readinessResult.statusColor.withAlpha(30),
-                      borderRadius: BorderRadius.circular(AppRadius.badge),
-                    ),
-                    child: Text(
-                      readinessResult.statusLabel,
-                      style: typography.caption.bold.copyWith(color: readinessResult.statusColor),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Diagnostic analysis for $examTitle ($daysRemaining days remaining)',
-                style: typography.body.medium.copyWith(color: colors.textSecondary),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
+          return DraggableScrollableSheet(
+            initialChildSize: 0.78,
+            maxChildSize: 0.92,
+            minChildSize: 0.50,
+            builder: (context, scrollController) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 decoration: BoxDecoration(
-                  color: colors.surfacePrimary.withAlpha(isDark ? 60 : 200),
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: colors.surfaceBorder.withAlpha(60)),
+                  color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: ListView(
+                  controller: scrollController,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: colors.textMuted.withAlpha(100),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.warning_amber_rounded, color: readinessResult.statusColor, size: 20),
-                        const SizedBox(width: 8),
                         Text(
-                          'Primary Bottleneck',
-                          style: typography.caption.bold.copyWith(color: colors.textSecondary),
+                          'CBT Readiness Breakdown',
+                          style: typography.title2.bold.copyWith(color: colors.textPrimary),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: readinessResult.statusColor.withAlpha(30),
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                          ),
+                          child: Text(
+                            readinessResult.statusLabel,
+                            style: typography.caption.bold.copyWith(color: readinessResult.statusColor),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      readinessResult.weakestAreaLabel.isNotEmpty
-                          ? readinessResult.weakestAreaLabel
-                          : 'Memory Retention Stability',
-                      style: typography.body.bold.copyWith(color: colors.textPrimary),
+                      'Diagnostic analysis for $examTitle ($daysRemaining days remaining)',
+                      style: typography.body.medium.copyWith(color: colors.textSecondary),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'RECOMMENDED ACTION',
-                style: typography.caption.bold.copyWith(
-                  color: colors.textSecondary,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 40 : 20),
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(color: colors.primary.withAlpha(80)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.bolt_rounded, color: colors.primary, size: 24),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        readinessResult.remediationSuggestion,
-                        style: typography.body.medium.copyWith(color: colors.textPrimary),
+                    const SizedBox(height: 18),
+
+                    // Projected Score vs Target Goal Banner
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            readinessResult.statusColor.withAlpha(isDark ? 50 : 30),
+                            colors.primary.withAlpha(isDark ? 30 : 15),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: readinessResult.statusColor.withAlpha(80)),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        final prompt =
-                            'Help me review ${readinessResult.weakestAreaLabel.isNotEmpty ? readinessResult.weakestAreaLabel : "key concepts"} to boost my $examTitle readiness score.';
-                        unawaited(
-                          context.router.push(
-                            SyllabotChatRoute(initialPrompt: prompt),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'PROJECTED EXAM SCORE',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 10.5,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  readinessResult.projectedScoreRange,
+                                  style: typography.title3.bold.copyWith(color: colors.textPrimary),
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 18,
-                        color: colors.primary,
-                      ),
-                      label: Text(
-                        'AI Sprint',
-                        style: typography.body.medium.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isDark ? colors.surfacePrimary : colors.surfaceSecondary,
+                              borderRadius: BorderRadius.circular(AppRadius.badge),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Pacing Rate',
+                                  style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 10),
+                                ),
+                                Text(
+                                  readinessResult.speedDiagnosticLabel,
+                                  style: typography.caption.bold.copyWith(
+                                    color: readinessResult.speedReadinessRatio >= 0.8 ? colors.success : colors.warning,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card),
+                    const SizedBox(height: 18),
+
+                    // Subject Mastery Breakdown Header
+                    if (readinessResult.subjectBreakdowns.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'SUBJECT MASTERY BREAKDOWN',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.textSecondary,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          Text(
+                            '${readinessResult.subjectBreakdowns.length} Subjects',
+                            style: typography.caption.medium.copyWith(color: colors.textSecondary),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ...readinessResult.subjectBreakdowns.map(
+                        (sub) => Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary.withAlpha(isDark ? 80 : 200),
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            border: Border.all(color: colors.surfaceBorder.withAlpha(60)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      sub.subjectName,
+                                      style: typography.body.bold.copyWith(color: colors.textPrimary),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${sub.projectedScore} / ${sub.maxScore} pts',
+                                    style: typography.body.bold.copyWith(
+                                      color: sub.statusColor ?? colors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                                      child: LinearProgressIndicator(
+                                        value: sub.readinessPercent / 100.0,
+                                        minHeight: 6,
+                                        backgroundColor: colors.surfaceBorder.withAlpha(60),
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          sub.statusColor ?? colors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    '${sub.readinessPercent}%',
+                                    style: typography.caption.bold.copyWith(color: colors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      child: const Text('Back'),
+                      const SizedBox(height: 14),
+                    ],
+
+                    // Primary Bottleneck Diagnostic
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colors.surfacePrimary.withAlpha(isDark ? 60 : 200),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: colors.surfaceBorder.withAlpha(60)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: readinessResult.statusColor, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Primary Bottleneck Diagnostic',
+                                style: typography.caption.bold.copyWith(color: colors.textSecondary),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            readinessResult.weakestAreaLabel.isNotEmpty
+                                ? readinessResult.weakestAreaLabel
+                                : 'Memory Retention Stability',
+                            style: typography.body.bold.copyWith(color: colors.textPrimary),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    ),
-  );
+                    const SizedBox(height: 16),
+
+                    // Actionable Remediation
+                    Text(
+                      'RECOMMENDED ACTION',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.textSecondary,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                        border: Border.all(color: colors.primary.withAlpha(80)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.bolt_rounded, color: colors.primary, size: 24),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              readinessResult.remediationSuggestion,
+                              style: typography.body.medium.copyWith(color: colors.textPrimary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              final prompt =
+                                  'Help me review ${readinessResult.weakestAreaLabel.isNotEmpty ? readinessResult.weakestAreaLabel : "key concepts"} to boost my $examTitle readiness score.';
+                              unawaited(
+                                context.router.push(
+                                  SyllabotChatRoute(initialPrompt: prompt),
+                                ),
+                              );
+                            },
+                            icon: Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 18,
+                              color: colors.primary,
+                            ),
+                            label: Text(
+                              'AI Sprint',
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.card),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.card),
+                              ),
+                            ),
+                            child: const Text('Back'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 }
 

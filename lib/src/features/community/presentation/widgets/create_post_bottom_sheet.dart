@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +9,9 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
+import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/pages/forum_thread_detail_page.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -99,6 +103,7 @@ class CreatePostBottomSheet extends HookWidget {
     final isDark = context.isDarkMode;
 
     final titleController = useTextEditingController(text: initialTitle);
+    useListenable(titleController);
     final contentController = useTextEditingController(text: initialContent);
     final latexController = useTextEditingController(text: initialLatex);
     useListenable(latexController);
@@ -290,7 +295,94 @@ class CreatePostBottomSheet extends HookWidget {
                       ? 'e.g. How do I solve this JAMB 2023 Physics Question 14?'
                       : l10n.postTitleHint,
                 ),
-                const SizedBox(height: 12),
+                Builder(
+                  builder: (ctx) {
+                    final hubState = ctx.watch<CommunityHubBloc?>()?.state;
+                    final existingPosts = hubState?.forumPosts ?? const [];
+                    final matches = ForumDuplicateDetector.findSimilarPosts(
+                      query: titleController.text,
+                      posts: existingPosts,
+                      track: activeTrack,
+                    );
+
+                    if (matches.isEmpty) return const SizedBox(height: 12);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 30 : 15),
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: colors.primary.withAlpha(50),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.manage_search_rounded,
+                                  size: 16,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Similar Solved Discussions Found',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...matches.map(
+                              (match) => InkWell(
+                                onTap: () {
+                                  Navigator.of(ctx).pop();
+                                  unawaited(
+                                    Navigator.of(ctx).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => ForumThreadDetailPage(post: match),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '• ${match.title}',
+                                          style: typography.caption.medium.copyWith(
+                                            color: colors.textPrimary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Join Thread',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
 
                 // Content Field
                 AppTextField(

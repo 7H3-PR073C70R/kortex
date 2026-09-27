@@ -37,6 +37,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
       fsrsRetentionRate: retentionScore,
       mockScoreRatio: mockScore,
       daysRemaining: 30,
+      examType: examTitle,
       explicitWeakestTopic: topicName,
     );
 

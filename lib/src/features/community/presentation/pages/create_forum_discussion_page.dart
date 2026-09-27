@@ -15,6 +15,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
 import 'package:kortex/src/features/community/domain/services/spoken_math_converter.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
@@ -567,16 +568,16 @@ class CreateForumDiscussionPage extends HookWidget {
 
       // Duplicate post prevention check across existing state
       final currentPosts = context.read<CommunityHubBloc>().state.forumPosts;
-      final isDuplicate = currentPosts.any(
-        (p) =>
-            p.track.toLowerCase() == selectedTrack.value.toLowerCase() &&
-            p.title.trim().toLowerCase() == title.toLowerCase(),
+      final duplicateMatch = ForumDuplicateDetector.findExactOrHighMatch(
+        title: title,
+        posts: currentPosts,
+        track: selectedTrack.value,
       );
 
-      if (isDuplicate) {
+      if (duplicateMatch != null) {
         context.showSnackBar(
           message:
-              'A discussion thread with this exact title already exists in ${selectedTrack.value}. Please join the existing discussion!',
+              'A highly similar discussion thread "${duplicateMatch.title}" already exists in ${selectedTrack.value}. Please join the existing discussion!',
           type: SnackBarType.error,
         );
         return;

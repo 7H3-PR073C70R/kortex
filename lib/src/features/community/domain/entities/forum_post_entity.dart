@@ -23,6 +23,7 @@ class ForumPostEntity extends Equatable {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
     this.socraticHint,
     this.socraticHintGeneratedAt,
     this.karmaBounty = 0,
@@ -48,6 +49,7 @@ class ForumPostEntity extends Equatable {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final String? socraticHint;
   final DateTime? socraticHintGeneratedAt;
   final int karmaBounty;
@@ -79,6 +81,7 @@ class ForumPostEntity extends Equatable {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     String? socraticHint,
     DateTime? socraticHintGeneratedAt,
     int? karmaBounty,
@@ -106,6 +109,7 @@ class ForumPostEntity extends Equatable {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       socraticHint: socraticHint ?? this.socraticHint,
       socraticHintGeneratedAt:
           socraticHintGeneratedAt ?? this.socraticHintGeneratedAt,
@@ -136,6 +140,7 @@ class ForumPostEntity extends Equatable {
     mediaUrls,
     voiceNoteUrl,
     voiceNoteDurationSeconds,
+    voiceNoteTranscript,
     socraticHint,
     socraticHintGeneratedAt,
     karmaBounty,
@@ -164,6 +169,7 @@ class ForumReplyEntity extends Equatable {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
   });
 
   final String id;
@@ -182,6 +188,7 @@ class ForumReplyEntity extends Equatable {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final DateTime createdAt;
 
   int get netVotes => upvotes - downvotes;
@@ -204,6 +211,7 @@ class ForumReplyEntity extends Equatable {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     DateTime? createdAt,
   }) {
     return ForumReplyEntity(
@@ -224,6 +232,7 @@ class ForumReplyEntity extends Equatable {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -246,6 +255,7 @@ class ForumReplyEntity extends Equatable {
     mediaUrls,
     voiceNoteUrl,
     voiceNoteDurationSeconds,
+    voiceNoteTranscript,
     createdAt,
   ];
 }

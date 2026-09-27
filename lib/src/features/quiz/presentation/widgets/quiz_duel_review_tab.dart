@@ -1,14 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_badge.dart';
 
 /// Post-Match Educational Review & Explanation tab for 1v1 Quiz Duels.
@@ -233,6 +239,36 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
                       ? null
                       : () => _saveAllMissedQuestions(context, missedQuestions),
                 ),
+                const SizedBox(width: 6),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    side: BorderSide(color: colors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                    ),
+                  ),
+                  icon: Icon(
+                    Icons.sports_esports_rounded,
+                    size: 16,
+                    color: colors.primary,
+                  ),
+                  label: Text(
+                    'Rematch',
+                    style: typography.caption.bold.copyWith(color: colors.primary),
+                  ),
+                  onPressed: () {
+                    unawaited(
+                      QuizDuelMatchmakingSheet.show(
+                        context,
+                        initialSubject: widget.match.subject,
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           );
@@ -423,31 +459,113 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
                 const SizedBox(height: 12),
               ],
 
-              // Single Question Flashcard Toggle Action
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+              // Question Actions: Flashcard Save & Community Discussion
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                     ),
+                    icon: Icon(
+                      Icons.forum_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                    label: Text(
+                      'Discuss in Forum',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                      ),
+                    ),
+                    onPressed: () {
+                      final tag = q.subTopic.isNotEmpty ? q.subTopic : widget.match.subject;
+                      final buffer = StringBuffer(q.prompt.replaceAll('**', ''));
+                      if (q.options.isNotEmpty) {
+                        buffer
+                          ..writeln()
+                          ..writeln()
+                          ..writeln('Options:');
+                        for (final opt in q.options) {
+                          buffer.writeln('• ${opt.replaceAll('**', '')}');
+                        }
+                      }
+                      buffer
+                        ..writeln()
+                        ..writeln('Correct Answer: ${q.correctAnswer}');
+                      if (q.explanation.isNotEmpty) {
+                        buffer
+                          ..writeln()
+                          ..writeln('Explanation: ${q.explanation.replaceAll('**', '')}');
+                      }
+                      buffer
+                        ..writeln()
+                        ..writeln('Would like a second perspective from the community!');
+
+                      unawaited(
+                        CreatePostBottomSheet.show(
+                          context,
+                          lockedTrack: widget.match.subject,
+                          initialTitle: '[$tag] Duel Question Discussion',
+                          initialContent: buffer.toString().trim(),
+                          initialLatex: q.latexFormula,
+                          initialSyllabusTag: tag,
+                          initialIsQuestion: true,
+                          contextBadge: 'Duel Question • ${widget.match.subject}',
+                          onSubmit: ({
+                            required title,
+                            required content,
+                            required track,
+                            latexContent,
+                            isQuestion = true,
+                            syllabusTag = 'General',
+                            isAnonymous = false,
+                          }) {
+                            if (locator.isRegistered<CommunityHubBloc>()) {
+                              locator<CommunityHubBloc>().add(
+                                CreateForumPostEvent(
+                                  title: title,
+                                  content: content,
+                                  track: track,
+                                  latexContent: latexContent,
+                                  isQuestion: true,
+                                  syllabusTag: syllabusTag,
+                                  isAnonymous: isAnonymous,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      );
+                    },
                   ),
-                  icon: Icon(
-                    isSingleSaved
-                        ? Icons.bookmark_added_rounded
-                        : Icons.bookmark_add_rounded,
-                    size: 16,
-                    color: isSingleSaved ? colors.success : colors.primary,
-                  ),
-                  label: Text(
-                    isSingleSaved ? 'Saved to Flashcards' : 'Save to Flashcards',
-                    style: typography.caption.bold.copyWith(
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    icon: Icon(
+                      isSingleSaved
+                          ? Icons.bookmark_added_rounded
+                          : Icons.bookmark_add_rounded,
+                      size: 16,
                       color: isSingleSaved ? colors.success : colors.primary,
                     ),
+                    label: Text(
+                      isSingleSaved ? 'Saved to Flashcards' : 'Save to Flashcards',
+                      style: typography.caption.bold.copyWith(
+                        color: isSingleSaved ? colors.success : colors.primary,
+                      ),
+                    ),
+                    onPressed: () => _toggleSingleQuestion(q.id),
                   ),
-                  onPressed: () => _toggleSingleQuestion(q.id),
-                ),
+                ],
               ),
             ],
           ),

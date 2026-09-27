@@ -16,6 +16,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_event.
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/subject_master_badge.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -599,6 +600,11 @@ class TrackForumPostCard extends HookWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 6),
+                              SubjectMasterBadge(
+                                track: post.track,
+                                compact: true,
+                              ),
                               if (post.isQuestion) ...[
                                 const SizedBox(width: 6),
                                 Container(
@@ -613,7 +619,7 @@ class TrackForumPostCard extends HookWidget {
                                     borderRadius: AppRadius.radiusMicro,
                                   ),
                                   child: Text(
-                                    '+100 XP',
+                                    '+${post.karmaBounty > 0 ? post.karmaBounty : 100} XP',
                                     style: typography.caption.bold.copyWith(
                                       color: colors.warning,
                                       fontSize: 9.5,
@@ -711,6 +717,7 @@ class TrackForumPostCard extends HookWidget {
                       VoiceNotePlayerWidget(
                         audioUrl: post.voiceNoteUrl!,
                         durationSeconds: post.voiceNoteDurationSeconds,
+                        transcript: post.voiceNoteTranscript,
                         compact: true,
                       ),
                     ],

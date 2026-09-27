@@ -22,6 +22,7 @@ class ForumPostModel {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
     this.socraticHint,
     this.socraticHintGeneratedAt,
     required this.createdAt,
@@ -47,6 +48,7 @@ class ForumPostModel {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final String? socraticHint;
   final DateTime? socraticHintGeneratedAt;
   final DateTime createdAt;
@@ -207,13 +209,28 @@ class ForumPostModel {
     return results;
   }
 
-  static ({String? url, int? duration}) extractVoiceNote(
+  static ({String? url, int? duration, String? transcript}) extractVoiceNote(
     String content, {
     String? rawUrl,
     int? rawDuration,
+    String? rawTranscript,
   }) {
+    String? transcript = rawTranscript;
+    if (transcript == null || transcript.trim().isEmpty) {
+      final transcriptMatch = RegExp(
+        r'<!--\s*voice_transcript:\s*([\s\S]*?)\s*-->',
+      ).firstMatch(content);
+      if (transcriptMatch != null) {
+        transcript = transcriptMatch.group(1)?.trim();
+      }
+    }
+
     if (rawUrl != null && rawUrl.trim().isNotEmpty) {
-      return (url: rawUrl.trim(), duration: rawDuration);
+      return (
+        url: rawUrl.trim(),
+        duration: rawDuration,
+        transcript: transcript,
+      );
     }
 
     final voiceMatch = RegExp(
@@ -223,10 +240,14 @@ class ForumPostModel {
       final url = voiceMatch.group(1)?.trim();
       final durStr = voiceMatch.group(2);
       final dur = durStr != null ? int.tryParse(durStr) : null;
-      return (url: url, duration: dur ?? rawDuration);
+      return (
+        url: url,
+        duration: dur ?? rawDuration,
+        transcript: transcript,
+      );
     }
 
-    return (url: null, duration: null);
+    return (url: null, duration: null, transcript: transcript);
   }
 
   factory ForumPostModel.fromJson(Map<String, dynamic> json) {
@@ -259,6 +280,9 @@ class ForumPostModel {
       rawDuration:
           (json['voice_note_duration_seconds'] as num?)?.toInt() ??
           (json['voiceNoteDurationSeconds'] as num?)?.toInt(),
+      rawTranscript:
+          json['voice_note_transcript'] as String? ??
+          json['voiceNoteTranscript'] as String?,
     );
 
     return ForumPostModel(
@@ -284,6 +308,7 @@ class ForumPostModel {
       mediaUrls: parsedMedia,
       voiceNoteUrl: voiceNote.url,
       voiceNoteDurationSeconds: voiceNote.duration,
+      voiceNoteTranscript: voiceNote.transcript,
       socraticHint:
           json['socratic_hint'] as String? ?? json['socraticHint'] as String?,
       socraticHintGeneratedAt: json['socratic_hint_generated_at'] != null
@@ -320,6 +345,8 @@ class ForumPostModel {
       if (voiceNoteUrl != null) 'voice_note_url': voiceNoteUrl,
       if (voiceNoteDurationSeconds != null)
         'voice_note_duration_seconds': voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null)
+        'voice_note_transcript': voiceNoteTranscript,
       if (socraticHint != null) 'socratic_hint': socraticHint,
       if (socraticHintGeneratedAt != null)
         'socratic_hint_generated_at': socraticHintGeneratedAt!
@@ -349,6 +376,7 @@ class ForumPostModel {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     String? socraticHint,
     DateTime? socraticHintGeneratedAt,
     DateTime? createdAt,
@@ -375,6 +403,7 @@ class ForumPostModel {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       socraticHint: socraticHint ?? this.socraticHint,
       socraticHintGeneratedAt:
           socraticHintGeneratedAt ?? this.socraticHintGeneratedAt,
@@ -404,6 +433,7 @@ class ForumPostModel {
       mediaUrls: mediaUrls,
       voiceNoteUrl: voiceNoteUrl,
       voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript,
       socraticHint: socraticHint,
       socraticHintGeneratedAt: socraticHintGeneratedAt,
       createdAt: createdAt,
@@ -430,6 +460,7 @@ class ForumReplyModel {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
     required this.createdAt,
   });
 
@@ -449,6 +480,7 @@ class ForumReplyModel {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final DateTime createdAt;
 
   int get netVotes => upvotes - downvotes;
@@ -458,15 +490,17 @@ class ForumReplyModel {
     return ForumPostModel.extractMediaUrls(content, rawMedia);
   }
 
-  static ({String? url, int? duration}) extractVoiceNote(
+  static ({String? url, int? duration, String? transcript}) extractVoiceNote(
     String content, {
     String? rawUrl,
     int? rawDuration,
+    String? rawTranscript,
   }) {
     return ForumPostModel.extractVoiceNote(
       content,
       rawUrl: rawUrl,
       rawDuration: rawDuration,
+      rawTranscript: rawTranscript,
     );
   }
 
@@ -486,6 +520,9 @@ class ForumReplyModel {
       rawDuration:
           (json['voice_note_duration_seconds'] as num?)?.toInt() ??
           (json['voiceNoteDurationSeconds'] as num?)?.toInt(),
+      rawTranscript:
+          json['voice_note_transcript'] as String? ??
+          json['voiceNoteTranscript'] as String?,
     );
 
     return ForumReplyModel(
@@ -515,6 +552,7 @@ class ForumReplyModel {
       mediaUrls: parsedMedia,
       voiceNoteUrl: voiceNote.url,
       voiceNoteDurationSeconds: voiceNote.duration,
+      voiceNoteTranscript: voiceNote.transcript,
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -540,6 +578,8 @@ class ForumReplyModel {
       if (voiceNoteUrl != null) 'voice_note_url': voiceNoteUrl,
       if (voiceNoteDurationSeconds != null)
         'voice_note_duration_seconds': voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null)
+        'voice_note_transcript': voiceNoteTranscript,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -561,6 +601,7 @@ class ForumReplyModel {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     DateTime? createdAt,
   }) {
     return ForumReplyModel(
@@ -581,6 +622,7 @@ class ForumReplyModel {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -603,6 +645,7 @@ class ForumReplyModel {
       mediaUrls: mediaUrls,
       voiceNoteUrl: voiceNoteUrl,
       voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript,
       createdAt: createdAt,
     );
   }
@@ -625,6 +668,7 @@ class ForumReplyModel {
       mediaUrls: entity.mediaUrls,
       voiceNoteUrl: entity.voiceNoteUrl,
       voiceNoteDurationSeconds: entity.voiceNoteDurationSeconds,
+      voiceNoteTranscript: entity.voiceNoteTranscript,
       createdAt: entity.createdAt,
     );
   }

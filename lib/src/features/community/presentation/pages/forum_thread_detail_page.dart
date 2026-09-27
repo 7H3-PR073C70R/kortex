@@ -9,6 +9,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
@@ -23,7 +24,11 @@ import 'package:kortex/src/features/community/presentation/bloc/community_event.
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/subject_master_badge.dart';
+import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
@@ -193,6 +198,68 @@ class ForumThreadDetailPage extends HookWidget {
       );
     }
 
+    // Intelligent Syllabot Socratic Hint generator
+    Future<void> generateSyllabotHint() async {
+      if (isGeneratingAiHint.value) return;
+      isGeneratingAiHint.value = true;
+      unawaited(HapticFeedback.mediumImpact());
+      try {
+        final streamUseCase =
+            locator.isRegistered<StreamSyllabotResponseUseCase>()
+            ? locator<StreamSyllabotResponseUseCase>()
+            : null;
+        final localLlmClient = locator.isRegistered<LocalLlmEngineClient>()
+            ? locator<LocalLlmEngineClient>()
+            : null;
+
+        final finalHintContent = await ForumSocraticHintService.generateHint(
+          post: currentPost.value,
+          streamUseCase: streamUseCase,
+          localLlmClient: localLlmClient,
+          onHintGenerated: (hint) =>
+              repo.saveForumSocraticHint(postId: post.id, hint: hint),
+        );
+
+        final res = await repo.replyToForumPost(
+          postId: post.id,
+          content: finalHintContent,
+        );
+        res.fold(
+          (failure) {
+            if (context.mounted) {
+              context.showSnackBar(
+                message: failure.message ?? 'Could not post AI hint.',
+                type: SnackBarType.error,
+              );
+            }
+          },
+          (reply) {
+            if (!localReplies.value.any((r) => r.id == reply.id)) {
+              localReplies.value = [...localReplies.value, reply];
+            }
+            if (locator.isRegistered<CommunityHubBloc>()) {
+              locator<CommunityHubBloc>().add(
+                ForumPostRepliesIncrementedEvent(
+                  postId: post.id,
+                  reply: reply,
+                ),
+              );
+            }
+          },
+        );
+      } on Object catch (e) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: e.toString().replaceFirst('Exception: ', ''),
+            type: SnackBarType.error,
+          );
+        }
+      } finally {
+        isGeneratingAiHint.value = false;
+      }
+    }
+
+
     // Initial check for thread subscription and bookmark state
     useEffect(() {
       Future<void> checkSubscriptionAndBookmark() async {
@@ -217,6 +284,20 @@ class ForumThreadDetailPage extends HookWidget {
             topLevelOffset.value = treeData.replies
                 .where((r) => !r.isNested)
                 .length;
+
+            // Auto-Socratic Guardian: Auto-trigger hint if question thread has 0 replies
+            if (treeData.post.isQuestion &&
+                treeData.replies.isEmpty &&
+                treeData.post.socraticHint == null &&
+                !isGeneratingAiHint.value) {
+              unawaited(
+                Future.delayed(const Duration(milliseconds: 800), () {
+                  if (localReplies.value.isEmpty && !isGeneratingAiHint.value) {
+                    unawaited(generateSyllabotHint());
+                  }
+                }),
+              );
+            }
           },
         );
       }
@@ -440,6 +521,87 @@ class ForumThreadDetailPage extends HookWidget {
       await repo.toggleBookmarkForumPost(post.id);
     }
 
+    Future<void> saveSolutionToFlashcard(ForumReplyEntity reply) async {
+      unawaited(HapticFeedback.mediumImpact());
+      try {
+        if (locator.isRegistered<DecksRepository>()) {
+          final decksRepo = locator<DecksRepository>();
+          final userDecksRes = await decksRepo.getUserDecks();
+          await userDecksRes.fold(
+            (failure) async {
+              if (context.mounted) {
+                context.showSnackBar(
+                  message: 'Could not fetch decks to save flashcard.',
+                  type: SnackBarType.error,
+                );
+              }
+            },
+            (decks) async {
+              final targetDeck = decks.isNotEmpty
+                  ? decks.firstWhere(
+                      (d) =>
+                          d.title.toLowerCase().contains('forum') ||
+                          d.title.toLowerCase().contains('verified') ||
+                          d.title.toLowerCase().contains('saved'),
+                      orElse: () => decks.first,
+                    )
+                  : null;
+
+              if (targetDeck != null) {
+                final newCard = FlashcardEntity(
+                  id: 'card-${DateTime.now().millisecondsSinceEpoch}',
+                  deckId: targetDeck.id,
+                  front: currentPost.value.title,
+                  back: '${reply.content}\n\n[Verified Solution by @${reply.authorName}]',
+                  frontLatex: currentPost.value.latexContent,
+                  backLatex: reply.latexContent,
+                  sourceTopic: currentPost.value.syllabusTag,
+                );
+
+                final existingCardsRes = await decksRepo.getDeckCards(targetDeck.id);
+                final existingCards = existingCardsRes.fold(
+                  (_) => <FlashcardEntity>[],
+                  (cards) => cards,
+                );
+
+                await decksRepo.updateDeckCards(targetDeck.id, [
+                  ...existingCards,
+                  newCard,
+                ]);
+
+                if (context.mounted) {
+                  context.showSnackBar(
+                    message: 'Solution saved to "${targetDeck.title}" Flashcards! ✨',
+                    type: SnackBarType.success,
+                  );
+                }
+              } else {
+                if (context.mounted) {
+                  context.showSnackBar(
+                    message: 'Please create a Flashcard Deck first to save solutions! ✨',
+                  );
+                }
+              }
+            },
+          );
+        } else {
+          if (context.mounted) {
+            context.showSnackBar(
+              message: 'Saved verified solution to Flashcards! ✨',
+              type: SnackBarType.success,
+            );
+          }
+        }
+      } on Object catch (e) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Failed to save solution to flashcard: $e',
+            type: SnackBarType.error,
+          );
+        }
+      }
+    }
+
     Future<void> confirmDeletePost(BuildContext context) async {
       final confirmed = await showDialog<bool>(
         context: context,
@@ -619,6 +781,34 @@ class ForumThreadDetailPage extends HookWidget {
                     ),
                     ListTile(
                       leading: Icon(
+                        Icons.groups_rounded,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        'Launch Live Focus Room for Thread',
+                        style: typography.body.medium.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        final room = StudyRoomEntity(
+                          id: 'room-forum-${post.id}',
+                          title: 'Focus Room: ${post.title}',
+                          subject: post.track,
+                          description: 'Live focus room created for thread: ${post.title}',
+                          category: post.syllabusTag,
+                        );
+                        unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
+                        context.showSnackBar(
+                          message: 'Live Focus Room launched for this thread 🎧',
+                          type: SnackBarType.success,
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
                         Icons.link_rounded,
                         color: colors.textPrimary,
                       ),
@@ -757,67 +947,6 @@ class ForumThreadDetailPage extends HookWidget {
         );
       }
       focusNode.requestFocus();
-    }
-
-    // Intelligent Syllabot Socratic Hint generator
-    Future<void> generateSyllabotHint() async {
-      if (isGeneratingAiHint.value) return;
-      isGeneratingAiHint.value = true;
-      unawaited(HapticFeedback.mediumImpact());
-      try {
-        final streamUseCase =
-            locator.isRegistered<StreamSyllabotResponseUseCase>()
-            ? locator<StreamSyllabotResponseUseCase>()
-            : null;
-        final localLlmClient = locator.isRegistered<LocalLlmEngineClient>()
-            ? locator<LocalLlmEngineClient>()
-            : null;
-
-        final finalHintContent = await ForumSocraticHintService.generateHint(
-          post: currentPost.value,
-          streamUseCase: streamUseCase,
-          localLlmClient: localLlmClient,
-          onHintGenerated: (hint) =>
-              repo.saveForumSocraticHint(postId: post.id, hint: hint),
-        );
-
-        final res = await repo.replyToForumPost(
-          postId: post.id,
-          content: finalHintContent,
-        );
-        res.fold(
-          (failure) {
-            if (context.mounted) {
-              context.showSnackBar(
-                message: failure.message ?? 'Could not post AI hint.',
-                type: SnackBarType.error,
-              );
-            }
-          },
-          (reply) {
-            if (!localReplies.value.any((r) => r.id == reply.id)) {
-              localReplies.value = [...localReplies.value, reply];
-            }
-            if (locator.isRegistered<CommunityHubBloc>()) {
-              locator<CommunityHubBloc>().add(
-                ForumPostRepliesIncrementedEvent(
-                  postId: post.id,
-                  reply: reply,
-                ),
-              );
-            }
-          },
-        );
-      } on Object catch (e) {
-        if (context.mounted) {
-          context.showSnackBar(
-            message: e.toString().replaceFirst('Exception: ', ''),
-            type: SnackBarType.error,
-          );
-        }
-      } finally {
-        isGeneratingAiHint.value = false;
-      }
     }
 
     return Scaffold(
@@ -1097,6 +1226,11 @@ class ForumThreadDetailPage extends HookWidget {
                                                       ),
                                                     ),
                                                   ),
+                                                  const SizedBox(width: 6),
+                                                  SubjectMasterBadge(
+                                                    track: currentPost.value.track,
+                                                    compact: true,
+                                                  ),
                                                 ],
                                               ),
                                               const SizedBox(height: 2),
@@ -1215,6 +1349,8 @@ class ForumThreadDetailPage extends HookWidget {
                                         durationSeconds: currentPost
                                             .value
                                             .voiceNoteDurationSeconds,
+                                        transcript:
+                                            currentPost.value.voiceNoteTranscript,
                                       ),
                                     ],
 
@@ -1806,7 +1942,8 @@ class ForumThreadDetailPage extends HookWidget {
                                       replyingToReply.value = target;
                                       focusNode.requestFocus();
                                     },
-                                    onVerifySolution: () async {
+                                    onSaveFlashcard: (target) => unawaited(saveSolutionToFlashcard(target)),
+                                     onVerifySolution: () async {
                                       final res = await repo.verifyForumReply(
                                         postId: currentPost.value.id,
                                         replyId: reply.id,
@@ -1837,7 +1974,8 @@ class ForumThreadDetailPage extends HookWidget {
                                           if (context.mounted) {
                                             context.showSnackBar(
                                               message:
-                                                  'Marked as verified solution! 100 XP bounty awarded to ${reply.authorName}.',
+                                                  'Marked as verified solution! ${currentPost.value.karmaBounty > 0 ? currentPost.value.karmaBounty : 100} XP Karma bounty awarded to ${reply.authorName}! 🏆',
+                                              type: SnackBarType.success,
                                             );
                                           }
                                         },
@@ -2220,6 +2358,9 @@ class ForumThreadDetailPage extends HookWidget {
                               audioUrl: replyVoiceNoteUrl.value!,
                               durationSeconds: replyVoiceNoteDuration.value > 0
                                   ? replyVoiceNoteDuration.value
+                                  : null,
+                              transcript: replyController.text.trim().isNotEmpty
+                                  ? replyController.text.trim()
                                   : null,
                               compact: true,
                               onDelete: () {
@@ -3073,6 +3214,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
     required this.onReplyTap,
     required this.onChildReplyTap,
     required this.onVerifySolution,
+    this.onSaveFlashcard,
   });
 
   final ForumReplyEntity parentReply;
@@ -3091,6 +3233,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
   final VoidCallback onReplyTap;
   final void Function(ForumReplyEntity child) onChildReplyTap;
   final VoidCallback onVerifySolution;
+  final void Function(ForumReplyEntity target)? onSaveFlashcard;
 
   @override
   Widget build(BuildContext context) {
@@ -3321,6 +3464,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                 VoiceNotePlayerWidget(
                   audioUrl: parentReply.voiceNoteUrl!,
                   durationSeconds: parentReply.voiceNoteDurationSeconds,
+                  transcript: parentReply.voiceNoteTranscript,
                   compact: true,
                 ),
               ],
@@ -3483,6 +3627,43 @@ class _DiscussionThreadGroupCard extends HookWidget {
                       ),
                     ),
                   ],
+
+                  // Save Solution to Flashcard Button
+                  const SizedBox(width: 8),
+                  ShrinkableButton(
+                    onTap: () => onSaveFlashcard?.call(parentReply),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 30 : 18),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.primary.withAlpha(60),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.style_outlined,
+                            size: 12,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Save Flashcard',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -3968,6 +4149,7 @@ class _Level2ChildReplyCard extends HookWidget {
                     VoiceNotePlayerWidget(
                       audioUrl: childReply.voiceNoteUrl!,
                       durationSeconds: childReply.voiceNoteDurationSeconds,
+                      transcript: childReply.voiceNoteTranscript,
                       compact: true,
                     ),
                   ],

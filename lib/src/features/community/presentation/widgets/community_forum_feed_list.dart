@@ -13,6 +13,7 @@ import 'package:kortex/src/features/community/presentation/pages/create_forum_di
 import 'package:kortex/src/features/community/presentation/widgets/community_forum_empty_state.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_pulse_banner.dart';
 import 'package:kortex/src/features/community/presentation/widgets/track_forum_post_card.dart';
+import 'package:kortex/src/features/community/presentation/widgets/trending_topics_widget.dart';
 
 /// Scrollable feed list displaying community forum posts with local filtering,
 /// refresh indicators, ambient pulse banner, and infinite scroll pagination.
@@ -99,6 +100,24 @@ class CommunityForumFeedList extends HookWidget {
                 },
               ),
             ),
+
+          // Cohort Trending Topics Panel
+          SliverToBoxAdapter(
+            child: TrendingTopicsWidget(
+              selectedTag: searchQuery.isNotEmpty ? searchQuery : state.selectedTrack,
+              onTopicSelected: (tag) {
+                if (tag == 'All') {
+                  context.read<CommunityHubBloc>().add(
+                    const SearchForumPostsEvent(''),
+                  );
+                } else {
+                  context.read<CommunityHubBloc>().add(
+                    SearchForumPostsEvent(tag),
+                  );
+                }
+              },
+            ),
+          ),
 
           // Posts Feed or Empty State
           if (filteredPosts.isEmpty)

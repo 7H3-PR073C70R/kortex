@@ -12,11 +12,11 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
-import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_elo_tier.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
 import 'package:kortex/src/features/quiz/presentation/pages/quiz_duel_arena_page.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_elo_tier_badge.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_leaderboard_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:share_plus/share_plus.dart';
@@ -199,7 +199,6 @@ class QuizDuelMatchmakingSheet extends HookWidget {
 
     final userProfile = authBloc?.state.userProfile;
     final userElo = userProfile?.eloRating ?? 1250;
-    final eloTier = QuizDuelEloTier.fromElo(userElo);
 
     return BlocListener<QuizDuelCubit, QuizDuelState>(
       listener: (context, state) {
@@ -298,36 +297,10 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                       const SizedBox(width: 6),
                                       GestureDetector(
                                         onTap: () => QuizDuelLeaderboardSheet.show(context),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: eloTier.color.withAlpha(isDark ? 35 : 20),
-                                            borderRadius: BorderRadius.circular(AppRadius.micro),
-                                            border: Border.all(
-                                              color: eloTier.color.withAlpha(100),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                '${eloTier.label} • $userElo ELO',
-                                                style: typography.caption.bold.copyWith(
-                                                  color: eloTier.color,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.leaderboard_rounded,
-                                                size: 12,
-                                                color: eloTier.color,
-                                              ),
-                                            ],
-                                          ),
+                                        child: QuizDuelEloTierBadge(
+                                          elo: userElo,
+                                          compact: true,
+                                          showXpBonus: true,
                                         ),
                                       ),
                                     ],
