@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -418,6 +419,18 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
         durationMinutes: state.room.pomodoroDurationMinutes,
         subject: state.room.subject,
       );
+      if (locator.isRegistered<UserActivityService>()) {
+        unawaited(
+          locator<UserActivityService>().awardXp(
+            XpActivityCategory.focusSession,
+            sourceId: state.room.id,
+            metadata: {
+              'durationMinutes': state.room.pomodoroDurationMinutes,
+              'subject': state.room.subject,
+            },
+          ),
+        );
+      }
       if (locator.isRegistered<DashboardBloc>()) {
         locator<DashboardBloc>().add(const DashboardRefreshed());
       }

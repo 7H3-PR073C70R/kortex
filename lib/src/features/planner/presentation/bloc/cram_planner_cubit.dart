@@ -387,6 +387,18 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         ),
       ),
       (newExam) {
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.plannerTaskCompletion,
+              sourceId: newExam.id,
+              metadata: {
+                'examName': newExam.examName,
+                'subject': newExam.subjectTrack,
+              },
+            ),
+          );
+        }
         final rawList = List<ExamEventEntity>.from(state.activeExams)
           ..add(newExam);
         final updatedList = _calibrateExamsWithLiveData(rawList)

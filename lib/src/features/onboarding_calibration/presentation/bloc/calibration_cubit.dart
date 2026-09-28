@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -245,6 +246,14 @@ class CalibrationCubit extends Cubit<CalibrationState> {
           dailyTarget: 20,
         ),
       );
+      if (locator.isRegistered<UserActivityService>()) {
+        unawaited(
+          locator<UserActivityService>().awardXp(
+            XpActivityCategory.onboardingCalibration,
+            sourceId: 'calibration',
+          ),
+        );
+      }
       locator<AuthBloc>().add(
         const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
       );

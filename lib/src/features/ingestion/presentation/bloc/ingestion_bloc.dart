@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -382,6 +383,19 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
             cardCount: snippets.length,
             documentId: event.documentId,
           );
+
+          if (locator.isRegistered<UserActivityService>()) {
+            unawaited(
+              locator<UserActivityService>().awardXp(
+                XpActivityCategory.documentIngestion,
+                sourceId: event.documentId,
+                metadata: {
+                  'filename': state.currentDocument?.filename,
+                  'cardCount': snippets.length,
+                },
+              ),
+            );
+          }
         },
       );
     } finally {

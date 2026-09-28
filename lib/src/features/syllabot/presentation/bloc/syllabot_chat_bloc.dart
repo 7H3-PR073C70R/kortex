@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -202,6 +203,16 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     _currentRagReferences = [];
 
     unawaited(_getChatHistory.cacheMessage(botMessage));
+
+    if (locator.isRegistered<UserActivityService>()) {
+      unawaited(
+        locator<UserActivityService>().awardXp(
+          XpActivityCategory.syllabotQuery,
+          sourceId: state.sessionId,
+          metadata: {'engineType': state.engineType.name},
+        ),
+      );
+    }
 
     if (_streamStartTime != null &&
         DateTime.now().difference(_streamStartTime!).inSeconds >= 10) {

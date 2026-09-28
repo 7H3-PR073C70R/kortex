@@ -250,7 +250,7 @@ void _initUseCaseLocator() {
       ),
     )
     ..registerLazySingleton<HubOverviewCubit>(
-      () => HubOverviewCubit(),
+      HubOverviewCubit.new,
     )
     ..registerLazySingleton<AutoCommunityCubit>(
       () => AutoCommunityCubit(

@@ -6,9 +6,59 @@ import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
 
+/// Categories of student activity that award XP across Kortex.
+enum XpActivityCategory {
+  cardReview(10, 'Card Review'),
+  deckCompletion(50, 'Deck Completed'),
+  deckCreation(30, 'Deck Created'),
+  quizQuestionCorrect(15, 'Quiz Correct Answer'),
+  quizCompletion(100, 'Quiz Completed'),
+  quizDuelWin(150, 'Quiz Duel Victory'),
+  quizDuelParticipation(50, 'Quiz Duel Participant'),
+  plannerTaskCompletion(40, 'Task Completed'),
+  dailyPlannerGoal(150, 'Daily Goal Achieved'),
+  syllabotQuery(10, 'Syllabot AI Interaction'),
+  syllabotExercise(30, 'AI Exercise Completed'),
+  aiDeckGeneration(25, 'AI Deck Generated'),
+  focusSession(75, 'Focus Session Completed'),
+  coWorkingGroupBonus(25, 'Group Study Bonus'),
+  communityPost(15, 'Community Post'),
+  communityAnswer(30, 'Community Answer'),
+  verifiedSolution(100, 'Verified Solution'),
+  documentIngestion(30, 'Document Ingestion'),
+  onboardingCalibration(100, 'Profile Calibration'),
+  dailyCheckIn(20, 'Daily Check-in');
+
+  const XpActivityCategory(this.defaultBaseXp, this.displayName);
+  final int defaultBaseXp;
+  final String displayName;
+}
+
+/// Telemetry payload emitted whenever XP is awarded to a student.
+class XpEarnedEvent {
+  const XpEarnedEvent({
+    required this.category,
+    required this.baseAmount,
+    required this.multiplier,
+    required this.xpEarned,
+    required this.totalXp,
+    this.sourceId,
+    this.metadata,
+  });
+
+  final XpActivityCategory category;
+  final int baseAmount;
+  final double multiplier;
+  final int xpEarned;
+  final int totalXp;
+  final String? sourceId;
+  final Map<String, dynamic>? metadata;
+}
+
 /// Service responsible for recording user learning activities (flashcard
-/// reviews, study sessions, quizzes) and calculating live, accurate study
-/// streaks, memory retention rates, weekly velocity, and heat map data.
+/// reviews, study sessions, quizzes, AI sessions, tasks) and calculating live,
+/// accurate study streaks, memory retention rates, weekly velocity, heat map
+/// data, and universal XP rewards.
 abstract class UserActivityService {
   Future<void> recordStudySession({
     required int cardsReviewed,
@@ -21,7 +71,9 @@ abstract class UserActivityService {
   });
 
   Stream<AnalyticsSummaryModel> get analyticsSummaryStream;
-  Map<String, ({int totalItems, double avgRetention, int minutes})> getSubjectBreakdown();
+  Stream<XpEarnedEvent> get xpEarnedStream;
+  Map<String, ({int totalItems, double avgRetention, int minutes})>
+      getSubjectBreakdown();
 
   int getCurrentStreak();
   int getLongestStreak();
@@ -34,6 +86,14 @@ abstract class UserActivityService {
   int getWeeklyMinutesStudied();
   double getOverallRetentionRate();
   int getXpPoints();
+  double getStreakMultiplier();
+  Future<XpEarnedEvent> awardXp(
+    XpActivityCategory category, {
+    int? customBaseAmount,
+    String? sourceId,
+    Map<String, dynamic>? metadata,
+  });
+  List<Map<String, dynamic>> getXpTransactions();
   int getLevelForXp(int xp);
   int getXpForLevel(int level);
   String getAvatarFrameForLevel(int level);
@@ -51,6 +111,8 @@ class UserActivityServiceImpl implements UserActivityService {
   final LocalStorageService _localStorageService;
   final StreamController<AnalyticsSummaryModel> _analyticsStreamController =
       StreamController<AnalyticsSummaryModel>.broadcast();
+  final StreamController<XpEarnedEvent> _xpEarnedStreamController =
+      StreamController<XpEarnedEvent>.broadcast();
 
   static const String _sessionsKey = '__kortex_study_sessions';
   static const String _streakCurrentKey = '__kortex_streak_current';
@@ -59,10 +121,15 @@ class UserActivityServiceImpl implements UserActivityService {
   static const String _streakFreezesKey = '__kortex_streak_freezes';
   static const String _spentXpKey = '__kortex_spent_xp';
   static const String _bonusKarmaKey = '__kortex_bonus_karma';
+  static const String _xpTransactionsKey = '__kortex_xp_transactions_list';
+  static const String _directXpAccumulatedKey = '__kortex_direct_xp_total';
 
   @override
   Stream<AnalyticsSummaryModel> get analyticsSummaryStream =>
       _analyticsStreamController.stream;
+
+  @override
+  Stream<XpEarnedEvent> get xpEarnedStream => _xpEarnedStreamController.stream;
 
   void _notifyAnalyticsUpdated() {
     if (!_analyticsStreamController.isClosed) {
@@ -71,9 +138,105 @@ class UserActivityServiceImpl implements UserActivityService {
   }
 
   @override
-  Map<String, ({int totalItems, double avgRetention, int minutes})> getSubjectBreakdown() {
+  double getStreakMultiplier() {
+    final streak = getCurrentStreak();
+    if (streak >= 30) return 2;
+    if (streak >= 14) return 1.75;
+    if (streak >= 7) return 1.5;
+    if (streak >= 4) return 1.25;
+    return 1;
+  }
+
+  @override
+  Future<XpEarnedEvent> awardXp(
+    XpActivityCategory category, {
+    int? customBaseAmount,
+    String? sourceId,
+    Map<String, dynamic>? metadata,
+  }) async {
+    final baseAmount = customBaseAmount ?? category.defaultBaseXp;
+    final multiplier = getStreakMultiplier();
+    final xpEarned = (baseAmount * multiplier).round();
+
+    // 1. Accumulate direct XP locally
+    final currentDirectXp = _getDirectXpAccumulated();
+    final newDirectXp = currentDirectXp + xpEarned;
+    await _localStorageService.savePreference(
+      key: _directXpAccumulatedKey,
+      data: newDirectXp.toString(),
+    );
+
+    // 2. Append transaction log
+    final txList = getXpTransactions();
+    final newTx = <String, dynamic>{
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'category': category.name,
+      'categoryDisplayName': category.displayName,
+      'baseAmount': baseAmount,
+      'multiplier': multiplier,
+      'xpEarned': xpEarned,
+      'timestamp': DateTime.now().toIso8601String(),
+      'sourceId': ?sourceId,
+      'metadata': ?metadata,
+    };
+    txList.insert(0, newTx);
+    if (txList.length > 200) {
+      txList.removeRange(200, txList.length);
+    }
+    await _localStorageService.savePreference(
+      key: _xpTransactionsKey,
+      data: jsonEncode(txList),
+    );
+
+    final event = XpEarnedEvent(
+      category: category,
+      baseAmount: baseAmount,
+      multiplier: multiplier,
+      xpEarned: xpEarned,
+      totalXp: getXpPoints(),
+      sourceId: sourceId,
+      metadata: metadata,
+    );
+
+    // 3. Emit event & update telemetry streams
+    if (!_xpEarnedStreamController.isClosed) {
+      _xpEarnedStreamController.add(event);
+    }
+    _notifyAnalyticsUpdated();
+
+    return event;
+  }
+
+  @override
+  List<Map<String, dynamic>> getXpTransactions() {
+    try {
+      final raw = _localStorageService.getPreference(key: _xpTransactionsKey);
+      if (raw == null || raw.isEmpty) return [];
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } on Object {
+      return [];
+    }
+  }
+
+  int _getDirectXpAccumulated() {
+    final raw = _localStorageService.getPreference(key: _directXpAccumulatedKey);
+    if (raw == null || raw.isEmpty) return 0;
+    return int.tryParse(raw) ?? 0;
+  }
+
+  @override
+  Map<String, ({int totalItems, double avgRetention, int minutes})>
+      getSubjectBreakdown() {
     final sessions = _getSessions();
-    final map = <String, ({int totalItems, double totalRetentionSum, int count, int seconds})>{};
+    final map = <
+        String,
+        ({
+          int totalItems,
+          double totalRetentionSum,
+          int count,
+          int seconds,
+        })>{};
 
     for (final s in sessions) {
       final subj = (s['subject'] as String?)?.trim();
@@ -82,7 +245,8 @@ class UserActivityServiceImpl implements UserActivityService {
       final retention = (s['retentionScore'] as num?)?.toDouble() ?? 0.85;
       final seconds = (s['durationSeconds'] as num?)?.toInt() ?? 0;
 
-      final prev = map[subj] ?? (totalItems: 0, totalRetentionSum: 0.0, count: 0, seconds: 0);
+      final prev = map[subj] ??
+          (totalItems: 0, totalRetentionSum: 0.0, count: 0, seconds: 0);
       map[subj] = (
         totalItems: prev.totalItems + cards,
         totalRetentionSum: prev.totalRetentionSum + retention,
@@ -91,11 +255,14 @@ class UserActivityServiceImpl implements UserActivityService {
       );
     }
 
-    final result = <String, ({int totalItems, double avgRetention, int minutes})>{};
+    final result =
+        <String, ({int totalItems, double avgRetention, int minutes})>{};
     for (final entry in map.entries) {
       final count = entry.value.count == 0 ? 1 : entry.value.count;
       final avgRet = (entry.value.totalRetentionSum / count).clamp(0.0, 1.0);
-      final mins = entry.value.seconds > 0 ? math.max(1, (entry.value.seconds / 60).round()) : 0;
+      final mins = entry.value.seconds > 0
+          ? math.max(1, (entry.value.seconds / 60).round())
+          : 0;
       result[entry.key] = (
         totalItems: entry.value.totalItems,
         avgRetention: avgRet,
@@ -108,7 +275,7 @@ class UserActivityServiceImpl implements UserActivityService {
   @override
   int getStreakFreezes() {
     final raw = _localStorageService.getPreference(key: _streakFreezesKey);
-    if (raw == null || raw.isEmpty) return 1; // Default to 1 streak freeze
+    if (raw == null || raw.isEmpty) return 1;
     return int.tryParse(raw) ?? 1;
   }
 
@@ -181,7 +348,6 @@ class UserActivityServiceImpl implements UserActivityService {
     };
     sessions.add(newSession);
 
-    // Keep up to 500 recent sessions
     if (sessions.length > 500) {
       sessions.removeRange(0, sessions.length - 500);
     }
@@ -190,10 +356,18 @@ class UserActivityServiceImpl implements UserActivityService {
       data: jsonEncode(sessions),
     );
 
-    // 2. Update daily study streak
+    // 2. Award Card Review XP with streak multiplier
+    await awardXp(
+      XpActivityCategory.cardReview,
+      customBaseAmount: (cardsReviewed * 10) + ((durationSeconds / 60).round() * 5),
+      sourceId: topicId,
+      metadata: {'subject': subject, 'cardsReviewed': cardsReviewed},
+    );
+
+    // 3. Update daily study streak
     await _updateStreak(now);
 
-    // 3. Emit real-time telemetry update event
+    // 4. Emit real-time telemetry update event
     _notifyAnalyticsUpdated();
   }
 
@@ -217,7 +391,6 @@ class UserActivityServiceImpl implements UserActivityService {
       if (diffDays == 1) {
         currentStreak += 1;
       } else if (diffDays == 2 && getStreakFreezes() > 0) {
-        // Protect streak using an available streak freeze
         await consumeStreakFreeze();
         currentStreak += 1;
       } else if (diffDays > 1) {
@@ -242,12 +415,9 @@ class UserActivityServiceImpl implements UserActivityService {
       data: longestStreak.toString(),
     );
 
-    // Fire a local notification on streak milestones.
     _notifyStreakMilestone(currentStreak);
   }
 
-  /// Fires a local streak-channel notification when [streak] hits a milestone.
-  /// Milestones: 3, 7, 14, 30, 60, 100, 365 days.
   void _notifyStreakMilestone(int streak) {
     const milestones = {3, 7, 14, 30, 60, 100, 365};
     if (!milestones.contains(streak)) return;
@@ -256,37 +426,37 @@ class UserActivityServiceImpl implements UserActivityService {
       final notifs = locator<NotificationService>();
       final (title, body) = switch (streak) {
         3 => (
-          '🔥 3-Day Streak!',
-          'You studied 3 days in a row. Keep it up — the habit is forming!',
-        ),
+            '🔥 3-Day Streak!',
+            'You studied 3 days in a row. Keep it up — the habit is forming!',
+          ),
         7 => (
-          '🏅 One Week Streak!',
-          'A full week of studying! Your memory retention is compounding fast.',
-        ),
+            '🏅 One Week Streak!',
+            'A full week of studying! Your memory retention is compounding fast.',
+          ),
         14 => (
-          '💪 Two-Week Warrior!',
-          '14 consecutive days. Your brain is rewiring for mastery. Incredible!',
-        ),
+            '💪 Two-Week Warrior!',
+            '14 consecutive days. Your brain is rewiring for mastery. Incredible!',
+          ),
         30 => (
-          '🌙 30-Day Scholar!',
-          'A whole month of daily study. WAEC/JAMB mastery is within reach!',
-        ),
+            '🌙 30-Day Scholar!',
+            'A whole month of daily study. WAEC/JAMB mastery is within reach!',
+          ),
         60 => (
-          '⚡ 60-Day Legend!',
-          '60 days straight — you are in the top 1% of all Kortex scholars.',
-        ),
+            '⚡ 60-Day Legend!',
+            '60 days straight — you are in the top 1% of all Kortex scholars.',
+          ),
         100 => (
-          '🏆 Century Streak!',
-          '100 days of relentless studying. You are unstoppable. Keep pushing!',
-        ),
+            '🏆 Century Streak!',
+            '100 days of relentless studying. You are unstoppable. Keep pushing!',
+          ),
         365 => (
-          '🌟 One-Year Champion!',
-          'A full year of daily study! The Kortex Scholar Award is yours — infinite respect!',
-        ),
+            '🌟 One-Year Champion!',
+            'A full year of daily study! The Kortex Scholar Award is yours — infinite respect!',
+          ),
         _ => (
-          '🔥 Streak Milestone!',
-          'You hit a $streak-day streak! Keep going!',
-        ),
+            '🔥 Streak Milestone!',
+            'You hit a $streak-day streak! Keep going!',
+          ),
       };
 
       unawaited(
@@ -306,7 +476,6 @@ class UserActivityServiceImpl implements UserActivityService {
     if (raw == null || raw.isEmpty) return 0;
     final streak = int.tryParse(raw) ?? 0;
 
-    // Verify if streak was broken (e.g. user hasn't studied yesterday or today)
     final lastDateStr = _localStorageService.getPreference(
       key: _lastStudyDateKey,
     );
@@ -316,11 +485,9 @@ class UserActivityServiceImpl implements UserActivityService {
       final todayDate = _parseDate(todayKey);
       final diffDays = todayDate.difference(lastDate).inDays;
       if (diffDays > 1) {
-        // If user missed 1 day (diffDays == 2) and has a streak freeze active, preserve streak
         if (diffDays == 2 && getStreakFreezes() > 0) {
           return streak;
         }
-        // Streak expired
         return 0;
       }
     }
@@ -348,8 +515,7 @@ class UserActivityServiceImpl implements UserActivityService {
     final sessions = _getSessions();
     var total = 0;
     for (final s in sessions) {
-      total +=
-          (s['masteredCards'] as num?)?.toInt() ??
+      total += (s['masteredCards'] as num?)?.toInt() ??
           (s['cardsReviewed'] as num?)?.toInt() ??
           0;
     }
@@ -419,7 +585,8 @@ class UserActivityServiceImpl implements UserActivityService {
       xp += (cards * 10) + (minutes * 5) + 50;
     }
     final streak = getCurrentStreak();
-    final totalEarned = xp + (streak * 30) + getBonusKarma();
+    final totalEarned =
+        xp + (streak * 30) + getBonusKarma() + _getDirectXpAccumulated();
     return (totalEarned - getSpentXp()).clamp(0, 9999999);
   }
 
@@ -474,7 +641,6 @@ class UserActivityServiceImpl implements UserActivityService {
     }
 
     final today = DateTime(now.year, now.month, now.day);
-    // Align to Monday of current week, then back 3 weeks (21 days) to form 4 full 7-day weeks (28 days)
     final currentMonday = today.subtract(Duration(days: today.weekday - 1));
     final startMonday = currentMonday.subtract(const Duration(days: 21));
 
@@ -488,7 +654,6 @@ class UserActivityServiceImpl implements UserActivityService {
 
       var intensityLevel = 0;
       if (day.isAfter(today)) {
-        // Future day in the current week
         intensityLevel = 0;
       } else if (cards >= 30 || minutes >= 25) {
         intensityLevel = 4;

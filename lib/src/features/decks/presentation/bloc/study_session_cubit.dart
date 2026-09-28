@@ -620,7 +620,7 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       // Execute all persistence operations concurrently in parallel
       try {
         await Future.wait([
-          if (locator.isRegistered<UserActivityService>())
+          if (locator.isRegistered<UserActivityService>()) ...[
             locator<UserActivityService>().recordStudySession(
               cardsReviewed: totalReviewed,
               durationSeconds: state.elapsedSeconds,
@@ -628,8 +628,16 @@ class StudySessionCubit extends Cubit<StudySessionState> {
               masteredCards: mastered,
               activityCategory: 'flashcard',
               subject: state.deckId,
-            )
-          else
+            ),
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.deckCompletion,
+              sourceId: state.deckId,
+              metadata: {
+                'deckId': state.deckId,
+                'cardsReviewed': totalReviewed,
+              },
+            ),
+          ] else
             Future<void>.value(),
           if (locator.isRegistered<DecksRemoteDataSource>())
             locator<DecksRemoteDataSource>().updateDeckCards(

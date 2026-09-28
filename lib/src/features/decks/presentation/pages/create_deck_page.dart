@@ -6,6 +6,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/file_picker_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -320,6 +321,19 @@ class CreateDeckPage extends HookWidget {
           await locator<DecksRemoteDataSource>().saveGeneratedDeck(
             deck: deckModel,
             cards: flashcards,
+          );
+        }
+
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.deckCreation,
+              sourceId: deckId,
+              metadata: {
+                'title': title,
+                'totalCards': flashcards.length,
+              },
+            ),
           );
         }
 

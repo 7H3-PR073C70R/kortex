@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -454,6 +455,15 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         ),
       ),
       (post) {
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.communityPost,
+              sourceId: post.id,
+              metadata: {'title': post.title, 'track': post.track},
+            ),
+          );
+        }
         emit(state.copyWith(forumPosts: [post, ...state.forumPosts]));
       },
     );
@@ -480,6 +490,15 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         ),
       ),
       (reply) {
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.communityAnswer,
+              sourceId: reply.id,
+              metadata: {'postId': event.postId},
+            ),
+          );
+        }
         final updatedPosts = state.forumPosts.map((p) {
           if (p.id == event.postId) {
             return p.copyWith(

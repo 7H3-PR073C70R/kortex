@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -888,6 +889,29 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         try {
           locator<DashboardBloc>().add(const DashboardRefreshed());
         } on Object catch (_) {}
+        try {
+          if (locator.isRegistered<UserActivityService>()) {
+            final isPerfect = quizResult.scorePercent >= 100;
+            final isHigh = quizResult.scorePercent >= 80;
+            final bonus = isPerfect ? 100 : (isHigh ? 50 : 0);
+            unawaited(
+              locator<UserActivityService>().awardXp(
+                XpActivityCategory.quizCompletion,
+                customBaseAmount:
+                    XpActivityCategory.quizCompletion.defaultBaseXp +
+                    (quizResult.correctAnswers * 15) +
+                    bonus,
+                sourceId: quizResult.quizTitle,
+                metadata: {
+                  'quizTitle': quizResult.quizTitle,
+                  'scorePercent': quizResult.scorePercent,
+                  'correctAnswers': quizResult.correctAnswers,
+                },
+              ),
+            );
+          }
+        } on Object catch (_) {}
+
         try {
           if (quizResult.durationSeconds >= 60 && locator.isRegistered<CommunityRepository>()) {
             final minutes = quizResult.durationSeconds ~/ 60;

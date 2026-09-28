@@ -51,8 +51,6 @@ import 'package:kortex/src/features/community/presentation/bloc/auto_community_c
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/forum_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/hub_overview_cubit.dart';
-import 'package:kortex/src/features/deck_marketplace/presentation/bloc/marketplace_cubit.dart';
-import 'package:kortex/src/features/study_rooms/presentation/bloc/study_circle_cubit.dart';
 import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source_impl.dart';
@@ -69,6 +67,7 @@ import 'package:kortex/src/features/dashboard/domain/use_cases/sync_user_courses
 import 'package:kortex/src/features/dashboard/presentation/bloc/curate_courses_cubit.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/use_cases/clone_shared_deck_use_case.dart';
+import 'package:kortex/src/features/deck_marketplace/presentation/bloc/marketplace_cubit.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
@@ -187,6 +186,7 @@ import 'package:kortex/src/features/study_rooms/data/services/livekit_audio_serv
 import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_room_repository.dart';
 import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_service.dart';
 import 'package:kortex/src/features/study_rooms/domain/use_cases/join_live_study_room_use_case.dart';
+import 'package:kortex/src/features/study_rooms/presentation/bloc/study_circle_cubit.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/data/client/syllabot_api_client.dart';
 import 'package:kortex/src/features/syllabot/data/client/vector_search_client.dart';

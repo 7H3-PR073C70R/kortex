@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_duel_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
@@ -119,6 +121,18 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
             } else if (isJustFinished) {
               _summarySafetyTimer?.cancel();
               unawaited(_repository.recordDuelOutcome(match));
+              if (locator.isRegistered<UserActivityService>()) {
+                final isWinner = match.winnerUserId == state.currentUserId;
+                unawaited(
+                  locator<UserActivityService>().awardXp(
+                    isWinner
+                        ? XpActivityCategory.quizDuelWin
+                        : XpActivityCategory.quizDuelParticipation,
+                    sourceId: match.duelId,
+                    metadata: {'isWinner': isWinner, 'subject': match.subject},
+                  ),
+                );
+              }
             }
 
             emit(
