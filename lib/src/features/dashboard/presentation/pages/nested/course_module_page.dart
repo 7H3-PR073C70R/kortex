@@ -22,7 +22,6 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
-import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
@@ -565,10 +564,11 @@ class _CourseModuleView extends StatelessWidget {
 
         // If no countdown set yet, show an inviting prompt
         return InkWell(
-          onTap: () => AddExamModalSheet.show(
-            context,
-            preselectedCourseCode: courseCode,
-            preselectedCourseTitle: courseTitle,
+          onTap: () => context.router.push(
+            AddAcademicAssessmentRoute(
+              preselectedCourseCode: courseCode,
+              preselectedCourseTitle: courseTitle,
+            ),
           ),
           borderRadius: BorderRadius.circular(AppRadius.panel),
           child: Container(

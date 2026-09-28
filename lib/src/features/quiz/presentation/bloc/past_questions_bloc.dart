@@ -11,6 +11,7 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
   }) : _repository = repository,
        super(const PastQuestionsState()) {
     on<LoadPastQuestionsEvent>(_onLoadPastQuestions);
+    on<SetTrackScopeEvent>(_onSetTrackScope);
     on<AddPastQuestionsEvent>(_onAddPastQuestions);
     on<ChangeExamCategoryEvent>(_onChangeExamCategory);
     on<ChangeSubjectEvent>(_onChangeSubject);
@@ -22,11 +23,49 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
 
   final PastQuestionsRepository _repository;
 
+  Future<void> _onSetTrackScope(
+    SetTrackScopeEvent event,
+    Emitter<PastQuestionsState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        isScopedToUserTrack: event.isScopedToUserTrack,
+        userTrack: event.userTrack ?? state.userTrack,
+        enrolledCourseCodes:
+            event.enrolledCourseCodes ?? state.enrolledCourseCodes,
+        enrolledCourseIds: event.enrolledCourseIds ?? state.enrolledCourseIds,
+      ),
+    );
+    add(
+      LoadPastQuestionsEvent(
+        isScopedToUserTrack: event.isScopedToUserTrack,
+        userTrack: event.userTrack ?? state.userTrack,
+        enrolledCourseCodes:
+            event.enrolledCourseCodes ?? state.enrolledCourseCodes,
+        enrolledCourseIds: event.enrolledCourseIds ?? state.enrolledCourseIds,
+      ),
+    );
+  }
+
   Future<void> _onLoadPastQuestions(
     LoadPastQuestionsEvent event,
     Emitter<PastQuestionsState> emit,
   ) async {
-    emit(state.copyWith(status: PastQuestionsStatus.loading));
+    final isScoped = event.isScopedToUserTrack ?? state.isScopedToUserTrack;
+    final userTrack = event.userTrack ?? state.userTrack;
+    final enrolledCodes =
+        event.enrolledCourseCodes ?? state.enrolledCourseCodes;
+    final enrolledIds = event.enrolledCourseIds ?? state.enrolledCourseIds;
+
+    emit(
+      state.copyWith(
+        status: PastQuestionsStatus.loading,
+        isScopedToUserTrack: isScoped,
+        userTrack: userTrack,
+        enrolledCourseCodes: enrolledCodes,
+        enrolledCourseIds: enrolledIds,
+      ),
+    );
 
     final exam = event.examCategory ?? state.selectedExam;
     final subject = event.subject ?? state.selectedSubject;
@@ -56,22 +95,44 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
       (questions) {
         final availSubjects = subjectsRes.fold<List<String>>(
           (_) => [],
-          List.from,
+          List<String>.from,
         );
         if (subject != 'All' && !availSubjects.contains(subject)) {
           availSubjects.insert(0, subject);
         }
+
+        // Filter questions if track scope is strictly enabled
+        var filteredQuestions = questions;
+        if (isScoped && enrolledCodes.isNotEmpty) {
+          final cleanCodes = enrolledCodes.map((c) => c.toLowerCase()).toSet();
+          filteredQuestions = questions.where((q) {
+            if (q.courseCode != null &&
+                cleanCodes.contains(q.courseCode!.toLowerCase())) {
+              return true;
+            }
+            if (enrolledIds.contains(q.courseId)) return true;
+            // Also match if question subject is in enrolled course codes or title list
+            final subjLower = q.subject.toLowerCase();
+            return cleanCodes.any(subjLower.contains);
+          }).toList();
+
+          // Fallback to original list if course-specific filtering yields empty set
+          if (filteredQuestions.isEmpty && questions.isNotEmpty) {
+            filteredQuestions = questions;
+          }
+        }
+
         emit(
           state.copyWith(
             status: PastQuestionsStatus.loaded,
-            questions: questions,
+            questions: filteredQuestions,
             selectedExam: exam,
             selectedSubject: subject,
             selectedYear: year,
             courseId: courseId,
             courseCode: courseCode,
             availableSubjects: availSubjects,
-            availableYears: yearsRes.fold((_) => [], (list) => list),
+            availableYears: yearsRes.fold((_) => [], List<int>.from),
           ),
         );
       },

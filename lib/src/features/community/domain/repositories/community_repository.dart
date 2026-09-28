@@ -133,6 +133,9 @@ abstract class CommunityRepository {
     String? track,
   });
 
+  /// Real-time stream of Study Circles / Pods via WebSocket.
+  Stream<List<StudyCircleEntity>> watchStudyCircles({String? track});
+
   /// Joins an existing Study Circle.
   Future<Either<Failure, StudyCircleEntity>> joinStudyCircle(String circleId);
 

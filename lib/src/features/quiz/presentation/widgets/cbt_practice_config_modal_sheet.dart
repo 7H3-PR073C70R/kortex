@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -8,7 +9,9 @@ import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
@@ -127,12 +130,18 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     final questionsState = useState<List<PastQuestionEntity>>(allQuestions);
     final effectiveQuestions = questionsState.value;
 
+    final userTrack = context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+    final examCategory = (userTrack != null && userTrack.isNotEmpty)
+        ? PastQuestionModel.parseExamCategory(userTrack)
+        : null;
+
     useEffect(() {
       if (locator.isRegistered<PastQuestionsRepository>()) {
         try {
           unawaited(
             locator<PastQuestionsRepository>()
                 .getPastQuestions(
+                  examCategory: examCategory,
                   courseId: courseId,
                   courseCode: courseCode,
                   subject: courseTitle,
@@ -151,7 +160,7 @@ class CbtPracticeConfigModalSheet extends HookWidget {
         } on Object catch (_) {}
       }
       return null;
-    }, [courseId, courseCode]);
+    }, [courseId, courseCode, examCategory]);
 
     // Extract unique available years sorted descending
     final availableYears = useMemoized(() {

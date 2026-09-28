@@ -56,6 +56,32 @@ class CommunityState extends Equatable {
   final DateTime? lastCreatedAt;
   final String? lastId;
 
+  /// Returns pods where user is already a member.
+  List<StudyCircleEntity> get myPods =>
+      studyCircles.where((c) => c.isCurrentUserMember).toList();
+
+  /// Returns available pods that are open for joining.
+  List<StudyCircleEntity> get availablePods =>
+      studyCircles.where((c) => !c.isFull && !c.isCurrentUserMember).toList();
+
+  /// Aggregated active scholars across all available pods.
+  int get totalActiveScholars {
+    if (studyCircles.isEmpty) return 0;
+    return studyCircles.fold(
+      0,
+      (sum, circle) => sum + circle.effectiveMemberCount,
+    );
+  }
+
+  /// Aggregated group focus minutes across all pods.
+  int get totalGroupFocusMinutes {
+    if (studyCircles.isEmpty) return 0;
+    return studyCircles.fold(
+      0,
+      (sum, circle) => sum + circle.totalMinutesCompleted,
+    );
+  }
+
   CommunityState copyWith({
     CommunityStatus? status,
     int? selectedTabIndex,

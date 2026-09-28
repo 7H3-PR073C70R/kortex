@@ -1315,6 +1315,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Stream<List<StudyCircleModel>> watchStudyCircles({String? track}) {
+    return _realtime
+        .watchTable('study_circles')
+        .asyncMap((_) => fetchStudyCircles(track: track));
+  }
+
+  @override
   Future<StudyCircleModel> createStudyCircle({
     required String name,
     required String track,

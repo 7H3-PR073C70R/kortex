@@ -16,6 +16,10 @@ class PastQuestionsState extends Equatable {
     this.searchQuery = '',
     this.courseId,
     this.courseCode,
+    this.isScopedToUserTrack = true,
+    this.userTrack,
+    this.enrolledCourseCodes = const [],
+    this.enrolledCourseIds = const [],
     this.errorMessage,
   });
 
@@ -30,6 +34,10 @@ class PastQuestionsState extends Equatable {
   final String searchQuery;
   final String? courseId;
   final String? courseCode;
+  final bool isScopedToUserTrack;
+  final String? userTrack;
+  final List<String> enrolledCourseCodes;
+  final List<String> enrolledCourseIds;
   final String? errorMessage;
 
   int get totalQuestions => questions.length;
@@ -58,6 +66,10 @@ class PastQuestionsState extends Equatable {
     String? searchQuery,
     String? courseId,
     String? courseCode,
+    bool? isScopedToUserTrack,
+    String? userTrack,
+    List<String>? enrolledCourseCodes,
+    List<String>? enrolledCourseIds,
     String? errorMessage,
   }) {
     return PastQuestionsState(
@@ -75,6 +87,10 @@ class PastQuestionsState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       courseId: courseId ?? this.courseId,
       courseCode: courseCode ?? this.courseCode,
+      isScopedToUserTrack: isScopedToUserTrack ?? this.isScopedToUserTrack,
+      userTrack: userTrack ?? this.userTrack,
+      enrolledCourseCodes: enrolledCourseCodes ?? this.enrolledCourseCodes,
+      enrolledCourseIds: enrolledCourseIds ?? this.enrolledCourseIds,
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
@@ -92,6 +108,10 @@ class PastQuestionsState extends Equatable {
     searchQuery,
     courseId,
     courseCode,
+    isScopedToUserTrack,
+    userTrack,
+    enrolledCourseCodes,
+    enrolledCourseIds,
     errorMessage,
   ];
 }

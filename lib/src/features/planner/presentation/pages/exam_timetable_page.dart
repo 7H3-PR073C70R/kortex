@@ -22,7 +22,6 @@ import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.da
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
-import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -702,7 +701,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                     color: colors.primary,
                   ),
                   tooltip: 'Add Assessment',
-                  onPressed: () => AddExamModalSheet.show(context),
+                  onPressed: () => context.router.push(
+                    AddAcademicAssessmentRoute(),
+                  ),
                 ),
                 const SizedBox(width: 8),
               ],
@@ -879,7 +880,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                               ),
                             ),
                             TextButton.icon(
-                              onPressed: () => AddExamModalSheet.show(context),
+                              onPressed: () => context.router.push(
+                                AddAcademicAssessmentRoute(),
+                              ),
                               icon: Icon(
                                 Icons.add,
                                 size: 18,
@@ -1325,8 +1328,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
                       color: isHovered ? colors.primary : colors.textSecondary,
                     ),
                     tooltip: 'Edit Assessment',
-                    onPressed: () =>
-                        AddExamModalSheet.show(context, initialExam: exam),
+                    onPressed: () => context.router.push(
+                      AddAcademicAssessmentRoute(initialExam: exam),
+                    ),
                   );
                 },
               ),
@@ -1600,7 +1604,9 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
             const SizedBox(height: 32),
             AppButton(
               text: 'Add First Exam',
-              onPressed: () => AddExamModalSheet.show(context),
+              onPressed: () => context.router.push(
+                AddAcademicAssessmentRoute(),
+              ),
             ),
           ],
         ),

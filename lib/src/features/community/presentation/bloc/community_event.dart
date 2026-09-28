@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/leaderboard/domain/entities/leaderboard_entry_entity.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
 
 abstract class CommunityEvent extends Equatable {
   const CommunityEvent();
@@ -240,6 +241,15 @@ class VerifyForumReplyEvent extends CommunityEvent {
 
   @override
   List<Object?> get props => [postId, replyId];
+}
+
+class StudyCirclesUpdatedEvent extends CommunityEvent {
+  const StudyCirclesUpdatedEvent(this.circles);
+
+  final List<StudyCircleEntity> circles;
+
+  @override
+  List<Object?> get props => [circles];
 }
 
 class LoadStudyCirclesEvent extends CommunityEvent {

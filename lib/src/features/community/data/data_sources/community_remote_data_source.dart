@@ -112,6 +112,9 @@ abstract class CommunityRemoteDataSource {
 
   Future<List<StudyCircleModel>> fetchStudyCircles({String? track});
 
+  /// Real-time stream of available study circles / pods via WebSocket.
+  Stream<List<StudyCircleModel>> watchStudyCircles({String? track});
+
   Future<StudyCircleModel> createStudyCircle({
     required String name,
     required String track,

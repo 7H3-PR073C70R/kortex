@@ -146,6 +146,52 @@ void main() {
     );
 
     blocTest<PastQuestionsBloc, PastQuestionsState>(
+      'SetTrackScopeEvent toggles isScopedToUserTrack and reloads questions',
+      build: () {
+        when(
+          () => mockRepository.getAvailableSubjects(any()),
+        ).thenAnswer((_) async => const Right(['Mathematics']));
+        when(
+          () => mockRepository.getAvailableYears(any()),
+        ).thenAnswer((_) async => const Right([2024]));
+        when(
+          () => mockRepository.getPastQuestions(
+            examCategory: any(named: 'examCategory'),
+            subject: any(named: 'subject'),
+            year: any(named: 'year'),
+            searchQuery: any(named: 'searchQuery'),
+          ),
+        ).thenAnswer((_) async => const Right([tQuestion]));
+        return bloc;
+      },
+      act: (b) => b.add(
+        const SetTrackScopeEvent(
+          isScopedToUserTrack: false,
+          userTrack: 'JAMB',
+        ),
+      ),
+      expect: () => [
+        const PastQuestionsState(
+          isScopedToUserTrack: false,
+          userTrack: 'JAMB',
+        ),
+        const PastQuestionsState(
+          status: PastQuestionsStatus.loading,
+          isScopedToUserTrack: false,
+          userTrack: 'JAMB',
+        ),
+        const PastQuestionsState(
+          status: PastQuestionsStatus.loaded,
+          isScopedToUserTrack: false,
+          userTrack: 'JAMB',
+          questions: [tQuestion],
+          availableSubjects: ['Mathematics'],
+          availableYears: [2024],
+        ),
+      ],
+    );
+
+    blocTest<PastQuestionsBloc, PastQuestionsState>(
       'AddPastQuestionsEvent saves questions and updates userAddedQuestions',
       build: () {
         when(

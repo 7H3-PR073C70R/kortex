@@ -158,6 +158,10 @@ class MockCommunityRepository implements CommunityRepository {
   }) async => const Right([]);
 
   @override
+  Stream<List<StudyCircleEntity>> watchStudyCircles({String? track}) =>
+      const Stream.empty();
+
+  @override
   Future<Either<Failure, StudyCircleEntity>> createStudyCircle({
     required String name,
     required String track,

@@ -11,6 +11,9 @@ class StudyCircleModel {
     this.memberCount = 1,
     this.totalMinutesCompleted = 0,
     this.members = const [],
+    this.isLive = false,
+    this.activeParticipantsCount = 1,
+    this.currentFocusTopic,
   });
 
   final String id;
@@ -22,9 +25,20 @@ class StudyCircleModel {
   final int memberCount;
   final int totalMinutesCompleted;
   final List<StudyCircleMemberModel> members;
+  final bool isLive;
+  final int activeParticipantsCount;
+  final String? currentFocusTopic;
 
   factory StudyCircleModel.fromJson(Map<String, dynamic> json) {
     final rawMembers = json['study_circle_members'] as List<dynamic>? ?? [];
+    final membersList = rawMembers
+        .map(
+          (m) => StudyCircleMemberModel.fromJson(m as Map<String, dynamic>),
+        )
+        .toList();
+    final parsedMemberCount = (json['member_count'] as num?)?.toInt() ??
+        (membersList.isNotEmpty ? membersList.length : 1);
+
     return StudyCircleModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Study Pod',
@@ -33,14 +47,14 @@ class StudyCircleModel {
           (json['target_weekly_minutes'] as num?)?.toInt() ?? 600,
       creatorId: json['creator_id'] as String? ?? '',
       maxMembers: (json['max_members'] as num?)?.toInt() ?? 6,
-      memberCount: (json['member_count'] as num?)?.toInt() ?? 1,
+      memberCount: parsedMemberCount,
       totalMinutesCompleted:
           (json['total_minutes_completed'] as num?)?.toInt() ?? 0,
-      members: rawMembers
-          .map(
-            (m) => StudyCircleMemberModel.fromJson(m as Map<String, dynamic>),
-          )
-          .toList(),
+      members: membersList,
+      isLive: json['is_live'] as bool? ?? (json['is_active'] as bool? ?? false),
+      activeParticipantsCount:
+          (json['active_participants_count'] as num?)?.toInt() ?? 1,
+      currentFocusTopic: json['current_focus_topic'] as String?,
     );
   }
 
@@ -54,6 +68,9 @@ class StudyCircleModel {
       'max_members': maxMembers,
       'member_count': memberCount,
       'total_minutes_completed': totalMinutesCompleted,
+      'is_live': isLive,
+      'active_participants_count': activeParticipantsCount,
+      'current_focus_topic': currentFocusTopic,
       'study_circle_members': members.map((m) => m.toJson()).toList(),
     };
   }
@@ -76,6 +93,9 @@ class StudyCircleModel {
       totalMinutesCompleted: totalMinutesCompleted,
       members: mappedMembers,
       isCurrentUserMember: isMember,
+      isLive: isLive,
+      activeParticipantsCount: activeParticipantsCount,
+      currentFocusTopic: currentFocusTopic,
     );
   }
 }

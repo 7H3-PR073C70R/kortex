@@ -14,6 +14,9 @@ class StudyCircleEntity extends Equatable {
     this.members = const [],
     this.isCurrentUserMember = false,
     this.podQuest = 'Collective Focus Sprint: 10 Hours Goal',
+    this.isLive = false,
+    this.activeParticipantsCount = 1,
+    this.currentFocusTopic,
   });
 
   final String id;
@@ -27,13 +30,21 @@ class StudyCircleEntity extends Equatable {
   final List<StudyCircleMemberEntity> members;
   final bool isCurrentUserMember;
   final String podQuest;
+  final bool isLive;
+  final int activeParticipantsCount;
+  final String? currentFocusTopic;
 
   double get weeklyProgressPercent {
     if (targetWeeklyMinutes <= 0) return 1;
     return (totalMinutesCompleted / targetWeeklyMinutes).clamp(0.0, 1.0);
   }
 
-  bool get isFull => memberCount >= maxMembers;
+  int get availableSlots => (maxMembers - effectiveMemberCount).clamp(0, maxMembers);
+
+  int get effectiveMemberCount =>
+      members.isNotEmpty ? members.length : memberCount;
+
+  bool get isFull => effectiveMemberCount >= maxMembers;
 
   StudyCircleEntity copyWith({
     String? id,
@@ -47,6 +58,9 @@ class StudyCircleEntity extends Equatable {
     List<StudyCircleMemberEntity>? members,
     bool? isCurrentUserMember,
     String? podQuest,
+    bool? isLive,
+    int? activeParticipantsCount,
+    String? currentFocusTopic,
   }) {
     return StudyCircleEntity(
       id: id ?? this.id,
@@ -61,6 +75,10 @@ class StudyCircleEntity extends Equatable {
       members: members ?? this.members,
       isCurrentUserMember: isCurrentUserMember ?? this.isCurrentUserMember,
       podQuest: podQuest ?? this.podQuest,
+      isLive: isLive ?? this.isLive,
+      activeParticipantsCount:
+          activeParticipantsCount ?? this.activeParticipantsCount,
+      currentFocusTopic: currentFocusTopic ?? this.currentFocusTopic,
     );
   }
 
@@ -77,6 +95,9 @@ class StudyCircleEntity extends Equatable {
     members,
     isCurrentUserMember,
     podQuest,
+    isLive,
+    activeParticipantsCount,
+    currentFocusTopic,
   ];
 }
 

@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
@@ -18,7 +19,9 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
@@ -36,6 +39,9 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkt
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_circle_sheet.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/study_circle_detail_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
@@ -1691,134 +1697,597 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
     final l10n = context.l10n;
 
     final trackLabel = (targetTrack != null && targetTrack!.trim().isNotEmpty)
-        ? l10n.podSuffix(targetTrack!)
-        : l10n.studyCirclePod;
+        ? targetTrack!.trim()
+        : 'All Tracks';
+
+    final communityBloc = locator.isRegistered<CommunityHubBloc>()
+        ? locator<CommunityHubBloc>()
+        : null;
 
     final activityService = locator.isRegistered<UserActivityService>()
         ? locator<UserActivityService>()
         : null;
-    final weeklyMinutes = activityService?.getWeeklyMinutesStudied() ?? 0;
     final userXp = activityService?.getXpPoints() ?? 0;
 
-    var activeMembers = 1;
-    var maxMembers = 6;
-    try {
-      if (locator.isRegistered<CommunityHubBloc>()) {
-        final circles = locator<CommunityHubBloc>().state.studyCircles;
-        if (circles.isNotEmpty) {
-          activeMembers = circles.first.memberCount;
-          maxMembers = circles.first.maxMembers;
-        }
-      }
-    } on Object catch (_) {}
+    Widget contentBuilder(CommunityState state) {
+      final circles = state.studyCircles;
 
-    final activeStr = '$activeMembers/$maxMembers';
-    final minutesStr = weeklyMinutes > 0 ? '${weeklyMinutes}m' : '0m';
-    final karmaStr = '+$userXp';
+      final totalActiveScholars = state.totalActiveScholars > 0
+          ? state.totalActiveScholars
+          : (circles.isNotEmpty ? circles.first.effectiveMemberCount : 1);
 
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, _) {
-        return ShrinkableButton(
-          onTap: () {
-            unawaited(HapticFeedback.lightImpact());
-            unawaited(context.navigateTo(const CommunityHubRoute()));
-          },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: AnimatedContainer(
-                duration: AppMotion.snappy,
-                curve: AppMotion.easeOutCubic,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: neural.glassPanel,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isHovered
-                        ? neural.emerald.withAlpha(51)
-                        : neural.hairline,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header: live dot + POD PULSE + pod link
-                    Container(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: neural.hairlineSoft),
+      final totalFocusMinutes = state.totalGroupFocusMinutes > 0
+          ? state.totalGroupFocusMinutes
+          : (activityService?.getWeeklyMinutesStudied() ?? 0);
+
+      final activeStr = '$totalActiveScholars Online';
+      final minutesStr = '${totalFocusMinutes}m';
+      final karmaStr = '+$userXp';
+
+      return Container(
+        decoration: BoxDecoration(
+          color: neural.glassPanel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: neural.hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Bar: Pulse Beacon + POD PULSE + Live Tag + Track + View All
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      AppPulsingBeacon(
+                        color: neural.emerald,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.podPulseTitle,
+                        style: typography.caption.bold.copyWith(
+                          color: neural.emerald400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.6,
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: neural.emerald.withAlpha(38),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: neural.emerald.withAlpha(77),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: neural.emerald,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'LIVE SYNC',
+                              style: typography.caption.bold.copyWith(
+                                color: neural.emerald400,
+                                fontSize: 9,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      InkWell(
+                        onTap: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          unawaited(
+                            context.navigateTo(const CommunityHubRoute()),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                trackLabel,
+                                style: typography.caption.medium.copyWith(
+                                  color: neural.slate300,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 14,
+                                color: neural.slate400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Metrics Summary Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _PodMetricChip(
+                          icon: Icons.groups_rounded,
+                          iconColor: neural.emerald400,
+                          value: activeStr,
+                          label: l10n.activeToday,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _PodMetricChip(
+                          icon: Icons.timer_outlined,
+                          iconColor: neural.amber400,
+                          value: minutesStr,
+                          label: l10n.groupFocus,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _PodMetricChip(
+                          icon: Icons.bolt_rounded,
+                          iconColor: neural.cyan400,
+                          value: karmaStr,
+                          valueColor: neural.cyan300,
+                          label: l10n.podKarma,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Available Pods Cards Section
+            Divider(height: 1, color: neural.hairlineSoft),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'AVAILABLE STUDY PODS',
+                    style: typography.caption.bold.copyWith(
+                      color: neural.slate400,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: neural.obsidian800,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${circles.length}',
+                      style: typography.caption.bold.copyWith(
+                        color: neural.slate200,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      unawaited(
+                        CreateStudyCircleSheet.show(
+                          context,
+                          initialTrack: targetTrack ?? 'General',
+                          onSubmit: ({
+                            required name,
+                            required track,
+                            required targetWeeklyMinutes,
+                          }) {
+                            if (communityBloc != null) {
+                              communityBloc.add(
+                                CreateStudyCircleEvent(
+                                  name: name,
+                                  track: track,
+                                  targetWeeklyMinutes: targetWeeklyMinutes,
+                                ),
+                              );
+                              context.showSnackBar(
+                                message: 'Study Pod "$name" created successfully!',
+                              );
+                            }
+                          },
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       child: Row(
                         children: [
-                          AppPulsingBeacon(
-                            color: neural.emerald,
-                            pulseSpread: 5,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.podPulseTitle,
-                            style: typography.caption.bold.copyWith(
-                              color: neural.emerald400,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.6,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            trackLabel,
-                            style: typography.caption.medium.copyWith(
-                              color: neural.slate300,
-                              fontSize: 12,
-                            ),
+                          Icon(
+                            Icons.add_rounded,
+                            size: 14,
+                            color: neural.emerald400,
                           ),
                           const SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: 14,
-                            color: neural.slate400,
+                          Text(
+                            'Create Pod',
+                            style: typography.caption.bold.copyWith(
+                              color: neural.emerald400,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                ],
+              ),
+            ),
+
+            if (circles.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.groups_outlined,
+                        size: 28,
+                        color: neural.slate400,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'No live pods for $trackLabel yet',
+                        style: typography.caption.medium.copyWith(
+                          color: neural.slate400,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ShrinkableButton(
+                        onTap: () {
+                          unawaited(
+                            CreateStudyCircleSheet.show(
+                              context,
+                              initialTrack: targetTrack ?? 'General',
+                              onSubmit: ({
+                                required name,
+                                required track,
+                                required targetWeeklyMinutes,
+                              }) {
+                                if (communityBloc != null) {
+                                  communityBloc.add(
+                                    CreateStudyCircleEvent(
+                                      name: name,
+                                      track: track,
+                                      targetWeeklyMinutes: targetWeeklyMinutes,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: neural.emerald.withAlpha(30),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: neural.emerald.withAlpha(77),
+                            ),
+                          ),
+                          child: Text(
+                            'Start a Pod Sprint',
+                            style: typography.caption.bold.copyWith(
+                              color: neural.emerald400,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: 128,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: circles.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    final circle = circles[index];
+                    return _PodPulseCardItem(
+                      circle: circle,
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        if (communityBloc != null) {
+                          unawaited(
+                            StudyCircleDetailSheet.show(
+                              context,
+                              circle,
+                              bloc: communityBloc,
+                            ),
+                          );
+                        }
+                      },
+                      onJoin: () {
+                        unawaited(HapticFeedback.mediumImpact());
+                        if (communityBloc != null) {
+                          communityBloc.add(JoinStudyCircleEvent(circle.id));
+                          context.showSnackBar(
+                            message:
+                                'Joined ${circle.name}! Welcome to the Pod.',
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    }
+
+    if (communityBloc != null) {
+      return BlocBuilder<CommunityHubBloc, CommunityState>(
+        bloc: communityBloc,
+        builder: (context, state) => contentBuilder(state),
+      );
+    }
+
+    return contentBuilder(const CommunityState());
+  }
+}
+
+class _PodPulseCardItem extends StatelessWidget {
+  const _PodPulseCardItem({
+    required this.circle,
+    required this.onTap,
+    required this.onJoin,
+  });
+
+  final StudyCircleEntity circle;
+  final VoidCallback onTap;
+  final VoidCallback onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    final neural = context.neural;
+    final typography = context.typography;
+
+    final isJoined = circle.isCurrentUserMember;
+    final isFull = circle.isFull;
+    final memberCount = circle.effectiveMemberCount;
+    final maxMembers = circle.maxMembers;
+    final progress = circle.weeklyProgressPercent;
+
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, _) {
+        return ShrinkableButton(
+          onTap: onTap,
+          child: Container(
+            width: 220,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: neural.obsidian850.withAlpha(200),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isJoined
+                    ? neural.emerald.withAlpha(128)
+                    : (isHovered
+                        ? neural.emerald.withAlpha(77)
+                        : neural.hairlineSoft),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        circle.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.caption.bold.copyWith(
+                          color: neural.slate100,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isJoined
+                            ? neural.emerald.withAlpha(38)
+                            : (isFull
+                                ? neural.amber400.withAlpha(25)
+                                : neural.cyan.withAlpha(25)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isJoined
+                            ? 'JOINED'
+                            : (isFull ? 'FULL' : '$memberCount/$maxMembers'),
+                        style: typography.caption.bold.copyWith(
+                          color: isJoined
+                              ? neural.emerald400
+                              : (isFull
+                                  ? neural.amber400
+                                  : neural.cyan300),
+                          fontSize: 9,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  circle.podQuest,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.caption.medium.copyWith(
+                    color: neural.slate400,
+                    fontSize: 10,
+                  ),
+                ),
+
+                // Weekly Goal Progress Bar
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: _PodMetricChip(
-                            icon: Icons.group_rounded,
-                            iconColor: neural.emerald400,
-                            value: activeStr,
-                            label: l10n.activeToday,
+                        Text(
+                          'Weekly Sprint',
+                          style: typography.caption.medium.copyWith(
+                            color: neural.slate400,
+                            fontSize: 9,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _PodMetricChip(
-                            icon: Icons.timer_outlined,
-                            iconColor: neural.amber400,
-                            value: minutesStr,
-                            label: l10n.groupFocus,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _PodMetricChip(
-                            icon: Icons.bolt_rounded,
-                            iconColor: neural.cyan400,
-                            value: karmaStr,
-                            valueColor: neural.cyan300,
-                            label: l10n.podKarma,
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: typography.caption.bold.copyWith(
+                            color: neural.emerald400,
+                            fontSize: 9,
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 3),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 4,
+                        backgroundColor: neural.obsidian800,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          neural.emerald400,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
+
+                // Bottom row: Member Avatars / Action Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Member Avatar Stack
+                    Row(
+                      children: [
+                        for (var i = 0;
+                            i < (circle.members.length.clamp(0, 3));
+                            i++)
+                          Align(
+                            widthFactor: 0.6,
+                            child: CircleAvatar(
+                              radius: 9,
+                              backgroundColor: neural.emerald.withAlpha(200),
+                              child: Text(
+                                circle.members[i].userName.isNotEmpty
+                                    ? circle.members[i].userName[0].toUpperCase()
+                                    : 'S',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (circle.members.isEmpty)
+                          CircleAvatar(
+                            radius: 9,
+                            backgroundColor: neural.emerald.withAlpha(200),
+                            child: const Text(
+                              'P',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (!isJoined && !isFull)
+                      ShrinkableButton(
+                        onTap: onJoin,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: neural.emerald.withAlpha(38),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: neural.emerald.withAlpha(102),
+                            ),
+                          ),
+                          child: Text(
+                            'Join Pod',
+                            style: typography.caption.bold.copyWith(
+                              color: neural.emerald400,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        isJoined ? 'Tap details' : 'Pod Full',
+                        style: typography.caption.medium.copyWith(
+                          color: neural.slate400,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
         );

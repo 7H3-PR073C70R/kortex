@@ -45,6 +45,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: PaywallRoute.page),
     AutoRoute(page: SyllabotChatRoute.page),
     AutoRoute(page: ExamTimetableRoute.page),
+    AutoRoute(page: AddAcademicAssessmentRoute.page),
     AutoRoute(page: AcademicTrackSettingsRoute.page),
     AutoRoute(page: SyllabotAiSettingsRoute.page),
     AutoRoute(page: SecuritySettingsRoute.page),

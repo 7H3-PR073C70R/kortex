@@ -319,6 +319,15 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Stream<List<StudyCircleEntity>> watchStudyCircles({String? track}) {
+    return _remoteDataSource.watchStudyCircles(track: track).map(
+          (models) => models
+              .map((m) => m.toEntity(currentUserId: _currentUserId))
+              .toList(),
+        );
+  }
+
+  @override
   Future<Either<Failure, StudyCircleEntity>> createStudyCircle({
     required String name,
     required String track,
