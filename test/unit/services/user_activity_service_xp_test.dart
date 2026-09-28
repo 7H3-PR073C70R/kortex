@@ -123,7 +123,7 @@ void main() {
       final startXp = userActivityService.getXpPoints();
       expect(startXp, equals(300));
 
-      final success = await userActivityService.purchaseStreakFreeze(costXp: 200);
+      final success = await userActivityService.purchaseStreakFreeze();
       expect(success, isTrue);
 
       final remainingXp = userActivityService.getXpPoints();

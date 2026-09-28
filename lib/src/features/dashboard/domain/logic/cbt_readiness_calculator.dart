@@ -95,6 +95,95 @@ class CbtReadinessResult {
   final List<SubjectReadinessBreakdown> subjectBreakdowns;
 }
 
+/// Representation of a student's registered course for CBT readiness evaluation
+class RegisteredCourseInput {
+  const RegisteredCourseInput({
+    required this.courseCode,
+    required this.title,
+    required this.syllabusCoverage,
+    this.department = 'General',
+    this.accuracyPercent,
+    this.retentionRate,
+    this.iconName = 'school',
+    this.colorHex = '#6366F1',
+  });
+
+  final String courseCode;
+  final String title;
+  final double syllabusCoverage;
+  final String department;
+  final double? accuracyPercent;
+  final double? retentionRate;
+  final String iconName;
+  final String colorHex;
+
+  /// Helper to convert dynamic course lists (CuratedCourseModel, CuratedCourseEntity, Maps)
+  static List<RegisteredCourseInput> convertCourses(List<dynamic>? courses) {
+    if (courses == null || courses.isEmpty) return const [];
+    final result = <RegisteredCourseInput>[];
+    for (final c in courses) {
+      if (c is RegisteredCourseInput) {
+        result.add(c);
+      } else if (c != null) {
+        final code = _extractString(c, 'courseCode') ?? _extractString(c, 'course_code') ?? '';
+        final title = _extractString(c, 'title') ?? code;
+        final cov = _extractDouble(c, 'syllabusCoverage') ?? _extractDouble(c, 'syllabus_coverage') ?? 0.75;
+        final dept = _extractString(c, 'department') ?? 'General';
+        final acc = _extractDouble(c, 'accuracyPercent');
+        final ret = _extractDouble(c, 'retentionRate');
+        final icon = _extractString(c, 'iconName') ?? 'school';
+        final color = _extractString(c, 'colorHex') ?? '#6366F1';
+
+        result.add(
+          RegisteredCourseInput(
+            courseCode: code,
+            title: title.isNotEmpty ? title : code,
+            syllabusCoverage: cov,
+            department: dept,
+            accuracyPercent: acc,
+            retentionRate: ret,
+            iconName: icon,
+            colorHex: color,
+          ),
+        );
+      }
+    }
+    return result;
+  }
+
+  static String? _extractString(dynamic obj, String key) {
+    if (obj is Map) {
+      final val = obj[key];
+      return val is String ? val : val?.toString();
+    }
+    try {
+      if (key == 'courseCode') return (obj as dynamic).courseCode as String?;
+      if (key == 'course_code') return (obj as dynamic).course_code as String?;
+      if (key == 'title') return (obj as dynamic).title as String?;
+      if (key == 'department') return (obj as dynamic).department as String?;
+      if (key == 'iconName') return (obj as dynamic).iconName as String?;
+      if (key == 'colorHex') return (obj as dynamic).colorHex as String?;
+    } on Exception catch (_) {}
+    return null;
+  }
+
+  static double? _extractDouble(dynamic obj, String key) {
+    if (obj is Map) {
+      final val = obj[key];
+      if (val is num) return val.toDouble();
+      if (val is String) return double.tryParse(val);
+      return null;
+    }
+    try {
+      if (key == 'syllabusCoverage') return ((obj as dynamic).syllabusCoverage as num?)?.toDouble();
+      if (key == 'syllabus_coverage') return ((obj as dynamic).syllabus_coverage as num?)?.toDouble();
+      if (key == 'accuracyPercent') return ((obj as dynamic).accuracyPercent as num?)?.toDouble();
+      if (key == 'retentionRate') return ((obj as dynamic).retentionRate as num?)?.toDouble();
+    } on Exception catch (_) {}
+    return null;
+  }
+}
+
 class CbtReadinessCalculator {
   const CbtReadinessCalculator();
 
@@ -114,13 +203,26 @@ class CbtReadinessCalculator {
     double averageSecondsPerQuestion = 48.0,
     int targetScoreGoal = 300,
     List<SubjectReadinessBreakdown>? subjectBreakdowns,
+    List<dynamic>? registeredCourses,
   }) {
-    final cov = syllabusCoverage.clamp(0.0, 1.0);
+    final convertedRegisteredCourses =
+        RegisteredCourseInput.convertCourses(registeredCourses);
+
+    var effectiveSyllabusCoverage = syllabusCoverage.clamp(0.0, 1.0);
+    if (convertedRegisteredCourses.isNotEmpty) {
+      final totalCov = convertedRegisteredCourses.fold<double>(
+        0,
+        (sum, item) => sum + item.syllabusCoverage.clamp(0.0, 1.0),
+      );
+      effectiveSyllabusCoverage =
+          (totalCov / convertedRegisteredCourses.length).clamp(0.0, 1.0);
+    }
+
+    final cov = effectiveSyllabusCoverage;
     final ret = fsrsRetentionRate.clamp(0.0, 1.0);
     final mock = mockScoreRatio.clamp(0.0, 1.0);
 
     // Time factor: if exam is further out (> 30 days), lower penalty for uncompleted syllabus.
-    // If exam is imminent (< 7 days), low coverage significantly penalizes readiness score.
     final double timeFactor;
     if (daysRemaining <= 0) {
       timeFactor = 1.0;
@@ -133,8 +235,6 @@ class CbtReadinessCalculator {
     }
 
     // Speed / Pacing Factor:
-    // Optimal CBT speed: 35 - 55 seconds per item.
-    // > 75 seconds per item indicates severe time-pressure risk during exam.
     final double speedFactor;
     final String speedDiag;
     if (averageSecondsPerQuestion <= 55) {
@@ -274,10 +374,93 @@ class CbtReadinessCalculator {
       }
     }
 
+    // Build subject breakdowns based on registered courses if available
+    final List<SubjectReadinessBreakdown> effectiveSubjectBreakdowns;
+    RegisteredCourseInput? weakestCourseInput;
+    var lowestCourseReadinessVal = 101;
+
+    if (convertedRegisteredCourses.isNotEmpty) {
+      final breakdowns = <SubjectReadinessBreakdown>[];
+      for (final course in convertedRegisteredCourses) {
+        final courseName = course.title.trim().isNotEmpty
+            ? course.title.trim()
+            : (course.courseCode.trim().isNotEmpty
+                ? course.courseCode.trim()
+                : 'Registered Course');
+
+        final courseCov = course.syllabusCoverage.clamp(0.0, 1.0);
+        final courseAcc = (course.accuracyPercent ?? mock).clamp(0.0, 1.0);
+        final courseRet = (course.retentionRate ?? ret).clamp(0.0, 1.0);
+
+        final courseReadinessVal =
+            ((courseCov * 0.40) + (courseAcc * 0.35) + (courseRet * 0.25)) * 100;
+        final courseReadinessPercent =
+            courseReadinessVal.round().clamp(0, 100);
+
+        final int subjectMaxScore;
+        final int subjectProjectedScore;
+
+        if (isWaecOrNeco || isUniversity) {
+          subjectMaxScore = 100;
+          subjectProjectedScore =
+              (courseReadinessPercent * 0.95).round().clamp(0, 100);
+        } else {
+          subjectMaxScore =
+              (400 / convertedRegisteredCourses.length).round().clamp(50, 200);
+          subjectProjectedScore =
+              ((courseReadinessPercent / 100.0) * subjectMaxScore)
+                  .round()
+                  .clamp(0, subjectMaxScore);
+        }
+
+        final Color statusColor;
+        if (courseReadinessPercent >= 75) {
+          statusColor = const Color(0xFF10B981);
+        } else if (courseReadinessPercent >= 55) {
+          statusColor = const Color(0xFFF59E0B);
+        } else {
+          statusColor = const Color(0xFFEF4444);
+        }
+
+        breakdowns.add(
+          SubjectReadinessBreakdown(
+            subjectName: courseName,
+            readinessPercent: courseReadinessPercent,
+            coveragePercent: courseCov,
+            accuracyPercent: courseAcc,
+            projectedScore: subjectProjectedScore,
+            maxScore: subjectMaxScore,
+            statusColor: statusColor,
+          ),
+        );
+
+        if (courseReadinessPercent < lowestCourseReadinessVal) {
+          lowestCourseReadinessVal = courseReadinessPercent;
+          weakestCourseInput = course;
+        }
+      }
+      effectiveSubjectBreakdowns = breakdowns;
+    } else {
+      effectiveSubjectBreakdowns =
+          subjectBreakdowns ??
+          _generateDefaultSubjectBreakdowns(
+            examType: examType,
+            overallScorePercent: finalPercent,
+            cov: cov,
+            ret: ret,
+            mock: mock,
+          );
+    }
+
     // Determine primary bottleneck diagnostic
     var weakestArea = explicitWeakestTopic ?? '';
     if (weakestArea.isEmpty) {
-      if (speedFactor < 0.8) {
+      if (weakestCourseInput != null) {
+        final courseName = weakestCourseInput.title.trim().isNotEmpty
+            ? weakestCourseInput.title.trim()
+            : weakestCourseInput.courseCode;
+        weakestArea = '$courseName ($lowestCourseReadinessVal% readiness)';
+      } else if (speedFactor < 0.8) {
         weakestArea = 'Time Pressure & Solving Speed';
       } else if (ret < cov && ret < mock) {
         weakestArea = 'FSRS Memory Retention';
@@ -293,6 +476,12 @@ class CbtReadinessCalculator {
     if (finalPercent >= 85) {
       remediation =
           'Maintain momentum with a 10-minute timed mock sprint to lock in distinction status.';
+    } else if (weakestCourseInput != null) {
+      final courseName = weakestCourseInput.title.trim().isNotEmpty
+          ? weakestCourseInput.title.trim()
+          : weakestCourseInput.courseCode;
+      remediation =
+          'Focus on $courseName: Complete 1 topic module & review 15 FSRS flashcards to boost course readiness.';
     } else if (speedFactor < 0.8) {
       remediation =
           'Pacing Alert: Practice 15 timed sprint questions to improve your $speedDiag pace.';
@@ -308,17 +497,6 @@ class CbtReadinessCalculator {
     }
 
     final probability = (finalPercent / 100.0).clamp(0.20, 0.98);
-
-    // Build default subject breakdowns if not explicitly supplied
-    final effectiveSubjectBreakdowns =
-        subjectBreakdowns ??
-        _generateDefaultSubjectBreakdowns(
-          examType: examType,
-          overallScorePercent: finalPercent,
-          cov: cov,
-          ret: ret,
-          mock: mock,
-        );
 
     return CbtReadinessResult(
       scorePercent: finalPercent,

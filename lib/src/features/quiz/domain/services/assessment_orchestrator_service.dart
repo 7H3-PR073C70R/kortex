@@ -195,7 +195,11 @@ class AssessmentOrchestratorService {
 
   /// Calculates a composite Academic Readiness Index (0.0 to 100.0) combining
   /// recent quiz performance, FSRS retention rate, and syllabus progress.
-  double calculateReadinessIndex({required double recentScorePercent, int daysRemaining = 14}) {
+  double calculateReadinessIndex({
+    required double recentScorePercent,
+    int daysRemaining = 14,
+    List<dynamic>? registeredCourses,
+  }) {
     final overallRetention = _userActivityService.getOverallRetentionRate();
     final mockRatio = (recentScorePercent / 100).clamp(0.0, 1.0);
     final coverage = (overallRetention * 0.90).clamp(0.0, 1.0);
@@ -205,6 +209,7 @@ class AssessmentOrchestratorService {
       fsrsRetentionRate: overallRetention,
       mockScoreRatio: mockRatio,
       daysRemaining: daysRemaining,
+      registeredCourses: registeredCourses,
     );
     return result.scorePercent.toDouble();
   }

@@ -15,6 +15,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
     this.syllabusCoverage = 0.88,
     this.mockScore = 0.85,
     this.topicName,
+    this.registeredCourses,
     super.key,
   });
 
@@ -24,6 +25,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
   final double syllabusCoverage;
   final double mockScore;
   final String? topicName;
+  final List<dynamic>? registeredCourses;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +41,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
       daysRemaining: 30,
       examType: examTitle,
       explicitWeakestTopic: topicName,
+      registeredCourses: registeredCourses,
     );
 
     final scoreGain = (cardsReviewed * 0.12 * retentionScore).clamp(0.4, 4.2);

@@ -345,21 +345,28 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
 
-                    // Subject Mastery Breakdown Header
+                    // Subject Mastery Breakdown Header for Registered Courses
                     if (readinessResult.subjectBreakdowns.isNotEmpty) ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'SUBJECT MASTERY BREAKDOWN',
+                            'REGISTERED COURSES BREAKDOWN',
                             style: typography.caption.bold.copyWith(
                               color: colors.textSecondary,
                               letterSpacing: 1.1,
                             ),
                           ),
-                          Text(
-                            '${readinessResult.subjectBreakdowns.length} Subjects',
-                            style: typography.caption.medium.copyWith(color: colors.textSecondary),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(20),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${readinessResult.subjectBreakdowns.length} Enrolled Courses',
+                              style: typography.caption.bold.copyWith(color: colors.primary, fontSize: 11),
+                            ),
                           ),
                         ],
                       ),
@@ -389,6 +396,26 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                                     '${sub.projectedScore} / ${sub.maxScore} pts',
                                     style: typography.body.bold.copyWith(
                                       color: sub.statusColor ?? colors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Syllabus: ${(sub.coveragePercent * 100).round()}%',
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Accuracy: ${(sub.accuracyPercent * 100).round()}%',
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],

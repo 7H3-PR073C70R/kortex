@@ -548,6 +548,10 @@ class _CompactDashboardLayout extends StatelessWidget {
                         (feed.analyticsSummary.overallRetentionRate * 0.90)
                             .clamp(0.0, 1.0),
                     daysRemaining: 14,
+                    registeredCourses: feed.curatedCourses,
+                    examType: (targetTrack ?? '').trim().isNotEmpty
+                        ? targetTrack!
+                        : 'JAMB',
                   ),
                   examTitle: (targetTrack ?? '').trim().isNotEmpty
                       ? targetTrack!
