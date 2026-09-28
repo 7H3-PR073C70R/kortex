@@ -911,7 +911,33 @@ class QuizDuelWebSocketClient {
 
     _roundTimers[duelId]?.cancel();
 
-    final updated = current.copyWith(status: QuizDuelStatus.roundSummary);
+    // Default any player who has not answered yet to timed out (-1)
+    final timeLimitMs = current.durationPerQuestionSeconds * 1000;
+    var p1 = current.player1;
+    if (p1.selectedOptionIndex == null) {
+      p1 = p1.copyWith(
+        selectedOptionIndex: -1,
+        isAnswerCorrect: false,
+        answeredInMs: timeLimitMs,
+        comboStreak: 0,
+      );
+    }
+
+    var p2 = current.player2;
+    if (p2 != null && p2.selectedOptionIndex == null) {
+      p2 = p2.copyWith(
+        selectedOptionIndex: -1,
+        isAnswerCorrect: false,
+        answeredInMs: timeLimitMs,
+        comboStreak: 0,
+      );
+    }
+
+    final updated = current.copyWith(
+      status: QuizDuelStatus.roundSummary,
+      player1: p1,
+      player2: p2,
+    );
     _updateMatch(duelId, updated);
 
     _realtimeClient.broadcastPresence(
@@ -930,7 +956,7 @@ class QuizDuelWebSocketClient {
 
   void _scheduleRoundTransition(String duelId, int questionIndex) {
     _transitionTimers[duelId]?.cancel();
-    _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1500), () {
+    _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1800), () {
       final latest = _activeMatches[duelId];
       if (latest == null) return;
 

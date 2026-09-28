@@ -17,7 +17,6 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   final QuizDuelRepository _repository;
   StreamSubscription<QuizDuelMatch>? _duelSubscription;
   Timer? _countdownTimer;
-  Timer? _summarySafetyTimer;
   DateTime? _roundStartTime;
 
   /// Starts searching for a real-time peer or AI study-buddy.
@@ -100,26 +99,13 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
                 previousStatus != QuizDuelStatus.finished;
 
             if (isMatchCountdown) {
-              _summarySafetyTimer?.cancel();
               _startLobbyCountdown(3);
             } else if (isNewRound) {
-              _summarySafetyTimer?.cancel();
               _startQuestionCountdown(match.durationPerQuestionSeconds);
             } else if (match.status == QuizDuelStatus.roundSummary) {
-              _summarySafetyTimer?.cancel();
-              _summarySafetyTimer = Timer(const Duration(milliseconds: 2800), () async {
-                if (!isClosed && state.status == QuizDuelStatus.roundSummary && state.match != null) {
-                  await _repository.submitDuelAnswer(
-                    duelId: state.match!.duelId,
-                    userId: state.currentUserId,
-                    questionIndex: state.match!.currentQuestionIndex,
-                    optionIndex: state.selectedOptionIndex ?? -1,
-                    responseTimeMs: 15000,
-                  );
-                }
-              });
+              _countdownTimer?.cancel();
             } else if (isJustFinished) {
-              _summarySafetyTimer?.cancel();
+              _countdownTimer?.cancel();
               unawaited(_repository.recordDuelOutcome(match));
               if (locator.isRegistered<UserActivityService>()) {
                 final isWinner = match.winnerUserId == state.currentUserId;
@@ -240,7 +226,6 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   /// Exits the current match and frees resources.
   Future<void> leaveMatch() async {
     _countdownTimer?.cancel();
-    _summarySafetyTimer?.cancel();
     if (state.match != null) {
       await _repository.leaveDuel(
         duelId: state.match!.duelId,
@@ -260,7 +245,6 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   @override
   Future<void> close() {
     _countdownTimer?.cancel();
-    _summarySafetyTimer?.cancel();
     unawaited(_duelSubscription?.cancel());
     return super.close();
   }

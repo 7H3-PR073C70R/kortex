@@ -1123,8 +1123,8 @@ class QuizDuelArenaPage extends HookWidget {
                               currentQuestion != null) ...[
                             Builder(
                               builder: (context) {
-                                final mySelection = state.selectedOptionIndex;
-                                final userHasSelected = mySelection != null;
+                                final mySelection = state.selectedOptionIndex ?? myPlayer.selectedOptionIndex;
+                                final userHasSelected = mySelection != null && mySelection >= 0;
                                 final isUserCorrect = userHasSelected &&
                                     (currentQuestion.options.length > mySelection &&
                                         currentQuestion.options[mySelection] ==
