@@ -1461,12 +1461,22 @@ class _CourseModuleView extends StatelessWidget {
                           child: ShrinkableButton(
                             onTap: () {
                               AppFeedback.light();
+                              final questions = pqState.questions.isNotEmpty
+                                  ? pqState.questions
+                                  : CbtPracticeConfigModalSheet.generateCourseQuestions(
+                                      courseId: courseId,
+                                      courseCode: courseCode,
+                                      courseTitle: courseTitle,
+                                    );
                               unawaited(
-                                context.router.push(
-                                  PastQuestionsBoardRoute(
-                                    initialExamCode: examCategory.code,
-                                    initialSubject: mappedSubject,
-                                  ),
+                                CbtPracticeConfigModalSheet.show(
+                                  context,
+                                  title: 'Practice $mappedSubject Past Questions',
+                                  courseId: courseId,
+                                  courseCode: courseCode,
+                                  courseTitle: courseTitle,
+                                  allQuestions: questions,
+                                  isMockExam: false,
                                 ),
                               );
                             },
@@ -1497,7 +1507,7 @@ class _CourseModuleView extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'Launch Q-Bank & CBT',
+                                    'Launch CBT Practice',
                                     style: typography.caption.bold.copyWith(
                                       color: colors.white,
                                       fontSize: 12.5,

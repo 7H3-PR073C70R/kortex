@@ -639,6 +639,25 @@ class _QuizWorkspaceView extends HookWidget {
                             return const SizedBox.shrink();
                           }
 
+                          final userPick = current.userSelectedAnswer ??
+                              (isPractice ? state.pendingAnswer : null);
+                          final isOptSelected = userPick != null &&
+                              userPick.trim().isNotEmpty &&
+                              (userPick == opt || _isSameAnswer(userPick, opt));
+                          final isCorrectOption = _isSameAnswer(
+                            opt,
+                            current.correctAnswer,
+                          );
+                          final isAnsweredState = reviewMode || current.isAnswered;
+
+                          final optionTrailingLabel = isAnsweredState
+                              ? (isOptSelected
+                                  ? (isCorrectOption
+                                      ? 'Your Answer'
+                                      : 'Your Answer')
+                                  : (isCorrectOption ? 'Correct Answer' : null))
+                              : null;
+
                           return QuizStaggeredFade(
                             index: 3 + idx,
                             distance: 10,
@@ -647,29 +666,11 @@ class _QuizWorkspaceView extends HookWidget {
                               optionText: opt,
                               index: idx,
                               reduceMotion: reduceMotion,
+                              trailingLabel: optionTrailingLabel,
                               state: McqOptionCard.resolveState(
-                                isSelected: reviewMode
-                                    ? (current.userSelectedAnswer == opt ||
-                                        _isSameAnswer(
-                                          current.userSelectedAnswer ?? '',
-                                          opt,
-                                        ))
-                                    : (isPractice
-                                        ? (state.pendingAnswer == opt ||
-                                            _isSameAnswer(
-                                              state.pendingAnswer ?? '',
-                                              opt,
-                                            ))
-                                        : (current.userSelectedAnswer == opt ||
-                                            _isSameAnswer(
-                                              current.userSelectedAnswer ?? '',
-                                              opt,
-                                            ))),
-                                isAnswered: reviewMode || current.isAnswered,
-                                isCorrect: _isSameAnswer(
-                                  opt,
-                                  current.correctAnswer,
-                                ),
+                                isSelected: isOptSelected,
+                                isAnswered: isAnsweredState,
+                                isCorrect: isCorrectOption,
                               ),
                               onTap: () {
                                 // Review is read-only: taps do nothing.

@@ -7,6 +7,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_config_modal_sheet.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CourseModuleQuickSheet extends StatelessWidget {
@@ -249,12 +250,12 @@ class CourseModuleQuickSheet extends StatelessWidget {
                   title: 'Practice Past Exam Questions',
                   subtitle: 'Launch CBT timed questions for ${course.courseCode}',
                   onTap: () {
+                    final rootContext = Navigator.of(context).context;
                     Navigator.pop(context);
                     unawaited(
-                      context.router.push(
-                        PastQuestionsBoardRoute(
-                          initialExamCode: course.courseCode,
-                        ),
+                      CbtPracticeConfigModalSheet.showForCourse(
+                        rootContext,
+                        course: course,
                       ),
                     );
                   },

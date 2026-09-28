@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 
 void main() {
@@ -168,6 +169,32 @@ void main() {
 
       expect(result.weakestAreaLabel, contains('Chemistry'));
       expect(result.remediationSuggestion, contains('Chemistry'));
+    });
+
+    test('Safely converts CuratedCourseEntity and CuratedCourseModel without runtime error', () {
+      const entity = CuratedCourseEntity(
+        id: '1',
+        courseCode: 'BIO 101',
+        title: 'General Biology',
+        department: 'Biological Sciences',
+        totalMaterials: 10,
+        hasActivePastPapers: true,
+        iconName: 'eco',
+        colorHex: '#10B981',
+        syllabusCoverage: 0.85,
+      );
+
+      final result = calculator.compute(
+        syllabusCoverage: 0.85,
+        fsrsRetentionRate: 0.85,
+        mockScoreRatio: 0.85,
+        daysRemaining: 14,
+        registeredCourses: [entity],
+      );
+
+      expect(result.subjectBreakdowns.length, equals(1));
+      expect(result.subjectBreakdowns.first.subjectName, equals('General Biology'));
+      expect(result.subjectBreakdowns.first.coveragePercent, equals(0.85));
     });
   });
 }

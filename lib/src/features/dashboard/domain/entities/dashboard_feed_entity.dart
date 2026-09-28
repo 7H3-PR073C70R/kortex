@@ -111,7 +111,16 @@ class DashboardFeedEntity extends Equatable {
   bool get isHigherEdStudent =>
       calibrationProfile.focus == AcademicFocus.higherEducation;
 
-  bool get isProfileUncalibrated => !calibrationProfile.isCalibrated;
+  bool get hasTrackSelected =>
+      calibrationProfile.hasTrackSelected ||
+      (targetExamCountdown != null &&
+          targetExamCountdown!.subjectTrack.trim().isNotEmpty);
+
+  bool get isProfileUncalibrated {
+    if (calibrationProfile.isCalibrated) return false;
+    if (hasTrackSelected && curatedCourses.isNotEmpty) return false;
+    return true;
+  }
 
   DashboardFeedEntity copyWith({
     CalibrationProfile? calibrationProfile,

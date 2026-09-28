@@ -47,6 +47,23 @@ class CalibrationProfile extends Equatable {
   final int dailyGoalMinutes;
   final bool isCalibrated;
 
+  /// Returns `true` if an academic track, field of study, or exam focus is selected.
+  bool get hasTrackSelected {
+    if (highSchoolExam != null && highSchoolExam!.trim().isNotEmpty) {
+      return true;
+    }
+    if (higherEdField != null && higherEdField!.trim().isNotEmpty) {
+      return true;
+    }
+    if (highSchoolSubjects.isNotEmpty) {
+      return true;
+    }
+    if (higherEdGoals.isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
   CalibrationProfile copyWith({
     AcademicFocus? focus,
     HigherEdLevel? higherEdLevel,

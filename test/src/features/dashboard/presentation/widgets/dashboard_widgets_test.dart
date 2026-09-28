@@ -55,6 +55,35 @@ void main() {
       expect(find.text('Calibrate Your Neural Workspace'), findsOneWidget);
     });
 
+    testWidgets('HeaderProfileBar hides calibrate banner when profile is calibrated', (
+      tester,
+    ) async {
+      const analytics = AnalyticsSummaryEntity(
+        currentStreakDays: 12,
+        longestStreakDays: 20,
+        totalCardsMastered: 150,
+        weeklyMinutesStudied: 180,
+        overallRetentionRate: 0.92,
+        academicRank: 'Neural Scholar',
+        xpPoints: 3400,
+        heatMapData: [],
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          const HeaderProfileBar(
+            analytics: analytics,
+            isProfileUncalibrated: false,
+            userName: 'Alexander',
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 1500));
+
+      expect(find.text('Hey, Alexander'), findsOneWidget);
+      expect(find.text('Calibrate Your Neural Workspace'), findsNothing);
+    });
+
     testWidgets('FsrsReviewDeckCard renders deck details and due badge', (
       tester,
     ) async {

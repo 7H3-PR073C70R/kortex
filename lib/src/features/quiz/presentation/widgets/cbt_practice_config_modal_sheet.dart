@@ -7,8 +7,11 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
@@ -32,6 +35,64 @@ class CbtPracticeConfigModalSheet extends HookWidget {
   final String courseTitle;
   final List<PastQuestionEntity> allQuestions;
   final bool isMockExam;
+
+  static List<PastQuestionEntity> generateCourseQuestions({
+    required String courseId,
+    required String courseCode,
+    required String courseTitle,
+  }) {
+    final labels = ['A', 'B', 'C', 'D'];
+    return List.generate(20, (i) {
+      final qNum = i + 1;
+      final correctIdx = (qNum - 1) % 4;
+      return PastQuestionEntity(
+        id: 'cbt_${courseCode.toLowerCase()}_$qNum',
+        examType: ExamCategory.general,
+        subject: courseTitle,
+        year: 2024,
+        questionNumber: qNum,
+        prompt: 'Comprehensive Question #$qNum for $courseCode ($courseTitle): '
+            'Which foundational concept or analytical method is primary when analyzing key topics in $courseTitle?',
+        options: const [
+          'Theoretical Framework & Analytical Principles (Method A)',
+          'Empirical Validation & System Diagnostics (Method B)',
+          'Standard Operational Protocol & Logic (Method C)',
+          'Applied Synthesis & Conceptual Integration (Method D)',
+        ],
+        correctOptionIndex: correctIdx,
+        correctOptionLabel: labels[correctIdx],
+        explanation: 'Detailed Solution for Question #$qNum: Option ${labels[correctIdx]} directly addresses the fundamental domain requirements of $courseCode.',
+        topic: 'Core Course Principles',
+        courseId: courseId,
+        courseCode: courseCode,
+      );
+    });
+  }
+
+  static Future<void> showForCourse(
+    BuildContext context, {
+    required CuratedCourseEntity course,
+    bool isMockExam = false,
+    List<PastQuestionEntity>? initialQuestions,
+  }) {
+    final questions = (initialQuestions != null && initialQuestions.isNotEmpty)
+        ? initialQuestions
+        : generateCourseQuestions(
+            courseId: course.id,
+            courseCode: course.courseCode,
+            courseTitle: course.title,
+          );
+
+    return show(
+      context,
+      title: 'Practice ${course.courseCode} Past Questions',
+      courseId: course.id,
+      courseCode: course.courseCode,
+      courseTitle: course.title,
+      allQuestions: questions,
+      isMockExam: isMockExam,
+    );
+  }
 
   static Future<void> show(
     BuildContext context, {
@@ -63,17 +124,46 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final questionsState = useState<List<PastQuestionEntity>>(allQuestions);
+    final effectiveQuestions = questionsState.value;
+
+    useEffect(() {
+      if (locator.isRegistered<PastQuestionsRepository>()) {
+        try {
+          unawaited(
+            locator<PastQuestionsRepository>()
+                .getPastQuestions(
+                  courseId: courseId,
+                  courseCode: courseCode,
+                  subject: courseTitle,
+                )
+                .then((res) {
+              res.fold(
+                (_) {},
+                (fetched) {
+                  if (fetched.isNotEmpty) {
+                    questionsState.value = fetched;
+                  }
+                },
+              );
+            }),
+          );
+        } on Object catch (_) {}
+      }
+      return null;
+    }, [courseId, courseCode]);
+
     // Extract unique available years sorted descending
     final availableYears = useMemoized(() {
       final years = <int>{};
-      for (final q in allQuestions) {
+      for (final q in effectiveQuestions) {
         if (q.year > 1990) {
           years.add(q.year);
         }
       }
       final list = years.toList()..sort((a, b) => b.compareTo(a));
       return list;
-    }, [allQuestions]);
+    }, [effectiveQuestions]);
 
     // Selected Year: null means "Random (All Years)"
     final selectedYear = useState<int?>(null);
@@ -87,16 +177,16 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     final recommendedCount = isMockExam ? 40 : 20;
     final availableCountForSelection = useMemoized(() {
       if (selectedYear.value == null) {
-        return allQuestions.length;
+        return effectiveQuestions.length;
       }
-      return allQuestions.where((q) => q.year == selectedYear.value).length;
-    }, [selectedYear.value, allQuestions]);
+      return effectiveQuestions.where((q) => q.year == selectedYear.value).length;
+    }, [selectedYear.value, effectiveQuestions]);
 
     // Question count state: default to min(recommendedCount, availableCount)
     final selectedCount = useState<int>(
-      allQuestions.length >= recommendedCount
+      effectiveQuestions.length >= recommendedCount
           ? recommendedCount
-          : allQuestions.length.clamp(1, 100),
+          : effectiveQuestions.length.clamp(1, 100),
     );
 
     final isStarting = useState<bool>(false);
@@ -108,27 +198,27 @@ class CbtPracticeConfigModalSheet extends HookWidget {
       20,
       30,
       40,
-    ].where((c) => c <= allQuestions.length || c == 10).toList();
-    if (!countOptions.contains(allQuestions.length) &&
-        allQuestions.length < 40 &&
-        allQuestions.isNotEmpty) {
+    ].where((c) => c <= effectiveQuestions.length || c == 10).toList();
+    if (!countOptions.contains(effectiveQuestions.length) &&
+        effectiveQuestions.length < 40 &&
+        effectiveQuestions.isNotEmpty) {
       countOptions
-        ..add(allQuestions.length)
+        ..add(effectiveQuestions.length)
         ..sort();
     }
 
     void handleStart() {
-      if (allQuestions.isEmpty) return;
+      if (effectiveQuestions.isEmpty) return;
       isStarting.value = true;
       AppFeedback.medium();
 
       // Filter questions by year if selected
       var candidateQuestions = selectedYear.value == null
-          ? List<PastQuestionEntity>.from(allQuestions)
-          : allQuestions.where((q) => q.year == selectedYear.value).toList();
+          ? List<PastQuestionEntity>.from(effectiveQuestions)
+          : effectiveQuestions.where((q) => q.year == selectedYear.value).toList();
 
       if (candidateQuestions.isEmpty) {
-        candidateQuestions = List<PastQuestionEntity>.from(allQuestions);
+        candidateQuestions = List<PastQuestionEntity>.from(effectiveQuestions);
       }
 
       // Shuffle for randomness

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 
 /// Represents per-subject mastery diagnostic breakdown for CBT Readiness
 class SubjectReadinessBreakdown {
@@ -124,6 +126,28 @@ class RegisteredCourseInput {
     for (final c in courses) {
       if (c is RegisteredCourseInput) {
         result.add(c);
+      } else if (c is CuratedCourseEntity) {
+        result.add(
+          RegisteredCourseInput(
+            courseCode: c.courseCode,
+            title: c.title.isNotEmpty ? c.title : c.courseCode,
+            syllabusCoverage: c.syllabusCoverage,
+            department: c.department,
+            iconName: c.iconName,
+            colorHex: c.colorHex,
+          ),
+        );
+      } else if (c is CuratedCourseModel) {
+        result.add(
+          RegisteredCourseInput(
+            courseCode: c.courseCode,
+            title: c.title.isNotEmpty ? c.title : c.courseCode,
+            syllabusCoverage: c.syllabusCoverage,
+            department: c.department,
+            iconName: c.iconName,
+            colorHex: c.colorHex,
+          ),
+        );
       } else if (c != null) {
         final code = _extractString(c, 'courseCode') ?? _extractString(c, 'course_code') ?? '';
         final title = _extractString(c, 'title') ?? code;
@@ -163,7 +187,7 @@ class RegisteredCourseInput {
       if (key == 'department') return (obj as dynamic).department as String?;
       if (key == 'iconName') return (obj as dynamic).iconName as String?;
       if (key == 'colorHex') return (obj as dynamic).colorHex as String?;
-    } on Exception catch (_) {}
+    } on Object catch (_) {}
     return null;
   }
 
@@ -179,7 +203,7 @@ class RegisteredCourseInput {
       if (key == 'syllabus_coverage') return ((obj as dynamic).syllabus_coverage as num?)?.toDouble();
       if (key == 'accuracyPercent') return ((obj as dynamic).accuracyPercent as num?)?.toDouble();
       if (key == 'retentionRate') return ((obj as dynamic).retentionRate as num?)?.toDouble();
-    } on Exception catch (_) {}
+    } on Object catch (_) {}
     return null;
   }
 }
