@@ -12,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -41,7 +42,6 @@ import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Available sorting modes for forum replies
 enum ForumSortFilter {
@@ -694,11 +694,11 @@ class ForumThreadDetailPage extends HookWidget {
     void shareThread() {
       unawaited(HapticFeedback.lightImpact());
       unawaited(
-        SharePlus.instance.share(
-          ShareParams(
-            text:
-                'Check out this discussion on Kortex: ${currentPost.value.title}\n\n${currentPost.value.content}\n\nhttps://kortex.app/forum/post/${post.id}',
-          ),
+        locator<LinkSharingService>().shareForumPost(
+          postId: post.id,
+          title: currentPost.value.title,
+          authorName: currentPost.value.authorName,
+          subjectTrack: currentPost.value.track,
         ),
       );
     }
@@ -838,18 +838,20 @@ class ForumThreadDetailPage extends HookWidget {
                           color: colors.textPrimary,
                         ),
                       ),
-                      onTap: () {
+                      onTap: () async {
                         Navigator.of(ctx).pop();
-                        unawaited(
-                          Clipboard.setData(
-                            ClipboardData(
-                              text: 'https://kortex.app/forum/post/${post.id}',
-                            ),
-                          ),
+                        final result = await locator<LinkSharingService>().shareForumPost(
+                          postId: post.id,
+                          title: currentPost.value.title,
+                          authorName: currentPost.value.authorName,
+                          subjectTrack: currentPost.value.track,
                         );
-                        context.showSnackBar(
-                          message: 'Post link copied to clipboard',
-                        );
+                        final copied = await locator<LinkSharingService>().copyLinkToClipboard(result.linkUri);
+                        if (copied && context.mounted) {
+                          context.showSnackBar(
+                            message: 'Post link copied to clipboard',
+                          );
+                        }
                       },
                     ),
                     if (isAuthor)

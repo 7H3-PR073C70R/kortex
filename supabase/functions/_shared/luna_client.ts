@@ -39,10 +39,11 @@ export class LunaClient {
     this.apiKey =
       Deno.env.get("LUNA_API_KEY") ||
       Deno.env.get("OPENAI_API_KEY") ||
+      Deno.env.get("GEMINI_API_KEY") ||
       "";
     this.baseUrl =
-      Deno.env.get("LUNA_BASE_URL") || "https://api.openai.com/v1/responses";
-    this.model = Deno.env.get("LUNA_MODEL") || "gpt-5.6-luna";
+      Deno.env.get("LUNA_BASE_URL") || "https://api.openai.com/v1/chat/completions";
+    this.model = Deno.env.get("LUNA_MODEL") || Deno.env.get("OPENAI_MODEL") || "gpt-4o-mini";
   }
 
   /**

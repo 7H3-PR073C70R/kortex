@@ -12,6 +12,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
@@ -824,15 +825,7 @@ class _QuickActionsGrid extends StatelessWidget {
                     accent: neural.violet,
                     onTap: () {
                       AppFeedback.light();
-                      try {
-                        AutoTabsRouter.of(context).setActiveIndex(1);
-                      } on Object catch (_) {
-                        unawaited(
-                          context.navigateTo(
-                            const MainRoute(children: [DecksRoute()]),
-                          ),
-                        );
-                      }
+                      AppTabNavigation.navigateTo(context, AppMainTab.decks);
                     },
                   ),
                 ),
@@ -1806,9 +1799,7 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                       InkWell(
                         onTap: () {
                           unawaited(HapticFeedback.lightImpact());
-                          unawaited(
-                            context.navigateTo(const CommunityHubRoute()),
-                          );
+                          AppTabNavigation.navigateTo(context, AppMainTab.forum);
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(

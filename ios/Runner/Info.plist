@@ -36,6 +36,7 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
+					<string>kortex</string>
 					<string>com.kortexify.app</string>
 					<string>com.googleusercontent.apps.1073532728398-e50651b1d7649388897f1f</string>
 				</array>

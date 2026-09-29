@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -31,7 +32,6 @@ import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
-import 'package:share_plus/share_plus.dart';
 
 @RoutePage()
 class QuizResultsPage extends StatefulWidget {
@@ -1238,31 +1238,12 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
   Future<void> _handleShareResult(BuildContext context) async {
     unawaited(HapticFeedback.lightImpact());
     final result = widget.result;
-    final message =
-        'I scored ${result.scorePercent}% on "${result.quizTitle}" in '
-        'Kortex (${result.correctAnswers} of ${result.totalQuestions} '
-        'correct).';
-    try {
-      final box = context.findRenderObject() as RenderBox?;
-      final origin = box != null && box.hasSize
-          ? box.localToGlobal(Offset.zero) & box.size
-          : null;
-      await SharePlus.instance.share(
-        ShareParams(
-          text: message,
-          sharePositionOrigin: origin,
-        ),
-      );
-    } on Object catch (_) {
-      // Share failed — fall back to clipboard.
-      await Clipboard.setData(ClipboardData(text: message));
-      if (context.mounted) {
-        context.showSnackBar(
-          message: context.l10n.quizResultCopied,
-          type: SnackBarType.success,
-        );
-      }
-    }
+    final deckId = result.id.isNotEmpty ? result.id : 'general-quiz';
+    await locator<LinkSharingService>().shareQuizDuel(
+      duelId: 'quiz-score-${result.id}',
+      deckId: deckId,
+      deckTitle: result.quizTitle,
+    );
   }
 
   void _handleAskClassForHelp(BuildContext context) {

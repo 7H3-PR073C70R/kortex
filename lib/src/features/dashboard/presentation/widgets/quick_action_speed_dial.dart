@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -103,17 +104,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                             color: colors.success,
                             onTap: () {
                               AppFeedback.light();
-                              try {
-                                AutoTabsRouter.of(context).setActiveIndex(2);
-                              } on Object catch (_) {
-                                unawaited(
-                                  context.navigateTo(
-                                    const MainRoute(
-                                      children: [CommunityHubRoute()],
-                                    ),
-                                  ),
-                                );
-                              }
+                              AppTabNavigation.navigateTo(context, AppMainTab.hub);
                             },
                           ),
                           _buildDivider(colors, isDark),
@@ -123,15 +114,7 @@ class QuickActionSpeedDial extends StatelessWidget {
                             color: colors.secondary,
                             onTap: () {
                               AppFeedback.light();
-                              try {
-                                AutoTabsRouter.of(context).setActiveIndex(1);
-                              } on Object catch (_) {
-                                unawaited(
-                                  context.navigateTo(
-                                    const MainRoute(children: [DecksRoute()]),
-                                  ),
-                                );
-                              }
+                              AppTabNavigation.navigateTo(context, AppMainTab.decks);
                             },
                           ),
                         ]

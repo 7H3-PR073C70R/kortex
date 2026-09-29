@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -111,15 +112,7 @@ class HeaderProfileBar extends StatelessWidget {
               child: ShrinkableButton(
                 onTap: () {
                   unawaited(HapticFeedback.lightImpact());
-                  try {
-                    AutoTabsRouter.of(context).setActiveIndex(4);
-                  } on Object catch (_) {
-                    unawaited(
-                      context.router.root.navigate(
-                        const MainRoute(children: [ProfileRoute()]),
-                      ),
-                    );
-                  }
+                  AppTabNavigation.navigateTo(context, AppMainTab.profile);
                 },
                 child: Row(
                   children:

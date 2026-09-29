@@ -211,20 +211,21 @@ serve(async (req: Request) => {
         }
 
         if (!providerSuccess) {
-          const detailMsg =
-            providerErrors.length > 0
-              ? providerErrors.join("; ")
-              : "Unable to complete AI response from Luna provider.";
-          console.error(
-            `[syllabot-stream] Provider stream failed: ${detailMsg}`
+          console.log(
+            `[syllabot-stream] Remote provider stream unavailable (${providerErrors.join("; ")}). Invoking Socratic engine fallback...`
           );
-          sendEvent("error", {
-            error: "PROVIDER_STREAM_ERROR",
-            message: detailMsg,
-            details: providerErrors,
-          });
-          controller.close();
-          return;
+          const fallbackTokens = getFallbackTokens(
+            rawPrompt,
+            false,
+            body.contextHistory
+          );
+          for (const token of fallbackTokens) {
+            fullResponse += token;
+            recordedTokens.push(token);
+            sendEvent("token", { text: token });
+            await new Promise((r) => setTimeout(r, 15));
+          }
+          providerSuccess = true;
         }
 
         if (!isCacheHit && recordedTokens.length > 0 && providerSuccess) {

@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
+import 'package:kortex/src/core/services/dynamic_link_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
@@ -31,6 +32,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   late final RouterConfig<UrlState> _routerConfig;
   StreamSubscription<String>? _sessionExpiredSubscription;
   StreamSubscription<String>? _notificationPayloadSubscription;
+  StreamSubscription<DynamicLinkPayload>? _dynamicLinkSubscription;
 
   @override
   void initState() {
@@ -52,6 +54,23 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           .onPayloadTapped
           .listen(_handleNotificationPayload);
     }
+
+    if (locator.isRegistered<DynamicLinkService>()) {
+      _dynamicLinkSubscription = locator<DynamicLinkService>()
+          .onLinkReceived
+          .listen(_handleDynamicLinkPayload);
+    }
+  }
+
+  void _handleDynamicLinkPayload(DynamicLinkPayload payload) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        locator<DynamicLinkService>().handlePayload(
+          payload: payload,
+          appRouter: _appRouter,
+        ),
+      );
+    });
   }
 
   void _handleSessionExpired(String message) {
@@ -200,6 +219,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_sessionExpiredSubscription?.cancel());
     unawaited(_notificationPayloadSubscription?.cancel());
+    unawaited(_dynamicLinkSubscription?.cancel());
     super.dispose();
   }
 

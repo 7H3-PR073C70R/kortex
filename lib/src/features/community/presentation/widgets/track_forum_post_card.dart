@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
@@ -23,7 +24,6 @@ import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:share_plus/share_plus.dart';
 
 class TrackForumPostCard extends HookWidget {
   const TrackForumPostCard({
@@ -106,11 +106,11 @@ class TrackForumPostCard extends HookWidget {
                         onTap: () {
                           Navigator.of(ctx).pop();
                           unawaited(
-                            SharePlus.instance.share(
-                              ShareParams(
-                                text:
-                                    'Check out this forum discussion: ${post.title}\n\n${post.content}',
-                              ),
+                            locator<LinkSharingService>().shareForumPost(
+                              postId: post.id,
+                              title: post.title,
+                              authorName: post.authorName,
+                              subjectTrack: post.track,
                             ),
                           );
                         },
@@ -126,19 +126,20 @@ class TrackForumPostCard extends HookWidget {
                             color: colors.textPrimary,
                           ),
                         ),
-                        onTap: () {
+                        onTap: () async {
                           Navigator.of(ctx).pop();
-                          unawaited(
-                            Clipboard.setData(
-                              ClipboardData(
-                                text:
-                                    'https://kortex.app/forum/post/${post.id}',
-                              ),
-                            ),
+                          final result = await locator<LinkSharingService>().shareForumPost(
+                            postId: post.id,
+                            title: post.title,
+                            authorName: post.authorName,
+                            subjectTrack: post.track,
                           );
-                          context.showSnackBar(
-                            message: 'Post link copied to clipboard',
-                          );
+                          final copied = await locator<LinkSharingService>().copyLinkToClipboard(result.linkUri);
+                          if (copied && context.mounted) {
+                            context.showSnackBar(
+                              message: 'Post link copied to clipboard',
+                            );
+                          }
                         },
                       ),
                       ListTile(
@@ -1092,11 +1093,11 @@ class TrackForumPostCard extends HookWidget {
                                       onTap: () {
                                         unawaited(HapticFeedback.lightImpact());
                                         unawaited(
-                                          SharePlus.instance.share(
-                                            ShareParams(
-                                              text:
-                                                  'Check out this forum discussion: ${post.title}\n\n${post.content}',
-                                            ),
+                                          locator<LinkSharingService>().shareForumPost(
+                                            postId: post.id,
+                                            title: post.title,
+                                            authorName: post.authorName,
+                                            subjectTrack: post.track,
                                           ),
                                         );
                                       },

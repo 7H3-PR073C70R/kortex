@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -19,7 +19,6 @@ import 'package:kortex/src/features/quiz/presentation/pages/quiz_duel_arena_page
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_elo_tier_badge.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_leaderboard_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Modal bottom sheet for searching and joining a 1v1 Quiz Duel match (QZ-13).
 class QuizDuelMatchmakingSheet extends HookWidget {
@@ -168,26 +167,12 @@ class QuizDuelMatchmakingSheet extends HookWidget {
       final duelId = match?.duelId ??
           'duel_${DateTime.now().millisecondsSinceEpoch}';
 
-      final inviteUrl =
-          'https://kortex.app/duel/join?duelId=$duelId&subject=${Uri.encodeComponent(selectedSubject.value)}&examBoard=${Uri.encodeComponent(resolvedExamBoard)}';
-
-      unawaited(
-        Clipboard.setData(
-          ClipboardData(text: inviteUrl),
-        ),
+      final result = await locator<LinkSharingService>().shareQuizDuel(
+        duelId: duelId,
+        deckId: selectedSubject.value,
+        deckTitle: selectedSubject.value,
       );
-
-      try {
-        await SharePlus.instance.share(
-          ShareParams(
-            text:
-                'Join my 1v1 ${selectedSubject.value} Quiz Duel on Kortex! Click here to accept: $inviteUrl',
-            subject: '1v1 Quiz Duel Challenge',
-          ),
-        );
-      } on Exception catch (_) {
-        // Fallback gracefully if share sheet is unsupported
-      }
+      await locator<LinkSharingService>().copyLinkToClipboard(result.linkUri);
 
       if (context.mounted) {
         context.showSnackBar(

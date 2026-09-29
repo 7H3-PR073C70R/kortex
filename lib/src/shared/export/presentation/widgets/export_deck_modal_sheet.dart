@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
@@ -206,6 +208,15 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
     }
   }
 
+  Future<void> _shareDynamicLink() async {
+    Navigator.of(context).pop();
+    await locator<LinkSharingService>().shareDeck(
+      deckId: widget.deck.id,
+      title: widget.deck.title,
+      description: widget.deck.description,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
@@ -267,6 +278,16 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
               ),
             ),
           ] else ...[
+            _ExportOptionTile(
+              icon: Icons.share_location_rounded,
+              iconColor: colors.primary,
+              title: 'Share Dynamic Link',
+              subtitle: 'Generate cross-platform link to open or study deck directly',
+              onTap: () {
+                unawaited(_shareDynamicLink());
+              },
+            ),
+            const SizedBox(height: 12),
             _ExportOptionTile(
               icon: Icons.flash_on_rounded,
               iconColor: colors.info,

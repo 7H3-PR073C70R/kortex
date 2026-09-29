@@ -17,6 +17,14 @@ void _initServices() {
     ..registerLazySingleton<NotificationService>(
       NotificationService.new,
     )
+    ..registerLazySingleton<DynamicLinkService>(
+      DynamicLinkService.new,
+    )
+    ..registerLazySingleton<LinkSharingService>(
+      () => LinkSharingService(
+        dynamicLinkService: locator<DynamicLinkService>(),
+      ),
+    )
     ..registerLazySingleton<SocialAuthService>(
       SocialAuthService.new,
     )

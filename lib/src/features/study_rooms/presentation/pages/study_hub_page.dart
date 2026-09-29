@@ -9,6 +9,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -68,6 +69,7 @@ class StudyHubPage extends HookWidget {
 Widget _buildHeaderActionButton(
   BuildContext context, {
   required int tabIndex,
+  required bool isWide,
   required String? targetTrack,
 }) {
   final colors = context.colors;
@@ -79,7 +81,9 @@ Widget _buildHeaderActionButton(
   String label;
   VoidCallback onTap;
 
-  switch (tabIndex) {
+  final effectiveActionIndex = isWide ? tabIndex + 1 : tabIndex;
+
+  switch (effectiveActionIndex) {
     case 0:
       icon = Icons.edit_note_rounded;
       label = 'Post Thread';
@@ -254,16 +258,29 @@ class _StudyHubView extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final tabController = useTabController(initialLength: 4);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = AppTabNavigation.isWideLayout(screenWidth);
+
+    final tabController = useTabController(
+      initialLength: isWide ? 3 : 4,
+      keys: [isWide],
+    );
     useListenable(tabController);
 
     useEffect(() {
-      AppTourKeys.onSelectStudyHubSubTab = (index) {
+      void handler(int index) {
         if (tabController.length > index) {
           tabController.animateTo(index);
         }
+      }
+
+      AppTabNavigation.onSelectStudyHubSubTab = handler;
+      AppTourKeys.onSelectStudyHubSubTab = handler;
+
+      return () {
+        AppTabNavigation.onSelectStudyHubSubTab = null;
+        AppTourKeys.onSelectStudyHubSubTab = null;
       };
-      return () => AppTourKeys.onSelectStudyHubSubTab = null;
     }, [tabController]);
 
     final authState = context.watch<AuthBloc?>()?.state;
@@ -306,6 +323,7 @@ class _StudyHubView extends HookWidget {
               child: _buildHeaderActionButton(
                 context,
                 tabIndex: tabController.index,
+                isWide: isWide,
                 targetTrack: targetTrack,
               ),
             ),
@@ -319,12 +337,18 @@ class _StudyHubView extends HookWidget {
                   constraints: const BoxConstraints(maxWidth: 860),
                   child: AppLiquidGlassTabBar(
                     key: AppTourKeys.pomodoroCardKey,
-                    tabs: [
-                      l10n.forumTab,
-                      l10n.liveRoomsTab,
-                      'Study Circles',
-                      l10n.marketplaceTab,
-                    ],
+                    tabs: isWide
+                        ? [
+                            l10n.liveRoomsTab,
+                            'Study Circles',
+                            l10n.marketplaceTab,
+                          ]
+                        : [
+                            l10n.forumTab,
+                            l10n.liveRoomsTab,
+                            'Study Circles',
+                            l10n.marketplaceTab,
+                          ],
                     selectedIndex: tabController.index,
                     onTabSelected: tabController.animateTo,
                     isCompact: true,
@@ -363,32 +387,53 @@ class _StudyHubView extends HookWidget {
 
             return TabBarView(
               controller: tabController,
-              children: [
-                // 0. Academic Forum Feed
-                _ForumTab(
-                  state: state,
-                  targetTrack: targetTrack,
-                ),
+              children: isWide
+                  ? [
+                      // 0. Live Focus Rooms
+                      _LiveRoomsTab(
+                        key: AppTourKeys.liveRoomsCardKey,
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
 
-                // 1. Live Focus Rooms
-                _LiveRoomsTab(
-                  key: AppTourKeys.liveRoomsCardKey,
-                  state: state,
-                  targetTrack: targetTrack,
-                ),
+                      // 1. Study Circles
+                      _StudyCirclesTab(
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
 
-                // 2. Study Circles
-                _StudyCirclesTab(
-                  state: state,
-                  targetTrack: targetTrack,
-                ),
+                      // 2. Deck Marketplace
+                      _DeckMarketplaceTab(
+                        key: AppTourKeys.marketplaceCardKey,
+                        state: state,
+                      ),
+                    ]
+                  : [
+                      // 0. Academic Forum Feed
+                      _ForumTab(
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
 
-                // 3. Deck Marketplace
-                _DeckMarketplaceTab(
-                  key: AppTourKeys.marketplaceCardKey,
-                  state: state,
-                ),
-              ],
+                      // 1. Live Focus Rooms
+                      _LiveRoomsTab(
+                        key: AppTourKeys.liveRoomsCardKey,
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
+
+                      // 2. Study Circles
+                      _StudyCirclesTab(
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
+
+                      // 3. Deck Marketplace
+                      _DeckMarketplaceTab(
+                        key: AppTourKeys.marketplaceCardKey,
+                        state: state,
+                      ),
+                    ],
             );
           },
         ),
