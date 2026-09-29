@@ -2567,21 +2567,21 @@
             }
         }
     },
-    "createStudyCircleTitle": "Create Study Circle",
+    "createStudyCircleTitle": "Create Study Pod",
     "@createStudyCircleTitle": {
-        "description": "Header title for creating a study circle"
+        "description": "Header title for creating a study pod"
     },
     "studyCircleMicroPodsSubtitle": "Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.",
     "@studyCircleMicroPodsSubtitle": {
         "description": "Subtitle explaining micro-pod study circles"
     },
-    "circleNameLabel": "Circle Name",
+    "circleNameLabel": "Pod Name",
     "@circleNameLabel": {
-        "description": "Label for circle name input"
+        "description": "Label for pod name input"
     },
     "circleNameHint": "e.g. 2026 JAMB Physics Slayers",
     "@circleNameHint": {
-        "description": "Hint text for circle name input"
+        "description": "Hint text for pod name input"
     },
     "academicTrackLabel": "Academic Track",
     "@academicTrackLabel": {
@@ -2605,7 +2605,7 @@
             }
         }
     },
-    "launchStudyCircleAction": "Launch Study Circle",
+    "launchStudyCircleAction": "Launch Study Pod",
     "@launchStudyCircleAction": {
         "description": "Button to submit and create a study circle"
     },

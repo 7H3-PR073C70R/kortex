@@ -3248,10 +3248,10 @@ abstract class AppLocalizations {
   /// **'{count} in this room'**
   String inThisRoom(int count);
 
-  /// Header title for creating a study circle
+  /// Header title for creating a study pod
   ///
   /// In en, this message translates to:
-  /// **'Create Study Circle'**
+  /// **'Create Study Pod'**
   String get createStudyCircleTitle;
 
   /// Subtitle explaining micro-pod study circles
@@ -3260,13 +3260,13 @@ abstract class AppLocalizations {
   /// **'Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.'**
   String get studyCircleMicroPodsSubtitle;
 
-  /// Label for circle name input
+  /// Label for pod name input
   ///
   /// In en, this message translates to:
-  /// **'Circle Name'**
+  /// **'Pod Name'**
   String get circleNameLabel;
 
-  /// Hint text for circle name input
+  /// Hint text for pod name input
   ///
   /// In en, this message translates to:
   /// **'e.g. 2026 JAMB Physics Slayers'**
@@ -3293,7 +3293,7 @@ abstract class AppLocalizations {
   /// Button to submit and create a study circle
   ///
   /// In en, this message translates to:
-  /// **'Launch Study Circle'**
+  /// **'Launch Study Pod'**
   String get launchStudyCircleAction;
 
   /// Notice when circle has no members yet

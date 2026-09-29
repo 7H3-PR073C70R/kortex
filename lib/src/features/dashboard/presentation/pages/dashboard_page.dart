@@ -1707,19 +1707,51 @@ class _NextBestActionCard extends StatelessWidget {
 }
 
 /// Real-time cohort accountability and peer co-presence indicator
-class _StudyCirclePodPulseCard extends StatelessWidget {
+class _StudyCirclePodPulseCard extends StatefulWidget {
   const _StudyCirclePodPulseCard({this.targetTrack});
 
   final String? targetTrack;
+
+  @override
+  State<_StudyCirclePodPulseCard> createState() =>
+      _StudyCirclePodPulseCardState();
+}
+
+class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StudyCirclePodPulseCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.targetTrack != widget.targetTrack) {
+      _fetchData();
+    }
+  }
+
+  void _fetchData() {
+    if (locator.isRegistered<CommunityHubBloc>()) {
+      final bloc = locator<CommunityHubBloc>();
+      if (bloc.state.status == CommunityStatus.initial) {
+        bloc.add(LoadCommunityHubEvent(track: widget.targetTrack));
+      } else {
+        bloc.add(LoadStudyCirclesEvent(track: widget.targetTrack));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final neural = context.neural;
     final typography = context.typography;
     final l10n = context.l10n;
+    final targetTrack = widget.targetTrack;
 
-    final trackLabel = (targetTrack != null && targetTrack!.trim().isNotEmpty)
-        ? targetTrack!.trim()
+    final trackLabel = (targetTrack != null && targetTrack.trim().isNotEmpty)
+        ? targetTrack.trim()
         : 'All Tracks';
 
     final communityBloc = locator.isRegistered<CommunityHubBloc>()
@@ -1732,7 +1764,20 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
     final userXp = activityService?.getXpPoints() ?? 0;
 
     Widget contentBuilder(CommunityState state) {
-      final circles = state.studyCircles;
+      final allCircles = state.studyCircles;
+      final effectiveTrack = targetTrack?.trim();
+      final trackCircles = (effectiveTrack != null &&
+              effectiveTrack.isNotEmpty &&
+              effectiveTrack != 'All Tracks' &&
+              effectiveTrack != 'All')
+          ? allCircles
+              .where(
+                (c) => c.track.toLowerCase() == effectiveTrack.toLowerCase(),
+              )
+              .toList()
+          : allCircles;
+
+      final circles = trackCircles.isNotEmpty ? trackCircles : allCircles;
 
       final totalActiveScholars = state.totalActiveScholars > 0
           ? state.totalActiveScholars
@@ -1937,7 +1982,8 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                                 ),
                               );
                               context.showSnackBar(
-                                message: 'Study Pod "$name" created successfully!',
+                                message:
+                                    'Study Pod "$name" created successfully!',
                               );
                             }
                           },
@@ -2011,6 +2057,10 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                                       targetWeeklyMinutes: targetWeeklyMinutes,
                                     ),
                                   );
+                                  context.showSnackBar(
+                                    message:
+                                        'Study Pod "$name" created successfully!',
+                                  );
                                 }
                               },
                             ),
@@ -2048,7 +2098,8 @@ class _StudyCirclePodPulseCard extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: circles.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 10),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 10),
                   itemBuilder: (context, index) {
                     final circle = circles[index];
                     return _PodPulseCardItem(

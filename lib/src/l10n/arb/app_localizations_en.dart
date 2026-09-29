@@ -1818,14 +1818,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get createStudyCircleTitle => 'Create Study Circle';
+  String get createStudyCircleTitle => 'Create Study Pod';
 
   @override
   String get studyCircleMicroPodsSubtitle =>
       'Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.';
 
   @override
-  String get circleNameLabel => 'Circle Name';
+  String get circleNameLabel => 'Pod Name';
 
   @override
   String get circleNameHint => 'e.g. 2026 JAMB Physics Slayers';
@@ -1842,7 +1842,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get launchStudyCircleAction => 'Launch Study Circle';
+  String get launchStudyCircleAction => 'Launch Study Pod';
 
   @override
   String get firstToJoinCircle => 'Be the first to join!';
