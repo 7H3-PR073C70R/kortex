@@ -72,6 +72,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
           // Header Row: CBT Readiness Index title & ON TRACK pill
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -90,7 +91,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
                       examTitle.toUpperCase(),
                       style: typography.title3.bold.copyWith(
                         color: colors.textPrimary,
-                        fontSize: 20,
+                        fontSize: 18,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -122,76 +123,85 @@ class CbtReadinessImpactCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: result.statusColor.withAlpha(isDark ? 40 : 20),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: result.statusColor.withAlpha(120),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          result.statusLabel,
-                          style: typography.caption.bold.copyWith(
-                            color: result.statusColor,
-                            fontSize: 11,
-                            letterSpacing: 0.5,
-                          ),
+                      decoration: BoxDecoration(
+                        color: result.statusColor.withAlpha(isDark ? 40 : 20),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: result.statusColor.withAlpha(120),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: result.statusColor,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            result.projectedGrade,
+                      ),
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            result.statusLabel,
                             style: typography.caption.bold.copyWith(
-                              color: colors.white,
-                              fontSize: 10,
+                              color: result.statusColor,
+                              fontSize: 11,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                        ),
-                      ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: result.statusColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              result.projectedGrade,
+                              style: typography.caption.bold.copyWith(
+                                color: colors.white,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Proj: ${result.projectedScoreRange}',
-                    style: typography.caption.medium.copyWith(
-                      color: colors.textMuted,
-                      fontSize: 10.5,
+                    const SizedBox(height: 4),
+                    Text(
+                      'Proj: ${result.projectedScoreRange}',
+                      style: typography.caption.medium.copyWith(
+                        color: colors.textMuted,
+                        fontSize: 10.5,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // Main Content: Circular Arc Gauge (Left) + Breakdown Bars (Right)
-          Row(
-            children: [
-              // Circular Arc Gauge
-              SizedBox(
-                width: 100,
-                height: 100,
+          // Main Content: Circular Arc Gauge + Breakdown Bars with Responsive LayoutBuilder
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 320;
+
+              final gaugeWidget = SizedBox(
+                width: 90,
+                height: 90,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     CustomPaint(
-                      size: const Size(100, 100),
+                      size: const Size(90, 90),
                       painter: _ArcGaugePainter(
                         percent: result.scorePercent / 100,
                         gaugeColor: result.statusColor,
@@ -205,8 +215,9 @@ class CbtReadinessImpactCard extends StatelessWidget {
                           '${result.scorePercent}%',
                           style: typography.title2.bold.copyWith(
                             color: colors.textPrimary,
-                            fontSize: 22,
+                            fontSize: 20,
                             height: 1,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -214,41 +225,56 @@ class CbtReadinessImpactCard extends StatelessWidget {
                           'Score',
                           style: typography.caption.medium.copyWith(
                             color: colors.textMuted,
-                            fontSize: 11,
+                            fontSize: 10.5,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 20),
+              );
 
-              // Breakdown Progress Bars
-              Expanded(
-                child: Column(
+              final metricsWidget = Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _MetricBar(
+                    label: 'Syllabus Coverage',
+                    valuePercent: (result.syllabusCoverage * 100).round(),
+                    barColor: const Color(0xFF6B8E7B),
+                  ),
+                  const SizedBox(height: 8),
+                  _MetricBar(
+                    label: 'FSRS Retention',
+                    valuePercent: (result.fsrsRetentionRate * 100).round(),
+                    barColor: const Color(0xFF10B981),
+                  ),
+                  const SizedBox(height: 8),
+                  _MetricBar(
+                    label: 'Mock Test Score',
+                    valuePercent: (result.mockScoreRatio * 100).round(),
+                    barColor: const Color(0xFF5B61D6),
+                  ),
+                ],
+              );
+
+              if (isCompact) {
+                return Column(
                   children: [
-                    _MetricBar(
-                      label: 'Syllabus Coverage',
-                      valuePercent: (result.syllabusCoverage * 100).round(),
-                      barColor: const Color(0xFF6B8E7B),
-                    ),
-                    const SizedBox(height: 10),
-                    _MetricBar(
-                      label: 'FSRS Retention',
-                      valuePercent: (result.fsrsRetentionRate * 100).round(),
-                      barColor: const Color(0xFF10B981),
-                    ),
-                    const SizedBox(height: 10),
-                    _MetricBar(
-                      label: 'Mock Test Score',
-                      valuePercent: (result.mockScoreRatio * 100).round(),
-                      barColor: const Color(0xFF5B61D6),
-                    ),
+                    gaugeWidget,
+                    const SizedBox(height: 14),
+                    metricsWidget,
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+
+              return Row(
+                children: [
+                  gaugeWidget,
+                  const SizedBox(width: 16),
+                  Expanded(child: metricsWidget),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
 

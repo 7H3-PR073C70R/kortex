@@ -297,8 +297,14 @@ class DeckListTileCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        _DueSignal(deck: effectiveDeck),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.topRight,
+                            child: _DueSignal(deck: effectiveDeck),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -350,16 +356,22 @@ class DeckListTileCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _StartSessionPill(
-                          onTap: () {
-                            unawaited(HapticFeedback.lightImpact());
-                            unawaited(
-                              context.router.push(
-                                StudySessionRoute(deckId: effectiveDeck.id),
-                              ),
-                            );
-                          },
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: _StartSessionPill(
+                              onTap: () {
+                                unawaited(HapticFeedback.lightImpact());
+                                unawaited(
+                                  context.router.push(
+                                    StudySessionRoute(deckId: effectiveDeck.id),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ],
                     ),
