@@ -21,6 +21,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_state.
 import 'package:kortex/src/features/community/presentation/pages/create_forum_discussion_page.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_forum_feed_list.dart';
+import 'package:kortex/src/features/community/presentation/widgets/community_hub_headers.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -283,8 +284,50 @@ class _StudyHubView extends HookWidget {
       };
     }, [tabController]);
 
+    final isSearchExpanded = useState<bool>(false);
+    final searchQuery = useState<String>('');
+    final searchController = useTextEditingController();
+    final debounceTimer = useRef<Timer?>(null);
+
+    useEffect(() {
+      return () => debounceTimer.value?.cancel();
+    }, const []);
+
+    useEffect(() {
+      void onTabChange() {
+        if (isSearchExpanded.value) {
+          isSearchExpanded.value = false;
+        }
+      }
+
+      tabController.addListener(onTabChange);
+      return () => tabController.removeListener(onTabChange);
+    }, [tabController]);
+
     final authState = context.watch<AuthBloc?>()?.state;
     final targetTrack = authState?.userProfile?.targetTrack;
+    final effectiveTrack = (targetTrack != null &&
+            targetTrack.trim().isNotEmpty &&
+            targetTrack != 'General')
+        ? targetTrack.trim()
+        : 'WAEC';
+
+    final availableTracks = useMemoized(
+      () => getAvailableTracks(targetTrack),
+      [targetTrack],
+    );
+
+    final hubState = context.watch<CommunityHubBloc>().state;
+    final hasActiveFilters = hubState.selectedTrack != 'All' ||
+        (hubState.selectedForumFilter != 'trending' &&
+            hubState.selectedForumFilter.isNotEmpty) ||
+        hubState.forumSearchQuery.isNotEmpty;
+    final activeFilterCount = (hubState.selectedTrack != 'All' ? 1 : 0) +
+        (hubState.selectedForumFilter != 'trending' &&
+                hubState.selectedForumFilter.isNotEmpty
+            ? 1
+            : 0) +
+        (hubState.forumSearchQuery.isNotEmpty ? 1 : 0);
 
     return BlocListener<CommunityHubBloc, CommunityState>(
       listenWhen: (previous, current) =>
@@ -311,23 +354,72 @@ class _StudyHubView extends HookWidget {
           elevation: 0,
           scrolledUnderElevation: 0,
           centerTitle: false,
-          title: Text(
-            'Scholar Hub',
-            style: typography.title2.bold.copyWith(
-              color: colors.textPrimary,
-            ),
+          titleSpacing: 16,
+          title: AnimatedSwitcher(
+            duration: AppMotion.snappy,
+            switchInCurve: AppMotion.easeOutCubic,
+            switchOutCurve: AppMotion.easeOutCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.05),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: isSearchExpanded.value
+                ? CommunitySearchHeader(
+                    searchController: searchController,
+                    searchQuery: searchQuery,
+                    debounceTimer: debounceTimer,
+                    isSearchExpanded: isSearchExpanded,
+                    availableTracks: availableTracks,
+                    effectiveTrack: effectiveTrack,
+                    hasActiveFilters: hasActiveFilters,
+                    activeFilterCount: activeFilterCount,
+                  )
+                : Text(
+                    'Scholar Hub',
+                    style: typography.title2.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: _buildHeaderActionButton(
-                context,
-                tabIndex: tabController.index,
-                isWide: isWide,
-                targetTrack: targetTrack,
-              ),
-            ),
-          ],
+          actions: isSearchExpanded.value
+              ? null
+              : [
+                  if (!isWide && tabController.index == 0) ...[
+                    CommunitySearchFilterCapsule(
+                      hasActiveFilters: hasActiveFilters,
+                      activeFilterCount: activeFilterCount,
+                      isDark: isDark,
+                      onOpenSearch: () {
+                        isSearchExpanded.value = true;
+                      },
+                      onOpenFilter: () {
+                        showCommunityFilterSheet(
+                          context: context,
+                          availableTracks: availableTracks,
+                          effectiveTrack: effectiveTrack,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: _buildHeaderActionButton(
+                      context,
+                      tabIndex: tabController.index,
+                      isWide: isWide,
+                      targetTrack: targetTrack,
+                    ),
+                  ),
+                ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(50),
             child: Padding(

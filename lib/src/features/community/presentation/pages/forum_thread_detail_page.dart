@@ -78,7 +78,7 @@ class ForumThreadDetailPage extends HookWidget {
     final isGeneratingAiHint = useState<bool>(false);
     final isSubscribed = useState<bool>(false);
     final isBookmarked = useState<bool>(false);
-    final sortFilter = useState<ForumSortFilter>(ForumSortFilter.topVoted);
+    final sortFilter = useState<ForumSortFilter>(ForumSortFilter.mostRecent);
     final currentPost = useState<ForumPostEntity>(post);
     final localReplies = useState<List<ForumReplyEntity>>(post.replies);
     final replyingToReply = useState<ForumReplyEntity?>(null);
@@ -100,6 +100,8 @@ class ForumThreadDetailPage extends HookWidget {
     final replyVoiceNoteUrl = useState<String?>(null);
     final replyVoiceNoteDuration = useState<int>(0);
     final isRecordingReplyVoice = useState<bool>(false);
+    final isReplyVoiceLocked = useState<bool>(false);
+    final replyVoiceTranscript = useState<String>('');
     final showFormattingTools = useState<bool>(false);
     final replyRecordingTimer = useRef<Timer?>(null);
 
@@ -107,12 +109,7 @@ class ForumThreadDetailPage extends HookWidget {
       () => SpeechToTextHandler(
         onResult: (words) {
           if (words.trim().isNotEmpty) {
-            final current = replyController.text;
-            if (current.isEmpty) {
-              replyController.text = words;
-            } else if (!current.contains(words)) {
-              replyController.text = '$current $words';
-            }
+            replyVoiceTranscript.value = words;
           }
         },
         onListeningChanged: (listening) {
@@ -177,22 +174,21 @@ class ForumThreadDetailPage extends HookWidget {
       res.fold(
         (_) {},
         (fetched) {
-          final existingIds = localReplies.value.map((r) => r.id).toSet();
-          final unique = fetched
-              .where((r) => !existingIds.contains(r.id))
-              .toList();
           if (isLoadMore) {
+            final existingIds = localReplies.value.map((r) => r.id).toSet();
+            final unique = fetched
+                .where((r) => !existingIds.contains(r.id))
+                .toList();
             localReplies.value = [...localReplies.value, ...unique];
             topLevelOffset.value = currentOffset + fetched.length;
             hasMoreTopLevel.value = fetched.length >= fetchLimit;
           } else {
-            final childReplies = localReplies.value
-                .where(
-                  (r) => r.parentReplyId != null && r.parentReplyId!.isNotEmpty,
-                )
-                .toList();
-            localReplies.value = [...unique, ...childReplies];
-            topLevelOffset.value = fetched.length;
+            final existingMap = {for (final r in localReplies.value) r.id: r};
+            for (final r in fetched) {
+              existingMap[r.id] = r;
+            }
+            localReplies.value = existingMap.values.toList();
+            topLevelOffset.value = math.max(topLevelOffset.value, fetched.length);
             hasMoreTopLevel.value = fetched.length >= fetchLimit;
           }
         },
@@ -280,11 +276,16 @@ class ForumThreadDetailPage extends HookWidget {
           (_) => unawaited(fetchTopLevelReplies()),
           (treeData) {
             currentPost.value = treeData.post;
-            localReplies.value = treeData.replies;
+            final existingMap = {for (final r in localReplies.value) r.id: r};
+            for (final r in treeData.replies) {
+              existingMap[r.id] = r;
+            }
+            localReplies.value = existingMap.values.toList();
             isInitialLoadingReplies.value = false;
-            topLevelOffset.value = treeData.replies
-                .where((r) => !r.isNested)
-                .length;
+            topLevelOffset.value = math.max(
+              topLevelOffset.value,
+              treeData.replies.where((r) => !r.isNested).length,
+            );
 
             // Auto-Socratic Guardian: Auto-trigger hint if question thread has 0 replies
             if (treeData.post.isQuestion &&
@@ -411,26 +412,6 @@ class ForumThreadDetailPage extends HookWidget {
       return null;
     }, [post.id, sortFilter.value]);
 
-    // Real-time replies stream
-    final repliesStream = useMemoized(
-      () => repo.watchForumReplies(post.id),
-      [post.id],
-    );
-    final repliesSnapshot = useStream(repliesStream, initialData: post.replies);
-
-    useEffect(() {
-      if (repliesSnapshot.hasData && repliesSnapshot.data != null) {
-        final streamed = repliesSnapshot.data!;
-        final existingIds = localReplies.value.map((r) => r.id).toSet();
-        final newOnes = streamed
-            .where((r) => !existingIds.contains(r.id))
-            .toList();
-        if (newOnes.isNotEmpty) {
-          localReplies.value = [...localReplies.value, ...newOnes];
-        }
-      }
-      return null;
-    }, [repliesSnapshot.data]);
 
     void votePost(int direction) {
       final p = currentPost.value;
@@ -2348,38 +2329,28 @@ class ForumThreadDetailPage extends HookWidget {
                         if (isRecordingReplyVoice.value) ...[
                           Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
+                              horizontal: 12,
                               vertical: 4,
                             ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.error.withAlpha(25),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: colors.error.withAlpha(60),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.mic_rounded,
-                                    size: 16,
-                                    color: colors.error,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Recording voice (${replyVoiceNoteDuration.value}s)... Tap mic to finish',
-                                    style: typography.caption.bold.copyWith(
-                                      color: colors.error,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            child: VoiceRecordingBannerWidget(
+                              isLocked: isReplyVoiceLocked.value,
+                              durationSeconds: replyVoiceNoteDuration.value,
+                              transcriptText: replyVoiceTranscript.value,
+                              onCancel: () {
+                                isRecordingReplyVoice.value = false;
+                                isReplyVoiceLocked.value = false;
+                                replyVoiceNoteUrl.value = null;
+                                replyVoiceNoteDuration.value = 0;
+                                replyVoiceTranscript.value = '';
+                              },
+                              onDone: () {
+                                isRecordingReplyVoice.value = false;
+                                isReplyVoiceLocked.value = false;
+                                if (replyVoiceNoteDuration.value <= 0) {
+                                  replyVoiceNoteDuration.value = 5;
+                                }
+                                replyVoiceNoteUrl.value ??= 'audio/voice_note.wav';
+                              },
                             ),
                           ),
                         ],
@@ -2400,6 +2371,7 @@ class ForumThreadDetailPage extends HookWidget {
                                   ? replyController.text.trim()
                                   : null,
                               compact: true,
+                              showTranscript: false,
                               onDelete: () {
                                 replyVoiceNoteUrl.value = null;
                                 replyVoiceNoteDuration.value = 0;
@@ -2513,6 +2485,18 @@ class ForumThreadDetailPage extends HookWidget {
                               // 2. Voice Note Recorder (Hold to record, drag up to lock, STT accompanied)
                               VoiceNoteRecorderWidget(
                                 compact: true,
+                                controller: replyController,
+                                onRecordingStateChanged: ({
+                                  required isRecording,
+                                  required isLocked,
+                                  required durationSeconds,
+                                  required transcript,
+                                }) {
+                                  isRecordingReplyVoice.value = isRecording;
+                                  isReplyVoiceLocked.value = isLocked;
+                                  replyVoiceNoteDuration.value = durationSeconds;
+                                  replyVoiceTranscript.value = transcript;
+                                },
                                 onRecordingComplete: ({
                                   required audioUrl,
                                   required durationSeconds,
@@ -2520,26 +2504,11 @@ class ForumThreadDetailPage extends HookWidget {
                                 }) {
                                   replyVoiceNoteUrl.value = audioUrl;
                                   replyVoiceNoteDuration.value = durationSeconds;
-                                  if (transcript.trim().isNotEmpty) {
-                                    final current = replyController.text;
-                                    replyController.text = current.isEmpty
-                                        ? transcript
-                                        : '$current $transcript';
-                                  }
                                 },
                                 onCancel: () {
                                   replyVoiceNoteUrl.value = null;
                                   replyVoiceNoteDuration.value = 0;
-                                },
-                                onTranscriptUpdate: (words) {
-                                  if (words.trim().isNotEmpty) {
-                                    final current = replyController.text;
-                                    if (current.isEmpty) {
-                                      replyController.text = words;
-                                    } else if (!current.contains(words)) {
-                                      replyController.text = '$current $words';
-                                    }
-                                  }
+                                  replyVoiceTranscript.value = '';
                                 },
                               ),
 
@@ -2573,53 +2542,89 @@ class ForumThreadDetailPage extends HookWidget {
 
                               // 4. Text Field
                               Expanded(
-                                child: TextField(
-                                  controller: replyController,
-                                  focusNode: focusNode,
-                                  maxLines: 4,
-                                  minLines: 1,
-                                  textCapitalization:
-                                      TextCapitalization.sentences,
-                                  decoration: InputDecoration(
-                                    hintText: replyingToReply.value != null
-                                        ? 'Reply to @${replyingToReply.value!.authorName}…'
-                                        : 'Add a reply…',
-                                    hintStyle: typography.body.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 14,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    filled: true,
-                                    fillColor: isDark
-                                        ? colors.surfaceSecondary.withAlpha(160)
-                                        : colors.surfaceSecondary.withAlpha(
-                                            130,
-                                          ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(22),
-                                      borderSide: BorderSide(
-                                        color: colors.surfaceBorder.withAlpha(
-                                          isDark ? 60 : 35,
+                                child: AnimatedContainer(
+                                  duration: AppMotion.snappy,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(22),
+                                    boxShadow: isRecordingReplyVoice.value
+                                        ? [
+                                            BoxShadow(
+                                              color: colors.error
+                                                  .withAlpha(isDark ? 80 : 50),
+                                              blurRadius: 8,
+                                              spreadRadius: 1,
+                                            ),
+                                          ]
+                                        : [],
+                                  ),
+                                  child: TextField(
+                                    controller: replyController,
+                                    focusNode: focusNode,
+                                    maxLines: 4,
+                                    minLines: 1,
+                                    textCapitalization:
+                                        TextCapitalization.sentences,
+                                    decoration: InputDecoration(
+                                      hintText: isRecordingReplyVoice.value
+                                          ? 'Transcribing speech live…'
+                                          : replyingToReply.value != null
+                                              ? 'Reply to @${replyingToReply.value!.authorName}…'
+                                              : 'Add a reply…',
+                                      hintStyle: typography.body.regular.copyWith(
+                                        color: isRecordingReplyVoice.value
+                                            ? colors.error.withAlpha(180)
+                                            : colors.textSecondary,
+                                        fontSize: 14,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      filled: true,
+                                      fillColor: isRecordingReplyVoice.value
+                                          ? colors.error
+                                              .withAlpha(isDark ? 30 : 16)
+                                          : isDark
+                                              ? colors.surfaceSecondary
+                                                  .withAlpha(160)
+                                              : colors.surfaceSecondary
+                                                  .withAlpha(130),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(22),
+                                        borderSide: BorderSide(
+                                          color: isRecordingReplyVoice.value
+                                              ? colors.error.withAlpha(180)
+                                              : colors.surfaceBorder.withAlpha(
+                                                  isDark ? 60 : 35,
+                                                ),
+                                          width: isRecordingReplyVoice.value
+                                              ? 1.5
+                                              : 1,
                                         ),
                                       ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(22),
-                                      borderSide: BorderSide(
-                                        color: colors.surfaceBorder.withAlpha(
-                                          isDark ? 60 : 35,
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(22),
+                                        borderSide: BorderSide(
+                                          color: isRecordingReplyVoice.value
+                                              ? colors.error.withAlpha(180)
+                                              : colors.surfaceBorder.withAlpha(
+                                                  isDark ? 60 : 35,
+                                                ),
+                                          width: isRecordingReplyVoice.value
+                                              ? 1.5
+                                              : 1,
                                         ),
                                       ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(22),
-                                      borderSide: BorderSide(
-                                        color: colors.primary.withAlpha(160),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(22),
+                                        borderSide: BorderSide(
+                                          color: isRecordingReplyVoice.value
+                                              ? colors.error
+                                              : colors.primary.withAlpha(160),
+                                          width: 1.8,
+                                        ),
                                       ),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 10,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -3507,139 +3512,179 @@ class _DiscussionThreadGroupCard extends HookWidget {
               const SizedBox(height: 12),
 
               // Interaction Row (Vote Pill + Reply Button + Verify Solution if Bounty)
-              Row(
-                children: [
-                  // Vote Pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 2,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? colors.surfacePrimary.withAlpha(160)
-                          : colors.surfaceSecondary.withAlpha(120),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ShrinkableButton(
-                          onTap: () => onVote(1),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.keyboard_arrow_up_rounded,
-                              size: 16,
-                              color: isUpvoted
-                                  ? colors.recallEasy
-                                  : colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            parentReply.netVotes > 0
-                                ? '+${parentReply.netVotes}'
-                                : '${parentReply.netVotes}',
-                            style: typography.caption.bold.copyWith(
-                              color: isUpvoted
-                                  ? colors.recallEasy
-                                  : (isDownvoted
-                                        ? colors.error
-                                        : colors.recallEasy),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        ShrinkableButton(
-                          onTap: () => onVote(-1),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 16,
-                              color: isDownvoted
-                                  ? colors.error
-                                  : colors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Reply Button
-                  ShrinkableButton(
-                    onTap: onReplyTap,
-                    child: Container(
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    // Vote Pill
+                    Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
+                        horizontal: 2,
+                        vertical: 1,
                       ),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? colors.surfacePrimary.withAlpha(120)
-                            : colors.surfaceSecondary.withAlpha(80),
-                        borderRadius: BorderRadius.circular(14),
+                            ? colors.surfacePrimary.withAlpha(160)
+                            : colors.surfaceSecondary.withAlpha(120),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.reply_rounded,
-                            size: 14,
-                            color: colors.textSecondary,
+                          ShrinkableButton(
+                            onTap: () => onVote(1),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.keyboard_arrow_up_rounded,
+                                size: 16,
+                                color: isUpvoted
+                                    ? colors.recallEasy
+                                    : colors.textPrimary,
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            totalChildCount > 0
-                                ? 'Reply ($totalChildCount)'
-                                : 'Reply',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11.5,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              parentReply.netVotes > 0
+                                  ? '+${parentReply.netVotes}'
+                                  : '${parentReply.netVotes}',
+                              style: typography.caption.bold.copyWith(
+                                color: isUpvoted
+                                    ? colors.recallEasy
+                                    : (isDownvoted
+                                          ? colors.error
+                                          : colors.recallEasy),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          ShrinkableButton(
+                            onTap: () => onVote(-1),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: 16,
+                                color: isDownvoted
+                                    ? colors.error
+                                    : colors.textPrimary,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
 
-                  // Solution Verification Button if Bounty
-                  if (isQuestion &&
-                      !parentReply.isVerifiedSolution &&
-                      (!hasVerifiedSolution || isAuthor)) ...[
+                    // Reply Button
+                    ShrinkableButton(
+                      onTap: onReplyTap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.surfacePrimary.withAlpha(120)
+                              : colors.surfaceSecondary.withAlpha(80),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.reply_rounded,
+                              size: 14,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              totalChildCount > 0
+                                  ? 'Reply ($totalChildCount)'
+                                  : 'Reply',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Solution Verification Button if Bounty
+                    if (isQuestion &&
+                        !parentReply.isVerifiedSolution &&
+                        (!hasVerifiedSolution || isAuthor)) ...[
+                      const SizedBox(width: 8),
+                      ShrinkableButton(
+                        onTap: onVerifySolution,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.warning.withAlpha(isDark ? 30 : 18),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colors.warning.withAlpha(60),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.verified_outlined,
+                                size: 12,
+                                color: colors.warning,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Mark Solved',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.warning,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    // Save Solution to Flashcard Button
                     const SizedBox(width: 8),
                     ShrinkableButton(
-                      onTap: onVerifySolution,
+                      onTap: () => onSaveFlashcard?.call(parentReply),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.warning.withAlpha(isDark ? 30 : 18),
+                          color: colors.primary.withAlpha(isDark ? 30 : 18),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: colors.warning.withAlpha(60),
+                            color: colors.primary.withAlpha(60),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.verified_outlined,
+                              Icons.style_outlined,
                               size: 12,
-                              color: colors.warning,
+                              color: colors.primary,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Mark Solved',
+                              'Save Flashcard',
                               style: typography.caption.bold.copyWith(
-                                color: colors.warning,
+                                color: colors.primary,
                                 fontSize: 10.5,
                               ),
                             ),
@@ -3648,44 +3693,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                       ),
                     ),
                   ],
-
-                  // Save Solution to Flashcard Button
-                  const SizedBox(width: 8),
-                  ShrinkableButton(
-                    onTap: () => onSaveFlashcard?.call(parentReply),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(isDark ? 30 : 18),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colors.primary.withAlpha(60),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.style_outlined,
-                            size: 12,
-                            color: colors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Save Flashcard',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 10.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),

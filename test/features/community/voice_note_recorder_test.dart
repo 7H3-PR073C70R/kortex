@@ -48,5 +48,45 @@ void main() {
       final icon = tester.widget<Icon>(find.byIcon(Icons.mic_none_rounded));
       expect(icon.size, equals(18));
     });
+
+    testWidgets('Renders VoiceRecordingBannerWidget with waveform and status correctly',
+        (tester) async {
+      await tester.pumpApp(
+        Scaffold(
+          body: VoiceRecordingBannerWidget(
+            isLocked: false,
+            durationSeconds: 12,
+            transcriptText: 'Testing live STT auto-fill',
+            onCancel: () {},
+            onDone: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('00:12'), findsOneWidget);
+      expect(find.text('Drag up to lock 🔒'), findsOneWidget);
+      expect(find.text('Testing live STT auto-fill'), findsOneWidget);
+      expect(find.byType(AudioWaveformVisualizer), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+    });
+
+    testWidgets('Renders VoiceRecordingBannerWidget locked state correctly',
+        (tester) async {
+      await tester.pumpApp(
+        Scaffold(
+          body: VoiceRecordingBannerWidget(
+            isLocked: true,
+            durationSeconds: 45,
+            onCancel: () {},
+            onDone: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('00:45'), findsOneWidget);
+      expect(find.text('Locked 🔒'), findsOneWidget);
+    });
   });
 }

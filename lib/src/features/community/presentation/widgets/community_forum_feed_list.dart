@@ -13,7 +13,6 @@ import 'package:kortex/src/features/community/presentation/pages/create_forum_di
 import 'package:kortex/src/features/community/presentation/widgets/community_forum_empty_state.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_pulse_banner.dart';
 import 'package:kortex/src/features/community/presentation/widgets/track_forum_post_card.dart';
-import 'package:kortex/src/features/community/presentation/widgets/trending_topics_widget.dart';
 
 /// Scrollable feed list displaying community forum posts with local filtering,
 /// refresh indicators, ambient pulse banner, and infinite scroll pagination.
@@ -38,6 +37,19 @@ class CommunityForumFeedList extends HookWidget {
 
     final scrollController = useScrollController();
     final isPulseBannerDismissed = useState<bool>(false);
+    final searchController = useTextEditingController(text: state.forumSearchQuery);
+    final debounceTimer = useRef<Timer?>(null);
+
+    useEffect(() {
+      return () => debounceTimer.value?.cancel();
+    }, const []);
+
+    useEffect(() {
+      if (searchController.text != state.forumSearchQuery) {
+        searchController.text = state.forumSearchQuery;
+      }
+      return null;
+    }, [state.forumSearchQuery]);
 
     useEffect(
       () {
@@ -64,17 +76,19 @@ class CommunityForumFeedList extends HookWidget {
       ],
     );
 
+
     // Apply local search filtering if user typed in search bar (backend handles sort)
     final filteredPosts = useMemoized(() {
-      if (searchQuery.isEmpty) return state.forumPosts;
-      final query = searchQuery.toLowerCase();
+      final activeQuery = searchQuery.isNotEmpty ? searchQuery : state.forumSearchQuery;
+      if (activeQuery.isEmpty) return state.forumPosts;
+      final query = activeQuery.toLowerCase();
       return state.forumPosts.where((p) {
         return p.title.toLowerCase().contains(query) ||
             p.content.toLowerCase().contains(query) ||
             p.authorName.toLowerCase().contains(query) ||
             p.syllabusTag.toLowerCase().contains(query);
       }).toList();
-    }, [state.forumPosts, searchQuery]);
+    }, [state.forumPosts, searchQuery, state.forumSearchQuery]);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -101,23 +115,7 @@ class CommunityForumFeedList extends HookWidget {
               ),
             ),
 
-          // Cohort Trending Topics Panel
-          SliverToBoxAdapter(
-            child: TrendingTopicsWidget(
-              selectedTag: searchQuery.isNotEmpty ? searchQuery : state.selectedTrack,
-              onTopicSelected: (tag) {
-                if (tag == 'All') {
-                  context.read<CommunityHubBloc>().add(
-                    const SearchForumPostsEvent(''),
-                  );
-                } else {
-                  context.read<CommunityHubBloc>().add(
-                    SearchForumPostsEvent(tag),
-                  );
-                }
-              },
-            ),
-          ),
+         
 
           // Posts Feed or Empty State
           if (filteredPosts.isEmpty)
@@ -249,4 +247,5 @@ class CommunityForumFeedList extends HookWidget {
       ),
     );
   }
+
 }

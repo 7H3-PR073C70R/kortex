@@ -1550,6 +1550,8 @@ class CreateForumDiscussionPage extends HookWidget {
                           const SizedBox(width: 10),
                           VoiceNoteRecorderWidget(
                             compact: true,
+                            showBanner: true,
+                            controller: contentController,
                             onRecordingComplete: ({
                               required audioUrl,
                               required durationSeconds,
@@ -1558,27 +1560,11 @@ class CreateForumDiscussionPage extends HookWidget {
                               recordedVoiceNoteUrl.value = audioUrl;
                               voiceNoteDurationSeconds.value = durationSeconds;
                               recordedVoiceNoteTranscript.value = transcript;
-                              if (transcript.trim().isNotEmpty) {
-                                final current = contentController.text;
-                                contentController.text = current.isEmpty
-                                    ? transcript
-                                    : '$current $transcript';
-                              }
                             },
                             onCancel: () {
                               recordedVoiceNoteUrl.value = null;
                               voiceNoteDurationSeconds.value = 0;
                               recordedVoiceNoteTranscript.value = null;
-                            },
-                            onTranscriptUpdate: (words) {
-                              if (words.trim().isNotEmpty) {
-                                final current = contentController.text;
-                                if (current.isEmpty) {
-                                  contentController.text = words;
-                                } else if (!current.contains(words)) {
-                                  contentController.text = '$current $words';
-                                }
-                              }
                             },
                           ),
                         ],
@@ -1592,6 +1578,7 @@ class CreateForumDiscussionPage extends HookWidget {
                           durationSeconds: voiceNoteDurationSeconds.value > 0
                               ? voiceNoteDurationSeconds.value
                               : null,
+                          showTranscript: false,
                           onDelete: () {
                             recordedVoiceNoteUrl.value = null;
                             voiceNoteDurationSeconds.value = 0;

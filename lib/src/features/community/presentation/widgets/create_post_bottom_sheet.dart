@@ -396,32 +396,17 @@ class CreatePostBottomSheet extends HookWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    VoiceNoteRecorderWidget(
-                      compact: true,
-                      onRecordingComplete: ({
-                        required audioUrl,
-                        required durationSeconds,
-                        required transcript,
-                      }) {
-                        if (transcript.trim().isNotEmpty) {
-                          final current = contentController.text;
-                          contentController.text = current.isEmpty
-                              ? transcript
-                              : '$current $transcript';
-                        }
-                      },
-                      onCancel: () {},
-                      onTranscriptUpdate: (words) {
-                        if (words.trim().isNotEmpty) {
-                          final current = contentController.text;
-                          if (current.isEmpty) {
-                            contentController.text = words;
-                          } else if (!current.contains(words)) {
-                            contentController.text = '$current $words';
-                          }
-                        }
-                      },
-                    ),
+                VoiceNoteRecorderWidget(
+                  compact: true,
+                  showBanner: true,
+                  controller: contentController,
+                  onRecordingComplete: ({
+                    required audioUrl,
+                    required durationSeconds,
+                    required transcript,
+                  }) {},
+                  onCancel: () {},
+                ),
                   ],
                 ),
                 const SizedBox(height: 12),

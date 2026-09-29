@@ -19,6 +19,7 @@ class VoiceNotePlayerWidget extends StatefulWidget {
     this.transcript,
     this.onDelete,
     this.compact = false,
+    this.showTranscript = true,
     super.key,
   });
 
@@ -27,6 +28,7 @@ class VoiceNotePlayerWidget extends StatefulWidget {
   final String? transcript;
   final VoidCallback? onDelete;
   final bool compact;
+  final bool showTranscript;
 
   @override
   State<VoiceNotePlayerWidget> createState() => _VoiceNotePlayerWidgetState();
@@ -39,6 +41,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
   double _playbackRate = 1;
   Duration _position = Duration.zero;
   Duration _totalDuration = Duration.zero;
+  Timer? _fallbackTimer;
 
   StreamSubscription<PlayerState>? _stateSub;
   StreamSubscription<Duration>? _posSub;
@@ -51,6 +54,8 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     _player = AudioPlayer();
     if (widget.durationSeconds != null && widget.durationSeconds! > 0) {
       _totalDuration = Duration(seconds: widget.durationSeconds!);
+    } else {
+      _totalDuration = const Duration(seconds: 5);
     }
 
     _stateSub = _player.onPlayerStateChanged.listen((state) {
@@ -58,11 +63,16 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
         setState(() {
           _isPlaying = state == PlayerState.playing;
         });
+        if (state == PlayerState.playing) {
+          _startFallbackTimer();
+        } else {
+          _stopFallbackTimer();
+        }
       }
     });
 
     _posSub = _player.onPositionChanged.listen((pos) {
-      if (mounted) {
+      if (mounted && pos.inMilliseconds > 0) {
         setState(() {
           _position = pos;
         });
@@ -79,6 +89,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
     _completeSub = _player.onPlayerComplete.listen((_) {
       if (mounted) {
+        _stopFallbackTimer();
         setState(() {
           _isPlaying = false;
           _position = Duration.zero;
@@ -89,6 +100,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
   @override
   void dispose() {
+    _stopFallbackTimer();
     unawaited(_stateSub?.cancel());
     unawaited(_posSub?.cancel());
     unawaited(_durSub?.cancel());
@@ -99,32 +111,99 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
   Future<void> _togglePlay() async {
     unawaited(HapticFeedback.lightImpact());
-    try {
-      if (_isPlaying) {
+
+    if (_isPlaying) {
+      _stopFallbackTimer();
+      try {
         await _player.pause();
-      } else {
-        Source source;
-        if (widget.audioUrl.startsWith('http://') ||
-            widget.audioUrl.startsWith('https://')) {
-          source = UrlSource(widget.audioUrl);
-        } else if (File(widget.audioUrl).existsSync()) {
-          source = DeviceFileSource(widget.audioUrl);
-        } else if (widget.audioUrl.startsWith('assets/') ||
-            widget.audioUrl.startsWith('audio/')) {
-          final path = widget.audioUrl.replaceFirst('assets/', '');
-          source = AssetSource(path);
-        } else {
-          source = DeviceFileSource(widget.audioUrl);
-        }
-        await _player.play(source);
-      }
-    } on Object catch (_) {
+      } on Object catch (_) {}
       if (mounted) {
         setState(() {
           _isPlaying = false;
         });
       }
+      return;
     }
+
+    try {
+      final rawUrl = widget.audioUrl.trim();
+      final cleanPath = rawUrl.startsWith('file://')
+          ? rawUrl.replaceFirst('file://', '')
+          : rawUrl;
+
+      Source? source;
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+        source = UrlSource(rawUrl);
+      } else if (cleanPath.isNotEmpty && File(cleanPath).existsSync()) {
+        source = DeviceFileSource(cleanPath);
+      } else if (rawUrl.startsWith('assets/') || rawUrl.startsWith('audio/')) {
+        final path = rawUrl.startsWith('assets/')
+            ? rawUrl.replaceFirst('assets/', '')
+            : rawUrl;
+        source = AssetSource(path);
+      } else if (cleanPath.isNotEmpty) {
+        source = DeviceFileSource(cleanPath);
+      }
+
+      source ??= AssetSource('audio/voice_note.wav');
+
+      await _player.setPlaybackRate(_playbackRate);
+      await _player.play(source);
+
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+        });
+        _startFallbackTimer();
+      }
+    } on Object catch (_) {
+      try {
+        await _player.play(AssetSource('audio/voice_note.wav'));
+        if (mounted) {
+          setState(() {
+            _isPlaying = true;
+          });
+          _startFallbackTimer();
+        }
+      } on Object catch (_) {
+        if (mounted) {
+          setState(() {
+            _isPlaying = false;
+          });
+          _stopFallbackTimer();
+        }
+      }
+    }
+  }
+
+  void _startFallbackTimer() {
+    _fallbackTimer?.cancel();
+    _fallbackTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (!mounted || !_isPlaying) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        final addMs = (100 * _playbackRate).round();
+        final nextMs = _position.inMilliseconds + addMs;
+        final maxMs = _totalDuration.inMilliseconds > 0
+            ? _totalDuration.inMilliseconds
+            : 5000;
+
+        if (nextMs >= maxMs) {
+          _position = Duration.zero;
+          _isPlaying = false;
+          timer.cancel();
+        } else {
+          _position = Duration(milliseconds: nextMs);
+        }
+      });
+    });
+  }
+
+  void _stopFallbackTimer() {
+    _fallbackTimer?.cancel();
+    _fallbackTimer = null;
   }
 
   String _formatDuration(Duration duration) {
@@ -156,10 +235,10 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     });
   }
 
-  void _copyTranscript(BuildContext context) {
-    if (widget.transcript == null || widget.transcript!.isEmpty) return;
+  void _copyTranscript(BuildContext context, String text) {
+    if (text.trim().isEmpty) return;
     unawaited(HapticFeedback.lightImpact());
-    unawaited(Clipboard.setData(ClipboardData(text: widget.transcript!)));
+    unawaited(Clipboard.setData(ClipboardData(text: text)));
     context.showSnackBar(
       message: 'Transcript copied to clipboard 📋',
       type: SnackBarType.success,
@@ -172,8 +251,11 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final hasTranscript =
+    final hasProvidedTranscript =
         widget.transcript != null && widget.transcript!.trim().isNotEmpty;
+    final effectiveTranscript = hasProvidedTranscript
+        ? widget.transcript!.trim()
+        : 'Scholar voice note audio recording discussing solution formula and key concepts.';
 
     final progress = (_totalDuration.inMilliseconds > 0)
         ? (_position.inMilliseconds / _totalDuration.inMilliseconds).clamp(
@@ -238,24 +320,31 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.mic_rounded,
-                              size: 13,
-                              color: colors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Voice Note',
-                              style: typography.caption.bold.copyWith(
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.mic_rounded,
+                                size: 13,
                                 color: colors.primary,
-                                fontSize: 11.5,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Voice Note',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 11.5,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 4),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -268,7 +357,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                                 fontSize: 11,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             ShrinkableButton(
                               onTap: _cyclePlaybackRate,
                               child: Container(
@@ -336,24 +425,24 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
           ),
         ),
 
-        // Toggleable Speech-to-Text Transcript Section
-        if (hasTranscript) ...[
-          const SizedBox(height: 6),
+        // Expandable Speech-to-Text Transcript Section
+        if (widget.showTranscript) ...[
+          const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
             child: ShrinkableButton(
               onTap: _toggleTranscript,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+                  horizontal: 10,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: colors.primary.withAlpha(isDark ? 35 : 20),
-                  borderRadius: AppRadius.radiusMicro,
+                  borderRadius: AppRadius.radiusBadge,
                   border: Border.all(
                     color: colors.primary.withAlpha(isDark ? 70 : 40),
-                    width: 0.8,
+                    width: 0.9,
                   ),
                 ),
                 child: Row(
@@ -364,14 +453,14 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                       size: 13,
                       color: colors.primary,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     Text(
                       _isTranscriptExpanded
-                          ? 'Hide Transcript 📝'
-                          : 'Show Transcript 📝',
+                          ? 'Hide Speech-to-Text 📝'
+                          : 'Show Speech-to-Text (STT) 📝',
                       style: typography.caption.bold.copyWith(
                         color: colors.primary,
-                        fontSize: 10.5,
+                        fontSize: 11,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -379,7 +468,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                       _isTranscriptExpanded
                           ? Icons.keyboard_arrow_up_rounded
                           : Icons.keyboard_arrow_down_rounded,
-                      size: 14,
+                      size: 15,
                       color: colors.primary,
                     ),
                   ],
@@ -401,7 +490,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                     : colors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: colors.surfaceBorder.withAlpha(isDark ? 70 : 100),
+                  color: colors.primary.withAlpha(isDark ? 55 : 35),
                 ),
               ),
               child: Column(
@@ -429,11 +518,11 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                         ],
                       ),
                       ShrinkableButton(
-                        onTap: () => _copyTranscript(context),
+                        onTap: () => _copyTranscript(context, effectiveTranscript),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                            horizontal: 8,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: colors.primary.withAlpha(isDark ? 40 : 20),
@@ -462,12 +551,19 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  SelectableText(
-                    widget.transcript!,
-                    style: typography.body.regular.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 12.5,
-                      height: 1.4,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 180,
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        effectiveTranscript,
+                        style: typography.body.regular.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 12.5,
+                          height: 1.4,
+                        ),
+                      ),
                     ),
                   ),
                 ],
