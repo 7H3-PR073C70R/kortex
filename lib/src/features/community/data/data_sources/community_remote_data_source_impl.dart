@@ -1460,10 +1460,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   Future<Map<String, dynamic>> recordPodFocusMinutes({
     required String circleId,
     required int minutes,
+    String? activityType,
   }) async {
     try {
       final body = <String, dynamic>{
         'p_minutes': minutes,
+        'p_activity_type': activityType ?? 'general',
       };
       if (circleId.isNotEmpty) {
         body['p_circle_id'] = circleId;

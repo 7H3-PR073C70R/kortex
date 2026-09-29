@@ -47,6 +47,9 @@ void _initServices() {
     ..registerLazySingleton<UserActivityService>(
       () => UserActivityServiceImpl(locator<LocalStorageService>()),
     )
+    ..registerLazySingleton<StudyActivityTracker>(
+      StudyActivityTrackerImpl.new,
+    )
     ..registerLazySingleton<AssessmentOrchestratorService>(
       () => AssessmentOrchestratorService(
         userActivityService: locator<UserActivityService>(),

@@ -12,6 +12,7 @@ import 'package:kortex/src/features/community/domain/services/content_moderation
 import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/pages/forum_thread_detail_page.dart';
+import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -391,6 +392,37 @@ class CreatePostBottomSheet extends HookWidget {
                       ? 'Detail the problem, what you tried, and where you are stuck...'
                       : l10n.postContentHint,
                   maxLines: 4,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    VoiceNoteRecorderWidget(
+                      compact: true,
+                      onRecordingComplete: ({
+                        required audioUrl,
+                        required durationSeconds,
+                        required transcript,
+                      }) {
+                        if (transcript.trim().isNotEmpty) {
+                          final current = contentController.text;
+                          contentController.text = current.isEmpty
+                              ? transcript
+                              : '$current $transcript';
+                        }
+                      },
+                      onCancel: () {},
+                      onTranscriptUpdate: (words) {
+                        if (words.trim().isNotEmpty) {
+                          final current = contentController.text;
+                          if (current.isEmpty) {
+                            contentController.text = words;
+                          } else if (!current.contains(words)) {
+                            contentController.text = '$current $words';
+                          }
+                        }
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
 

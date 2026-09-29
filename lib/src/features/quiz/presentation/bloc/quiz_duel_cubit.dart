@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
@@ -116,6 +117,21 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
                         : XpActivityCategory.quizDuelParticipation,
                     sourceId: match.duelId,
                     metadata: {'isWinner': isWinner, 'subject': match.subject},
+                  ),
+                );
+              }
+              if (locator.isRegistered<StudyActivityTracker>()) {
+                final totalDuelDuration =
+                    match.questions.length * match.durationPerQuestionSeconds;
+                unawaited(
+                  locator<StudyActivityTracker>().recordActivityCompletion(
+                    durationSeconds:
+                        totalDuelDuration > 0 ? totalDuelDuration : 60,
+                    activityType: 'duel',
+                    metadata: {
+                      'duelId': match.duelId,
+                      'subject': match.subject,
+                    },
                   ),
                 );
               }

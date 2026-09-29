@@ -69,8 +69,16 @@ class StudyCircleCubit extends Cubit<StudyCircleState> {
     );
   }
 
-  Future<void> recordFocusMinutes({required String circleId, required int minutes}) async {
-    final res = await _repository.recordPodFocusMinutes(circleId: circleId, minutes: minutes);
+  Future<void> recordFocusMinutes({
+    required String circleId,
+    required int minutes,
+    String? activityType,
+  }) async {
+    final res = await _repository.recordPodFocusMinutes(
+      circleId: circleId,
+      minutes: minutes,
+      activityType: activityType,
+    );
     res.fold(
       (failure) => emit(state.copyWith(errorMessage: failure.message)),
       (_) => loadStudyCircles(),

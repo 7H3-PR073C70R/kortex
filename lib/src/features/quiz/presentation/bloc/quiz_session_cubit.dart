@@ -4,12 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
-import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
@@ -913,12 +913,13 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
         } on Object catch (_) {}
 
         try {
-          if (quizResult.durationSeconds >= 60 && locator.isRegistered<CommunityRepository>()) {
-            final minutes = quizResult.durationSeconds ~/ 60;
+          if (locator.isRegistered<StudyActivityTracker>()) {
+            final isCbt =
+                state.assessmentMode == AssessmentMode.examSimulationMode;
             unawaited(
-              locator<CommunityRepository>().recordPodFocusMinutes(
-                circleId: '',
-                minutes: minutes,
+              locator<StudyActivityTracker>().recordActivityCompletion(
+                durationSeconds: quizResult.durationSeconds,
+                activityType: isCbt ? 'cbt' : 'quiz',
               ),
             );
           }

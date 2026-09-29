@@ -7,6 +7,7 @@ import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -638,6 +639,17 @@ class StudySessionCubit extends Cubit<StudySessionState> {
               },
             ),
           ] else
+            Future<void>.value(),
+          if (locator.isRegistered<StudyActivityTracker>())
+            locator<StudyActivityTracker>().recordActivityCompletion(
+              durationSeconds: state.elapsedSeconds,
+              activityType: 'deck',
+              metadata: {
+                'deckId': state.deckId,
+                'cardsReviewed': totalReviewed,
+              },
+            )
+          else
             Future<void>.value(),
           if (locator.isRegistered<DecksRemoteDataSource>())
             locator<DecksRemoteDataSource>().updateDeckCards(

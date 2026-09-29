@@ -370,9 +370,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
     required String circleId,
     required int minutes,
+    String? activityType,
   }) {
     return _remoteDataSource
-        .recordPodFocusMinutes(circleId: circleId, minutes: minutes)
+        .recordPodFocusMinutes(
+          circleId: circleId,
+          minutes: minutes,
+          activityType: activityType,
+        )
         .makeRequest();
   }
 

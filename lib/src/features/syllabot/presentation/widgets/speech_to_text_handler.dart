@@ -40,6 +40,19 @@ class SpeechToTextHandler {
             return false;
           }
         }
+
+        final speechStatus = await Permission.speech.status;
+        if (!speechStatus.isGranted) {
+          final res = await Permission.speech.request();
+          if (!res.isGranted) {
+            _isAvailable = false;
+            _isInitializing = false;
+            onError?.call(
+              'Speech recognition permission required for voice input',
+            );
+            return false;
+          }
+        }
       } on Object catch (_) {
         // Continue if permission_handler is not configured for the target platform
       }
@@ -92,8 +105,9 @@ class SpeechToTextHandler {
           }
         },
         listenOptions: SpeechListenOptions(
-          listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(seconds: 4),
+          listenMode: ListenMode.dictation,
+          listenFor: const Duration(minutes: 10),
+          pauseFor: const Duration(seconds: 30),
         ),
       );
       onListeningChanged(true);

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -438,6 +439,21 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
           masteredCards: mastered,
           activityCategory: 'focus_session',
           subject: state.deckTitle,
+        );
+      }
+    } on Object catch (_) {}
+
+    try {
+      if (locator.isRegistered<StudyActivityTracker>()) {
+        unawaited(
+          locator<StudyActivityTracker>().recordActivityCompletion(
+            durationSeconds: state.elapsedSeconds,
+            activityType: 'focus_session',
+            metadata: {
+              'deckId': state.deckId,
+              'deckTitle': state.deckTitle,
+            },
+          ),
         );
       }
     } on Object catch (_) {}

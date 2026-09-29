@@ -151,6 +151,7 @@ abstract class CommunityRepository {
   Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
     required String circleId,
     required int minutes,
+    String? activityType,
   });
 
   /// Creates a new Study Circle.

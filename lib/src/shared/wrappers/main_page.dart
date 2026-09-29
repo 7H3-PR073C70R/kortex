@@ -52,6 +52,12 @@ final List<_MainNavItem> _kNavItems = [
     labelBuilder: _getDecksLabel,
   ),
   const _MainNavItem(
+    route: CommunityHubRoute(),
+    icon: Icons.forum_outlined,
+    activeIcon: Icons.forum_rounded,
+    labelBuilder: _getForumLabel,
+  ),
+  const _MainNavItem(
     route: StudyHubRoute(),
     icon: Icons.hub_outlined,
     activeIcon: Icons.hub_rounded,
@@ -67,6 +73,7 @@ final List<_MainNavItem> _kNavItems = [
 
 String _getHomeLabel(AppLocalizations l10n) => l10n.navTabHome;
 String _getDecksLabel(AppLocalizations l10n) => l10n.navTabDecks;
+String _getForumLabel(AppLocalizations l10n) => l10n.navTabCommunity;
 String _getStudyHubLabel(AppLocalizations l10n) => l10n.navTabStudyHub;
 String _getProfileLabel(AppLocalizations l10n) => l10n.navTabProfile;
 

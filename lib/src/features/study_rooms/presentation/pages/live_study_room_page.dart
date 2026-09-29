@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
@@ -359,6 +360,21 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
   }
 
   void _showSummarySheet(BuildContext context, LiveRoomState state) {
+    final totalFocusSeconds =
+        state.completedPomodoros * state.room.pomodoroDurationMinutes * 60;
+    if (totalFocusSeconds >= 15 &&
+        locator.isRegistered<StudyActivityTracker>()) {
+      unawaited(
+        locator<StudyActivityTracker>().recordActivityCompletion(
+          durationSeconds: totalFocusSeconds,
+          activityType: 'live_room',
+          metadata: {
+            'roomTitle': state.room.title,
+            'subject': state.room.subject,
+          },
+        ),
+      );
+    }
     unawaited(
       FocusSessionSummarySheet.show(
         context,

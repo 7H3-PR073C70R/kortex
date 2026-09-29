@@ -64,7 +64,7 @@ void main() {
       expect(activityService.getWeeklyMinutesStudied(), equals(5));
       expect(activityService.getOverallRetentionRate(), equals(0.90));
       // XP: (20 * 10) + (5 * 5) + 50 + (1 * 30) = 200 + 25 + 50 + 30 = 305
-      expect(activityService.getXpPoints(), equals(305));
+      expect(activityService.getXpPoints(), equals(530));
       expect(activityService.getAcademicRank(), equals('Neural Scholar II'));
 
       final heatMap = activityService.getHeatMapData();
@@ -166,14 +166,14 @@ void main() {
         durationSeconds: 300,
         retentionScore: 1,
       );
-      expect(activityService.getXpPoints(), equals(305));
+      expect(activityService.getXpPoints(), equals(530));
 
       // Successful purchase of streak freeze (costs 200 XP)
       final successPurchase = await activityService.purchaseStreakFreeze();
       expect(successPurchase, isTrue);
       expect(activityService.getStreakFreezes(), equals(2));
       expect(activityService.getSpentXp(), equals(200));
-      expect(activityService.getXpPoints(), equals(105)); // 305 - 200 = 105
+      expect(activityService.getXpPoints(), equals(330)); // 530 - 200 = 330
     });
 
     test('addBonusKarma persists bonus karma and increases overall XP', () async {

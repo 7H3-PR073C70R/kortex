@@ -25,6 +25,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_hub_bl
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/subject_master_badge.dart';
+import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
@@ -302,9 +303,28 @@ class ForumThreadDetailPage extends HookWidget {
         );
       }
 
+      // WebSocket Realtime Stream for live thread replies
+      final wsSubscription = repo.watchForumReplies(post.id).listen((incomingReplies) {
+        if (incomingReplies.isNotEmpty) {
+          final existingMap = {for (final r in localReplies.value) r.id: r};
+          var updated = false;
+          for (final reply in incomingReplies) {
+            if (!existingMap.containsKey(reply.id) || existingMap[reply.id] != reply) {
+              existingMap[reply.id] = reply;
+              updated = true;
+            }
+          }
+          if (updated) {
+            localReplies.value = existingMap.values.toList();
+          }
+        }
+      });
+
       unawaited(checkSubscriptionAndBookmark());
       unawaited(initialLoadThreadTree());
-      return null;
+      return () {
+        unawaited(wsSubscription.cancel());
+      };
     }, [post.id]);
 
     Future<void> loadSubRepliesForParent(
@@ -1709,14 +1729,29 @@ class ForumThreadDetailPage extends HookWidget {
                                   }
                                 });
 
-                          // Group nested replies
-                          final nestedRepliesMap =
-                              <String, List<ForumReplyEntity>>{};
+                          // Group nested replies recursively by root top-level parent ID
+                          final replyById = {for (final r in allReplies) r.id: r};
+                          String getRootParentId(ForumReplyEntity r) {
+                            var current = r;
+                            final visited = <String>{current.id};
+                            while (current.parentReplyId != null &&
+                                current.parentReplyId!.isNotEmpty &&
+                                replyById.containsKey(current.parentReplyId)) {
+                              final parent = replyById[current.parentReplyId!]!;
+                              if (visited.contains(parent.id)) break;
+                              visited.add(parent.id);
+                              current = parent;
+                            }
+                            return current.id;
+                          }
+
+                          final nestedRepliesMap = <String, List<ForumReplyEntity>>{};
                           for (final reply in allReplies) {
                             if (reply.parentReplyId != null &&
                                 reply.parentReplyId!.isNotEmpty) {
+                              final rootId = getRootParentId(reply);
                               nestedRepliesMap
-                                  .putIfAbsent(reply.parentReplyId!, () => [])
+                                  .putIfAbsent(rootId, () => [])
                                   .add(reply);
                             }
                           }
@@ -2473,50 +2508,34 @@ class ForumThreadDetailPage extends HookWidget {
                                 },
                               ),
 
-                              // 2. Mic Button (Replaces code button in row)
-                              IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 34,
-                                  minHeight: 34,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                icon: Icon(
-                                  isRecordingReplyVoice.value
-                                      ? Icons.stop_circle_rounded
-                                      : Icons.mic_rounded,
-                                  size: 20,
-                                  color: isRecordingReplyVoice.value
-                                      ? colors.error
-                                      : (replyVoiceNoteUrl.value != null
-                                            ? colors.primary
-                                            : colors.textSecondary),
-                                ),
-                                tooltip: isRecordingReplyVoice.value
-                                    ? 'Stop Recording'
-                                    : 'Voice Reply',
-                                onPressed: () async {
-                                  unawaited(HapticFeedback.mediumImpact());
-                                  try {
-                                    if (isRecordingReplyVoice.value) {
-                                      await replySttHandler.stopListening();
-                                      replyRecordingTimer.value?.cancel();
-                                      if (replyVoiceNoteDuration.value == 0) {
-                                        replyVoiceNoteDuration.value = 5;
-                                      }
-                                      replyVoiceNoteUrl.value ??=
-                                          'audio/voice_note.wav';
-                                    } else {
-                                      await replySttHandler.startListening();
-                                    }
-                                  } on Object catch (e) {
-                                    isRecordingReplyVoice.value = false;
-                                    replyRecordingTimer.value?.cancel();
-                                    if (context.mounted) {
-                                      context.showSnackBar(
-                                        message:
-                                            'Speech recognition unavailable: $e',
-                                      );
+                              // 2. Voice Note Recorder (Hold to record, drag up to lock, STT accompanied)
+                              VoiceNoteRecorderWidget(
+                                compact: true,
+                                onRecordingComplete: ({
+                                  required audioUrl,
+                                  required durationSeconds,
+                                  required transcript,
+                                }) {
+                                  replyVoiceNoteUrl.value = audioUrl;
+                                  replyVoiceNoteDuration.value = durationSeconds;
+                                  if (transcript.trim().isNotEmpty) {
+                                    final current = replyController.text;
+                                    replyController.text = current.isEmpty
+                                        ? transcript
+                                        : '$current $transcript';
+                                  }
+                                },
+                                onCancel: () {
+                                  replyVoiceNoteUrl.value = null;
+                                  replyVoiceNoteDuration.value = 0;
+                                },
+                                onTranscriptUpdate: (words) {
+                                  if (words.trim().isNotEmpty) {
+                                    final current = replyController.text;
+                                    if (current.isEmpty) {
+                                      replyController.text = words;
+                                    } else if (!current.contains(words)) {
+                                      replyController.text = '$current $words';
                                     }
                                   }
                                 },
