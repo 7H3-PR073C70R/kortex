@@ -229,7 +229,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<FetchCourseCommunityStatsUseCase>(
       () => FetchCourseCommunityStatsUseCase(locator<CommunityRepository>()),
     )
-    ..registerFactory<CommunityHubBloc>(
+    ..registerLazySingleton<CommunityHubBloc>(
       () => CommunityHubBloc(
         repository: locator<CommunityRepository>(),
       ),

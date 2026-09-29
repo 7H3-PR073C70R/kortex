@@ -37,8 +37,8 @@ class CommunityHubPage extends HookWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<CommunityHubBloc>(
-          create: (_) =>
+        BlocProvider<CommunityHubBloc>.value(
+          value:
               locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
         ),
         BlocProvider<AutoCommunityCubit>.value(

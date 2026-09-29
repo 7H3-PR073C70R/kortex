@@ -49,8 +49,8 @@ class StudyHubPage extends HookWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<CommunityHubBloc>(
-          create: (_) =>
+        BlocProvider<CommunityHubBloc>.value(
+          value:
               locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
         ),
         BlocProvider<AutoCommunityCubit>.value(
@@ -146,7 +146,7 @@ Widget _buildHeaderActionButton(
       };
     case 2:
       icon = Icons.groups_rounded;
-      label = 'Start Circle';
+      label = 'Start Pod';
       onTap = () {
         unawaited(HapticFeedback.lightImpact());
         unawaited(
@@ -166,7 +166,7 @@ Widget _buildHeaderActionButton(
                 ),
               );
               context.showSnackBar(
-                message: '🎉 Study Circle "$name" created successfully!',
+                message: '🎉 Study Pod "$name" created successfully!',
                 type: SnackBarType.success,
               );
             },
@@ -435,13 +435,13 @@ class _StudyHubView extends HookWidget {
                     tabs: isWide
                         ? [
                             l10n.liveRoomsTab,
-                            'Study Circles',
+                            'Study Pods',
                             l10n.marketplaceTab,
                           ]
                         : [
                             l10n.forumTab,
                             l10n.liveRoomsTab,
-                            'Study Circles',
+                            'Study Pods',
                             l10n.marketplaceTab,
                           ],
                     selectedIndex: tabController.index,
@@ -951,7 +951,7 @@ class _StudyCirclesTab extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'What are Study Circles?',
+                              'What are Study Pods?',
                               style: typography.subhead.bold.copyWith(
                                 color: colors.textPrimary,
                               ),
@@ -960,7 +960,7 @@ class _StudyCirclesTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Study Circles (Pods) are small peer study groups of up to 6 scholars taking the same track. Join a pod to commit to a collective weekly focus target, monitor contributions, and send instant nudges to keep each other accountable.',
+                          'Study Pods are small peer study groups of up to 6 scholars taking the same track. Join a pod to commit to a collective weekly focus target, monitor contributions, and send instant nudges to keep each other accountable.',
                           style: typography.caption.regular.copyWith(
                             color: colors.textSecondary,
                             height: 1.35,
@@ -1007,14 +1007,14 @@ class _StudyCirclesTab extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Peer Study Circles',
+                        'Peer Study Pods',
                         style: typography.subhead.bold.copyWith(
                           color: colors.textPrimary,
                         ),
                       ),
                       const Spacer(),
                       Text(
-                        '${state.studyCircles.length} Pods',
+                        '${state.studyCircles.length} ${state.studyCircles.length == 1 ? 'Pod' : 'Pods'}',
                         style: typography.caption.medium.copyWith(
                           color: colors.textSecondary,
                         ),

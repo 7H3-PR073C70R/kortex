@@ -1718,27 +1718,17 @@ class _StudyCirclePodPulseCard extends StatefulWidget {
 }
 
 class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
+  CommunityHubBloc? _bloc;
+
   @override
   void initState() {
     super.initState();
-    _fetchData();
-  }
-
-  @override
-  void didUpdateWidget(covariant _StudyCirclePodPulseCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.targetTrack != widget.targetTrack) {
-      _fetchData();
-    }
-  }
-
-  void _fetchData() {
     if (locator.isRegistered<CommunityHubBloc>()) {
-      final bloc = locator<CommunityHubBloc>();
-      if (bloc.state.status == CommunityStatus.initial) {
-        bloc.add(LoadCommunityHubEvent(track: widget.targetTrack));
-      } else {
-        bloc.add(LoadStudyCirclesEvent(track: widget.targetTrack));
+      _bloc = locator<CommunityHubBloc>();
+      if (_bloc!.state.status == CommunityStatus.initial) {
+        _bloc!.add(const LoadCommunityHubEvent());
+      } else if (_bloc!.state.studyCircles.isEmpty) {
+        _bloc!.add(const LoadStudyCirclesEvent());
       }
     }
   }
@@ -1754,9 +1744,10 @@ class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
         ? targetTrack.trim()
         : 'All Tracks';
 
-    final communityBloc = locator.isRegistered<CommunityHubBloc>()
-        ? locator<CommunityHubBloc>()
-        : null;
+    final communityBloc = _bloc ??
+        (locator.isRegistered<CommunityHubBloc>()
+            ? locator<CommunityHubBloc>()
+            : null);
 
     final activityService = locator.isRegistered<UserActivityService>()
         ? locator<UserActivityService>()
@@ -1777,7 +1768,18 @@ class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
               .toList()
           : allCircles;
 
-      final circles = trackCircles.isNotEmpty ? trackCircles : allCircles;
+      final joinedCircles =
+          allCircles.where((c) => c.isCurrentUserMember).toList();
+      final combinedMap = <String, StudyCircleEntity>{};
+      for (final c in joinedCircles) {
+        combinedMap[c.id] = c;
+      }
+      for (final c in trackCircles) {
+        combinedMap[c.id] = c;
+      }
+      final combined = combinedMap.values.toList();
+
+      final circles = combined.isNotEmpty ? combined : allCircles;
 
       final totalActiveScholars = state.totalActiveScholars > 0
           ? state.totalActiveScholars
