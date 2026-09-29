@@ -1,22 +1,17 @@
-import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 import 'package:kortex/src/features/decks/domain/services/fsrs_settings_sync_service.dart';
 
-/// Modal bottom sheet allowing scholars to customize FSRS-6 algorithm parameters
-/// (target retention rate, daily study reminder time, and interval scaling).
+/// Legacy entry point for FSRS tuning. Redirects to [DeckPaceSettingsRoute] in Profile.
 class FsrsParameterTuningSheet extends StatefulWidget {
   const FsrsParameterTuningSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const FsrsParameterTuningSheet(),
-    );
+    return context.router.push(const DeckPaceSettingsRoute());
   }
 
   @override

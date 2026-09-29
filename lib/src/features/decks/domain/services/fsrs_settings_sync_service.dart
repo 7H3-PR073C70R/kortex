@@ -94,6 +94,11 @@ class FsrsSettingsSyncService {
           'p_reminder_minute': settings.preferredReminderMinute,
           'p_user_timezone': deviceTz,
           'p_desired_retention': settings.clampedRetention,
+          'p_pace_preset': settings.pacePreset.name,
+          'p_new_cards_per_day': settings.newCardsPerDay,
+          'p_max_reviews_per_day': settings.maxReviewsPerDay,
+          'p_is_soft_catch_up': settings.isSoftCatchUpEnabled,
+          'p_reminders_enabled': settings.remindersEnabled,
         },
       );
 

@@ -143,5 +143,31 @@ void main() {
         ),
       );
     });
+
+    test('FsrsUserSettings correctly clamps retention and daily review bounds', () {
+      final invalidJson = {
+        'pacePreset': 'intensive',
+        'desiredRetention': 0.999, // Out of range (>0.97)
+        'preferredReminderHour': 25, // Out of range (>23)
+        'preferredReminderMinute': 70, // Out of range (>59)
+        'newCardsPerDay': 200, // Out of range (>100)
+        'maxReviewsPerDay': 2, // Out of range (<10)
+      };
+
+      final settings = FsrsUserSettings.fromJson(invalidJson);
+      expect(settings.pacePreset, equals(DeckPacePreset.intensive));
+      expect(settings.desiredRetention, equals(0.97));
+      expect(settings.preferredReminderHour, equals(23));
+      expect(settings.preferredReminderMinute, equals(59));
+      expect(settings.newCardsPerDay, equals(100));
+      expect(settings.maxReviewsPerDay, equals(10));
+    });
+
+    test('DeckPacePreset.fromName defaults to balanced for unknown name', () {
+      expect(DeckPacePreset.fromName('unknown'), equals(DeckPacePreset.balanced));
+      expect(DeckPacePreset.fromName('relaxed'), equals(DeckPacePreset.relaxed));
+      expect(DeckPacePreset.fromName('intensive'), equals(DeckPacePreset.intensive));
+      expect(DeckPacePreset.fromName('custom'), equals(DeckPacePreset.custom));
+    });
   });
 }
