@@ -28,6 +28,14 @@ void main() {
         equals(NotificationCategory.community),
       );
       expect(
+        NotificationCategoryExtension.fromString('social_alerts'),
+        equals(NotificationCategory.community),
+      );
+      expect(
+        NotificationCategoryExtension.fromString('forum_reply'),
+        equals(NotificationCategory.community),
+      );
+      expect(
         NotificationCategoryExtension.fromString('daily_streak_reminder'),
         equals(NotificationCategory.streak),
       );

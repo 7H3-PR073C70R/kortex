@@ -2,10 +2,10 @@
 -- Description: Adds quiz_duels table for multiplayer duel history, persistent ELO ratings, and Elo calculation RPC.
 
 -- 1. Ensure elo_rating exists on user profiles
-ALTER TABLE public.user_profiles 
+ALTER TABLE public.profiles 
 ADD COLUMN IF NOT EXISTS elo_rating INT DEFAULT 1200;
 
-CREATE INDEX IF NOT EXISTS idx_user_profiles_elo_rating ON public.user_profiles(elo_rating DESC);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_elo_rating ON public.profiles(elo_rating DESC);
 
 -- 2. Create quiz_duels history table
 CREATE TABLE IF NOT EXISTS public.quiz_duels (
@@ -13,18 +13,18 @@ CREATE TABLE IF NOT EXISTS public.quiz_duels (
     duel_id TEXT UNIQUE NOT NULL,
     subject TEXT NOT NULL,
     exam_board TEXT NOT NULL,
-    player1_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
-    player2_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
+    player1_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    player2_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     player1_score INT NOT NULL DEFAULT 0,
     player2_score INT NOT NULL DEFAULT 0,
     player1_elo_before INT NOT NULL DEFAULT 1200,
     player2_elo_before INT NOT NULL DEFAULT 1200,
     player1_elo_after INT,
     player2_elo_after INT,
-    winner_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
+    winner_user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     is_draw BOOLEAN DEFAULT FALSE,
     is_forfeit BOOLEAN DEFAULT FALSE,
-    forfeit_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
+    forfeit_user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
     questions_snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     finished_at TIMESTAMPTZ DEFAULT now()
@@ -81,13 +81,13 @@ DECLARE
 BEGIN
     -- Fetch existing ELO for Player 1
     SELECT COALESCE(elo_rating, 1200) INTO v_p1_elo
-    FROM public.user_profiles
+    FROM public.profiles
     WHERE id = p_player1_id;
 
     -- Fetch existing ELO for Player 2 (if real user)
     IF p_player2_id IS NOT NULL THEN
         SELECT COALESCE(elo_rating, 1200) INTO v_p2_elo
-        FROM public.user_profiles
+        FROM public.profiles
         WHERE id = p_player2_id;
     ELSE
         v_p2_elo := 1200;
@@ -114,12 +114,12 @@ BEGIN
     v_new_p2_elo := GREATEST(100, ROUND(v_p2_elo + v_k_factor * (v_actual_p2 - v_expected_p2)));
 
     -- Update user profiles
-    UPDATE public.user_profiles
+    UPDATE public.profiles
     SET elo_rating = v_new_p1_elo
     WHERE id = p_player1_id;
 
     IF p_player2_id IS NOT NULL THEN
-        UPDATE public.user_profiles
+        UPDATE public.profiles
         SET elo_rating = v_new_p2_elo
         WHERE id = p_player2_id;
     END IF;

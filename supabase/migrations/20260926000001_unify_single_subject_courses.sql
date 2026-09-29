@@ -188,8 +188,7 @@ VALUES
 ON CONFLICT (id) DO UPDATE SET 
     course_code = EXCLUDED.course_code,
     title = EXCLUDED.title,
-    department = EXCLUDED.department,
-    updated_at = now();
+    department = EXCLUDED.department;
 
 -- 2. Deduplicate user enrollments: point legacy track-specific courses (e.g. W-ENG, J-ENG, N-ENG) to canonical courses
 DO $$
@@ -239,7 +238,7 @@ BEGIN
 
         IF v_canonical_id IS NOT NULL THEN
             -- Re-link decks
-            UPDATE public.decks SET course_id = v_canonical_id WHERE course_id = rec.id;
+            UPDATE public.decks SET course_id = v_canonical_id::text WHERE course_id = rec.id::text;
 
             -- Migrate user enrollments to canonical course
             INSERT INTO public.user_curated_courses (user_id, course_id, syllabus_coverage)
