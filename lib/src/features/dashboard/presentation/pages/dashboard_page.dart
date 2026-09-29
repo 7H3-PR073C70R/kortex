@@ -216,11 +216,14 @@ class _DashboardView extends HookWidget {
             bottom: false,
             child: BlocBuilder<DashboardBloc, DashboardState>(
               builder: (context, state) {
-                if (state.isLoading) {
+                // Show full shimmer only on genuine cold-start loading (no
+                // cached data available). Stale-while-revalidate keeps
+                // existing content visible during background refresh.
+                if (state.isLoading && !state.hasDisplayableFeed) {
                   return const _DashboardShimmerLoading();
                 }
 
-                if (state.isError || state.feed == null) {
+                if (state.isError || state.displayFeed == null) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -273,7 +276,7 @@ class _DashboardView extends HookWidget {
                   );
                 }
 
-                final feed = state.feed!;
+                final feed = state.displayFeed!;
 
                 return RefreshIndicator(
                   onRefresh: () async {
@@ -447,8 +450,16 @@ class _DashboardShimmerLoading extends StatelessWidget {
         const ShimmerPlaceholder(height: 48, borderRadius: 22),
         const SizedBox(height: 20),
 
-        // 7. Retention Heatmap Skeleton
-        const ShimmerPlaceholder(height: 160, borderRadius: 22),
+        // 7. Pod Pulse / Study Circle Skeleton
+        const ShimmerPlaceholder(height: 168, borderRadius: 18),
+        const SizedBox(height: 20),
+
+        // 8. CBT Readiness Gauge Skeleton — matches widget height of ~200px
+        const ShimmerPlaceholder(height: 200, borderRadius: 18),
+        const SizedBox(height: 20),
+
+        // 9. Retention Heatmap + Study Matrix Skeleton — full widget height
+        const ShimmerPlaceholder(height: 260, borderRadius: 18),
       ],
     );
   }
@@ -569,9 +580,11 @@ class _CompactDashboardLayout extends StatelessWidget {
                 // 8. Retention Heat Map & Mastery Stats
                 RetentionHeatMapWidget(analytics: feed.analyticsSummary),
               ]
-              .animate(interval: 80.ms)
-              .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-              .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+              // 50ms stagger — reduces last-item entrance delay from 560ms
+              // to 350ms. Subtler slideY also feels snappier on mobile.
+              .animate(interval: 50.ms)
+              .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint),
     );
   }
 }
@@ -1278,13 +1291,13 @@ class _MediumDashboardLayout extends StatelessWidget {
                                     analytics: feed.analyticsSummary,
                                   ),
                                 ]
-                                .animate(interval: 80.ms)
+                                .animate(interval: 50.ms)
                                 .fadeIn(
-                                  duration: 400.ms,
+                                  duration: 380.ms,
                                   curve: Curves.easeOutCubic,
                                 )
                                 .slideY(
-                                  begin: 0.05,
+                                  begin: 0.04,
                                   end: 0,
                                   curve: Curves.easeOutQuint,
                                 ),
@@ -1293,9 +1306,9 @@ class _MediumDashboardLayout extends StatelessWidget {
                   ],
                 ),
               ]
-              .animate(interval: 80.ms)
-              .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-              .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+              .animate(interval: 50.ms)
+              .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint),
     );
   }
 }
@@ -1417,13 +1430,13 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                       else
                                         _EmptyCoursesCard(l10n: context.l10n),
                                     ]
-                                    .animate(interval: 80.ms)
+                                    .animate(interval: 50.ms)
                                     .fadeIn(
-                                      duration: 400.ms,
+                                      duration: 380.ms,
                                       curve: Curves.easeOutCubic,
                                     )
                                     .slideY(
-                                      begin: 0.05,
+                                      begin: 0.04,
                                       end: 0,
                                       curve: Curves.easeOutQuint,
                                     ),
@@ -1453,13 +1466,13 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                       // Speed Dial / Action Toolbox
                                       const QuickActionSpeedDial(),
                                     ]
-                                    .animate(interval: 80.ms)
+                                    .animate(interval: 50.ms)
                                     .fadeIn(
-                                      duration: 400.ms,
+                                      duration: 380.ms,
                                       curve: Curves.easeOutCubic,
                                     )
                                     .slideY(
-                                      begin: 0.05,
+                                      begin: 0.04,
                                       end: 0,
                                       curve: Curves.easeOutQuint,
                                     ),
@@ -1468,9 +1481,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                       ],
                     ),
                   ]
-                  .animate(interval: 80.ms)
-                  .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-                  .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+                  .animate(interval: 50.ms)
+                  .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
+                  .slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint),
         ),
       ),
     );

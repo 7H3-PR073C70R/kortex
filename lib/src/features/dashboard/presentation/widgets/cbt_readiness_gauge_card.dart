@@ -9,7 +9,11 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
 
 /// Interactive glassmorphic CBT Readiness Score progress gauge widget for the executive dashboard.
-class CbtReadinessGaugeCard extends StatelessWidget {
+///
+/// On first mount the arc sweeps from 0 → [readinessResult.scorePercent] over
+/// 900ms with an easeOutCubic curve, providing a satisfying reveal animation
+/// that communicates "data loaded and computed". Metric bars stagger in after.
+class CbtReadinessGaugeCard extends StatefulWidget {
   const CbtReadinessGaugeCard({
     required this.readinessResult,
     required this.examTitle,
@@ -22,10 +26,59 @@ class CbtReadinessGaugeCard extends StatelessWidget {
   final int daysRemaining;
 
   @override
+  State<CbtReadinessGaugeCard> createState() => _CbtReadinessGaugeCardState();
+}
+
+class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _arcController;
+  late final Animation<double> _arcAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _arcController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _arcAnimation = CurvedAnimation(
+      parent: _arcController,
+      curve: Curves.easeOutCubic,
+    );
+    // Delay slightly so the widget's outer container has faded in first.
+    unawaited(
+      Future<void>.delayed(const Duration(milliseconds: 80), () {
+        if (mounted) _arcController.forward();
+      }),
+    );
+  }
+
+  @override
+  void didUpdateWidget(CbtReadinessGaugeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-animate when the score changes (e.g. after a data refresh).
+    if (oldWidget.readinessResult.scorePercent !=
+        widget.readinessResult.scorePercent) {
+      _arcController
+        ..reset()
+        ..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _arcController.dispose();
+    super.dispose();
+  }
+
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+    final readinessResult = widget.readinessResult;
+    final examTitle = widget.examTitle;
 
     return InkWell(
       onTap: () => _showDiagnosticSheet(context),
@@ -121,31 +174,38 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                 SizedBox(
                   width: 100,
                   height: 100,
-                  child: CustomPaint(
-                    painter: _ReadinessGaugePainter(
-                      scorePercent: readinessResult.scorePercent,
-                      color: readinessResult.statusColor,
-                      trackColor: colors.surfaceBorder.withAlpha(isDark ? 50 : 80),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${readinessResult.scorePercent}%',
-                            style: typography.title1.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 22,
-                              height: 1,
+                  child: AnimatedBuilder(
+                    animation: _arcAnimation,
+                    builder: (context, _) => CustomPaint(
+                      painter: _ReadinessGaugePainter(
+                        // Arc sweeps from 0 → target score.
+                        scorePercent: (readinessResult.scorePercent *
+                                _arcAnimation.value)
+                            .round(),
+                        color: readinessResult.statusColor,
+                        trackColor:
+                            colors.surfaceBorder.withAlpha(isDark ? 50 : 80),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${(readinessResult.scorePercent * _arcAnimation.value).round()}%',
+                              style: typography.title1.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 22,
+                                height: 1,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Score',
-                            style: typography.caption.medium.copyWith(
-                              color: colors.textSecondary,
+                            Text(
+                              'Score',
+                              style: typography.caption.medium.copyWith(
+                                color: colors.textSecondary,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -266,19 +326,19 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: readinessResult.statusColor.withAlpha(30),
+                            color: widget.readinessResult.statusColor.withAlpha(30),
                             borderRadius: BorderRadius.circular(AppRadius.badge),
                           ),
                           child: Text(
-                            readinessResult.statusLabel,
-                            style: typography.caption.bold.copyWith(color: readinessResult.statusColor),
+                            widget.readinessResult.statusLabel,
+                            style: typography.caption.bold.copyWith(color: widget.readinessResult.statusColor),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Diagnostic analysis for $examTitle ($daysRemaining days remaining)',
+                      'Diagnostic analysis for $widget.examTitle ($widget.daysRemaining days remaining)',
                       style: typography.body.medium.copyWith(color: colors.textSecondary),
                     ),
                     const SizedBox(height: 18),
@@ -289,12 +349,12 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            readinessResult.statusColor.withAlpha(isDark ? 50 : 30),
+                            widget.readinessResult.statusColor.withAlpha(isDark ? 50 : 30),
                             colors.primary.withAlpha(isDark ? 30 : 15),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(color: readinessResult.statusColor.withAlpha(80)),
+                        border: Border.all(color: widget.readinessResult.statusColor.withAlpha(80)),
                       ),
                       child: Row(
                         children: [
@@ -312,7 +372,7 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  readinessResult.projectedScoreRange,
+                                  widget.readinessResult.projectedScoreRange,
                                   style: typography.title3.bold.copyWith(color: colors.textPrimary),
                                 ),
                               ],
@@ -331,9 +391,9 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                                   style: typography.caption.regular.copyWith(color: colors.textSecondary, fontSize: 10),
                                 ),
                                 Text(
-                                  readinessResult.speedDiagnosticLabel,
+                                  widget.readinessResult.speedDiagnosticLabel,
                                   style: typography.caption.bold.copyWith(
-                                    color: readinessResult.speedReadinessRatio >= 0.8 ? colors.success : colors.warning,
+                                    color: widget.readinessResult.speedReadinessRatio >= 0.8 ? colors.success : colors.warning,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -346,7 +406,7 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                     const SizedBox(height: 18),
 
                     // Subject Mastery Breakdown Header for Registered Courses
-                    if (readinessResult.subjectBreakdowns.isNotEmpty) ...[
+                    if (widget.readinessResult.subjectBreakdowns.isNotEmpty) ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -364,14 +424,14 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              '${readinessResult.subjectBreakdowns.length} Enrolled Courses',
+                              '${widget.readinessResult.subjectBreakdowns.length} Enrolled Courses',
                               style: typography.caption.bold.copyWith(color: colors.primary, fontSize: 11),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      ...readinessResult.subjectBreakdowns.map(
+                      ...widget.readinessResult.subjectBreakdowns.map(
                         (sub) => Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(14),
@@ -463,7 +523,7 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.warning_amber_rounded, color: readinessResult.statusColor, size: 20),
+                              Icon(Icons.warning_amber_rounded, color: widget.readinessResult.statusColor, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 'Primary Bottleneck Diagnostic',
@@ -473,8 +533,8 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            readinessResult.weakestAreaLabel.isNotEmpty
-                                ? readinessResult.weakestAreaLabel
+                            widget.readinessResult.weakestAreaLabel.isNotEmpty
+                                ? widget.readinessResult.weakestAreaLabel
                                 : 'Memory Retention Stability',
                             style: typography.body.bold.copyWith(color: colors.textPrimary),
                           ),
@@ -505,7 +565,7 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              readinessResult.remediationSuggestion,
+                              widget.readinessResult.remediationSuggestion,
                               style: typography.body.medium.copyWith(color: colors.textPrimary),
                             ),
                           ),
@@ -521,7 +581,7 @@ class CbtReadinessGaugeCard extends StatelessWidget {
                             onPressed: () {
                               Navigator.pop(context);
                               final prompt =
-                                  'Help me review ${readinessResult.weakestAreaLabel.isNotEmpty ? readinessResult.weakestAreaLabel : "key concepts"} to boost my $examTitle readiness score.';
+                                  'Help me review ${widget.readinessResult.weakestAreaLabel.isNotEmpty ? widget.readinessResult.weakestAreaLabel : "key concepts"} to boost my $widget.examTitle readiness score.';
                               unawaited(
                                 context.router.push(
                                   SyllabotChatRoute(initialPrompt: prompt),
