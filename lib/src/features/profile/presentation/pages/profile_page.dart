@@ -283,7 +283,11 @@ class _ProfileView extends HookWidget {
                                        ),
                                        const SizedBox(height: 20),
                                        ProfileNavigationMenu(
-                                         key: AppTourKeys.profileCardKey,
+                                         key: AppTourKeys.profileCardKey =
+                                             AppTourKeys.safeKey(
+                                           AppTourKeys.profileCardKey,
+                                           'tour_profile_card',
+                                         ),
                                          targetTrack: targetTrack,
                                          dailyTarget: dailyTarget,
                                        ),

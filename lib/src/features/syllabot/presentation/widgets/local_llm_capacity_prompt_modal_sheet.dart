@@ -41,15 +41,50 @@ class LocalLlmCapacityPromptModalSheet extends StatefulWidget {
       _LocalLlmCapacityPromptModalSheetState();
 }
 
+class _LocalLlmModelSpec {
+  const _LocalLlmModelSpec({
+    required this.name,
+    required this.sizeLabel,
+    required this.requiredMb,
+    required this.badgeLabel,
+    required this.ramSubtitle,
+  });
+
+  final String name;
+  final String sizeLabel;
+  final int requiredMb;
+  final String badgeLabel;
+  final String ramSubtitle;
+}
+
+const _kAvailableModels = [
+  _LocalLlmModelSpec(
+    name: 'TinyLlama 1.1B',
+    sizeLabel: '248 MB',
+    requiredMb: 248,
+    badgeLabel: '248 MB • Fast & Lightweight',
+    ramSubtitle: '~350MB Peak RAM • Optimized for energy efficiency',
+  ),
+  _LocalLlmModelSpec(
+    name: 'Gemma 2B',
+    sizeLabel: '1.2 GB',
+    requiredMb: 1200,
+    badgeLabel: '1.2 GB • Deep STEM Reasoning',
+    ramSubtitle: '~850MB Peak RAM • Optimized for energy efficiency',
+  ),
+];
+
 class _LocalLlmCapacityPromptModalSheetState
     extends State<LocalLlmCapacityPromptModalSheet> {
   int _selectedModelIndex = 0;
-  // ignore: use_late_for_private_fields_and_variables - report is null until audit completes
   DeviceCapabilityReport? _report;
   bool _isLoadingReport = true;
   bool _isDownloading = false;
   double _downloadProgress = 0;
   StreamSubscription<double>? _downloadSub;
+
+  _LocalLlmModelSpec get _selectedModelSpec =>
+      _kAvailableModels[_selectedModelIndex.clamp(0, _kAvailableModels.length - 1)];
 
   @override
   void initState() {
@@ -76,6 +111,7 @@ class _LocalLlmCapacityPromptModalSheetState
 
   void _startDownload() {
     final client = locator<LocalLlmEngineClient>();
+    final selectedModel = _selectedModelSpec;
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0.05;
@@ -96,7 +132,7 @@ class _LocalLlmCapacityPromptModalSheetState
             _downloadProgress = 1.0;
           });
           context.showSnackBar(
-            message: 'On-Device Neural Engine ready (248 MB)! Activated.',
+            message: '${selectedModel.name} On-Device Neural Engine ready (${selectedModel.sizeLabel})! Activated.',
             type: SnackBarType.success,
           );
           widget.onDownloadComplete?.call();
@@ -123,6 +159,12 @@ class _LocalLlmCapacityPromptModalSheetState
     final typography = context.typography;
     final isDark = context.isDarkMode;
     final l10n = context.l10n;
+    final selectedModel = _selectedModelSpec;
+    final hasSufficientStorage = _report != null &&
+        _report!.availableStorageMb >= selectedModel.requiredMb;
+    final storageStatusText = hasSufficientStorage
+        ? 'Sufficient space available (${selectedModel.sizeLabel} required)'
+        : 'Low storage warning (${selectedModel.sizeLabel} required)';
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -191,7 +233,7 @@ class _LocalLlmCapacityPromptModalSheetState
                           ),
                         ),
                         Text(
-                          'Quantized 4-bit Neural Model (248 MB)',
+                          'Quantized 4-bit Neural Model (${selectedModel.sizeLabel})',
                           style: typography.caption.medium.copyWith(
                             color: colors.textSecondary,
                             fontSize: 12,
@@ -217,95 +259,56 @@ class _LocalLlmCapacityPromptModalSheetState
 
               // Model Choice Cards
               Row(
-                children: [
-                  Expanded(
-                    child: ShrinkableButton(
-                      onTap: () => setState(() => _selectedModelIndex = 0),
-                      child: AnimatedContainer(
-                        duration: AppMotion.snappy,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _selectedModelIndex == 0
-                              ? colors.primary.withAlpha(isDark ? 40 : 20)
-                              : colors.surfaceSecondary,
-                          borderRadius: AppRadius.radiusCard,
-                          border: Border.all(
-                            color: _selectedModelIndex == 0
-                                ? colors.primary
-                                : colors.surfaceBorder.withAlpha(60),
-                            width: _selectedModelIndex == 0 ? 1.5 : 1,
+                children: List.generate(_kAvailableModels.length, (index) {
+                  final model = _kAvailableModels[index];
+                  final isSelected = _selectedModelIndex == index;
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: index > 0 ? 8.0 : 0.0),
+                      child: ShrinkableButton(
+                        onTap: () => setState(() => _selectedModelIndex = index),
+                        child: AnimatedContainer(
+                          duration: AppMotion.snappy,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? colors.primary.withAlpha(isDark ? 40 : 20)
+                                : colors.surfaceSecondary,
+                            borderRadius: AppRadius.radiusCard,
+                            border: Border.all(
+                              color: isSelected
+                                  ? colors.primary
+                                  : colors.surfaceBorder.withAlpha(60),
+                              width: isSelected ? 1.5 : 1,
+                            ),
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'TinyLlama 1.1B',
-                              style: typography.caption.bold.copyWith(
-                                color: _selectedModelIndex == 0
-                                    ? colors.primary
-                                    : colors.textPrimary,
-                                fontSize: 12,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                model.name,
+                                style: typography.caption.bold.copyWith(
+                                  color: isSelected
+                                      ? colors.primary
+                                      : colors.textPrimary,
+                                  fontSize: 12,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '248 MB • Fast & Lightweight',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 10,
+                              const SizedBox(height: 2),
+                              Text(
+                                model.badgeLabel,
+                                style: typography.caption.regular.copyWith(
+                                  color: colors.textSecondary,
+                                  fontSize: 10,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ShrinkableButton(
-                      onTap: () => setState(() => _selectedModelIndex = 1),
-                      child: AnimatedContainer(
-                        duration: AppMotion.snappy,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: _selectedModelIndex == 1
-                              ? colors.primary.withAlpha(isDark ? 40 : 20)
-                              : colors.surfaceSecondary,
-                          borderRadius: AppRadius.radiusCard,
-                          border: Border.all(
-                            color: _selectedModelIndex == 1
-                                ? colors.primary
-                                : colors.surfaceBorder.withAlpha(60),
-                            width: _selectedModelIndex == 1 ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Gemma 2B',
-                              style: typography.caption.bold.copyWith(
-                                color: _selectedModelIndex == 1
-                                    ? colors.primary
-                                    : colors.textPrimary,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '1.2 GB • Deep STEM Reasoning',
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                }),
               ),
               const SizedBox(height: 14),
 
@@ -332,15 +335,15 @@ class _LocalLlmCapacityPromptModalSheetState
                         children: [
                           _AuditRow(
                             icon: Icons.storage_rounded,
-                            iconColor: _report!.hasSufficientStorage
+                            iconColor: hasSufficientStorage
                                 ? colors.success
                                 : colors.error,
                             title: l10n.syllabotCapStorageSpace,
-                            subtitle: _report!.storageStatusText,
-                            statusBadge: _report!.hasSufficientStorage
+                            subtitle: storageStatusText,
+                            statusBadge: hasSufficientStorage
                                 ? 'Ready'
                                 : 'Low',
-                            statusColor: _report!.hasSufficientStorage
+                            statusColor: hasSufficientStorage
                                 ? colors.success
                                 : colors.error,
                           ),
@@ -359,8 +362,7 @@ class _LocalLlmCapacityPromptModalSheetState
                             icon: Icons.psychology_rounded,
                             iconColor: colors.syllabotAccent,
                             title: l10n.syllabotCapRamBatteryGuard,
-                            subtitle:
-                                '~350MB Peak RAM • Optimized for energy efficiency',
+                            subtitle: selectedModel.ramSubtitle,
                             statusBadge: 'Optimal',
                             statusColor: colors.syllabotAccent,
                           ),
@@ -383,7 +385,7 @@ class _LocalLlmCapacityPromptModalSheetState
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Downloading model weights (${(_downloadProgress * 100).toInt()}%)...',
+                    'Downloading ${selectedModel.name} weights (${(_downloadProgress * 100).toInt()}%)...',
                     style: typography.caption.medium.copyWith(
                       color: colors.textSecondary,
                       fontSize: 11.5,
@@ -434,7 +436,7 @@ class _LocalLlmCapacityPromptModalSheetState
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Download & Activate Model (248 MB)',
+                              'Download & Activate Model (${selectedModel.sizeLabel})',
                               style: typography.callout.bold.copyWith(
                                 color: colors.white,
                                 fontSize: 13.5,

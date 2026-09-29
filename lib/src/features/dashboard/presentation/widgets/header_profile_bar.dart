@@ -10,8 +10,10 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -98,6 +100,17 @@ class HeaderProfileBar extends StatelessWidget {
     final initials = extractTwoLetterInitials(
       trimmedName.isNotEmpty ? trimmedName : displayName,
     );
+
+    final unreadCount = () {
+      try {
+        final cubit = context.watch<NotificationsCubit?>();
+        if (cubit != null) return cubit.state.unreadCount;
+      } on Object catch (_) {}
+      if (locator.isRegistered<NotificationsCubit>()) {
+        return locator<NotificationsCubit>().state.unreadCount;
+      }
+      return 0;
+    }();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -244,6 +257,7 @@ class HeaderProfileBar extends StatelessWidget {
                           color: neural.amber300,
                           tooltip: 'Notifications',
                           borderHighlightColor: neural.amber,
+                          badgeCount: unreadCount,
                           onTap: () {
                             unawaited(HapticFeedback.lightImpact());
                             unawaited(
@@ -374,6 +388,7 @@ class _HeaderIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onTap,
     this.borderHighlightColor,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
@@ -381,6 +396,7 @@ class _HeaderIconButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
   final Color? borderHighlightColor;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -395,29 +411,75 @@ class _HeaderIconButton extends StatelessWidget {
           builder: (context, isHovered, child) {
             return ShrinkableButton(
               onTap: onTap,
-              child: AnimatedContainer(
-                duration: AppMotion.snappy,
-                curve: AppMotion.easeOutCubic,
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: neural.obsidian850.withAlpha(
-                    isHovered ? 255 : 230,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.easeOutCubic,
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: neural.obsidian850.withAlpha(
+                        isHovered ? 255 : 230,
+                      ),
+                      border: Border.all(
+                        color: isHovered
+                            ? (borderHighlightColor ?? neural.emerald).withAlpha(
+                                110,
+                              )
+                            : neural.hairlineStrong,
+                      ),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 16,
+                      color: color,
+                    ),
                   ),
-                  border: Border.all(
-                    color: isHovered
-                        ? (borderHighlightColor ?? neural.emerald).withAlpha(
-                            110,
-                          )
-                        : neural.hairlineStrong,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: color,
-                ),
+                  if (badgeCount > 0)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: neural.amber400,
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: neural.obsidian950,
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: neural.amber400.withAlpha(140),
+                              blurRadius: 6,
+                              spreadRadius: 0.5,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            badgeCount > 99 ? '99+' : '$badgeCount',
+                            style: TextStyle(
+                              color: neural.obsidian950,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             );
           },

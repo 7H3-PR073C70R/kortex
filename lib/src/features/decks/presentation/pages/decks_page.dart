@@ -213,7 +213,10 @@ class _DecksView extends HookWidget {
                     children: [
                       // 1. Header Title & Create Action
                       Row(
-                        key: AppTourKeys.decksHeaderKey,
+                        key: AppTourKeys.decksHeaderKey = AppTourKeys.safeKey(
+                          AppTourKeys.decksHeaderKey,
+                          'tour_decks_header',
+                        ),
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
@@ -276,7 +279,11 @@ class _DecksView extends HookWidget {
                       //    One decision at the front door beats four equal tiles.
                       if (state.allDecks.isNotEmpty) ...[
                         _TodayHeroCard(
-                          key: AppTourKeys.decksTodayHeroKey,
+                          key: AppTourKeys.decksTodayHeroKey =
+                              AppTourKeys.safeKey(
+                            AppTourKeys.decksTodayHeroKey,
+                            'tour_decks_today_hero',
+                          ),
                           state: state,
                         ),
                         const SizedBox(height: 16),

@@ -496,7 +496,10 @@ class _CompactDashboardLayout extends StatelessWidget {
           <Widget>[
                 // 1. User Profile Header (Identity & Streak Anchor)
                 HeaderProfileBar(
-                  key: AppTourKeys.headerProfileKey,
+                  key: AppTourKeys.headerProfileKey = AppTourKeys.safeKey(
+                    AppTourKeys.headerProfileKey,
+                    'tour_header_profile',
+                  ),
                   analytics: feed.analyticsSummary,
                   isProfileUncalibrated: feed.isProfileUncalibrated,
                   userName: userName,
@@ -518,7 +521,12 @@ class _CompactDashboardLayout extends StatelessWidget {
                   child: Column(
                     children: [
                       if (feed.curatedCourses.isNotEmpty) ...[
-                        ExamCountdownBanner(key: AppTourKeys.countdownKey),
+                        ExamCountdownBanner(
+                          key: AppTourKeys.countdownKey = AppTourKeys.safeKey(
+                            AppTourKeys.countdownKey,
+                            'tour_countdown',
+                          ),
+                        ),
                         const SizedBox(height: 16),
                       ],
                       if (heavyDebtDeck != null) ...[
@@ -531,14 +539,22 @@ class _CompactDashboardLayout extends StatelessWidget {
 
                 // 3. Daily Recall Status Banner ("All caught up!" / due-cards state)
                 _DailyRecallStatusBanner(
-                  key: AppTourKeys.reviewQueueKey,
+                  key: AppTourKeys.reviewQueueKey = AppTourKeys.safeKey(
+                    AppTourKeys.reviewQueueKey,
+                    'tour_review_queue',
+                  ),
                   feed: feed,
                 ),
 
                 const SizedBox(height: 16),
 
                 // 4. Quick Actions Grid (Upload Notes | Q-Bank | 1v1 Duel | New Deck)
-                _QuickActionsGrid(key: AppTourKeys.quickActionsKey),
+                _QuickActionsGrid(
+                  key: AppTourKeys.quickActionsKey = AppTourKeys.safeKey(
+                    AppTourKeys.quickActionsKey,
+                    'tour_quick_actions',
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // 5. Curated Course Repositories

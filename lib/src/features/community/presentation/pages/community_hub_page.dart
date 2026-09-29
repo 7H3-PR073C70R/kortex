@@ -167,7 +167,10 @@ class _CommunityHubView extends HookWidget {
                     activeFilterCount: activeFilterCount,
                   )
                 : CommunityStandardHeader(
-                    key: AppTourKeys.communityHeroKey,
+                    key: AppTourKeys.communityHeroKey = AppTourKeys.safeKey(
+                      AppTourKeys.communityHeroKey,
+                      'tour_community_hero',
+                    ),
                     title: l10n.forumTab,
                     selectedTrack: hubState.selectedTrack,
                     selectedForumFilter: hubState.selectedForumFilter,
@@ -239,7 +242,11 @@ class _CommunityHubView extends HookWidget {
                           }
                         },
                         child: Container(
-                          key: AppTourKeys.communityPostBtnKey,
+                          key: AppTourKeys.communityPostBtnKey =
+                              AppTourKeys.safeKey(
+                            AppTourKeys.communityPostBtnKey,
+                            'tour_community_post_btn',
+                          ),
                           height: 38,
                           padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
@@ -389,19 +396,43 @@ class _CommunityNotificationAction extends StatelessWidget {
                 ),
                 if (unreadCount > 0)
                   Positioned(
-                    top: 1,
-                    right: 1,
+                    top: -4,
+                    right: -4,
                     child: Container(
-                      width: 8,
-                      height: 8,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         color: colors.primary,
+                        borderRadius: BorderRadius.circular(9),
                         border: Border.all(
                           color: isDark
                               ? colors.surfaceSecondary
                               : colors.surfacePrimary,
                           width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primary.withAlpha(120),
+                            blurRadius: 6,
+                            spreadRadius: 0.5,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: TextStyle(
+                            color: colors.white,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            height: 1.1,
+                          ),
                         ),
                       ),
                     ),
