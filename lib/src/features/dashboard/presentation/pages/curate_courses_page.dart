@@ -78,52 +78,18 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
   Timer? _searchDebounceTimer;
 
   List<String> get _categories {
-    final track = widget.userTrack.toUpperCase();
-    if (track.contains('WAEC') || track.contains('WASSCE')) {
-      return const [
-        'All',
-        'Core',
-        'Sciences',
-        'Commercial',
-        'Arts',
-      ];
-    }
-    if (track.contains('JAMB') || track.contains('UTME')) {
-      return const [
-        'All',
-        'Core',
-        'Sciences',
-        'Commercial',
-        'Arts',
-      ];
-    }
-    if (track.contains('NECO') || track.contains('SSCE')) {
-      return const [
-        'All',
-        'Core',
-        'Sciences',
-        'Commercial',
-        'Arts',
-      ];
-    }
-    if (track.contains('SAT')) {
-      return const [
-        'All',
-        'SAT Prep',
-        'Math',
-        'Reading',
-      ];
-    }
     return const [
       'All',
+      'Core',
+      'Sciences',
+      'Commercial',
+      'Arts',
       'Computer Science',
+      'Engineering',
       'Medicine & Health',
       'Law & Legal Studies',
-      'Engineering',
       'Business & Management',
       'Social Sciences',
-      'WAEC',
-      'JAMB',
     ];
   }
 

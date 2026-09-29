@@ -10,7 +10,7 @@ import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calcula
 
 /// Interactive glassmorphic CBT Readiness Score progress gauge widget for the executive dashboard.
 ///
-/// On first mount the arc sweeps from 0 → [readinessResult.scorePercent] over
+/// On first mount the arc sweeps from 0 → readiness score over
 /// 900ms with an easeOutCubic curve, providing a satisfying reveal animation
 /// that communicates "data loaded and computed". Metric bars stagger in after.
 class CbtReadinessGaugeCard extends StatefulWidget {
@@ -48,7 +48,7 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
     // Delay slightly so the widget's outer container has faded in first.
     unawaited(
       Future<void>.delayed(const Duration(milliseconds: 80), () {
-        if (mounted) _arcController.forward();
+        if (mounted) unawaited(_arcController.forward());
       }),
     );
   }
@@ -59,9 +59,8 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
     // Re-animate when the score changes (e.g. after a data refresh).
     if (oldWidget.readinessResult.scorePercent !=
         widget.readinessResult.scorePercent) {
-      _arcController
-        ..reset()
-        ..forward();
+      _arcController.reset();
+      unawaited(_arcController.forward());
     }
   }
 

@@ -115,7 +115,7 @@ class HeaderProfileBar extends StatelessWidget {
                     AutoTabsRouter.of(context).setActiveIndex(4);
                   } on Object catch (_) {
                     unawaited(
-                      context.navigateTo(
+                      context.router.root.navigate(
                         const MainRoute(children: [ProfileRoute()]),
                       ),
                     );
@@ -144,24 +144,17 @@ class HeaderProfileBar extends StatelessWidget {
                                       ? AppAvatar(
                                           customDimension: 40,
                                           imageUrl: effectivePhoto,
-                                          name:
-                                              effectiveName ??
-                                              displayName,
+                                          name: effectiveName ?? displayName,
                                           borderWidth: 0,
-                                          backgroundColor:
-                                              neural.obsidian850,
-                                          foregroundColor:
-                                              neural.amber300,
+                                          backgroundColor: neural.obsidian850,
+                                          foregroundColor: neural.amber300,
                                         )
                                       : Center(
                                           child: Text(
                                             initials,
-                                            style: typography
-                                                .caption
-                                                .bold
+                                            style: typography.caption.bold
                                                 .copyWith(
-                                                  color:
-                                                      neural.amber300,
+                                                  color: neural.amber300,
                                                   fontSize: 13,
                                                   letterSpacing: 0.5,
                                                 ),
@@ -439,7 +432,9 @@ class _HeaderIconButton extends StatelessWidget {
       ),
     );
   }
-}void _showRankProgressSheet(
+}
+
+void _showRankProgressSheet(
   BuildContext context,
   AnalyticsSummaryEntity analytics,
   dynamic authProfile,
@@ -529,11 +524,16 @@ class _HeaderIconButton extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: neural.emerald.withAlpha(30),
                       borderRadius: BorderRadius.circular(AppRadius.badge),
-                      border: Border.all(color: neural.emerald400.withAlpha(100)),
+                      border: Border.all(
+                        color: neural.emerald400.withAlpha(100),
+                      ),
                     ),
                     child: Text(
                       'LEVEL $userLevel SCHOLAR',
@@ -605,12 +605,20 @@ class _HeaderIconButton extends StatelessWidget {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: neural.obsidian850,
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
-                            border: Border.all(color: neural.amber.withAlpha(40)),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
+                            border: Border.all(
+                              color: neural.amber.withAlpha(40),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.bolt_rounded, size: 18, color: neural.amber400),
+                              Icon(
+                                Icons.bolt_rounded,
+                                size: 18,
+                                color: neural.amber400,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(

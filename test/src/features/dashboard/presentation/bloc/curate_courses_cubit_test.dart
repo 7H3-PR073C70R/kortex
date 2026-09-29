@@ -180,6 +180,43 @@ void main() {
     );
 
     blocTest<CurateCoursesCubit, CurateCoursesState>(
+      'addCustomCourse defaults department to General Studies and does NOT append activeTrack name',
+      seed: () => const CurateCoursesState(),
+      build: () => CurateCoursesCubit(
+        getCatalogUseCase: mockGetCatalogUseCase,
+        syncCoursesUseCase: mockSyncUseCase,
+      ),
+      act: (cubit) => cubit.addCustomCourse(
+        courseCode: 'mth 101',
+        title: 'General Mathematics',
+      ),
+      verify: (cubit) {
+        expect(cubit.state.customCourses, hasLength(1));
+        final created = cubit.state.customCourses.first;
+        expect(created.department, equals('General Studies'));
+        expect(created.department.contains('WAEC'), isFalse);
+      },
+    );
+
+    blocTest<CurateCoursesCubit, CurateCoursesState>(
+      'addCustomCourse sanitizes title and department to max 100 characters',
+      build: () => CurateCoursesCubit(
+        getCatalogUseCase: mockGetCatalogUseCase,
+        syncCoursesUseCase: mockSyncUseCase,
+      ),
+      act: (cubit) => cubit.addCustomCourse(
+        courseCode: 'CS 999',
+        title: 'A' * 150,
+        department: 'B' * 150,
+      ),
+      verify: (cubit) {
+        final created = cubit.state.customCourses.first;
+        expect(created.title.length, equals(100));
+        expect(created.department.length, equals(100));
+      },
+    );
+
+    blocTest<CurateCoursesCubit, CurateCoursesState>(
       'saveCuratedCourses successfully syncs selected courses and emits success',
       seed: () => CurateCoursesState(
         status: CurateCoursesStatus.loaded,

@@ -15,6 +15,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
@@ -58,7 +59,8 @@ class _ProfileView extends HookWidget {
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (!state.isAuthenticated) {
+        if (state.sessionStatus == AuthSessionStatus.unauthenticated ||
+            state.status == AuthStatus.unauthenticated) {
           locator<AuthModeCubit>().resetToAiChat();
           unawaited(context.router.root.replaceAll([const AuthRoute()]));
         }

@@ -196,6 +196,7 @@ void main() {
           status: DashboardStatus.loaded,
           sectionStatus: DashboardSectionStatus.fullyLoaded,
           feed: _tFeed,
+          previousFeed: _tFeed,
         ),
       ],
     );

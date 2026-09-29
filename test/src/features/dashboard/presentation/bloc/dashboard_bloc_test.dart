@@ -152,6 +152,7 @@ void main() {
         const DashboardState(status: DashboardStatus.loading),
         const DashboardState(
           status: DashboardStatus.error,
+          sectionStatus: DashboardSectionStatus.error,
           errorMessage: 'Network Timeout',
         ),
       ];

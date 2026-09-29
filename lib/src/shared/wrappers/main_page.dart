@@ -456,19 +456,34 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
       vsync: this,
       duration: const Duration(milliseconds: 320),
     );
+    widget.tabsRouter.addListener(_onTabsRouterChanged);
+  }
+
+  void _onTabsRouterChanged() {
+    if (!mounted) return;
+    final activeIndex = widget.tabsRouter.activeIndex;
+    if (activeIndex != _lastHapticIndex && !_isDragging) {
+      _lastHapticIndex = activeIndex;
+      _animateToTab(activeIndex);
+    }
   }
 
   @override
   void didUpdateWidget(covariant _AdaptiveBottomNavDock oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.tabsRouter.activeIndex != oldWidget.tabsRouter.activeIndex &&
-        !_isDragging) {
+    if (oldWidget.tabsRouter != widget.tabsRouter) {
+      oldWidget.tabsRouter.removeListener(_onTabsRouterChanged);
+      widget.tabsRouter.addListener(_onTabsRouterChanged);
+    }
+    if (widget.tabsRouter.activeIndex != _lastHapticIndex && !_isDragging) {
+      _lastHapticIndex = widget.tabsRouter.activeIndex;
       _animateToTab(widget.tabsRouter.activeIndex);
     }
   }
 
   @override
   void dispose() {
+    widget.tabsRouter.removeListener(_onTabsRouterChanged);
     _animController.dispose();
     super.dispose();
   }

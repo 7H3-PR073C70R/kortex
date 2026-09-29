@@ -403,13 +403,11 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     _persistLocalDecksToStorage();
 
     // Direct, targeted update in SQLite: only cards for this deck updated
-    unawaited(_localDataSource?.saveCards(deckId, cards));
-    unawaited(
-      _localDataSource?.updateDeckStats(
-        deckId: deckId,
-        masteryRate: calculatedMasteryRate,
-        dueCards: dueCount,
-      ),
+    await _localDataSource?.saveCards(deckId, cards);
+    await _localDataSource?.updateDeckStats(
+      deckId: deckId,
+      masteryRate: calculatedMasteryRate,
+      dueCards: dueCount,
     );
   }
 
@@ -426,7 +424,7 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     // 1. Direct targeted SQLite update of reviewed flashcards (no monolithic re-serialization)
     if (updatedCards != null && updatedCards.isNotEmpty) {
       _localDeckCards[deckId] = updatedCards;
-      unawaited(_localDataSource?.batchUpdateCards(updatedCards));
+      await _localDataSource?.batchUpdateCards(updatedCards);
     }
 
     final cards =
@@ -476,14 +474,12 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     // 3. Fast targeted SQLite update for deck stats & ensure deck row exists
     _persistLocalDecksToStorage();
     final deckEntry = _localCreatedDecks.firstWhere((d) => d.id == deckId);
-    unawaited(_localDataSource?.saveDeck(deckEntry, cards: cards));
-    unawaited(
-      _localDataSource?.updateDeckStats(
-        deckId: deckId,
-        masteryRate: calculatedMasteryRate,
-        dueCards: calculatedDueCards,
-        lastStudied: now,
-      ),
+    await _localDataSource?.saveDeck(deckEntry, cards: cards);
+    await _localDataSource?.updateDeckStats(
+      deckId: deckId,
+      masteryRate: calculatedMasteryRate,
+      dueCards: calculatedDueCards,
+      lastStudied: now,
     );
 
     // 4. Sync to Supabase RPC record_study_session with correct parameter names if UUID

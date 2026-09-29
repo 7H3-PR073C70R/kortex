@@ -74,6 +74,7 @@ void main() {
         const DashboardState(status: DashboardStatus.loading),
         const DashboardState(
           status: DashboardStatus.loaded,
+          sectionStatus: DashboardSectionStatus.fullyLoaded,
           feed: tFeedHighSchool,
         ),
       ],
@@ -95,6 +96,7 @@ void main() {
         const DashboardState(status: DashboardStatus.loading),
         const DashboardState(
           status: DashboardStatus.error,
+          sectionStatus: DashboardSectionStatus.error,
           errorMessage: 'Server error',
         ),
       ],
@@ -117,6 +119,11 @@ void main() {
       expect: () => [
         const DashboardState(
           status: DashboardStatus.loaded,
+          sectionStatus: DashboardSectionStatus.revalidating,
+        ),
+        const DashboardState(
+          status: DashboardStatus.loaded,
+          sectionStatus: DashboardSectionStatus.fullyLoaded,
           feed: tFeedHighSchool,
         ),
       ],

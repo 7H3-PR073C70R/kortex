@@ -122,14 +122,12 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
       return;
     }
 
-    final resolvedTitle = (title != null && title.trim().isNotEmpty)
-        ? title.trim()
+    final sanitizedTitle = (title != null && title.trim().isNotEmpty)
+        ? (title.trim().length > 100 ? title.trim().substring(0, 100) : title.trim())
         : cleanCode;
-    final resolvedDept = (department != null && department.trim().isNotEmpty)
-        ? department.trim()
-        : (state.activeTrack.isNotEmpty
-              ? '${state.activeTrack} Studies'
-              : 'University Studies');
+    final sanitizedDept = (department != null && department.trim().isNotEmpty)
+        ? (department.trim().length > 100 ? department.trim().substring(0, 100) : department.trim())
+        : 'General Studies';
 
     final deterministicId =
         'course_${cleanCode.toLowerCase().replaceAll(RegExp('[^a-z0-9]'), '_')}';
@@ -137,8 +135,8 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
     final customCourse = CuratedCourseEntity(
       id: deterministicId,
       courseCode: cleanCode,
-      title: resolvedTitle,
-      department: resolvedDept,
+      title: sanitizedTitle,
+      department: sanitizedDept,
       totalMaterials: 1,
       hasActivePastPapers: false,
       iconName: 'school',

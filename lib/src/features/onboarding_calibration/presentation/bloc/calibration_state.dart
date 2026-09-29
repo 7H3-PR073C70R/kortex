@@ -57,7 +57,6 @@ class CalibrationState extends Equatable {
   bool get canProceed => true;
 
   List<CuratedCourseEntity> get highSchoolCatalogCourses {
-    final exam = (profile.highSchoolExam ?? '').toUpperCase();
     final effectiveList = catalogCourses.isNotEmpty
         ? catalogCourses
         : kCuratedSubjectsCatalog.map((s) {
@@ -74,55 +73,7 @@ class CalibrationState extends Equatable {
             );
           }).toList();
 
-    if (exam.contains('SAT')) {
-      final satCourses = effectiveList
-          .where(
-            (c) =>
-                c.department.toUpperCase().contains('SAT') ||
-                c.id.startsWith('sat-') ||
-                c.title.toUpperCase().contains('SAT'),
-          )
-          .toList();
-      if (satCourses.isNotEmpty) return satCourses;
-    }
-    if (exam.contains('JAMB') || exam.contains('UTME')) {
-      final jambCourses = effectiveList
-          .where(
-            (c) =>
-                c.id.startsWith('jamb-') ||
-                c.department.toUpperCase().contains('JAMB'),
-          )
-          .toList();
-      if (jambCourses.isNotEmpty) return jambCourses;
-    } else if (exam.contains('NECO') || exam.contains('SSCE')) {
-      final necoCourses = effectiveList
-          .where(
-            (c) =>
-                c.id.startsWith('neco-') ||
-                c.department.toUpperCase().contains('NECO'),
-          )
-          .toList();
-      if (necoCourses.isNotEmpty) return necoCourses;
-    } else if (exam.contains('WAEC') || exam.contains('WASSCE')) {
-      final waecCourses = effectiveList
-          .where(
-            (c) =>
-                c.id.startsWith('waec-') ||
-                c.department.toUpperCase().contains('WAEC'),
-          )
-          .toList();
-      if (waecCourses.isNotEmpty) return waecCourses;
-    }
-
-    return effectiveList
-        .where(
-          (c) =>
-              c.department.contains('Core') ||
-              c.department.contains('Sciences') ||
-              c.department.contains('Commercial') ||
-              c.department.contains('Arts'),
-        )
-        .toList();
+    return effectiveList;
   }
 
   CalibrationState copyWith({

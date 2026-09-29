@@ -133,6 +133,22 @@ void main() {
       expect(cubit.state.standardizedExams.length, equals(1));
       expect(cubit.state.standardizedExams.first.key, equals('jamb'));
     });
+    test('highSchoolCatalogCourses returns clean catalog subjects without exam track filtering', () {
+      const state = CalibrationState(
+        profile: CalibrationProfile(
+          focus: AcademicFocus.highSchool,
+          highSchoolExam: 'WAEC',
+        ),
+      );
+
+      final courses = state.highSchoolCatalogCourses;
+      expect(courses, isNotEmpty);
+      for (final course in courses) {
+        expect(course.id.startsWith('waec-'), isFalse);
+        expect(course.id.startsWith('jamb-'), isFalse);
+        expect(course.id.startsWith('neco-'), isFalse);
+      }
+    });
   });
 }
 

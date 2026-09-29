@@ -51,23 +51,23 @@ class PromptSuggestionModel {
             text:
                 'Prove circle theorem: angle at center is twice circumference',
             icon: '📐',
-            category: 'WAEC Mathematics',
+            category: 'Mathematics',
           ),
           PromptSuggestionModel(
             text:
                 'Calculate terminal voltage and internal resistance of a cell',
             icon: '🔋',
-            category: 'WAEC Physics',
+            category: 'Physics',
           ),
           PromptSuggestionModel(
             text: 'Balance organic esterification reaction mechanisms',
             icon: '🧪',
-            category: 'WAEC Chemistry',
+            category: 'Chemistry',
           ),
           PromptSuggestionModel(
             text: 'Explain phototropism and auxin concentration in plants',
             icon: '🌿',
-            category: 'WAEC Biology',
+            category: 'Biology',
           ),
         ];
       }

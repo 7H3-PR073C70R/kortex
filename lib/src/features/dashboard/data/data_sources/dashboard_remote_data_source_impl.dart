@@ -591,7 +591,7 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
               id: 'course_${code.toLowerCase()}',
               courseCode: code,
               title: subject,
-              department: 'Secondary School Board',
+              department: 'General Studies',
               totalMaterials: 25,
               hasActivePastPapers: true,
               iconName: 'school',

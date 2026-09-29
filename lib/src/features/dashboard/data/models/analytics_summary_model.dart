@@ -48,7 +48,7 @@ abstract class AnalyticsSummaryModel with _$AnalyticsSummaryModel {
     currentStreakDays: currentStreakDays,
     longestStreakDays: longestStreakDays,
     weeklyMinutesStudied: weeklyMinutesStudied,
-    overallRetentionRate: overallRetentionRate,
+    overallRetentionRate: overallRetentionRate.clamp(0.0, 1.0),
     totalCardsMastered: totalCardsMastered,
     heatMapData: heatMapData.map((e) => e.toEntity()).toList(),
     xpPoints: xpPoints,

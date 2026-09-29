@@ -43,7 +43,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget>
     // Short delay so the outer container fade-in completes first.
     unawaited(
       Future<void>.delayed(const Duration(milliseconds: 120), () {
-        if (mounted) _waveController.forward();
+        if (mounted) unawaited(_waveController.forward());
       }),
     );
 

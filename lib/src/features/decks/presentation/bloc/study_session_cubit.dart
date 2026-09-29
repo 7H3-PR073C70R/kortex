@@ -12,6 +12,7 @@ import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
@@ -672,6 +673,18 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         ]);
       } on Object catch (_) {}
 
+      // Flush queued card reviews upon session completion before refreshing UI
+      try {
+        await _cardSyncQueue.flushPendingLogs();
+      } on Object catch (_) {}
+
+      // Clear cached feed so Dashboard loads fresh review queue immediately
+      try {
+        if (locator.isRegistered<DashboardRepository>()) {
+          locator<DashboardRepository>().clearFeedCache();
+        }
+      } on Object catch (_) {}
+
       // Increment streak in AuthBloc
       try {
         if (locator.isRegistered<AuthBloc>()) {
@@ -719,9 +732,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           unawaited(trace.start().then((_) => trace.stop()));
         }
       } on Object catch (_) {}
-
-      // Flush queued card reviews upon session completion
-      unawaited(_cardSyncQueue.flushPendingLogs());
 
       // Clear checkpoint when all cards in deck are fully reviewed
       unawaited(clearSessionCheckpoint(state.deckId));
@@ -818,6 +828,17 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         ),
       ]);
     } on Object catch (_) {}
+    // Flush queued card reviews upon session completion before refreshing UI
+    try {
+      await _cardSyncQueue.flushPendingLogs();
+    } on Object catch (_) {}
+
+    // Clear cached feed so Dashboard loads fresh review queue immediately
+    try {
+      if (locator.isRegistered<DashboardRepository>()) {
+        locator<DashboardRepository>().clearFeedCache();
+      }
+    } on Object catch (_) {}
 
     try {
       if (locator.isRegistered<AuthBloc>()) {
@@ -834,8 +855,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         locator<DashboardBloc>().add(const DashboardRefreshed());
       }
     } on Object catch (_) {}
-
-    unawaited(_cardSyncQueue.flushPendingLogs());
 
     // Save checkpoint so the user can resume exactly where they left off when taking a break
     unawaited(

@@ -10,12 +10,15 @@ import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/logic/millionaire_tiering_engine.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
@@ -836,6 +839,14 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
       }
     }
 
+    // Flush pending FSRS review logs so missed question reviews are persisted immediately
+    try {
+      final queue = _cardSyncQueue;
+      if (queue != null) {
+        await queue.flushPendingLogs();
+      }
+    } on Object catch (_) {}
+
     final result = await _submitQuizUseCase(
       quizTitle: state.quizTitle,
       questions: gradedQuestions,
@@ -849,7 +860,14 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           errorMessage: failure.message,
         ),
       ),
-      (quizResult) {
+      (quizResult) async {
+        // Clear cached feed so Dashboard loads fresh review queue immediately
+        try {
+          if (locator.isRegistered<DashboardRepository>()) {
+            locator<DashboardRepository>().clearFeedCache();
+          }
+        } on Object catch (_) {}
+
         // Telemetry: Mock exam score submission trace & Crashlytics metrics
         try {
           final crashlytics = locator<CrashlyticsService>();
@@ -882,12 +900,21 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           unawaited(trace.start().then((_) => trace.stop()));
         } on Object catch (_) {}
 
-        // Live UI state refresh for Auth streak, Dashboard, and Pod Focus Minutes
+        // Live UI state refresh for Auth streak, Decks, Dashboard, and Pod Focus Minutes
         try {
-          locator<AuthBloc>().add(const AuthStreakIncremented());
+          if (locator.isRegistered<AuthBloc>()) {
+            locator<AuthBloc>().add(const AuthStreakIncremented());
+          }
         } on Object catch (_) {}
         try {
-          locator<DashboardBloc>().add(const DashboardRefreshed());
+          if (locator.isRegistered<DecksBloc>()) {
+            locator<DecksBloc>().add(const DecksRefreshed());
+          }
+        } on Object catch (_) {}
+        try {
+          if (locator.isRegistered<DashboardBloc>()) {
+            locator<DashboardBloc>().add(const DashboardRefreshed());
+          }
         } on Object catch (_) {}
         try {
           if (locator.isRegistered<UserActivityService>()) {

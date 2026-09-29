@@ -28,8 +28,20 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for calibrating active academic track, target exams, and goals.
 @RoutePage()
-class AcademicTrackSettingsPage extends HookWidget {
+class AcademicTrackSettingsPage extends StatelessWidget {
   const AcademicTrackSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<AuthBloc>.value(
+      value: locator<AuthBloc>(),
+      child: const _AcademicTrackSettingsView(),
+    );
+  }
+}
+
+class _AcademicTrackSettingsView extends HookWidget {
+  const _AcademicTrackSettingsView();
 
   IconData _getIconData(String iconName) {
     switch (iconName) {
