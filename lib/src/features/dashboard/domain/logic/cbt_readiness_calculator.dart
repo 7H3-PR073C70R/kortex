@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 
@@ -133,6 +135,8 @@ class RegisteredCourseInput {
             title: c.title.isNotEmpty ? c.title : c.courseCode,
             syllabusCoverage: c.syllabusCoverage,
             department: c.department,
+            accuracyPercent: c.accuracyPercent,
+            retentionRate: c.retentionRate,
             iconName: c.iconName,
             colorHex: c.colorHex,
           ),
@@ -144,6 +148,8 @@ class RegisteredCourseInput {
             title: c.title.isNotEmpty ? c.title : c.courseCode,
             syllabusCoverage: c.syllabusCoverage,
             department: c.department,
+            accuracyPercent: _extractDouble(c, 'accuracyPercent'),
+            retentionRate: _extractDouble(c, 'retentionRate'),
             iconName: c.iconName,
             colorHex: c.colorHex,
           ),
@@ -211,12 +217,83 @@ class RegisteredCourseInput {
 class CbtReadinessCalculator {
   const CbtReadinessCalculator();
 
+  static ({double accuracy, double retention})? _resolveCoursePerformance({
+    required RegisteredCourseInput course,
+    Map<String, double>? subjectAccuracies,
+    Map<String, double>? subjectRetentions,
+  }) {
+    if (course.accuracyPercent != null && course.retentionRate != null) {
+      return (
+        accuracy: course.accuracyPercent!,
+        retention: course.retentionRate!,
+      );
+    }
+
+    final codeKey = course.courseCode.trim().toLowerCase();
+    final titleKey = course.title.trim().toLowerCase();
+
+    // 1. Check explicit subject performance maps if passed
+    if (subjectAccuracies != null) {
+      for (final entry in subjectAccuracies.entries) {
+        final key = entry.key.trim().toLowerCase();
+        if (key.isNotEmpty &&
+            (key == codeKey ||
+             key == titleKey ||
+             titleKey.contains(key) ||
+             key.contains(titleKey))) {
+          final acc = entry.value;
+          final ret = subjectRetentions?[entry.key] ?? acc;
+          return (accuracy: acc, retention: ret);
+        }
+      }
+    }
+
+    // 2. Check UserActivityService singleton if registered
+    try {
+      if (locator.isRegistered<UserActivityService>()) {
+        final activityService = locator<UserActivityService>();
+        final breakdownMap = activityService.getSubjectBreakdown();
+        for (final entry in breakdownMap.entries) {
+          final key = entry.key.trim().toLowerCase();
+          if (key.isNotEmpty &&
+              (key == codeKey ||
+               key == titleKey ||
+               titleKey.contains(key) ||
+               key.contains(titleKey) ||
+               (codeKey.isNotEmpty &&
+                   (codeKey.contains(key) || key.contains(codeKey))))) {
+            final avgRet = entry.value.avgRetention;
+            return (accuracy: avgRet, retention: avgRet);
+          }
+        }
+      }
+    } on Object catch (_) {}
+
+    // 3. Fallback to course explicit single property if present
+    if (course.accuracyPercent != null || course.retentionRate != null) {
+      final acc = course.accuracyPercent ?? course.retentionRate ?? 0.0;
+      final ret = course.retentionRate ?? course.accuracyPercent ?? 0.0;
+      return (
+        accuracy: acc,
+        retention: ret,
+      );
+    }
+
+    // 4. No session data for this specific course (unattempted)
+    return null;
+  }
+
+  static String _getJambBandString(int points) {
+    if (points >= 320) return '320 - 360 Band';
+    if (points >= 280) return '280 - 315 Band';
+    if (points >= 250) return '250 - 279 Band';
+    if (points >= 220) return '220 - 249 Band';
+    if (points >= 190) return '190 - 219 Band';
+    return '< 180 Band';
+  }
+
   /// Computes a weighted 0-100% CBT readiness score and projects expected exam grade.
-  /// Weights:
-  /// - Syllabus Coverage: 30%
-  /// - FSRS Active Recall Retention: 35%
-  /// - CBT Mock Exam Performance: 25%
-  /// - Time Urgency Balance: 10%
+  /// Each course is evaluated individually toward the collective goal.
   CbtReadinessResult compute({
     required double syllabusCoverage,
     required double fsrsRetentionRate,
@@ -228,6 +305,8 @@ class CbtReadinessCalculator {
     int targetScoreGoal = 300,
     List<SubjectReadinessBreakdown>? subjectBreakdowns,
     List<dynamic>? registeredCourses,
+    Map<String, double>? subjectAccuracies,
+    Map<String, double>? subjectRetentions,
   }) {
     final convertedRegisteredCourses =
         RegisteredCourseInput.convertCourses(registeredCourses);
@@ -272,20 +351,6 @@ class CbtReadinessCalculator {
       speedDiag = 'Time Risk: ${averageSecondsPerQuestion.round()}s/item (Slow)';
     }
 
-    final rawWeighted =
-        (cov * 0.28) +
-        (ret * 0.32) +
-        (mock * 0.25) +
-        (timeFactor * 0.08) +
-        (speedFactor * 0.07);
-    final finalPercent = (rawWeighted * 100).round().clamp(0, 100);
-
-    final String label;
-    final Color color;
-    String grade;
-    String scoreRange;
-    int projectedPoints;
-
     final lowerExam = examType.toLowerCase().trim();
     final isWaecOrNeco =
         lowerExam.contains('waec') ||
@@ -296,112 +361,12 @@ class CbtReadinessCalculator {
         lowerExam.contains('gpa') ||
         lowerExam.contains('degree');
 
-    if (isWaecOrNeco) {
-      projectedPoints = (finalPercent * 0.09).round().clamp(1, 9);
-      if (finalPercent >= 85) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981); // Emerald
-        grade = 'A1';
-        scoreRange = 'A1 (Excellent Distinction)';
-      } else if (finalPercent >= 75) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = 'B2';
-        scoreRange = 'B2 (Very Good)';
-      } else if (finalPercent >= 65) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = 'B3';
-        scoreRange = 'B3 (Good)';
-      } else if (finalPercent >= 55) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = 'C4';
-        scoreRange = 'C4 (Credit)';
-      } else if (finalPercent >= 45) {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = 'C6';
-        scoreRange = 'C6 (Pass Credit)';
-      } else {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = 'F9';
-        scoreRange = 'F9 (Fail / Requires Remediation)';
-      }
-    } else if (isUniversity) {
-      projectedPoints = ((finalPercent / 100.0) * 5.0 * 100).round();
-      if (finalPercent >= 85) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = '4.5+ GPA';
-        scoreRange = 'First Class Honors (4.50 - 5.00)';
-      } else if (finalPercent >= 75) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = '4.0 GPA';
-        scoreRange = 'Second Class Upper (3.50 - 4.49)';
-      } else if (finalPercent >= 65) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = '3.5 GPA';
-        scoreRange = 'Second Class Upper (3.50 - 4.49)';
-      } else if (finalPercent >= 55) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = '3.0 GPA';
-        scoreRange = 'Second Class Lower (2.40 - 3.49)';
-      } else if (finalPercent >= 45) {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = '2.5 GPA';
-        scoreRange = 'Second Class Lower (2.40 - 3.49)';
-      } else {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = '< 2.0 GPA';
-        scoreRange = 'Third Class / Pass';
-      }
-    } else {
-      // Default JAMB 400-point scale
-      projectedPoints = ((finalPercent / 100.0) * 400).round().clamp(100, 380);
-      if (finalPercent >= 85) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = '320+';
-        scoreRange = '$projectedPoints / 400 (320 - 360 Band)';
-      } else if (finalPercent >= 75) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = '280+';
-        scoreRange = '$projectedPoints / 400 (280 - 315 Band)';
-      } else if (finalPercent >= 65) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = '250+';
-        scoreRange = '$projectedPoints / 400 (250 - 279 Band)';
-      } else if (finalPercent >= 55) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = '220+';
-        scoreRange = '$projectedPoints / 400 (220 - 249 Band)';
-      } else if (finalPercent >= 45) {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = '190+';
-        scoreRange = '$projectedPoints / 400 (190 - 219 Band)';
-      } else {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = '< 180';
-        scoreRange = '$projectedPoints / 400 (< 180 Band)';
-      }
-    }
-
     // Build subject breakdowns based on registered courses if available
     final List<SubjectReadinessBreakdown> effectiveSubjectBreakdowns;
     RegisteredCourseInput? weakestCourseInput;
     var lowestCourseReadinessVal = 101;
+    var totalProjectedPoints = 0;
+    var totalMaxPoints = 0;
 
     if (convertedRegisteredCourses.isNotEmpty) {
       final breakdowns = <SubjectReadinessBreakdown>[];
@@ -412,9 +377,18 @@ class CbtReadinessCalculator {
                 ? course.courseCode.trim()
                 : 'Registered Course');
 
+        final resolvedPerf = _resolveCoursePerformance(
+          course: course,
+          subjectAccuracies: subjectAccuracies,
+          subjectRetentions: subjectRetentions,
+        );
+
         final courseCov = course.syllabusCoverage.clamp(0.0, 1.0);
-        final courseAcc = (course.accuracyPercent ?? mock).clamp(0.0, 1.0);
-        final courseRet = (course.retentionRate ?? ret).clamp(0.0, 1.0);
+        // Each course MUST be evaluated individually. If no specific quiz/session
+        // activity has been completed for this course, default accuracy and retention to 0.0 (unattempted)
+        // rather than inheriting another course's score.
+        final courseAcc = (resolvedPerf?.accuracy ?? 0.0).clamp(0.0, 1.0);
+        final courseRet = (resolvedPerf?.retention ?? 0.0).clamp(0.0, 1.0);
 
         final courseReadinessVal =
             ((courseCov * 0.40) + (courseAcc * 0.35) + (courseRet * 0.25)) * 100;
@@ -436,6 +410,9 @@ class CbtReadinessCalculator {
                   .round()
                   .clamp(0, subjectMaxScore);
         }
+
+        totalProjectedPoints += subjectProjectedScore;
+        totalMaxPoints += subjectMaxScore;
 
         final Color statusColor;
         if (courseReadinessPercent >= 75) {
@@ -469,11 +446,140 @@ class CbtReadinessCalculator {
           subjectBreakdowns ??
           _generateDefaultSubjectBreakdowns(
             examType: examType,
-            overallScorePercent: finalPercent,
+            overallScorePercent: (cov * 100).round(),
             cov: cov,
             ret: ret,
             mock: mock,
           );
+    }
+
+    final int finalPercent;
+    int projectedPoints;
+
+    if (convertedRegisteredCourses.isNotEmpty && totalMaxPoints > 0) {
+      projectedPoints = totalProjectedPoints;
+      finalPercent =
+          ((totalProjectedPoints / totalMaxPoints) * 100).round().clamp(0, 100);
+    } else {
+      final rawWeighted =
+          (cov * 0.28) +
+          (ret * 0.32) +
+          (mock * 0.25) +
+          (timeFactor * 0.08) +
+          (speedFactor * 0.07);
+      finalPercent = (rawWeighted * 100).round().clamp(0, 100);
+      projectedPoints = isWaecOrNeco
+          ? (finalPercent * 0.09).round().clamp(1, 9)
+          : (isUniversity
+              ? ((finalPercent / 100.0) * 5.0 * 100).round()
+              : ((finalPercent / 100.0) * 400).round().clamp(0, 400));
+    }
+
+    final String label;
+    final Color color;
+    String grade;
+    String scoreRange;
+
+    if (isWaecOrNeco) {
+      if (finalPercent >= 85) {
+        label = 'ON TRACK';
+        color = const Color(0xFF10B981); // Emerald
+        grade = 'A1';
+        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (A1 - Excellent)';
+      } else if (finalPercent >= 75) {
+        label = 'ON TRACK';
+        color = const Color(0xFF10B981);
+        grade = 'B2';
+        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (B2 - Very Good)';
+      } else if (finalPercent >= 65) {
+        label = 'ACCELERATE PREP';
+        color = const Color(0xFFF59E0B);
+        grade = 'B3';
+        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (B3 - Good)';
+      } else if (finalPercent >= 55) {
+        label = 'ACCELERATE PREP';
+        color = const Color(0xFFF59E0B);
+        grade = 'C4';
+        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (C4 - Credit)';
+      } else if (finalPercent >= 45) {
+        label = 'NEEDS TRIAGE';
+        color = const Color(0xFFEF4444);
+        grade = 'C6';
+        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (C6 - Pass Credit)';
+      } else {
+        label = 'NEEDS TRIAGE';
+        color = const Color(0xFFEF4444);
+        grade = 'F9';
+        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (F9 / Requires Remediation)';
+      }
+    } else if (isUniversity) {
+      final gpaVal = (finalPercent / 100.0) * 5.0;
+      if (finalPercent >= 85) {
+        label = 'ON TRACK';
+        color = const Color(0xFF10B981);
+        grade = '${gpaVal.toStringAsFixed(2)} GPA';
+        scoreRange = 'First Class Honors (${gpaVal.toStringAsFixed(2)} / 5.00)';
+      } else if (finalPercent >= 75) {
+        label = 'ON TRACK';
+        color = const Color(0xFF10B981);
+        grade = '${gpaVal.toStringAsFixed(2)} GPA';
+        scoreRange = 'Second Class Upper (${gpaVal.toStringAsFixed(2)} / 5.00)';
+      } else if (finalPercent >= 65) {
+        label = 'ACCELERATE PREP';
+        color = const Color(0xFFF59E0B);
+        grade = '${gpaVal.toStringAsFixed(2)} GPA';
+        scoreRange = 'Second Class Upper (${gpaVal.toStringAsFixed(2)} / 5.00)';
+      } else if (finalPercent >= 55) {
+        label = 'ACCELERATE PREP';
+        color = const Color(0xFFF59E0B);
+        grade = '${gpaVal.toStringAsFixed(2)} GPA';
+        scoreRange = 'Second Class Lower (${gpaVal.toStringAsFixed(2)} / 5.00)';
+      } else if (finalPercent >= 45) {
+        label = 'NEEDS TRIAGE';
+        color = const Color(0xFFEF4444);
+        grade = '${gpaVal.toStringAsFixed(2)} GPA';
+        scoreRange = 'Second Class Lower (${gpaVal.toStringAsFixed(2)} / 5.00)';
+      } else {
+        label = 'NEEDS TRIAGE';
+        color = const Color(0xFFEF4444);
+        grade = '< 2.0 GPA';
+        scoreRange = 'Third Class / Pass (${gpaVal.toStringAsFixed(2)} / 5.00)';
+      }
+    } else {
+      // Default JAMB 400-point scale
+      final maxTarget = totalMaxPoints > 0 ? totalMaxPoints : 400;
+      final bandStr = _getJambBandString(projectedPoints);
+      if (finalPercent >= 85) {
+        label = 'ON TRACK';
+        color = const Color(0xFF10B981);
+        grade = '320+';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+      } else if (finalPercent >= 75) {
+        label = 'ON TRACK';
+        color = const Color(0xFF10B981);
+        grade = '280+';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+      } else if (finalPercent >= 65) {
+        label = 'ACCELERATE PREP';
+        color = const Color(0xFFF59E0B);
+        grade = '250+';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+      } else if (finalPercent >= 55) {
+        label = 'ACCELERATE PREP';
+        color = const Color(0xFFF59E0B);
+        grade = '220+';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+      } else if (finalPercent >= 45) {
+        label = 'NEEDS TRIAGE';
+        color = const Color(0xFFEF4444);
+        grade = '190+';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+      } else {
+        label = 'NEEDS TRIAGE';
+        color = const Color(0xFFEF4444);
+        grade = '< 180';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+      }
     }
 
     // Determine primary bottleneck diagnostic

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -7,9 +8,11 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 
 /// AutoRouter guard directing users based on their active authentication
 /// and onboarding session status.
@@ -20,7 +23,7 @@ class AuthRouteGuard extends AutoRouteGuard {
   final UserStorageService _userStorageService;
 
   @override
-  void onNavigation(NavigationResolver resolver, StackRouter router) {
+  Future<void> onNavigation(NavigationResolver resolver, StackRouter router) async {
     final currentRouteName = resolver.routeName;
 
     // SplashRoute is always unconditionally accessible
@@ -50,6 +53,8 @@ class AuthRouteGuard extends AutoRouteGuard {
     // 2. User has an active token or session: route appropriately
     switch (status) {
       case AuthSessionStatus.authenticatedNeedsOnboarding:
+        final serverSaysOnboarded =
+            _authBloc.state.userProfile?.isOnboarded ?? false;
         final isCalibratedLocally = () {
           try {
             final storage = locator<LocalStorageService>();
@@ -75,13 +80,51 @@ class AuthRouteGuard extends AutoRouteGuard {
           return false;
         }();
 
-        if (isCalibratedLocally) {
+        var isCalibrated = serverSaysOnboarded || isCalibratedLocally;
+
+        if (!isCalibrated && locator.isRegistered<AuthRepository>()) {
+          try {
+            final profileRes = await locator<AuthRepository>().getUserProfile();
+            profileRes.fold(
+              (_) {},
+              (profile) {
+                if (profile.isOnboarded) {
+                  isCalibrated = true;
+                }
+              },
+            );
+          } on Object catch (_) {}
+        }
+
+        if (!isCalibrated && locator.isRegistered<DashboardRepository>()) {
+          try {
+            final coursesRes =
+                await locator<DashboardRepository>().getUserCuratedCourses();
+            coursesRes.fold(
+              (_) {},
+              (courses) {
+                if (courses.isNotEmpty) {
+                  isCalibrated = true;
+                }
+              },
+            );
+          } on Object catch (_) {}
+        }
+
+        if (isCalibrated) {
+          try {
+            final storage = locator<LocalStorageService>();
+            await storage.savePreference(
+              key: PrefKeys.hasCompletedOnboarding,
+              data: 'true',
+            );
+          } on Object catch (_) {}
           _authBloc.add(
             const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
           );
           if (currentRouteName == AuthRoute.name ||
               currentRouteName == OnboardingRoute.name ||
-          currentRouteName == ForgotPasswordRoute.name ||
+              currentRouteName == ForgotPasswordRoute.name ||
               currentRouteName == OnboardingCalibrationRoute.name) {
             resolver.next(false);
             unawaited(router.replace(const MainRoute()));

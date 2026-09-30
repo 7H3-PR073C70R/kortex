@@ -196,5 +196,65 @@ void main() {
       expect(result.subjectBreakdowns.first.subjectName, equals('General Biology'));
       expect(result.subjectBreakdowns.first.coveragePercent, equals(0.85));
     });
+
+    test('Evaluates courses individually and does not bleed score from one course to unattempted courses', () {
+      final courses = [
+        const RegisteredCourseInput(
+          courseCode: 'MTH',
+          title: 'Mathematics',
+          syllabusCoverage: 0.0,
+          accuracyPercent: 0.32,
+          retentionRate: 0.32,
+        ),
+        const RegisteredCourseInput(
+          courseCode: 'ENG',
+          title: 'English Language',
+          syllabusCoverage: 0.0,
+        ),
+        const RegisteredCourseInput(
+          courseCode: 'YOR',
+          title: 'Yoruba',
+          syllabusCoverage: 0.0,
+        ),
+        const RegisteredCourseInput(
+          courseCode: 'ARB',
+          title: 'Arabic',
+          syllabusCoverage: 0.0,
+        ),
+      ];
+
+      final result = calculator.compute(
+        syllabusCoverage: 0.0,
+        fsrsRetentionRate: 0.32,
+        mockScoreRatio: 0.32,
+        daysRemaining: 14,
+        registeredCourses: courses,
+      );
+
+      expect(result.subjectBreakdowns.length, equals(4));
+
+      final math = result.subjectBreakdowns.firstWhere((s) => s.subjectName == 'Mathematics');
+      final eng = result.subjectBreakdowns.firstWhere((s) => s.subjectName == 'English Language');
+      final yor = result.subjectBreakdowns.firstWhere((s) => s.subjectName == 'Yoruba');
+      final arb = result.subjectBreakdowns.firstWhere((s) => s.subjectName == 'Arabic');
+
+      // Math has its own recorded performance
+      expect(math.accuracyPercent, equals(0.32));
+      expect(math.projectedScore, equals(19));
+
+      // Unattempted courses remain at 0% performance instead of copying Math
+      expect(eng.accuracyPercent, equals(0.0));
+      expect(eng.projectedScore, equals(0));
+
+      expect(yor.accuracyPercent, equals(0.0));
+      expect(yor.projectedScore, equals(0));
+
+      expect(arb.accuracyPercent, equals(0.0));
+      expect(arb.projectedScore, equals(0));
+
+      // Total projected score is sum of individual courses (19 + 0 + 0 + 0 = 19 / 400)
+      expect(result.projectedTotalScore, equals(19));
+      expect(result.projectedScoreRange, contains('19 / 400'));
+    });
   });
 }

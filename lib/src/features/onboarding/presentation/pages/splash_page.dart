@@ -12,6 +12,7 @@ import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
@@ -164,6 +165,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     final authBloc = locator<AuthBloc>();
 
     // Pre-flight check: verify token against server if auth repository is available
+    UserProfileEntity? preflightProfile;
     if (locator.isRegistered<AuthRepository>()) {
       try {
         final profileResult = await locator<AuthRepository>().getUserProfile();
@@ -176,7 +178,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 msg.contains('invalid token') ||
                 msg.contains('401');
           },
-          (_) => false,
+          (profile) {
+            preflightProfile = profile;
+            return false;
+          },
         );
 
         if (isSessionInvalid) {
@@ -196,9 +201,9 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       }
     }
 
-    // 1. Fast check: server-verified auth bloc user profile
-    final serverSaysOnboarded =
-        authBloc.state.userProfile?.isOnboarded ?? false;
+    // 1. Fast check: server-verified auth bloc user profile or pre-flight profile
+    final serverSaysOnboarded = (preflightProfile?.isOnboarded ?? false) ||
+        (authBloc.state.userProfile?.isOnboarded ?? false);
 
     // 2. Local pref key (persisted by CalibrationLocalDataSourceImpl.saveCalibrationProfile)
     var localSaysOnboarded = false;

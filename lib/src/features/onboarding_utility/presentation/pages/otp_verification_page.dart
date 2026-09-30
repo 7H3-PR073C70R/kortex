@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,13 +9,20 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
+import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/features/onboarding_utility/presentation/bloc/otp_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -73,12 +82,89 @@ class _OtpView extends HookWidget {
     return BlocListener<OtpCubit, OtpState>(
       listener: (context, state) async {
         if (state.isVerified) {
-          final calibRepo = locator<CalibrationRepository>();
-          final calibResult = await calibRepo.getCalibrationProfile();
-          final isCalibrated = calibResult.fold(
-            (_) => false,
-            (profile) => profile?.isCalibrated ?? false,
-          );
+          final authBloc = locator<AuthBloc>();
+          var serverSaysOnboarded =
+              authBloc.state.userProfile?.isOnboarded ?? false;
+
+          var localSaysOnboarded = false;
+          try {
+            final storage = locator<LocalStorageService>();
+            localSaysOnboarded =
+                storage.getPreference(key: PrefKeys.hasCompletedOnboarding) ==
+                'true';
+          } on Object catch (_) {}
+
+          var calibSaysOnboarded = false;
+          if (!serverSaysOnboarded && !localSaysOnboarded) {
+            final calibRepo = locator<CalibrationRepository>();
+            final calibResult = await calibRepo.getCalibrationProfile();
+            calibSaysOnboarded = calibResult.fold(
+              (_) => false,
+              (profile) => profile?.isCalibrated ?? false,
+            );
+          }
+
+          var coursesSayOnboarded = false;
+          if (!serverSaysOnboarded &&
+              !localSaysOnboarded &&
+              !calibSaysOnboarded) {
+            try {
+              final storage = locator<LocalStorageService>();
+              final rawCourses = storage.getPreference(
+                key: PrefKeys.userCuratedCourses,
+              );
+              if (rawCourses != null && rawCourses.isNotEmpty) {
+                final list = jsonDecode(rawCourses) as List<dynamic>;
+                if (list.isNotEmpty) coursesSayOnboarded = true;
+              }
+            } on Object catch (_) {}
+
+            if (!coursesSayOnboarded &&
+                locator.isRegistered<AuthRepository>()) {
+              try {
+                final profileRes = await locator<AuthRepository>().getUserProfile();
+                profileRes.fold(
+                  (_) {},
+                  (profile) {
+                    if (profile.isOnboarded) serverSaysOnboarded = true;
+                  },
+                );
+              } on Object catch (_) {}
+            }
+
+            if (!coursesSayOnboarded &&
+                !serverSaysOnboarded &&
+                locator.isRegistered<DashboardRepository>()) {
+              try {
+                final dashRepo = locator<DashboardRepository>();
+                final coursesRes = await dashRepo.getUserCuratedCourses();
+                coursesSayOnboarded = coursesRes.fold(
+                  (_) => false,
+                  (courses) => courses.isNotEmpty,
+                );
+              } on Object catch (_) {}
+            }
+          }
+
+          final isCalibrated =
+              serverSaysOnboarded ||
+              localSaysOnboarded ||
+              calibSaysOnboarded ||
+              coursesSayOnboarded;
+
+          if (isCalibrated) {
+            try {
+              final storage = locator<LocalStorageService>();
+              await storage.savePreference(
+                key: PrefKeys.hasCompletedOnboarding,
+                data: 'true',
+              );
+              authBloc.add(
+                const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
+              );
+            } on Object catch (_) {}
+          }
+
           if (context.mounted) {
             if (isCalibrated) {
               unawaited(context.router.replaceAll([const MainRoute()]));

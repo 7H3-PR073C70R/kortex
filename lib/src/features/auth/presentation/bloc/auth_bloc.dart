@@ -128,6 +128,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             effectiveProfile.subscriptionTier.toLowerCase() != 'pro') {
           effectiveProfile = effectiveProfile.copyWith(subscriptionTier: 'pro');
         }
+        if (isOnboarded) {
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.hasCompletedOnboarding,
+                data: 'true',
+              ),
+            );
+          } on Object catch (_) {}
+        }
         if (isOnboarded && !profile.isOnboarded) {
           try {
             unawaited(

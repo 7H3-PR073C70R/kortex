@@ -11,6 +11,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/social_auth_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
@@ -97,6 +98,7 @@ class AuthNavigationListener extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
+        final authBloc = context.read<AuthBloc>();
         final isChatMode = context.read<AuthModeCubit>().state.isChat;
 
         final isNewlyRegistered =
@@ -106,21 +108,15 @@ class AuthNavigationListener extends StatelessWidget {
                 ) ==
                 'true';
 
-        if (state.status == AuthStatus.needsOnboarding && state.user != null) {
+        if ((state.status == AuthStatus.needsOnboarding || state.isAuthenticated) &&
+            state.user != null) {
           if (!isChatMode) {
             if (isNewlyRegistered) {
               context.showSnackBar(
-                message: context.l10n.authAccountCreatedWelcome,
+                message: state.status == AuthStatus.needsOnboarding
+                    ? context.l10n.authAccountCreatedWelcome
+                    : context.l10n.authSuccessMessage,
               );
-            }
-            unawaited(
-              context.router.replace(const OnboardingCalibrationRoute()),
-            );
-          }
-        } else if (state.isAuthenticated) {
-          if (!isChatMode) {
-            if (isNewlyRegistered) {
-              context.showSnackBar(message: context.l10n.authSuccessMessage);
             } else {
               context.showSnackBar(message: 'Signed in successfully');
             }
@@ -193,6 +189,9 @@ class AuthNavigationListener extends StatelessWidget {
                     key: PrefKeys.hasCompletedOnboarding,
                     data: 'true',
                   ),
+                );
+                authBloc.add(
+                  const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
                 );
               } on Object catch (_) {}
             }

@@ -57,6 +57,8 @@ class CuratedCourseEntity extends Equatable {
     required this.colorHex,
     this.pdfDownloadUrl,
     this.syllabusCoverage = 0.75,
+    this.accuracyPercent,
+    this.retentionRate,
   });
 
   final String id;
@@ -69,6 +71,8 @@ class CuratedCourseEntity extends Equatable {
   final String colorHex;
   final String? pdfDownloadUrl;
   final double syllabusCoverage;
+  final double? accuracyPercent;
+  final double? retentionRate;
 
   @override
   List<Object?> get props => [
@@ -82,6 +86,8 @@ class CuratedCourseEntity extends Equatable {
     colorHex,
     pdfDownloadUrl,
     syllabusCoverage,
+    accuracyPercent,
+    retentionRate,
   ];
 }
 
