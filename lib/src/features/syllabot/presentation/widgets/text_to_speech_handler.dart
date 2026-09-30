@@ -197,7 +197,16 @@ class TextToSpeechHandler {
       final nextSentence = _sentenceQueue.removeAt(0);
       // Ensure in-flight session was not aborted
       if (sessionId == _activeSessionId) {
-        unawaited(_flutterTts.speak(nextSentence));
+        final pauseMs = _config.sentencePauseMs;
+        if (pauseMs > 0) {
+          Future.delayed(Duration(milliseconds: pauseMs), () {
+            if (sessionId == _activeSessionId) {
+              unawaited(_flutterTts.speak(nextSentence));
+            }
+          });
+        } else {
+          unawaited(_flutterTts.speak(nextSentence));
+        }
       }
     } else {
       _setSpeakingState(false);

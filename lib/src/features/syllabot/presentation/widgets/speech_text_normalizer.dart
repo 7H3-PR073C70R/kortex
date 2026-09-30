@@ -286,14 +286,16 @@ class SpeechTextNormalizer {
     return n.toString();
   }
 
-  /// Splits normalized text into natural, cadence-friendly chunks (100–180 chars)
-  /// ensuring synthesis starts immediately without mid-sentence chops.
+  /// Splits normalized text into natural, cadence-friendly sentence and clause chunks.
+  ///
+  /// Keeps sentences distinct (or splits long sentences along clause boundaries)
+  /// so synthesis takes natural human breathing pauses rather than reading long paragraph blocks.
   static List<String> splitIntoChunks(String text) {
     final clean = text.trim();
     if (clean.isEmpty) return [];
 
-    // Split on sentence-ending punctuation while retaining the delimiter
-    final sentencePattern = RegExp(r'(?<=[.!?])\s+');
+    // Split on sentence-ending punctuation (. ! ?) or paragraph linebreaks
+    final sentencePattern = RegExp(r'(?<=[.!?])\s+|\n+');
     final rawSentences = clean.split(sentencePattern);
 
     final chunks = <String>[];
@@ -303,8 +305,8 @@ class SpeechTextNormalizer {
       final s = raw.trim();
       if (s.isEmpty) continue;
 
-      // If a single sentence exceeds 180 characters, split on clause boundaries (, ; :)
-      if (s.length > 180) {
+      // If a single sentence is long (> 100 characters), split along clause pauses (, ; :)
+      if (s.length > 100) {
         final clauseParts = s.split(RegExp(r'(?<=[,;:])\s+'));
         for (final clause in clauseParts) {
           final c = clause.trim();
@@ -312,7 +314,7 @@ class SpeechTextNormalizer {
 
           if (buffer.isEmpty) {
             buffer.write(c);
-          } else if (buffer.length + c.length + 1 > 160) {
+          } else if (buffer.length + c.length + 1 > 80) {
             chunks.add(buffer.toString());
             buffer
               ..clear()
@@ -322,9 +324,10 @@ class SpeechTextNormalizer {
           }
         }
       } else {
+        // For distinct human speech, keep sentences separate unless combining very short phrases (total <= 50 chars)
         if (buffer.isEmpty) {
           buffer.write(s);
-        } else if (buffer.length + s.length + 1 > 150) {
+        } else if (buffer.length + s.length + 1 > 50) {
           chunks.add(buffer.toString());
           buffer
             ..clear()

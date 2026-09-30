@@ -76,22 +76,25 @@ void main() {
   });
 
   group('TtsConfig', () {
-    test('creates valid calibrated platform defaults', () {
+    test('creates valid calibrated platform defaults with sentencePauseMs', () {
       final config = TtsConfig.forCurrentPlatform();
       expect(config.pitch, equals(1.0));
       expect(config.volume, equals(1.0));
+      expect(config.sentencePauseMs, equals(250));
       expect(config.effectiveSpeechRate, greaterThan(0));
       expect(config.effectiveSpeechRate, lessThan(2.0));
     });
 
-    test('copyWith updates fields correctly', () {
+    test('copyWith updates fields correctly including sentencePauseMs', () {
       final initial = TtsConfig.forCurrentPlatform();
       final updated = initial.copyWith(
         gender: VoiceGender.male,
         speechRateMultiplier: 1.2,
+        sentencePauseMs: 300,
       );
       expect(updated.gender, equals(VoiceGender.male));
       expect(updated.speechRateMultiplier, equals(1.2));
+      expect(updated.sentencePauseMs, equals(300));
     });
   });
 }
