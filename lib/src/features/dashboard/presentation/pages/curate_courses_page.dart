@@ -84,12 +84,6 @@ class _CurateCoursesViewState extends State<_CurateCoursesView> {
       'Sciences',
       'Commercial',
       'Arts',
-      'Computer Science',
-      'Engineering',
-      'Medicine & Health',
-      'Law & Legal Studies',
-      'Business & Management',
-      'Social Sciences',
     ];
   }
 
@@ -709,7 +703,7 @@ class _CourseSelectTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          course.department,
+                          course.department.split('-').last.trim(),
                           style: typography.footnote.regular.copyWith(
                             color: colors.textSecondary,
                             fontSize: 11.5,

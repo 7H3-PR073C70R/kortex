@@ -501,7 +501,8 @@ class _CompactDashboardLayout extends StatelessWidget {
                     'tour_header_profile',
                   ),
                   analytics: feed.analyticsSummary,
-                  isProfileUncalibrated: feed.isProfileUncalibrated,
+                  isProfileUncalibrated:
+                      feed.isProfileUncalibratedFor(targetTrack),
                   userName: userName,
                   userPhotoUrl: userPhotoUrl,
                 ),
@@ -1200,7 +1201,8 @@ class _MediumDashboardLayout extends StatelessWidget {
           <Widget>[
                 HeaderProfileBar(
                   analytics: feed.analyticsSummary,
-                  isProfileUncalibrated: feed.isProfileUncalibrated,
+                  isProfileUncalibrated:
+                      feed.isProfileUncalibratedFor(targetTrack),
                   userName: userName,
                   userPhotoUrl: userPhotoUrl,
                 ),
@@ -1355,7 +1357,8 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     // 1. Identity & Retention Anchor Header
                     HeaderProfileBar(
                       analytics: feed.analyticsSummary,
-                      isProfileUncalibrated: feed.isProfileUncalibrated,
+                      isProfileUncalibrated:
+                          feed.isProfileUncalibratedFor(targetTrack),
                       userName: userName,
                       userPhotoUrl: userPhotoUrl,
                     ),

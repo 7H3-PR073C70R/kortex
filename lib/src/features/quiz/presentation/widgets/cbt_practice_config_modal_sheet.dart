@@ -245,10 +245,11 @@ class CbtPracticeConfigModalSheet extends HookWidget {
           ? null
           : (isExam.value ? quizQuestions.length : null);
 
+      final router = context.router;
       Navigator.of(context).pop();
 
       unawaited(
-        context.router.push(
+        router.push(
           QuizWorkspaceRoute(
             deckId: 'cbt_${courseId}_${DateTime.now().millisecondsSinceEpoch}',
             deckTitle: isMillionaire.value

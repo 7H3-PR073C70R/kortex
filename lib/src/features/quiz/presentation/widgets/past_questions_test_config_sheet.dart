@@ -290,10 +290,11 @@ void showPastQuestionsTestConfigSheet(
                                         ? '${state.selectedExam.displayName} Mixed Past Papers'
                                         : '${state.selectedExam.displayName} $selectedYear Past Paper');
 
+                              final router = context.router;
                               Navigator.of(context).pop();
 
                               unawaited(
-                                context.router.push(
+                                router.push(
                                   QuizWorkspaceRoute(
                                     deckId:
                                         'cbt_${state.selectedExam.code}_${isRandomSelection ? "random" : selectedYear}',
