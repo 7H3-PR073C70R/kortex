@@ -68,6 +68,20 @@ class SyllabotAiSettingsPage extends HookWidget {
       return 1.0;
     }();
 
+    final initialPitch = () {
+      final raw = storage?.getPreference(key: PrefKeys.syllabotVoicePitch);
+      if (raw != null) {
+        final parsed = double.tryParse(raw);
+        if (parsed != null && parsed > 0) return parsed;
+      }
+      return 1.0;
+    }();
+
+    final initialVoiceName = () {
+      final raw = storage?.getPreference(key: PrefKeys.syllabotVoiceName);
+      return (raw != null && raw.isNotEmpty) ? raw : null;
+    }();
+
     final initialPersona = () {
       final raw = storage?.getPreference(key: '__syllabot_tutor_persona');
       return raw ?? 'Socratic Tutor';
@@ -76,8 +90,12 @@ class SyllabotAiSettingsPage extends HookWidget {
     final socraticMode = useState<SocraticMode>(initialMode);
     final voiceGender = useState<VoiceGender>(initialGender);
     final speechRate = useState<double>(initialRate);
+    final speechPitch = useState<double>(initialPitch);
+    final selectedVoiceName = useState<String?>(initialVoiceName);
     final tutorPersona = useState<String>(initialPersona);
     final isPlayingPreview = useState<bool>(false);
+    final availableVoices = useState<List<Map<String, dynamic>>>([]);
+    final isLoadingVoices = useState<bool>(true);
 
     final ttsHandler = useMemoized(
       () => TextToSpeechHandler(
@@ -90,6 +108,12 @@ class SyllabotAiSettingsPage extends HookWidget {
     );
 
     useEffect(() {
+      unawaited(
+        ttsHandler.getAvailableVoices().then((voices) {
+          availableVoices.value = voices;
+          isLoadingVoices.value = false;
+        }),
+      );
       return ttsHandler.stop;
     }, const []);
 
@@ -491,6 +515,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   AppFeedback.selection();
                                   final g = set.first;
                                   voiceGender.value = g;
+                                  selectedVoiceName.value = null;
                                   if (storage != null) {
                                     unawaited(
                                       storage.savePreference(
@@ -567,6 +592,207 @@ class SyllabotAiSettingsPage extends HookWidget {
                             ),
                           ],
                         ),
+                        const Divider(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Pitch Tuning',
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            AppSpacing.horizontalSpaceMedium,
+
+                            Expanded(
+                              child: SegmentedButton<double>(
+                                showSelectedIcon: false,
+                                segments: [
+                                  ButtonSegment(
+                                    value: 0.9,
+                                    label: Text(
+                                      'Warm (0.9x)',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                  ButtonSegment(
+                                    value: 1,
+                                    label: Text(
+                                      'Natural',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                  ButtonSegment(
+                                    value: 1.1,
+                                    label: Text(
+                                      'Crisp (1.1x)',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                selected: {speechPitch.value},
+                                onSelectionChanged: (set) {
+                                  AppFeedback.selection();
+                                  final p = set.first;
+                                  speechPitch.value = p;
+                                  if (storage != null) {
+                                    unawaited(
+                                      storage.savePreference(
+                                        key: PrefKeys.syllabotVoicePitch,
+                                        data: p.toString(),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!isLoadingVoices.value && availableVoices.value.isNotEmpty) ...[
+                          const Divider(height: 24),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'SPECIFIC NEURAL ENGINE VOICE',
+                                style: typography.caption.bold.copyWith(
+                                  color: colors.textSecondary.withAlpha(140),
+                                  fontSize: 10,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              DropdownButtonFormField<String?>(
+                                initialValue: selectedVoiceName.value,
+                                isExpanded: true,
+                                decoration: InputDecoration(
+                                  filled: true,
+                                  fillColor: colors.surfaceSecondary,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  border: OutlineInputBorder(
+                                    borderRadius: AppRadius.radiusCard,
+                                    borderSide: BorderSide(color: colors.surfaceBorder.withAlpha(80)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: AppRadius.radiusCard,
+                                    borderSide: BorderSide(color: colors.surfaceBorder.withAlpha(80)),
+                                  ),
+                                ),
+                                style: typography.body.regular.copyWith(
+                                  color: colors.textPrimary,
+                                  fontSize: 13,
+                                ),
+                                dropdownColor: colors.surfacePrimary,
+                                items: [
+                                  DropdownMenuItem<String?>(
+                                    child: Text(
+                                      '✨ Auto-Select Best Device Neural Voice',
+                                      style: typography.body.bold.copyWith(color: colors.primary, fontSize: 12.5),
+                                    ),
+                                  ),
+                                  ...availableVoices.value.map((v) {
+                                    final name = v['name'] as String;
+                                    final isNeural = v['isNeural'] as bool;
+                                    return DropdownMenuItem<String?>(
+                                      value: name,
+                                      child: Text(
+                                        '${isNeural ? '⚡ ' : ''}$name (${v['locale']})',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ],
+                                onChanged: (val) {
+                                  AppFeedback.selection();
+                                  selectedVoiceName.value = val;
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        // Interactive "Test Selected Voice Mode" Banner Card
+                        ShrinkableButton(
+                          onTap: () async {
+                            AppFeedback.light();
+                            if (isPlayingPreview.value) {
+                              await ttsHandler.stop();
+                            } else {
+                              await ttsHandler.setSpeechRate(speechRate.value);
+                              await ttsHandler.setVoicePitch(speechPitch.value);
+                              await ttsHandler.setVoiceGender(voiceGender.value);
+                              await ttsHandler.setVoiceName(selectedVoiceName.value);
+                              await ttsHandler.speak(
+                                'Hello scholar! This is your custom neural voice mode preview for Syllabot AI.',
+                              );
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isPlayingPreview.value
+                                  ? colors.error.withAlpha(30)
+                                  : colors.primary.withAlpha(isDark ? 40 : 20),
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: isPlayingPreview.value ? colors.error : colors.primary.withAlpha(90),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: isPlayingPreview.value ? colors.error : colors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isPlayingPreview.value ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                                    color: colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isPlayingPreview.value ? 'Speaking Sample...' : 'Test Selected Voice Mode',
+                                        style: typography.body.bold.copyWith(
+                                          color: isPlayingPreview.value ? colors.error : colors.primary,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Click to preview human voice audio synthesis',
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -637,6 +863,14 @@ class SyllabotAiSettingsPage extends HookWidget {
                             data: speechRate.value.toString(),
                           );
                           await storage.savePreference(
+                            key: PrefKeys.syllabotVoicePitch,
+                            data: speechPitch.value.toString(),
+                          );
+                          await storage.savePreference(
+                            key: PrefKeys.syllabotVoiceName,
+                            data: selectedVoiceName.value ?? '',
+                          );
+                          await storage.savePreference(
                             key: '__syllabot_tutor_persona',
                             data: tutorPersona.value,
                           );
@@ -644,7 +878,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                         if (context.mounted) {
                           context.showSnackBar(
                             message:
-                                'Syllabot AI preferences updated successfully!',
+                                'Syllabot AI neural voice preferences updated successfully!',
                             type: SnackBarType.success,
                           );
                           Navigator.of(context).pop();

@@ -20,6 +20,8 @@ class PrefKeys {
   static const String syllabotSocraticMode =
       '__kortex_syllabot_socratic_mode__';
   static const String syllabotVoiceGender = '__kortex_syllabot_voice_gender__';
+  static const String syllabotVoiceName = '__kortex_syllabot_voice_name__';
+  static const String syllabotVoicePitch = '__kortex_syllabot_voice_pitch__';
   static const String syllabotSpeechRate = '__kortex_syllabot_speech_rate__';
   static const String pastQuestionBookmarks =
       '__kortex_past_question_bookmarks__';

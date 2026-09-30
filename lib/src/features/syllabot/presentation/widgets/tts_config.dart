@@ -26,6 +26,7 @@ class TtsConfig {
   factory TtsConfig.forCurrentPlatform({
     VoiceGender gender = VoiceGender.female,
     double speechRateMultiplier = 1.0,
+    double pitch = 1.0,
     String language = 'en-US',
   }) {
     final isIos = !kIsWeb && Platform.isIOS;
@@ -37,16 +38,13 @@ class TtsConfig {
         ? (gender == VoiceGender.female ? 0.47 : 0.46)
         : (gender == VoiceGender.female ? 0.82 : 0.80);
 
-    // Keep pitch at 1.0 to preserve natural acoustic vocal tract formants
-    // and prevent metallic/vocoder distortion.
-    const naturalPitch = 1.0;
     const standardVolume = 1.0;
 
     return TtsConfig(
       gender: gender,
       speechRateMultiplier: speechRateMultiplier,
       baseSpeechRate: baseRate,
-      pitch: naturalPitch,
+      pitch: pitch,
       volume: standardVolume,
       language: language,
     );

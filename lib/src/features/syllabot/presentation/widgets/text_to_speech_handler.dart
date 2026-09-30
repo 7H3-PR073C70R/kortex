@@ -42,6 +42,8 @@ class TextToSpeechHandler {
   bool _isSpeaking = false;
   VoiceGender _gender = VoiceGender.female;
   double _speechRate = 1;
+  double _speechPitch = 1;
+  String? _customVoiceName;
   late TtsConfig _config;
 
   final List<String> _sentenceQueue = [];
@@ -54,6 +56,8 @@ class TextToSpeechHandler {
   bool get isSpeaking => _isSpeaking;
   VoiceGender get voiceGender => _gender;
   double get speechRate => _speechRate;
+  double get speechPitch => _speechPitch;
+  String? get customVoiceName => _customVoiceName;
   TtsConfig get config => _config;
   bool get hasQueuedSentences =>
       _sentenceQueue.isNotEmpty || _isProcessingQueue;
@@ -140,12 +144,28 @@ class TextToSpeechHandler {
             _speechRate = parsed;
           }
         }
+        final savedPitch = storage.getPreference(
+          key: PrefKeys.syllabotVoicePitch,
+        );
+        if (savedPitch != null) {
+          final parsedPitch = double.tryParse(savedPitch);
+          if (parsedPitch != null && parsedPitch > 0) {
+            _speechPitch = parsedPitch;
+          }
+        }
+        final savedVoiceName = storage.getPreference(
+          key: PrefKeys.syllabotVoiceName,
+        );
+        if (savedVoiceName != null && savedVoiceName.isNotEmpty) {
+          _customVoiceName = savedVoiceName;
+        }
       }
     } on Object catch (_) {}
 
     _config = TtsConfig.forCurrentPlatform(
       gender: _gender,
       speechRateMultiplier: _speechRate,
+      pitch: _speechPitch,
     );
   }
 
@@ -228,6 +248,89 @@ class TextToSpeechHandler {
     } on Object catch (_) {}
   }
 
+  Future<void> setVoicePitch(double pitch) async {
+    _speechPitch = pitch;
+    _config = _config.copyWith(pitch: pitch);
+    _isConfigured = false;
+    await _applyVoiceConfiguration();
+    try {
+      await _effectiveLocalStorage?.savePreference(
+        key: PrefKeys.syllabotVoicePitch,
+        data: pitch.toString(),
+      );
+    } on Object catch (_) {}
+  }
+
+  Future<void> setVoiceName(String? voiceName) async {
+    _customVoiceName = voiceName;
+    _cachedSelectedVoice = null;
+    _isConfigured = false;
+    await _applyVoiceConfiguration();
+    try {
+      if (voiceName != null && voiceName.isNotEmpty) {
+        await _effectiveLocalStorage?.savePreference(
+          key: PrefKeys.syllabotVoiceName,
+          data: voiceName,
+        );
+      } else {
+        await _effectiveLocalStorage?.savePreference(
+          key: PrefKeys.syllabotVoiceName,
+          data: '',
+        );
+      }
+    } on Object catch (_) {}
+  }
+
+  /// Retrieves available system voices filtered for high quality English synthesis.
+  Future<List<Map<String, dynamic>>> getAvailableVoices() async {
+    try {
+      final rawVoices = await _flutterTts.getVoices.timeout(
+        const Duration(milliseconds: 1500),
+        onTimeout: () => null,
+      );
+      if (rawVoices is! List) return [];
+
+      final qualityKeywords = [
+        'neural',
+        'natural',
+        'enhanced',
+        'premium',
+        'wavenet',
+        'siri',
+        'sfg',
+        'tpc',
+        'iob',
+      ];
+
+      final results = <Map<String, dynamic>>[];
+      for (final dynamic v in rawVoices) {
+        if (v is Map) {
+          final name = v['name']?.toString() ?? '';
+          final locale = v['locale']?.toString() ?? 'en-US';
+          if (!locale.toLowerCase().startsWith('en')) continue;
+
+          final nameLower = name.toLowerCase();
+          final isNeural = qualityKeywords.any(nameLower.contains);
+
+          results.add({
+            'name': name,
+            'locale': locale,
+            'isNeural': isNeural,
+            'gender': nameLower.contains('female') ||
+                    nameLower.contains('ava') ||
+                    nameLower.contains('allison') ||
+                    nameLower.contains('samantha')
+                ? VoiceGender.female
+                : VoiceGender.male,
+          });
+        }
+      }
+      return results;
+    } on Object catch (_) {
+      return [];
+    }
+  }
+
   Future<void> _applyVoiceConfiguration() async {
     if (_isConfigured) return;
     try {
@@ -282,6 +385,21 @@ class TextToSpeechHandler {
           final name = v['name']?.toString() ?? '';
           final locale = v['locale']?.toString() ?? 'en-US';
           voiceList.add({'name': name, 'locale': locale});
+        }
+      }
+
+      // 0. Check for explicit custom voice selection by user
+      if (_customVoiceName != null && _customVoiceName!.isNotEmpty) {
+        final customMatch = voiceList.firstWhere(
+          (v) =>
+              v['name'] == _customVoiceName ||
+              v['name']!.toLowerCase() == _customVoiceName!.toLowerCase(),
+          orElse: () => const {},
+        );
+        if (customMatch.isNotEmpty) {
+          _cachedSelectedVoice = customMatch;
+          await _flutterTts.setVoice(customMatch);
+          return;
         }
       }
 
