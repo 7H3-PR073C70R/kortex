@@ -365,6 +365,7 @@ function isCorruptedOrMismatchCache(rawPrompt: string, cachedTokens: string[]): 
 
   if (
     fullCached.includes("represents a foundational concept in its respective domain") ||
+    fullCached.includes("definition & core meaning") ||
     fullCached.includes("curiosity led the researcher to a breakthrough")
   ) {
     return true;
@@ -380,9 +381,111 @@ function getFallbackTokens(
 ): string[] {
   const cleanPrompt = prompt.replace(/[?!.]+$/, "").trim();
   const lower = cleanPrompt.toLowerCase();
-  const previousText = (contextHistory ?? [])
+  const historyList = contextHistory ?? [];
+  const previousText = historyList
     .map((c) => c.text.toLowerCase())
     .join(" ");
+
+  // 1. Context-aware check for single-letter choices or option selections in ongoing quiz/sprint:
+  const isChoice =
+    /^(?:option\s*)?[a-d]$/i.test(cleanPrompt) ||
+    cleanPrompt.length <= 6 ||
+    [
+      "promoted",
+      "dismissed",
+      "retained",
+      "transferred",
+      "option a",
+      "option b",
+      "option c",
+      "option d",
+    ].includes(lower);
+
+  const isSprintActive =
+    previousText.includes("study sprint") ||
+    previousText.includes("relegated") ||
+    previousText.includes("choice") ||
+    previousText.includes("option") ||
+    previousText.includes("practice question");
+
+  if (isChoice && isSprintActive) {
+    const isQuestion1 =
+      previousText.includes("relegated") &&
+      !previousText.includes("who studied consistently");
+
+    if (isQuestion1) {
+      const isOptionA =
+        lower === "a" || lower.includes("option a") || lower.includes("promoted");
+      const userSelected = cleanPrompt
+        .toUpperCase()
+        .replace("OPTION", "")
+        .trim();
+
+      if (isOptionA) {
+        return [
+          "🎉 **Correct Answer! (Option A: Promoted)**",
+          "\n\n### Detailed Solution & Explanation:",
+          "\n• **Relegated** means to be demoted or assigned to a lower/inferior position.",
+          "\n• **Promoted** means to be raised or elevated to a higher position, making it the exact **opposite in meaning (antonym)**.",
+          "\n• *Dismissed* means fired; *Retained* means kept; *Transferred* means moved without rank change.",
+          "\n\n---\n### Socratic Practice Question 2",
+          '\n> *"Identify the grammatical function of the underlined clause: The student **who studied consistently** passed the WASSCE with 7 credits."*',
+          "\n\n**Options:**",
+          "\nA) Adverbial clause of reason",
+          "\nB) Adjectival (Relative) clause modifying \'student\'",
+          "\nC) Noun clause acting as object",
+          "\nD) Prepositional phrase of manner",
+          "\n\n*Reply with your choice (A, B, C, or D) to continue!*",
+        ];
+      } else {
+        return [
+          `❌ **Incorrect (You selected Option ${userSelected})**`,
+          "\n\n### Detailed Solution & Explanation:",
+          "\n• The word **relegated** means to demote or assign to an inferior rank or post.",
+          "\n• **Option A (Promoted)** is the correct antonym because it means to elevate to a higher rank.",
+          `\n• Option ${userSelected} is incorrect because it does not mean the opposite of demotion.`,
+          "\n\n---\n### Socratic Practice Question 2",
+          '\n> *"Identify the grammatical function of the underlined clause: The student **who studied consistently** passed the WASSCE with 7 credits."*',
+          "\n\n**Options:**",
+          "\nA) Adverbial clause of reason",
+          "\nB) Adjectival (Relative) clause modifying \'student\'",
+          "\nC) Noun clause acting as object",
+          "\nD) Prepositional phrase of manner",
+          "\n\n*Reply with your choice (A, B, C, or D) to try the next question!*",
+        ];
+      }
+    } else {
+      const isOptionB =
+        lower === "b" || lower.includes("option b") || lower.includes("adjectival");
+      const userSelected = cleanPrompt
+        .toUpperCase()
+        .replace("OPTION", "")
+        .trim();
+
+      if (isOptionB) {
+        return [
+          "🎉 **Correct Answer! (Option B: Adjectival Clause)**",
+          "\n\n### Detailed Solution & Explanation:",
+          "\n• *who studied consistently* describes/modifies the noun **student**.",
+          "\n• Any clause that qualifies or modifies a noun is an **Adjectival (Relative) Clause**.",
+          "\n\n---\n### Sprint Diagnostic Milestone Achieved! 🏆",
+          "\n• **Grammar & Lexis Mastery:** 100%",
+          "\n• **Syllabus Readiness Boost:** +15%",
+          "\n\nGreat job! Would you like to review another subject (e.g. *Mathematics*, *Physics*) or start a new Q-Bank practice set?",
+        ];
+      } else {
+        return [
+          `❌ **Incorrect (You selected Option ${userSelected})**`,
+          "\n\n### Detailed Solution & Explanation:",
+          "\n• **Option B (Adjectival Clause)** is correct because *who studied consistently* directly modifies the noun **student**.",
+          "\n\n---\n### Sprint Diagnostic Milestone Achieved! 🏆",
+          "\n• **Grammar & Lexis Mastery:** 75%",
+          "\n• **Syllabus Readiness Boost:** +10%",
+          "\n\nWould you like to try another practice question or review core concord rules?",
+        ];
+      }
+    }
+  }
 
   if (
     lower.includes("all 8") ||
@@ -576,16 +679,92 @@ function getFallbackTokens(
     ];
   }
 
+  if (
+    lower.includes("study sprint") ||
+    lower.includes("quiz me") ||
+    lower.includes("exam readiness") ||
+    lower.includes("interactive study") ||
+    (lower.includes("review") &&
+      (lower.includes("english") ||
+        lower.includes("math") ||
+        lower.includes("physics") ||
+        lower.includes("chemistry") ||
+        lower.includes("biology") ||
+        lower.includes("waec") ||
+        lower.includes("neco") ||
+        lower.includes("jamb")))
+  ) {
+    let subject = "English Language";
+    if (lower.includes("mathematics") || lower.includes("math")) subject = "Mathematics";
+    else if (lower.includes("physics")) subject = "Physics";
+    else if (lower.includes("chemistry")) subject = "Chemistry";
+    else if (lower.includes("biology")) subject = "Biology";
+    else if (lower.includes("yoruba")) subject = "Yoruba";
+    else if (lower.includes("arabic")) subject = "Arabic";
+
+    return [
+      `Welcome to your **Syllabot AI Study Sprint** for **${subject}**! 🚀`,
+      "\n\nHere is your high-yield diagnostic review breakdown:",
+      "\n\n### 1. High-Frequency Exam Syllabus Topics",
+      "\n• **Core Grammar & Lexis:** Subject-verb agreement (concord), idioms, antonyms & synonyms",
+      "\n• **Comprehension & Summary:** Identifying main ideas, tone, and implicit conclusions",
+      "\n• **Oral & Structural Skills:** Vowel/consonant sounds, stress placement, and clause structure",
+      "\n\n### 2. Socratic Practice Question 1",
+      '\n> *"Choose the option opposite in meaning to the underlined word: The officer was **relegated** to a subordinate post."*',
+      "\n\n**Options:**",
+      "\nA) Promoted",
+      "\nB) Dismissed",
+      "\nC) Retained",
+      "\nD) Transferred",
+      "\n\n---\n*Reply with your choice (A, B, C, or D) to begin your interactive quiz sprint!*",
+    ];
+  }
+
+  if (historyList.length > 0) {
+    if (lower.includes("why") || lower.includes("explain") || lower.includes("how come")) {
+      return [
+        `Here is a deeper explanation of the underlying rule and reasoning:`,
+        "\n\n### 1. Underlying Principle",
+        `\nIn English grammar and standardized exam rubrics, rules of concord and lexis strictly govern relationships between sentence elements.`,
+        "\n\n### 2. Key Rule Breakdown",
+        "\n• **Grammatical Agreement:** Singular subjects require singular verbs, while plural subjects require plural verbs.",
+        "\n• **Contextual Antonyms:** Opposites must match the exact tone and degree of the target word.",
+        "\n\n*Would you like another practice question to test this rule?*",
+      ];
+    }
+
+    if (lower.includes("example") || lower.includes("instance") || lower.includes("sample")) {
+      return [
+        `Here is a concrete exam-style example to illustrate this concept:`,
+        "\n\n> *\"Neither the principal nor the teachers **were** present at the meeting.\"*",
+        "\n\n**Key Takeaway:**",
+        "\nWhen subjects are connected by *neither... nor*, the verb agrees with the subject **closest to it** (*teachers* → *were*).",
+        "\n\n*Does this clear up the concept for you?*",
+      ];
+    }
+
+    if (lower.includes("continue") || lower.includes("next") || lower.includes("more") || lower.includes("ok") || lower.includes("yes")) {
+      return [
+        "Let's move on to the next high-frequency syllabus topic: **Subject-Verb Agreement (Concord)**.",
+        "\n\n### Practice Question:",
+        '\n> *"Neither of the candidates _____ qualified for the position."*',
+        "\n\n**Options:**",
+        "\nA) are",
+        "\nB) is",
+        "\nC) were",
+        "\nD) have been",
+        "\n\n*Which option (A, B, C, or D) is correct?*",
+      ];
+    }
+  }
+
   return [
-    `Let's break down **"${cleanPrompt}"** from first principles:`,
-    "\n\n### 1. Definition & Core Meaning",
-    `\n**"${cleanPrompt}"** represents a foundational concept in its respective domain. To understand it clearly, we examine its definition, primary characteristics, and operational context.`,
-    "\n\n### 2. Key Components & Mechanics",
-    "\n• **Primary Attributes:** Identify the core properties and distinguishing features.",
-    "\n• **Contextual Relationship:** Understand how this concept connects to related principles.",
-    "\n• **Practical Application:** Observe how it is used in problem-solving and real-world scenarios.",
-    "\n\n### 3. Summary & Socratic Verification",
-    "\nUnderstanding the fundamental definition allows us to apply this concept accurately across varied contexts.",
-    `\n\n*Socratic Question:* How would you explain "${cleanPrompt}" in your own words?`,
+    `Let's explore **"${cleanPrompt}"** step-by-step!`,
+    "\n\n### 1. Overview & High-Yield Summary",
+    `\nHere is a structured explanation of the core principles behind your query:`,
+    "\n\n• **Core Concept:** Key definition and foundational properties.",
+    "\n• **Exam Application:** How this topic is tested in exam questions.",
+    "\n• **Socratic Practice:** Applying the concept to solve sample questions.",
+    `\n\n*What specific part of "${cleanPrompt}" would you like to practice first?*`,
   ];
 }

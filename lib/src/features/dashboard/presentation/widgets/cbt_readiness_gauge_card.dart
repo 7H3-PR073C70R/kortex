@@ -581,8 +581,12 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                           child: OutlinedButton.icon(
                             onPressed: () {
                               Navigator.pop(context);
+                              final rawWeakest = widget.readinessResult.weakestAreaLabel;
+                              final cleanSubject = rawWeakest.contains('(')
+                                  ? rawWeakest.split('(').first.trim()
+                                  : (rawWeakest.isNotEmpty ? rawWeakest.trim() : 'key concepts');
                               final prompt =
-                                  'Help me review ${widget.readinessResult.weakestAreaLabel.isNotEmpty ? widget.readinessResult.weakestAreaLabel : "key concepts"} to boost my $widget.examTitle readiness score.';
+                                  "Let's do an interactive study sprint for $cleanSubject to boost my ${widget.examTitle} exam readiness. Please quiz me on high-yield syllabus topics and explain core concepts step-by-step.";
                               unawaited(
                                 context.router.push(
                                   SyllabotChatRoute(initialPrompt: prompt),
