@@ -337,7 +337,7 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Diagnostic analysis for $widget.examTitle ($widget.daysRemaining days remaining)',
+                      'Diagnostic analysis for ${widget.examTitle} (${widget.daysRemaining} days remaining)',
                       style: typography.body.medium.copyWith(color: colors.textSecondary),
                     ),
                     const SizedBox(height: 18),
@@ -452,7 +452,9 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                                     ),
                                   ),
                                   Text(
-                                    '${sub.projectedScore} / ${sub.maxScore} pts',
+                                    sub.projectedGrade.isNotEmpty
+                                        ? '${sub.projectedScore} / ${sub.maxScore} pts (${sub.projectedGrade})'
+                                        : '${sub.projectedScore} / ${sub.maxScore} pts',
                                     style: typography.body.bold.copyWith(
                                       color: sub.statusColor ?? colors.primary,
                                     ),

@@ -13,6 +13,7 @@ class SubjectReadinessBreakdown {
     required this.accuracyPercent,
     required this.projectedScore,
     required this.maxScore,
+    this.projectedGrade = '',
     this.statusColor,
   });
 
@@ -22,6 +23,7 @@ class SubjectReadinessBreakdown {
   final double accuracyPercent;
   final int projectedScore;
   final int maxScore;
+  final String projectedGrade;
   final Color? statusColor;
 }
 
@@ -217,6 +219,51 @@ class RegisteredCourseInput {
 class CbtReadinessCalculator {
   const CbtReadinessCalculator();
 
+  static String getWaecGrade(int percent) {
+    if (percent >= 75) return 'A1';
+    if (percent >= 70) return 'B2';
+    if (percent >= 65) return 'B3';
+    if (percent >= 60) return 'C4';
+    if (percent >= 55) return 'C5';
+    if (percent >= 50) return 'C6';
+    if (percent >= 45) return 'D7';
+    if (percent >= 40) return 'E8';
+    return 'F9';
+  }
+
+  static String getWaecGradeLabel(String grade) {
+    switch (grade) {
+      case 'A1':
+        return 'A1 - Excellent';
+      case 'B2':
+        return 'B2 - Very Good';
+      case 'B3':
+        return 'B3 - Good';
+      case 'C4':
+        return 'C4 - Credit';
+      case 'C5':
+        return 'C5 - Credit';
+      case 'C6':
+        return 'C6 - Credit';
+      case 'D7':
+        return 'D7 - Pass';
+      case 'E8':
+        return 'E8 - Pass';
+      case 'F9':
+      default:
+        return 'F9 - Fail';
+    }
+  }
+
+  static bool isWaecCredit(String grade) {
+    return grade == 'A1' ||
+        grade == 'B2' ||
+        grade == 'B3' ||
+        grade == 'C4' ||
+        grade == 'C5' ||
+        grade == 'C6';
+  }
+
   static ({double accuracy, double retention})? _resolveCoursePerformance({
     required RegisteredCourseInput course,
     Map<String, double>? subjectAccuracies,
@@ -355,7 +402,9 @@ class CbtReadinessCalculator {
     final isWaecOrNeco =
         lowerExam.contains('waec') ||
         lowerExam.contains('neco') ||
-        lowerExam.contains('wassce');
+        lowerExam.contains('wassce') ||
+        lowerExam.contains('ssce') ||
+        lowerExam.contains('gce');
     final isUniversity =
         lowerExam.contains('uni') ||
         lowerExam.contains('gpa') ||
@@ -397,18 +446,26 @@ class CbtReadinessCalculator {
 
         final int subjectMaxScore;
         final int subjectProjectedScore;
+        final String subjectGrade;
 
-        if (isWaecOrNeco || isUniversity) {
+        if (isWaecOrNeco) {
           subjectMaxScore = 100;
-          subjectProjectedScore =
-              (courseReadinessPercent * 0.95).round().clamp(0, 100);
+          subjectProjectedScore = courseReadinessPercent;
+          subjectGrade = getWaecGrade(courseReadinessPercent);
+        } else if (isUniversity) {
+          subjectMaxScore = 100;
+          subjectProjectedScore = courseReadinessPercent;
+          final gpaVal = (courseReadinessPercent / 100.0) * 5.0;
+          subjectGrade = '${gpaVal.toStringAsFixed(1)} GP';
         } else {
+          // JAMB
           subjectMaxScore =
               (400 / convertedRegisteredCourses.length).round().clamp(50, 200);
           subjectProjectedScore =
               ((courseReadinessPercent / 100.0) * subjectMaxScore)
                   .round()
                   .clamp(0, subjectMaxScore);
+          subjectGrade = '$subjectProjectedScore pts';
         }
 
         totalProjectedPoints += subjectProjectedScore;
@@ -431,6 +488,7 @@ class CbtReadinessCalculator {
             accuracyPercent: courseAcc,
             projectedScore: subjectProjectedScore,
             maxScore: subjectMaxScore,
+            projectedGrade: subjectGrade,
             statusColor: statusColor,
           ),
         );
@@ -481,36 +539,32 @@ class CbtReadinessCalculator {
     String scoreRange;
 
     if (isWaecOrNeco) {
+      final creditsCount = effectiveSubjectBreakdowns
+          .where((b) => isWaecCredit(b.projectedGrade.isNotEmpty ? b.projectedGrade : getWaecGrade(b.readinessPercent)))
+          .length;
+      final totalCount = effectiveSubjectBreakdowns.isNotEmpty
+          ? effectiveSubjectBreakdowns.length
+          : 1;
+
+      final averageGrade = getWaecGrade(finalPercent);
+      grade = averageGrade;
+
       if (finalPercent >= 85) {
         label = 'ON TRACK';
         color = const Color(0xFF10B981); // Emerald
-        grade = 'A1';
-        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (A1 - Excellent)';
-      } else if (finalPercent >= 75) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = 'B2';
-        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (B2 - Very Good)';
-      } else if (finalPercent >= 65) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = 'B3';
-        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (B3 - Good)';
       } else if (finalPercent >= 55) {
         label = 'ACCELERATE PREP';
         color = const Color(0xFFF59E0B);
-        grade = 'C4';
-        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (C4 - Credit)';
-      } else if (finalPercent >= 45) {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = 'C6';
-        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (C6 - Pass Credit)';
       } else {
         label = 'NEEDS TRIAGE';
         color = const Color(0xFFEF4444);
-        grade = 'F9';
-        scoreRange = '$projectedPoints / ${totalMaxPoints > 0 ? totalMaxPoints : 100} pts (F9 / Requires Remediation)';
+      }
+
+      final gradeLabel = getWaecGradeLabel(averageGrade);
+      if (creditsCount >= 5 || (totalCount < 5 && creditsCount == totalCount)) {
+        scoreRange = '$creditsCount / $totalCount Credits ($gradeLabel)';
+      } else {
+        scoreRange = '$creditsCount / $totalCount Credits ($gradeLabel / Requires Remediation)';
       }
     } else if (isUniversity) {
       final gpaVal = (finalPercent / 100.0) * 5.0;
