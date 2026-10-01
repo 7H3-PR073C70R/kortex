@@ -260,6 +260,120 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     await _repository.matchWithAiImmediately(duelId: state.match!.duelId);
   }
 
+  /// Requests or accepts a rematch with the duel opponent.
+  Future<void> requestRematch() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: true));
+
+    final result = await _repository.requestRematch(
+      duelId: currentMatch.duelId,
+      userId: state.currentUserId,
+    );
+
+    result.fold(
+      (failure) {
+        emit(
+          state.copyWith(
+            isRematchLoading: false,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (match) {
+        final isNewMatch = match.duelId != currentMatch.duelId;
+        if (isNewMatch) {
+          _subscribeToMatchStream(match.duelId);
+        }
+        emit(
+          state.copyWith(
+            match: match,
+            status: match.status,
+            isRematchLoading: false,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Accepts a rematch challenge requested by rival.
+  Future<void> acceptRematch() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: true));
+
+    final result = await _repository.acceptRematch(
+      duelId: currentMatch.duelId,
+      userId: state.currentUserId,
+    );
+
+    result.fold(
+      (failure) {
+        emit(
+          state.copyWith(
+            isRematchLoading: false,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (match) {
+        if (match.duelId != currentMatch.duelId) {
+          _subscribeToMatchStream(match.duelId);
+        }
+        emit(
+          state.copyWith(
+            match: match,
+            status: match.status,
+            isRematchLoading: false,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Declines or cancels an active rematch request.
+  Future<void> declineRematch() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: false));
+
+    await _repository.declineRematch(
+      duelId: currentMatch.duelId,
+      userId: state.currentUserId,
+    );
+
+    emit(
+      state.copyWith(
+        match: currentMatch.copyWith(clearRematch: true),
+        isRematchLoading: false,
+      ),
+    );
+  }
+
+  /// Starts an instant AI rematch if human peer is unresponsive or player prefers AI.
+  Future<void> rematchWithAiImmediately() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: true));
+
+    final p1 = state.myParticipant;
+    await startMatchmaking(
+      subject: currentMatch.subject,
+      examBoard: currentMatch.examBoard,
+      userId: state.currentUserId,
+      displayName: p1?.displayName ?? 'Scholar',
+      avatarUrl: p1?.avatarUrl ?? '⚡',
+      questionCount: currentMatch.questions.length,
+    );
+
+    await matchWithAiImmediately();
+    emit(state.copyWith(isRematchLoading: false));
+  }
+
   @override
   Future<void> close() {
     _countdownTimer?.cancel();

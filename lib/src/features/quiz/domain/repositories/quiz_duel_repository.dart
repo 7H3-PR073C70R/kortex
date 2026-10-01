@@ -70,4 +70,22 @@ abstract class QuizDuelRepository {
   Future<Either<Failure, List<QuizDuelMatch>>> getPendingAsyncChallenges(
     String userId,
   );
+
+  /// Requests a rematch with the current duel opponent.
+  Future<Either<Failure, QuizDuelMatch>> requestRematch({
+    required String duelId,
+    required String userId,
+  });
+
+  /// Accepts a pending rematch request from the opponent.
+  Future<Either<Failure, QuizDuelMatch>> acceptRematch({
+    required String duelId,
+    required String userId,
+  });
+
+  /// Declines or cancels a pending rematch request.
+  Future<Either<Failure, void>> declineRematch({
+    required String duelId,
+    required String userId,
+  });
 }

@@ -1,5 +1,5 @@
 {
-  "total_synced": 8309,
+  "total_synced": 8424,
   "progress": {
     "jamb": {
       "mathematics": 44,
@@ -57,9 +57,9 @@
       "office-practice": 24
     },
     "neco": {
-      "mathematics": 18,
-      "english-language": 10,
-      "chemistry": 9,
+      "mathematics": 24,
+      "english-language": 20,
+      "chemistry": 16,
       "physics": 9,
       "biology": 9,
       "economics": 9,
@@ -68,5 +68,5 @@
       "computer-studies": 9
     }
   },
-  "last_updated": "2026-10-01T17:36:42Z"
+  "last_updated": "2026-10-01T18:05:00Z"
 }

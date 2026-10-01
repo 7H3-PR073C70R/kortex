@@ -140,7 +140,7 @@ void main() {
       expect(find.text('Scholar One Won the Duel!'), findsOneWidget);
       expect(find.text('450 pts'), findsOneWidget);
       expect(find.text('300 pts'), findsOneWidget);
-      expect(find.text('Rematch'), findsOneWidget);
+      expect(find.textContaining('Rematch'), findsWidgets);
       expect(find.text('Return to Dashboard'), findsOneWidget);
     });
 

@@ -22,11 +22,13 @@ class QuizDuelReviewTab extends StatefulWidget {
   const QuizDuelReviewTab({
     required this.match,
     required this.currentUserId,
+    this.onRematch,
     super.key,
   });
 
   final QuizDuelMatch match;
   final String currentUserId;
+  final VoidCallback? onRematch;
 
   @override
   State<QuizDuelReviewTab> createState() => _QuizDuelReviewTabState();
@@ -261,12 +263,17 @@ class _QuizDuelReviewTabState extends State<QuizDuelReviewTab> {
                     style: typography.caption.bold.copyWith(color: colors.primary),
                   ),
                   onPressed: () {
-                    unawaited(
-                      QuizDuelMatchmakingSheet.show(
-                        context,
-                        initialSubject: widget.match.subject,
-                      ),
-                    );
+                    AppFeedback.selection();
+                    if (widget.onRematch != null) {
+                      widget.onRematch!();
+                    } else {
+                      unawaited(
+                        QuizDuelMatchmakingSheet.show(
+                          context,
+                          initialSubject: widget.match.subject,
+                        ),
+                      );
+                    }
                   },
                 ),
               ],

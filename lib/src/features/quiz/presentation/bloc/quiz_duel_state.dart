@@ -11,6 +11,7 @@ class QuizDuelState extends Equatable {
     this.currentUserId = 'current_user',
     this.errorMessage,
     this.isSubmitting = false,
+    this.isRematchLoading = false,
   });
 
   final QuizDuelMatch? match;
@@ -20,6 +21,7 @@ class QuizDuelState extends Equatable {
   final String currentUserId;
   final String? errorMessage;
   final bool isSubmitting;
+  final bool isRematchLoading;
 
   QuizDuelParticipant? get myParticipant {
     if (match == null) return null;
@@ -42,6 +44,21 @@ class QuizDuelState extends Equatable {
 
   bool get isDraw => match?.isDraw ?? false;
 
+  bool get hasRematchRequest =>
+      match?.rematchRequestedBy != null &&
+      match!.rematchRequestedBy!.isNotEmpty;
+
+  bool get didIRequestRematch =>
+      match?.rematchRequestedBy != null &&
+      match!.rematchRequestedBy == currentUserId;
+
+  bool get didOpponentRequestRematch =>
+      match?.rematchRequestedBy != null &&
+      match!.rematchRequestedBy!.isNotEmpty &&
+      match!.rematchRequestedBy != currentUserId;
+
+  bool get isOpponentAi => opponentParticipant?.isAiOpponent ?? false;
+
   QuizDuelState copyWith({
     QuizDuelMatch? match,
     QuizDuelStatus? status,
@@ -50,6 +67,7 @@ class QuizDuelState extends Equatable {
     String? currentUserId,
     String? errorMessage,
     bool? isSubmitting,
+    bool? isRematchLoading,
     bool clearSelectedOption = false,
   }) {
     return QuizDuelState(
@@ -62,6 +80,7 @@ class QuizDuelState extends Equatable {
       currentUserId: currentUserId ?? this.currentUserId,
       errorMessage: errorMessage,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      isRematchLoading: isRematchLoading ?? this.isRematchLoading,
     );
   }
 
@@ -74,5 +93,6 @@ class QuizDuelState extends Equatable {
     currentUserId,
     errorMessage,
     isSubmitting,
+    isRematchLoading,
   ];
 }

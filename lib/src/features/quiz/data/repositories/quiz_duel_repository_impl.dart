@@ -496,4 +496,58 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
       return Left(ServerFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, QuizDuelMatch>> requestRematch({
+    required String duelId,
+    required String userId,
+  }) async {
+    try {
+      final match = await _client.requestRematch(
+        duelId: duelId,
+        userId: userId,
+      );
+      if (match != null) {
+        return Right(match);
+      }
+      return const Left(ServerFailure(message: 'Match not found for rematch'));
+    } on Exception catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, QuizDuelMatch>> acceptRematch({
+    required String duelId,
+    required String userId,
+  }) async {
+    try {
+      final match = await _client.acceptRematch(
+        duelId: duelId,
+        userId: userId,
+      );
+      if (match != null) {
+        return Right(match);
+      }
+      return const Left(ServerFailure(message: 'Failed to accept rematch'));
+    } on Exception catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> declineRematch({
+    required String duelId,
+    required String userId,
+  }) async {
+    try {
+      await _client.declineRematch(
+        duelId: duelId,
+        userId: userId,
+      );
+      return const Right(null);
+    } on Exception catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
 }
