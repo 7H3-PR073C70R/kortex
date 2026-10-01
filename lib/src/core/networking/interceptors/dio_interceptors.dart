@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
@@ -6,6 +7,12 @@ import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:logger/logger.dart';
+
+enum RefreshTokenResult {
+  success,
+  transientNetworkError,
+  invalidSession,
+}
 
 class LoggingInterceptor extends Interceptor {
   LoggingInterceptor({this.logger});
@@ -80,22 +87,22 @@ class TokenInterceptor extends QueuedInterceptor {
   final SessionExpiredService sessionExpiredService;
   final Dio _refreshDio;
 
-  Completer<bool>? _refreshCompleter;
+  Completer<RefreshTokenResult>? _refreshCompleter;
 
-  Future<bool> _refreshAccessToken() async {
+  Future<RefreshTokenResult> _refreshAccessToken() async {
     if (_refreshCompleter != null) {
       return _refreshCompleter!.future;
     }
 
-    final completer = Completer<bool>();
+    final completer = Completer<RefreshTokenResult>();
     _refreshCompleter = completer;
 
     try {
       final rawRefreshToken = storageService.getRefreshToken();
       final refreshToken = rawRefreshToken?.trim();
       if (refreshToken == null || refreshToken.isEmpty) {
-        completer.complete(false);
-        return false;
+        completer.complete(RefreshTokenResult.invalidSession);
+        return RefreshTokenResult.invalidSession;
       }
 
       debugPrint(
@@ -130,16 +137,59 @@ class TokenInterceptor extends QueuedInterceptor {
         debugPrint(
           '[TokenInterceptor] Token refresh successfully completed.',
         );
-        completer.complete(true);
-        return true;
+        completer.complete(RefreshTokenResult.success);
+        return RefreshTokenResult.success;
       } else {
-        completer.complete(false);
-        return false;
+        completer.complete(RefreshTokenResult.invalidSession);
+        return RefreshTokenResult.invalidSession;
       }
+    } on DioException catch (dioErr) {
+      final type = dioErr.type;
+      final status = dioErr.response?.statusCode;
+      final isConnectionIssue =
+          type == DioExceptionType.connectionTimeout ||
+          type == DioExceptionType.sendTimeout ||
+          type == DioExceptionType.receiveTimeout ||
+          type == DioExceptionType.connectionError ||
+          dioErr.error is SocketException ||
+          dioErr.message?.toLowerCase().contains('socket') == true ||
+          dioErr.message?.toLowerCase().contains('network is unreachable') == true;
+
+      final isServerError = status != null && status >= 500 && status <= 599;
+
+      if (isConnectionIssue || isServerError) {
+        debugPrint(
+          '[TokenInterceptor] Token refresh encountered transient network/server error ($type / $status). Preserving session.',
+        );
+        completer.complete(RefreshTokenResult.transientNetworkError);
+        return RefreshTokenResult.transientNetworkError;
+      }
+
+      final data = dioErr.response?.data;
+      final errStr = data?.toString().toLowerCase() ?? '';
+      if (status == 400 || status == 401 || status == 403) {
+        if (errStr.contains('invalid_grant') ||
+            errStr.contains('invalid refresh token') ||
+            errStr.contains('refresh_token_not_found') ||
+            errStr.contains('revoked') ||
+            errStr.contains('not found')) {
+          debugPrint(
+            '[TokenInterceptor] Refresh token explicitly rejected by auth server: $data',
+          );
+          completer.complete(RefreshTokenResult.invalidSession);
+          return RefreshTokenResult.invalidSession;
+        }
+      }
+
+      debugPrint(
+        '[TokenInterceptor] Token refresh failed with status $status: $dioErr. Treating as invalid session.',
+      );
+      completer.complete(RefreshTokenResult.invalidSession);
+      return RefreshTokenResult.invalidSession;
     } on Object catch (e) {
-      debugPrint('[TokenInterceptor] Token refresh failed: $e');
-      completer.complete(false);
-      return false;
+      debugPrint('[TokenInterceptor] Token refresh unexpected error: $e');
+      completer.complete(RefreshTokenResult.transientNetworkError);
+      return RefreshTokenResult.transientNetworkError;
     } finally {
       _refreshCompleter = null;
     }
@@ -214,8 +264,8 @@ class TokenInterceptor extends QueuedInterceptor {
           debugPrint(
             '[TokenInterceptor] Caught auth/token error on $path. Attempting token refresh...',
           );
-          final refreshed = await _refreshAccessToken();
-          if (refreshed) {
+          final refreshResult = await _refreshAccessToken();
+          if (refreshResult == RefreshTokenResult.success) {
             final latestToken = storageService.getToken();
             final options = err.requestOptions;
             if (latestToken != null && latestToken.isNotEmpty) {
@@ -234,12 +284,19 @@ class TokenInterceptor extends QueuedInterceptor {
               handler.reject(retryErr);
               return;
             }
+          } else if (refreshResult == RefreshTokenResult.transientNetworkError) {
+            // Transient offline/network issue: DO NOT clear storage or log out.
+            debugPrint(
+              '[TokenInterceptor] Refresh failed due to network/offline condition. Preserving session.',
+            );
+            super.onError(err, handler);
+            return;
           }
         }
 
-        // Auto-logout and notify user only if refresh is completely unavailable or failed
+        // Auto-logout ONLY if refresh is definitively invalid/revoked
         debugPrint(
-          '[TokenInterceptor] Auto logging out due to expired/unauthenticated session.',
+          '[TokenInterceptor] Auto logging out due to explicitly revoked/invalid session.',
         );
         storageService.clearStorage();
         sessionExpiredService.notifySessionExpired();

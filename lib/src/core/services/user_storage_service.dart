@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/features/auth/data/models/user_profile_model.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 
 abstract class UserStorageService {
   Future<void> saveToken(String token);
@@ -41,6 +43,12 @@ abstract class UserStorageService {
   Future<void> initStorage();
 
   bool isTokenExpired();
+
+  bool hasActiveSession();
+
+  Future<void> saveUserProfile(UserProfileEntity profile);
+
+  UserProfileEntity? getCachedUserProfile();
 }
 
 class UserStorageServiceImpl implements UserStorageService {
@@ -61,6 +69,20 @@ class UserStorageServiceImpl implements UserStorageService {
   String? _cachedEmail;
   String? _cachedDisplayName;
   String? _cachedAvatarUrl;
+  UserProfileEntity? _cachedProfile;
+
+  @override
+  bool hasActiveSession() {
+    final refreshToken = getRefreshToken();
+    if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+      return true;
+    }
+    final token = getToken();
+    if (token != null && token.trim().isNotEmpty && !isTokenExpired()) {
+      return true;
+    }
+    return false;
+  }
 
   @override
   Future<void> initStorage() async {
@@ -86,6 +108,16 @@ class UserStorageServiceImpl implements UserStorageService {
     _cachedAvatarUrl = _localStorageService.getPreference(
       key: PrefKeys.userAvatarUrl,
     );
+
+    final rawProfile = _localStorageService.getPreference(
+      key: PrefKeys.cachedUserProfile,
+    );
+    if (rawProfile != null && rawProfile.trim().isNotEmpty) {
+      try {
+        final json = jsonDecode(rawProfile) as Map<String, dynamic>;
+        _cachedProfile = UserProfileModel.fromJson(json).toEntity();
+      } on Object catch (_) {}
+    }
   }
 
   static String? _sanitizeToken(String? raw) {
@@ -382,12 +414,61 @@ class UserStorageServiceImpl implements UserStorageService {
   }
 
   @override
+  Future<void> saveUserProfile(UserProfileEntity profile) async {
+    _cachedProfile = profile;
+    if (profile.displayName != null && profile.displayName!.trim().isNotEmpty) {
+      _cachedDisplayName = profile.displayName!.trim();
+    }
+    if (profile.photoUrl != null && profile.photoUrl!.trim().isNotEmpty) {
+      _cachedAvatarUrl = profile.photoUrl!.trim();
+    }
+    try {
+      final model = UserProfileModel(
+        id: profile.id,
+        email: profile.email,
+        displayName: profile.displayName,
+        photoUrl: profile.photoUrl,
+        targetTrack: profile.targetTrack,
+        dailyCardTarget: profile.dailyCardTarget,
+        retentionBenchmark: profile.retentionBenchmark,
+        level: profile.level,
+        streakDays: profile.streakDays,
+        streakFreezeCount: profile.streakFreezeCount,
+        timezone: profile.timezone,
+        xpPoints: profile.xpPoints,
+        subscriptionTier: profile.subscriptionTier,
+        isOnboarded: profile.isOnboarded,
+      );
+      await _localStorageService.savePreference(
+        key: PrefKeys.cachedUserProfile,
+        data: jsonEncode(model.toJson()),
+      );
+    } on Object catch (_) {}
+  }
+
+  @override
+  UserProfileEntity? getCachedUserProfile() {
+    if (_cachedProfile != null) return _cachedProfile;
+    try {
+      final raw = _localStorageService.getPreference(
+        key: PrefKeys.cachedUserProfile,
+      );
+      if (raw != null && raw.trim().isNotEmpty) {
+        final json = jsonDecode(raw) as Map<String, dynamic>;
+        return _cachedProfile = UserProfileModel.fromJson(json).toEntity();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
+
+  @override
   void clearStorage() {
     _cachedToken = null;
     _cachedRefreshToken = null;
     _cachedEmail = null;
     _cachedDisplayName = null;
     _cachedAvatarUrl = null;
+    _cachedProfile = null;
     unawaited(_safeSecureDelete(_tokenKey));
     unawaited(_safeSecureDelete(_refreshTokenKey));
     unawaited(_safeSecureDelete(_emailKey));
@@ -397,5 +478,6 @@ class UserStorageServiceImpl implements UserStorageService {
     unawaited(_safeLocalDelete(_emailKey));
     unawaited(_safeLocalDelete(PrefKeys.userDisplayName));
     unawaited(_safeLocalDelete(PrefKeys.userAvatarUrl));
+    unawaited(_safeLocalDelete(PrefKeys.cachedUserProfile));
   }
 }

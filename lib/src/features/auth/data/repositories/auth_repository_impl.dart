@@ -27,11 +27,25 @@ class AuthRepositoryImpl implements AuthRepository {
   Stream<AuthSessionStatus> observeAuthState() => _authStateController.stream;
 
   @override
-  Future<Either<Failure, UserProfileEntity>> getUserProfile() {
-    return _remoteDataSource
+  Future<Either<Failure, UserProfileEntity>> getUserProfile() async {
+    final cached = _userStorageService.getCachedUserProfile();
+    final remoteRes = await _remoteDataSource
         .fetchUserProfile()
         .then((model) => model.toEntity())
         .makeRequest();
+
+    return remoteRes.fold(
+      (failure) {
+        if (cached != null) {
+          return Right(cached);
+        }
+        return Left(failure);
+      },
+      (profile) {
+        unawaited(_userStorageService.saveUserProfile(profile));
+        return Right(profile);
+      },
+    );
   }
 
   @override
@@ -48,8 +62,10 @@ class AuthRepositoryImpl implements AuthRepository {
         )
         .then((model) => model.toEntity())
         .makeRequest(
-          onSuccess: (_) =>
-              _authStateController.add(AuthSessionStatus.authenticatedComplete),
+          onSuccess: (profile) {
+            unawaited(_userStorageService.saveUserProfile(profile));
+            _authStateController.add(AuthSessionStatus.authenticatedComplete);
+          },
         );
   }
 
@@ -66,7 +82,11 @@ class AuthRepositoryImpl implements AuthRepository {
           retentionBenchmark: retentionBenchmark,
         )
         .then((model) => model.toEntity())
-        .makeRequest();
+        .makeRequest(
+          onSuccess: (profile) {
+            unawaited(_userStorageService.saveUserProfile(profile));
+          },
+        );
   }
 
   @override

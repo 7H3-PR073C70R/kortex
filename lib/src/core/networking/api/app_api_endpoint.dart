@@ -32,6 +32,7 @@ class AppApiEndpoint {
   static const String magicLink = '/auth/v1/magiclink';
   static const String otpVerify = '/auth/v1/verify';
   static const String userProfiles = '/rest/v1/profiles';
+  static const String userCalibrations = '/rest/v1/user_calibrations';
   static const String courseTracks = '/rest/v1/course_tracks';
   static const String updateProfileRpc =
       '/rest/v1/rpc/update_user_profile_track_and_goal';

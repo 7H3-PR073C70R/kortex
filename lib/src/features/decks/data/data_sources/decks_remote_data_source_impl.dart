@@ -70,6 +70,33 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
 
   bool _isValidUuid(String id) => _isValidId(id);
 
+  static const String _pendingDeckDeletionsKey =
+      '__kortex_pending_deck_deletions';
+
+  Set<String> _getPendingDeckDeletions() {
+    try {
+      final raw = _localStorage?.getPreference(key: _pendingDeckDeletionsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list.map((e) => e.toString()).toSet();
+      }
+    } on Object catch (_) {}
+    return <String>{};
+  }
+
+  Future<void> _savePendingDeckDeletions(Set<String> deletions) async {
+    try {
+      if (deletions.isEmpty) {
+        await _localStorage?.deletePreference(key: _pendingDeckDeletionsKey);
+      } else {
+        await _localStorage?.savePreference(
+          key: _pendingDeckDeletionsKey,
+          data: jsonEncode(deletions.toList()),
+        );
+      }
+    } on Object catch (_) {}
+  }
+
   void _persistLocalDecksToStorage() {
     try {
       final jsonStr = jsonEncode(
@@ -229,9 +256,30 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     }
 
     try {
+      // 1. Flush any pending offline deck deletions to Supabase
+      final pendingDeletions = _getPendingDeckDeletions();
+      if (pendingDeletions.isNotEmpty) {
+        final remainingPending = Set<String>.from(pendingDeletions);
+        for (final deletedId in pendingDeletions) {
+          if (_isValidUuid(deletedId)) {
+            try {
+              await _client.deleteDeck(deletedId);
+              remainingPending.remove(deletedId);
+            } on Object catch (_) {}
+          } else {
+            remainingPending.remove(deletedId);
+          }
+        }
+        await _savePendingDeckDeletions(remainingPending);
+      }
+
       final remoteDecks = await _client.getUserDecks();
-      final remoteIds = remoteDecks.map((d) => d.id).toSet();
-      final updatedRemote = remoteDecks.map((remote) {
+      // Filter out any decks that were deleted locally while offline
+      final activeRemoteDecks = remoteDecks
+          .where((d) => !pendingDeletions.contains(d.id))
+          .toList();
+      final remoteIds = activeRemoteDecks.map((d) => d.id).toSet();
+      final updatedRemote = activeRemoteDecks.map((remote) {
         final localMatch = _localCreatedDecks
             .where((d) => d.id == remote.id)
             .firstOrNull;
@@ -244,6 +292,60 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         }
         return remote;
       }).toList();
+
+      // 2. Auto-sync offline-created decks to Supabase now that we are online
+      final userId = _userStorage?.getUserId() ?? '';
+      final localOnlyDecks = _localCreatedDecks
+          .where((d) =>
+              !remoteIds.contains(d.id) &&
+              _isValidUuid(d.id) &&
+              !pendingDeletions.contains(d.id))
+          .toList();
+      for (final localDeck in localOnlyDecks) {
+        unawaited(() async {
+          try {
+            await _client.createDeckRecord({
+              'id': localDeck.id,
+              'title': localDeck.title,
+              'subject': localDeck.subject,
+              'total_cards': localDeck.totalCards,
+              'due_cards': localDeck.dueCards,
+              'mastery_rate': localDeck.masteryRate,
+              'description': localDeck.description,
+              if (userId.isNotEmpty) 'user_id': userId,
+              if (localDeck.courseId != null) 'course_id': localDeck.courseId,
+              if (localDeck.courseCode != null)
+                'course_code': localDeck.courseCode,
+            });
+
+            final cards = _localDeckCards[localDeck.id] ?? localDeck.cards;
+            if (cards.isNotEmpty) {
+              final cardsPayload = cards
+                  .where((c) => _isValidUuid(c.id))
+                  .map((c) {
+                return <String, dynamic>{
+                  'id': c.id,
+                  'deck_id': localDeck.id,
+                  if (userId.isNotEmpty) 'user_id': userId,
+                  'front': c.front,
+                  'back': c.back,
+                  'front_latex': c.frontLatex,
+                  'back_latex': c.backLatex,
+                  'source_topic': c.sourceTopic,
+                  'interval': c.interval,
+                  'repetitions': c.repetitions,
+                  'ease_factor': c.easeFactor,
+                  'next_due_date':
+                      (c.nextDueDate ?? DateTime.now()).toIso8601String(),
+                };
+              }).toList();
+              if (cardsPayload.isNotEmpty) {
+                await _client.bulkInsertCards(cardsPayload);
+              }
+            }
+          } on Object catch (_) {}
+        }());
+      }
 
       final merged = [
         ..._localCreatedDecks.where((d) => !remoteIds.contains(d.id)),
@@ -282,6 +384,18 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         _localCreatedDecks.removeWhere((d) => duplicateDeckIdsToRemove.contains(d.id));
         _persistLocalDecksToStorage();
       }
+
+      // Persist fetched remote decks into local SQLite and memory cache for offline continuity across reinstalls
+      for (final deck in updatedRemote) {
+        final idx = _localCreatedDecks.indexWhere((d) => d.id == deck.id);
+        if (idx < 0) {
+          _localCreatedDecks.add(deck);
+        } else {
+          _localCreatedDecks[idx] = deck;
+        }
+        unawaited(_localDataSource?.saveDeck(deck));
+      }
+      _persistLocalDecksToStorage();
 
       final resultList = <DeckModel>[...dedupedResult];
 
@@ -454,6 +568,56 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       masteryRate: calculatedMasteryRate,
       dueCards: dueCount,
     );
+
+    // Push card updates and deck metadata to Supabase asynchronously
+    final userId = _userStorage?.getUserId() ?? '';
+    if (_isValidUuid(deckId)) {
+      unawaited(() async {
+        try {
+          await _client.updateDeckRecord(
+            deckId,
+            <String, dynamic>{
+              'total_cards': cards.length,
+              'due_cards': dueCount,
+              'mastery_rate': calculatedMasteryRate,
+              'updated_at': DateTime.now().toIso8601String(),
+            },
+          );
+
+          final cardsPayload = cards.where((c) => _isValidUuid(c.id)).map((c) {
+            return <String, dynamic>{
+              'id': c.id,
+              'deck_id': deckId,
+              if (userId.isNotEmpty) 'user_id': userId,
+              'front': c.front,
+              'back': c.back,
+              'front_latex': c.frontLatex,
+              'back_latex': c.backLatex,
+              'source_topic': c.sourceTopic,
+              'interval': c.interval,
+              'repetitions': c.repetitions,
+              'ease_factor': c.easeFactor,
+              'next_due_date': (c.nextDueDate ?? DateTime.now()).toIso8601String(),
+            };
+          }).toList();
+
+          if (cardsPayload.isNotEmpty) {
+            await _client.bulkInsertCards(cardsPayload);
+          }
+        } on Object catch (e, stack) {
+          final crashlytics = _crashlyticsService;
+          if (crashlytics != null) {
+            unawaited(
+              crashlytics.recordError(
+                e,
+                stack,
+                reason: 'DecksRemoteDataSource.updateDeckCards remote sync failed',
+              ),
+            );
+          }
+        }
+      }());
+    }
   }
 
   @override
@@ -550,6 +714,37 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       } on Object catch (_) {
         // Offline/Local continues gracefully
       }
+
+      // 6. Persist updated card review states to Supabase flashcards table
+      if (updatedCards != null && updatedCards.isNotEmpty) {
+        final userId = _userStorage?.getUserId() ?? '';
+        final cardsPayload =
+            updatedCards.where((c) => _isValidUuid(c.id)).map((c) {
+          return <String, dynamic>{
+            'id': c.id,
+            'deck_id': deckId,
+            if (userId.isNotEmpty) 'user_id': userId,
+            'front': c.front,
+            'back': c.back,
+            'front_latex': c.frontLatex,
+            'back_latex': c.backLatex,
+            'source_topic': c.sourceTopic,
+            'interval': c.interval,
+            'repetitions': c.repetitions,
+            'ease_factor': c.easeFactor,
+            'next_due_date':
+                (c.nextDueDate ?? DateTime.now()).toIso8601String(),
+          };
+        }).toList();
+
+        if (cardsPayload.isNotEmpty) {
+          try {
+            await _client.bulkInsertCards(cardsPayload);
+          } on Object catch (_) {
+            // Offline/Local continues gracefully
+          }
+        }
+      }
     }
   }
 
@@ -560,11 +755,16 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     _persistLocalDecksToStorage();
     unawaited(_localDataSource?.deleteDeck(deckId));
 
+    final pending = _getPendingDeckDeletions()..add(deckId);
+    await _savePendingDeckDeletions(pending);
+
     if (_isValidUuid(deckId)) {
       try {
         await _client.deleteDeck(deckId);
+        final remaining = _getPendingDeckDeletions()..remove(deckId);
+        await _savePendingDeckDeletions(remaining);
       } on Object catch (_) {
-        // Offline/Local deletion continues smoothly
+        // Offline/Local deletion continues smoothly; retained in pending deletions queue
       }
     }
   }

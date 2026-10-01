@@ -632,39 +632,39 @@ class QuizDuelWebSocketClient {
         subject.contains('calc') ||
         subject.contains('stat')) {
       aiPersonalities = [
-        ('Amina • ABU Zaria', '📐'),
-        ('Kofi • KNUST Math Apex', '⚡'),
-        ('Ada Lovelace AI', '💻'),
-        ('Tunde • Unilag Prodigy', '🚀'),
-        ('Euler Algorithm Bot', '🧠'),
+        ('Amina', '📐'),
+        ('Kofi', '⚡'),
+        ('Ada Lovelace', '💻'),
+        ('Tunde', '🚀'),
+        ('Wuke', '🧠'),
       ];
     } else if (subject.contains('phys') || subject.contains('eng')) {
       aiPersonalities = [
-        ('Chidi • UNN Physics Master', '⚡'),
-        ('Farouk • BUK Mechanics', '💡'),
-        ('Newton Kinetic Bot', '🍎'),
-        ('Zainab • UI Quantum Scholar', '🔬'),
-        ('Maxwell Electro-Pro', '🧲'),
+        ('Chidi', '⚡'),
+        ('Farouk', '💡'),
+        ('Oluwatobi', '🍎'),
+        ('Zainab', '🔬'),
+        ('Maxwell', '🧲'),
       ];
     } else if (subject.contains('chem') ||
         subject.contains('bio') ||
         subject.contains('med')) {
       aiPersonalities = [
-        ('Dr. Folake • Pre-Med Ace', '🧬'),
-        ('Emeka • Biochem Specialist', '🧪'),
-        ('Curie Reaction Scholar', '💡'),
-        ('Hauwa • Anatomy Prodigy', '🩺'),
-        ('Cellular Biology Ace', '🔬'),
+        ('Dr. Folake', '🧬'),
+        ('Emeka', '🧪'),
+        ('Curie', '💡'),
+        ('Hauwa', '🩺'),
+        ('Cellular', '🔬'),
       ];
     } else {
       aiPersonalities = [
-        ('⚡ Speedy Scholar', '🧠'),
-        ('🎯 Calculated Genius', '💡'),
-        ('🚀 Formula Prodigy', '🚀'),
-        ('👑 Syllabot Rival', '🏆'),
-        ('🛡️ Master Duelist', '⚡'),
-        ('Ifeoma • Premier Duelist', '🌟'),
-        ('Marcus • Cambridge Scholar', '🏛️'),
+        ('Akintola', '🧠'),
+        ('Abiodun', '💡'),
+        ('Barry', '🚀'),
+        ('Taiwo', '🏆'),
+        ('Mark', '⚡'),
+        ('Olatunde', '🌟'),
+        ('Boluwatife', '🏛️'),
       ];
     }
 

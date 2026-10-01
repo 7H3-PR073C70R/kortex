@@ -386,6 +386,20 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
       feed = feed.copyWith(analyticsSummary: sanitisedAnalytics);
     }
 
+    if (_userActivityService != null &&
+        (feed.analyticsSummary.currentStreakDays > 0 ||
+            feed.analyticsSummary.xpPoints > 0 ||
+            feed.analyticsSummary.heatMapData.isNotEmpty)) {
+      unawaited(
+        _userActivityService.hydrateFromRemote(
+          streakDays: feed.analyticsSummary.currentStreakDays,
+          longestStreakDays: feed.analyticsSummary.longestStreakDays,
+          xpPoints: feed.analyticsSummary.xpPoints,
+          heatMapData: feed.analyticsSummary.heatMapData,
+        ),
+      );
+    }
+
     if (liveAnalytics != null &&
         (liveAnalytics.currentStreakDays > 0 ||
             liveAnalytics.xpPoints > 0 ||
@@ -485,6 +499,28 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           key: PrefKeys.hasCompletedOnboarding,
           data: 'true',
         );
+        final db = _effectiveDatabase;
+        if (db != null) {
+          try {
+            final now = DateTime.now();
+            final companions = remoteCourses.map((c) {
+              return CourseModulesCompanion(
+                id: Value(c.id),
+                courseCode: Value(c.courseCode),
+                title: Value(c.title),
+                department: Value(c.department),
+                totalMaterials: Value(c.totalMaterials),
+                hasActivePastPapers: Value(c.hasActivePastPapers),
+                iconName: Value(c.iconName),
+                colorHex: Value(c.colorHex),
+                pdfDownloadUrl: Value(c.pdfDownloadUrl),
+                syllabusCoverage: Value(c.syllabusCoverage),
+                updatedAt: Value(now),
+              );
+            }).toList();
+            unawaited(db.batchUpsertCourseModules(companions));
+          } on Object catch (_) {}
+        }
         return remoteCourses;
       }
     } on Object catch (_) {}

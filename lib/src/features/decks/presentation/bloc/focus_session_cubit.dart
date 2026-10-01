@@ -485,6 +485,9 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
       } on Object catch (_) {}
     }
 
+    // Flush any pending FSRS review logs to backend
+    unawaited(_cardSyncQueue.flushPendingLogs());
+
     AppFeedback.celebration();
 
     emit(

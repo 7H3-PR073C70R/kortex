@@ -11,6 +11,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<CalibrationRepository>(
       () => CalibrationRepositoryImpl(
         localDataSource: locator<CalibrationLocalDataSource>(),
+        remoteDataSource: locator<CalibrationRemoteDataSource>(),
       ),
     )
     ..registerLazySingleton<OtpRepository>(

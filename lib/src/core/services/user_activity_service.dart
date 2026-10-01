@@ -108,6 +108,13 @@ abstract class UserActivityService {
   List<HeatMapDayModel> getHeatMapData();
   bool hasStudiedToday();
   AnalyticsSummaryModel getAnalyticsSummary();
+  Future<void> hydrateFromRemote({
+    int? streakDays,
+    int? longestStreakDays,
+    int? xpPoints,
+    int? streakFreezes,
+    List<HeatMapDayModel>? heatMapData,
+  });
 }
 
 class UserActivityServiceImpl implements UserActivityService {
@@ -730,6 +737,99 @@ class UserActivityServiceImpl implements UserActivityService {
       xpPoints: getXpPoints(),
       academicRank: getAcademicRank(),
     );
+  }
+
+  @override
+  Future<void> hydrateFromRemote({
+    int? streakDays,
+    int? longestStreakDays,
+    int? xpPoints,
+    int? streakFreezes,
+    List<HeatMapDayModel>? heatMapData,
+  }) async {
+    final now = DateTime.now();
+    final todayKey = _toDateKey(now);
+
+    // 1. Hydrate streak safely without overwriting higher local progress
+    if (streakDays != null && streakDays > 0) {
+      final currentLocal = getCurrentStreak();
+      if (currentLocal < streakDays) {
+        await _localStorageService.savePreference(
+          key: _streakCurrentKey,
+          data: streakDays.toString(),
+        );
+        // Ensure last study date is set to today so getCurrentStreak() won't expire it
+        await _localStorageService.savePreference(
+          key: _lastStudyDateKey,
+          data: todayKey,
+        );
+      }
+    }
+
+    // 2. Hydrate longest streak
+    final effectiveLongest = longestStreakDays ?? streakDays;
+    if (effectiveLongest != null && effectiveLongest > 0) {
+      final currentLongest = getLongestStreak();
+      if (currentLongest < effectiveLongest) {
+        await _localStorageService.savePreference(
+          key: _streakLongestKey,
+          data: effectiveLongest.toString(),
+        );
+      }
+    }
+
+    // 3. Hydrate streak freezes
+    if (streakFreezes != null && streakFreezes >= 0) {
+      final rawFreezes = _localStorageService.getPreference(key: _streakFreezesKey);
+      if (rawFreezes == null || rawFreezes.isEmpty || (int.tryParse(rawFreezes) ?? 0) < streakFreezes) {
+        await _localStorageService.savePreference(
+          key: _streakFreezesKey,
+          data: streakFreezes.toString(),
+        );
+      }
+    }
+
+    // 4. Hydrate XP points without clobbering higher local XP
+    if (xpPoints != null && xpPoints > 0) {
+      final currentXp = getXpPoints();
+      if (currentXp < xpPoints) {
+        final streak = getCurrentStreak();
+        final bonusKarma = getBonusKarma();
+        final spentXp = getSpentXp();
+        // Since getXpPoints() = (directXp + streak*30 + bonusKarma) - spentXp
+        final requiredDirectXp = math.max(0, xpPoints + spentXp - (streak * 30) - bonusKarma);
+        await _localStorageService.savePreference(
+          key: _directXpAccumulatedKey,
+          data: requiredDirectXp.toString(),
+        );
+      }
+    }
+
+    // 5. Synthesize sessions from remote heat map if local sessions are empty
+    final existingSessions = _getSessions();
+    if (existingSessions.isEmpty && heatMapData != null && heatMapData.isNotEmpty) {
+      final synthesized = <Map<String, dynamic>>[];
+      for (final day in heatMapData) {
+        if (day.cardsReviewed > 0 || day.minutesStudied > 0) {
+          synthesized.add({
+            'timestamp': day.dateIso,
+            'cardsReviewed': day.cardsReviewed,
+            'durationSeconds': day.minutesStudied * 60,
+            'retentionScore': 0.85,
+            'masteredCards': day.cardsReviewed,
+            'category': 'cardReview',
+          });
+        }
+      }
+      if (synthesized.isNotEmpty) {
+        await _localStorageService.savePreference(
+          key: _sessionsKey,
+          data: jsonEncode(synthesized),
+        );
+      }
+    }
+
+    _notifyAnalyticsUpdated();
   }
 
   List<Map<String, dynamic>> _getSessions() {

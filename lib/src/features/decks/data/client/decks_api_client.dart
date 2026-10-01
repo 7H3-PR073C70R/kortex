@@ -22,7 +22,8 @@ abstract class DecksApiClient {
   @POST('/rest/v1/flashcards')
   Future<HttpResponse<dynamic>> bulkInsertCards(
     @Body() dynamic body, {
-    @Header('Prefer') String prefer = 'return=representation',
+    @Header('Prefer')
+    String prefer = 'resolution=merge-duplicates,return=representation',
   });
 
   @GET(AppApiEndpoint.deckCards)

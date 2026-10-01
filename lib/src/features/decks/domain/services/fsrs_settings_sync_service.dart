@@ -52,6 +52,48 @@ class FsrsSettingsSyncService {
     return const FsrsUserSettings();
   }
 
+  /// Restores user notification preferences and desired retention from Supabase
+  /// if local storage is missing or default.
+  Future<FsrsUserSettings?> restoreFromRemote() async {
+    try {
+      final dio = _effectiveDio;
+      if (dio == null) return null;
+
+      final response = await dio.get<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.userProfiles}?select=notification_reminder_hour,notification_reminder_minute,fsrs_desired_retention,daily_card_target&limit=1',
+        options: Options(
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        final list = response.data as List<dynamic>;
+        if (list.isNotEmpty && list.first is Map<String, dynamic>) {
+          final row = list.first as Map<String, dynamic>;
+          final hour = (row['notification_reminder_hour'] as num?)?.toInt();
+          final minute = (row['notification_reminder_minute'] as num?)?.toInt();
+          final retention = (row['fsrs_desired_retention'] as num?)?.toDouble();
+          final dailyTarget = (row['daily_card_target'] as num?)?.toInt();
+
+          if (hour != null || retention != null) {
+            final current = load();
+            final restored = current.copyWith(
+              preferredReminderHour: hour ?? current.preferredReminderHour,
+              preferredReminderMinute: minute ?? current.preferredReminderMinute,
+              desiredRetention: retention ?? current.desiredRetention,
+              newCardsPerDay: dailyTarget ?? current.newCardsPerDay,
+            );
+            await _saveLocally(restored);
+            return restored;
+          }
+        }
+      }
+    } on Object catch (e) {
+      developer.log('FsrsSettingsSyncService.restoreFromRemote error: $e');
+    }
+    return null;
+  }
+
   // ── Private helpers ────────────────────────────────────────────────────────
 
   LocalStorageService? get _storage {

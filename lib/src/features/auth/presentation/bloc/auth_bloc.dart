@@ -21,6 +21,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
@@ -83,16 +84,66 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthCheckRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    final userStorage = locator.isRegistered<UserStorageService>()
+        ? locator<UserStorageService>()
+        : null;
+    final hasSession = userStorage?.hasActiveSession() ?? false;
 
-    final profileRes = await _authRepository.getUserProfile();
-    await profileRes.fold(
-      (failure) async => emit(
+    if (!hasSession) {
+      emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
           sessionStatus: AuthSessionStatus.unauthenticated,
         ),
-      ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(status: AuthStatus.loading));
+
+    final profileRes = await _authRepository.getUserProfile();
+    await profileRes.fold(
+      (failure) async {
+        // Session is active in secure storage; error is transient or device is offline.
+        // Retrieve locally cached profile if available, or synthesize a fallback profile.
+        final cachedProfile = userStorage?.getCachedUserProfile();
+        if (cachedProfile != null) {
+          final isOnboarded = _computeIsOnboarded(cachedProfile);
+          if (locator.isRegistered<UserActivityService>()) {
+            unawaited(
+              locator<UserActivityService>().hydrateFromRemote(
+                streakDays: cachedProfile.streakDays,
+                xpPoints: cachedProfile.xpPoints,
+                streakFreezes: cachedProfile.streakFreezeCount,
+              ),
+            );
+          }
+          emit(
+            state.copyWith(
+              status: AuthStatus.authenticated,
+              userProfile: cachedProfile,
+              sessionStatus: isOnboarded
+                  ? AuthSessionStatus.authenticatedComplete
+                  : AuthSessionStatus.authenticatedNeedsOnboarding,
+            ),
+          );
+        } else {
+          final fallbackProfile = UserProfileEntity(
+            id: userStorage?.getUserId() ?? 'offline_user',
+            email: userStorage?.getUserEmail() ?? '',
+            displayName: userStorage?.getUserDisplayName(),
+            photoUrl: userStorage?.getUserAvatarUrl(),
+            isOnboarded: true,
+          );
+          emit(
+            state.copyWith(
+              status: AuthStatus.authenticated,
+              userProfile: fallbackProfile,
+              sessionStatus: AuthSessionStatus.authenticatedComplete,
+            ),
+          );
+        }
+      },
       (profile) async {
         if (profile.id.isEmpty && profile.email.isEmpty) {
           emit(
@@ -168,6 +219,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final session = isOnboarded
             ? AuthSessionStatus.authenticatedComplete
             : AuthSessionStatus.authenticatedNeedsOnboarding;
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().hydrateFromRemote(
+              streakDays: effectiveProfile.streakDays,
+              xpPoints: effectiveProfile.xpPoints,
+              streakFreezes: effectiveProfile.streakFreezeCount,
+            ),
+          );
+        }
         emit(
           state.copyWith(
             status: isOnboarded
@@ -188,6 +248,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             );
           } on Object catch (_) {}
           _syncDeviceToken(profile.id);
+          if (locator.isRegistered<CardSyncQueue>()) {
+            unawaited(locator<CardSyncQueue>().flushPendingLogs());
+          }
         }
       },
     );
@@ -215,22 +278,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     if (locator.isRegistered<UserStorageService>()) {
       final storage = locator<UserStorageService>();
-      if (storage.isTokenExpired()) {
-        final refreshRes = await _authRepository.refreshSession();
-        await refreshRes.fold(
-          (failure) async {
-            emit(
-              state.copyWith(
-                status: AuthStatus.unauthenticated,
-                sessionStatus: AuthSessionStatus.unauthenticated,
-              ),
-            );
-          },
-          (_) async {
-            add(const AuthCheckRequested());
-          },
-        );
-        return;
+      if (storage.hasActiveSession()) {
+        if (storage.isTokenExpired()) {
+          final refreshRes = await _authRepository.refreshSession();
+          await refreshRes.fold(
+            (failure) async {
+              // Transient network/offline error: preserve session, do NOT unauthenticate
+              // (TokenInterceptor will handle genuine revocation).
+            },
+            (_) async {
+              add(const AuthCheckRequested());
+            },
+          );
+          return;
+        }
       }
     }
     add(const AuthCheckRequested());
@@ -677,6 +738,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           } on Object catch (_) {}
         }
 
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().hydrateFromRemote(
+              streakDays: mergedProfile.streakDays,
+              xpPoints: mergedProfile.xpPoints,
+              streakFreezes: mergedProfile.streakFreezeCount,
+            ),
+          );
+        }
         emit(
           state.copyWith(
             userProfile: mergedProfile,

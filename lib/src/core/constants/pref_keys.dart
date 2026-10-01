@@ -49,4 +49,5 @@ class PrefKeys {
   static const String proEntitlementCacheDate =
       '__kortex_pro_entitlement_cache_date__';
   static const String pendingPromoCode = '__kortex_pending_promo_code__';
+  static const String cachedUserProfile = '__kortex_cached_user_profile__';
 }

@@ -8,16 +8,17 @@ import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/biometric_auth_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
-import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:kortex/src/features/decks/domain/services/fsrs_settings_sync_service.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
@@ -105,20 +106,9 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     if (!mounted) return;
 
     final userStorage = locator<UserStorageService>();
-    final token = userStorage.getToken();
-    final hasToken = token != null && token.isNotEmpty;
-    final isExpired = userStorage.isTokenExpired();
-    final isAuthenticated = hasToken && !isExpired;
+    final hasActiveSession = userStorage.hasActiveSession();
 
-    if (hasToken && isExpired) {
-      // Proactively clear expired token to prevent dashboard flash
-      userStorage.clearStorage();
-      if (locator.isRegistered<AuthBloc>()) {
-        locator<AuthBloc>().add(const AuthSignOutRequested());
-      }
-    }
-
-    if (isAuthenticated) {
+    if (hasActiveSession) {
       final biometricService = locator<BiometricAuthService>();
       if (biometricService.isBiometricLockEnabled()) {
         setState(() {
@@ -163,39 +153,35 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   Future<void> _proceedToApp() async {
     final authBloc = locator<AuthBloc>();
+    final userStorage = locator<UserStorageService>();
 
-    // Pre-flight check: verify token against server if auth repository is available
-    UserProfileEntity? preflightProfile;
+    // Seed preflight profile from offline cache if available
+    var preflightProfile = userStorage.getCachedUserProfile();
+
+    // Verify or refresh profile against server if auth repository is available
     if (locator.isRegistered<AuthRepository>()) {
       try {
         final profileResult = await locator<AuthRepository>().getUserProfile();
-        final isSessionInvalid = profileResult.fold(
+        profileResult.fold(
           (failure) {
-            final msg = (failure.message ?? '').toLowerCase();
-            return msg.contains('jwt') ||
-                msg.contains('expired') ||
-                msg.contains('unauthorized') ||
-                msg.contains('invalid token') ||
-                msg.contains('401');
+            // Note: If session was explicitly revoked/invalidated on the server,
+            // TokenInterceptor triggers auto-logout and session expiration.
+            // On offline/transient failure, we proceed with cached profile.
           },
           (profile) {
             preflightProfile = profile;
-            return false;
+            if (locator.isRegistered<UserActivityService>()) {
+              unawaited(
+                locator<UserActivityService>().hydrateFromRemote(
+                  streakDays: profile.streakDays,
+                  xpPoints: profile.xpPoints,
+                  streakFreezes: profile.streakFreezeCount,
+                ),
+              );
+            }
+            unawaited(const FsrsSettingsSyncService().restoreFromRemote());
           },
         );
-
-        if (isSessionInvalid) {
-          locator<UserStorageService>().clearStorage();
-          authBloc.add(const AuthSignOutRequested());
-          if (!mounted) return;
-          final onboardingLocal = locator<OnboardingLocalDataSource>();
-          if (!onboardingLocal.hasCompletedOnboarding()) {
-            await context.router.replaceAll([const OnboardingRoute()]);
-          } else {
-            await context.router.replaceAll([const AuthRoute()]);
-          }
-          return;
-        }
       } on Object catch (_) {
         // Offline or connection glitch: allow proceeding with local cached state
       }
