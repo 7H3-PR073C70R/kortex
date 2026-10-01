@@ -152,5 +152,61 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets('renders top navigation bar with safe close button', (
+      tester,
+    ) async {
+      await pumpSummary(
+        tester,
+        cardsReviewed: 5,
+        retentionScore: 0.9,
+        disableAnimations: true,
+      );
+
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.text('Session Summary'), findsOneWidget);
+    });
+
+    testWidgets('displays Deck Conquered! for high retention (>= 85%)', (
+      tester,
+    ) async {
+      await pumpSummary(
+        tester,
+        cardsReviewed: 10,
+        retentionScore: 0.9,
+        disableAnimations: true,
+      );
+
+      expect(find.text('Deck Conquered! 🏆'), findsOneWidget);
+    });
+
+    testWidgets('displays Session Complete! for standard retention (< 85%)', (
+      tester,
+    ) async {
+      await pumpSummary(
+        tester,
+        cardsReviewed: 10,
+        retentionScore: 0.75,
+        disableAnimations: true,
+      );
+
+      expect(find.text('Session Complete! 🎉'), findsOneWidget);
+    });
+
+    testWidgets('renders complete action button hierarchy for standard decks', (
+      tester,
+    ) async {
+      await pumpSummary(
+        tester,
+        cardsReviewed: 10,
+        retentionScore: 0.8,
+        disableAnimations: true,
+      );
+
+      expect(find.text('🎯 Validate with Checkpoint Quiz'), findsOneWidget);
+      expect(find.text('Study Deck Again'), findsOneWidget);
+      expect(find.text('Return to Dashboard'), findsOneWidget);
+      expect(find.text('Browse All Decks'), findsOneWidget);
+    });
   });
 }

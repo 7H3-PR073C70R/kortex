@@ -264,22 +264,27 @@ class _SyllabotChatView extends HookWidget {
       BuildContext dialogContext,
       SyllabotChatState state,
     ) {
+      final persistentSessionId = UuidUtils.isValidUuid(state.sessionId)
+          ? state.sessionId
+          : UuidUtils.generate();
+
       unawaited(
         VoiceDialogueModal.show(
           context: dialogContext,
           ttsHandler: ttsHandler,
           initialMode: state.socraticMode,
           onStreamPrompt: (voicePrompt) {
-            final sid = UuidUtils.isValidUuid(state.sessionId)
-                ? state.sessionId
-                : UuidUtils.generate();
+            final latestState = dialogContext.read<SyllabotChatBloc>().state;
+            final sid = UuidUtils.isValidUuid(latestState.sessionId)
+                ? latestState.sessionId
+                : persistentSessionId;
 
             dialogContext.read<SyllabotChatBloc>().add(
               SubmitPromptEvent(
                 prompt: voicePrompt,
                 sessionId: sid,
-                socraticMode: state.socraticMode,
-                engineType: state.engineType,
+                socraticMode: latestState.socraticMode,
+                engineType: latestState.engineType,
               ),
             );
 
@@ -288,8 +293,8 @@ class _SyllabotChatView extends HookWidget {
             return streamUseCase(
               prompt: voicePrompt,
               sessionId: sid,
-              socraticMode: state.socraticMode,
-              preferredEngine: state.engineType,
+              socraticMode: latestState.socraticMode,
+              preferredEngine: latestState.engineType,
             );
           },
         ),

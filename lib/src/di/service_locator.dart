@@ -17,6 +17,9 @@ void _initServices() {
     ..registerLazySingleton<NotificationService>(
       NotificationService.new,
     )
+    ..registerLazySingleton<NotificationRouter>(
+      NotificationRouter.new,
+    )
     ..registerLazySingleton<DynamicLinkService>(
       DynamicLinkService.new,
     )

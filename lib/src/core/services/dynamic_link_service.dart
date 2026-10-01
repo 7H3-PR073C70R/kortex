@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
@@ -20,7 +21,7 @@ enum DynamicLinkType {
   final String value;
 
   static DynamicLinkType fromString(String raw) {
-    final clean = raw.trim().toLowerCase();
+    final clean = raw.trim().toLowerCase().replaceAll('-', '_');
     return DynamicLinkType.values.firstWhere(
       (e) => e.value == clean || e.name.toLowerCase() == clean,
       orElse: () => DynamicLinkType.unknown,
@@ -187,20 +188,29 @@ class DynamicLinkService {
       final targetId = uri.queryParameters['id'] ??
           uri.queryParameters['targetId'] ??
           uri.queryParameters['deckId'] ??
+          uri.queryParameters['deck_id'] ??
           uri.queryParameters['postId'] ??
+          uri.queryParameters['post_id'] ??
+          uri.queryParameters['roomId'] ??
+          uri.queryParameters['room_id'] ??
+          uri.queryParameters['code'] ??
           '';
 
-      if (typeStr.isNotEmpty && targetId.isNotEmpty) {
+      if (typeStr.isNotEmpty) {
         final type = DynamicLinkType.fromString(typeStr);
-        return DynamicLinkPayload(
-          type: type,
-          targetId: targetId,
-          parameters: uri.queryParameters,
-          title: uri.queryParameters['title'],
-          description: uri.queryParameters['desc'] ?? uri.queryParameters['description'],
-          imageUrl: uri.queryParameters['img'],
-          originalUri: uri,
-        );
+        if (type != DynamicLinkType.unknown &&
+            (targetId.isNotEmpty || type == DynamicLinkType.promo)) {
+          return DynamicLinkPayload(
+            type: type,
+            targetId: targetId.isNotEmpty ? targetId : 'promo',
+            parameters: uri.queryParameters,
+            title: uri.queryParameters['title'],
+            description: uri.queryParameters['desc'] ??
+                uri.queryParameters['description'],
+            imageUrl: uri.queryParameters['img'],
+            originalUri: uri,
+          );
+        }
       }
 
       // 3. Fallback path parsing for web links: https://domain/deck/123 or https://domain/forum/456
@@ -226,6 +236,75 @@ class DynamicLinkService {
     }
   }
 
+  /// Resolves the corresponding [PageRouteInfo] for a given [DynamicLinkPayload].
+  PageRouteInfo? routeForPayload(DynamicLinkPayload payload) {
+    switch (payload.type) {
+      case DynamicLinkType.deck:
+        if (payload.targetId.isNotEmpty) {
+          final isStudy = payload.parameters['mode'] == 'study';
+          if (isStudy) {
+            return StudySessionRoute(deckId: payload.targetId);
+          } else {
+            return DeckDetailRoute(deckId: payload.targetId);
+          }
+        }
+        return const DecksRoute();
+
+      case DynamicLinkType.forum:
+        if (payload.targetId.isNotEmpty) {
+          final post = ForumPostEntity(
+            id: payload.targetId,
+            title: payload.title ?? 'Shared Discussion',
+            content: payload.description ?? '',
+            authorId: payload.parameters['authorId'] ?? 'user-anonymous',
+            authorName: payload.parameters['authorName'] ?? 'Kortex Scholar',
+            track: payload.parameters['track'] ?? 'General',
+            createdAt: DateTime.now(),
+          );
+          return ForumThreadDetailRoute(
+            post: post,
+            highlightReplyId: payload.parameters['replyId'] ??
+                payload.parameters['reply_id'],
+          );
+        }
+        return const CommunityHubRoute();
+
+      case DynamicLinkType.quizDuel:
+        final deckId = payload.parameters['deckId'] ??
+            payload.parameters['deck_id'] ??
+            (payload.targetId.isNotEmpty ? payload.targetId : 'deck-default');
+        return QuizWorkspaceRoute(deckId: deckId);
+
+      case DynamicLinkType.studyRoom:
+        if (payload.targetId.isNotEmpty) {
+          final room = StudyRoomEntity(
+            id: payload.targetId,
+            title: payload.title ?? 'Live Study Room',
+            subject: payload.description ?? 'Academic Co-Working',
+            createdBy: payload.parameters['hostId'] ?? 'host-user',
+          );
+          return LiveStudyRoomRoute(room: room);
+        }
+        return const StudyHubRoute();
+
+      case DynamicLinkType.promo:
+        return PaywallRoute();
+
+      case DynamicLinkType.course:
+        if (payload.targetId.isNotEmpty) {
+          return CourseModuleRoute(
+            courseId: payload.targetId,
+            courseCode: payload.parameters['code'] ?? 'COURSE',
+            courseTitle: payload.title ?? 'Academic Course',
+          );
+        }
+        return CurateCoursesRoute();
+
+      case DynamicLinkType.unknown:
+        return null;
+    }
+  }
+
   /// Navigates to the corresponding screen inside [AppRouter] based on [DynamicLinkPayload].
   Future<bool> handlePayload({
     required DynamicLinkPayload payload,
@@ -233,80 +312,12 @@ class DynamicLinkService {
   }) async {
     debugPrint('[DynamicLinkService] Handling link payload: $payload');
     try {
-      switch (payload.type) {
-        case DynamicLinkType.deck:
-          if (payload.targetId.isNotEmpty) {
-            final isStudy = payload.parameters['mode'] == 'study';
-            if (isStudy) {
-              await appRouter.push(StudySessionRoute(deckId: payload.targetId));
-            } else {
-              await appRouter.push(DeckDetailRoute(deckId: payload.targetId));
-            }
-            return true;
-          }
-          await appRouter.push(const DecksRoute());
-          return true;
-
-        case DynamicLinkType.forum:
-          if (payload.targetId.isNotEmpty) {
-            // Construct placeholder entity for thread detail view
-            final post = ForumPostEntity(
-              id: payload.targetId,
-              title: payload.title ?? 'Shared Discussion',
-              content: payload.description ?? '',
-              authorId: payload.parameters['authorId'] ?? 'user-anonymous',
-              authorName: payload.parameters['authorName'] ?? 'Kortex Scholar',
-              track: payload.parameters['track'] ?? 'General',
-              createdAt: DateTime.now(),
-            );
-            await appRouter.push(ForumThreadDetailRoute(post: post));
-            return true;
-          }
-          await appRouter.push(const CommunityHubRoute());
-          return true;
-
-        case DynamicLinkType.quizDuel:
-          final deckId = payload.parameters['deckId'] ??
-              payload.parameters['deck_id'] ??
-              payload.targetId;
-          await appRouter.push(QuizWorkspaceRoute(deckId: deckId));
-          return true;
-
-        case DynamicLinkType.studyRoom:
-          if (payload.targetId.isNotEmpty) {
-            final room = StudyRoomEntity(
-              id: payload.targetId,
-              title: payload.title ?? 'Live Study Room',
-              subject: payload.description ?? 'Academic Co-Working',
-              createdBy: payload.parameters['hostId'] ?? 'host-user',
-            );
-            await appRouter.push(LiveStudyRoomRoute(room: room));
-            return true;
-          }
-          await appRouter.push(const StudyHubRoute());
-          return true;
-
-        case DynamicLinkType.promo:
-          await appRouter.push(PaywallRoute());
-          return true;
-
-        case DynamicLinkType.course:
-          if (payload.targetId.isNotEmpty) {
-            await appRouter.push(
-              CourseModuleRoute(
-                courseId: payload.targetId,
-                courseCode: payload.parameters['code'] ?? 'COURSE',
-                courseTitle: payload.title ?? 'Academic Course',
-              ),
-            );
-            return true;
-          }
-          await appRouter.push(CurateCoursesRoute());
-          return true;
-
-        case DynamicLinkType.unknown:
-          return false;
+      final route = routeForPayload(payload);
+      if (route != null) {
+        await appRouter.push(route);
+        return true;
       }
+      return false;
     } on Object catch (e) {
       debugPrint('[DynamicLinkService] Navigation error for payload ($payload): $e');
       return false;

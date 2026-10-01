@@ -13,16 +13,25 @@ class SpeechTextNormalizer {
   // Educational & Academic Abbreviations
   // ---------------------------------------------------------------------------
   static const Map<String, String> _acronymExpansions = {
-    'JAMB': 'J-A-M-B',
-    'WAEC': 'W-A-E-C',
+    'WAEC': 'Way-eck',
+    'WASSCE': 'Was-see',
+    'JAMB': 'Jamb',
+    'NECO': 'Neco',
+    'NABTEB': 'Nabteb',
+    'BECE': 'Beh-seh',
+    'JUPEB': 'Joo-peb',
+    'ASUU': 'Ah-soo',
     'UTME': 'U-T-M-E',
-    'NECO': 'N-E-C-O',
-    'NABTEB': 'N-A-B-T-E-B',
     'POST-UTME': 'Post U-T-M-E',
     'Post-UTME': 'Post U-T-M-E',
     'CBT': 'C-B-T',
     'GPA': 'G-P-A',
     'CGPA': 'C-G-P-A',
+    'SSCE': 'S-S-C-E',
+    'GCE': 'G-C-E',
+    'IJMB': 'I-J-M-B',
+    'NUC': 'N-U-C',
+    'NYSC': 'N-Y-S-C',
     'API': 'A-P-I',
     'AI': 'A-I',
     'UI': 'U-I',
@@ -159,46 +168,85 @@ class SpeechTextNormalizer {
 
     var text = rawMarkdown;
 
-    // 1. Strip code blocks and inline code
+    // 0. Clean zero-width, non-breaking, and invisible control characters
+    text = text
+        .replaceAll('\u00A0', ' ')
+        .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF\u200E\u200F]'), '');
+
+    // 1. Decode HTML entities so they do not leak as codes or ampersands
+    text = text
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', ' and ')
+        .replaceAll('&lt;', ' is less than ')
+        .replaceAll('&gt;', ' is greater than ')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&apos;', "'")
+        .replaceAll('&#39;', "'")
+        .replaceAll('&cent;', ' cents')
+        .replaceAll('&copy;', ' copyright')
+        .replaceAll('&deg;', ' degrees')
+        .replaceAll(RegExp(r'&#\d+;'), ' ');
+
+    // 2. Strip HTML tags (e.g. <br>, <b>, <span>, <div>, <p>)
+    text = text.replaceAll(RegExp('<[^>]+>'), ' ');
+
+    // 3. Strip code blocks and inline code
     text = text.replaceAll(
       RegExp(r'```[\s\S]*?```'),
       ', here is the code snippet: , ',
     );
     text = text.replaceAllMapped(RegExp('`([^`]+)`'), (m) => m[1]!);
+    text = text.replaceAll('`', '');
 
-    // 2. Expand LaTeX math commands into spoken words
+    // 4. Expand LaTeX math commands into spoken words
     text = _normalizeLatex(text);
 
-    // 3. Strip Markdown headings (#, ##, etc.) and bold/italic syntax
-    text = text.replaceAll(RegExp(r'#{1,6}\s*'), '');
+    // 5. Clean Blockquotes (strip leading > without confusing with math)
+    text = text.replaceAll(RegExp(r'^\s*>\s*', multiLine: true), '');
+
+    // 6. Strip Markdown headings (#, ##, etc.) and horizontal rules
+    text = text.replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'^\s*[-*_]{3,}\s*$', multiLine: true), '');
+    // Clean number signs like #1 -> number 1
+    text = text.replaceAllMapped(RegExp(r'#(\d+)'), (m) => 'number ${m[1]}');
+    text = text.replaceAll('#', '');
+
+    // 7. Strip Markdown bold, italic, strikethrough syntax cleanly
+    text = text.replaceAllMapped(RegExp(r'(\*{1,3}|_{1,3})(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp(r'(\*\*|__)(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp(r'(\*|_)(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp('~~(.*?)~~'), (m) => m[1]!);
 
-    // 4. Markdown links: retain link title, remove URL
+    // 8. Markdown links: retain link title, remove URL
     text = text.replaceAllMapped(
       RegExp(r'\[([^\]]+)\]\([^)]+\)'),
       (m) => m[1]!,
     );
 
-    // 5. Remove standalone raw URLs
+    // 9. Remove standalone raw URLs
     text = text.replaceAll(RegExp(r'https?://\S+'), '');
 
-    // 6. Clean bullet points & numbered lists
-    // Convert bullet lists into natural pauses
-    text = text.replaceAll(RegExp(r'^\s*[-•*]\s+', multiLine: true), ', ');
+    // 10. Clean bullet points & numbered lists
+    // Convert list markers into natural pauses
+    text = text.replaceAll(RegExp(r'^\s*[-•*+]\s+', multiLine: true), ', ');
     text = text.replaceAll(RegExp(r'^\s*\d+\.\s+', multiLine: true), ', ');
 
-    // 7. Strip emojis (Unicode ranges covering standard emoji blocks)
+    // 11. Normalize Unicode bullets & special symbols
+    text = text.replaceAll(RegExp('[•·▪▫◦‣⁃■□●○★☆]'), ', ');
+    text = text
+        .replaceAll(RegExp('[✓✔]'), ' correct ')
+        .replaceAll(RegExp('[✕✖✗✘]'), ' incorrect ');
+
+    // 12. Strip emojis (all standard Unicode emoji ranges)
     text = text.replaceAll(
       RegExp(
-        r'[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1FA70}-\u{1FAFF}]|[\u{1F000}-\u{1F02F}]',
+        r'[\u{1F000}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]',
         unicode: true,
       ),
       '',
     );
 
-    // 8. Normalise Currencies
+    // 13. Normalise Currencies
     text = text.replaceAllMapped(
       RegExp(r'₦\s*(\d+(?:,\d+)*(?:\.\d{1,2})?)'),
       (m) => '${m[1]} Naira',
@@ -216,21 +264,115 @@ class SpeechTextNormalizer {
       (m) => '${m[1]} euros',
     );
 
-    // 9. Normalise Percentages & Mathematical Comparison Symbols
+    // 14. Normalise Degrees, Percentages, and Math Symbols
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*°\s*C\b'),
+      (m) => '${m[1]} degrees Celsius',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*°\s*F\b'),
+      (m) => '${m[1]} degrees Fahrenheit',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*°'),
+      (m) => '${m[1]} degrees',
+    );
+    text = text.replaceAll('°', ' degrees ');
+
     text = text.replaceAllMapped(
       RegExp(r'(\d+(?:\.\d+)?)\s*%'),
       (m) => '${m[1]} percent',
     );
+    text = text.replaceAll('%', ' percent ');
+
+    // Powers and exponents outside LaTeX: e.g. x^2, 10^3, 2^5
+    text = text.replaceAllMapped(
+      RegExp(r'(\w+)\^2\b'),
+      (m) => '${m[1]} squared',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\w+)\^3\b'),
+      (m) => '${m[1]} cubed',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\w+)\^(-?\d+)'),
+      (m) => '${m[1]} to the power of ${m[2]}',
+    );
+
+    // Unicode superscripts & subscripts
     text = text
+        .replaceAll('²', ' squared')
+        .replaceAll('³', ' cubed')
+        .replaceAll('¹', ' to the power of 1')
+        .replaceAll('⁰', ' to the power of 0')
+        .replaceAll('⁴', ' to the power of 4')
+        .replaceAll('⁵', ' to the power of 5')
+        .replaceAll('⁶', ' to the power of 6')
+        .replaceAll('⁷', ' to the power of 7')
+        .replaceAll('⁸', ' to the power of 8')
+        .replaceAll('⁹', ' to the power of 9');
+
+    // Subscripts in chemical formulas (e.g. H₂O -> H 2 O, CO₂ -> C O 2)
+    text = text.replaceAllMapped(
+      RegExp('([A-Za-z])([₀₁₂₃₄₅₆₇₈₉])'),
+      (m) {
+        const subMap = {
+          '₀': ' 0 ',
+          '₁': ' 1 ',
+          '₂': ' 2 ',
+          '₃': ' 3 ',
+          '₄': ' 4 ',
+          '₅': ' 5 ',
+          '₆': ' 6 ',
+          '₇': ' 7 ',
+          '₈': ' 8 ',
+          '₉': ' 9 ',
+        };
+        return '${m[1]}${subMap[m[2]] ?? ''}';
+      },
+    );
+
+    // Math operators & comparisons
+    text = text
+        .replaceAll(' ± ', ' plus or minus ')
+        .replaceAll('±', ' plus or minus ')
+        .replaceAll(' × ', ' times ')
+        .replaceAll('×', ' times ')
+        .replaceAll(' ÷ ', ' divided by ')
+        .replaceAll('÷', ' divided by ')
+        .replaceAll(' − ', ' minus ')
+        .replaceAll(' ≠ ', ' does not equal ')
+        .replaceAll('≠', ' does not equal ')
+        .replaceAll(' ≤ ', ' is less than or equal to ')
+        .replaceAll('≤', ' is less than or equal to ')
+        .replaceAll(' ≥ ', ' is greater than or equal to ')
+        .replaceAll('≥', ' is greater than or equal to ')
+        .replaceAll(' ≈ ', ' approximately equals ')
+        .replaceAll('≈', ' approximately equals ')
+        .replaceAll(' ∞ ', ' infinity ')
+        .replaceAll('∞', ' infinity ')
         .replaceAll(' & ', ' and ')
         .replaceAll('&', ' and ')
         .replaceAll(' > ', ' is greater than ')
         .replaceAll(' < ', ' is less than ')
         .replaceAll(' = ', ' equals ')
-        .replaceAll(' != ', ' does not equal ')
-        .replaceAll(' ± ', ' plus or minus ');
+        .replaceAll(' != ', ' does not equal ');
 
-    // 10. Normalise Times (e.g. "10:30 AM", "8:15 pm")
+    // Directional arrows
+    text = text
+        .replaceAll(RegExp(r'(\s*[-=]>|\s*→)'), ' leads to ')
+        .replaceAll(RegExp(r'(\s*<[-=]|\s*←)'), ' comes from ')
+        .replaceAll(RegExp(r'(\s*<[-=]>|\s*↔)'), ' is equivalent to ');
+
+    // Units with slashes
+    text = text
+        .replaceAll(RegExp(r'\bkm/h\b', caseSensitive: false), 'kilometers per hour')
+        .replaceAll(RegExp(r'\bm/s\^?2\b', caseSensitive: false), 'meters per second squared')
+        .replaceAll(RegExp(r'\bm/s\b', caseSensitive: false), 'meters per second')
+        .replaceAll(RegExp(r'\band/or\b', caseSensitive: false), 'and or')
+        .replaceAll(RegExp(r'\bapprox\.\s*', caseSensitive: false), 'approximately ');
+
+    // 15. Normalise Times (e.g. "10:30 AM", "8:15 pm")
     text = text.replaceAllMapped(
       RegExp(r'\b(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)\b'),
       (m) {
@@ -241,7 +383,7 @@ class SpeechTextNormalizer {
       },
     );
 
-    // 11. Normalise Academic Acronyms & Abbreviations
+    // 16. Normalise Academic Acronyms & Abbreviations
     for (final entry in _commonAbbreviations.entries) {
       text = text.replaceAll(
         RegExp(entry.key, caseSensitive: false),
@@ -249,10 +391,13 @@ class SpeechTextNormalizer {
       );
     }
     for (final entry in _acronymExpansions.entries) {
-      text = text.replaceAll(RegExp('\\b${entry.key}\\b'), entry.value);
+      text = text.replaceAll(
+        RegExp('\\b${entry.key}\\b', caseSensitive: false),
+        entry.value,
+      );
     }
 
-    // 12. Conversational Year Pronunciation (e.g. 2024 -> "twenty twenty-four")
+    // 17. Conversational Year Pronunciation (e.g. 2024 -> "twenty twenty-four")
     text = text.replaceAllMapped(
       RegExp(r'\b(19\d{2}|20\d{2})\b'),
       (m) {
@@ -272,11 +417,47 @@ class SpeechTextNormalizer {
       },
     );
 
-    // 13. Clean punctuation & whitespace
+    // 18. Clean remaining stray syntax characters that would be read aloud by TTS
+    // Fill in the blanks: ______ -> ", blank, "
+    text = text.replaceAll(RegExp('_{2,}'), ', blank, ');
+    // Snake_case between words: user_id -> user id
+    text = text.replaceAllMapped(
+      RegExp('([a-zA-Z0-9])_([a-zA-Z0-9])'),
+      (m) => '${m[1]} ${m[2]}',
+    );
+    // Remove stray underscores
+    text = text.replaceAll('_', ' ');
+
+    // Multiply star e.g. 5 * 2 -> 5 times 2
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+)\s*\*\s*(\d+)'),
+      (m) => '${m[1]} times ${m[2]}',
+    );
+    // Remove stray asterisks so TTS never says "asterisk"
+    text = text.replaceAll('*', ' ');
+
+    // Strip brackets and braces but keep inner text
+    text = text
+        .replaceAll('[', ' ')
+        .replaceAll(']', ' ')
+        .replaceAll('{', ' ')
+        .replaceAll('}', ' ')
+        .replaceAll('|', ', ')
+        .replaceAll(r'\', ' ')
+        .replaceAll('^', ' ')
+        .replaceAll('~', ' ');
+
+    // Normalize quotes
+    text = text
+        .replaceAll(RegExp('[“”«»]'), '"')
+        .replaceAll(RegExp('[‘’`]'), "'");
+
+    // 19. Clean punctuation & whitespace
     // Replace em-dash or en-dash with comma pause
-    text = text.replaceAll(RegExp('[—–]'), ', ');
+    text = text.replaceAll(RegExp('[—–―]'), ', ');
     // Replace ellipses with comma pause
     text = text.replaceAll('...', ', ');
+    text = text.replaceAll('…', ', ');
     // Collapse newlines: avoid creating double punctuation if preceded by punctuation
     text = text.replaceAll(RegExp(r'(?<=[.!?])\s*\n+'), ' ');
     text = text.replaceAll(RegExp(r'(?<=[,;:])\s*\n+'), ' ');
@@ -425,7 +606,7 @@ class SpeechTextNormalizer {
       (m) => ' to the power of ${m[1]}',
     );
     s = s.replaceAllMapped(
-      RegExp('_([a-zA-Z0-9])'),
+      RegExp(r'(?<=\b[a-zA-Z])_(\d+)\b'),
       (m) => ' sub ${m[1]}',
     );
 

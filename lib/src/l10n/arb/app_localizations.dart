@@ -2630,6 +2630,24 @@ abstract class AppLocalizations {
   /// **'Review More Decks'**
   String get sessionSummaryReviewAgain;
 
+  /// Celebratory title when review session retention is high
+  ///
+  /// In en, this message translates to:
+  /// **'Deck Conquered! 🏆'**
+  String get sessionSummaryDeckConquered;
+
+  /// Button to restudy or replay the current deck
+  ///
+  /// In en, this message translates to:
+  /// **'Study Deck Again'**
+  String get sessionSummaryStudyAgain;
+
+  /// Button to browse all flashcard decks
+  ///
+  /// In en, this message translates to:
+  /// **'Browse All Decks'**
+  String get sessionSummaryBrowseDecks;
+
   /// Title of the Syllabot AI feature
   ///
   /// In en, this message translates to:

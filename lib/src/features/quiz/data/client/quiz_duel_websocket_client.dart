@@ -19,8 +19,15 @@ class QuizDuelWebSocketClient {
        _random = random ?? Random(),
        matchmakingTimeout = matchmakingTimeout ?? defaultMatchmakingTimeout,
        _dio = dio;
-  static const Duration defaultMatchmakingTimeout = Duration(minutes: 2);
+  static const Duration defaultMatchmakingTimeout = Duration(seconds: 12);
   final Duration matchmakingTimeout;
+
+  /// Generates a clean 6-character room code for direct student challenges.
+  static String generateRoomCode([Random? random]) {
+    final rng = random ?? Random();
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+  }
 
   final RealtimeClient _realtimeClient;
   final Random _random;
@@ -244,17 +251,30 @@ class QuizDuelWebSocketClient {
             final remoteDuelId = data['duelId'] as String?;
             final remoteUserId = data['userId'] as String?;
             final remoteMatchJson = data['match'] as Map<String, dynamic>?;
+            final remoteRoomCode =
+                (data['roomCode'] as String?)?.trim().toUpperCase();
 
             if (remoteDuelId == null || remoteUserId == null) return;
 
             for (final localMatch in _activeMatches.values.toList()) {
+              final bool isCodeMatch;
+              if (remoteRoomCode != null && remoteRoomCode.isNotEmpty) {
+                isCodeMatch =
+                    localMatch.roomCode?.trim().toUpperCase() == remoteRoomCode;
+              } else if (localMatch.roomCode != null &&
+                  localMatch.roomCode!.isNotEmpty) {
+                isCodeMatch = false;
+              } else {
+                isCodeMatch = localMatch.subject.trim().toLowerCase() ==
+                        (data['subject'] as String? ?? '').trim().toLowerCase() &&
+                    localMatch.examBoard.trim().toLowerCase() ==
+                        (data['examBoard'] as String? ?? '').trim().toLowerCase();
+              }
+
               if (localMatch.status == QuizDuelStatus.matching &&
                   localMatch.player1.userId != remoteUserId &&
                   localMatch.player2 == null &&
-                  localMatch.subject.trim().toLowerCase() ==
-                      (data['subject'] as String? ?? '').trim().toLowerCase() &&
-                  localMatch.examBoard.trim().toLowerCase() ==
-                      (data['examBoard'] as String? ?? '').trim().toLowerCase()) {
+                  isCodeMatch) {
                 // Deterministic host tie-breaker:
                 // Compare localDuelId vs remoteDuelId. The smaller duelId lexicographically is the host room.
                 // Both clients agree on the exact same host duelId and host question set.
@@ -456,7 +476,7 @@ class QuizDuelWebSocketClient {
   }
 
   /// Finds or creates a duel match room.
-  /// Looks for real human opponent first; if none is found after 2 minutes, falls back to AI.
+  /// Looks for real human opponent first; if none is found within 12 seconds, falls back to AI.
   Future<QuizDuelMatch> findOrCreateDuel({
     required String subject,
     required String examBoard,
@@ -465,19 +485,31 @@ class QuizDuelWebSocketClient {
     required String avatarUrl,
     int questionCount = 10,
     List<QuizQuestionEntity>? customQuestions,
+    String? roomCode,
   }) async {
     _initMatchmakingRealtime();
+
+    final targetRoomCode = roomCode?.trim().toUpperCase();
 
     // 1. Check if another real player is already waiting in matchmaking locally
     QuizDuelMatch? existingMatch;
     for (final m in _activeMatches.values) {
       if (m.status == QuizDuelStatus.matching &&
-          m.subject.trim().toLowerCase() == subject.trim().toLowerCase() &&
-          m.examBoard.trim().toLowerCase() == examBoard.trim().toLowerCase() &&
           m.player1.userId != userId &&
           m.player2 == null) {
-        existingMatch = m;
-        break;
+        if (targetRoomCode != null && targetRoomCode.isNotEmpty) {
+          if (m.roomCode?.trim().toUpperCase() == targetRoomCode) {
+            existingMatch = m;
+            break;
+          }
+        } else if (m.roomCode == null || m.roomCode!.isEmpty) {
+          if (m.subject.trim().toLowerCase() == subject.trim().toLowerCase() &&
+              m.examBoard.trim().toLowerCase() ==
+                  examBoard.trim().toLowerCase()) {
+            existingMatch = m;
+            break;
+          }
+        }
       }
     }
 
@@ -535,6 +567,8 @@ class QuizDuelWebSocketClient {
       eloRating: 1250,
     );
 
+    final assignedRoomCode = targetRoomCode ?? generateRoomCode(_random);
+
     final match = QuizDuelMatch(
       duelId: duelId,
       subject: subject,
@@ -542,6 +576,7 @@ class QuizDuelWebSocketClient {
       questions: questions,
       player1: player1,
       createdAt: DateTime.now(),
+      roomCode: assignedRoomCode,
     );
 
     _activeMatches[duelId] = match;
@@ -561,6 +596,7 @@ class QuizDuelWebSocketClient {
             'userId': userId,
             'displayName': displayName,
             'avatarUrl': avatarUrl,
+            'roomCode': assignedRoomCode,
             'match': match.toJson(),
           },
         },
@@ -570,7 +606,7 @@ class QuizDuelWebSocketClient {
         payload: {'type': 'announcement_request'},
       );
 
-    // Schedule AI match if no real player joins within matchmakingTimeout (default 2 minutes)
+    // Schedule AI match if no real player joins within matchmakingTimeout
     _matchingTimers[duelId]?.cancel();
     _matchingTimers[duelId] = Timer(matchmakingTimeout, () {
       if (_activeMatches[duelId]?.status == QuizDuelStatus.matching) {
@@ -581,23 +617,59 @@ class QuizDuelWebSocketClient {
     return match;
   }
 
-  /// Immediately pairs with an AI opponent if the user chooses not to wait out the 2-minute search.
+  /// Immediately pairs with an AI opponent if the user chooses not to wait out the matchmaking search.
   void simulateMatchFoundWithAi(String duelId) {
     final current = _activeMatches[duelId];
     if (current == null || current.status != QuizDuelStatus.matching) return;
 
     _matchingTimers[duelId]?.cancel();
 
-    final aiPersonalities = [
-      ('⚡ Speedy Scholar', '🧠'),
-      ('🎯 Calculated Genius', '💡'),
-      ('🚀 Formula Prodigy', '🚀'),
-      ('👑 Syllabot Rival', '🏆'),
-      ('🛡️ Master Duelist', '⚡'),
-    ];
-    final pick = aiPersonalities[_random.nextInt(aiPersonalities.length)];
     final p1Elo = current.player1.eloRating;
-    final aiElo = (p1Elo + (_random.nextInt(101) - 50)).clamp(1000, 2200);
+    final subject = current.subject.toLowerCase();
+
+    final List<(String, String)> aiPersonalities;
+    if (subject.contains('math') ||
+        subject.contains('calc') ||
+        subject.contains('stat')) {
+      aiPersonalities = [
+        ('Amina • ABU Zaria', '📐'),
+        ('Kofi • KNUST Math Apex', '⚡'),
+        ('Ada Lovelace AI', '💻'),
+        ('Tunde • Unilag Prodigy', '🚀'),
+        ('Euler Algorithm Bot', '🧠'),
+      ];
+    } else if (subject.contains('phys') || subject.contains('eng')) {
+      aiPersonalities = [
+        ('Chidi • UNN Physics Master', '⚡'),
+        ('Farouk • BUK Mechanics', '💡'),
+        ('Newton Kinetic Bot', '🍎'),
+        ('Zainab • UI Quantum Scholar', '🔬'),
+        ('Maxwell Electro-Pro', '🧲'),
+      ];
+    } else if (subject.contains('chem') ||
+        subject.contains('bio') ||
+        subject.contains('med')) {
+      aiPersonalities = [
+        ('Dr. Folake • Pre-Med Ace', '🧬'),
+        ('Emeka • Biochem Specialist', '🧪'),
+        ('Curie Reaction Scholar', '💡'),
+        ('Hauwa • Anatomy Prodigy', '🩺'),
+        ('Cellular Biology Ace', '🔬'),
+      ];
+    } else {
+      aiPersonalities = [
+        ('⚡ Speedy Scholar', '🧠'),
+        ('🎯 Calculated Genius', '💡'),
+        ('🚀 Formula Prodigy', '🚀'),
+        ('👑 Syllabot Rival', '🏆'),
+        ('🛡️ Master Duelist', '⚡'),
+        ('Ifeoma • Premier Duelist', '🌟'),
+        ('Marcus • Cambridge Scholar', '🏛️'),
+      ];
+    }
+
+    final pick = aiPersonalities[_random.nextInt(aiPersonalities.length)];
+    final aiElo = (p1Elo + (_random.nextInt(61) - 30)).clamp(1000, 2400);
 
     final player2 = QuizDuelParticipant(
       userId: 'ai_bot_${_random.nextInt(9999)}',

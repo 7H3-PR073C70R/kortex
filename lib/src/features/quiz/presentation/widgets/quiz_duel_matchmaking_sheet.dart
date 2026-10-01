@@ -1,17 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
-import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/quiz/data/client/quiz_duel_websocket_client.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_cubit.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
@@ -19,8 +20,10 @@ import 'package:kortex/src/features/quiz/presentation/pages/quiz_duel_arena_page
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_elo_tier_badge.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_leaderboard_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
+import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
+import 'package:kortex/src/shared/widgets/app_text_field.dart';
 
-/// Modal bottom sheet for searching and joining a 1v1 Quiz Duel match (QZ-13).
+/// Modal bottom sheet for searching, creating rooms, entering codes, and joining 1v1 Quiz Duels (QZ-13).
 class QuizDuelMatchmakingSheet extends HookWidget {
   const QuizDuelMatchmakingSheet({
     super.key,
@@ -58,10 +61,15 @@ class QuizDuelMatchmakingSheet extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final activeTab = useState<int>(0); // 0: Quick Match, 1: Invite with Code, 2: Join with Code
     final selectedSubject = useState<String>(initialSubject);
     final selectedQuestionCount = useState<int>(10);
     final isSearching = useState<bool>(false);
     final searchSeconds = useState<int>(0);
+    final activeRoomCode = useState<String?>(null);
+
+    final generatedCode = useState<String>(QuizDuelWebSocketClient.generateRoomCode());
+    final enteredCodeController = useTextEditingController();
 
     useEffect(() {
       Timer? timer;
@@ -108,7 +116,6 @@ class QuizDuelMatchmakingSheet extends HookWidget {
 
     final userRegisteredCourses = {...curatedCourses, ...deckSubjects}.toList();
 
-    // Fallback only if user has zero registered courses yet
     final subjects = userRegisteredCourses.isNotEmpty
         ? userRegisteredCourses
         : const [
@@ -135,9 +142,11 @@ class QuizDuelMatchmakingSheet extends HookWidget {
       return null;
     }, [pulseController]);
 
-    Future<void> startMatchmaking() async {
+    Future<void> executeMatchmaking({String? roomCode}) async {
       AppFeedback.selection();
       isSearching.value = true;
+      activeRoomCode.value = roomCode;
+
       final profile = authBloc?.state.userProfile;
       final resolvedUserId = profile?.id ??
           authBloc?.state.user?.id ??
@@ -155,28 +164,31 @@ class QuizDuelMatchmakingSheet extends HookWidget {
         displayName: resolvedDisplayName,
         avatarUrl: resolvedAvatarUrl,
         questionCount: selectedQuestionCount.value,
+        roomCode: roomCode,
       );
     }
 
-    Future<void> inviteViaLink() async {
-      await startMatchmaking();
-      if (!context.mounted) return;
-
-      final cubit = context.read<QuizDuelCubit>();
-      final match = cubit.state.match;
-      final duelId = match?.duelId ??
-          'duel_${DateTime.now().millisecondsSinceEpoch}';
-
-      final result = await locator<LinkSharingService>().shareQuizDuel(
-        duelId: duelId,
-        deckId: selectedSubject.value,
-        deckTitle: selectedSubject.value,
-      );
-      await locator<LinkSharingService>().copyLinkToClipboard(result.linkUri);
-
+    Future<void> copyCodeToClipboard(String code) async {
+      AppFeedback.light();
+      await Clipboard.setData(ClipboardData(text: code));
       if (context.mounted) {
         context.showSnackBar(
-          message: 'Private duel room created! Link copied to clipboard.',
+          message: 'Room code $code copied to clipboard!',
+          type: SnackBarType.success,
+        );
+      }
+    }
+
+    Future<void> shareInviteWithFriend(String code) async {
+      AppFeedback.light();
+      final shareText = '⚔️ Challenge me to a 1v1 ${selectedSubject.value} Duel on Kortex!\n'
+          'Room Code: $code\n'
+          'Open Kortex > 1v1 Duel > Enter Code "$code" to play!';
+
+      await Clipboard.setData(ClipboardData(text: shareText));
+      if (context.mounted) {
+        context.showSnackBar(
+          message: 'Duel invite copied! Send it to your friend on WhatsApp or chat.',
           type: SnackBarType.success,
         );
       }
@@ -226,9 +238,9 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Header section (Drag handle + Title + Subtitle)
+                  // Header section (Drag handle + Title + ELO Badge)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -243,7 +255,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
 
                         // Title & ELO Banner Row
                         Row(
@@ -271,7 +283,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          'Quiz Duel',
+                                          '1v1 Academic Duel',
                                           style: typography.title2.bold.copyWith(
                                             color: colors.textPrimary,
                                           ),
@@ -290,13 +302,13 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 3),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    'Answer quickly and correctly to earn bonus points.',
+                                    'Real-time battle of speed and academic mastery.',
                                     style: typography.caption.regular.copyWith(
                                       color: colors.textSecondary,
                                     ),
-                                    maxLines: 2,
+                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
@@ -307,6 +319,28 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                       ],
                     ),
                   ),
+
+                  // Mode Segment Switcher (only when not actively searching)
+                  if (!isSearching.value) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: AppLiquidGlassTabBar(
+                        tabs: const ['Quick Match', 'Invite Friend', 'Enter Code'],
+                        icons: const [
+                          Icons.radar_rounded,
+                          Icons.share_rounded,
+                          Icons.pin_rounded,
+                        ],
+                        selectedIndex: activeTab.value,
+                        isCompact: true,
+                        onTabSelected: (index) {
+                          AppFeedback.selection();
+                          activeTab.value = index;
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
 
                   Divider(
                     height: 1,
@@ -322,10 +356,10 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (isSearching.value) ...[
-                            // Searching Radar View
+                            // Active Matchmaking Radar View
                             Center(
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                                 child: Column(
                                   children: [
                                     AnimatedBuilder(
@@ -365,9 +399,11 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                               ),
                                               child: Center(
                                                 child: Icon(
-                                                  Icons.radar_rounded,
+                                                  activeRoomCode.value != null
+                                                      ? Icons.vpn_key_rounded
+                                                      : Icons.radar_rounded,
                                                   color: colors.white,
-                                                  size: 32,
+                                                  size: 30,
                                                 ),
                                               ),
                                             ),
@@ -375,35 +411,115 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                         );
                                       },
                                     ),
-                                    const SizedBox(height: 18),
-                                    Text(
-                                      'Looking for a classmate… (${((searchSeconds.value ~/ 60) + 1).toString().padLeft(2, '0')}:${(searchSeconds.value % 60).toString().padLeft(2, '0')} of 02:00)',
-                                      style: typography.title3.bold.copyWith(
-                                        color: colors.textPrimary,
-                                        fontSize: 16,
+                                    const SizedBox(height: 16),
+
+                                    if (activeRoomCode.value != null) ...[
+                                      // Private Room Active Display
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: colors.primary.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(AppRadius.card),
+                                          border: Border.all(
+                                            color: colors.primary.withValues(alpha: 0.4),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              'ROOM CODE: ',
+                                              style: typography.caption.bold.copyWith(
+                                                color: colors.textSecondary,
+                                                letterSpacing: 1,
+                                              ),
+                                            ),
+                                            Text(
+                                              activeRoomCode.value!,
+                                              style: typography.title2.bold.copyWith(
+                                                color: colors.primary,
+                                                letterSpacing: 3,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            InkWell(
+                                              onTap: () => copyCodeToClipboard(activeRoomCode.value!),
+                                              child: Icon(
+                                                Icons.copy_rounded,
+                                                color: colors.primary,
+                                                size: 18,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'Searching classmates studying ${selectedSubject.value} ($resolvedExamBoard)\nIf nobody joins within 2 minutes, you will practice with AI',
-                                      textAlign: TextAlign.center,
-                                      style: typography.body.regular.copyWith(
-                                        color: colors.textSecondary,
-                                        fontSize: 12,
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Waiting for friend to join with code...',
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Share this 6-character code with your study partner to connect!',
+                                        textAlign: TextAlign.center,
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textSecondary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      OutlinedButton.icon(
+                                        onPressed: () => shareInviteWithFriend(activeRoomCode.value!),
+                                        icon: const Icon(Icons.share_rounded, size: 16),
+                                        label: const Text('Share Code & Invite'),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: colors.primary,
+                                          side: BorderSide(color: colors.primary.withValues(alpha: 0.5)),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                                          ),
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      // Public Quick Match Active Display
+                                      Text(
+                                        searchSeconds.value < 4
+                                            ? 'Scanning online scholars in ${selectedSubject.value}…'
+                                            : searchSeconds.value < 8
+                                                ? 'Expanding campus matchmaking radius…'
+                                                : searchSeconds.value < 12
+                                                    ? 'Rival found! Synchronizing exam room…'
+                                                    : 'Connecting with AI study-buddy…',
+                                        style: typography.title3.bold.copyWith(
+                                          color: colors.textPrimary,
+                                          fontSize: 15,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${selectedSubject.value} ($resolvedExamBoard) • ${selectedQuestionCount.value} Questions\nInstant match in ~12 seconds',
+                                        textAlign: TextAlign.center,
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
                             ),
-                          ] else ...[
-                            // Subject Selector
+                          ] else if (activeTab.value == 0) ...[
+                            // TAB 0: QUICK MATCH
                             Text(
                               'Subject',
-                              style: typography.caption.regular.copyWith(
+                              style: typography.caption.bold.copyWith(
                                 color: colors.textSecondary,
-                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -441,12 +557,10 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                             ),
                             const SizedBox(height: 16),
 
-                            // Question Count Selector
                             Text(
                               'Questions',
-                              style: typography.caption.regular.copyWith(
+                              style: typography.caption.bold.copyWith(
                                 color: colors.textSecondary,
-                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -456,9 +570,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                               children: questionCounts.map((count) {
                                 final isSelected = selectedQuestionCount.value == count;
                                 return ChoiceChip(
-                                  label: Text(
-                                    '$count questions${count == 10 ? ' (default)' : ''}',
-                                  ),
+                                  label: Text('$count questions${count == 10 ? ' (standard)' : ''}'),
                                   selected: isSelected,
                                   selectedColor: colors.primary.withValues(alpha: 0.2),
                                   backgroundColor: colors.surfaceSecondary,
@@ -486,7 +598,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                             ),
                             const SizedBox(height: 16),
 
-                            // Match Rule Highlights
+                            // Match Rule Highlight
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
@@ -499,18 +611,223 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.info_outline_rounded,
-                                    size: 18,
-                                    color: colors.primary,
+                                    Icons.bolt_rounded,
+                                    size: 20,
+                                    color: colors.warning,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      '${selectedQuestionCount.value} questions • 15 seconds each • Answer faster to earn more points',
+                                      '${selectedQuestionCount.value} questions • 15s adaptive timer • Faster answers earn up to +50 speed bonus.',
                                       style: typography.caption.regular.copyWith(
                                         color: colors.textSecondary,
                                         fontSize: 12,
                                       ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else if (activeTab.value == 1) ...[
+                            // TAB 1: INVITE FRIEND (DISPLAY ROOM CODE)
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
+                                    colors.secondary.withValues(alpha: isDark ? 0.15 : 0.08),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(AppRadius.panel),
+                                border: Border.all(
+                                  color: colors.primary.withValues(alpha: 0.3),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.vpn_key_rounded,
+                                        color: colors.primary,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'YOUR PRIVATE DUEL CODE',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Big Room Code Display
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? colors.surfacePrimary : colors.white,
+                                      borderRadius: BorderRadius.circular(AppRadius.card),
+                                      border: Border.all(
+                                        color: colors.primary.withValues(alpha: 0.5),
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.primary.withValues(alpha: 0.15),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          generatedCode.value,
+                                          style: typography.largeTitle.bold.copyWith(
+                                            color: colors.primary,
+                                            letterSpacing: 4.5,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 28,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 14),
+                                        IconButton(
+                                          icon: const Icon(Icons.copy_rounded),
+                                          color: colors.primary,
+                                          tooltip: 'Copy Code',
+                                          onPressed: () => copyCodeToClipboard(generatedCode.value),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Tell your classmate to open "Enter Code" and type this code.',
+                                    textAlign: TextAlign.center,
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          AppFeedback.light();
+                                          generatedCode.value =
+                                              QuizDuelWebSocketClient.generateRoomCode();
+                                        },
+                                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                                        label: const Text('Generate New Code'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      ElevatedButton.icon(
+                                        onPressed: () => shareInviteWithFriend(generatedCode.value),
+                                        icon: const Icon(Icons.share_rounded, size: 16),
+                                        label: const Text('Share Code'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: colors.primary,
+                                          foregroundColor: colors.white,
+                                          elevation: 0,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Subject Selection for Room
+                            Text(
+                              'Room Subject: ${selectedSubject.value}',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: subjects.map((sub) {
+                                final isSelected = selectedSubject.value == sub;
+                                return ChoiceChip(
+                                  label: Text(sub),
+                                  selected: isSelected,
+                                  selectedColor: colors.primary.withValues(alpha: 0.2),
+                                  backgroundColor: colors.surfaceSecondary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? colors.primary.withValues(alpha: 0.4)
+                                          : colors.surfaceBorder.withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  onSelected: (val) {
+                                    if (val) {
+                                      AppFeedback.selection();
+                                      selectedSubject.value = sub;
+                                    }
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ] else ...[
+                            // TAB 2: ENTER ROOM CODE (JOIN WITH CODE)
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSecondary.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(AppRadius.panel),
+                                border: Border.all(
+                                  color: colors.surfaceBorder.withValues(alpha: 0.5),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.pin_rounded,
+                                        color: colors.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'ENTER 6-DIGIT ROOM CODE',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  AppTextField(
+                                    controller: enteredCodeController,
+                                    hintText: 'e.g. K9X7P2',
+                                    prefixIcon: const Icon(Icons.vpn_key_outlined),
+                                    textCapitalization: TextCapitalization.characters,
+                                    maxLength: 6,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Enter the code your friend shared to jump directly into their duel arena.',
+                                    style: typography.caption.regular.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
@@ -549,6 +866,7 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                                 variant: AppButtonVariant.secondary,
                                 onPressed: () async {
                                   isSearching.value = false;
+                                  activeRoomCode.value = null;
                                   await context.read<QuizDuelCubit>().leaveMatch();
                                 },
                               ),
@@ -557,16 +875,46 @@ class QuizDuelMatchmakingSheet extends HookWidget {
                         : Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              AppButton(
-                                text: 'Find a classmate',
-                                onPressed: startMatchmaking,
-                              ),
-                              const SizedBox(height: 8),
-                              AppButton(
-                                text: 'Invite via Link',
-                                variant: AppButtonVariant.secondary,
-                                onPressed: inviteViaLink,
-                              ),
+                              if (activeTab.value == 0) ...[
+                                AppButton(
+                                  text: 'Find a classmate',
+                                  onPressed: executeMatchmaking,
+                                ),
+                                const SizedBox(height: 8),
+                                AppButton(
+                                  text: 'Practice Solo with AI',
+                                  variant: AppButtonVariant.secondary,
+                                  onPressed: () async {
+                                    await executeMatchmaking();
+                                    if (context.mounted) {
+                                      await context
+                                          .read<QuizDuelCubit>()
+                                          .matchWithAiImmediately();
+                                    }
+                                  },
+                                ),
+                              ] else if (activeTab.value == 1) ...[
+                                AppButton(
+                                  text: 'Start Room Lobby (${generatedCode.value})',
+                                  onPressed: () => executeMatchmaking(
+                                    roomCode: generatedCode.value,
+                                  ),
+                                ),
+                              ] else ...[
+                                AppButton(
+                                  text: 'Join Duel Room',
+                                  onPressed: () {
+                                    final code = enteredCodeController.text.trim().toUpperCase();
+                                    if (code.isEmpty || code.length < 4) {
+                                      context.showSnackBar(
+                                        message: 'Please enter a valid room code.',
+                                      );
+                                      return;
+                                    }
+                                    unawaited(executeMatchmaking(roomCode: code));
+                                  },
+                                ),
+                              ],
                             ],
                           ),
                   ),

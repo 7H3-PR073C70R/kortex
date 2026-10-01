@@ -1474,6 +1474,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionSummaryReviewAgain => 'Review More Decks';
 
   @override
+  String get sessionSummaryDeckConquered => 'Deck Conquered! 🏆';
+
+  @override
+  String get sessionSummaryStudyAgain => 'Study Deck Again';
+
+  @override
+  String get sessionSummaryBrowseDecks => 'Browse All Decks';
+
+  @override
   String get syllabotTitle => 'Syllabot AI';
 
   @override

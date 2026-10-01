@@ -2101,6 +2101,18 @@
     "@sessionSummaryReviewAgain": {
         "description": "Button to review another deck"
     },
+    "sessionSummaryDeckConquered": "Deck Conquered! 🏆",
+    "@sessionSummaryDeckConquered": {
+        "description": "Celebratory title when review session retention is high"
+    },
+    "sessionSummaryStudyAgain": "Study Deck Again",
+    "@sessionSummaryStudyAgain": {
+        "description": "Button to restudy or replay the current deck"
+    },
+    "sessionSummaryBrowseDecks": "Browse All Decks",
+    "@sessionSummaryBrowseDecks": {
+        "description": "Button to browse all flashcard decks"
+    },
     "syllabotTitle": "Syllabot AI",
     "@syllabotTitle": {
         "description": "Title of the Syllabot AI feature"

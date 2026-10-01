@@ -55,6 +55,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
   bool _hasInput = false;
   bool _isListening = false;
   String _textBeforeListening = '';
+  Timer? _silenceTimer;
 
   @override
   void initState() {
@@ -80,6 +81,19 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
           );
         });
       },
+      onResultWithFinal: (text, {required isFinal}) {
+        if (!mounted) return;
+        _silenceTimer?.cancel();
+        if (isFinal) {
+          unawaited(_speechHandler.stopListening());
+        } else {
+          _silenceTimer = Timer(const Duration(milliseconds: 1800), () {
+            if (mounted && _isListening) {
+              unawaited(_speechHandler.stopListening());
+            }
+          });
+        }
+      },
       onListeningChanged: (listening) {
         if (!mounted) return;
         setState(() {
@@ -88,6 +102,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
         if (listening) {
           unawaited(_micPulseController.repeat(reverse: true));
         } else {
+          _silenceTimer?.cancel();
+          _silenceTimer = null;
           _micPulseController
             ..stop()
             ..reset();
@@ -95,6 +111,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
       },
       onError: (err) {
         if (!mounted) return;
+        _silenceTimer?.cancel();
+        _silenceTimer = null;
         setState(() {
           _isListening = false;
         });
@@ -112,6 +130,7 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
 
   @override
   void dispose() {
+    _silenceTimer?.cancel();
     widget.controller.removeListener(_onTextChanged);
     _micPulseController.dispose();
     _speechHandler.dispose();
@@ -162,7 +181,38 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
     _textBeforeListening = '';
   }
 
+  void _onMicTap() {
+    if (widget.isAiSpeaking) {
+      unawaited(HapticFeedback.mediumImpact());
+      widget.onInterruptAi?.call();
+      return;
+    }
+    if (_isListening) {
+      _silenceTimer?.cancel();
+      _silenceTimer = null;
+      unawaited(_speechHandler.stopListening());
+      return;
+    }
+    if (widget.onVoiceDialogueTap != null) {
+      unawaited(HapticFeedback.mediumImpact());
+      widget.onVoiceDialogueTap!();
+      return;
+    }
+    _toggleListening();
+  }
+
+  void _onMicLongPress() {
+    unawaited(HapticFeedback.heavyImpact());
+    if (widget.onVoiceDialogueTap != null) {
+      widget.onVoiceDialogueTap!();
+    } else {
+      _toggleListening();
+    }
+  }
+
   void _toggleListening() {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
     if (widget.isAiSpeaking) {
       // Tap while AI is speaking -> Instant Barge-in Interruption
       unawaited(HapticFeedback.mediumImpact());
@@ -173,7 +223,11 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
       unawaited(_speechHandler.stopListening());
     } else {
       _textBeforeListening = widget.controller.text.trim();
-      unawaited(_speechHandler.startListening());
+      unawaited(
+        _speechHandler.startListening(
+          pauseFor: const Duration(milliseconds: 1800),
+        ),
+      );
     }
   }
 
@@ -529,8 +583,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                               ? 'Listening... Tap to stop'
                                               : (widget.onVoiceDialogueTap !=
                                                         null
-                                                    ? 'Voice Input • Long-press for Voice Dialogue'
-                                                    : 'Voice Input')),
+                                                    ? 'Voice Dialogue • Tap to start conversation'
+                                                    : 'Voice Input • Tap to dictate')),
                                     child: PlatformHoverBuilder(
                                       key: ValueKey(
                                         isAiSpeaking
@@ -541,16 +595,8 @@ class _SyllabotChatInputBarState extends State<SyllabotChatInputBar>
                                       ),
                                       builder: (context, isHovered, child) {
                                         return ShrinkableButton(
-                                          onTap: _toggleListening,
-                                          onLongPress:
-                                              widget.onVoiceDialogueTap != null
-                                              ? () {
-                                                  unawaited(
-                                                    HapticFeedback.heavyImpact(),
-                                                  );
-                                                  widget.onVoiceDialogueTap!();
-                                                }
-                                              : null,
+                                          onTap: _onMicTap,
+                                          onLongPress: _onMicLongPress,
                                           child: Stack(
                                             alignment: Alignment.center,
                                             children: [

@@ -304,7 +304,7 @@ serve(async (req: Request) => {
 });
 
 function getSystemPrompt(mode: string, courseCode?: string): string {
-  const baseInstruction = `You are Syllabot, a standard-grade, context-aware AI tutor and academic study copilot powered by Luna inside Kortex.${
+  const baseInstruction = `You are Syllabot, a standard-grade, context-aware AI tutor and academic study copilot powered by Kotexify.${
     courseCode ? ` Active Course Context: ${courseCode}.` : ""
   }`;
 

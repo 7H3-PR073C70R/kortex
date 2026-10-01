@@ -285,5 +285,29 @@ void main() {
       final finishedMatch = await client.streamDuel(match.duelId).first;
       expect(finishedMatch.status, equals(QuizDuelStatus.finished));
     });
+
+    test('generateRoomCode produces clean 6-character uppercase alphanumeric code', () {
+      final code = QuizDuelWebSocketClient.generateRoomCode();
+      expect(code.length, equals(6));
+      expect(code, equals(code.toUpperCase()));
+      // Ambiguous characters O, 0, I, 1 should not be present
+      expect(code.contains('O'), isFalse);
+      expect(code.contains('0'), isFalse);
+      expect(code.contains('I'), isFalse);
+      expect(code.contains('1'), isFalse);
+    });
+
+    test('findOrCreateDuel with roomCode attaches roomCode to match entity', () async {
+      final match = await client.findOrCreateDuel(
+        subject: 'Mathematics',
+        examBoard: 'WAEC',
+        userId: 'host_user',
+        displayName: 'Host Scholar',
+        avatarUrl: '🎯',
+        roomCode: 'K7X9P2',
+      );
+
+      expect(match.roomCode, equals('K7X9P2'));
+    });
   });
 }

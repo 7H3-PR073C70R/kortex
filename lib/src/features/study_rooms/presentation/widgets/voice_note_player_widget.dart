@@ -68,9 +68,27 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
   @override
   void initState() {
     super.initState();
-    _currentTranscript = (widget.transcript != null && widget.transcript!.trim().isNotEmpty)
+    final provided = (widget.transcript != null &&
+            widget.transcript!.trim().isNotEmpty)
         ? widget.transcript!.trim()
         : null;
+
+    if (provided != null) {
+      _currentTranscript = provided;
+      MediaUploadService.cacheTranscript(
+        audioUrl: widget.audioUrl,
+        replyId: widget.replyId,
+        postId: widget.postId,
+        transcript: provided,
+      );
+    } else {
+      _currentTranscript = MediaUploadService.getCachedTranscript(
+        audioUrl: widget.audioUrl,
+        replyId: widget.replyId,
+        postId: widget.postId,
+      );
+    }
+
     _player = AudioPlayer();
     if (widget.durationSeconds != null && widget.durationSeconds! > 0) {
       _totalDuration = Duration(seconds: widget.durationSeconds!);
@@ -123,10 +141,17 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     super.didUpdateWidget(oldWidget);
     if (widget.transcript != oldWidget.transcript) {
       if (widget.transcript != null && widget.transcript!.trim().isNotEmpty) {
+        final text = widget.transcript!.trim();
         setState(() {
-          _currentTranscript = widget.transcript!.trim();
+          _currentTranscript = text;
           _transcriptionError = null;
         });
+        MediaUploadService.cacheTranscript(
+          audioUrl: widget.audioUrl,
+          replyId: widget.replyId,
+          postId: widget.postId,
+          transcript: text,
+        );
       }
     }
   }
@@ -267,34 +292,66 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
   void _toggleTranscript() {
     unawaited(HapticFeedback.lightImpact());
     final willExpand = !_isTranscriptExpanded;
+
+    if (willExpand) {
+      if (_currentTranscript == null || _currentTranscript!.trim().isEmpty) {
+        final cached = MediaUploadService.getCachedTranscript(
+          audioUrl: widget.audioUrl,
+          replyId: widget.replyId,
+          postId: widget.postId,
+        );
+        if (cached != null && cached.isNotEmpty) {
+          setState(() {
+            _isTranscriptExpanded = true;
+            _currentTranscript = cached;
+            _isTranscribing = false;
+            _transcriptionError = null;
+          });
+          widget.onTranscriptLoaded?.call(cached);
+          return;
+        }
+
+        // Expand directly into transcribing state so user never sees empty state flash
+        setState(() {
+          _isTranscriptExpanded = true;
+          _isTranscribing = true;
+          _transcriptionError = null;
+        });
+        unawaited(_fetchTranscription());
+        return;
+      }
+    }
+
     setState(() {
       _isTranscriptExpanded = willExpand;
     });
-
-    if (willExpand &&
-        (_currentTranscript == null || _currentTranscript!.trim().isEmpty)) {
-      unawaited(_fetchTranscription());
-    }
   }
 
   Future<void> _fetchTranscription() async {
-    if (_isTranscribing) return;
     if (_currentTranscript != null && _currentTranscript!.trim().isNotEmpty) {
+      if (mounted && _isTranscribing) {
+        setState(() {
+          _isTranscribing = false;
+        });
+      }
       return;
     }
 
     final audioUrl = widget.audioUrl.trim();
     if (audioUrl.isEmpty) {
       setState(() {
+        _isTranscribing = false;
         _transcriptionError = 'Audio URL is empty.';
       });
       return;
     }
 
-    setState(() {
-      _isTranscribing = true;
-      _transcriptionError = null;
-    });
+    if (!_isTranscribing) {
+      setState(() {
+        _isTranscribing = true;
+        _transcriptionError = null;
+      });
+    }
 
     try {
       String? result;
@@ -319,6 +376,12 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
       if (result != null && result.trim().isNotEmpty) {
         final cleanText = result.trim();
+        MediaUploadService.cacheTranscript(
+          audioUrl: audioUrl,
+          replyId: widget.replyId,
+          postId: widget.postId,
+          transcript: cleanText,
+        );
         setState(() {
           _currentTranscript = cleanText;
           _isTranscribing = false;

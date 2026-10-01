@@ -20,7 +20,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   Timer? _countdownTimer;
   DateTime? _roundStartTime;
 
-  /// Starts searching for a real-time peer or AI study-buddy.
+  /// Starts searching for a real-time peer, joining by room code, or AI study-buddy.
   Future<void> startMatchmaking({
     required String subject,
     required String examBoard,
@@ -28,6 +28,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     required String displayName,
     required String avatarUrl,
     int questionCount = 10,
+    String? roomCode,
   }) async {
     emit(
       state.copyWith(
@@ -44,6 +45,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
       displayName: displayName,
       avatarUrl: avatarUrl,
       questionCount: questionCount,
+      roomCode: roomCode,
     );
 
     result.fold(

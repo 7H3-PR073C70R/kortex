@@ -39,6 +39,7 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     required String displayName,
     required String avatarUrl,
     int questionCount = 10,
+    String? roomCode,
   }) async {
     try {
       final curatedQuestions = await _fetchCuratedQuestions(
@@ -55,6 +56,7 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
         avatarUrl: avatarUrl,
         questionCount: questionCount,
         customQuestions: curatedQuestions.isNotEmpty ? curatedQuestions : null,
+        roomCode: roomCode,
       );
       return Right(match);
     } on Exception catch (e) {

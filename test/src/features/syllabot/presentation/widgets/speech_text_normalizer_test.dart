@@ -21,13 +21,58 @@ void main() {
       expect(result, contains('It runs smoothly'));
     });
 
-    test('expands educational acronyms to spelled-out phonetics', () {
-      const input = 'Prepare for your JAMB, WAEC, and UTME exams with CBT practice.';
+    test('expands educational acronyms to spoken phonetics (WAEC as Way-eck, JAMB as Jamb)', () {
+      const input = 'Prepare for your JAMB, WAEC, waec, WASSCE, NECO, and UTME exams with CBT practice.';
       final result = SpeechTextNormalizer.normalize(input);
-      expect(result, contains('J-A-M-B'));
-      expect(result, contains('W-A-E-C'));
+      expect(result, contains('Jamb'));
+      expect(result, contains('Way-eck'));
+      expect(result, contains('Was-see'));
+      expect(result, contains('Neco'));
       expect(result, contains('U-T-M-E'));
       expect(result, contains('C-B-T'));
+      expect(result.contains('W-A-E-C'), isFalse);
+      expect(result.contains('J-A-M-B'), isFalse);
+      expect(result.contains('N-E-C-O'), isFalse);
+    });
+
+    test('strips HTML tags and decodes HTML entities cleanly', () {
+      const input = '<p>Check your <b>WAEC</b> result&nbsp;at the portal &amp; print&nbsp;it.<br>Is A &lt; B and C &gt; D?</p>';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('<p>'), isFalse);
+      expect(result.contains('<b>'), isFalse);
+      expect(result.contains('<br>'), isFalse);
+      expect(result.contains('&nbsp;'), isFalse);
+      expect(result.contains('&amp;'), isFalse);
+      expect(result.contains('&lt;'), isFalse);
+      expect(result.contains('&gt;'), isFalse);
+      expect(result, contains('Way-eck'));
+      expect(result, contains('and'));
+      expect(result, contains('is less than'));
+      expect(result, contains('is greater than'));
+    });
+
+    test('cleans stray characters (asterisks, underscores, brackets, carets, tildes)', () {
+      const input = 'Calculate [H+] for ~5 minutes: x^2 + y^2 = z^2. Fill in the blank: ______ and check user_id.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('['), isFalse);
+      expect(result.contains(']'), isFalse);
+      expect(result.contains('^'), isFalse);
+      expect(result.contains('~'), isFalse);
+      expect(result, contains('squared'));
+      expect(result, contains('blank'));
+      expect(result, contains('user id'));
+    });
+
+    test('normalizes degrees, superscripts, subscripts, and checkmarks', () {
+      const input = 'Water is H₂O at 25°C. Option A: ✓ Correct, Option B: ✗ False. Area is 10 m².';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('°'), isFalse);
+      expect(result.contains('✓'), isFalse);
+      expect(result.contains('✗'), isFalse);
+      expect(result, contains('degrees Celsius'));
+      expect(result, contains('correct'));
+      expect(result, contains('incorrect'));
+      expect(result, contains('squared'));
     });
 
     test('expands LaTeX formulas into spoken equivalents', () {

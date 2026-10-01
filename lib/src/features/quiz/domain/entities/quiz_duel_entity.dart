@@ -163,6 +163,7 @@ class QuizDuelMatch extends Equatable {
     this.latestEmote,
     this.latestEmoteSenderId,
     this.latestEmoteTimestamp,
+    this.roomCode,
   });
 
   factory QuizDuelMatch.fromJson(Map<String, dynamic> json) {
@@ -215,6 +216,7 @@ class QuizDuelMatch extends Equatable {
       latestEmote: json['latestEmote'] as String?,
       latestEmoteSenderId: json['latestEmoteSenderId'] as String?,
       latestEmoteTimestamp: json['latestEmoteTimestamp'] as int?,
+      roomCode: json['roomCode'] as String?,
     );
   }
 
@@ -234,6 +236,7 @@ class QuizDuelMatch extends Equatable {
   final String? latestEmote;
   final String? latestEmoteSenderId;
   final int? latestEmoteTimestamp;
+  final String? roomCode;
 
   QuizQuestionEntity? get currentQuestion =>
       (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length)
@@ -279,6 +282,7 @@ class QuizDuelMatch extends Equatable {
         'latestEmoteSenderId': latestEmoteSenderId,
       if (latestEmoteTimestamp != null)
         'latestEmoteTimestamp': latestEmoteTimestamp,
+      if (roomCode != null) 'roomCode': roomCode,
     };
   }
 
@@ -299,6 +303,7 @@ class QuizDuelMatch extends Equatable {
     String? latestEmote,
     String? latestEmoteSenderId,
     int? latestEmoteTimestamp,
+    String? roomCode,
   }) {
     return QuizDuelMatch(
       duelId: duelId ?? this.duelId,
@@ -318,6 +323,7 @@ class QuizDuelMatch extends Equatable {
       latestEmote: latestEmote ?? this.latestEmote,
       latestEmoteSenderId: latestEmoteSenderId ?? this.latestEmoteSenderId,
       latestEmoteTimestamp: latestEmoteTimestamp ?? this.latestEmoteTimestamp,
+      roomCode: roomCode ?? this.roomCode,
     );
   }
 
@@ -339,5 +345,6 @@ class QuizDuelMatch extends Equatable {
     latestEmote,
     latestEmoteSenderId,
     latestEmoteTimestamp,
+    roomCode,
   ];
 }

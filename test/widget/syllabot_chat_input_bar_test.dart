@@ -155,5 +155,35 @@ void main() {
 
       expect(voiceDialogueTapped, isTrue);
     });
+
+    testWidgets('tapping mic triggers onVoiceDialogueTap directly when empty', (tester) async {
+      var voiceDialogueTapped = false;
+
+      await tester.pumpApp(
+        Scaffold(
+          body: SyllabotChatInputBar(
+            controller: controller,
+            socraticMode: SocraticMode.stepByStep,
+            engineType: ExecutionEngineType.cloudRemote,
+            onModeChanged: (_) {},
+            onEngineChanged: (_) {},
+            onSubmit: (_) {},
+            onVoiceDialogueTap: () {
+              voiceDialogueTapped = true;
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final micFinder = find.byIcon(Icons.mic_none_rounded);
+      expect(micFinder, findsOneWidget);
+
+      await tester.tap(micFinder);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(voiceDialogueTapped, isTrue);
+    });
   });
 }

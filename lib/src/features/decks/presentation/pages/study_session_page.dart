@@ -467,7 +467,13 @@ class _StudySessionView extends HookWidget {
                           onClose: () async {
                             await cubit.saveSessionCheckpoint();
                             if (context.mounted) {
-                              unawaited(context.router.maybePop());
+                              if (context.router.canPop()) {
+                                context.router.pop();
+                              } else {
+                                unawaited(
+                                  context.router.replaceAll([const MainRoute()]),
+                                );
+                              }
                             }
                           },
                         ),

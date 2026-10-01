@@ -57,6 +57,8 @@ class OcrPreviewPage extends HookWidget {
     }, [currentSnippets.value]);
 
     void handleGenerateCards() {
+      if (currentSnippets.value.isEmpty) return;
+
       final previewCards = currentSnippets.value.map((s) {
         return GeneratedCardPreviewItem(
           front: s.topic.isNotEmpty ? s.topic : 'Core Concept',
@@ -110,9 +112,9 @@ class OcrPreviewPage extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: colors.transparent,
+      backgroundColor: colors.backgroundPrimary,
       appBar: AppBar(
-        backgroundColor: colors.transparent,
+        backgroundColor: colors.backgroundPrimary,
         elevation: 0,
         leading: const AppBackButton(),
         title: Text(
@@ -122,81 +124,199 @@ class OcrPreviewPage extends HookWidget {
           ),
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: Column(
-            children: [
-              // Extracted Snippets Count Banner
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 40 : 25),
-                  borderRadius: AppRadius.radiusCard,
-                  border: Border.all(
-                    color: colors.primary.withAlpha(isDark ? 80 : 50),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Column(
+              children: [
+                // Extracted Snippets Count Banner with Add Card Action
+                Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      color: colors.primary,
-                      size: 18,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 40 : 25),
+                    borderRadius: AppRadius.radiusCard,
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        l10n.extractedSnippetsCount(
-                          currentSnippets.value.length,
-                        ),
-                        style: typography.footnote.bold.copyWith(
-                          color: colors.textPrimary,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        color: colors.primary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          l10n.extractedSnippetsCount(
+                            currentSnippets.value.length,
+                          ),
+                          style: typography.footnote.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            curve: AppMotion.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isHovered
+                                  ? colors.primary.withAlpha(isDark ? 50 : 35)
+                                  : colors.primary.withAlpha(isDark ? 30 : 20),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.badge),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(
+                                  isDark ? 90 : 60,
+                                ),
+                              ),
+                            ),
+                            child: InkWell(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.badge),
+                              onTap: () {
+                                final updatedList =
+                                    List<OcrExtractionEntity>.from(
+                                  currentSnippets.value,
+                                )..add(
+                                    OcrExtractionEntity(
+                                      id: 'card_${DateTime.now().millisecondsSinceEpoch}',
+                                      documentId: documentId,
+                                      rawText: '',
+                                      topic:
+                                          'Card ${currentSnippets.value.length + 1}',
+                                    ),
+                                  );
+                                currentSnippets.value = updatedList;
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_rounded,
+                                    size: 15,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Add Card',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-    
-              // Live Editors List
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  itemCount: currentSnippets.value.length,
-                  itemBuilder: (context, index) {
-                    final snippet = currentSnippets.value[index];
-                    return OcrLatexLiveEditor(
-                      snippet: snippet,
-                      availableImageUrls: availableImageUrls,
-                      onChanged: (updated) {
-                        final updatedList = List<OcrExtractionEntity>.from(
-                          currentSnippets.value,
-                        );
-                        updatedList[index] = updated;
-                        currentSnippets.value = updatedList;
-                      },
-                    );
-                  },
+
+                // Live Editors List or Empty State
+                Expanded(
+                  child: currentSnippets.value.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.auto_stories_outlined,
+                                  size: 56,
+                                  color: colors.textSecondary.withAlpha(120),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No study cards yet',
+                                  style: typography.title3.bold.copyWith(
+                                    color: colors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap "Add Card" above to create study flashcards from your material.',
+                                  textAlign: TextAlign.center,
+                                  style: typography.footnote.regular.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          itemCount: currentSnippets.value.length,
+                          itemBuilder: (context, index) {
+                            final snippet = currentSnippets.value[index];
+                            return OcrLatexLiveEditor(
+                              key: ValueKey(
+                                snippet.id.isNotEmpty
+                                    ? snippet.id
+                                    : 'ocr_snippet_$index',
+                              ),
+                              snippet: snippet,
+                              cardNumber: index + 1,
+                              availableImageUrls: availableImageUrls,
+                              onChanged: (updated) {
+                                final updatedList =
+                                    List<OcrExtractionEntity>.from(
+                                  currentSnippets.value,
+                                );
+                                updatedList[index] = updated;
+                                currentSnippets.value = updatedList;
+                              },
+                              onDelete: () {
+                                final updatedList =
+                                    List<OcrExtractionEntity>.from(
+                                  currentSnippets.value,
+                                )..removeAt(index);
+                                currentSnippets.value = updatedList;
+                              },
+                            );
+                          },
+                        ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-      bottomNavigationBar: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: BoxDecoration(
+            color: colors.backgroundPrimary.withValues(alpha: 0.95),
+            border: Border(
+              top: BorderSide(
+                color: colors.primary.withAlpha(isDark ? 35 : 15),
+              ),
+            ),
+          ),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
               child: PlatformHoverBuilder(
                 builder: (context, isHovered, child) {
                   return AnimatedScale(
@@ -207,25 +327,34 @@ class OcrPreviewPage extends HookWidget {
                   );
                 },
                 child: ShrinkableButton(
-                  onTap: handleGenerateCards,
+                  onTap: currentSnippets.value.isEmpty
+                      ? null
+                      : handleGenerateCards,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          colors.primary,
-                          colors.primary.withAlpha(220),
-                        ],
+                        colors: currentSnippets.value.isEmpty
+                            ? [
+                                colors.textSecondary.withAlpha(80),
+                                colors.textSecondary.withAlpha(60),
+                              ]
+                            : [
+                                colors.primary,
+                                colors.primary.withAlpha(220),
+                              ],
                       ),
                       borderRadius: AppRadius.radiusCard,
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.black.withAlpha(isDark ? 50 : 20),
-                          blurRadius: 14,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      boxShadow: currentSnippets.value.isEmpty
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: colors.black.withAlpha(isDark ? 50 : 20),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,

@@ -81,6 +81,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   bool _isTranscriptExpanded = false;
   bool _isProcessingPrompt = false;
   Timer? _silenceTimer;
+  Timer? _restartListeningTimer;
 
   static const Duration _silenceThreshold = Duration(milliseconds: 1400);
 
@@ -120,7 +121,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         if (!mounted || _state != DialogueState.listening) return;
         // Normalize sound level from dB (-160..0) or relative amplitude to smooth 0.0..1.0
         final normalized = ((level + 40.0) / 50.0).clamp(0.0, 1.0);
-        if ((normalized - _soundLevel).abs() > 0.06) {
+        if ((normalized - _soundLevel).abs() > 0.04) {
           setState(() {
             _soundLevel = normalized;
           });
@@ -133,23 +134,29 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           if (prompt.isNotEmpty) {
             unawaited(_commitVoicePromptImmediately());
           } else {
-            // Wait briefly so the audio session fully releases before
-            // restarting — prevents startListening() from seeing
-            // isListening==true and bailing without reopening the mic.
-            Future<void>.delayed(const Duration(milliseconds: 300), () {
-              if (mounted && _state == DialogueState.listening) {
-                unawaited(_sttHandler.startListening());
-              }
+            // If recognizer stopped without speech, transition to idle gracefully
+            setState(() {
+              _state = DialogueState.idle;
+              _soundLevel = 0;
             });
           }
         }
       },
-      onError: (_) {
-        // Benign errors handled without abruptly closing dialogue
+      onError: (err) {
+        if (!mounted) return;
+        if (_state == DialogueState.listening && _liveTranscript.trim().isEmpty) {
+          setState(() {
+            _state = DialogueState.idle;
+            _soundLevel = 0;
+          });
+        }
       },
     );
 
-    // Speak initial AI greeting automatically, then start conversational spiral loop!
+    // Warm up speech recognition in background while initial greeting plays
+    unawaited(_sttHandler.initialize());
+
+    // Speak initial AI greeting automatically, then start conversational loop
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_speakInitialGreeting());
     });
@@ -174,10 +181,18 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   Future<void> _commitVoicePromptImmediately() async {
     _silenceTimer?.cancel();
     _silenceTimer = null;
+    _restartListeningTimer?.cancel();
+    _restartListeningTimer = null;
     if (_state != DialogueState.listening || _isProcessingPrompt) return;
 
     final prompt = _liveTranscript.trim();
     if (prompt.isNotEmpty) {
+      // Transition state immediately to prevent race conditions or circular callbacks
+      setState(() {
+        _state = DialogueState.thinking;
+        _soundLevel = 0;
+      });
+      _isProcessingPrompt = true;
       unawaited(HapticFeedback.mediumImpact());
       await _sttHandler.stopListening();
       await _processVoicePrompt(prompt);
@@ -186,6 +201,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       if (mounted) {
         setState(() {
           _state = DialogueState.idle;
+          _soundLevel = 0;
         });
       }
     }
@@ -205,9 +221,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     await widget.ttsHandler.waitForQueueDrained();
 
     // Spirally loop: automatically open microphone for user once greeting finishes!
-    if (mounted && _state == DialogueState.speaking) {
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      if (mounted && _state == DialogueState.speaking) {
+    if (mounted && (_state == DialogueState.speaking || _state == DialogueState.idle)) {
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (mounted && (_state == DialogueState.speaking || _state == DialogueState.idle)) {
         await _startListening();
       }
     }
@@ -216,6 +232,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   @override
   void dispose() {
     _silenceTimer?.cancel();
+    _restartListeningTimer?.cancel();
     _pulseController.dispose();
     _sttHandler.dispose();
     super.dispose();
@@ -224,6 +241,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   Future<void> _startListening() async {
     _silenceTimer?.cancel();
     _silenceTimer = null;
+    _restartListeningTimer?.cancel();
+    _restartListeningTimer = null;
     await widget.ttsHandler.stop();
     if (!mounted) return;
 
@@ -235,7 +254,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     });
 
     unawaited(HapticFeedback.selectionClick());
-    await _sttHandler.startListening();
+    await _sttHandler.startListening(
+      pauseFor: const Duration(milliseconds: 1800),
+    );
   }
 
   Future<void> _processVoicePrompt(String prompt) async {
@@ -330,9 +351,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         await widget.ttsHandler.waitForQueueDrained();
 
         // Conversational spiral: automatically listen again for user's turn
-        if (mounted && _state == DialogueState.speaking) {
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-          if (mounted && _state == DialogueState.speaking) {
+        if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
+          await Future<void>.delayed(const Duration(milliseconds: 350));
+          if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
             await _startListening();
           }
         }
@@ -352,9 +373,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         await widget.ttsHandler.waitForQueueDrained();
 
         // Conversational spiral: automatically listen again for user's turn
-        if (mounted && _state == DialogueState.speaking) {
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-          if (mounted && _state == DialogueState.speaking) {
+        if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
+          await Future<void>.delayed(const Duration(milliseconds: 350));
+          if (mounted && (_state == DialogueState.speaking || _state == DialogueState.thinking)) {
             await _startListening();
           }
         }
@@ -363,6 +384,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       if (mounted) {
         setState(() {
           _state = DialogueState.idle;
+          _soundLevel = 0;
         });
       }
     } finally {
@@ -377,12 +399,15 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       } else {
         _silenceTimer?.cancel();
         _silenceTimer = null;
-        unawaited(_sttHandler.stopListening());
+        _restartListeningTimer?.cancel();
+        _restartListeningTimer = null;
         setState(() {
           _state = DialogueState.idle;
+          _soundLevel = 0;
         });
+        unawaited(_sttHandler.stopListening());
       }
-    } else if (_state == DialogueState.speaking) {
+    } else if (_state == DialogueState.speaking || _state == DialogueState.thinking) {
       // User interrupts Syllabot and speaks immediately
       unawaited(widget.ttsHandler.stop());
       unawaited(_startListening());
@@ -392,24 +417,7 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   }
 
   void _onBottomButtonTap() {
-    if (_state == DialogueState.listening) {
-      if (_liveTranscript.trim().isNotEmpty) {
-        unawaited(_commitVoicePromptImmediately());
-      } else {
-        _silenceTimer?.cancel();
-        _silenceTimer = null;
-        unawaited(_sttHandler.stopListening());
-        setState(() {
-          _state = DialogueState.idle;
-        });
-      }
-    } else if (_state == DialogueState.speaking) {
-      // User interrupts Syllabot and speaks immediately
-      unawaited(widget.ttsHandler.stop());
-      unawaited(_startListening());
-    } else if (_state == DialogueState.idle) {
-      unawaited(_startListening());
-    }
+    _onOrbTap();
   }
 
   void _toggleGender() {

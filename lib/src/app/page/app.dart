@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,6 +17,7 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
+import 'package:kortex/src/features/notifications/domain/services/notification_router.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:kortex/src/shared/widgets/biometric_lock_overlay.dart';
 import 'package:kortex/src/shared/widgets/dismiss_keyboard.dart';
@@ -43,6 +45,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       reevaluateListenable: ReevaluateListenable.stream(
         locator<AuthBloc>().stream,
       ),
+      deepLinkTransformer: _transformDeepLink,
+      deepLinkBuilder: _handlePlatformDeepLink,
     );
 
     _sessionExpiredSubscription = locator<SessionExpiredService>()
@@ -60,6 +64,90 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           .onLinkReceived
           .listen(_handleDynamicLinkPayload);
     }
+  }
+
+  /// Transforms external deep-link URIs into recognized internal routes before matching.
+  Future<Uri> _transformDeepLink(Uri uri) async {
+    developer.log('[App] Transforming deep link: $uri');
+    final isCustomScheme =
+        uri.scheme == 'kortex' || uri.scheme == 'com.kortexify.app';
+    final isShareHost = uri.host == 'share' || uri.path.contains('share');
+    final typeStr =
+        uri.queryParameters['type']?.trim().toLowerCase().replaceAll('-', '_');
+
+    if (isCustomScheme || isShareHost || typeStr != null) {
+      switch (typeStr) {
+        case 'deck':
+          return uri.replace(path: '/deck-detail');
+        case 'study':
+          return uri.replace(path: '/study-session');
+        case 'forum':
+          return uri.replace(path: '/community');
+        case 'quiz_duel':
+          return uri.replace(path: '/quiz-workspace');
+        case 'study_room':
+          return uri.replace(path: '/study-hub');
+        case 'promo':
+          return uri.replace(path: '/paywall');
+        case 'course':
+          return uri.replace(path: '/curate-courses');
+      }
+
+      if (isCustomScheme && uri.host.isNotEmpty) {
+        final hostType = uri.host.toLowerCase();
+        if (hostType == 'study-session') {
+          return uri.replace(path: '/study-session');
+        }
+        if (hostType == 'decks' || hostType == 'deck') {
+          return uri.replace(path: '/decks');
+        }
+        if (hostType == 'planner' || hostType == 'exam') {
+          return uri.replace(path: '/exam-timetable');
+        }
+        if (hostType == 'community') {
+          return uri.replace(path: '/community');
+        }
+        if (hostType == 'chat' || hostType == 'syllabot') {
+          return uri.replace(path: '/syllabot-chat');
+        }
+      }
+    }
+    return uri;
+  }
+
+  /// Resolves the exact [DeepLink] for incoming platform deep links.
+  FutureOr<DeepLink> _handlePlatformDeepLink(
+    PlatformDeepLink platformDeepLink,
+  ) async {
+    final uri = platformDeepLink.uri;
+    developer.log('[App] Resolving platform deep link: $uri');
+
+    // 1. Try parsing through DynamicLinkService
+    if (locator.isRegistered<DynamicLinkService>()) {
+      final dynamicService = locator<DynamicLinkService>();
+      final payload = dynamicService.parseUri(uri);
+      if (payload != null && payload.type != DynamicLinkType.unknown) {
+        dynamicService.handleRawUri(uri);
+        final route = dynamicService.routeForPayload(payload);
+        if (route != null) {
+          return DeepLink.single(route);
+        }
+      }
+    }
+
+    // 2. Try parsing through NotificationRouter
+    final notifRouter = locator.isRegistered<NotificationRouter>()
+        ? locator<NotificationRouter>()
+        : const NotificationRouter();
+    final notifRoute = notifRouter.resolveRouteFromPayload(uri.toString());
+    if (notifRoute != null) {
+      return DeepLink.single(notifRoute);
+    }
+
+    if (platformDeepLink.isValid) {
+      return platformDeepLink;
+    }
+    return DeepLink.defaultPath;
   }
 
   void _handleDynamicLinkPayload(DynamicLinkPayload payload) {
@@ -94,110 +182,17 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   void _handleNotificationPayload(String payload) {
     if (payload.trim().isEmpty) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final clean = payload.trim();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        if (clean == '/planner' ||
-            clean == 'planner' ||
-            clean.startsWith('/exam') ||
-            clean.startsWith('exam:')) {
-          unawaited(_appRouter.push(const ExamTimetableRoute()));
-          return;
-        }
-
-        if (clean == '/decks' || clean == 'decks') {
-          unawaited(_appRouter.push(const DecksRoute()));
-          return;
-        }
-
-        if (clean == '/past-questions' || clean == 'past-questions') {
-          unawaited(_appRouter.push(PastQuestionsBoardRoute()));
-          return;
-        }
-
-        if (clean == '/ingestion' ||
-            clean == 'ingestion' ||
-            clean.startsWith('doc:')) {
-          unawaited(_appRouter.push(DocumentIngestionRoute()));
-          return;
-        }
-
-        if (clean == '/chat' || clean == 'syllabot' || clean == '/syllabot') {
-          unawaited(_appRouter.push(SyllabotChatRoute()));
-          return;
-        }
-
-        if (clean.startsWith('deck:')) {
-          final parts = clean.substring(5).split(':');
-          final deckId = parts.first;
-          final mode = parts.length > 1 ? parts[1] : '';
-          if (mode == 'study') {
-            unawaited(
-              _appRouter.push(
-                StudySessionRoute(deckId: deckId),
-              ),
-            );
-          } else {
-            unawaited(_appRouter.push(DeckDetailRoute(deckId: deckId)));
-          }
-          return;
-        }
-
-        if (clean.startsWith('study:')) {
-          final deckId = clean.substring(6);
-          unawaited(
-            _appRouter.push(
-              StudySessionRoute(deckId: deckId),
-            ),
-          );
-          return;
-        }
-
-        // FCM data payload route keys (from trigger-notifications)
-        if (clean == '/study-session' || clean.startsWith('/study-session?')) {
-          // Parse optional deckId query param: /study-session?deckId=xxx
-          final uri = Uri.tryParse(clean);
-          final deckId = uri?.queryParameters['deckId'];
-          if (deckId != null && deckId.isNotEmpty) {
-            unawaited(_appRouter.push(StudySessionRoute(deckId: deckId)));
-          } else {
-            unawaited(_appRouter.push(const DecksRoute()));
-          }
-          return;
-        }
-
-        if (clean == '/quiz-duel' || clean.startsWith('/quiz-duel?')) {
-          // Navigate to the Community hub where Quiz Duels are initiated.
-          // The duelId can be passed via query param when deep-linking is added.
-          unawaited(_appRouter.push(const CommunityHubRoute()));
-          return;
-        }
-
-        if (clean == '/deck-detail' || clean.startsWith('/deck-detail?')) {
-          final uri = Uri.tryParse(clean);
-          final deckId = uri?.queryParameters['deckId'];
-          if (deckId != null && deckId.isNotEmpty) {
-            unawaited(_appRouter.push(DeckDetailRoute(deckId: deckId)));
-          } else {
-            unawaited(_appRouter.push(const DecksRoute()));
-          }
-          return;
-        }
-
-        if (clean == '/dashboard' || clean == 'dashboard') {
-          // Pop to root (dashboard is the root scaffold tab).
-          _appRouter.popUntilRoot();
-          return;
-        }
-
-        if (clean == '/community' || clean == 'community') {
-          unawaited(_appRouter.push(const CommunityHubRoute()));
-          return;
-        }
-
-        // Generic named route fallback
-        if (clean.startsWith('/')) {
-          unawaited(_appRouter.pushPath(clean));
+        final notifRouter = locator.isRegistered<NotificationRouter>()
+            ? locator<NotificationRouter>()
+            : const NotificationRouter();
+        final handled = await notifRouter.handlePayloadString(
+          router: _appRouter,
+          payload: payload,
+        );
+        if (!handled) {
+          debugPrint('[App] Could not route notification payload: "$payload"');
         }
       } on Object catch (e) {
         debugPrint('[App] Failed to route notification payload "$payload": $e');

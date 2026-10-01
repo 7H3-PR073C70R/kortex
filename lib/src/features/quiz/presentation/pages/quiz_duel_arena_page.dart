@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -37,6 +39,9 @@ class QuizDuelArenaPage extends HookWidget {
     final lastEmoteTs = useState<int?>(null);
     final activePostMatchTab = useState<int>(0);
     final lastEmoteSentMs = useState<int>(0);
+    final previousStatus = useRef<QuizDuelStatus?>(null);
+    final previousSeconds = useRef<int?>(null);
+    final previousRivalSelected = useRef<bool>(false);
 
     void onSelectOption(int index) {
       AppFeedback.selection();
@@ -60,6 +65,51 @@ class QuizDuelArenaPage extends HookWidget {
 
     return BlocConsumer<QuizDuelCubit, QuizDuelState>(
       listener: (context, state) {
+        // Countdown Audio / Haptic Tick
+        if (state.status == QuizDuelStatus.countdown &&
+            state.remainingSeconds != previousSeconds.value) {
+          previousSeconds.value = state.remainingSeconds;
+          AppFeedback.light();
+        }
+
+        // Duel Timer Urgent Tick (last 5 seconds)
+        if (state.status == QuizDuelStatus.inRound &&
+            state.remainingSeconds <= 5 &&
+            state.remainingSeconds > 0 &&
+            state.remainingSeconds != previousSeconds.value) {
+          previousSeconds.value = state.remainingSeconds;
+          AppFeedback.duelTimerTick();
+        }
+
+        // Rival Locked Answer Haptic Cue
+        final rivalLocked = state.opponentParticipant?.selectedOptionIndex != null;
+        if (state.status == QuizDuelStatus.inRound &&
+            rivalLocked &&
+            !previousRivalSelected.value) {
+          AppFeedback.medium();
+        }
+        previousRivalSelected.value = rivalLocked;
+
+        // Round Summary Verdict Feedback (Correct / Streak / Incorrect)
+        if (previousStatus.value == QuizDuelStatus.inRound &&
+            state.status == QuizDuelStatus.roundSummary) {
+          final myIdx = state.selectedOptionIndex ?? state.myParticipant?.selectedOptionIndex;
+          final q = state.match?.currentQuestion;
+          if (myIdx != null && q != null && myIdx >= 0 && myIdx < q.options.length) {
+            final isCorrect = q.options[myIdx] == q.correctAnswer;
+            if (isCorrect) {
+              final streak = state.myParticipant?.comboStreak ?? 0;
+              if (streak >= 3) {
+                AppFeedback.comboStreak(streak);
+              } else {
+                AppFeedback.correct();
+              }
+            } else {
+              AppFeedback.incorrect();
+            }
+          }
+        }
+
         if (state.match?.latestEmote != null &&
             state.match?.latestEmoteTimestamp != null &&
             state.match!.latestEmoteTimestamp != lastEmoteTs.value &&
@@ -84,6 +134,16 @@ class QuizDuelArenaPage extends HookWidget {
           final opponentScore = state.opponentParticipant?.score ?? 0;
           final opponentName =
               state.opponentParticipant?.displayName ?? 'Rival';
+
+          if (previousStatus.value != QuizDuelStatus.finished) {
+            if (isWinner || forfeitByRival) {
+              AppFeedback.duelVictory();
+            } else if (!isDraw) {
+              AppFeedback.duelDefeat();
+            } else {
+              AppFeedback.medium();
+            }
+          }
 
           final String title;
           final String subtitle;
@@ -152,6 +212,8 @@ class QuizDuelArenaPage extends HookWidget {
             ),
           );
         }
+
+        previousStatus.value = state.status;
       },
       builder: (context, state) {
         final match = state.match;
@@ -236,6 +298,70 @@ class QuizDuelArenaPage extends HookWidget {
                             fontSize: 13.5,
                           ),
                         ),
+                        if (match?.roomCode != null &&
+                            match!.roomCode!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 35 : 20),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(80),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.vpn_key_rounded,
+                                  size: 14,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'ROOM CODE: ${match.roomCode}',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    letterSpacing: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.micro,
+                                  ),
+                                  onTap: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(text: match.roomCode!),
+                                    );
+                                    AppFeedback.light();
+                                    if (context.mounted) {
+                                      context.showSnackBar(
+                                        message:
+                                            'Room code ${match.roomCode} copied!',
+                                        type: SnackBarType.success,
+                                      );
+                                    }
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2),
+                                    child: Icon(
+                                      Icons.copy_rounded,
+                                      size: 14,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 36),
 
                         // VS Battle Ring Cards: they arrive together in one
@@ -615,6 +741,34 @@ class QuizDuelArenaPage extends HookWidget {
                                   letterSpacing: 1.2,
                                 ),
                               ),
+                              if (match?.roomCode != null &&
+                                  match!.roomCode!.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(25),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.micro,
+                                    ),
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(60),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'ROOM: ${match.roomCode}',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 11,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 20),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -770,6 +924,7 @@ class QuizDuelArenaPage extends HookWidget {
                                   .startMatchmaking(
                                     subject: match?.subject ?? 'Physics',
                                     examBoard: match?.examBoard ?? 'WAEC',
+                                    roomCode: match?.roomCode,
                                     userId: state.currentUserId,
                                     displayName: myPlayer.displayName,
                                     avatarUrl: myPlayer.avatarUrl,
@@ -778,8 +933,29 @@ class QuizDuelArenaPage extends HookWidget {
                           ),
                           const SizedBox(height: 12),
                           AppButton(
-                            text: 'Return to Dashboard',
+                            text: 'Share Duel & Invite 🚀',
                             variant: AppButtonVariant.secondary,
+                            onPressed: () async {
+                              final code = match?.roomCode;
+                              final inviteSuffix = code != null && code.isNotEmpty
+                                  ? ' Challenge me back with room code: $code'
+                                  : ' Challenge me on Kortex!';
+                              final shareText =
+                                  'I scored $p1Score pts in a 1v1 Quiz Duel on ${match?.subject ?? "Academic Trivia"}!$inviteSuffix';
+                              await Clipboard.setData(ClipboardData(text: shareText));
+                              AppFeedback.light();
+                              if (context.mounted) {
+                                context.showSnackBar(
+                                  message: 'Duel results & invite copied to clipboard!',
+                                  type: SnackBarType.success,
+                                );
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            text: 'Return to Dashboard',
+                            variant: AppButtonVariant.ghost,
                             onPressed: () {
                               Navigator.of(context).popUntil((route) => route.isFirst);
                             },
@@ -889,6 +1065,59 @@ class QuizDuelArenaPage extends HookWidget {
               style: typography.body.bold,
             ),
             centerTitle: true,
+            actions: [
+              if (match?.roomCode != null && match!.roomCode!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Center(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                      onTap: () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: match.roomCode!),
+                        );
+                        AppFeedback.light();
+                        if (context.mounted) {
+                          context.showSnackBar(
+                            message: 'Room code ${match.roomCode} copied!',
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.vpn_key_rounded,
+                              size: 12,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              match.roomCode!,
+                              style: typography.caption.bold.copyWith(
+                                letterSpacing: 1,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           body: Stack(
             children: [
@@ -1035,52 +1264,105 @@ class QuizDuelArenaPage extends HookWidget {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 10),
-                                // Live Tug-of-War Score Gauge Bar
+                                const SizedBox(height: 12),
+                                // Live Tug-of-War Score Battle Gauge with Dynamic Delta Pill
                                 Builder(
                                   builder: (_) {
                                     final p1Pts = myPlayer.score;
                                     final p2Pts = opponent.score;
                                     final totalPts = max(1, p1Pts + p2Pts);
-                                    final p1Share = (p1Pts / totalPts).clamp(0.08, 0.92);
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(AppRadius.micro),
-                                      child: SizedBox(
-                                        height: 5,
-                                        child: Row(
+                                    final p1Share = (p1Pts / totalPts).clamp(0.10, 0.90);
+                                    final delta = p1Pts - p2Pts;
+
+                                    return Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Stack(
+                                          alignment: Alignment.center,
                                           children: [
-                                            Expanded(
-                                              flex: (p1Share * 100).round(),
-                                              child: AnimatedContainer(
-                                                duration: AppMotion.snappy,
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      colors.primary,
-                                                      colors.primary.withAlpha(200),
-                                                    ],
-                                                  ),
+                                            // Split Battle Gauge
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(AppRadius.micro),
+                                              child: SizedBox(
+                                                height: 14,
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      flex: (p1Share * 1000).round(),
+                                                      child: AnimatedContainer(
+                                                        duration: AppMotion.snappy,
+                                                        decoration: BoxDecoration(
+                                                          gradient: LinearGradient(
+                                                            colors: [
+                                                              colors.primary,
+                                                              colors.primary.withAlpha(200),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      width: 2,
+                                                      color: colors.surfacePrimary,
+                                                    ),
+                                                    Expanded(
+                                                      flex: ((1 - p1Share) * 1000).round(),
+                                                      child: AnimatedContainer(
+                                                        duration: AppMotion.snappy,
+                                                        decoration: BoxDecoration(
+                                                          gradient: LinearGradient(
+                                                            colors: [
+                                                              colors.secondary.withAlpha(200),
+                                                              colors.secondary,
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 2),
-                                            Expanded(
-                                              flex: ((1 - p1Share) * 100).round(),
-                                              child: AnimatedContainer(
-                                                duration: AppMotion.snappy,
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      colors.secondary.withAlpha(200),
-                                                      colors.secondary,
-                                                    ],
+                                            // Floating Delta Indicator Pill in Center
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: colors.surfacePrimary,
+                                                borderRadius: BorderRadius.circular(AppRadius.badge),
+                                                border: Border.all(
+                                                  color: delta > 0
+                                                      ? colors.success
+                                                      : delta < 0
+                                                          ? colors.secondary
+                                                          : colors.surfaceBorder,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: colors.black.withAlpha(isDark ? 60 : 25),
+                                                    blurRadius: 4,
                                                   ),
+                                                ],
+                                              ),
+                                              child: Text(
+                                                delta > 0
+                                                    ? '+$delta LEAD'
+                                                    : delta < 0
+                                                        ? '${delta.abs()} BEHIND'
+                                                        : 'TIED',
+                                                style: typography.caption.bold.copyWith(
+                                                  fontSize: 9.5,
+                                                  letterSpacing: 0.5,
+                                                  color: delta > 0
+                                                      ? colors.success
+                                                      : delta < 0
+                                                          ? colors.secondary
+                                                          : colors.textSecondary,
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
+                                      ],
                                     );
                                   },
                                 ),

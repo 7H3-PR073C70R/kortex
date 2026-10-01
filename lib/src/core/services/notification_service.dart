@@ -31,6 +31,9 @@ class NotificationService {
 
   // ── Channel constants ────────────────────────────────────────────────────────
 
+  /// Default channel configured by server push payloads.
+  static const String channelDefault = 'kortex_channel';
+
   /// General app channel — document processing, system events.
   static const String channelGeneral = 'kortex_general';
 
@@ -43,6 +46,12 @@ class NotificationService {
   /// Social channel — quiz duels, challenges, results.
   static const String channelSocial = 'kortex_social';
 
+  /// System and security channel — profile calibration, security notices, subscription.
+  static const String channelSystem = 'kortex_system';
+
+  /// AI Processing channel — OCR, Syllabot thinking, document synthesis.
+  static const String channelProcessing = 'kortex_processing';
+
   /// Returns the human-readable name for a channel ID.
   static String channelName(String channelId) {
     switch (channelId) {
@@ -52,6 +61,12 @@ class NotificationService {
         return 'Streak & Milestones';
       case channelSocial:
         return 'Social & Challenges';
+      case channelSystem:
+        return 'System & Security';
+      case channelProcessing:
+        return 'AI Processing';
+      case channelDefault:
+      case channelGeneral:
       default:
         return 'Kortex Notifications';
     }
@@ -66,6 +81,12 @@ class NotificationService {
         return 'Streak protection reminders and milestone celebrations';
       case channelSocial:
         return 'Quiz duel challenges, invitations, and results';
+      case channelSystem:
+        return 'Profile calibration, security notices, and subscription alerts';
+      case channelProcessing:
+        return 'Document synthesis, OCR extraction, and Syllabot updates';
+      case channelDefault:
+      case channelGeneral:
       default:
         return 'Document processing, system events, and general updates';
     }
@@ -159,6 +180,23 @@ class NotificationService {
           }
         },
       );
+
+      // Check if app was launched via local notification tap from terminated state.
+      final launchDetails =
+          await _localNotifications.getNotificationAppLaunchDetails();
+      if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
+        final payload = launchDetails.notificationResponse?.payload;
+        if (payload != null && payload.isNotEmpty) {
+          developer.log(
+            'NotificationService: app launched from local notification: $payload',
+          );
+          Future<void>.delayed(const Duration(milliseconds: 500), () {
+            if (!_payloadStreamController.isClosed) {
+              _payloadStreamController.add(payload);
+            }
+          });
+        }
+      }
     } on Object catch (e) {
       developer.log('NotificationService: local notifications init failed: $e');
     }
@@ -177,12 +215,12 @@ class NotificationService {
             'NotificationService: app opened from terminated state via '
             'notification: ${initialMessage.data}',
           );
-          final route = initialMessage.data['route']?.toString();
-          if (route != null && route.isNotEmpty) {
+          final payload = buildPayloadFromData(initialMessage.data);
+          if (payload.isNotEmpty) {
             // Delayed to allow router to be ready after startup.
             Future<void>.delayed(const Duration(milliseconds: 500), () {
               if (!_payloadStreamController.isClosed) {
-                _payloadStreamController.add(route);
+                _payloadStreamController.add(payload);
               }
             });
           }
@@ -199,14 +237,14 @@ class NotificationService {
           final notification = message.notification;
           if (notification != null) {
             final action = message.data['action']?.toString();
-            final route = message.data['route']?.toString();
+            final payload = buildPayloadFromData(message.data);
             final channelId = _resolveChannelId(action);
             unawaited(
               showLocalNotification(
                 id: notification.hashCode,
                 title: notification.title ?? 'Kortex',
                 body: notification.body ?? '',
-                payload: route ?? message.data.toString(),
+                payload: payload.isNotEmpty ? payload : '/dashboard',
                 channelId: channelId,
               ),
             );
@@ -218,9 +256,9 @@ class NotificationService {
           developer.log(
             'NotificationService: app opened via notification: ${message.data}',
           );
-          final route = message.data['route']?.toString();
-          if (route != null && route.isNotEmpty) {
-            _payloadStreamController.add(route);
+          final payload = buildPayloadFromData(message.data);
+          if (payload.isNotEmpty) {
+            _payloadStreamController.add(payload);
           }
         });
       } on Object catch (e) {
@@ -238,8 +276,15 @@ class NotificationService {
   ) async {
     final channels = [
       const AndroidNotificationChannel(
-        channelGeneral,
+        channelDefault,
         'Kortex Notifications',
+        description:
+            'General system notifications, updates, and activity alerts',
+        importance: Importance.high,
+      ),
+      const AndroidNotificationChannel(
+        channelGeneral,
+        'General Updates',
         description: 'Document processing, system events, and general updates',
       ),
       const AndroidNotificationChannel(
@@ -260,6 +305,18 @@ class NotificationService {
         'Social & Challenges',
         description: 'Quiz duel challenges, invitations, and results',
         importance: Importance.high,
+      ),
+      const AndroidNotificationChannel(
+        channelSystem,
+        'System & Security',
+        description:
+            'Profile calibration, security notices, and subscription alerts',
+        importance: Importance.high,
+      ),
+      const AndroidNotificationChannel(
+        channelProcessing,
+        'AI Processing',
+        description: 'Document synthesis, OCR extraction, and Syllabot updates',
       ),
     ];
 
@@ -708,6 +765,102 @@ class NotificationService {
     }
   }
 
+  /// Transforms raw notification payload data from FCM/APNs into a canonical route URI string.
+  ///
+  /// Guarantees that query parameters (e.g. `deckId`, `documentId`, `roomId`, `duelId`)
+  /// and inferred routes from `action` fields are preserved for deep-linking navigation.
+  static String buildPayloadFromData(Map<String, dynamic> data) {
+    if (data.isEmpty) return '';
+
+    final route = data['route']?.toString().trim();
+    final action = data['action']?.toString().trim();
+    final deckId = data['deckId']?.toString() ?? data['deck_id']?.toString();
+    final documentId =
+        data['documentId']?.toString() ?? data['document_id']?.toString();
+    final roomId = data['roomId']?.toString() ?? data['room_id']?.toString();
+    final duelId = data['duelId']?.toString() ?? data['duel_id']?.toString();
+    final postId = data['postId']?.toString() ??
+        data['post_id']?.toString() ??
+        data['thread_id']?.toString() ??
+        data['threadId']?.toString();
+
+    // 1. If an explicit route was sent, ensure parameters are merged into its query parameters.
+    if (route != null && route.isNotEmpty) {
+      final uri = Uri.tryParse(route);
+      final queryParams = <String, String>{};
+      if (uri != null) {
+        queryParams.addAll(uri.queryParameters);
+      }
+      data.forEach((key, value) {
+        if (key != 'route' &&
+            value != null &&
+            !queryParams.containsKey(key)) {
+          queryParams[key] = value.toString();
+        }
+      });
+      return Uri(
+        path: uri?.path ?? route,
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      ).toString();
+    }
+
+    // 2. Infer route from action if no explicit route was provided.
+    if (action != null && action.isNotEmpty) {
+      switch (action) {
+        case 'spaced_repetition_due':
+        case 'study_reminder':
+        case 'memory_decay_alert':
+          return deckId != null && deckId.isNotEmpty
+              ? '/study-session?deckId=$deckId'
+              : '/decks';
+        case 'daily_streak_reminder':
+        case 'streak_milestone':
+          return '/dashboard';
+        case 'exam_milestones':
+        case 'exam_countdown':
+          return '/planner';
+        case 'quiz_duel_challenge':
+        case 'quiz_duel_result':
+          final duelParam = duelId != null && duelId.isNotEmpty ? 'duelId=$duelId' : '';
+          final deckParam = deckId != null && deckId.isNotEmpty ? 'deckId=$deckId' : '';
+          final q = [duelParam, deckParam].where((s) => s.isNotEmpty).join('&');
+          return q.isNotEmpty ? '/quiz-duel?$q' : '/quiz-duel';
+        case 'room_started':
+        case 'room_invite':
+          return roomId != null && roomId.isNotEmpty
+              ? '/study-room?roomId=$roomId'
+              : '/study-room';
+        case 'document_completed':
+          return documentId != null && documentId.isNotEmpty
+              ? '/deck-detail?documentId=$documentId'
+              : '/ingestion';
+        case 'forum_solution_verified':
+        case 'forum_reply':
+          return postId != null && postId.isNotEmpty
+              ? '/forum/post/$postId'
+              : '/community';
+        case 'subscription_expiry':
+          return '/paywall';
+      }
+    }
+
+    // 3. Fallback inference based on present entity keys.
+    if (deckId != null && deckId.isNotEmpty) {
+      return '/study-session?deckId=$deckId';
+    }
+    if (postId != null && postId.isNotEmpty) {
+      return '/forum/post/$postId';
+    }
+    if (roomId != null && roomId.isNotEmpty) {
+      return '/study-room?roomId=$roomId';
+    }
+    if (duelId != null && duelId.isNotEmpty) {
+      return '/quiz-duel?duelId=$duelId';
+    }
+
+    return '/dashboard';
+  }
+
   void dispose() {
     unawaited(_tokenRefreshSubscription?.cancel());
     unawaited(_messageStreamController.close());
@@ -720,13 +873,24 @@ String _resolveChannelId(String? action) {
   switch (action) {
     case 'spaced_repetition_due':
     case 'study_reminder':
+    case 'memory_decay_alert':
       return NotificationService.channelStudyReminders;
     case 'daily_streak_reminder':
     case 'streak_milestone':
       return NotificationService.channelStreak;
     case 'quiz_duel_challenge':
     case 'quiz_duel_result':
+    case 'room_started':
+    case 'room_invite':
+    case 'forum_solution_verified':
+    case 'forum_reply':
       return NotificationService.channelSocial;
+    case 'document_completed':
+    case 'document_processing':
+      return NotificationService.channelProcessing;
+    case 'subscription_expiry':
+    case 'welcome_user':
+      return NotificationService.channelSystem;
     default:
       return NotificationService.channelGeneral;
   }

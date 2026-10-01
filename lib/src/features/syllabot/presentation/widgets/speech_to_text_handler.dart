@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+export 'package:speech_to_text/speech_to_text.dart' show ListenMode;
+
 /// Real-time speech recognition service for Syllabot AI voice input.
 class SpeechToTextHandler {
   SpeechToTextHandler({
@@ -59,15 +61,7 @@ class SpeechToTextHandler {
           if (Platform.isIOS) {
             final speechStatus = await Permission.speech.status;
             if (!speechStatus.isGranted) {
-              final res = await Permission.speech.request();
-              if (res.isPermanentlyDenied) {
-                _isAvailable = false;
-                completer.complete(false);
-                onError?.call(
-                  'Speech recognition permission is required. Please enable it in Settings.',
-                );
-                return false;
-              }
+              await Permission.speech.request();
             }
           }
         }
@@ -102,6 +96,36 @@ class SpeechToTextHandler {
         },
       );
 
+      if (!_isAvailable) {
+        if (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
+          final micStatus = await Permission.microphone.status;
+          if (micStatus.isPermanentlyDenied || micStatus.isDenied) {
+            onError?.call(
+              'Microphone permission is required. Please enable it in Settings.',
+            );
+          } else if (Platform.isIOS) {
+            final speechStatus = await Permission.speech.status;
+            if (speechStatus.isPermanentlyDenied || speechStatus.isDenied) {
+              onError?.call(
+                'Speech recognition permission is required. Please enable it in Settings.',
+              );
+            } else {
+              onError?.call(
+                'Speech recognition is unavailable on this device.',
+              );
+            }
+          } else {
+            onError?.call(
+              'Speech recognition is unavailable on this device.',
+            );
+          }
+        } else {
+          onError?.call(
+            'Speech recognition is unavailable on this device.',
+          );
+        }
+      }
+
       completer.complete(_isAvailable);
       return _isAvailable;
     } on Object catch (e) {
@@ -116,8 +140,9 @@ class SpeechToTextHandler {
 
   /// Starts listening to microphone and transcribing speech.
   Future<void> startListening({
-    Duration listenFor = const Duration(minutes: 10),
-    Duration pauseFor = const Duration(seconds: 30),
+    Duration listenFor = const Duration(minutes: 5),
+    Duration pauseFor = const Duration(milliseconds: 2000),
+    ListenMode listenMode = ListenMode.confirmation,
   }) async {
     // If already listening, stop previous session cleanly before starting a new one
     if (_speechToText.isListening) {
@@ -129,16 +154,13 @@ class SpeechToTextHandler {
     if (!_isAvailable) {
       final initialized = await initialize();
       if (!initialized) {
-        onError?.call(
-          'Microphone or speech recognition is unavailable on this device.',
-        );
         return;
       }
     }
 
     try {
       unawaited(HapticFeedback.mediumImpact());
-      await _speechToText.listen(
+      final started = await _speechToText.listen(
         onResult: (result) {
           if (result.recognizedWords.isNotEmpty) {
             onResult(result.recognizedWords);
@@ -155,11 +177,16 @@ class SpeechToTextHandler {
         },
         onSoundLevelChange: onSoundLevelChange,
         listenOptions: SpeechListenOptions(
-          listenMode: ListenMode.dictation,
+          listenMode: listenMode,
           listenFor: listenFor,
           pauseFor: pauseFor,
         ),
       );
+      if (started == false) {
+        onListeningChanged(false);
+        onError?.call('Could not start speech recognition session');
+        return;
+      }
       // Immediately reflect listening state in UI
       onListeningChanged(true);
     } on Object catch (e) {

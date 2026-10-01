@@ -129,6 +129,7 @@ import 'package:kortex/src/features/monetization/data/repositories/promo_code_re
 import 'package:kortex/src/features/monetization/domain/repositories/promo_code_repository.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
+import 'package:kortex/src/features/notifications/domain/services/notification_router.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/onboarding/data/datasources/onboarding_local_data_source.dart';
 import 'package:kortex/src/features/onboarding_calibration/data/data_sources/calibration_local_data_source.dart';
