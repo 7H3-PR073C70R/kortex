@@ -1,8 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 /// Real-time speech recognition service for Syllabot AI voice input.
 class SpeechToTextHandler {

@@ -100,45 +100,63 @@ class VoiceNoteRecorderWidget extends HookWidget {
       locator.get<AudioRecordingService>,
     );
 
+    // Indirection ref so onListeningChanged can call startListening() without
+    // a forward-reference compile error (handler self-references via closure).
+    final sttHandlerRef = useRef<SpeechToTextHandler?>(null);
+
     final sttHandler = useMemoized(
-      () => SpeechToTextHandler(
-        onResult: (words) {
-          // Live intermediate preview only — do not save as authoritative transcript
-          if (words.trim().isNotEmpty) {
-            transcriptText.value = words;
-            onTranscriptUpdate?.call(words);
+      () {
+        final h = SpeechToTextHandler(
+          onResult: (words) {
+            // Live intermediate preview only — do not save as authoritative transcript
+            if (words.trim().isNotEmpty) {
+              transcriptText.value = words;
+              onTranscriptUpdate?.call(words);
 
-            if (controller != null) {
-              final base = initialText.value;
-              final newContent = base.isEmpty ? words : '$base $words';
-              controller!.text = newContent;
-              controller!.selection =
-                  TextSelection.collapsed(offset: newContent.length);
+              if (controller != null) {
+                final base = initialText.value;
+                final newContent = base.isEmpty ? words : '$base $words';
+                controller!.text = newContent;
+                controller!.selection =
+                    TextSelection.collapsed(offset: newContent.length);
+              }
+
+              onRecordingStateChanged?.call(
+                isRecording: isRecording.value,
+                isLocked: false,
+                durationSeconds: durationSeconds.value,
+                transcript: words,
+              );
             }
-
-            onRecordingStateChanged?.call(
-              isRecording: isRecording.value,
-              isLocked: false,
-              durationSeconds: durationSeconds.value,
-              transcript: words,
-            );
-          }
-        },
-        onResultWithFinal: (words, {required isFinal}) {
-          // Accumulate final-only results as the authoritative transcript
-          if (isFinal && words.trim().isNotEmpty) {
-            final prev = finalTranscriptText.value.trim();
-            finalTranscriptText.value =
-                prev.isEmpty ? words.trim() : '$prev ${words.trim()}';
-          }
-        },
-        onListeningChanged: (listening) {
-          // Handled via AudioRecordingService lifecycle
-        },
-        onError: (err) {
-          debugPrint('VoiceNoteRecorder: STT error: $err');
-        },
-      ),
+          },
+          onResultWithFinal: (words, {required isFinal}) {
+            // Accumulate final-only results as the authoritative transcript
+            if (isFinal && words.trim().isNotEmpty) {
+              final prev = finalTranscriptText.value.trim();
+              finalTranscriptText.value =
+                  prev.isEmpty ? words.trim() : '$prev ${words.trim()}';
+            }
+          },
+          onListeningChanged: (listening) {
+            // Auto-restart STT if it pauses mid-session (iOS pauses after silence)
+            if (!listening && isRecording.value && !isStarting.value) {
+              Future<void>.delayed(const Duration(milliseconds: 200), () {
+                if (isRecording.value) {
+                  unawaited(sttHandlerRef.value?.startListening(
+                    listenFor: const Duration(minutes: 30),
+                    pauseFor: const Duration(seconds: 60),
+                  ));
+                }
+              });
+            }
+          },
+          onError: (err) {
+            debugPrint('VoiceNoteRecorder: STT error: $err');
+          },
+        );
+        sttHandlerRef.value = h;
+        return h;
+      },
     );
 
     useEffect(() {
@@ -152,7 +170,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
     Future<void> startRecordingSession() async {
       if (isProcessing.value || isRecording.value || isStarting.value) return;
       isProcessing.value = true;
-      // Immediately show a "starting" state so the button reacts on first tap
+      // Show starting state immediately so first tap always gives visual feedback
       isStarting.value = true;
 
       try {
@@ -174,8 +192,12 @@ class VoiceNoteRecorderWidget extends HookWidget {
         finalTranscriptText.value = '';
         initialText.value = controller?.text ?? '';
 
+        // ── Step 1: Start audio recorder immediately ──────────────────────────
+        // This is fast (< 50ms) and gives instant feedback. The UI flips to
+        // isRecording=true right after so there's zero perceived double-tap lag.
         await recordingService.startRecording();
 
+        // ── Step 2: Flip to recording state right away ────────────────────────
         isStarting.value = false;
         isRecording.value = true;
         durationSeconds.value = 0;
@@ -200,14 +222,23 @@ class VoiceNoteRecorderWidget extends HookWidget {
           },
         );
 
-        try {
-          unawaited(sttHandler.startListening());
-        } on Object catch (e) {
-          debugPrint('VoiceNoteRecorder: STT start failed: $e');
-        }
+        // ── Step 3: Start STT unawaited — never blocks the UI ────────────────
+        // STT is initialized ahead-of-time in useEffect so by now it should be
+        // ready. We fire it unawaited to avoid any remaining latency.
+        // The auto-restart in onListeningChanged handles mid-session pauses.
+        unawaited(
+          sttHandler.startListening(
+            listenFor: const Duration(minutes: 30),
+            pauseFor: const Duration(seconds: 60),
+          ).catchError((Object e) {
+            debugPrint('VoiceNoteRecorder: STT start failed: $e');
+          }),
+        );
+
       } on Object catch (e) {
         debugPrint('VoiceNoteRecorder: Failed to start audio recording: $e');
         isStarting.value = false;
+        isRecording.value = false;
         if (context.mounted) {
           context.showSnackBar(
             message: 'Failed to access microphone: $e',
@@ -313,14 +344,12 @@ class VoiceNoteRecorderWidget extends HookWidget {
           durationSeconds: durationSeconds.value,
           transcriptText: transcriptText.value,
           amplitudeStream: recordingService.amplitudeStream,
-          onCancel: cancelRecordingSession,
-          onDone: finishRecordingSession,
         ),
       );
     }
 
-    // Single-Tap Mic Trigger Button (Instant Start / Finish)
-    final isActive = isRecording.value || isStarting.value;
+    // Single-Tap Mic Button — starts on first tap, stops on second tap.
+    // While recording shows a pulsing radial indicator; while starting shows a spinner.
     final triggerButton = ShrinkableButton(
       onTap: () {
         if (isRecording.value) {
@@ -329,46 +358,41 @@ class VoiceNoteRecorderWidget extends HookWidget {
           unawaited(startRecordingSession());
         }
       },
-      child: AnimatedContainer(
-        duration: AppMotion.snappy,
-        curve: AppMotion.easeOutCubic,
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive
-              ? colors.error.withAlpha(isDark ? 60 : 35)
-              : colors.transparent,
-          shape: BoxShape.circle,
-          border: isActive
-              ? Border.all(color: colors.error.withAlpha(180), width: 1.5)
-              : null,
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: colors.error.withAlpha(120),
-                    blurRadius: 10,
-                    spreadRadius: 1,
+      child: isStarting.value
+          // ── Startup spinner ───────────────────────────────────────────────
+          ? SizedBox(
+              width: 36,
+              height: 36,
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.error),
                   ),
-                ]
-              : null,
-        ),
-        child: isStarting.value
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(colors.error),
                 ),
-              )
-            : Icon(
-                isRecording.value ? Icons.stop_rounded : Icons.mic_rounded,
-                size: compact ? 19 : 21,
-                color:
-                    isRecording.value ? colors.error : colors.textSecondary,
               ),
-      ),
+            )
+          : isRecording.value
+              // ── Pulsing radial "tap to stop" indicator ────────────────────
+              ? _PulsingMicButton(
+                  compact: compact,
+                  isDark: isDark,
+                  errorColor: colors.error,
+                )
+              // ── Idle mic ──────────────────────────────────────────────────
+              : SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: Center(
+                    child: Icon(
+                      Icons.mic_rounded,
+                      size: compact ? 19 : 21,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ),
     );
 
     if (showBanner && bannerWidget != null) {
@@ -389,24 +413,147 @@ class VoiceNoteRecorderWidget extends HookWidget {
   }
 }
 
+/// Continuously pulsing mic circle used as the "tap to stop" affordance
+/// during an active recording session.
+class _PulsingMicButton extends StatefulWidget {
+  const _PulsingMicButton({
+    required this.compact,
+    required this.isDark,
+    required this.errorColor,
+  });
+
+  final bool compact;
+  final bool isDark;
+  final Color errorColor;
+
+  @override
+  State<_PulsingMicButton> createState() => _PulsingMicButtonState();
+}
+
+class _PulsingMicButtonState extends State<_PulsingMicButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnim;
+  late final Animation<double> _rippleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    unawaited(_controller.repeat());
+
+    _scaleAnim = Tween<double>(begin: 0.92, end: 1.08).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0, 1, curve: Curves.easeInOut),
+      ),
+    );
+    _rippleAnim = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 36.0;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final ripple = _rippleAnim.value;
+        final scale = _scaleAnim.value;
+        return SizedBox(
+          width: size + 12,
+          height: size + 12,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer ripple ring
+              Opacity(
+                opacity: ((1 - ripple) * 0.9).clamp(0.0, 1.0),
+                child: Container(
+                  width: size + ripple * 14,
+                  height: size + ripple * 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: widget.errorColor
+                          .withAlpha(((1 - ripple) * 140).round()),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              // Core pulsing mic circle
+              Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.errorColor
+                        .withAlpha(widget.isDark ? 60 : 40),
+                    border: Border.all(
+                      color: widget.errorColor.withAlpha(200),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.errorColor.withAlpha(100),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.mic_rounded,
+                    size: widget.compact ? 18 : 20,
+                    color: widget.errorColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+
 /// Real-life grade Voice Recording Banner displayed when recording is active.
-/// Provides live duration, pulsing rec indicator, bouncing 4-bar waveform animation,
-/// lock status badge, and clear Discard/Done controls.
+/// Shows only the REC indicator, live timer, and waveform — the mic button
+/// in the parent toolbar acts as the single stop control.
 class VoiceRecordingBannerWidget extends HookWidget {
   const VoiceRecordingBannerWidget({
     required this.durationSeconds,
-    required this.onCancel,
-    required this.onDone,
     this.isLocked = false,
     this.transcriptText = '',
     this.amplitudeStream,
+    // Legacy cancel/done params kept for callers that still pass them;
+    // they are no longer rendered inside the banner itself.
+    this.onCancel,
+    this.onDone,
     super.key,
   });
 
   final bool isLocked;
   final int durationSeconds;
-  final VoidCallback onCancel;
-  final VoidCallback onDone;
+  final VoidCallback? onCancel;
+  final VoidCallback? onDone;
   final String transcriptText;
   final Stream<double>? amplitudeStream;
 
@@ -483,55 +630,10 @@ class VoiceRecordingBannerWidget extends HookWidget {
               ),
               const SizedBox(width: 8),
 
-              // Animated Waveform Visualizer
-              AudioWaveformVisualizer(
-                amplitudeStream: amplitudeStream,
-              ),
-
-              const Spacer(),
-
-              // Discard / Trash Button
-              ShrinkableButton(
-                onTap: onCancel,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.error.withAlpha(isDark ? 40 : 25),
-                  ),
-                  child: Icon(
-                    Icons.delete_outline_rounded,
-                    size: 16,
-                    color: colors.error,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-
-              // Done Button
-              ShrinkableButton(
-                onTap: onDone,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: AppRadius.radiusBadge,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_rounded, size: 14, color: colors.white),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Done',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.white,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
-                  ),
+              // Animated Waveform Visualizer — takes all remaining space
+              Expanded(
+                child: AudioWaveformVisualizer(
+                  amplitudeStream: amplitudeStream,
                 ),
               ),
             ],
