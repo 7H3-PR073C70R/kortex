@@ -532,19 +532,40 @@ class AppDatabase extends _$AppDatabase {
     if (cardsList.isEmpty) return;
 
     final deckIds = cardsList
-        .where((c) => c.deckId.present)
-        .map((c) => c.deckId.value)
+        .where((c) => c.deckId.present && c.deckId.value.trim().isNotEmpty)
+        .map((c) => c.deckId.value.trim())
         .toSet();
 
+    final now = DateTime.now();
     for (final deckId in deckIds) {
       final existing = await (select(
         decks,
       )..where((d) => d.id.equals(deckId))).getSingleOrNull();
 
-      if (existing != null) {
+      if (existing == null) {
+        final resolvedTitle = DeckTitleResolver.resolveTitle(deckId: deckId);
+        final resolvedSubject = DeckTitleResolver.resolveSubject(
+          deckId: deckId,
+        );
+        final resolvedCategory = DeckTitleResolver.resolveCategory(
+          deckId: deckId,
+        );
+        await into(decks).insert(
+          DecksCompanion.insert(
+            id: deckId,
+            title: resolvedTitle,
+            subject: Value(resolvedSubject),
+            category: Value(resolvedCategory),
+            createdAt: now,
+            updatedAt: now,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      } else if (DeckTitleResolver.isGenericTitle(existing.title)) {
         final resolvedTitle = DeckTitleResolver.resolveTitle(
           deckId: deckId,
           currentTitle: existing.title,
+          subject: existing.subject,
         );
         final resolvedSubject = DeckTitleResolver.resolveSubject(
           deckId: deckId,
@@ -564,17 +585,57 @@ class AppDatabase extends _$AppDatabase {
       }
     }
 
+    final effectiveCards = <FlashcardsCompanion>[];
+    final seenIds = <String>{};
+
+    for (final card in cardsList) {
+      if (!card.id.present || card.id.value.trim().isEmpty) continue;
+      final cid = card.id.value.trim();
+      if (seenIds.contains(cid)) continue;
+      seenIds.add(cid);
+
+      var cleanCard = card;
+      if (!card.deckId.present || card.deckId.value.trim().isEmpty) {
+        final fallback = deckIds.isNotEmpty ? deckIds.first : 'default-deck';
+        cleanCard = card.copyWith(deckId: Value(fallback));
+        if (fallback == 'default-deck') {
+          await into(decks).insert(
+            DecksCompanion.insert(
+              id: 'default-deck',
+              title: 'General Flashcards',
+              subject: const Value('General'),
+              category: const Value('General'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+        }
+      }
+      effectiveCards.add(cleanCard);
+    }
+
+    if (effectiveCards.isEmpty) return;
+
     await ensureFsrsColumnsExist();
     try {
       await batch((b) {
-        b.insertAllOnConflictUpdate(flashcards, cardsList);
+        b.insertAllOnConflictUpdate(flashcards, effectiveCards);
       });
     } on Object catch (_) {
       _fsrsColumnsChecked = false;
       await ensureFsrsColumnsExist();
-      await batch((b) {
-        b.insertAllOnConflictUpdate(flashcards, cardsList);
-      });
+      try {
+        await batch((b) {
+          b.insertAllOnConflictUpdate(flashcards, effectiveCards);
+        });
+      } on Object catch (_) {
+        for (final card in effectiveCards) {
+          try {
+            await into(flashcards).insertOnConflictUpdate(card);
+          } on Object catch (_) {}
+        }
+      }
     }
 
     for (final deckId in deckIds) {
@@ -587,22 +648,51 @@ class AppDatabase extends _$AppDatabase {
     List<FlashcardsCompanion> cardsList,
   ) async {
     await ensureFsrsColumnsExist();
+    final deckId = deck.id.present ? deck.id.value.trim() : '';
+    final effectiveCards = <FlashcardsCompanion>[];
+    final seenIds = <String>{};
+
+    for (final card in cardsList) {
+      if (!card.id.present || card.id.value.trim().isEmpty) continue;
+      final cid = card.id.value.trim();
+      if (seenIds.contains(cid)) continue;
+      seenIds.add(cid);
+
+      var cleanCard = card;
+      if (deckId.isNotEmpty &&
+          (!card.deckId.present || card.deckId.value.trim().isEmpty)) {
+        cleanCard = card.copyWith(deckId: Value(deckId));
+      }
+      effectiveCards.add(cleanCard);
+    }
+
     try {
       await batch((b) {
         b.insertAllOnConflictUpdate(decks, [deck]);
-        if (cardsList.isNotEmpty) {
-          b.insertAllOnConflictUpdate(flashcards, cardsList);
+        if (effectiveCards.isNotEmpty) {
+          b.insertAllOnConflictUpdate(flashcards, effectiveCards);
         }
       });
     } on Object catch (_) {
       _fsrsColumnsChecked = false;
       await ensureFsrsColumnsExist();
-      await batch((b) {
-        b.insertAllOnConflictUpdate(decks, [deck]);
-        if (cardsList.isNotEmpty) {
-          b.insertAllOnConflictUpdate(flashcards, cardsList);
+      try {
+        await batch((b) {
+          b.insertAllOnConflictUpdate(decks, [deck]);
+          if (effectiveCards.isNotEmpty) {
+            b.insertAllOnConflictUpdate(flashcards, effectiveCards);
+          }
+        });
+      } on Object catch (_) {
+        try {
+          await into(decks).insertOnConflictUpdate(deck);
+        } on Object catch (_) {}
+        for (final card in effectiveCards) {
+          try {
+            await into(flashcards).insertOnConflictUpdate(card);
+          } on Object catch (_) {}
         }
-      });
+      }
     }
 
     if (deck.id.present) {
