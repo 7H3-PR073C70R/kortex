@@ -15,8 +15,8 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
 import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
-import 'package:kortex/src/features/community/domain/services/spoken_math_converter.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
@@ -26,7 +26,6 @@ import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -95,60 +94,12 @@ class CreateForumDiscussionPage extends HookWidget {
 
     // Media & Voice note attachments state
     final attachedImages = useState<List<String>>([]);
-    final isRecordingVoice = useState<bool>(false);
     final recordedVoiceNoteUrl = useState<String?>(null);
     final voiceNoteDurationSeconds = useState<int>(0);
     final recordedVoiceNoteTranscript = useState<String?>(null);
-    final recordingTimer = useRef<Timer?>(null);
 
     final characterCount = useState<int>(0);
     final lastSavedTime = useState<String>('Draft');
-
-    // Speech to Text handler for live voice-to-text dictation with math KaTeX conversion
-    final sttHandler = useMemoized(
-      () => SpeechToTextHandler(
-        onResult: (words) {
-          if (words.trim().isNotEmpty) {
-            final convertedMath =
-                SpokenMathToKaTeXConverter.convertSpokenMathToKaTeX(words);
-            final current = contentController.text;
-            if (current.isEmpty) {
-              contentController.text = convertedMath;
-            } else if (!current.contains(convertedMath)) {
-              contentController.text = '$current $convertedMath';
-            }
-          }
-        },
-        onListeningChanged: (listening) {
-          isRecordingVoice.value = listening;
-          if (listening) {
-            voiceNoteDurationSeconds.value = 0;
-            recordingTimer.value?.cancel();
-            recordingTimer.value = Timer.periodic(const Duration(seconds: 1), (
-              timer,
-            ) {
-              voiceNoteDurationSeconds.value = timer.tick;
-            });
-          } else {
-            recordingTimer.value?.cancel();
-            if (voiceNoteDurationSeconds.value > 0) {
-              recordedVoiceNoteUrl.value ??= 'audio/voice_note.wav';
-            }
-          }
-        },
-        onError: (err) {
-          isRecordingVoice.value = false;
-          recordingTimer.value?.cancel();
-        },
-      ),
-    );
-
-    useEffect(() {
-      return () {
-        recordingTimer.value?.cancel();
-        sttHandler.dispose();
-      };
-    }, []);
 
     useEffect(() {
       void listener() {
@@ -545,10 +496,27 @@ class CreateForumDiscussionPage extends HookWidget {
         return;
       }
 
+      // Content safety & anti-abuse moderation check
+      const moderationService = ContentModerationService();
+      final modResult = moderationService.validatePost(
+        title: title,
+        content: content,
+      );
+      if (!modResult.isValid) {
+        context.showSnackBar(
+          message: modResult.reason ?? 'Post content failed safety moderation.',
+          type: SnackBarType.error,
+        );
+        return;
+      }
+
+      final sanitizedTitle = ContentModerationService.sanitizeText(title);
+      final sanitizedContent = ContentModerationService.sanitizeText(content);
+
       // Duplicate post prevention check across existing state
       final currentPosts = context.read<CommunityHubBloc>().state.forumPosts;
       final duplicateMatch = ForumDuplicateDetector.findExactOrHighMatch(
-        title: title,
+        title: sanitizedTitle,
         posts: currentPosts,
         track: selectedTrack.value,
       );
@@ -680,8 +648,8 @@ class CreateForumDiscussionPage extends HookWidget {
 
       if (onSubmit != null) {
         onSubmit!(
-          title: title,
-          content: content.isNotEmpty ? content : title,
+          title: sanitizedTitle,
+          content: sanitizedContent.isNotEmpty ? sanitizedContent : sanitizedTitle,
           track: selectedTrack.value,
           latexContent: latexSnippet,
           isQuestion: true,
@@ -708,8 +676,8 @@ class CreateForumDiscussionPage extends HookWidget {
 
       try {
         final result = await locator<CommunityRepository>().createForumPost(
-          title: title,
-          content: content.isNotEmpty ? content : title,
+          title: sanitizedTitle,
+          content: sanitizedContent.isNotEmpty ? sanitizedContent : sanitizedTitle,
           track: selectedTrack.value,
           latexContent: latexSnippet,
           isQuestion: true,

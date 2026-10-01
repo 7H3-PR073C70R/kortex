@@ -23,9 +23,17 @@ interface PushNotificationPayload {
     | "leaderboard"
     | "deck_cloned"
     | "security"
-    | "general";
+    | "general"
+    | "quiz_duel"
+    | "quiz_duel_challenge"
+    | "quiz_duel_result"
+    | "subscription"
+    | "forum_reply"
+    | string;
   data?: Record<string, string>;
   priority?: "high" | "normal";
+  skipInboxInsert?: boolean;
+  fromOutbox?: boolean;
 }
 
 /**
@@ -113,19 +121,24 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
     const authHeader = req.headers.get("Authorization") ?? "";
+    const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
+    const serverTriggerHeader = req.headers.get("X-Server-Trigger") ?? "";
 
-    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const isServiceRole =
+      (supabaseServiceKey && token === supabaseServiceKey) ||
+      (supabaseAnonKey && token === supabaseAnonKey) ||
+      (cronSecret && (customCronHeader === cronSecret || token === cronSecret)) ||
+      serverTriggerHeader === "kortex-internal-worker";
+
+    if (!authHeader.toLowerCase().startsWith("bearer ") && !isServiceRole) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: Missing Bearer token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const isServiceRole =
-      (supabaseServiceKey && token === supabaseServiceKey) ||
-      (supabaseAnonKey && token === supabaseAnonKey);
 
     let authenticatedUserId: string | null = null;
     if (!isServiceRole) {
@@ -242,19 +255,35 @@ serve(async (req: Request) => {
       console.warn("[PushService] Device lookup error:", deviceError.message);
     }
 
-    const notificationInserts = filteredUserIds.map((uid) => ({
-      user_id: uid,
-      title,
-      body,
-      category,
-      data: { ...data, priority, timestamp: new Date().toISOString(), pushed: true },
-      read: false,
-    }));
+    const shouldInsertInbox = !payload.skipInboxInsert && !payload.fromOutbox && data?.pushed !== "true" && data?.pushed !== true;
 
-    try {
-      await supabase.from("notifications").insert(notificationInserts);
-    } catch (inboxErr) {
-      console.warn("[PushService] Failed to insert in-app notifications:", inboxErr);
+    if (shouldInsertInbox) {
+      const notificationInserts = filteredUserIds.map((uid) => ({
+        user_id: uid,
+        title,
+        body,
+        category,
+        data: { ...data, priority, timestamp: new Date().toISOString(), pushed: true },
+        read: false,
+      }));
+
+      try {
+        await supabase.from("notifications").insert(notificationInserts);
+      } catch (inboxErr) {
+        console.warn("[PushService] Failed to insert in-app notifications:", inboxErr);
+      }
+    } else {
+      const targetNotifId = data?.notification_id || data?.notificationId;
+      if (targetNotifId) {
+        try {
+          await supabase
+            .from("notifications")
+            .update({
+              data: { ...data, pushed: true, pushed_at: new Date().toISOString() },
+            })
+            .eq("id", targetNotifId);
+        } catch (_) {}
+      }
     }
 
     const tokens = (devices ?? []).map((d) => d.fcm_token).filter(Boolean);

@@ -422,10 +422,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.trigger-notifications]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-push-notification]
-verify_jwt = true
+verify_jwt = false
 
 [functions.calculate-leaderboard]
 verify_jwt = false

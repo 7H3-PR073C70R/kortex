@@ -9,6 +9,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/audio_pronounce_button.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
@@ -87,6 +88,13 @@ class _ExplanationAccordionState extends State<ExplanationAccordion> {
                     ),
                   ),
                 ),
+                AudioPronounceButton(
+                  textToPronounce: widget.explanation,
+                  size: 28,
+                  iconSize: 15,
+                  tooltip: 'Listen to explanation',
+                ),
+                const SizedBox(width: 8),
                 // Ask Syllabot AI Action Pill
                 InkWell(
                   onTap: () {

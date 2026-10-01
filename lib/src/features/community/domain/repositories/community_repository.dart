@@ -104,6 +104,7 @@ abstract class CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    bool isAnonymous = false,
   });
 
   /// Upvotes, downvotes, or clears vote on a forum post.

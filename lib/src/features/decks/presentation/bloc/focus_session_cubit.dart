@@ -63,7 +63,10 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
            (locator.isRegistered<LocalStorageService>()
                ? locator<LocalStorageService>()
                : null),
-       _ttsHandler = ttsHandler,
+       _ttsHandler = ttsHandler ??
+           (locator.isRegistered<TextToSpeechService>()
+               ? TextToSpeechHandler()
+               : null),
        super(const FocusSessionState()) {
     _initTtsListener();
   }

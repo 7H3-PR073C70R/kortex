@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
@@ -65,11 +66,9 @@ class AudioPronounceButton extends HookWidget {
             } on Object catch (_) {
               AppFeedback.incorrect();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Audio pronunciation unavailable offline.'),
-                    duration: Duration(seconds: 2),
-                  ),
+                context.showSnackBar(
+                  message: 'Audio pronunciation unavailable offline.',
+                  type: SnackBarType.error,
                 );
               }
             }

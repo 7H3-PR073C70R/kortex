@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
 import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
@@ -14,6 +17,7 @@ import 'package:kortex/src/features/community/presentation/bloc/community_hub_bl
 import 'package:kortex/src/features/community/presentation/pages/forum_thread_detail_page.dart';
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -113,6 +117,9 @@ class CreatePostBottomSheet extends HookWidget {
     );
     final isQuestion = useState<bool>(initialIsQuestion);
     final isAnonymous = useState<bool>(false);
+    final recordedVoiceNoteUrl = useState<String?>(null);
+    final voiceNoteDurationSeconds = useState<int>(0);
+    final recordedVoiceNoteTranscript = useState<String?>(null);
 
     final authState = context.watch<AuthBloc?>()?.state;
     final userTrack = authState?.userProfile?.targetTrack;
@@ -396,19 +403,43 @@ class CreatePostBottomSheet extends HookWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                VoiceNoteRecorderWidget(
-                  compact: true,
-                  showBanner: true,
-                  controller: contentController,
-                  onRecordingComplete: ({
-                    required audioUrl,
-                    required durationSeconds,
-                    required transcript,
-                  }) {},
-                  onCancel: () {},
-                ),
+                    VoiceNoteRecorderWidget(
+                      compact: true,
+                      showBanner: true,
+                      controller: contentController,
+                      onRecordingComplete: ({
+                        required audioUrl,
+                        required durationSeconds,
+                        required transcript,
+                      }) {
+                        recordedVoiceNoteUrl.value = audioUrl;
+                        voiceNoteDurationSeconds.value = durationSeconds;
+                        recordedVoiceNoteTranscript.value = transcript;
+                      },
+                      onCancel: () {
+                        recordedVoiceNoteUrl.value = null;
+                        voiceNoteDurationSeconds.value = 0;
+                        recordedVoiceNoteTranscript.value = null;
+                      },
+                    ),
                   ],
                 ),
+                if (recordedVoiceNoteUrl.value != null) ...[
+                  const SizedBox(height: 8),
+                  VoiceNotePlayerWidget(
+                    audioUrl: recordedVoiceNoteUrl.value!,
+                    durationSeconds: voiceNoteDurationSeconds.value > 0
+                        ? voiceNoteDurationSeconds.value
+                        : null,
+                    transcript: recordedVoiceNoteTranscript.value,
+                    showTranscript: false,
+                    onDelete: () {
+                      recordedVoiceNoteUrl.value = null;
+                      voiceNoteDurationSeconds.value = 0;
+                      recordedVoiceNoteTranscript.value = null;
+                    },
+                  ),
+                ],
                 const SizedBox(height: 12),
 
                 // Optional Syllabus Tag Field
@@ -514,7 +545,7 @@ class CreatePostBottomSheet extends HookWidget {
                       ],
                     ),
                     child: ShrinkableButton(
-                      onTap: () {
+                      onTap: () async {
                         final rawTitle = titleController.text.trim();
                         final rawContent = contentController.text.trim();
                         if (rawTitle.isEmpty || rawContent.isEmpty) {
@@ -534,9 +565,41 @@ class CreatePostBottomSheet extends HookWidget {
                           return;
                         }
 
+                        var finalContent = contentController.text.trim();
+                        var finalVoiceNoteUrl = recordedVoiceNoteUrl.value;
+                        if (finalVoiceNoteUrl != null &&
+                            !finalVoiceNoteUrl.startsWith('http://') &&
+                            !finalVoiceNoteUrl.startsWith('https://') &&
+                            locator.isRegistered<MediaUploadService>()) {
+                          final uploadService = locator<MediaUploadService>();
+                          if (File(finalVoiceNoteUrl).existsSync()) {
+                            try {
+                              final r2Url = await uploadService.uploadMedia(
+                                file: File(finalVoiceNoteUrl),
+                                mediaType: ForumMediaType.voice,
+                              );
+                              finalVoiceNoteUrl = r2Url;
+                            } on Object catch (_) {}
+                          }
+                        }
+
+                        if (finalVoiceNoteUrl != null &&
+                            finalVoiceNoteUrl.isNotEmpty) {
+                          final dur = voiceNoteDurationSeconds.value > 0
+                              ? voiceNoteDurationSeconds.value
+                              : 5;
+                          finalContent +=
+                              '\n<!-- voice: $finalVoiceNoteUrl | dur: $dur -->';
+                          if (recordedVoiceNoteTranscript.value != null &&
+                              recordedVoiceNoteTranscript.value!.trim().isNotEmpty) {
+                            finalContent +=
+                                '\n<!-- voice_transcript: ${recordedVoiceNoteTranscript.value!.trim()} -->';
+                          }
+                        }
+
                         onSubmit(
                           title: titleController.text.trim(),
-                          content: contentController.text.trim(),
+                          content: finalContent,
                           track: activeTrack,
                           latexContent: latexController.text.trim().isNotEmpty
                               ? latexController.text.trim()
@@ -548,7 +611,9 @@ class CreatePostBottomSheet extends HookWidget {
                               : 'General',
                           isAnonymous: isAnonymous.value,
                         );
-                        Navigator.of(context).pop();
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
                       },
                       child: Container(
                         width: double.infinity,

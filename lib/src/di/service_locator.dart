@@ -85,6 +85,16 @@ void _initServices() {
     ..registerLazySingleton<MediaUploadService>(
       MediaUploadService.new,
     )
+    ..registerLazySingleton<AudioRecordingService>(
+      AudioRecordingServiceImpl.new,
+    )
+    ..registerLazySingleton<TextToSpeechService>(
+      () => TextToSpeechServiceImpl(
+        localStorageService: locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null,
+      ),
+    )
     ..registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(storageService: locator()),
     )

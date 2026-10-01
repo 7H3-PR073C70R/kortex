@@ -1,20 +1,42 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
+/// Controller to allow external widgets (such as pinned top recording banners)
+/// to complete or cancel recording sessions synchronously with [VoiceNoteRecorderWidget].
+class VoiceNoteRecorderController {
+  Future<void> Function()? _finish;
+  Future<void> Function()? _cancel;
+
+  void attach({
+    required Future<void> Function() onFinish,
+    required Future<void> Function() onCancel,
+  }) {
+    _finish = onFinish;
+    _cancel = onCancel;
+  }
+
+  void detach() {
+    _finish = null;
+    _cancel = null;
+  }
+
+  Future<void> finish() async => _finish?.call();
+  Future<void> cancel() async => _cancel?.call();
+}
+
 /// Interactive Voice Note recorder widget supporting:
-/// - Hold to record (releasing stops & completes recording)
-/// - Drag up to lock (activates hands-free locked mode)
-/// - Explicit "Done" button to complete when locked
-/// - Trash / Cancel button to discard
-/// - Live duration timer & live Speech-to-Text transcript preview
-/// Interactive Voice Note recorder widget supporting:
+/// - Real microphone recording via [AudioRecordingService] into AAC/M4A audio files
 /// - Hold to record (releasing stops & completes recording)
 /// - Drag up to lock (activates hands-free locked mode)
 /// - Explicit "Done" button to complete when locked
@@ -25,6 +47,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
   const VoiceNoteRecorderWidget({
     required this.onRecordingComplete,
     required this.onCancel,
+    this.recorderController,
     this.onTranscriptUpdate,
     this.onRecordingStateChanged,
     this.controller,
@@ -40,6 +63,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
   }) onRecordingComplete;
 
   final VoidCallback onCancel;
+  final VoiceNoteRecorderController? recorderController;
   final ValueChanged<String>? onTranscriptUpdate;
   final void Function({
     required bool isRecording,
@@ -71,12 +95,24 @@ class VoiceNoteRecorderWidget extends HookWidget {
     final initialText = useRef<String>('');
     final recordingTimer = useRef<Timer?>(null);
 
+    final recordingService = useMemoized(
+      locator.get<AudioRecordingService>,
+    );
+
     final sttHandler = useMemoized(
       () => SpeechToTextHandler(
         onResult: (words) {
           if (words.trim().isNotEmpty) {
             transcriptText.value = words;
             onTranscriptUpdate?.call(words);
+
+            if (controller != null) {
+              final base = initialText.value;
+              final newContent = base.isEmpty ? words : '$base $words';
+              controller!.text = newContent;
+              controller!.selection =
+                  TextSelection.collapsed(offset: newContent.length);
+            }
 
             onRecordingStateChanged?.call(
               isRecording: isRecording.value,
@@ -87,41 +123,10 @@ class VoiceNoteRecorderWidget extends HookWidget {
           }
         },
         onListeningChanged: (listening) {
-          if (listening) {
-            isRecording.value = true;
-            if (recordingTimer.value == null || !recordingTimer.value!.isActive) {
-              recordingTimer.value?.cancel();
-              recordingTimer.value = Timer.periodic(
-                const Duration(seconds: 1),
-                (timer) {
-                  durationSeconds.value = timer.tick;
-                  onRecordingStateChanged?.call(
-                    isRecording: true,
-                    isLocked: isLocked.value,
-                    durationSeconds: timer.tick,
-                    transcript: transcriptText.value,
-                  );
-                },
-              );
-            }
-          }
+          // Handled via AudioRecordingService lifecycle
         },
         onError: (err) {
-          if (transcriptText.value.isEmpty) {
-            transcriptText.value =
-                'Scholar voice note recording for discussion response.';
-            onTranscriptUpdate?.call(transcriptText.value);
-
-            if (controller != null) {
-              final baseText = initialText.value;
-              final newContent = baseText.isEmpty
-                  ? transcriptText.value
-                  : '$baseText ${transcriptText.value}';
-              controller!.text = newContent;
-              controller!.selection =
-                  TextSelection.collapsed(offset: newContent.length);
-            }
-          }
+          debugPrint('VoiceNoteRecorder: STT error: $err');
         },
       ),
     );
@@ -133,17 +138,42 @@ class VoiceNoteRecorderWidget extends HookWidget {
       };
     }, const []);
 
-    void startRecordingSession() {
+    Future<void> startRecordingSession() async {
       if (isRecording.value &&
           recordingTimer.value != null &&
           recordingTimer.value!.isActive) {
         return;
       }
+
+      final hasPerm = await recordingService.hasPermission();
+      if (!hasPerm) {
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Microphone permission is required to record voice notes',
+            type: SnackBarType.error,
+          );
+        }
+        return;
+      }
+
       unawaited(HapticFeedback.mediumImpact());
       transcriptText.value = '';
       isLocked.value = false;
       dragOffset.value = 0;
       initialText.value = controller?.text ?? '';
+
+      try {
+        await recordingService.startRecording();
+      } on Object catch (e) {
+        debugPrint('VoiceNoteRecorder: Failed to start audio recording: $e');
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Failed to access microphone: $e',
+            type: SnackBarType.error,
+          );
+        }
+        return;
+      }
 
       isRecording.value = true;
       durationSeconds.value = 0;
@@ -168,23 +198,24 @@ class VoiceNoteRecorderWidget extends HookWidget {
         },
       );
 
-      unawaited(sttHandler.startListening());
+      try {
+        unawaited(sttHandler.startListening());
+      } on Object catch (e) {
+        debugPrint('VoiceNoteRecorder: STT start failed: $e');
+      }
     }
 
-    void finishRecordingSession() {
+    Future<void> finishRecordingSession() async {
       unawaited(HapticFeedback.lightImpact());
       recordingTimer.value?.cancel();
-      final finalDuration =
-          durationSeconds.value > 0 ? durationSeconds.value : 5;
-      final finalTranscript = transcriptText.value.trim().isNotEmpty
-          ? transcriptText.value.trim()
-          : (controller != null && controller!.text.trim().isNotEmpty)
-              ? controller!.text.trim()
-              : 'Scholar voice note recording for discussion response.';
+      final finalDuration = durationSeconds.value;
+      final finalTranscript = transcriptText.value.trim();
 
       unawaited(sttHandler.stopListening());
       isRecording.value = false;
       isLocked.value = false;
+
+      final recordedPath = await recordingService.stopRecording();
 
       onRecordingStateChanged?.call(
         isRecording: false,
@@ -193,17 +224,28 @@ class VoiceNoteRecorderWidget extends HookWidget {
         transcript: finalTranscript,
       );
 
-      onRecordingComplete(
-        audioUrl: 'audio/voice_note.wav',
-        durationSeconds: finalDuration,
-        transcript: finalTranscript,
-      );
+      if (recordedPath != null && File(recordedPath).existsSync()) {
+        onRecordingComplete(
+          audioUrl: recordedPath,
+          durationSeconds: finalDuration > 0 ? finalDuration : 1,
+          transcript: finalTranscript,
+        );
+      } else {
+        debugPrint('VoiceNoteRecorder: No audio captured or empty file');
+        if (context.mounted) {
+          context.showSnackBar(
+            message: 'Voice note was too short or could not be recorded',
+          );
+        }
+        onCancel();
+      }
     }
 
-    void cancelRecordingSession() {
+    Future<void> cancelRecordingSession() async {
       unawaited(HapticFeedback.lightImpact());
       recordingTimer.value?.cancel();
       unawaited(sttHandler.cancel());
+      await recordingService.cancelRecording();
 
       if (controller != null) {
         controller!.text = initialText.value;
@@ -226,6 +268,17 @@ class VoiceNoteRecorderWidget extends HookWidget {
       onCancel();
     }
 
+    // Attach external controller if provided
+    useEffect(() {
+      recorderController?.attach(
+        onFinish: finishRecordingSession,
+        onCancel: cancelRecordingSession,
+      );
+      return () {
+        recorderController?.detach();
+      };
+    }, [recorderController]);
+
     // Standalone top banner rendering if requested
     Widget? bannerWidget;
     if (showBanner && isRecording.value) {
@@ -235,22 +288,23 @@ class VoiceNoteRecorderWidget extends HookWidget {
           isLocked: isLocked.value,
           durationSeconds: durationSeconds.value,
           transcriptText: transcriptText.value,
+          amplitudeStream: recordingService.amplitudeStream,
           onCancel: cancelRecordingSession,
           onDone: finishRecordingSession,
         ),
       );
     }
 
-    // Compact Mic Trigger Button (Fixed width in input row so TextField never shrinks)
+    // Compact Mic Trigger Button
     final triggerButton = GestureDetector(
       onTap: () {
         if (isRecording.value) {
-          finishRecordingSession();
+          unawaited(finishRecordingSession());
         } else {
-          startRecordingSession();
+          unawaited(startRecordingSession());
         }
       },
-      onLongPressStart: (_) => startRecordingSession(),
+      onLongPressStart: (_) => unawaited(startRecordingSession()),
       onLongPressMoveUpdate: (details) {
         final dy = details.localOffsetFromOrigin.dy;
         dragOffset.value = dy;
@@ -267,7 +321,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
       },
       onLongPressEnd: (_) {
         if (!isLocked.value && isRecording.value) {
-          finishRecordingSession();
+          unawaited(finishRecordingSession());
         }
       },
       child: AnimatedContainer(
@@ -326,6 +380,7 @@ class VoiceRecordingBannerWidget extends HookWidget {
     required this.onCancel,
     required this.onDone,
     this.transcriptText = '',
+    this.amplitudeStream,
     super.key,
   });
 
@@ -334,6 +389,7 @@ class VoiceRecordingBannerWidget extends HookWidget {
   final VoidCallback onCancel;
   final VoidCallback onDone;
   final String transcriptText;
+  final Stream<double>? amplitudeStream;
 
   @override
   Widget build(BuildContext context) {
@@ -389,8 +445,28 @@ class VoiceRecordingBannerWidget extends HookWidget {
               const SizedBox(width: 8),
 
               // Animated Waveform Visualizer
-              const AudioWaveformVisualizer(),
+              AudioWaveformVisualizer(
+                amplitudeStream: amplitudeStream,
+              ),
               const SizedBox(width: 8),
+
+              // Lock Status Indicator
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isLocked
+                      ? colors.primary.withAlpha(isDark ? 50 : 30)
+                      : colors.textSecondary.withAlpha(isDark ? 40 : 20),
+                  borderRadius: AppRadius.radiusBadge,
+                ),
+                child: Text(
+                  isLocked ? 'Locked 🔒' : 'Drag up to lock 🔒',
+                  style: typography.caption.medium.copyWith(
+                    color: isLocked ? colors.primary : colors.textSecondary,
+                    fontSize: 10.5,
+                  ),
+                ),
+              ),
 
               const Spacer(),
 
@@ -440,6 +516,18 @@ class VoiceRecordingBannerWidget extends HookWidget {
               ),
             ],
           ),
+          if (transcriptText.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              transcriptText.trim(),
+              style: typography.caption.regular.copyWith(
+                color: colors.textSecondary,
+                fontSize: 11,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
@@ -447,15 +535,18 @@ class VoiceRecordingBannerWidget extends HookWidget {
 }
 
 /// Animated 4-bar waveform visualizer indicating active audio microphone input.
+/// Reacts to real-time input amplitude when [amplitudeStream] is supplied.
 class AudioWaveformVisualizer extends HookWidget {
   const AudioWaveformVisualizer({
     this.height = 14,
     this.color,
+    this.amplitudeStream,
     super.key,
   });
 
   final double height;
   final Color? color;
+  final Stream<double>? amplitudeStream;
 
   @override
   Widget build(BuildContext context) {
@@ -465,6 +556,8 @@ class AudioWaveformVisualizer extends HookWidget {
     final controller = useAnimationController(
       duration: const Duration(milliseconds: 900),
     );
+
+    final liveAmp = useStream(amplitudeStream, initialData: 0).data ?? 0;
 
     useEffect(() {
       unawaited(controller.repeat(reverse: true));
@@ -479,15 +572,21 @@ class AudioWaveformVisualizer extends HookWidget {
           mainAxisSize: MainAxisSize.min,
           children: List.generate(4, (i) {
             final phase = (val + i * 0.25) % 1.0;
-            final barHeight = 4.0 +
-                (height - 4.0) *
-                    (0.25 + 0.75 * (phase < 0.5 ? phase * 2 : (1 - phase) * 2));
+            final baseFactor = 0.25 +
+                0.75 * (phase < 0.5 ? phase * 2 : (1 - phase) * 2);
+            // Blend idle subtle animation with live microphone volume
+            final boost = (liveAmp * 1.5).clamp(0.0, 1.0);
+            final combinedFactor = (baseFactor * (0.3 + 0.7 * boost)).clamp(0.15, 1.0);
+            final barHeight = 4 + (height - 4) * combinedFactor;
+
             return Container(
               width: 3,
               height: barHeight,
               margin: const EdgeInsets.symmetric(horizontal: 1.5),
               decoration: BoxDecoration(
-                color: activeColor.withAlpha((180 + (phase * 75)).toInt().clamp(0, 255)),
+                color: activeColor.withAlpha(
+                  (180 + (phase * 75)).toInt().clamp(0, 255),
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             );

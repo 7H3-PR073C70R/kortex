@@ -193,22 +193,17 @@ serve(async (req: Request) => {
         }
 
         if (!providerSuccess) {
-          console.log(
-            `[syllabot-stream] Remote Luna provider stream unavailable (${providerErrors.join("; ")}). Executing context-aware engine fallback...`
+          console.error(
+            `[syllabot-stream] All AI providers failed (${providerErrors.join("; ")}). Emitting error event to client.`
           );
-          const fallbackTokens = generateContextAwareFallback(
-            rawPrompt,
-            messages,
-            socraticMode,
-            courseCode
-          );
-          for (const token of fallbackTokens) {
-            fullResponse += token;
-            recordedTokens.push(token);
-            sendEvent("token", { text: token });
-            await new Promise((r) => setTimeout(r, 15));
-          }
-          providerSuccess = true;
+          sendEvent("error", {
+            error:
+              "AI services are temporarily busy across all providers. Please check your connection and try again.",
+            code: "AI_PROVIDERS_UNAVAILABLE",
+            details: providerErrors,
+          });
+          controller.close();
+          return;
         }
 
         if (!isCacheHit && recordedTokens.length > 0 && providerSuccess) {
@@ -406,66 +401,3 @@ function buildCacheKey(
   return `syllabot:${selectedModel}:${socraticMode}:${contextSignature}`;
 }
 
-function generateContextAwareFallback(
-  rawPrompt: string,
-  messages: Message[],
-  socraticMode: string,
-  courseCode?: string
-): string[] {
-  const cleanPrompt = rawPrompt.replace(/[?!.]+$/, "").trim();
-  const recentHistory = messages
-    .filter((m) => m.role !== "system")
-    .slice(-4)
-    .map((m) => `${m.role === "user" ? "User" : "Syllabot"}: ${m.content}`)
-    .join("\n");
-
-  const tokens: string[] = [];
-
-  tokens.push(
-    `I have received your query regarding **"${cleanPrompt || "your topic"}"**`
-  );
-  if (courseCode) {
-    tokens.push(` in **${courseCode}**.`);
-  } else {
-    tokens.push(`.`);
-  }
-
-  tokens.push(`\n\n### 1. Key Conceptual Overview\n`);
-  tokens.push(
-    `• **Core Topic:** ${cleanPrompt || "Academic Study & Problem Solving"}\n`
-  );
-  tokens.push(`• **Learning Mode:** ${socraticMode}\n`);
-
-  if (recentHistory) {
-    tokens.push(
-      `• **Context Continuity:** Active chat session history retained.\n`
-    );
-  }
-
-  tokens.push(`\n### 2. Solution & Guidance Breakdown\n`);
-  tokens.push(
-    `1. **Analysis:** Examining underlying principles and key definitions.\n`
-  );
-  tokens.push(
-    `2. **Step-by-Step Breakdown:** Formulating structured derivations and logic.\n`
-  );
-  tokens.push(
-    `3. **Mastery Verification:** Ensuring alignment with syllabus requirements.\n\n`
-  );
-
-  if (socraticMode === "stepByStep") {
-    tokens.push(
-      `*Socratic Question:* What specific aspect of **"${cleanPrompt || "this problem"}"** would you like to explore or solve first?`
-    );
-  } else if (socraticMode === "examSim") {
-    tokens.push(
-      `*Exam Challenge:* Would you like an exam-style practice question on this concept?`
-    );
-  } else {
-    tokens.push(
-      `Would you like me to walk through a detailed example or convert this topic into active-recall flashcards?`
-    );
-  }
-
-  return tokens;
-}

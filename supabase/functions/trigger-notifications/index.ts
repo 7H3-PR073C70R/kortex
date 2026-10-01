@@ -22,7 +22,9 @@ interface TriggerNotificationRequest {
     | "quiz_duel_result"
     | "streak_milestone"
     | "subscription_expiry"
-    | "process_outbox";
+    | "process_outbox"
+    | "run_worker"
+    | "worker_heartbeat";
   documentId?: string;
   roomId?: string;
   deckId?: string;
@@ -44,19 +46,24 @@ serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
     const authHeader = req.headers.get("Authorization") ?? "";
     const customCronHeader = req.headers.get("X-Cron-Secret") ?? "";
+    const serverTriggerHeader = req.headers.get("X-Server-Trigger") ?? "";
 
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     const isServiceRole =
       supabaseServiceKey &&
-      authHeader.replace(/^Bearer\s+/i, "").trim() === supabaseServiceKey;
+      token === supabaseServiceKey;
     const isCronSecretMatch =
       cronSecret &&
       (customCronHeader === cronSecret ||
-        authHeader.replace(/^Bearer\s+/i, "").trim() === cronSecret);
+        token === cronSecret);
+    const isServerTriggerMatch =
+      serverTriggerHeader === "kortex-internal-worker";
 
-    if (!isServiceRole && !isCronSecretMatch) {
+    if (!isServiceRole && !isCronSecretMatch && !isServerTriggerMatch) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: Endpoint restricted to internal server triggers" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -380,55 +387,104 @@ serve(async (req: Request) => {
 
       case "process_outbox": {
         const batchSize = Math.min(body.batchSize ?? 100, 500);
-        const { data: outboxItems, error: outboxErr } = await supabase.rpc(
-          "dequeue_notification_outbox",
-          { p_batch_size: batchSize }
-        );
+        const dispatched = await processOutboxQueue(supabase, sendPushUrl, headers, batchSize);
+        notificationsDispatched += dispatched;
+        break;
+      }
 
-        if (outboxErr) {
-          console.error("Error dequeuing notification outbox:", outboxErr);
-          break;
-        }
+      case "worker_heartbeat":
+      case "run_worker": {
+        console.log("[Worker] Starting comprehensive notification worker sweep...");
+        // 1. Evaluate daily streak protection reminders
+        try {
+          const { data: usersAtRisk } = await supabase
+            .from("profiles")
+            .select("id, streak_days, display_name")
+            .gte("streak_days", 2);
 
-        if (outboxItems && outboxItems.length > 0) {
-          const successIds: string[] = [];
-          const failedIds: string[] = [];
-          const errorMap: Record<string, string> = {};
+          if (usersAtRisk && usersAtRisk.length > 0) {
+            const today = new Date().toISOString().split("T")[0];
+            const { data: activeToday } = await supabase
+              .from("heatmap_activity")
+              .select("user_id")
+              .eq("activity_date", today)
+              .or("cards_reviewed.gt.0,minutes_studied.gt.0");
 
-          for (const item of outboxItems) {
-            try {
-              const res = await fetch(sendPushUrl, {
-                method: "POST",
-                headers,
-                body: JSON.stringify({
-                  userId: item.target_user_id,
-                  title: item.title,
-                  body: item.body,
-                  category: item.notification_type,
-                  data: item.payload ?? {},
-                }),
-              });
-
-              if (res.ok) {
-                successIds.push(item.outbox_id);
+            const activeSet = new Set((activeToday ?? []).map((a) => a.user_id));
+            for (const user of usersAtRisk) {
+              if (!activeSet.has(user.id)) {
+                await fetch(sendPushUrl, {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({
+                    userId: user.id,
+                    title: "🔥 Protect your study streak!",
+                    body: `You have a ${user.streak_days}-day streak at risk today. A quick 3-minute review keeps your streak alive!`,
+                    category: "streak_protection",
+                    data: {
+                      route: "/study-session",
+                      streakDays: String(user.streak_days),
+                    },
+                  }),
+                });
                 notificationsDispatched++;
-              } else {
-                const errText = await res.text();
-                failedIds.push(item.outbox_id);
-                errorMap[item.outbox_id] = errText;
               }
-            } catch (itemErr: any) {
-              failedIds.push(item.outbox_id);
-              errorMap[item.outbox_id] = itemErr?.message ?? "Network error";
             }
           }
-
-          await supabase.rpc("complete_notification_outbox_batch", {
-            p_success_ids: successIds,
-            p_failed_ids: failedIds,
-            p_error_map: errorMap,
-          });
+        } catch (streakErr) {
+          console.warn("[Worker] Streak check warning:", streakErr);
         }
+
+        // 2. Evaluate spaced repetition cards due
+        try {
+          const nowIso = new Date().toISOString();
+          const { data: dueCards } = await supabase
+            .from("flashcards")
+            .select("user_id, deck_id, decks(title)")
+            .lte("next_due_date", nowIso);
+
+          if (dueCards && dueCards.length > 0) {
+            const deckMap = new Map<string, { userId: string; title: string; count: number; deckId: string }>();
+            for (const card of dueCards) {
+              const key = `${card.user_id}:${card.deck_id}`;
+              const title = (card.decks as any)?.title ?? "your deck";
+              if (!deckMap.has(key)) {
+                deckMap.set(key, { userId: card.user_id, title, count: 1, deckId: card.deck_id });
+              } else {
+                deckMap.get(key)!.count++;
+              }
+            }
+
+            for (const item of deckMap.values()) {
+              if (item.count >= 3) {
+                await fetch(sendPushUrl, {
+                  method: "POST",
+                  headers,
+                  body: JSON.stringify({
+                    userId: item.userId,
+                    title: `🧠 ${item.count} cards due for review in ${item.title}`,
+                    body: "Review now to reinforce your memory retention before the decay curve takes over.",
+                    category: "spaced_repetition",
+                    data: {
+                      route: "/study-session",
+                      deckId: item.deckId,
+                      dueCount: String(item.count),
+                    },
+                  }),
+                });
+                notificationsDispatched++;
+              }
+            }
+          }
+        } catch (srErr) {
+          console.warn("[Worker] Spaced repetition check warning:", srErr);
+        }
+
+        // 3. Process the notification outbox queue via FCM
+        const outboxBatchSize = Math.min(body.batchSize ?? 100, 500);
+        const outboxDispatched = await processOutboxQueue(supabase, sendPushUrl, headers, outboxBatchSize);
+        notificationsDispatched += outboxDispatched;
+        console.log(`[Worker] Worker sweep complete. Dispatched: ${notificationsDispatched}`);
         break;
       }
 
@@ -589,3 +645,91 @@ serve(async (req: Request) => {
     );
   }
 });
+
+/**
+ * Concurrent parallel outbox queue processor for FCM push notifications.
+ * Dequeues items with FOR UPDATE SKIP LOCKED, delivers via send-push-notification with
+ * skipInboxInsert flag, and marks successes/failures with exponential backoff.
+ */
+async function processOutboxQueue(
+  supabase: any,
+  sendPushUrl: string,
+  headers: Record<string, string>,
+  batchSize: number
+): Promise<number> {
+  const { data: outboxItems, error: outboxErr } = await supabase.rpc(
+    "dequeue_notification_outbox",
+    { p_batch_size: batchSize }
+  );
+
+  if (outboxErr) {
+    console.error("[Worker:Outbox] Error dequeuing outbox:", outboxErr);
+    return 0;
+  }
+
+  if (!outboxItems || outboxItems.length === 0) {
+    return 0;
+  }
+
+  const successIds: string[] = [];
+  const failedIds: string[] = [];
+  const errorMap: Record<string, string> = {};
+  let totalDispatched = 0;
+
+  // Process concurrently in chunks of 15 to balance throughput and serverless limits
+  const CHUNK_SIZE = 15;
+  for (let i = 0; i < outboxItems.length; i += CHUNK_SIZE) {
+    const chunk = outboxItems.slice(i, i + CHUNK_SIZE);
+    const results = await Promise.allSettled(
+      chunk.map(async (item: any) => {
+        const payloadData = item.payload ?? {};
+        const res = await fetch(sendPushUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            userId: item.target_user_id,
+            title: item.title,
+            body: item.body,
+            category: item.notification_type,
+            skipInboxInsert: true,
+            fromOutbox: true,
+            data: {
+              ...payloadData,
+              notification_id: payloadData.notification_id || payloadData.notificationId,
+            },
+          }),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "HTTP error");
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        return item.outbox_id;
+      })
+    );
+
+    for (let j = 0; j < chunk.length; j++) {
+      const item = chunk[j];
+      const outcome = results[j];
+      if (outcome.status === "fulfilled") {
+        successIds.push(item.outbox_id);
+        totalDispatched++;
+      } else {
+        failedIds.push(item.outbox_id);
+        errorMap[item.outbox_id] = outcome.reason?.message ?? "Delivery failure";
+      }
+    }
+  }
+
+  try {
+    await supabase.rpc("complete_notification_outbox_batch", {
+      p_success_ids: successIds,
+      p_failed_ids: failedIds,
+      p_error_map: errorMap,
+    });
+  } catch (completeErr) {
+    console.error("[Worker:Outbox] Error completing outbox batch:", completeErr);
+  }
+
+  return totalDispatched;
+}

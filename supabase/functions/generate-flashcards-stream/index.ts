@@ -114,35 +114,7 @@ serve(async (req: Request) => {
         });
 
         const generatedCards: Record<string, unknown>[] = [];
-
-        const initialCards = getSeedFlashcards(topic, difficulty);
-        const seedCount = Math.min(3, totalCount, initialCards.length);
-        for (let i = 0; i < seedCount; i++) {
-          const card = {
-            id: `card_${deckId}_${i + 1}`,
-            deckId,
-            index: i + 1,
-            front: initialCards[i].front,
-            back: initialCards[i].back,
-            explanation: initialCards[i].explanation,
-            hints: initialCards[i].explanation,
-            tags: [topic, difficulty],
-            createdAt: new Date().toISOString(),
-            isImmediate: true,
-          };
-          generatedCards.push(card);
-
-          sendEvent("card", {
-            card,
-            isInitialBatch: true,
-            currentCount: generatedCards.length,
-            targetCount: totalCount,
-          });
-
-          await new Promise((r) => setTimeout(r, 60));
-        }
-
-        const remainingCount = totalCount - generatedCards.length;
+        const remainingCount = totalCount;
         if (remainingCount > 0) {
           const luna = new LunaClient();
           let streamSuccess = false;
@@ -310,44 +282,24 @@ CRITICAL OUTPUT INSTRUCTIONS:
               }
             }
 
-            if (generatedCards.length >= seedCount + 1) {
+            if (generatedCards.length > 0) {
               streamSuccess = true;
             }
           } catch (err) {
             console.warn("[generate-flashcards-stream] Luna stream error:", err);
           }
 
-          if (!streamSuccess && generatedCards.length < totalCount) {
-            console.log("[generate-flashcards-stream] Using topic-aligned fallback cards for remaining stream.");
-            const fallbackRemainder = getTopicFallbacks(topic, difficulty);
-            let fIdx = 0;
-            while (generatedCards.length < totalCount) {
-              const item = fallbackRemainder[fIdx % fallbackRemainder.length];
-              fIdx++;
-              const cardIndex = generatedCards.length + 1;
-              const card = {
-                id: `card_${deckId}_${cardIndex}`,
-                deckId,
-                index: cardIndex,
-                front: `${item.front} (${cardIndex})`,
-                back: item.back,
-                explanation: item.explanation,
-                hints: item.explanation,
-                tags: [topic, difficulty],
-                createdAt: new Date().toISOString(),
-                isImmediate: false,
-              };
-              generatedCards.push(card);
-
-              sendEvent("card", {
-                card,
-                isInitialBatch: false,
-                currentCount: generatedCards.length,
-                targetCount: totalCount,
-              });
-
-              await new Promise((r) => setTimeout(r, 60));
-            }
+          if (!streamSuccess || generatedCards.length === 0) {
+            console.error(
+              "[generate-flashcards-stream] AI stream failed across all providers and produced no cards."
+            );
+            sendEvent("error", {
+              error:
+                "AI flashcard generation failed across all providers. Please check your connection and try again.",
+              code: "AI_GENERATION_FAILED",
+            });
+            controller.close();
+            return;
           }
         }
 
@@ -382,47 +334,3 @@ CRITICAL OUTPUT INSTRUCTIONS:
   }
 });
 
-function getSeedFlashcards(topic: string, difficulty: string) {
-  return [
-    {
-      front: `What is the fundamental theorem of ${topic}?`,
-      back: `It establishes the direct inverse relationship between integration and differentiation: $$\\int_a^b f'(x) \\, dx = f(b) - f(a)$$.`,
-      explanation: `Allows evaluating definite integrals using antiderivatives without computing Riemann sums.`,
-    },
-    {
-      front: `How does Euler-Lagrange optimization apply to ${topic}?`,
-      back: `By extremizing the action functional $$S = \\int L(q, \\dot{q}, t) \\, dt$$, yielding $$\\frac{\\partial L}{\\partial q} - \\frac{d}{dt}\\left(\\frac{\\partial L}{\\partial \\dot{q}}\\right) = 0$$.`,
-      explanation: `Forms the foundation for stationary action and classical analytical mechanics.`,
-    },
-    {
-      front: `State the condition for eigenvalues and eigenvectors in this system.`,
-      back: `For matrix $$A$$, vector $$v \\neq 0$$ satisfies $$Av = \\lambda v$$, requiring $$\\det(A - \\lambda I) = 0$$.`,
-      explanation: `Characteristic polynomial roots determine the principal vibrational modes and invariant axes.`,
-    },
-  ];
-}
-
-function getTopicFallbacks(topic: string, difficulty: string) {
-  return [
-    {
-      front: `Cauchy-Schwarz Inequality in ${topic}`,
-      back: `For all vectors $$u$$ and $$v$$ in an inner product space: $$|\\langle u, v \\rangle|^2 \\le \\langle u, u \\rangle \\cdot \\langle v, v \\rangle$$.`,
-      explanation: `Provides essential bounds for inner product spaces and functional analysis.`,
-    },
-    {
-      front: `Divergence Theorem Representation in ${topic}`,
-      back: `Relates the flux of a vector field through a closed surface to volume divergence: $$\\iiint_V (\\nabla \\cdot \\mathbf{F}) \\, dV = \\iint_S (\\mathbf{F} \\cdot \\hat{n}) \\, dS$$.`,
-      explanation: `Fundamental in electromagnetism and continuum mechanics for flux conservation.`,
-    },
-    {
-      front: `Stokes' Theorem Formulation`,
-      back: `Equates the surface integral of the curl of a vector field to line integral around boundary: $$\\iint_S (\\nabla \\times \\mathbf{F}) \\cdot d\\mathbf{S} = \\oint_C \\mathbf{F} \\cdot d\\mathbf{r}$$.`,
-      explanation: `Circulation around boundary equals macroscopic vortex density flux.`,
-    },
-    {
-      front: `Taylor Series Expansion Order in ${topic}`,
-      back: `Represents infinitely differentiable functions near point $$a$$: $$f(x) = \\sum_{n=0}^{\\infty} \\frac{f^{(n)}(a)}{n!} (x - a)^n$$.`,
-      explanation: `Enables polynomial approximations around local analytical points.`,
-    },
-  ];
-}

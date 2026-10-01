@@ -80,6 +80,21 @@ class LatexRichViewer extends StatelessWidget {
       s = s.replaceAll(RegExp(r'<\|[a-zA-Z0-9_\-]+\|>'), '');
       s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
 
+      // Strip executable script tags, iframes, objects, and event handlers
+      s = s.replaceAll(
+        RegExp(r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>', caseSensitive: false),
+        '',
+      );
+      s = s.replaceAll(
+        RegExp(r'<\s*\/?\s*(?:script|iframe|object|embed|applet|style|form|input|meta|link)[^>]*>', caseSensitive: false),
+        '',
+      );
+      s = s.replaceAll(
+        RegExp(r'\s+on[a-zA-Z]+\s*=\s*(?:"[^"]*"|' r"'[^']*'|[^\s>]+)", caseSensitive: false),
+        '',
+      );
+      s = s.replaceAll(RegExp(r'javascript:\s*', caseSensitive: false), '');
+
       // Replace common HTML tags and entities
       s = s.replaceAll(RegExp(r'<\s*br\s*\/?\s*>', caseSensitive: false), '\n');
       s = s.replaceAll(

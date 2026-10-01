@@ -145,7 +145,15 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
         source = DeviceFileSource(cleanPath);
       }
 
-      source ??= AssetSource('audio/voice_note.wav');
+      if (source == null) {
+        if (mounted) {
+          context.showSnackBar(
+            message: 'Voice note file not found',
+            type: SnackBarType.error,
+          );
+        }
+        return;
+      }
 
       await _player.setPlaybackRate(_playbackRate);
       await _player.play(source);
@@ -156,22 +164,17 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
         });
         _startFallbackTimer();
       }
-    } on Object catch (_) {
-      try {
-        await _player.play(AssetSource('audio/voice_note.wav'));
-        if (mounted) {
-          setState(() {
-            _isPlaying = true;
-          });
-          _startFallbackTimer();
-        }
-      } on Object catch (_) {
-        if (mounted) {
-          setState(() {
-            _isPlaying = false;
-          });
-          _stopFallbackTimer();
-        }
+    } on Object catch (e) {
+      debugPrint('VoiceNotePlayerWidget: playback error: $e');
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+        _stopFallbackTimer();
+        context.showSnackBar(
+          message: 'Unable to play voice note',
+          type: SnackBarType.error,
+        );
       }
     }
   }
@@ -253,9 +256,8 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
     final hasProvidedTranscript =
         widget.transcript != null && widget.transcript!.trim().isNotEmpty;
-    final effectiveTranscript = hasProvidedTranscript
-        ? widget.transcript!.trim()
-        : 'Scholar voice note audio recording discussing solution formula and key concepts.';
+    final effectiveTranscript =
+        hasProvidedTranscript ? widget.transcript!.trim() : null;
 
     final progress = (_totalDuration.inMilliseconds > 0)
         ? (_position.inMilliseconds / _totalDuration.inMilliseconds).clamp(
@@ -426,7 +428,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
         ),
 
         // Expandable Speech-to-Text Transcript Section
-        if (widget.showTranscript) ...[
+        if (widget.showTranscript && effectiveTranscript != null) ...[
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,

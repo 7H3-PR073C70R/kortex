@@ -167,6 +167,7 @@ class ReplyToPostEvent extends CommunityEvent {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.isAnonymous = false,
   });
 
   final String postId;
@@ -176,6 +177,7 @@ class ReplyToPostEvent extends CommunityEvent {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final bool isAnonymous;
 
   @override
   List<Object?> get props => [
@@ -186,6 +188,7 @@ class ReplyToPostEvent extends CommunityEvent {
     mediaUrls,
     voiceNoteUrl,
     voiceNoteDurationSeconds,
+    isAnonymous,
   ];
 }
 

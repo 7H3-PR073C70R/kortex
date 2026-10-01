@@ -12,14 +12,17 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
 import 'package:kortex/src/features/community/domain/services/forum_socratic_hint_service.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
@@ -27,14 +30,19 @@ import 'package:kortex/src/features/community/presentation/widgets/forum_media_a
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/subject_master_badge.dart';
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
+import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/audio_pronounce_button.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_audio_reader_button.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/gen/assets.gen.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -60,10 +68,12 @@ enum ForumSortFilter {
 class ForumThreadDetailPage extends HookWidget {
   const ForumThreadDetailPage({
     required this.post,
+    this.highlightReplyId,
     super.key,
   });
 
   final ForumPostEntity post;
+  final String? highlightReplyId;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +84,7 @@ class ForumThreadDetailPage extends HookWidget {
 
     final replyController = useTextEditingController();
     final focusNode = useFocusNode();
+    final scrollController = useScrollController();
     final isSubmitting = useState<bool>(false);
     final isGeneratingAiHint = useState<bool>(false);
     final isSubscribed = useState<bool>(false);
@@ -103,46 +114,8 @@ class ForumThreadDetailPage extends HookWidget {
     final isReplyVoiceLocked = useState<bool>(false);
     final replyVoiceTranscript = useState<String>('');
     final showFormattingTools = useState<bool>(false);
-    final replyRecordingTimer = useRef<Timer?>(null);
-
-    final replySttHandler = useMemoized(
-      () => SpeechToTextHandler(
-        onResult: (words) {
-          if (words.trim().isNotEmpty) {
-            replyVoiceTranscript.value = words;
-          }
-        },
-        onListeningChanged: (listening) {
-          isRecordingReplyVoice.value = listening;
-          if (listening) {
-            replyVoiceNoteDuration.value = 0;
-            replyRecordingTimer.value?.cancel();
-            replyRecordingTimer.value = Timer.periodic(
-              const Duration(seconds: 1),
-              (timer) {
-                replyVoiceNoteDuration.value = timer.tick;
-              },
-            );
-          } else {
-            replyRecordingTimer.value?.cancel();
-            if (replyVoiceNoteDuration.value > 0) {
-              replyVoiceNoteUrl.value ??= 'audio/voice_note.wav';
-            }
-          }
-        },
-        onError: (err) {
-          isRecordingReplyVoice.value = false;
-          replyRecordingTimer.value?.cancel();
-        },
-      ),
-    );
-
-    useEffect(() {
-      return () {
-        replyRecordingTimer.value?.cancel();
-        replySttHandler.dispose();
-      };
-    }, []);
+    final isAnonymousReply = useState<bool>(false);
+    final replyRecorderController = useMemoized(VoiceNoteRecorderController.new);
 
     final repo = locator<CommunityRepository>();
 
@@ -412,6 +385,31 @@ class ForumThreadDetailPage extends HookWidget {
       return null;
     }, [post.id, sortFilter.value]);
 
+    useEffect(() {
+      if (highlightReplyId != null && highlightReplyId!.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (scrollController.hasClients) {
+            unawaited(
+              scrollController.animateTo(
+                320,
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutCubic,
+              ),
+            );
+          }
+        });
+        for (final reply in localReplies.value) {
+          if (reply.repliesCount > 0) {
+            expandedParentReplyIds.value = {
+              ...expandedParentReplyIds.value,
+              reply.id,
+            };
+          }
+        }
+      }
+      return null;
+    }, [highlightReplyId, localReplies.value.length]);
+
 
     void votePost(int direction) {
       final p = currentPost.value;
@@ -525,6 +523,15 @@ class ForumThreadDetailPage extends HookWidget {
     Future<void> saveSolutionToFlashcard(ForumReplyEntity reply) async {
       unawaited(HapticFeedback.mediumImpact());
       try {
+        final cleanPrompt = currentPost.value.title.trim();
+        final cleanReply = reply.content.trim();
+        final authorCredit = reply.authorName.isNotEmpty
+            ? '\n\n— Verified Solution by @${reply.authorName}'
+            : '';
+        final topicTag = currentPost.value.syllabusTag.isNotEmpty
+            ? currentPost.value.syllabusTag
+            : currentPost.value.track;
+
         if (locator.isRegistered<DecksRepository>()) {
           final decksRepo = locator<DecksRepository>();
           final userDecksRes = await decksRepo.getUserDecks();
@@ -538,32 +545,51 @@ class ForumThreadDetailPage extends HookWidget {
               }
             },
             (decks) async {
-              final targetDeck = decks.isNotEmpty
-                  ? decks.firstWhere(
-                      (d) =>
-                          d.title.toLowerCase().contains('forum') ||
-                          d.title.toLowerCase().contains('verified') ||
-                          d.title.toLowerCase().contains('saved'),
-                      orElse: () => decks.first,
-                    )
-                  : null;
+              DeckEntity? targetDeck;
+              for (final d in decks) {
+                final titleLower = d.title.toLowerCase();
+                if (titleLower.contains('forum') ||
+                    titleLower.contains('verified') ||
+                    titleLower.contains('saved')) {
+                  targetDeck = d;
+                  break;
+                }
+              }
+
+              if (targetDeck == null && decks.isNotEmpty) {
+                targetDeck = decks.first;
+              }
 
               if (targetDeck != null) {
                 final newCard = FlashcardEntity(
-                  id: 'card-${DateTime.now().millisecondsSinceEpoch}',
+                  id: UuidUtils.generate(),
                   deckId: targetDeck.id,
-                  front: currentPost.value.title,
-                  back: '${reply.content}\n\n[Verified Solution by @${reply.authorName}]',
+                  front: cleanPrompt,
+                  back: '$cleanReply$authorCredit',
                   frontLatex: currentPost.value.latexContent,
                   backLatex: reply.latexContent,
-                  sourceTopic: currentPost.value.syllabusTag,
+                  sourceTopic: topicTag,
                 );
 
-                final existingCardsRes = await decksRepo.getDeckCards(targetDeck.id);
+                final existingCardsRes =
+                    await decksRepo.getDeckCards(targetDeck.id);
                 final existingCards = existingCardsRes.fold(
                   (_) => <FlashcardEntity>[],
                   (cards) => cards,
                 );
+
+                final isDuplicate = existingCards.any(
+                  (c) => c.front == newCard.front && c.back == newCard.back,
+                );
+                if (isDuplicate) {
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message:
+                          'This solution is already in "${targetDeck.title}"! 💡',
+                    );
+                  }
+                  return;
+                }
 
                 await decksRepo.updateDeckCards(targetDeck.id, [
                   ...existingCards,
@@ -572,14 +598,57 @@ class ForumThreadDetailPage extends HookWidget {
 
                 if (context.mounted) {
                   context.showSnackBar(
-                    message: 'Solution saved to "${targetDeck.title}" Flashcards! ✨',
+                    message:
+                        'Solution saved to "${targetDeck.title}" Flashcards! ✨',
+                    type: SnackBarType.success,
+                  );
+                }
+              } else if (locator.isRegistered<DecksRemoteDataSource>()) {
+                // Auto-provision a dedicated "Saved Forum Solutions" deck
+                final newDeckId = UuidUtils.generate();
+                final cardId = UuidUtils.generate();
+                final card = FlashcardModel(
+                  id: cardId,
+                  deckId: newDeckId,
+                  front: cleanPrompt,
+                  back: '$cleanReply$authorCredit',
+                  frontLatex: currentPost.value.latexContent,
+                  backLatex: reply.latexContent,
+                  sourceTopic: topicTag,
+                );
+                final newDeck = DeckModel(
+                  id: newDeckId,
+                  title: 'Saved Forum Solutions',
+                  subject: currentPost.value.track.isNotEmpty
+                      ? currentPost.value.track
+                      : 'General',
+                  category: 'Saved Solutions',
+                  totalCards: 1,
+                  dueCards: 1,
+                  masteryRate: 0,
+                  description:
+                      'Verified peer answers and step-by-step solutions saved from discussions.',
+                  cards: [card],
+                  lastStudied: DateTime.now(),
+                );
+
+                await locator<DecksRemoteDataSource>().saveGeneratedDeck(
+                  deck: newDeck,
+                  cards: [card],
+                );
+
+                if (context.mounted) {
+                  context.showSnackBar(
+                    message:
+                        'Created "Saved Forum Solutions" deck and added flashcard! ✨',
                     type: SnackBarType.success,
                   );
                 }
               } else {
                 if (context.mounted) {
                   context.showSnackBar(
-                    message: 'Please create a Flashcard Deck first to save solutions! ✨',
+                    message:
+                        'Please create a Flashcard Deck first to save solutions! ✨',
                   );
                 }
               }
@@ -976,6 +1045,28 @@ class ForumThreadDetailPage extends HookWidget {
           ],
         ),
         actions: [
+          // Live Focus Room Button (Pulsing live audio quick join)
+          IconButton(
+            icon: Icon(
+              Icons.headphones_rounded,
+              color: colors.primary,
+              size: 21,
+            ),
+            tooltip: 'Live Focus Room for Thread',
+            onPressed: () {
+              unawaited(HapticFeedback.lightImpact());
+              final room = StudyRoomEntity(
+                id: 'room-forum-${post.id}',
+                title: 'Focus Room: ${post.title}',
+                subject: post.track,
+                description:
+                    'Live focus room created for thread: ${post.title}',
+                category: post.syllabusTag,
+              );
+              unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
+            },
+          ),
+
           // 1. Notification Toggle Button (Bell with real-time active status dot)
           Stack(
             alignment: Alignment.center,
@@ -1060,6 +1151,7 @@ class ForumThreadDetailPage extends HookWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 860),
                   child: CustomScrollView(
+                    controller: scrollController,
                     slivers: [
                       // Breadcrumb Return Bar & Original Post Card
                       SliverToBoxAdapter(
@@ -1171,18 +1263,39 @@ class ForumThreadDetailPage extends HookWidget {
                                     // Author Profile Row
                                     Row(
                                       children: [
-                                        AppAvatar(
-                                          customDimension: 40,
-                                          name: currentPost.value.authorName,
-                                          backgroundColor: colors.primary
-                                              .withAlpha(isDark ? 50 : 35),
-                                          foregroundColor: colors.primary,
-                                          showBadge: true,
-                                          badgeColor: colors.success,
-                                          badgeBorderColor: isDark
-                                              ? colors.surfaceSecondary
-                                              : colors.surfacePrimary,
-                                        ),
+                                        if (currentPost.value.isAnonymous)
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: isDark
+                                                  ? colors.surfaceSecondary
+                                                  : colors.surfaceBorder
+                                                      .withAlpha(40),
+                                              border: Border.all(
+                                                color: colors.textSecondary
+                                                    .withAlpha(isDark ? 60 : 35),
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.visibility_off_rounded,
+                                              size: 20,
+                                              color: colors.textSecondary,
+                                            ),
+                                          )
+                                        else
+                                          AppAvatar(
+                                            customDimension: 40,
+                                            name: currentPost.value.authorName,
+                                            backgroundColor: colors.primary
+                                                .withAlpha(isDark ? 50 : 35),
+                                            foregroundColor: colors.primary,
+                                            badgeColor: colors.success,
+                                            badgeBorderColor: isDark
+                                                ? colors.surfaceSecondary
+                                                : colors.surfacePrimary,
+                                          ),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Column(
@@ -1193,14 +1306,20 @@ class ForumThreadDetailPage extends HookWidget {
                                                 children: [
                                                   Flexible(
                                                     child: Text(
-                                                      '@${currentPost.value.authorName}',
+                                                      currentPost.value.isAnonymous
+                                                          ? currentPost.value.authorName
+                                                          : '@${currentPost.value.authorName}',
                                                       style: typography
                                                           .subhead
                                                           .bold
                                                           .copyWith(
-                                                            color: colors
-                                                                .textPrimary,
+                                                            color: currentPost.value.isAnonymous
+                                                                ? colors.textSecondary
+                                                                : colors.textPrimary,
                                                             fontSize: 14.5,
+                                                            fontStyle: currentPost.value.isAnonymous
+                                                                ? FontStyle.italic
+                                                                : FontStyle.normal,
                                                           ),
                                                       maxLines: 1,
                                                       overflow:
@@ -1208,42 +1327,82 @@ class ForumThreadDetailPage extends HookWidget {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 6),
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 5,
-                                                          vertical: 1,
+                                                  if (currentPost.value.isAnonymous)
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 1.5,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: colors.textSecondary
+                                                            .withAlpha(isDark ? 40 : 25),
+                                                        borderRadius:
+                                                            BorderRadius.circular(4),
+                                                        border: Border.all(
+                                                          color: colors.textSecondary
+                                                              .withAlpha(isDark ? 70 : 40),
+                                                          width: 0.8,
                                                         ),
-                                                    decoration: BoxDecoration(
-                                                      color: colors.primary,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            4,
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.shield_outlined,
+                                                            size: 10,
+                                                            color: colors.textSecondary,
                                                           ),
-                                                    ),
-                                                    child: Text(
-                                                      'OP',
-                                                      style: typography.caption.bold.copyWith(
-                                                        color: colors.white,
-                                                        fontSize: 9.5,
+                                                          const SizedBox(width: 3),
+                                                          Text(
+                                                            'Incognito OP',
+                                                            style: typography.caption.bold.copyWith(
+                                                              color: colors.textSecondary,
+                                                              fontSize: 9.5,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    )
+                                                  else ...[
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 5,
+                                                            vertical: 1,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: colors.primary,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              4,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        'OP',
+                                                        style: typography.caption.bold.copyWith(
+                                                          color: colors.white,
+                                                          fontSize: 9.5,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  SubjectMasterBadge(
-                                                    track: currentPost.value.track,
-                                                    compact: true,
-                                                  ),
+                                                    const SizedBox(width: 6),
+                                                    SubjectMasterBadge(
+                                                      track: currentPost.value.track,
+                                                      compact: true,
+                                                    ),
+                                                  ],
                                                 ],
                                               ),
                                               const SizedBox(height: 2),
                                               Text(
-                                                currentPost
-                                                        .value
-                                                        .syllabusTag
-                                                        .isNotEmpty
-                                                    ? 'Staff Level Scholar • ${currentPost.value.syllabusTag}'
-                                                    : 'Staff Level Scholar',
+                                                currentPost.value.isAnonymous
+                                                    ? 'Incognito Mode • Identities are protected'
+                                                    : (currentPost
+                                                            .value
+                                                            .syllabusTag
+                                                            .isNotEmpty
+                                                        ? 'Staff Level Scholar • ${currentPost.value.syllabusTag}'
+                                                        : 'Staff Level Scholar'),
                                                 style: typography
                                                     .caption
                                                     .regular
@@ -1930,6 +2089,7 @@ class ForumThreadDetailPage extends HookWidget {
                                   child: _DiscussionThreadGroupCard(
                                     parentReply: reply,
                                     children: children,
+                                    highlightReplyId: highlightReplyId,
                                     opAuthorName: currentPost.value.authorName,
                                     isQuestion: currentPost.value.isQuestion,
                                     isAuthor: isAuthor,
@@ -1978,6 +2138,17 @@ class ForumThreadDetailPage extends HookWidget {
                                           }
                                         },
                                         (_) {
+                                          unawaited(HapticFeedback.heavyImpact());
+                                          currentPost.value = currentPost.value
+                                              .copyWith(isVerifiedSolution: true);
+                                          if (locator.isRegistered<CommunityHubBloc>()) {
+                                            locator<CommunityHubBloc>().add(
+                                              VerifyForumReplyEvent(
+                                                postId: currentPost.value.id,
+                                                replyId: reply.id,
+                                              ),
+                                            );
+                                          }
                                           localReplies.value = localReplies
                                               .value
                                               .map(
@@ -2336,20 +2507,16 @@ class ForumThreadDetailPage extends HookWidget {
                               isLocked: isReplyVoiceLocked.value,
                               durationSeconds: replyVoiceNoteDuration.value,
                               transcriptText: replyVoiceTranscript.value,
+                              amplitudeStream:
+                                  locator.isRegistered<AudioRecordingService>()
+                                      ? locator<AudioRecordingService>()
+                                          .amplitudeStream
+                                      : null,
                               onCancel: () {
-                                isRecordingReplyVoice.value = false;
-                                isReplyVoiceLocked.value = false;
-                                replyVoiceNoteUrl.value = null;
-                                replyVoiceNoteDuration.value = 0;
-                                replyVoiceTranscript.value = '';
+                                unawaited(replyRecorderController.cancel());
                               },
                               onDone: () {
-                                isRecordingReplyVoice.value = false;
-                                isReplyVoiceLocked.value = false;
-                                if (replyVoiceNoteDuration.value <= 0) {
-                                  replyVoiceNoteDuration.value = 5;
-                                }
-                                replyVoiceNoteUrl.value ??= 'audio/voice_note.wav';
+                                unawaited(replyRecorderController.finish());
                               },
                             ),
                           ),
@@ -2486,6 +2653,7 @@ class ForumThreadDetailPage extends HookWidget {
                               VoiceNoteRecorderWidget(
                                 compact: true,
                                 controller: replyController,
+                                recorderController: replyRecorderController,
                                 onRecordingStateChanged: ({
                                   required isRecording,
                                   required isLocked,
@@ -2538,6 +2706,34 @@ class ForumThreadDetailPage extends HookWidget {
                                       !showFormattingTools.value;
                                 },
                               ),
+                              const SizedBox(width: 2),
+
+                              // 3b. Anonymous Reply Mode Toggle
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 34,
+                                  minHeight: 34,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                icon: Icon(
+                                  isAnonymousReply.value
+                                      ? Icons.visibility_off_rounded
+                                      : Icons.visibility_rounded,
+                                  size: 19,
+                                  color: isAnonymousReply.value
+                                      ? colors.warning
+                                      : colors.textSecondary,
+                                ),
+                                tooltip: isAnonymousReply.value
+                                    ? 'Replying Anonymously (Tap to switch)'
+                                    : 'Reply Anonymously',
+                                onPressed: () {
+                                  unawaited(HapticFeedback.selectionClick());
+                                  isAnonymousReply.value =
+                                      !isAnonymousReply.value;
+                                },
+                              ),
                               const SizedBox(width: 4),
 
                               // 4. Text Field
@@ -2567,9 +2763,13 @@ class ForumThreadDetailPage extends HookWidget {
                                     decoration: InputDecoration(
                                       hintText: isRecordingReplyVoice.value
                                           ? 'Transcribing speech live…'
-                                          : replyingToReply.value != null
-                                              ? 'Reply to @${replyingToReply.value!.authorName}…'
-                                              : 'Add a reply…',
+                                          : isAnonymousReply.value
+                                              ? (replyingToReply.value != null
+                                                  ? 'Reply anonymously to @${replyingToReply.value!.authorName}…'
+                                                  : 'Reply anonymously as Anonymous Scholar…')
+                                              : replyingToReply.value != null
+                                                  ? 'Reply to @${replyingToReply.value!.authorName}…'
+                                                  : 'Add a reply…',
                                       hintStyle: typography.body.regular.copyWith(
                                         color: isRecordingReplyVoice.value
                                             ? colors.error.withAlpha(180)
@@ -2652,6 +2852,24 @@ class ForumThreadDetailPage extends HookWidget {
                                               replyVoiceNoteUrl.value == null) {
                                             return;
                                           }
+
+                                          // Content safety & anti-abuse moderation check for replies
+                                          if (text.isNotEmpty) {
+                                            const moderation = ContentModerationService();
+                                            final modResult = moderation.validateReply(content: text);
+                                            if (!modResult.isValid) {
+                                              context.showSnackBar(
+                                                message: modResult.reason ??
+                                                    'Reply failed safety moderation.',
+                                                type: SnackBarType.error,
+                                              );
+                                              return;
+                                            }
+                                          }
+
+                                          final sanitizedText =
+                                              ContentModerationService.sanitizeText(text);
+
                                           final targetParentId =
                                               replyingToReply.value?.id;
                                           isSubmitting.value = true;
@@ -2700,8 +2918,8 @@ class ForumThreadDetailPage extends HookWidget {
                                           final res = await repo
                                               .replyToForumPost(
                                                 postId: currentPost.value.id,
-                                                content: text.isNotEmpty
-                                                    ? text
+                                                content: sanitizedText.isNotEmpty
+                                                    ? sanitizedText
                                                     : 'Shared media attachment',
                                                 parentReplyId: targetParentId,
                                                 mediaUrls: finalReplyImages,
@@ -2713,6 +2931,8 @@ class ForumThreadDetailPage extends HookWidget {
                                                     ? replyVoiceNoteDuration
                                                           .value
                                                     : null,
+                                                isAnonymous:
+                                                    isAnonymousReply.value,
                                               );
                                           isSubmitting.value = false;
                                           res.fold(
@@ -2732,6 +2952,7 @@ class ForumThreadDetailPage extends HookWidget {
                                               replyVoiceNoteUrl.value = null;
                                               replyVoiceNoteDuration.value = 0;
                                               replyingToReply.value = null;
+                                              isAnonymousReply.value = false;
                                               if (!localReplies.value.any(
                                                 (r) => r.id == createdReply.id,
                                               )) {
@@ -3240,11 +3461,13 @@ class _DiscussionThreadGroupCard extends HookWidget {
     required this.onReplyTap,
     required this.onChildReplyTap,
     required this.onVerifySolution,
+    this.highlightReplyId,
     this.onSaveFlashcard,
   });
 
   final ForumReplyEntity parentReply;
   final List<ForumReplyEntity> children;
+  final String? highlightReplyId;
   final String opAuthorName;
   final bool isQuestion;
   final bool isAuthor;
@@ -3268,6 +3491,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
+    final isHighlighted = parentReply.id == highlightReplyId;
     final isUpvoted = parentReply.userVote == 1;
     final isDownvoted = parentReply.userVote == -1;
 
@@ -3292,11 +3516,15 @@ class _DiscussionThreadGroupCard extends HookWidget {
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
             borderRadius: BorderRadius.circular(16),
-            // Removed border
+            border: isHighlighted
+                ? Border.all(color: colors.primary, width: 2)
+                : null,
             boxShadow: [
               BoxShadow(
-                color: colors.black.withAlpha(isDark ? 25 : 8),
-                blurRadius: 8,
+                color: isHighlighted
+                    ? colors.primary.withAlpha(isDark ? 65 : 40)
+                    : colors.black.withAlpha(isDark ? 25 : 8),
+                blurRadius: isHighlighted ? 12 : 8,
                 offset: const Offset(0, 1),
               ),
             ],
@@ -3304,6 +3532,36 @@ class _DiscussionThreadGroupCard extends HookWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isHighlighted)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 50 : 25),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.push_pin_rounded,
+                        size: 13,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Highlighted Reply',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               // Author Info & Options
               Row(
                 children: [
@@ -3332,6 +3590,27 @@ class _DiscussionThreadGroupCard extends HookWidget {
                         ),
                       ),
                     )
+                  else if (parentReply.isAnonymous)
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? colors.surfaceSecondary
+                            : colors.surfaceBorder.withAlpha(40),
+                        border: Border.all(
+                          color: colors.textSecondary
+                              .withAlpha(isDark ? 60 : 35),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.visibility_off_rounded,
+                        size: 14,
+                        color: colors.textSecondary,
+                      ),
+                    )
                   else
                     AppAvatar(
                       customDimension: 28,
@@ -3350,18 +3629,62 @@ class _DiscussionThreadGroupCard extends HookWidget {
                           children: [
                             Flexible(
                               child: Text(
-                                '@${parentReply.authorName}',
+                                parentReply.isAnonymous
+                                    ? parentReply.authorName
+                                    : '@${parentReply.authorName}',
                                 style: typography.subhead.bold.copyWith(
                                   color: isAiReply
                                       ? colors.syllabotAccent
-                                      : colors.textPrimary,
+                                      : (parentReply.isAnonymous
+                                          ? colors.textSecondary
+                                          : colors.textPrimary),
                                   fontSize: 13.5,
+                                  fontStyle: parentReply.isAnonymous
+                                      ? FontStyle.italic
+                                      : FontStyle.normal,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 6),
+                            if (parentReply.isAnonymous)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.textSecondary.withAlpha(
+                                    isDark ? 35 : 20,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: colors.textSecondary.withAlpha(
+                                      isDark ? 60 : 35,
+                                    ),
+                                    width: 0.6,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.shield_outlined,
+                                      size: 8.5,
+                                      color: colors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'Incognito',
+                                      style: typography.caption.medium.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 8.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             if (isAiReply)
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -3833,6 +4156,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                           return _Level2ChildReplyCard(
                             childReply: child,
                             opAuthorName: opAuthorName,
+                            isHighlighted: child.id == highlightReplyId,
                             onVote: (direction) =>
                                 onChildVote(child, direction),
                             onReplyTap: () => onChildReplyTap(child),
@@ -3959,12 +4283,14 @@ class _Level2ChildReplyCard extends HookWidget {
     required this.opAuthorName,
     required this.onVote,
     required this.onReplyTap,
+    this.isHighlighted = false,
   });
 
   final ForumReplyEntity childReply;
   final String opAuthorName;
   final void Function(int direction) onVote;
   final VoidCallback onReplyTap;
+  final bool isHighlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -4031,10 +4357,17 @@ class _Level2ChildReplyCard extends HookWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '@${childReply.authorName}',
+                      childReply.isAnonymous
+                          ? childReply.authorName
+                          : '@${childReply.authorName}',
                       style: typography.caption.bold.copyWith(
-                        color: colors.textPrimary,
+                        color: childReply.isAnonymous
+                            ? colors.textSecondary
+                            : colors.textPrimary,
                         fontSize: 12,
+                        fontStyle: childReply.isAnonymous
+                            ? FontStyle.italic
+                            : FontStyle.normal,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -4064,40 +4397,140 @@ class _Level2ChildReplyCard extends HookWidget {
                     : colors.surfaceSecondary.withAlpha(90),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
+                  color: isHighlighted
+                      ? colors.primary
+                      : colors.surfaceBorder.withAlpha(isDark ? 30 : 20),
+                  width: isHighlighted ? 1.8 : 1.0,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (isHighlighted)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 50 : 25),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.push_pin_rounded,
+                            size: 11,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Highlighted Reply',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   // Author Info & Collapse Toggle
                   Row(
                     children: [
                       Expanded(
                         child: Row(
                           children: [
-                            AppAvatar(
-                              customDimension: 22,
-                              name: childReply.authorName,
-                              backgroundColor: colors.primary.withAlpha(
-                                isDark ? 40 : 25,
+                            if (childReply.isAnonymous)
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark
+                                      ? colors.surfaceSecondary
+                                      : colors.surfaceBorder.withAlpha(40),
+                                  border: Border.all(
+                                    color: colors.textSecondary
+                                        .withAlpha(isDark ? 60 : 35),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.visibility_off_rounded,
+                                  size: 12,
+                                  color: colors.textSecondary,
+                                ),
+                              )
+                            else
+                              AppAvatar(
+                                customDimension: 22,
+                                name: childReply.authorName,
+                                backgroundColor: colors.primary.withAlpha(
+                                  isDark ? 40 : 25,
+                                ),
+                                foregroundColor: colors.primary,
                               ),
-                              foregroundColor: colors.primary,
-                            ),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                '@${childReply.authorName}',
+                                childReply.isAnonymous
+                                    ? childReply.authorName
+                                    : '@${childReply.authorName}',
                                 style: typography.caption.bold.copyWith(
                                   color: isAiReply
                                       ? colors.syllabotAccent
-                                      : colors.textPrimary,
+                                      : (childReply.isAnonymous
+                                          ? colors.textSecondary
+                                          : colors.textPrimary),
                                   fontSize: 12.5,
+                                  fontStyle: childReply.isAnonymous
+                                      ? FontStyle.italic
+                                      : FontStyle.normal,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (isOp) ...[
+                            if (childReply.isAnonymous) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 0.8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.textSecondary.withAlpha(
+                                    isDark ? 35 : 20,
+                                  ),
+                                  borderRadius: BorderRadius.circular(3),
+                                  border: Border.all(
+                                    color: colors.textSecondary.withAlpha(
+                                      isDark ? 60 : 35,
+                                    ),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.shield_outlined,
+                                      size: 7.5,
+                                      color: colors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 2.5),
+                                    Text(
+                                      'Incognito',
+                                      style: typography.caption.medium.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 7.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else if (isOp) ...[
                               const SizedBox(width: 5),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -4444,23 +4877,42 @@ class _ForumThreadStructuredBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 2.5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(isDark ? 40 : 20),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'QUESTION PROMPT',
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 9.5,
-                      letterSpacing: 0.8,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'QUESTION PROMPT',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 9.5,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (options.isNotEmpty)
+                      QuizAudioReaderButton(
+                        questionText: promptText,
+                        options: options,
+                        size: 28,
+                        iconSize: 14,
+                      )
+                    else
+                      AudioPronounceButton(
+                        textToPronounce: promptText,
+                        size: 28,
+                        iconSize: 14,
+                        tooltip: 'Listen to prompt',
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 _CleanFormattedText(
@@ -4626,20 +5078,32 @@ class _ForumThreadStructuredBody extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: colors.primary,
-                      size: 16,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline_rounded,
+                          color: colors.primary,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Concept Explanation',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.primary,
+                            letterSpacing: 0.5,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Concept Explanation',
-                      style: typography.caption.bold.copyWith(
-                        color: colors.primary,
-                        letterSpacing: 0.5,
-                        fontSize: 11.5,
-                      ),
+                    AudioPronounceButton(
+                      textToPronounce: explanationText,
+                      size: 26,
+                      iconSize: 13,
+                      tooltip: 'Listen to explanation',
                     ),
                   ],
                 ),

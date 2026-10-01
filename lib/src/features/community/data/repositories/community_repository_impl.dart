@@ -247,6 +247,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    bool isAnonymous = false,
   }) {
     return _remoteDataSource
         .replyToForumPost(
@@ -257,6 +258,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
           mediaUrls: mediaUrls,
           voiceNoteUrl: voiceNoteUrl,
           voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+          isAnonymous: isAnonymous,
         )
         .then((model) => model.toEntity())
         .makeRequest();

@@ -352,19 +352,29 @@ serve(async (req) => {
     }
 
     if (generatedCards.length === 0) {
-      const hasImages = parsedDoc.images.length > 0;
-      generatedCards.push({
-        id: crypto.randomUUID(),
-        front: `What are the core concepts covered in ${cleanDeckTitle}?`,
-        back: hasImages
-          ? `This document is image-based. Review the ${parsedDoc.images.length} attached diagram(s) for the study content. Re-upload as a text-searchable PDF for richer flashcard generation.`
-          : `No extractable text was found in this document. For best results, upload a text-searchable PDF. Deck title: ${cleanDeckTitle}.`,
-        back_latex: null,
-        explanation: hasImages ? "Visual-only document — see attached diagram(s)" : "Document had no extractable content",
-        image_url: parsedDoc.images[0]?.url ?? null,
-        tags: [cleanDeckTitle, courseCode].filter(Boolean),
+      console.error(
+        `[parse-stem-ocr] Flashcard synthesis failed for '${cleanDeckTitle}'. Emitting failure to progress channel.`
+      );
+      await broadcastProgress(supabase, documentId, {
+        status: "failed",
+        progress: 1.0,
+        stageMessage:
+          "Flashcard synthesis failed: No study cards could be generated from document content.",
+        error:
+          "Failed to synthesize flashcards across all AI providers. Please check document quality or re-upload as text-searchable PDF.",
       });
-      console.warn(`[parse-stem-ocr] Ultimate fallback activated for '${cleanDeckTitle}' — document had no usable content.`);
+      return new Response(
+        JSON.stringify({
+          error:
+            "Failed to synthesize flashcards from document content across AI providers.",
+          document_id: documentId,
+          snippets: [],
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 422,
+        }
+      );
     }
 
     await broadcastProgress(supabase, documentId, {

@@ -118,6 +118,7 @@ class MockCommunityRepository implements CommunityRepository {
   Future<Either<Failure, ForumReplyEntity>> replyToForumPost({
     required String postId,
     required String content,
+    bool isAnonymous = false,
     String? latexContent,
     String? parentReplyId,
     List<String>? mediaUrls,

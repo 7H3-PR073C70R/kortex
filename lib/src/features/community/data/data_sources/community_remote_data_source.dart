@@ -89,6 +89,7 @@ abstract class CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    bool isAnonymous = false,
   });
 
   Future<bool> voteForumPost({

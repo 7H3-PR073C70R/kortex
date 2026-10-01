@@ -14,6 +14,7 @@ class ForumPostEntity extends Equatable {
     this.latexContent,
     this.isQuestion = false,
     this.isVerifiedSolution = false,
+    this.isAnonymous = false,
     this.syllabusTag = 'General',
     this.upvotes = 0,
     this.downvotes = 0,
@@ -40,6 +41,7 @@ class ForumPostEntity extends Equatable {
   final String? latexContent;
   final bool isQuestion;
   final bool isVerifiedSolution;
+  final bool isAnonymous;
   final String syllabusTag;
   final int upvotes;
   final int downvotes;
@@ -72,6 +74,7 @@ class ForumPostEntity extends Equatable {
     String? latexContent,
     bool? isQuestion,
     bool? isVerifiedSolution,
+    bool? isAnonymous,
     String? syllabusTag,
     int? upvotes,
     int? downvotes,
@@ -99,6 +102,7 @@ class ForumPostEntity extends Equatable {
       latexContent: latexContent ?? this.latexContent,
       isQuestion: isQuestion ?? this.isQuestion,
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
       syllabusTag: syllabusTag ?? this.syllabusTag,
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
@@ -131,6 +135,7 @@ class ForumPostEntity extends Equatable {
     latexContent,
     isQuestion,
     isVerifiedSolution,
+    isAnonymous,
     syllabusTag,
     upvotes,
     downvotes,
@@ -162,6 +167,7 @@ class ForumReplyEntity extends Equatable {
     this.authorAvatar,
     this.latexContent,
     this.isVerifiedSolution = false,
+    this.isAnonymous = false,
     this.upvotes = 0,
     this.downvotes = 0,
     this.userVote = 0,
@@ -181,6 +187,7 @@ class ForumReplyEntity extends Equatable {
   final String content;
   final String? latexContent;
   final bool isVerifiedSolution;
+  final bool isAnonymous;
   final int upvotes;
   final int downvotes;
   final int userVote;
@@ -204,6 +211,7 @@ class ForumReplyEntity extends Equatable {
     String? content,
     String? latexContent,
     bool? isVerifiedSolution,
+    bool? isAnonymous,
     int? upvotes,
     int? downvotes,
     int? userVote,
@@ -224,6 +232,7 @@ class ForumReplyEntity extends Equatable {
       content: content ?? this.content,
       latexContent: latexContent ?? this.latexContent,
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
       userVote: userVote ?? this.userVote,
@@ -248,6 +257,7 @@ class ForumReplyEntity extends Equatable {
     content,
     latexContent,
     isVerifiedSolution,
+    isAnonymous,
     upvotes,
     downvotes,
     userVote,

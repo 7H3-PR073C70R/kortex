@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
@@ -71,11 +72,21 @@ class QuizAudioReaderButton extends HookWidget {
               borderRadius: BorderRadius.circular(size / 2),
               onTap: () async {
                 AppFeedback.selection();
-                if (isSpeaking) {
-                  await handler.stop();
-                } else {
-                  final script = _buildSpeechScript();
-                  await handler.speak(script);
+                try {
+                  if (isSpeaking) {
+                    await handler.stop();
+                  } else {
+                    final script = _buildSpeechScript();
+                    await handler.speak(script);
+                  }
+                } on Object catch (_) {
+                  AppFeedback.incorrect();
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      message: 'Audio narration unavailable.',
+                      type: SnackBarType.error,
+                    );
+                  }
                 }
               },
               child: SizedBox(

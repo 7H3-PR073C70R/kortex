@@ -117,5 +117,62 @@ void main() {
       expect(routed, isTrue);
       verify(() => mockRouter.push(any())).called(1);
     });
+
+    test('NotificationCategoryExtension maps quiz duel result and subscription categories', () {
+      expect(
+        NotificationCategoryExtension.fromString('quiz_duel_result'),
+        equals(NotificationCategory.community),
+      );
+      expect(
+        NotificationCategoryExtension.fromString('subscription'),
+        equals(NotificationCategory.system),
+      );
+      expect(
+        NotificationCategoryExtension.fromString('subscription_activated'),
+        equals(NotificationCategory.system),
+      );
+      expect(
+        NotificationCategoryExtension.fromString('ai_ingestion'),
+        equals(NotificationCategory.study),
+      );
+    });
+
+    test('NotificationRouter routes FSRS spaced repetition and exam countdown correctly', () async {
+      final mockRouter = MockStackRouter();
+      when(() => mockRouter.push(any())).thenAnswer((_) async => null);
+
+      const router = NotificationRouter();
+
+      final fsrsNotif = NotificationItemEntity(
+        id: 'n-fsrs',
+        title: 'Review Due',
+        message: '10 cards due',
+        timestamp: DateTime.now(),
+        category: NotificationCategory.study,
+        actionRoute: '/study-session',
+        metadata: const {'deck_id': 'deck-123'},
+      );
+
+      final fsrsRouted = await router.handleNotificationNavigation(
+        router: mockRouter,
+        notification: fsrsNotif,
+      );
+      expect(fsrsRouted, isTrue);
+
+      final examNotif = NotificationItemEntity(
+        id: 'n-exam',
+        title: 'Exam Countdown',
+        message: '14 days left',
+        timestamp: DateTime.now(),
+        category: NotificationCategory.system,
+        actionRoute: '/planner',
+      );
+
+      final examRouted = await router.handleNotificationNavigation(
+        router: mockRouter,
+        notification: examNotif,
+      );
+      expect(examRouted, isTrue);
+    });
   });
 }

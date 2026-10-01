@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -667,7 +668,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }
     }
 
-    final rawUserId = isAnonymous ? null : _userStorage?.getUserId();
+    final rawUserId = _userStorage?.getUserId();
     final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
         ? rawUserId.trim()
         : null;
@@ -707,6 +708,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
         'author_avatar': authorAvatar,
+      'is_anonymous': isAnonymous,
     };
 
     final res = await _safeCreateForumPost(payload);
@@ -811,13 +813,16 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    bool isAnonymous = false,
   }) async {
     final rawUserId = _userStorage?.getUserId();
     final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
         ? rawUserId.trim()
         : null;
-    final authorName = _userStorage?.getUserDisplayName() ?? 'Scholar';
-    final authorAvatar = _userStorage?.getUserAvatarUrl();
+    final authorName = isAnonymous
+        ? 'Anonymous Scholar'
+        : (_userStorage?.getUserDisplayName() ?? 'Scholar');
+    final authorAvatar = isAnonymous ? null : _userStorage?.getUserAvatarUrl();
 
     var enrichedContent = content.trim();
     if (mediaUrls != null && mediaUrls.isNotEmpty) {
@@ -845,6 +850,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
         'author_avatar': authorAvatar,
+      'is_anonymous': isAnonymous,
     };
 
     final res = await _safeReplyToForumPost(payload);
@@ -1217,58 +1223,113 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }).ignore();
     }
 
-    // Seed or refresh cache via direct REST call to /rest/v1/forum_replies
-    _client
-        .fetchForumReplies({
+    Future<void> syncRepliesFromRest() async {
+      if (streamController.isClosed) return;
+      try {
+        final res = await _client.fetchForumReplies({
           'select': '*',
           'post_id': 'eq.$postId',
           'order': 'created_at.asc',
-        })
-        .then((res) {
-          try {
-            final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-            if (rawList.isNotEmpty) {
-              final fetchedReplies = rawList
-                  .map(
-                    (r) => ForumReplyModel.fromJson(r as Map<String, dynamic>),
-                  )
-                  .toList();
-              final currentCache = _replyCache.putIfAbsent(postId, () => []);
-              for (final fetched in fetchedReplies) {
-                if (!currentCache.any((r) => r.id == fetched.id)) {
-                  currentCache.add(fetched);
-                  unawaited(_localDataSource?.saveForumReply(fetched));
-                }
-              }
-              if (!streamController.isClosed) {
-                streamController.add(List.unmodifiable(currentCache));
-              }
-            }
-          } on Exception catch (_) {}
-        })
-        .ignore();
-
-    // Listen for new inserts via WebSocket
-    final wsSub = _realtime
-        .watchTable('forum_replies', filter: 'post_id=eq.$postId')
-        .listen((event) {
-          if (event.type == RealtimeEventType.insert) {
-            try {
-              final reply = ForumReplyModel.fromJson(event.record);
-              final cache = _replyCache.putIfAbsent(postId, () => []);
-              if (!cache.any((r) => r.id == reply.id)) {
-                cache.add(reply);
-                unawaited(_localDataSource?.saveForumReply(reply));
-              }
-              if (!streamController.isClosed) {
-                streamController.add(List.unmodifiable(cache));
-              }
-            } on Exception catch (_) {}
-          }
         });
+        final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+        if (rawList.isNotEmpty && !streamController.isClosed) {
+          final fetchedReplies = rawList
+              .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
+              .toList();
+          final currentCache = _replyCache.putIfAbsent(postId, () => []);
+          var hasChanges = false;
+          for (final fetched in fetchedReplies) {
+            final idx = currentCache.indexWhere((r) => r.id == fetched.id);
+            if (idx == -1) {
+              currentCache.add(fetched);
+              hasChanges = true;
+              unawaited(_localDataSource?.saveForumReply(fetched));
+            } else if (currentCache[idx] != fetched) {
+              currentCache[idx] = fetched;
+              hasChanges = true;
+              unawaited(_localDataSource?.saveForumReply(fetched));
+            }
+          }
+          if (hasChanges && !streamController.isClosed) {
+            streamController.add(List.unmodifiable(currentCache));
+          }
+        }
+      } on Object catch (_) {}
+    }
+
+    // Initial fetch from REST
+    unawaited(syncRepliesFromRest());
+
+    // Fallback reconciliation timer (every 15s) while subscribed to reconcile missed events
+    Timer? fallbackPollTimer;
+    fallbackPollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!streamController.isClosed && streamController.hasListener) {
+        unawaited(syncRepliesFromRest());
+      }
+    });
+
+    StreamSubscription<RealtimeRowEvent>? wsSub;
+    var reconnectAttempts = 0;
+
+    void subscribeRealtime() {
+      if (streamController.isClosed) return;
+      wsSub?.cancel().ignore();
+
+      wsSub = _realtime
+          .watchTable('forum_replies', filter: 'post_id=eq.$postId')
+          .listen(
+            (event) {
+              reconnectAttempts = 0;
+              try {
+                final reply = ForumReplyModel.fromJson(event.record);
+                final cache = _replyCache.putIfAbsent(postId, () => []);
+                if (event.type == RealtimeEventType.insert) {
+                  final idx = cache.indexWhere((r) => r.id == reply.id);
+                  if (idx == -1) {
+                    cache.add(reply);
+                    unawaited(_localDataSource?.saveForumReply(reply));
+                  } else {
+                    cache[idx] = reply;
+                  }
+                  if (!streamController.isClosed) {
+                    streamController.add(List.unmodifiable(cache));
+                  }
+                } else if (event.type == RealtimeEventType.update) {
+                  final idx = cache.indexWhere((r) => r.id == reply.id);
+                  if (idx != -1) {
+                    cache[idx] = reply;
+                    unawaited(_localDataSource?.saveForumReply(reply));
+                    if (!streamController.isClosed) {
+                      streamController.add(List.unmodifiable(cache));
+                    }
+                  }
+                }
+              } on Object catch (_) {}
+            },
+            onError: (Object error) {
+              if (streamController.isClosed) return;
+              reconnectAttempts++;
+              final delaySeconds = math.min(30, math.pow(2, reconnectAttempts).toInt());
+              Timer(Duration(seconds: delaySeconds), () {
+                if (!streamController.isClosed && streamController.hasListener) {
+                  subscribeRealtime();
+                  unawaited(syncRepliesFromRest());
+                }
+              });
+            },
+            onDone: () {
+              if (!streamController.isClosed && streamController.hasListener) {
+                subscribeRealtime();
+              }
+            },
+          );
+    }
+
+    subscribeRealtime();
 
     streamController.onCancel = () {
-      wsSub.cancel().ignore();
+      fallbackPollTimer?.cancel();
+      wsSub?.cancel().ignore();
       _replyControllers.remove(postId);
       _replyCache.remove(postId);
     };

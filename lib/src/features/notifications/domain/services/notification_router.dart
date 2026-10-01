@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 
 /// Centralized router for parsing notification payloads and executing deep-linking.
@@ -38,7 +40,37 @@ class NotificationRouter {
       if (routeStr.contains('forum') ||
           routeStr.contains('thread') ||
           metadata['type'] == 'forum_reply' ||
-          metadata['thread_id'] != null) {
+          metadata['type'] == 'forum_mention' ||
+          metadata['thread_id'] != null ||
+          metadata['post_id'] != null) {
+        final threadId = metadata['thread_id']?.toString() ??
+            metadata['post_id']?.toString() ??
+            metadata['threadId']?.toString() ??
+            metadata['postId']?.toString();
+        final replyId = metadata['reply_id']?.toString() ??
+            metadata['replyId']?.toString();
+
+        if (threadId != null &&
+            threadId.isNotEmpty &&
+            locator.isRegistered<CommunityRepository>()) {
+          try {
+            final repo = locator<CommunityRepository>();
+            final treeRes = await repo.fetchForumThreadTree(postId: threadId);
+            final tree = treeRes.fold((_) => null, (val) => val);
+            if (tree != null) {
+              await router.push(
+                ForumThreadDetailRoute(
+                  post: tree.post,
+                  highlightReplyId: replyId,
+                ),
+              );
+              return true;
+            }
+          } on Object catch (e) {
+            debugPrint('[NotificationRouter] Error fetching thread tree: $e');
+          }
+        }
+
         await router.push(const CommunityHubRoute());
         return true;
       }

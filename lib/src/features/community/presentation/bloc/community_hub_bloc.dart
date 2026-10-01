@@ -500,6 +500,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       mediaUrls: event.mediaUrls,
       voiceNoteUrl: event.voiceNoteUrl,
       voiceNoteDurationSeconds: event.voiceNoteDurationSeconds,
+      isAnonymous: event.isAnonymous,
     );
     res.fold(
       (failure) => emit(

@@ -51,6 +51,46 @@ serve(async (req) => {
       console.warn("Could not fetch leaderboard count:", countError);
     }
 
+    // Award podium notifications to the top 3 scholars of the week
+    try {
+      const { data: topScholars } = await supabase
+        .from("leaderboards")
+        .select("user_id, rank, total_xp, display_name")
+        .order("rank", { ascending: true })
+        .limit(3);
+
+      if (topScholars && topScholars.length > 0) {
+        const medals = ["🥇", "🥈", "🥉"];
+        const inserts = topScholars.map((s, idx) => ({
+          user_id: s.user_id,
+          title: `${medals[idx] || "🏆"} Weekly Podium: Rank #${s.rank}!`,
+          body: `Incredible work! You earned ${s.total_xp} XP this week and finished in the top 3 scholars on the global leaderboard.`,
+          category: "leaderboard",
+          data: {
+            route: "/leaderboard",
+            rank: String(s.rank),
+            totalXp: String(s.total_xp),
+          },
+        }));
+
+        await supabase.from("notifications").insert(inserts);
+
+        // Immediately trigger outbox processing to deliver FCM pushes
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/trigger-notifications`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${supabaseServiceKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ action: "process_outbox" }),
+          });
+        } catch (_) {}
+      }
+    } catch (topErr) {
+      console.warn("[Leaderboard] Failed to notify top scholars:", topErr);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

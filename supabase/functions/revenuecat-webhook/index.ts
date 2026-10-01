@@ -193,6 +193,36 @@ Deno.serve(async (req: Request) => {
       console.log(
         `[RevenueCat Webhook] Successfully updated user ${userId} to tier: ${targetTier}`
       );
+
+      try {
+        if (targetTier === "pro") {
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            title: "⭐ Welcome to Kortex Pro!",
+            body: "Your Pro subscription is active. Enjoy unlimited AI flashcard synthesis, Socratic tutoring, and priority sync.",
+            category: "general",
+            data: {
+              route: "/dashboard",
+              type: "subscription_activated",
+              event: event.type,
+            },
+          });
+        } else if (targetTier === "free") {
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            title: "📅 Kortex Pro Plan Ended",
+            body: "Your Pro access has expired. You can renew at any time to unlock all AI tools and unlimited cloud storage.",
+            category: "general",
+            data: {
+              route: "/subscription",
+              type: "subscription_ended",
+              event: event.type,
+            },
+          });
+        }
+      } catch (subNotifErr) {
+        console.warn("[RevenueCat Webhook] Failed to enqueue subscription notification:", subNotifErr);
+      }
     }
 
     return new Response(

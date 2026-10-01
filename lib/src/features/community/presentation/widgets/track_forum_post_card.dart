@@ -547,44 +547,65 @@ class TrackForumPostCard extends HookWidget {
                     // Author Row: [Avatar with online ring] [Name] [PRO/MOD badge] • [Time]
                     Row(
                       children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            CircleAvatar(
-                              radius: 17,
-                              backgroundColor: colors.primary.withAlpha(
-                                isDark ? 50 : 30,
-                              ),
-                              child: Text(
-                                post.authorName.isNotEmpty
-                                    ? post.authorName[0].toUpperCase()
-                                    : 'U',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.primary,
-                                  fontSize: 13,
-                                ),
+                        if (post.isAnonymous)
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDark
+                                  ? colors.surfaceSecondary
+                                  : colors.surfaceBorder.withAlpha(40),
+                              border: Border.all(
+                                color: colors.textSecondary
+                                    .withAlpha(isDark ? 50 : 30),
                               ),
                             ),
-                            Positioned(
-                              bottom: -1,
-                              right: -1,
-                              child: Container(
-                                width: 9,
-                                height: 9,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: colors.success,
-                                  border: Border.all(
-                                    color: isDark
-                                        ? colors.surfaceSecondary
-                                        : colors.surfacePrimary,
-                                    width: 1.5,
+                            child: Icon(
+                              Icons.visibility_off_rounded,
+                              size: 16,
+                              color: colors.textSecondary,
+                            ),
+                          )
+                        else
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              CircleAvatar(
+                                radius: 17,
+                                backgroundColor: colors.primary.withAlpha(
+                                  isDark ? 50 : 30,
+                                ),
+                                child: Text(
+                                  post.authorName.isNotEmpty
+                                      ? post.authorName[0].toUpperCase()
+                                      : 'U',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 13,
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                              Positioned(
+                                bottom: -1,
+                                right: -1,
+                                child: Container(
+                                  width: 9,
+                                  height: 9,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: colors.success,
+                                    border: Border.all(
+                                      color: isDark
+                                          ? colors.surfaceSecondary
+                                          : colors.surfacePrimary,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         const SizedBox(width: 10),
                         Flexible(
                           child: Row(
@@ -592,20 +613,64 @@ class TrackForumPostCard extends HookWidget {
                             children: [
                               Flexible(
                                 child: Text(
-                                  '@${post.authorName}',
+                                  post.isAnonymous
+                                      ? post.authorName
+                                      : '@${post.authorName}',
                                   style: typography.caption.bold.copyWith(
-                                    color: colors.textPrimary,
+                                    color: post.isAnonymous
+                                        ? colors.textSecondary
+                                        : colors.textPrimary,
                                     fontSize: 13,
+                                    fontStyle: post.isAnonymous
+                                        ? FontStyle.italic
+                                        : FontStyle.normal,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              SubjectMasterBadge(
-                                track: post.track,
-                                compact: true,
-                              ),
+                              if (post.isAnonymous)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                    vertical: 1.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.textSecondary
+                                        .withAlpha(isDark ? 35 : 20),
+                                    borderRadius: AppRadius.radiusMicro,
+                                    border: Border.all(
+                                      color: colors.textSecondary
+                                          .withAlpha(isDark ? 60 : 35),
+                                      width: 0.6,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.shield_outlined,
+                                        size: 9,
+                                        color: colors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        'Incognito',
+                                        style: typography.caption.medium
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 9,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                SubjectMasterBadge(
+                                  track: post.track,
+                                  compact: true,
+                                ),
                               if (post.isQuestion) ...[
                                 const SizedBox(width: 6),
                                 Container(

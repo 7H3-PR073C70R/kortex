@@ -112,8 +112,12 @@ class ForumSocraticHintService {
     return false;
   }
 
+  /// In-flight completers keyed by post ID to deduplicate concurrent hint generation calls
+  static final Map<String, Completer<String>> _inFlightHintCompleters = {};
+
   /// Executes the full Socratic Hint pipeline with Cloud AI priority,
   /// automatic on-device fallback, and strict error reporting if generation fails.
+  /// Deduplicates concurrent generation requests for the same post ID.
   /// Throws [SyllabotHintGenerationException] if the AI engine is unavailable or returns empty.
   static Future<String> generateHint({
     required ForumPostEntity post,
@@ -137,99 +141,117 @@ class ForumSocraticHintService {
       return '🤖 Syllabot Socratic Hint:\n\n$cachedText';
     }
 
-    final prompt = buildPrompt(post);
-    var candidate = '';
-
-    // Step 1: Cloud AI Streaming via Luna edge routing
-    if (streamUseCase != null) {
-      try {
-        final stream = streamUseCase.call(
-          prompt: prompt,
-          sessionId: 'forum-hint-${post.id}',
-          socraticMode: SocraticMode.stepByStep,
-          preferredEngine: ExecutionEngineType.cloudRemote,
-        );
-
-        final buffer = StringBuffer();
-        await stream
-            .timeout(const Duration(seconds: 12), onTimeout: (s) => s.close())
-            .forEach(buffer.write);
-
-        final cloudCandidate = buffer.toString().trim();
-        if (cloudCandidate.isNotEmpty &&
-            !isTemplateOrGenericEcho(cloudCandidate)) {
-          candidate = cloudCandidate;
-        }
-      } on Object catch (_) {
-        candidate = '';
-      }
+    // Step 0b: Mutex lock - if generation for this post is already in flight, reuse the future
+    if (_inFlightHintCompleters.containsKey(post.id)) {
+      return _inFlightHintCompleters[post.id]!.future;
     }
 
-    // Step 2: Fall back to on-device LLM stream if Cloud AI returned empty or failed
-    if (candidate.isEmpty && streamUseCase != null) {
+    final completer = Completer<String>();
+    _inFlightHintCompleters[post.id] = completer;
+
+    unawaited(() async {
       try {
-        final localStream = streamUseCase.call(
-          prompt: prompt,
-          sessionId: 'forum-hint-local-${post.id}',
-          socraticMode: SocraticMode.stepByStep,
-          preferredEngine: ExecutionEngineType.localOnDevice,
-        );
+        final prompt = buildPrompt(post);
+        var candidate = '';
 
-        final buffer = StringBuffer();
-        await localStream
-            .timeout(const Duration(seconds: 8), onTimeout: (s) => s.close())
-            .forEach(buffer.write);
+        // Step 1: Cloud AI Streaming via Luna edge routing
+        if (streamUseCase != null) {
+          try {
+            final stream = streamUseCase.call(
+              prompt: prompt,
+              sessionId: 'forum-hint-${post.id}',
+              socraticMode: SocraticMode.stepByStep,
+              preferredEngine: ExecutionEngineType.cloudRemote,
+            );
 
-        final localCandidate = buffer.toString().trim();
-        if (localCandidate.isNotEmpty &&
-            !isTemplateOrGenericEcho(localCandidate)) {
-          candidate = localCandidate;
-        }
-      } on Object catch (_) {}
-    }
+            final buffer = StringBuffer();
+            await stream
+                .timeout(const Duration(seconds: 12), onTimeout: (s) => s.close())
+                .forEach(buffer.write);
 
-    // Step 3: Direct local LLM generation fallback if available
-    if (candidate.isEmpty && localLlmClient != null) {
-      try {
-        if (localLlmClient.isModelDownloaded || localLlmClient.isInitialized) {
-          final buffer = StringBuffer();
-          await localLlmClient
-              .generate(
-                prompt: prompt,
-                systemInstruction:
-                    'Provide a direct, concrete academic Socratic hint for this question. Do not echo instructions.',
-              )
-              .timeout(const Duration(seconds: 8), onTimeout: (s) => s.close())
-              .forEach(buffer.write);
-
-          final directLocal = buffer.toString().trim();
-          if (directLocal.isNotEmpty && !isTemplateOrGenericEcho(directLocal)) {
-            candidate = directLocal;
+            final cloudCandidate = buffer.toString().trim();
+            if (cloudCandidate.isNotEmpty &&
+                !isTemplateOrGenericEcho(cloudCandidate)) {
+              candidate = cloudCandidate;
+            }
+          } on Object catch (_) {
+            candidate = '';
           }
         }
-      } on Object catch (_) {}
-    }
 
-    // Step 4: Strict Error Handling - Never return mock or heuristic fallback text
-    if (candidate.isEmpty || isTemplateOrGenericEcho(candidate)) {
-      throw const SyllabotHintGenerationException(
-        'Unable to generate AI Socratic hint. Please check your internet connection or ensure on-device model is ready.',
-      );
-    }
+        // Step 2: Fall back to on-device LLM stream if Cloud AI returned empty or failed
+        if (candidate.isEmpty && streamUseCase != null) {
+          try {
+            final localStream = streamUseCase.call(
+              prompt: prompt,
+              sessionId: 'forum-hint-local-${post.id}',
+              socraticMode: SocraticMode.stepByStep,
+              preferredEngine: ExecutionEngineType.localOnDevice,
+            );
 
-    // Step 5: Clean up any markdown or prefix formatting
-    final cleanText = candidate
-        .replaceAll(
-          RegExp(r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*', caseSensitive: false),
-          '',
-        )
-        .trim();
+            final buffer = StringBuffer();
+            await localStream
+                .timeout(const Duration(seconds: 8), onTimeout: (s) => s.close())
+                .forEach(buffer.write);
 
-    final result = '🤖 Syllabot Socratic Hint:\n\n$cleanText';
-    if (onHintGenerated != null) {
-      unawaited(onHintGenerated(result));
-    }
+            final localCandidate = buffer.toString().trim();
+            if (localCandidate.isNotEmpty &&
+                !isTemplateOrGenericEcho(localCandidate)) {
+              candidate = localCandidate;
+            }
+          } on Object catch (_) {}
+        }
 
-    return result;
+        // Step 3: Direct local LLM generation fallback if available
+        if (candidate.isEmpty && localLlmClient != null) {
+          try {
+            if (localLlmClient.isModelDownloaded || localLlmClient.isInitialized) {
+              final buffer = StringBuffer();
+              await localLlmClient
+                  .generate(
+                    prompt: prompt,
+                    systemInstruction:
+                        'Provide a direct, concrete academic Socratic hint for this question. Do not echo instructions.',
+                  )
+                  .timeout(const Duration(seconds: 8), onTimeout: (s) => s.close())
+                  .forEach(buffer.write);
+
+              final directLocal = buffer.toString().trim();
+              if (directLocal.isNotEmpty && !isTemplateOrGenericEcho(directLocal)) {
+                candidate = directLocal;
+              }
+            }
+          } on Object catch (_) {}
+        }
+
+        // Step 4: Strict Error Handling - Never return mock or heuristic fallback text
+        if (candidate.isEmpty || isTemplateOrGenericEcho(candidate)) {
+          throw const SyllabotHintGenerationException(
+            'Unable to generate AI Socratic hint. Please check your internet connection or ensure on-device model is ready.',
+          );
+        }
+
+        // Step 5: Clean up any markdown or prefix formatting
+        final cleanText = candidate
+            .replaceAll(
+              RegExp(r'^🤖\s*Syllabot\s*Socratic\s*Hint:\s*', caseSensitive: false),
+              '',
+            )
+            .trim();
+
+        final result = '🤖 Syllabot Socratic Hint:\n\n$cleanText';
+        if (onHintGenerated != null) {
+          unawaited(onHintGenerated(result));
+        }
+
+        completer.complete(result);
+      } catch (e, stack) {
+        completer.completeError(e, stack);
+      } finally {
+        _inFlightHintCompleters.remove(post.id);
+      }
+    }());
+
+    return completer.future;
   }
 }

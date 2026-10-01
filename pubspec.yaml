@@ -27,6 +27,8 @@ dependencies:
   flutter_screenutil: ^5.9.3
   flutter_svg: ^2.2.1
   flutter_tts: ^4.2.5
+  flutter_kokoro_tts: ^0.0.1
+  flutter_edge_tts: ^0.0.2
   flutter_markdown: ^0.7.6
   freezed_annotation: ^3.1.0
   get_it: ^9.2.1
@@ -75,6 +77,7 @@ dependencies:
   drift_flutter: ^0.3.1
   sqlite3_flutter_libs: ^0.6.0+eol
   audioplayers: ^6.7.1
+  record: ^6.2.1
   flutter_animate: ^4.5.2
 
 dev_dependencies:

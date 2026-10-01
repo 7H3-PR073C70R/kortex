@@ -24,6 +24,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.da
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_audience_poll_dialog.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_ladder_drawer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_lifeline_bar.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_audio_reader_button.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -1031,12 +1032,25 @@ class _QuizPromptCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LatexRichViewer(
-            text: question.prompt,
-            style: typography.title3.bold.copyWith(
-              color: colors.textPrimary,
-              height: 1.4,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: LatexRichViewer(
+                  text: question.prompt,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              QuizAudioReaderButton(
+                questionText: question.prompt,
+                options: question.options,
+                size: 34,
+              ),
+            ],
           ),
           if (question.imageUrl != null &&
               question.imageUrl!.trim().isNotEmpty) ...[

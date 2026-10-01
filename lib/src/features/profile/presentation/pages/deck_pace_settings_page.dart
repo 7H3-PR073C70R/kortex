@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -77,14 +78,11 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success
-              ? 'Deck Study Pace updated & synced across devices! 🎯'
-              : 'Deck Study Pace saved locally.',
-        ),
-      ),
+    context.showSnackBar(
+      message: success
+          ? 'Deck Study Pace updated & synced across devices! 🎯'
+          : 'Deck Study Pace saved locally.',
+      type: success ? SnackBarType.success : SnackBarType.info,
     );
   }
 

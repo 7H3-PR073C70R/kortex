@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
@@ -45,14 +46,11 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success
-              ? 'FSRS parameters updated & synced with server! 🎯'
-              : 'FSRS parameters saved locally.',
-        ),
-      ),
+    context.showSnackBar(
+      message: success
+          ? 'FSRS parameters updated & synced with server! 🎯'
+          : 'FSRS parameters saved locally.',
+      type: success ? SnackBarType.success : SnackBarType.info,
     );
     Navigator.of(context).pop();
   }
@@ -65,8 +63,9 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
 
     final retentionPercent = (_desiredRetention * 100).round();
     // Approximate FSRS interval multiplier relative to 90% baseline
-    final intervalMultiplier =
-        (0.90 / _desiredRetention).clamp(0.5, 2.0).toStringAsFixed(2);
+    final intervalMultiplier = (0.90 / _desiredRetention)
+        .clamp(0.5, 2.0)
+        .toStringAsFixed(2);
 
     return Container(
       padding: EdgeInsets.only(
@@ -103,7 +102,9 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
               const SizedBox(width: 10),
               Text(
                 'FSRS-6 Algorithm Tuning',
-                style: typography.title2.bold.copyWith(color: colors.textPrimary),
+                style: typography.title2.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ],
           ),

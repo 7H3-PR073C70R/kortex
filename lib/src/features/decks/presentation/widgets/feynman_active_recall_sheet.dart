@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/audio_pronounce_button.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -178,13 +179,24 @@ class FeynmanActiveRecallSheet extends HookWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'QUESTION PROMPT',
-                  style: typography.caption.bold.copyWith(
-                    color: colors.primary,
-                    fontSize: 10,
-                    letterSpacing: 1,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'QUESTION PROMPT',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                        fontSize: 10,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    AudioPronounceButton(
+                      textToPronounce: card.front,
+                      size: 26,
+                      iconSize: 13,
+                      tooltip: 'Listen to prompt',
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(

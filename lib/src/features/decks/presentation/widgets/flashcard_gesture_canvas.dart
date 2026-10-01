@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/audio_pronounce_button.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
@@ -543,22 +544,33 @@ class _CardFace extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (card.sourceTopic != null &&
-                        (isBackFace || card.sourceTopic != mainText)) ...[
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          card.sourceTopic!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style: typography.footnote.regular.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 11.5,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (card.sourceTopic != null &&
+                            (isBackFace || card.sourceTopic != mainText)) ...[
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160),
+                            child: Text(
+                              card.sourceTopic!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: typography.footnote.regular.copyWith(
+                                color: colors.textMuted,
+                                fontSize: 11.5,
+                              ),
+                            ),
                           ),
+                          const SizedBox(width: 8),
+                        ],
+                        AudioPronounceButton(
+                          textToPronounce: mainText,
+                          size: 30,
+                          iconSize: 15,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ],
                 ),
 

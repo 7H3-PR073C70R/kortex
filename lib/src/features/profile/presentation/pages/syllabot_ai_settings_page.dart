@@ -78,8 +78,9 @@ class SyllabotAiSettingsPage extends HookWidget {
     }();
 
     final initialVoiceName = () {
-      final raw = storage?.getPreference(key: PrefKeys.syllabotVoiceName);
-      return (raw != null && raw.isNotEmpty) ? raw : null;
+      final raw = storage?.getPreference(key: PrefKeys.kokoroVoiceName) ??
+          storage?.getPreference(key: PrefKeys.syllabotVoiceName);
+      return (raw != null && raw.isNotEmpty) ? raw : 'Bella';
     }();
 
     final initialPersona = () {
@@ -655,72 +656,199 @@ class SyllabotAiSettingsPage extends HookWidget {
                             ),
                           ],
                         ),
-                        if (!isLoadingVoices.value && availableVoices.value.isNotEmpty) ...[
-                          const Divider(height: 24),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'SPECIFIC NEURAL ENGINE VOICE',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.textSecondary.withAlpha(140),
-                                  fontSize: 10,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<String?>(
-                                initialValue: selectedVoiceName.value,
-                                isExpanded: true,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor: colors.surfaceSecondary,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  border: OutlineInputBorder(
-                                    borderRadius: AppRadius.radiusCard,
-                                    borderSide: BorderSide(color: colors.surfaceBorder.withAlpha(80)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: AppRadius.radiusCard,
-                                    borderSide: BorderSide(color: colors.surfaceBorder.withAlpha(80)),
+                        const Divider(height: 24),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'KOKORO ON-DEVICE & EDGE NEURAL VOICE',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textSecondary.withAlpha(140),
+                                    fontSize: 10,
+                                    letterSpacing: 0.8,
                                   ),
                                 ),
-                                style: typography.body.regular.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 13,
-                                ),
-                                dropdownColor: colors.surfacePrimary,
-                                items: [
-                                  DropdownMenuItem<String?>(
-                                    child: Text(
-                                      '✨ Auto-Select Best Device Neural Voice',
-                                      style: typography.body.bold.copyWith(color: colors.primary, fontSize: 12.5),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(25),
+                                    borderRadius: AppRadius.radiusBadge,
+                                  ),
+                                  child: Text(
+                                    '24 kHz Studio Model',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 9.5,
                                     ),
                                   ),
-                                  ...availableVoices.value.map((v) {
-                                    final name = v['name'] as String;
-                                    final isNeural = v['isNeural'] as bool;
-                                    return DropdownMenuItem<String?>(
-                                      value: name,
-                                      child: Text(
-                                        '${isNeural ? '⚡ ' : ''}$name (${v['locale']})',
-                                        overflow: TextOverflow.ellipsis,
-                                        style: typography.caption.regular.copyWith(
-                                          color: colors.textPrimary,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                ],
-                                onChanged: (val) {
-                                  AppFeedback.selection();
-                                  selectedVoiceName.value = val;
-                                },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Offline-capable ONNX Kokoro voice with automatic cloud Microsoft Edge neural acceleration when online.',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 12),
+                            // Kokoro Voice Cards Grid
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                {
+                                  'id': 'Default',
+                                  'label': 'Default',
+                                  'tag': 'Studio Female',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Bella',
+                                  'label': 'Bella',
+                                  'tag': 'Warm Female',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Nicole',
+                                  'label': 'Nicole',
+                                  'tag': 'Crisp Tutor',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Sarah',
+                                  'label': 'Sarah',
+                                  'tag': 'Articulate UK',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Adam',
+                                  'label': 'Adam',
+                                  'tag': 'Mentor Male',
+                                  'gender': VoiceGender.male,
+                                },
+                                {
+                                  'id': 'Michael',
+                                  'label': 'Michael',
+                                  'tag': 'Academic Male',
+                                  'gender': VoiceGender.male,
+                                },
+                              ].map((voice) {
+                                final voiceId = voice['id']! as String;
+                                final label = voice['label']! as String;
+                                final tag = voice['tag']! as String;
+                                final vGender = voice['gender']! as VoiceGender;
+                                final isSelected =
+                                    selectedVoiceName.value == voiceId ||
+                                    (selectedVoiceName.value == null &&
+                                        voiceId == 'Bella');
+
+                                return ShrinkableButton(
+                                  onTap: () async {
+                                    AppFeedback.selection();
+                                    selectedVoiceName.value = voiceId;
+                                    voiceGender.value = vGender;
+                                    await ttsHandler.setKokoroVoice(voiceId);
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: AppMotion.snappy,
+                                    width: 105,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? colors.primary.withAlpha(isDark ? 50 : 25)
+                                          : colors.surfaceSecondary,
+                                      borderRadius: AppRadius.radiusCard,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? colors.primary
+                                            : colors.surfaceBorder.withAlpha(70),
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              label,
+                                              style: typography.body.bold.copyWith(
+                                                color: isSelected
+                                                    ? colors.primary
+                                                    : colors.textPrimary,
+                                                fontSize: 12.5,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            if (isSelected)
+                                              Icon(
+                                                Icons.check_circle_rounded,
+                                                size: 14,
+                                                color: colors.primary,
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          tag,
+                                          style: typography.caption.regular.copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            // Tiered Pipeline Status Card
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSecondary.withAlpha(120),
+                                borderRadius: AppRadius.radiusBadge,
+                                border: Border.all(
+                                  color: colors.surfaceBorder.withAlpha(60),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 14,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Tiered: Edge Neural (Online) → Kokoro 24 kHz (Offline) → System Fallback',
+                                      style: typography.caption.medium.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                         // Interactive "Test Selected Voice Mode" Banner Card
                         ShrinkableButton(
