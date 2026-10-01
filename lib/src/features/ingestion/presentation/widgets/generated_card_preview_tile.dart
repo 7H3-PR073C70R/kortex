@@ -5,6 +5,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/ingestion/data/models/generated_deck_preview_model.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/shared/widgets/app_multimodal_image.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -280,8 +281,8 @@ class GeneratedCardPreviewTile extends HookWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                card.back,
+                              LatexRichViewer(
+                                text: card.back,
                                 style: typography.body.regular.copyWith(
                                   color: colors.textPrimary,
                                   height: 1.5,
@@ -331,8 +332,8 @@ class GeneratedCardPreviewTile extends HookWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                card.front,
+                              LatexRichViewer(
+                                text: card.front,
                                 style: typography.body.bold.copyWith(
                                   color: colors.textPrimary,
                                   fontSize: 15,

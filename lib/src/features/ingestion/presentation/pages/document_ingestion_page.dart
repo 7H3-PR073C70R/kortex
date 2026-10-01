@@ -21,7 +21,6 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/camera_scanner_overlay.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/file_drop_zone_widget.dart';
-import 'package:kortex/src/features/ingestion/presentation/widgets/lms_import_modal_sheet.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progress_card.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -113,13 +112,13 @@ class _DocumentIngestionView extends HookWidget {
                   type: SnackBarType.success,
                 );
               }
-    
+
               final doc = state.currentDocument!;
               final rawSubject = doc.filename.split('.').first;
               final cleanCode = rawSubject
                   .replaceAll(RegExp(r'[^a-zA-Z0-9\s_-]'), '')
                   .trim();
-    
+
               // Background pgvector RAG auto-chunking & embeddings generation
               if (state.snippets.isNotEmpty &&
                   locator.isRegistered<GenerateDocumentEmbeddingsUseCase>()) {
@@ -138,7 +137,7 @@ class _DocumentIngestionView extends HookWidget {
                   ),
                 );
               }
-    
+
               // Navigate to STEM OCR Live Preview & Editor
               unawaited(
                 context.router.push(
@@ -166,7 +165,9 @@ class _DocumentIngestionView extends HookWidget {
                 flexibleSpace: ClipRect(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(color: colors.backgroundPrimary.withValues(alpha: 0.7)),
+                    child: Container(
+                      color: colors.backgroundPrimary.withValues(alpha: 0.7),
+                    ),
                   ),
                 ),
                 title: Text(
@@ -181,58 +182,72 @@ class _DocumentIngestionView extends HookWidget {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final isDesktop = constraints.maxWidth >= 1024;
-    
-                    final uploadSection = Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // File drop zone
-                        FileDropZoneWidget(
-                          courseId: courseId,
-                          courseCode: courseCode,
-                          courseTitle: courseTitle,
-                          onFilePicked:
-                              ({
-                                required filename,
-                                required fileType,
-                                required fileBytes,
-                              }) {
-                                context.read<IngestionBloc>().add(
-                                  PickAndUploadFileEvent(
-                                    filename: filename,
-                                    fileType: fileType,
-                                    fileBytes: fileBytes,
-                                    courseId: courseId,
-                                    courseCode: courseCode,
-                                    courseTitle: courseTitle,
-                                  ),
-                                );
-                              },
-                          onCameraScanTap: () => isScanningCamera.value = true,
-                          onLmsImportTap: () =>
-                              unawaited(LmsImportModalSheet.show(context)),
-                        ),
-                        const SizedBox(height: 20),
-    
-                        // Progress card if active
-                        if (state.status != ProcessingStatus.idle)
-                          UploadProgressCard(
-                            filename:
-                                state.currentDocument?.filename ??
-                                'Selected Document',
-                            status: state.status,
-                            progress: state.uploadProgress,
-                            stageMessage: state.stageMessage,
-                            wasDeduplicated: state.wasDeduplicated,
-                            errorMessage: state.errorMessage,
-                            onRetry: () {
-                              context.read<IngestionBloc>().add(
-                                const ResetIngestionStateEvent(),
-                              );
-                            },
-                          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic),
-                      ],
-                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0, curve: Curves.easeOutCubic);
-    
+
+                    final uploadSection =
+                        Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // File drop zone
+                                FileDropZoneWidget(
+                                  courseId: courseId,
+                                  courseCode: courseCode,
+                                  courseTitle: courseTitle,
+                                  onFilePicked:
+                                      ({
+                                        required filename,
+                                        required fileType,
+                                        required fileBytes,
+                                      }) {
+                                        context.read<IngestionBloc>().add(
+                                          PickAndUploadFileEvent(
+                                            filename: filename,
+                                            fileType: fileType,
+                                            fileBytes: fileBytes,
+                                            courseId: courseId,
+                                            courseCode: courseCode,
+                                            courseTitle: courseTitle,
+                                          ),
+                                        );
+                                      },
+                                  onCameraScanTap: () =>
+                                      isScanningCamera.value = true,
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Progress card if active
+                                if (state.status != ProcessingStatus.idle)
+                                  UploadProgressCard(
+                                        filename:
+                                            state.currentDocument?.filename ??
+                                            'Selected Document',
+                                        status: state.status,
+                                        progress: state.uploadProgress,
+                                        stageMessage: state.stageMessage,
+                                        wasDeduplicated: state.wasDeduplicated,
+                                        errorMessage: state.errorMessage,
+                                        onRetry: () {
+                                          context.read<IngestionBloc>().add(
+                                            const ResetIngestionStateEvent(),
+                                          );
+                                        },
+                                      )
+                                      .animate()
+                                      .fadeIn(duration: 400.ms)
+                                      .slideY(
+                                        begin: 0.1,
+                                        end: 0,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                              ],
+                            )
+                            .animate()
+                            .fadeIn(duration: 400.ms)
+                            .slideY(
+                              begin: 0.05,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
+
                     final recentDocsSection = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -257,7 +272,9 @@ class _DocumentIngestionView extends HookWidget {
                                   : colors.surfacePrimary,
                               borderRadius: AppRadius.radiusPanel,
                               border: Border.all(
-                                color: colors.primary.withAlpha(isDark ? 40 : 20),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 40 : 20,
+                                ),
                               ),
                             ),
                             child: Center(
@@ -283,7 +300,8 @@ class _DocumentIngestionView extends HookWidget {
                               final kbSize = (doc.fileSizeBytes / 1024)
                                   .toStringAsFixed(1);
                               final hasCourseContext =
-                                  (courseCode != null && courseCode!.isNotEmpty) ||
+                                  (courseCode != null &&
+                                      courseCode!.isNotEmpty) ||
                                   (courseId != null && courseId!.isNotEmpty);
                               final baseName = doc.filename
                                   .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
@@ -299,9 +317,10 @@ class _DocumentIngestionView extends HookWidget {
                                               state.attachedDocumentIds.contains(
                                                 '${doc.contentHash}_$courseCode',
                                               ) ||
-                                              state.attachedDocumentIds.contains(
-                                                '${baseName}_$courseCode',
-                                              ))) ||
+                                              state.attachedDocumentIds
+                                                  .contains(
+                                                    '${baseName}_$courseCode',
+                                                  ))) ||
                                       (courseId != null &&
                                           (state.attachedDocumentIds.contains(
                                                 '${doc.id}_$courseId',
@@ -309,15 +328,16 @@ class _DocumentIngestionView extends HookWidget {
                                               state.attachedDocumentIds.contains(
                                                 '${doc.contentHash}_$courseId',
                                               ) ||
-                                              state.attachedDocumentIds.contains(
-                                                '${baseName}_$courseId',
-                                              ))) ||
+                                              state.attachedDocumentIds
+                                                  .contains(
+                                                    '${baseName}_$courseId',
+                                                  ))) ||
                                       _checkIsDocAttachedLocally(
                                         doc: doc,
                                         courseId: courseId,
                                         courseCode: courseCode,
                                       ));
-    
+
                               return Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
@@ -362,7 +382,8 @@ class _DocumentIngestionView extends HookWidget {
                                                 '$kbSize KB',
                                                 style: typography.caption.medium
                                                     .copyWith(
-                                                      color: colors.textSecondary,
+                                                      color:
+                                                          colors.textSecondary,
                                                     ),
                                               ),
                                             ],
@@ -379,10 +400,11 @@ class _DocumentIngestionView extends HookWidget {
                                           ),
                                           child: Text(
                                             'Ready',
-                                            style: typography.caption.bold.copyWith(
-                                              color: colors.success,
-                                              fontSize: 10,
-                                            ),
+                                            style: typography.caption.bold
+                                                .copyWith(
+                                                  color: colors.success,
+                                                  fontSize: 10,
+                                                ),
                                           ),
                                         ),
                                         const SizedBox(width: 4),
@@ -398,22 +420,25 @@ class _DocumentIngestionView extends HookWidget {
                                           child: IconButton(
                                             icon: Icon(
                                               Icons.delete_outline_rounded,
-                                              color: colors.textSecondary.withAlpha(
-                                                180,
-                                              ),
+                                              color: colors.textSecondary
+                                                  .withAlpha(
+                                                    180,
+                                                  ),
                                               size: 20,
                                             ),
                                             tooltip: 'Delete Document',
-                                            visualDensity: VisualDensity.compact,
+                                            visualDensity:
+                                                VisualDensity.compact,
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(
                                               minWidth: 32,
                                               minHeight: 32,
                                             ),
-                                            onPressed: () => _confirmDeleteDocument(
-                                              context: context,
-                                              doc: doc,
-                                            ),
+                                            onPressed: () =>
+                                                _confirmDeleteDocument(
+                                                  context: context,
+                                                  doc: doc,
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -424,36 +449,44 @@ class _DocumentIngestionView extends HookWidget {
                                         alignment: Alignment.centerRight,
                                         child: isAlreadyAttached
                                             ? Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 6,
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: colors.primary.withAlpha(
-                                                    20,
-                                                  ),
+                                                  color: colors.primary
+                                                      .withAlpha(
+                                                        20,
+                                                      ),
                                                   borderRadius:
                                                       AppRadius.radiusBadge,
                                                   border: Border.all(
-                                                    color: colors.primary.withAlpha(
-                                                      60,
-                                                    ),
+                                                    color: colors.primary
+                                                        .withAlpha(
+                                                          60,
+                                                        ),
                                                   ),
                                                 ),
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Icon(
-                                                      Icons.check_circle_rounded,
+                                                      Icons
+                                                          .check_circle_rounded,
                                                       color: colors.primary,
                                                       size: 14,
                                                     ),
                                                     const SizedBox(width: 5),
                                                     Text(
                                                       'Attached to ${courseCode ?? "Course"}',
-                                                      style: typography.caption.bold
+                                                      style: typography
+                                                          .caption
+                                                          .bold
                                                           .copyWith(
-                                                            color: colors.primary,
+                                                            color:
+                                                                colors.primary,
                                                             fontSize: 11,
                                                           ),
                                                     ),
@@ -462,14 +495,19 @@ class _DocumentIngestionView extends HookWidget {
                                               )
                                             : PlatformHoverBuilder(
                                                 builder:
-                                                    (context, isHovered, child) {
+                                                    (
+                                                      context,
+                                                      isHovered,
+                                                      child,
+                                                    ) {
                                                       return AnimatedScale(
                                                         scale: isHovered
                                                             ? 1.03
                                                             : 1.0,
-                                                        duration: AppMotion.snappy,
-                                                        curve:
-                                                            AppMotion.easeOutCubic,
+                                                        duration:
+                                                            AppMotion.snappy,
+                                                        curve: AppMotion
+                                                            .easeOutCubic,
                                                         child: child,
                                                       );
                                                     },
@@ -484,20 +522,26 @@ class _DocumentIngestionView extends HookWidget {
                                                       color: colors.primary
                                                           .withAlpha(80),
                                                     ),
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          AppRadius.radiusBadge,
-                                                    ),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              AppRadius
+                                                                  .radiusBadge,
+                                                        ),
                                                   ),
                                                   onPressed: () {
-                                                    context.read<IngestionBloc>().add(
-                                                      AttachDocumentToCourseEvent(
-                                                        doc: doc,
-                                                        courseId: courseId,
-                                                        courseCode: courseCode,
-                                                        courseTitle: courseTitle,
-                                                      ),
-                                                    );
+                                                    context
+                                                        .read<IngestionBloc>()
+                                                        .add(
+                                                          AttachDocumentToCourseEvent(
+                                                            doc: doc,
+                                                            courseId: courseId,
+                                                            courseCode:
+                                                                courseCode,
+                                                            courseTitle:
+                                                                courseTitle,
+                                                          ),
+                                                        );
                                                   },
                                                   icon: Icon(
                                                     Icons.bookmark_add_outlined,
@@ -506,7 +550,9 @@ class _DocumentIngestionView extends HookWidget {
                                                   ),
                                                   label: Text(
                                                     'Attach to ${courseCode ?? "Course"}',
-                                                    style: typography.caption.bold
+                                                    style: typography
+                                                        .caption
+                                                        .bold
                                                         .copyWith(
                                                           color: colors.primary,
                                                           fontSize: 11,
@@ -523,7 +569,7 @@ class _DocumentIngestionView extends HookWidget {
                           ),
                       ],
                     ).animate().fadeIn(duration: 400.ms, delay: 150.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
-    
+
                     if (isDesktop) {
                       return Center(
                         child: ConstrainedBox(
@@ -542,7 +588,7 @@ class _DocumentIngestionView extends HookWidget {
                         ),
                       );
                     }
-    
+
                     return Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 680),

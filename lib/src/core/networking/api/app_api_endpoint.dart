@@ -88,6 +88,12 @@ class AppApiEndpoint {
   static String getCardAssetPublicUrl(String path) =>
       '$baseUri/storage/v1/object/public/card-assets/$path';
 
+  static String get r2PublicDomain =>
+      AppEnv.r2PublicDomain.replaceAll(RegExp(r'/+$'), '');
+
+  static String getDocumentImagePublicUrl(String documentId, String filename) =>
+      '$r2PublicDomain/documents/$documentId/images/$filename';
+
   // Community & Peer Study Hub Endpoints
   static const String studyRooms = '/rest/v1/study_rooms';
   static const String forumPosts = '/rest/v1/forum_posts';

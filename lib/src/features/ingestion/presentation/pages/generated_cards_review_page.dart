@@ -99,8 +99,17 @@ class _GeneratedCardsReviewView extends HookWidget {
     );
     final titleController = useTextEditingController(text: deckTitle);
     final subjectController = useTextEditingController(text: subject);
+    final isSubmitting = useState<bool>(false);
 
     void handleConfirmAndStudy() {
+      final currentStatus = context.read<IngestionBloc>().state.status;
+      if (isSubmitting.value ||
+          currentStatus == ProcessingStatus.generatingCards ||
+          currentStatus == ProcessingStatus.syncingDb) {
+        return;
+      }
+      isSubmitting.value = true;
+
       final updatedSnippets = cards.value.map((c) {
         return OcrExtractionEntity(
           id: 'card_${c.front.hashCode}',
@@ -129,8 +138,18 @@ class _GeneratedCardsReviewView extends HookWidget {
       extendBody: true,
       body: BlocConsumer<IngestionBloc, IngestionState>(
         listener: (context, state) {
+          if (state.status == ProcessingStatus.failed) {
+            isSubmitting.value = false;
+            if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+              context.showSnackBar(
+                message: state.errorMessage!,
+                type: SnackBarType.error,
+              );
+            }
+          }
           if (state.status == ProcessingStatus.completed &&
               state.generatedDeck != null) {
+            isSubmitting.value = false;
             if (locator.isRegistered<DecksBloc>()) {
               locator<DecksBloc>().add(const DecksRefreshed());
             }
@@ -317,45 +336,77 @@ class _GeneratedCardsReviewView extends HookWidget {
                         child: child,
                       );
                     },
-                    child: ShrinkableButton(
-                      onTap: handleConfirmAndStudy,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              colors.primary,
-                              colors.primary.withAlpha(220),
-                            ],
-                          ),
-                          borderRadius: AppRadius.radiusCard,
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.primary.withAlpha(isDark ? 60 : 40),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.play_arrow_rounded,
-                              color: colors.white,
-                              size: 22,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.confirmAndStudyAction,
-                              style: typography.body.bold.copyWith(
-                                color: colors.white,
+                    child: BlocBuilder<IngestionBloc, IngestionState>(
+                      builder: (context, state) {
+                        final isBusy = isSubmitting.value ||
+                            state.status == ProcessingStatus.generatingCards ||
+                            state.status == ProcessingStatus.syncingDb;
+
+                        return ShrinkableButton(
+                          onTap: isBusy ? null : handleConfirmAndStudy,
+                          child: AnimatedOpacity(
+                            duration: AppMotion.snappy,
+                            opacity: isBusy ? 0.8 : 1.0,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colors.primary,
+                                    colors.primary.withAlpha(220),
+                                  ],
+                                ),
+                                borderRadius: AppRadius.radiusCard,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colors.primary.withAlpha(isDark ? 60 : 40),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (isBusy) ...[
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      l10n.generatingCardsStatus,
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.white,
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: colors.white,
+                                      size: 22,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      l10n.confirmAndStudyAction,
+                                      style: typography.body.bold.copyWith(
+                                        color: colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),

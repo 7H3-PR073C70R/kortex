@@ -128,10 +128,11 @@ ${sourceText ? `Source Material:\n${sourceText.length > 50000 ? sourceText.slice
 CRITICAL OUTPUT INSTRUCTIONS:
 - You must output exactly ${remainingCount} unique academic flashcards.
 - Output each flashcard on its OWN line as a standalone valid JSON object (Newline-Delimited JSON / NDJSON format).
-- Do NOT wrap the output in markdown codeblocks (no \`\`\` or \`\`\`json).
+- Do NOT wrap the outer response in markdown codeblocks (no \`\`\` or \`\`\`json around the stream).
+- If code snippets or programming syntax are queried or explained inside "front" or "back", format them using markdown code fences (e.g. \`\`\`dart\\nvoid main() {\\n}\\n\`\`\`). Preserve indentation and newlines.
 - Do NOT output an outer array or commas between lines.
 - Each line MUST be a complete, parsable JSON object with the following schema:
-{"front": "Concept or Question", "back": "Mathematical definition, line-by-line checklist/steps, and LaTeX formulas", "tags": ["${topic}", "${difficulty}"], "hints": "Brief mnemonic or hint"}`;
+{"front": "Concept or Question", "back": "Mathematical definition, code blocks, line-by-line checklist/steps, and LaTeX formulas", "tags": ["${topic}", "${difficulty}"], "hints": "Brief mnemonic or hint"}`;
 
           try {
             console.log(`[generate-flashcards-stream] Streaming from Luna (${luna.modelName})...`);

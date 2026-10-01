@@ -582,24 +582,27 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       );
       final uploadedImageUrls = <String>[];
 
-      // Upload extracted diagrams to Supabase Storage `card-assets` bucket
+      // Upload extracted diagrams to Cloudflare R2 under `documents/{documentId}/images/{filename}`
       for (var i = 0; i < extractedImages.length; i++) {
         final img = extractedImages[i];
-        final assetPath = '${documentId}_img_${i + 1}.${img.extension}';
+        final filename = 'img_${i + 1}.${img.extension}';
         final contentType = img.extension == 'png' ? 'image/png' : 'image/jpeg';
+        String? r2Url;
 
         if (token != null && token.isNotEmpty) {
           try {
-            await _dio.uploadStorageFile(
-              storagePath: assetPath,
+            r2Url = await _dio.uploadDocumentImageToR2(
+              documentId: documentId,
+              filename: filename,
               fileBytes: img.bytes,
               contentType: contentType,
-              bucket: AppApiEndpoint.cardAssetsBucket,
+              token: token,
             );
           } on Object catch (_) {}
         }
 
-        final publicUrl = AppApiEndpoint.getCardAssetPublicUrl(assetPath);
+        final publicUrl =
+            r2Url ?? AppApiEndpoint.getDocumentImagePublicUrl(documentId, filename);
         uploadedImageUrls.add(publicUrl);
       }
 

@@ -250,7 +250,40 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         ...updatedRemote,
       ];
 
-      final resultList = <DeckModel>[...merged];
+      // Deduplicate decks created from the same auto-synthesized document
+      final seenDocDecks = <String, DeckModel>{};
+      final dedupedResult = <DeckModel>[];
+      final duplicateDeckIdsToRemove = <String>[];
+
+      for (final deck in merged) {
+        final desc = deck.description ?? '';
+        final docMatch = RegExp('Auto-synthesized from document ([a-zA-Z0-9_-]+)').firstMatch(desc);
+        if (docMatch != null) {
+          final docId = docMatch.group(1)!;
+          if (seenDocDecks.containsKey(docId)) {
+            final prev = seenDocDecks[docId]!;
+            if (deck.masteryRate > prev.masteryRate ||
+                (deck.lastStudied != null && (prev.lastStudied == null || deck.lastStudied!.isAfter(prev.lastStudied!)))) {
+              duplicateDeckIdsToRemove.add(prev.id);
+              seenDocDecks[docId] = deck;
+              final idx = dedupedResult.indexOf(prev);
+              if (idx >= 0) dedupedResult[idx] = deck;
+            } else {
+              duplicateDeckIdsToRemove.add(deck.id);
+            }
+            continue;
+          }
+          seenDocDecks[docId] = deck;
+        }
+        dedupedResult.add(deck);
+      }
+
+      if (duplicateDeckIdsToRemove.isNotEmpty) {
+        _localCreatedDecks.removeWhere((d) => duplicateDeckIdsToRemove.contains(d.id));
+        _persistLocalDecksToStorage();
+      }
+
+      final resultList = <DeckModel>[...dedupedResult];
 
       // Background offline pre-fetching of top due decks to guarantee 100% offline study availability
       unawaited(_prefetchTopDueDecks(updatedRemote));
@@ -276,7 +309,19 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
       }
 
       final fallbackList = <DeckModel>[..._localCreatedDecks];
-      return fallbackList.map(DeckTitleResolver.enrichDeckModel).toList();
+      final seenFallback = <String, DeckModel>{};
+      final dedupedFallback = <DeckModel>[];
+      for (final deck in fallbackList) {
+        final desc = deck.description ?? '';
+        final docMatch = RegExp('Auto-synthesized from document ([a-zA-Z0-9_-]+)').firstMatch(desc);
+        if (docMatch != null) {
+          final docId = docMatch.group(1)!;
+          if (seenFallback.containsKey(docId)) continue;
+          seenFallback[docId] = deck;
+        }
+        dedupedFallback.add(deck);
+      }
+      return dedupedFallback.map(DeckTitleResolver.enrichDeckModel).toList();
     }
   }
 

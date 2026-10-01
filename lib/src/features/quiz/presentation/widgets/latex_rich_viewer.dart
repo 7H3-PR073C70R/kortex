@@ -3,6 +3,7 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/utils/latex_ast_cache.dart';
 import 'package:kortex/src/features/quiz/domain/logic/formula_aware_text_formatter.dart';
+import 'package:kortex/src/shared/widgets/app_code_block_viewer.dart';
 
 /// A high-performance, language-aware Flutter widget that parses mixed natural text,
 /// Markdown formatting, and LaTeX mathematics.
@@ -36,8 +37,15 @@ class LatexRichViewer extends StatelessWidget {
     r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]',
   );
 
-  static final RegExp _blockMathRegex = RegExp(
-    r'(\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$)',
+
+
+  static final RegExp _codeBlockRegex = RegExp(
+    r'```(?:([a-zA-Z0-9_\-+]*)\r?\n)?([\s\S]*?)```',
+    multiLine: true,
+  );
+
+  static final RegExp _structuralBlockRegex = RegExp(
+    r'(```(?:[a-zA-Z0-9_\-+]*\r?\n)?[\s\S]*?```|\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$)',
     multiLine: true,
   );
 
@@ -113,8 +121,21 @@ class LatexRichViewer extends StatelessWidget {
       s = s.replaceAll('&gt;', '>');
       s = s.replaceAll('&nbsp;', ' ');
 
+      // Protect code blocks before inline list and formula formatting passes
+      final codeBlocks = <String>[];
+      s = s.replaceAllMapped(_codeBlockRegex, (m) {
+        final idx = codeBlocks.length;
+        codeBlocks.add(m[0]!);
+        return '%%KORTEX_CODE_BLOCK_$idx%%';
+      });
+
       s = formatInlineLists(s);
       s = FormulaAwareTextFormatter.formatFormulaAware(s);
+
+      // Restore protected code blocks
+      for (var i = 0; i < codeBlocks.length; i++) {
+        s = s.replaceAll('%%KORTEX_CODE_BLOCK_$i%%', codeBlocks[i]);
+      }
 
       return s.trim();
     });
@@ -294,9 +315,9 @@ class LatexRichViewer extends StatelessWidget {
           fontFamilyFallback: _fontFamilyFallbacks,
         );
 
-    // Split text into structural blocks (paragraphs / block math)
-    final hasBlockMath = _blockMathRegex.hasMatch(cleanText);
-    if (hasBlockMath) {
+    // Split text into structural blocks (code blocks / block math)
+    final hasStructuralBlocks = _structuralBlockRegex.hasMatch(cleanText);
+    if (hasStructuralBlocks) {
       return _buildBlockAndInlineContent(context, cleanText, defaultStyle);
     }
 
@@ -310,7 +331,7 @@ class LatexRichViewer extends StatelessWidget {
     TextStyle defaultStyle,
   ) {
     final widgets = <Widget>[];
-    final matches = _blockMathRegex.allMatches(content);
+    final matches = _structuralBlockRegex.allMatches(content);
     var lastEnd = 0;
 
     for (final match in matches) {
@@ -323,28 +344,45 @@ class LatexRichViewer extends StatelessWidget {
         }
       }
 
-      final rawMath = match.group(0) ?? '';
-      var cleanFormula = rawMath;
-      if (cleanFormula.startsWith(r'\[') && cleanFormula.endsWith(r'\]')) {
-        cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
-      } else if (cleanFormula.startsWith(r'$$') &&
-          cleanFormula.endsWith(r'$$')) {
-        cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
-      }
-      cleanFormula = cleanFormula.trim();
+      final rawBlock = match.group(0) ?? '';
 
-      if (cleanFormula.isNotEmpty) {
+      // Check if this structural block is a fenced code block
+      if (rawBlock.startsWith('```')) {
+        final codeMatch = _codeBlockRegex.firstMatch(rawBlock);
+        final lang = codeMatch?.group(1)?.trim();
+        final code = codeMatch?.group(2) ?? '';
         widgets
           ..add(
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: LatexFormulaBlock(
-                formula: cleanFormula,
-                textStyle: defaultStyle,
-              ),
+            AppCodeBlockViewer(
+              code: code,
+              language: lang,
             ),
           )
           ..add(const SizedBox(height: 8));
+      } else {
+        // Block LaTeX math formula
+        var cleanFormula = rawBlock;
+        if (cleanFormula.startsWith(r'\[') && cleanFormula.endsWith(r'\]')) {
+          cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
+        } else if (cleanFormula.startsWith(r'$$') &&
+            cleanFormula.endsWith(r'$$')) {
+          cleanFormula = cleanFormula.substring(2, cleanFormula.length - 2);
+        }
+        cleanFormula = cleanFormula.trim();
+
+        if (cleanFormula.isNotEmpty) {
+          widgets
+            ..add(
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: LatexFormulaBlock(
+                  formula: cleanFormula,
+                  textStyle: defaultStyle,
+                ),
+              ),
+            )
+            ..add(const SizedBox(height: 8));
+        }
       }
 
       lastEnd = match.end;

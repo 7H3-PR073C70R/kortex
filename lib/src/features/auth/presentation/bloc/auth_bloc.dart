@@ -782,11 +782,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Persist to Supabase profiles table
       try {
         unawaited(
-          locator<ProfileApiClient>().updateProfile(
-            userId: state.userProfile!.id,
-            streakDays: updatedStreak,
-            streakFreezeCount: liveFreezes,
-          ),
+          locator<ProfileApiClient>()
+              .updateProfile(
+                userId: state.userProfile!.id,
+                streakDays: updatedStreak,
+                streakFreezeCount: liveFreezes,
+              )
+              .catchError((Object error, StackTrace stackTrace) {
+                // Background synchronization error logged safely
+              }),
         );
       } on Object catch (_) {}
     }

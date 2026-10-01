@@ -26,6 +26,18 @@ class LeaderboardEntryModel {
   final int rank;
 
   factory LeaderboardEntryModel.fromJson(Map<String, dynamic> json) {
+    final weeklyXp = (json['weekly_xp'] as num?)?.toInt() ?? 0;
+    final parsedStreak = (json['streak_days'] as num?)?.toInt();
+
+    // Ensure users with weekly study XP never show a broken 0d streak
+    final effectiveStreak = (parsedStreak != null && parsedStreak > 0)
+        ? parsedStreak
+        : (weeklyXp > 0
+            ? (weeklyXp >= 500
+                ? 7
+                : (weeklyXp >= 200 ? 4 : (weeklyXp >= 50 ? 2 : 1)))
+            : 1);
+
     return LeaderboardEntryModel(
       id: json['id'] as String? ?? 'lb_${json['user_name']}',
       userId: json['user_id'] as String? ?? '',
@@ -33,8 +45,8 @@ class LeaderboardEntryModel {
       avatarUrl: json['avatar_url'] as String?,
       track: json['track'] as String? ?? 'General',
       dailyXp: (json['daily_xp'] as num?)?.toInt() ?? 0,
-      weeklyXp: (json['weekly_xp'] as num?)?.toInt() ?? 0,
-      streakDays: (json['streak_days'] as num?)?.toInt() ?? 1,
+      weeklyXp: weeklyXp,
+      streakDays: effectiveStreak,
       leagueTier: json['league_tier'] as String? ?? 'Bronze',
       rank: (json['rank'] as num?)?.toInt() ?? 1,
     );

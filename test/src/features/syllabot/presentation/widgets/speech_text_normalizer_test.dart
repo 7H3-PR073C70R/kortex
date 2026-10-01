@@ -18,7 +18,20 @@ void main() {
       final result = SpeechTextNormalizer.normalize(input);
       expect(result.contains('```'), isFalse);
       expect(result, contains('here is the code snippet'));
+      expect(result, contains('print Hello'));
       expect(result, contains('It runs smoothly'));
+    });
+
+    test('pronounces Dart and Flutter code blocks with operators in natural speech', () {
+      const input = '```dart\nvoid main() => runApp(const MyApp());\nif (score >= 50 && isValid) {\n  setState(() => count++);\n}\n```';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('here is the code snippet in Dart:'));
+      expect(result, contains('void main returns run App'));
+      expect(result, contains('is greater than or equal to 50 and is Valid'));
+      expect(result, contains('set State returns count plus plus'));
+      expect(result.contains(';'), isFalse);
+      expect(result.contains('=>'), isFalse);
+      expect(result.contains('{'), isFalse);
     });
 
     test('expands educational acronyms to spoken phonetics (WAEC as Way-eck, JAMB as Jamb)', () {

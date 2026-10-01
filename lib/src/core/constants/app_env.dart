@@ -18,4 +18,9 @@ class AppEnv {
   static String get revenueCatAppleApiKey => dotenv.isInitialized
       ? (dotenv.env['REVENUECAT_APPLE_API_KEY'] ?? '')
       : '';
+
+  static String get r2PublicDomain => dotenv.isInitialized
+      ? (dotenv.env['R2_PUBLIC_DOMAIN'] ??
+          'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev')
+      : 'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev';
 }

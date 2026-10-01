@@ -5,7 +5,6 @@ import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
-import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -502,31 +501,29 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     }
 
     if (matchedDeck != null && courseId != null && decksDataSource != null) {
-      final existingCards = await decksDataSource.getDeckCards(matchedDeck.id);
-      final newDeckId = UuidUtils.generate();
-      final now = DateTime.now();
-
-      final newCards = existingCards.map((c) {
-        return c.copyWith(
-          id: UuidUtils.generate(),
-          deckId: newDeckId,
-          nextDueDate: now,
+      if (matchedDeck.courseId == courseId) {
+        emit(
+          state.copyWith(
+            status: ProcessingStatus.completed,
+            stageMessage:
+                'Study deck already attached to ${courseCode ?? "course"}.',
+            generatedDeck: matchedDeck.toEntity(),
+            wasDeduplicated: true,
+          ),
         );
-      }).toList();
+        return;
+      }
 
+      final existingCards = await decksDataSource.getDeckCards(matchedDeck.id);
       final assignedDeck = matchedDeck.copyWith(
-        id: newDeckId,
         courseId: courseId,
         courseCode: courseCode ?? matchedDeck.courseCode,
         subject: courseTitle ?? matchedDeck.subject,
-        cards: newCards,
-        totalCards: newCards.length,
-        dueCards: newCards.length,
       );
 
       await decksDataSource.saveGeneratedDeck(
         deck: assignedDeck,
-        cards: newCards,
+        cards: existingCards,
       );
 
       // Save preference for future lookups
@@ -600,7 +597,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
 
       _notifyProcessingCompleted(
         filename: docFilename,
-        cardCount: newCards.length,
+        cardCount: existingCards.length,
         documentId: documentId,
         deckId: assignedDeck.id,
       );
@@ -696,6 +693,11 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     GenerateFlashcardsFromSnippetsEvent event,
     Emitter<IngestionState> emit,
   ) async {
+    if (state.status == ProcessingStatus.generatingCards ||
+        state.status == ProcessingStatus.syncingDb) {
+      return;
+    }
+
     emit(
       state.copyWith(
         status: ProcessingStatus.generatingCards,

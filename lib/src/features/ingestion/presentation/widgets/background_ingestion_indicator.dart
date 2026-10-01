@@ -98,14 +98,7 @@ class _BackgroundIngestionIndicatorState
                               if (deck != null) {
                                 unawaited(
                                   context.router.push(
-                                    GeneratedCardsReviewRoute(
-                                      documentId:
-                                          state.currentDocument?.id ?? '',
-                                      deckTitle: deck.title,
-                                      subject: deck.subject,
-                                      initialCards: const [],
-                                      rawSnippets: state.snippets,
-                                    ),
+                                    StudySessionRoute(deckId: deck.id),
                                   ),
                                 );
                               } else {

@@ -703,8 +703,8 @@ export class LunaClient {
         ? `AVAILABLE VISUAL DIAGRAMS / FIGURES IN THIS DOCUMENT:
 ${availableImages.map((img, i) => `- Diagram [${i + 1}]: URL: "${img.url}" | Context/Label: "${img.label}"`).join("\n")}
 
-CRITICAL MULTIMODAL INSTRUCTION:
-This document contains ${availableImages.length} visual diagrams/figures. For EVERY diagram in this list, you MUST create at least one dedicated active-recall card whose concept, question, or explanation directly analyzes that visual figure, and assign its exact URL to the "image_url" field! Ensure all ${availableImages.length} diagrams are utilized across the flashcard set.`
+MULTIMODAL DIAGRAM INSTRUCTION:
+Only assign an image URL to a flashcard if the card directly discusses, questions, or visually explains that specific diagram. For all general conceptual, architectural, mathematical, code, or definition cards that do not require this diagram, you MUST set "image_url" to null. Never arbitrarily attach diagrams to unrelated cards.`
         : "No embedded diagrams available. Set 'image_url' to null for all cards.";
 
     const systemPrompt = `You are an advanced pedagogical AI tutor specializing in synthesizing rigorous, high-yield flashcards for students.
@@ -716,8 +716,9 @@ PEDAGOGICAL & FORMATTING RULES:
 3. LATEX_CONTENT: If the card involves mathematical formulas, equations, limits, fractions, or physics/chemistry formulas, provide valid raw LaTeX notation without enclosing $$ or \\(\\) delimiters (e.g., "\\text{RR} = \\frac{\\text{Potential Reward}}{\\text{Potential Risk}}" or "E = mc^2"). If none, set to null.
 4. EXPLANATION / HINTS: A concise mnemonic, key takeaway, or memory hint.
 5. TAGS: Array of 1-3 strings categorizing this card (e.g. ["${topic}", "${courseCode || "General"}"]).
-6. IMAGE_URL: When a card describes, explains, or references a visual diagram from the available figures, assign its EXACT URL string. Ensure every provided diagram is assigned to its relevant card. If a card does not use a diagram, set to null.
-7. COMPREHENSIVE COVERAGE: ${cardCountHint ? `Target roughly ${cardCountHint} high-yield cards.` : "Cover every key concept, formula, rule, and definition without omitting important sections."}
+6. IMAGE_URL: Only assign an image URL if the card directly questions, explains, or interprets that specific visual diagram. For all other conceptual, textual, code, or definition cards, you MUST set 'image_url' to null. Do NOT arbitrarily attach images to unrelated cards.
+7. CODE BLOCKS: Whenever code, syntax, algorithms, or programming snippets are queried or explained (in either FRONT or BACK), format them cleanly using standard markdown code fences with language identifiers (e.g., ```dart\nvoid main() {\n  runApp(const MyApp());\n}\n```, ```python\n...\n```). Preserve standard indentation and line breaks. Never collapse code snippets into a single unbroken line.
+8. COMPREHENSIVE COVERAGE: ${cardCountHint ? `Target roughly ${cardCountHint} high-yield cards.` : "Cover every key concept, formula, rule, and definition without omitting important sections."}
 
 ${imageContext}
 

@@ -324,13 +324,18 @@ serve(async (req) => {
 
             const back = lines.slice(0, 10).join("\n");
 
+            const hasDiagramRef = /\b(?:figure|fig\.?|diagram|chart|illustration|schematic|flowchart|table)\b/i.test(`${sec.title} ${firstLine} ${back}`);
+            const matchedImageUrl = hasDiagramRef
+              ? (parsedDoc.images[pIdx % parsedDoc.images.length]?.url ?? null)
+              : null;
+
             generatedCards.push({
               id: crypto.randomUUID(),
               front,
               back,
               back_latex: null,
               explanation: `Extracted from: ${sec.title}`,
-              image_url: parsedDoc.images[pIdx % parsedDoc.images.length]?.url ?? null,
+              image_url: matchedImageUrl,
               tags: [sec.title, cleanDeckTitle, courseCode].filter(Boolean),
             });
           }

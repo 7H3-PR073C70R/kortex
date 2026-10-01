@@ -63,4 +63,34 @@ extension IngestionStorageUpload on Dio {
       onSendProgress: onProgress,
     );
   }
+
+  /// Uploads an extracted document diagram/image to Cloudflare R2
+  /// under `documents/{documentId}/images/{filename}`.
+  Future<String?> uploadDocumentImageToR2({
+    required String documentId,
+    required String filename,
+    required Uint8List fileBytes,
+    required String contentType,
+    String? token,
+  }) async {
+    final response = await post<Map<String, dynamic>>(
+      '${AppApiEndpoint.baseUri}${AppApiEndpoint.uploadForumMedia}',
+      data: fileBytes,
+      options: Options(
+        extra: {'silent': true},
+        headers: {
+          'Content-Type': contentType,
+          'x-media-type': 'document_image',
+          'x-document-id': documentId,
+          'x-file-name': filename,
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+        },
+      ),
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final resData = response.data!;
+      return resData['url'] as String? ?? resData['proxyUrl'] as String?;
+    }
+    return null;
+  }
 }

@@ -14,6 +14,7 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { unzlib, zlibSync } from "https://esm.sh/fflate@0.8.2";
 import { extractText, getDocumentProxy } from "https://esm.sh/unpdf@0.12.0";
+import { R2StorageProvider } from "./r2_storage.ts";
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -103,32 +104,44 @@ export class ServerDocumentParser {
       const media = extractedMedia[i];
       try {
         const imgExt = media.mimeType.includes("png") ? "png" : "jpg";
-        const storagePath = contentHash
-          ? `canonical/${contentHash}/fig_${i + 1}.${imgExt}`
-          : `${documentId}_diagram_${i + 1}_${Date.now()}.${imgExt}`;
-        const { error: uploadErr } = await this.supabase.storage
-          .from("card-assets")
-          .upload(storagePath, media.bytes, {
-            contentType: media.mimeType,
-            upsert: true,
-          });
+        const filename = `fig_${i + 1}.${imgExt}`;
+        const uploadRes = await R2StorageProvider.uploadDocumentImage({
+          documentId,
+          filename,
+          bytes: media.bytes,
+          mimeType: media.mimeType,
+          contentHash,
+        });
 
-        if (!uploadErr) {
-          const { data: publicUrlData } = this.supabase.storage
-            .from("card-assets")
-            .getPublicUrl(storagePath);
-
-          if (publicUrlData?.publicUrl) {
-            uploadedImages.push({
-              url: publicUrlData.publicUrl,
-              label: media.label || `Figure ${i + 1}`,
-            });
-          }
-        } else {
-          console.warn("[ServerDocumentParser] Diagram storage upload notice:", uploadErr.message);
-        }
+        uploadedImages.push({
+          url: uploadRes.publicUrl,
+          label: media.label || `Figure ${i + 1}`,
+        });
       } catch (uploadEx) {
-        console.warn("[ServerDocumentParser] Diagram upload exception:", uploadEx);
+        console.warn("[ServerDocumentParser] R2 diagram upload warning, checking fallback:", uploadEx);
+        try {
+          const imgExt = media.mimeType.includes("png") ? "png" : "jpg";
+          const storagePath = `documents/${documentId}/images/fig_${i + 1}.${imgExt}`;
+          const { error: uploadErr } = await this.supabase.storage
+            .from("card-assets")
+            .upload(storagePath, media.bytes, {
+              contentType: media.mimeType,
+              upsert: true,
+            });
+
+          if (!uploadErr) {
+            const { data: publicUrlData } = this.supabase.storage
+              .from("card-assets")
+              .getPublicUrl(storagePath);
+
+            if (publicUrlData?.publicUrl) {
+              uploadedImages.push({
+                url: publicUrlData.publicUrl,
+                label: media.label || `Figure ${i + 1}`,
+              });
+            }
+          }
+        } catch (_) {}
       }
     }
 
@@ -306,7 +319,10 @@ This document appears to be a scanned image-based PDF. Synthesize active-recall 
       const height = hMatch ? parseInt(hMatch[1], 10) : 0;
       const declaredLength = lMatch ? parseInt(lMatch[1], 10) : 0;
 
-      if (width < 50 || height < 50) continue;
+      // Filter out small non-diagram images (icons, bullet markers, separators, avatars)
+      if (width < 160 || height < 120) continue;
+      const aspectRatio = width / (height || 1);
+      if (aspectRatio < 0.25 || aspectRatio > 4.0) continue;
 
       const isFlate = dictStr.includes("/FlateDecode");
       const isDct = dictStr.includes("/DCTDecode");

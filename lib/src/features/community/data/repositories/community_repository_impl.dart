@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
@@ -680,38 +683,158 @@ class CommunityRepositoryImpl implements CommunityRepository {
     List<LeaderboardEntryEntity> list, {
     String? track,
   }) {
-    if (list.isEmpty) {
-      return const [];
-    }
+    final authProfile = locator.isRegistered<AuthBloc>()
+        ? locator<AuthBloc>().state.userProfile
+        : null;
 
-    final currentUserId = _userStorage?.getUserId();
-    if (currentUserId == null || currentUserId.isEmpty) {
-      return list;
-    }
+    final currentUserId = _userStorage?.getUserId() ?? authProfile?.id;
 
-    final hasCurrentUser = list.any(
-      (e) => e.isCurrentUser || e.userId == currentUserId,
+    final userActivity = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>()
+        : null;
+
+    final localStreak = userActivity?.getCurrentStreak() ?? 0;
+
+    final liveXp = math.max(
+      authProfile?.xpPoints ?? 0,
+      userActivity?.getXpPoints() ?? 0,
     );
-    if (!hasCurrentUser) {
-      final currentUserName =
-          _userStorage?.getUserDisplayName() ?? 'Scholar (You)';
-      final currentUserAvatar = _userStorage?.getUserAvatarUrl();
-      final effectiveTrack = track ?? 'General';
 
-      return List<LeaderboardEntryEntity>.from(list)..add(
-        LeaderboardEntryEntity(
-          id: 'user_$currentUserId',
-          userId: currentUserId,
-          userName: currentUserName,
-          avatarUrl: currentUserAvatar,
-          track: effectiveTrack,
-          rank: list.length + 1,
-          isCurrentUser: true,
-        ),
+    final liveStreak = math.max(
+      authProfile?.streakDays ?? 0,
+      math.max(localStreak, userActivity?.getCurrentStreak() ?? 0),
+    );
+
+    final profileTrack = authProfile?.targetTrack.trim();
+    final liveTrack = (profileTrack != null && profileTrack.isNotEmpty)
+        ? profileTrack
+        : 'WAEC';
+
+    final profileName = authProfile?.displayName?.trim();
+    final liveDisplayName = (profileName != null && profileName.isNotEmpty)
+        ? profileName
+        : (_userStorage?.getUserDisplayName() ?? 'Scholar (You)');
+
+    final liveAvatarUrl =
+        authProfile?.photoUrl ?? _userStorage?.getUserAvatarUrl();
+
+    // Trigger async background sync to Supabase so server leaderboards row is updated
+    if (currentUserId != null && currentUserId.isNotEmpty && liveXp > 0) {
+      unawaited(
+        _remoteDataSource
+            .claimWeeklyXp(xpAmount: liveXp)
+            .catchError((_) => <String, dynamic>{}),
       );
     }
 
-    return list;
+    if (list.isEmpty) {
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        final trackMatches = track == null ||
+            track.isEmpty ||
+            track == 'All' ||
+            liveTrack.toLowerCase() == track.toLowerCase();
+
+        if (trackMatches) {
+          final tier = _calculateLeagueTier(liveXp);
+          return [
+            LeaderboardEntryEntity(
+              id: 'user_$currentUserId',
+              userId: currentUserId,
+              userName: liveDisplayName,
+              avatarUrl: liveAvatarUrl,
+              track: liveTrack,
+              weeklyXp: liveXp,
+              streakDays: liveStreak > 0 ? liveStreak : 1,
+              leagueTier: tier,
+              isCurrentUser: true,
+            ),
+          ];
+        }
+      }
+      return const [];
+    }
+
+    final updatedList = list.map((entry) {
+      final isCurrent = (currentUserId != null &&
+              currentUserId.isNotEmpty &&
+              entry.userId == currentUserId) ||
+          entry.isCurrentUser;
+
+      if (isCurrent) {
+        final streak = liveStreak > 0
+            ? liveStreak
+            : (entry.streakDays > 0 ? entry.streakDays : 1);
+        final xp = liveXp > 0 ? math.max(liveXp, entry.weeklyXp) : entry.weeklyXp;
+        final trackVal = liveTrack.isNotEmpty ? liveTrack : entry.track;
+
+        return entry.copyWith(
+          userName: liveDisplayName,
+          avatarUrl: liveAvatarUrl ?? entry.avatarUrl,
+          streakDays: streak,
+          weeklyXp: xp,
+          track: trackVal,
+          isCurrentUser: true,
+        );
+      }
+
+      if (entry.streakDays <= 0) {
+        final derivedStreak = entry.weeklyXp >= 500
+            ? 7
+            : (entry.weeklyXp >= 200 ? 4 : (entry.weeklyXp >= 50 ? 2 : 1));
+        return entry.copyWith(streakDays: derivedStreak);
+      }
+      return entry;
+    }).toList();
+
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      final hasCurrentUser = updatedList.any(
+        (e) => e.isCurrentUser || e.userId == currentUserId,
+      );
+      if (!hasCurrentUser) {
+        final trackMatches = track == null ||
+            track.isEmpty ||
+            track == 'All' ||
+            liveTrack.toLowerCase() == track.toLowerCase();
+
+        if (trackMatches) {
+          updatedList.add(
+            LeaderboardEntryEntity(
+              id: 'user_$currentUserId',
+              userId: currentUserId,
+              userName: liveDisplayName,
+              avatarUrl: liveAvatarUrl,
+              track: liveTrack,
+              weeklyXp: liveXp,
+              streakDays: liveStreak > 0 ? liveStreak : 1,
+              isCurrentUser: true,
+            ),
+          );
+        }
+      }
+    }
+
+    // Sort all scholars by weeklyXp descending so everyone is in true rank order!
+    updatedList.sort((a, b) => b.weeklyXp.compareTo(a.weeklyXp));
+
+    // Re-index ranks and calculate league tiers dynamically
+    for (var i = 0; i < updatedList.length; i++) {
+      final item = updatedList[i];
+      final calculatedTier = _calculateLeagueTier(item.weeklyXp);
+      updatedList[i] = item.copyWith(
+        rank: i + 1,
+        leagueTier: calculatedTier,
+      );
+    }
+
+    return updatedList;
+  }
+
+  String _calculateLeagueTier(int xp) {
+    if (xp >= 1000) return "Dean's List";
+    if (xp >= 600) return 'Diamond';
+    if (xp >= 350) return 'Gold';
+    if (xp >= 150) return 'Silver';
+    return 'Bronze';
   }
 
   @override
