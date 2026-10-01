@@ -383,7 +383,7 @@ class _StudyHubView extends HookWidget {
                     activeFilterCount: activeFilterCount,
                   )
                 : Text(
-                    'Scholar Hub',
+                    'Hub',
                     style: typography.title2.bold.copyWith(
                       color: colors.textPrimary,
                     ),

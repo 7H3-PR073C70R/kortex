@@ -719,6 +719,19 @@ class CreateForumDiscussionPage extends HookWidget {
             }
           },
           (post) {
+            // Fire-and-forget server-side Groq transcription via Supabase Edge Function.
+            final vnUrl = post.voiceNoteUrl;
+            if (vnUrl != null &&
+                vnUrl.trim().isNotEmpty &&
+                locator.isRegistered<MediaUploadService>()) {
+              unawaited(
+                locator<MediaUploadService>().triggerVoiceNoteTranscription(
+                  audioUrl: vnUrl,
+                  postId: post.id,
+                ),
+              );
+            }
+
             try {
               final hubBloc = context.read<CommunityHubBloc>();
               hubBloc.add(
@@ -1591,6 +1604,7 @@ class CreateForumDiscussionPage extends HookWidget {
                               ? voiceNoteDurationSeconds.value
                               : null,
                           transcript: recordedVoiceNoteTranscript.value,
+                          showTranscript: false,
                           onDelete: () {
                             recordedVoiceNoteUrl.value = null;
                             voiceNoteDurationSeconds.value = 0;

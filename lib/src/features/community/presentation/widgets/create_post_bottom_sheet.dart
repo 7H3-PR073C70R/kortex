@@ -428,6 +428,7 @@ class CreatePostBottomSheet extends HookWidget {
                         ? voiceNoteDurationSeconds.value
                         : null,
                     transcript: recordedVoiceNoteTranscript.value,
+                    showTranscript: false,
                     onDelete: () {
                       recordedVoiceNoteUrl.value = null;
                       voiceNoteDurationSeconds.value = 0;

@@ -87,3 +87,9 @@ final class ConvertToDeckEvent extends SyllabotChatEvent {
   final String deckTitle;
   final String courseCode;
 }
+
+/// Acknowledges that the generated deck notification has been presented to the user,
+/// transitioning the state back to idle and clearing the transient generatedDeck reference.
+final class AcknowledgeDeckGeneratedEvent extends SyllabotChatEvent {
+  const AcknowledgeDeckGeneratedEvent();
+}

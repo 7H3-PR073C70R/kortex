@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -81,6 +83,76 @@ class MediaUploadService {
 
     throw Exception(
       'Failed to upload media: ${response.statusCode} ${response.statusMessage}',
+    );
+  }
+
+  /// Transcribes a recorded voice note via the Supabase Edge Function (Groq Whisper).
+  ///
+  /// Returns the transcribed text string if successful, or null on error.
+  Future<String?> transcribeVoiceNote({
+    required String audioUrl,
+    String? replyId,
+    String? postId,
+  }) async {
+    try {
+      final endpoint =
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.transcribeVoiceNote}';
+      if (endpoint.isEmpty || endpoint == AppApiEndpoint.transcribeVoiceNote) {
+        return null;
+      }
+      final userStorage = locator.isRegistered<UserStorageService>()
+          ? locator<UserStorageService>()
+          : null;
+      final token = userStorage?.getToken();
+      final effectiveToken = (token != null && token.isNotEmpty)
+          ? token
+          : AppEnv.apiKey;
+
+      final response = await _dio.post<dynamic>(
+        endpoint,
+        data: {
+          'audio_url': audioUrl,
+          if (replyId != null && replyId.isNotEmpty) 'reply_id': replyId,
+          if (postId != null && postId.isNotEmpty) 'post_id': postId,
+        },
+        options: Options(
+          headers: {
+            if (AppEnv.apiKey.isNotEmpty) 'apikey': AppEnv.apiKey,
+            if (effectiveToken.isNotEmpty)
+              'Authorization': 'Bearer $effectiveToken',
+            'Content-Type': 'application/json',
+          },
+          sendTimeout: const Duration(seconds: 40),
+          receiveTimeout: const Duration(seconds: 40),
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map) {
+          final transcript = data['transcript'] as String?;
+          if (transcript != null && transcript.trim().isNotEmpty) {
+            return transcript.trim();
+          }
+        }
+      }
+      return null;
+    } on Object catch (e) {
+      debugPrint('MediaUploadService: transcribeVoiceNote error: $e');
+      return null;
+    }
+  }
+
+  /// Triggers server-side Groq Whisper transcription (fire-and-forget wrapper).
+  Future<void> triggerVoiceNoteTranscription({
+    required String audioUrl,
+    String? replyId,
+    String? postId,
+  }) async {
+    await transcribeVoiceNote(
+      audioUrl: audioUrl,
+      replyId: replyId,
+      postId: postId,
     );
   }
 }

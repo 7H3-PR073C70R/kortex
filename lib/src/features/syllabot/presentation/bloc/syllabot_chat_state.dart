@@ -57,6 +57,7 @@ class SyllabotChatState extends Equatable {
     ExecutionEngineType? engineType,
     String? errorMessage,
     DeckEntity? generatedDeck,
+    bool clearGeneratedDeck = false,
     bool? isConvertedToDeck,
     String? lastPrompt,
     ExecutionEngineType? lastEngine,
@@ -70,13 +71,15 @@ class SyllabotChatState extends Equatable {
       socraticMode: socraticMode ?? this.socraticMode,
       engineType: engineType ?? this.engineType,
       errorMessage: errorMessage ?? this.errorMessage,
-      generatedDeck: generatedDeck ?? this.generatedDeck,
+      generatedDeck:
+          clearGeneratedDeck ? null : (generatedDeck ?? this.generatedDeck),
       isConvertedToDeck: isConvertedToDeck ?? this.isConvertedToDeck,
       lastPrompt: lastPrompt ?? this.lastPrompt,
       lastEngine: lastEngine ?? this.lastEngine,
       lastSocraticMode: lastSocraticMode ?? this.lastSocraticMode,
     );
   }
+
 
   @override
   List<Object?> get props => [

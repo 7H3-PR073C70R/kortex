@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// An interactive audio player widget for voice notes in forum posts and replies
@@ -15,8 +17,12 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 class VoiceNotePlayerWidget extends StatefulWidget {
   const VoiceNotePlayerWidget({
     required this.audioUrl,
+    this.replyId,
+    this.postId,
     this.durationSeconds,
     this.transcript,
+    this.onTranscriptLoaded,
+    this.onTranscribe,
     this.onDelete,
     this.compact = false,
     this.showTranscript = true,
@@ -24,8 +30,16 @@ class VoiceNotePlayerWidget extends StatefulWidget {
   });
 
   final String audioUrl;
+  final String? replyId;
+  final String? postId;
   final int? durationSeconds;
   final String? transcript;
+  final ValueChanged<String>? onTranscriptLoaded;
+  final Future<String?> Function({
+    required String audioUrl,
+    String? replyId,
+    String? postId,
+  })? onTranscribe;
   final VoidCallback? onDelete;
   final bool compact;
   final bool showTranscript;
@@ -38,6 +52,9 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
   late final AudioPlayer _player;
   bool _isPlaying = false;
   bool _isTranscriptExpanded = false;
+  String? _currentTranscript;
+  bool _isTranscribing = false;
+  String? _transcriptionError;
   double _playbackRate = 1;
   Duration _position = Duration.zero;
   Duration _totalDuration = Duration.zero;
@@ -51,6 +68,9 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
   @override
   void initState() {
     super.initState();
+    _currentTranscript = (widget.transcript != null && widget.transcript!.trim().isNotEmpty)
+        ? widget.transcript!.trim()
+        : null;
     _player = AudioPlayer();
     if (widget.durationSeconds != null && widget.durationSeconds! > 0) {
       _totalDuration = Duration(seconds: widget.durationSeconds!);
@@ -96,6 +116,19 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
         });
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(VoiceNotePlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.transcript != oldWidget.transcript) {
+      if (widget.transcript != null && widget.transcript!.trim().isNotEmpty) {
+        setState(() {
+          _currentTranscript = widget.transcript!.trim();
+          _transcriptionError = null;
+        });
+      }
+    }
   }
 
   @override
@@ -233,9 +266,81 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
 
   void _toggleTranscript() {
     unawaited(HapticFeedback.lightImpact());
+    final willExpand = !_isTranscriptExpanded;
     setState(() {
-      _isTranscriptExpanded = !_isTranscriptExpanded;
+      _isTranscriptExpanded = willExpand;
     });
+
+    if (willExpand &&
+        (_currentTranscript == null || _currentTranscript!.trim().isEmpty)) {
+      unawaited(_fetchTranscription());
+    }
+  }
+
+  Future<void> _fetchTranscription() async {
+    if (_isTranscribing) return;
+    if (_currentTranscript != null && _currentTranscript!.trim().isNotEmpty) {
+      return;
+    }
+
+    final audioUrl = widget.audioUrl.trim();
+    if (audioUrl.isEmpty) {
+      setState(() {
+        _transcriptionError = 'Audio URL is empty.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isTranscribing = true;
+      _transcriptionError = null;
+    });
+
+    try {
+      String? result;
+      if (widget.onTranscribe != null) {
+        result = await widget.onTranscribe!(
+          audioUrl: audioUrl,
+          replyId: widget.replyId,
+          postId: widget.postId,
+        );
+      } else {
+        final uploadService = locator.isRegistered<MediaUploadService>()
+            ? locator<MediaUploadService>()
+            : MediaUploadService();
+        result = await uploadService.transcribeVoiceNote(
+          audioUrl: audioUrl,
+          replyId: widget.replyId,
+          postId: widget.postId,
+        );
+      }
+
+      if (!mounted) return;
+
+      if (result != null && result.trim().isNotEmpty) {
+        final cleanText = result.trim();
+        setState(() {
+          _currentTranscript = cleanText;
+          _isTranscribing = false;
+          _transcriptionError = null;
+        });
+        widget.onTranscriptLoaded?.call(cleanText);
+      } else {
+        setState(() {
+          _isTranscribing = false;
+          _transcriptionError =
+              'Could not generate transcript. Tap to retry.';
+        });
+      }
+    } on Object catch (e) {
+      debugPrint('VoiceNotePlayerWidget: transcription failed: $e');
+      if (mounted) {
+        setState(() {
+          _isTranscribing = false;
+          _transcriptionError = 'Transcription failed. Tap to retry.';
+        });
+      }
+    }
   }
 
   void _copyTranscript(BuildContext context, String text) {
@@ -254,10 +359,10 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final hasProvidedTranscript =
-        widget.transcript != null && widget.transcript!.trim().isNotEmpty;
+    final hasTranscript = _currentTranscript != null &&
+        _currentTranscript!.trim().isNotEmpty;
     final effectiveTranscript =
-        hasProvidedTranscript ? widget.transcript!.trim() : null;
+        hasTranscript ? _currentTranscript!.trim() : null;
 
     final progress = (_totalDuration.inMilliseconds > 0)
         ? (_position.inMilliseconds / _totalDuration.inMilliseconds).clamp(
@@ -440,12 +545,12 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: effectiveTranscript != null
+                  color: (effectiveTranscript != null || _isTranscribing)
                       ? colors.primary.withAlpha(isDark ? 35 : 20)
                       : colors.surfaceSecondary.withAlpha(isDark ? 120 : 80),
                   borderRadius: AppRadius.radiusBadge,
                   border: Border.all(
-                    color: effectiveTranscript != null
+                    color: (effectiveTranscript != null || _isTranscribing)
                         ? colors.primary.withAlpha(isDark ? 70 : 40)
                         : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                     width: 0.9,
@@ -454,20 +559,34 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.subtitles_rounded,
-                      size: 13,
-                      color: effectiveTranscript != null
-                          ? colors.primary
-                          : colors.textSecondary,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      _isTranscriptExpanded
-                          ? 'Hide Transcript'
-                          : 'Show Speech-to-Text 📝',
-                      style: typography.caption.bold.copyWith(
+                    if (_isTranscribing) ...[
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.8,
+                          color: colors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                    ] else ...[
+                      Icon(
+                        Icons.subtitles_rounded,
+                        size: 13,
                         color: effectiveTranscript != null
+                            ? colors.primary
+                            : colors.textSecondary,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      _isTranscribing
+                          ? 'Transcribing with AI... 🎙️'
+                          : _isTranscriptExpanded
+                              ? 'Hide Transcript'
+                              : 'Show Speech-to-Text 📝',
+                      style: typography.caption.bold.copyWith(
+                        color: (effectiveTranscript != null || _isTranscribing)
                             ? colors.primary
                             : colors.textSecondary,
                         fontSize: 11,
@@ -479,7 +598,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                           ? Icons.keyboard_arrow_up_rounded
                           : Icons.keyboard_arrow_down_rounded,
                       size: 15,
-                      color: effectiveTranscript != null
+                      color: (effectiveTranscript != null || _isTranscribing)
                           ? colors.primary
                           : colors.textSecondary,
                     ),
@@ -504,111 +623,187 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                 border: Border.all(
                   color: effectiveTranscript != null
                       ? colors.primary.withAlpha(isDark ? 55 : 35)
-                      : colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
+                      : _transcriptionError != null
+                          ? colors.error.withAlpha(isDark ? 80 : 50)
+                          : colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
                 ),
               ),
-              child: effectiveTranscript != null
-                  // ── Has transcript ──────────────────────────────────────
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.graphic_eq_rounded,
-                                  size: 14,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'SPEECH-TO-TEXT TRANSCRIPT',
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                    fontSize: 10,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            ShrinkableButton(
-                              onTap: () =>
-                                  _copyTranscript(context, effectiveTranscript),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      colors.primary.withAlpha(isDark ? 40 : 20),
-                                  borderRadius: AppRadius.radiusMicro,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.copy_rounded,
-                                      size: 11,
-                                      color: colors.primary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Copy',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 180),
-                          child: SingleChildScrollView(
-                            child: SelectableText(
-                              effectiveTranscript,
-                              style: typography.body.regular.copyWith(
-                                color: colors.textPrimary,
-                                fontSize: 12.5,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  // ── No transcript ───────────────────────────────────────
-                  : Row(
-                      children: [
-                        Icon(
-                          Icons.subtitles_off_rounded,
-                          size: 16,
-                          color: colors.textSecondary.withAlpha(160),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'No transcript available for this voice note.',
-                            style: typography.caption.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              child: _buildTranscriptContent(context),
             ),
           ],
         ],
       ],
+    );
+  }
+
+  Widget _buildTranscriptContent(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    if (_isTranscribing) {
+      return Row(
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colors.primary,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Transcribing voice note with AI Whisper...',
+              style: typography.caption.medium.copyWith(
+                color: colors.primary,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (_transcriptionError != null) {
+      return ShrinkableButton(
+        onTap: () => unawaited(_fetchTranscription()),
+        child: Row(
+          children: [
+            Icon(
+              Icons.refresh_rounded,
+              size: 16,
+              color: colors.error,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _transcriptionError!,
+                style: typography.caption.medium.copyWith(
+                  color: colors.error,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: colors.error.withAlpha(isDark ? 40 : 20),
+                borderRadius: AppRadius.radiusMicro,
+              ),
+              child: Text(
+                'Retry',
+                style: typography.caption.bold.copyWith(
+                  color: colors.error,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_currentTranscript != null && _currentTranscript!.trim().isNotEmpty) {
+      final text = _currentTranscript!.trim();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.graphic_eq_rounded,
+                    size: 14,
+                    color: colors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'SPEECH-TO-TEXT TRANSCRIPT',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.primary,
+                      fontSize: 10,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+              ShrinkableButton(
+                onTap: () => _copyTranscript(context, text),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 40 : 20),
+                    borderRadius: AppRadius.radiusMicro,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.copy_rounded,
+                        size: 11,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Copy',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.primary,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 180),
+            child: SingleChildScrollView(
+              child: SelectableText(
+                text,
+                style: typography.body.regular.copyWith(
+                  color: colors.textPrimary,
+                  fontSize: 12.5,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ShrinkableButton(
+      onTap: () => unawaited(_fetchTranscription()),
+      child: Row(
+        children: [
+          Icon(
+            Icons.auto_awesome_rounded,
+            size: 16,
+            color: colors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'No transcript available. Tap to transcribe with AI 🎙️',
+              style: typography.caption.medium.copyWith(
+                color: colors.primary,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

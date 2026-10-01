@@ -146,8 +146,9 @@ class TrackForumPostCard extends HookWidget {
                           : () async {
                               final newTitle = titleController.text.trim();
                               final newContent = contentController.text.trim();
-                              if (newTitle.isEmpty || newContent.isEmpty)
+                              if (newTitle.isEmpty || newContent.isEmpty) {
                                 return;
+                              }
 
                               const mod = ContentModerationService();
                               final modRes = mod.validatePost(
@@ -892,6 +893,7 @@ class TrackForumPostCard extends HookWidget {
                     const SizedBox(height: 10),
                     VoiceNotePlayerWidget(
                       audioUrl: post.voiceNoteUrl!,
+                      postId: post.id,
                       durationSeconds: post.voiceNoteDurationSeconds,
                       transcript: post.voiceNoteTranscript,
                       compact: true,

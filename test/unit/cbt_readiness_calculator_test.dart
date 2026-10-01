@@ -285,5 +285,129 @@ void main() {
         expect(result.projectedScoreRange, contains('19 / 400'));
       },
     );
+
+    test(
+      'Computes readiness for BSC and MSC tracks using tertiary 5.0 GPA scale',
+      () {
+        final bscCourses = [
+          const RegisteredCourseInput(
+            courseCode: 'CSC 301',
+            title: 'Operating Systems',
+            syllabusCoverage: 0.80,
+            accuracyPercent: 0.85,
+            retentionRate: 0.88,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'CSC 303',
+            title: 'Database Systems',
+            syllabusCoverage: 0.75,
+            accuracyPercent: 0.80,
+            retentionRate: 0.82,
+          ),
+        ];
+
+        final bscResult = calculator.compute(
+          syllabusCoverage: 0.77,
+          fsrsRetentionRate: 0.85,
+          mockScoreRatio: 0.82,
+          daysRemaining: 60,
+          examType: 'BSC',
+          registeredCourses: bscCourses,
+        );
+
+        expect(bscResult.targetExamType, equals('BSC'));
+        expect(bscResult.projectedGrade, contains('GPA'));
+        expect(bscResult.projectedScoreRange, contains('5.00 GPA'));
+        expect(bscResult.statusLabel, equals('ON TRACK'));
+
+        final mscResult = calculator.compute(
+          syllabusCoverage: 0.70,
+          fsrsRetentionRate: 0.75,
+          mockScoreRatio: 0.72,
+          daysRemaining: 45,
+          examType: 'MSC',
+          registeredCourses: bscCourses,
+        );
+
+        expect(mscResult.projectedGrade, contains('GPA'));
+        expect(mscResult.statusLabel, isIn(['ON TRACK', 'ACCELERATE PREP']));
+      },
+    );
+
+    test(
+      'Computes readiness for Professional certifications with Distinction / Merit / Pass scale',
+      () {
+        final profCourses = [
+          const RegisteredCourseInput(
+            courseCode: 'ICAN-01',
+            title: 'Financial Accounting',
+            syllabusCoverage: 0.85,
+            accuracyPercent: 0.88,
+            retentionRate: 0.86,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'ICAN-02',
+            title: 'Taxation & Fiscal Policy',
+            syllabusCoverage: 0.78,
+            accuracyPercent: 0.82,
+            retentionRate: 0.80,
+          ),
+        ];
+
+        final result = calculator.compute(
+          syllabusCoverage: 0.81,
+          fsrsRetentionRate: 0.83,
+          mockScoreRatio: 0.85,
+          daysRemaining: 30,
+          examType: 'Professional',
+          registeredCourses: profCourses,
+        );
+
+        expect(result.targetExamType, equals('Professional'));
+        expect(result.projectedGrade, isIn(['Distinction', 'Merit', 'Pass']));
+        expect(result.projectedScoreRange, contains('Projected'));
+        expect(result.statusLabel, equals('ON TRACK'));
+      },
+    );
+
+    test(
+      'Inherits baseline FSRS retention & mock score when newly registered courses have no overrides',
+      () {
+        // Simulates freshly curated WAEC courses with 0% syllabus completed and 0 overrides
+        final waecCourses = [
+          const RegisteredCourseInput(
+            courseCode: 'ENG',
+            title: 'English Language',
+            syllabusCoverage: 0,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'MTH',
+            title: 'General Mathematics',
+            syllabusCoverage: 0,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'BIO',
+            title: 'Biology',
+            syllabusCoverage: 0,
+          ),
+        ];
+
+        final result = calculator.compute(
+          syllabusCoverage: 0,
+          fsrsRetentionRate: 0.53,
+          mockScoreRatio: 0.48,
+          daysRemaining: 68, // Real WAEC countdown, not hardcoded 14
+          examType: 'WAEC',
+          registeredCourses: waecCourses,
+        );
+
+        // Does NOT collapse to 0% or F9 because student has 53% retention and 48% mock accuracy!
+        expect(result.scorePercent, greaterThanOrEqualTo(35));
+        expect(result.scorePercent, lessThanOrEqualTo(65));
+        expect(result.statusLabel, equals('ACCELERATE PREP'));
+        // Projected score range reflects credits
+        expect(result.projectedScoreRange, contains('Credits'));
+      },
+    );
   });
 }

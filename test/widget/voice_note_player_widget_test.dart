@@ -23,13 +23,14 @@ void main() {
       expect(find.text('00:00 / 00:42'), findsOneWidget);
     });
 
-    testWidgets('does not show transcript toggle when transcript is null or empty',
+    testWidgets('does not show transcript toggle when showTranscript is false',
         (tester) async {
       await tester.pumpApp(
         const Scaffold(
           body: VoiceNotePlayerWidget(
             audioUrl: 'https://example.com/test.m4a',
             durationSeconds: 15,
+            showTranscript: false,
           ),
         ),
       );
@@ -53,13 +54,51 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Show Speech-to-Text (STT)'), findsOneWidget);
+      expect(find.text('Show Speech-to-Text 📝'), findsOneWidget);
 
-      await tester.tap(find.textContaining('Show Speech-to-Text (STT)'));
+      await tester.tap(find.text('Show Speech-to-Text 📝'));
       await tester.pumpAndSettle();
 
       expect(find.text(realTranscript), findsOneWidget);
-      expect(find.textContaining('Hide Speech-to-Text'), findsOneWidget);
+      expect(find.text('Hide Transcript'), findsOneWidget);
+    });
+
+    testWidgets(
+        'clicking transcript toggle when no transcript is provided triggers onTranscribe and displays result',
+        (tester) async {
+      const generatedTranscript =
+          'This is an AI generated transcript from Whisper';
+      var transcribeCalled = false;
+      String? loadedTranscript;
+
+      await tester.pumpApp(
+        Scaffold(
+          body: VoiceNotePlayerWidget(
+            audioUrl: 'https://example.com/test.m4a',
+            durationSeconds: 10,
+            replyId: 'reply-123',
+            onTranscriptLoaded: (val) {
+              loadedTranscript = val;
+            },
+            onTranscribe: ({required audioUrl, replyId, postId}) async {
+              transcribeCalled = true;
+              expect(audioUrl, 'https://example.com/test.m4a');
+              expect(replyId, 'reply-123');
+              return generatedTranscript;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show Speech-to-Text 📝'), findsOneWidget);
+      await tester.tap(find.text('Show Speech-to-Text 📝'));
+      await tester.pumpAndSettle();
+
+      expect(transcribeCalled, isTrue);
+      expect(loadedTranscript, generatedTranscript);
+      expect(find.text(generatedTranscript), findsOneWidget);
+      expect(find.text('Hide Transcript'), findsOneWidget);
     });
 
     testWidgets('triggers onDelete callback when delete button is pressed',

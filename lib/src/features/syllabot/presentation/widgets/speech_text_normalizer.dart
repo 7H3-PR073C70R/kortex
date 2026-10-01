@@ -425,7 +425,7 @@ class SpeechTextNormalizer {
       (m) => ' to the power of ${m[1]}',
     );
     s = s.replaceAllMapped(
-      RegExp(r'_([a-zA-Z0-9])'),
+      RegExp('_([a-zA-Z0-9])'),
       (m) => ' sub ${m[1]}',
     );
 

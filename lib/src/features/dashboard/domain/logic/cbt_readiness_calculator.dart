@@ -216,8 +216,84 @@ class RegisteredCourseInput {
   }
 }
 
+enum CbtTrackArchetype {
+  secondary,
+  tertiary,
+  professional,
+  matriculation,
+}
+
 class CbtReadinessCalculator {
   const CbtReadinessCalculator();
+
+  static CbtTrackArchetype resolveArchetype(String examType) {
+    final lower = examType.toLowerCase().trim();
+    if (lower.isEmpty) return CbtTrackArchetype.matriculation;
+
+    if (lower.contains('waec') ||
+        lower.contains('neco') ||
+        lower.contains('wassce') ||
+        lower.contains('ssce') ||
+        lower.contains('gce') ||
+        lower.contains('nabteb') ||
+        lower.contains('bece') ||
+        lower.contains('junior waec')) {
+      return CbtTrackArchetype.secondary;
+    }
+
+    if (lower.contains('bsc') ||
+        lower.contains('b.sc') ||
+        lower.contains('msc') ||
+        lower.contains('m.sc') ||
+        lower.contains('phd') ||
+        lower.contains('ph.d') ||
+        lower.contains('ond') ||
+        lower.contains('hnd') ||
+        lower.contains('bachelor') ||
+        lower.contains('master') ||
+        lower.contains('doctorate') ||
+        lower.contains('degree') ||
+        lower.contains('uni') ||
+        lower.contains('gpa') ||
+        lower.contains('polytechnic') ||
+        lower.contains('college') ||
+        lower.contains('undergraduate') ||
+        lower.contains('postgraduate')) {
+      return CbtTrackArchetype.tertiary;
+    }
+
+    if (lower.contains('prof') ||
+        lower.contains('vocational') ||
+        lower.contains('cert') ||
+        lower.contains('license') ||
+        lower.contains('licensure') ||
+        lower.contains('ican') ||
+        lower.contains('acca') ||
+        lower.contains('cfa') ||
+        lower.contains('pmp') ||
+        lower.contains('bar') ||
+        lower.contains('tvet') ||
+        lower.contains('technical')) {
+      return CbtTrackArchetype.professional;
+    }
+
+    return CbtTrackArchetype.matriculation;
+  }
+
+  static String getTertiaryDegreeClass(double gpa) {
+    if (gpa >= 4.50) return 'First Class Honors';
+    if (gpa >= 3.50) return 'Second Class Upper';
+    if (gpa >= 2.40) return 'Second Class Lower';
+    if (gpa >= 1.50) return 'Third Class';
+    return 'Pass / Academic Warning';
+  }
+
+  static String getProfessionalGrade(int percent) {
+    if (percent >= 85) return 'Distinction';
+    if (percent >= 70) return 'Merit';
+    if (percent >= 50) return 'Pass';
+    return 'Unsatisfactory';
+  }
 
   static String getWaecGrade(int percent) {
     if (percent >= 75) return 'A1';
@@ -398,17 +474,10 @@ class CbtReadinessCalculator {
       speedDiag = 'Time Risk: ${averageSecondsPerQuestion.round()}s/item (Slow)';
     }
 
-    final lowerExam = examType.toLowerCase().trim();
-    final isWaecOrNeco =
-        lowerExam.contains('waec') ||
-        lowerExam.contains('neco') ||
-        lowerExam.contains('wassce') ||
-        lowerExam.contains('ssce') ||
-        lowerExam.contains('gce');
-    final isUniversity =
-        lowerExam.contains('uni') ||
-        lowerExam.contains('gpa') ||
-        lowerExam.contains('degree');
+    final archetype = resolveArchetype(examType);
+    final isWaecOrNeco = archetype == CbtTrackArchetype.secondary;
+    final isUniversity = archetype == CbtTrackArchetype.tertiary;
+    final isProfessional = archetype == CbtTrackArchetype.professional;
 
     // Build subject breakdowns based on registered courses if available
     final List<SubjectReadinessBreakdown> effectiveSubjectBreakdowns;
@@ -418,6 +487,15 @@ class CbtReadinessCalculator {
     var totalMaxPoints = 0;
 
     if (convertedRegisteredCourses.isNotEmpty) {
+      final hasAnyExplicitCoursePerf = convertedRegisteredCourses.any((c) =>
+          _resolveCoursePerformance(
+            course: c,
+            subjectAccuracies: subjectAccuracies,
+            subjectRetentions: subjectRetentions,
+          ) != null ||
+          c.accuracyPercent != null ||
+          c.retentionRate != null);
+
       final breakdowns = <SubjectReadinessBreakdown>[];
       for (final course in convertedRegisteredCourses) {
         final courseName = course.title.trim().isNotEmpty
@@ -433,14 +511,45 @@ class CbtReadinessCalculator {
         );
 
         final courseCov = course.syllabusCoverage.clamp(0.0, 1.0);
-        // Each course MUST be evaluated individually. If no specific quiz/session
-        // activity has been completed for this course, default accuracy and retention to 0.0 (unattempted)
-        // rather than inheriting another course's score.
-        final courseAcc = (resolvedPerf?.accuracy ?? 0.0).clamp(0.0, 1.0);
-        final courseRet = (resolvedPerf?.retention ?? 0.0).clamp(0.0, 1.0);
+        final double courseAcc;
+        final double courseRet;
+
+        if (resolvedPerf != null) {
+          courseAcc = resolvedPerf.accuracy.clamp(0.0, 1.0);
+          courseRet = resolvedPerf.retention.clamp(0.0, 1.0);
+        } else if (course.accuracyPercent != null || course.retentionRate != null) {
+          courseAcc = (course.accuracyPercent ?? course.retentionRate ?? 0.0).clamp(0.0, 1.0);
+          courseRet = (course.retentionRate ?? course.accuracyPercent ?? 0.0).clamp(0.0, 1.0);
+        } else if (hasAnyExplicitCoursePerf) {
+          // Explicit per-course performance exists elsewhere, keep unattempted course at 0.0
+          courseAcc = 0.0;
+          courseRet = 0.0;
+        } else {
+          // No per-course overrides exist; inherit student's aggregate baseline
+          courseAcc = mockScoreRatio.clamp(0.0, 1.0);
+          courseRet = fsrsRetentionRate.clamp(0.0, 1.0);
+        }
+
+        final double covWeight;
+        final double accWeight;
+        final double retWeight;
+
+        if (daysRemaining > 45) {
+          covWeight = 0.20;
+          accWeight = 0.45;
+          retWeight = 0.35;
+        } else if (daysRemaining > 20) {
+          covWeight = 0.30;
+          accWeight = 0.40;
+          retWeight = 0.30;
+        } else {
+          covWeight = 0.40;
+          accWeight = 0.35;
+          retWeight = 0.25;
+        }
 
         final courseReadinessVal =
-            ((courseCov * 0.40) + (courseAcc * 0.35) + (courseRet * 0.25)) * 100;
+            ((courseCov * covWeight) + (courseAcc * accWeight) + (courseRet * retWeight)) * 100;
         final courseReadinessPercent =
             courseReadinessVal.round().clamp(0, 100);
 
@@ -457,6 +566,10 @@ class CbtReadinessCalculator {
           subjectProjectedScore = courseReadinessPercent;
           final gpaVal = (courseReadinessPercent / 100.0) * 5.0;
           subjectGrade = '${gpaVal.toStringAsFixed(1)} GP';
+        } else if (isProfessional) {
+          subjectMaxScore = 100;
+          subjectProjectedScore = courseReadinessPercent;
+          subjectGrade = getProfessionalGrade(courseReadinessPercent);
         } else {
           // JAMB
           subjectMaxScore =
@@ -530,7 +643,9 @@ class CbtReadinessCalculator {
           ? (finalPercent * 0.09).round().clamp(1, 9)
           : (isUniversity
               ? ((finalPercent / 100.0) * 5.0 * 100).round()
-              : ((finalPercent / 100.0) * 400).round().clamp(0, 400));
+              : (isProfessional
+                  ? finalPercent
+                  : ((finalPercent / 100.0) * 400).round().clamp(0, 400)));
     }
 
     final String label;
@@ -549,10 +664,11 @@ class CbtReadinessCalculator {
       final averageGrade = getWaecGrade(finalPercent);
       grade = averageGrade;
 
-      if (finalPercent >= 85) {
+      final passThreshold = daysRemaining > 30 ? 35 : 40;
+      if (finalPercent >= 70 || creditsCount >= 5) {
         label = 'ON TRACK';
         color = const Color(0xFF10B981); // Emerald
-      } else if (finalPercent >= 55) {
+      } else if (finalPercent >= passThreshold) {
         label = 'ACCELERATE PREP';
         color = const Color(0xFFF59E0B);
       } else {
@@ -568,70 +684,53 @@ class CbtReadinessCalculator {
       }
     } else if (isUniversity) {
       final gpaVal = (finalPercent / 100.0) * 5.0;
-      if (finalPercent >= 85) {
+      final degreeClass = getTertiaryDegreeClass(gpaVal);
+      final passThreshold = daysRemaining > 30 ? 40 : 45;
+      if (finalPercent >= 70) {
         label = 'ON TRACK';
         color = const Color(0xFF10B981);
-        grade = '${gpaVal.toStringAsFixed(2)} GPA';
-        scoreRange = 'First Class Honors (${gpaVal.toStringAsFixed(2)} / 5.00)';
-      } else if (finalPercent >= 75) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = '${gpaVal.toStringAsFixed(2)} GPA';
-        scoreRange = 'Second Class Upper (${gpaVal.toStringAsFixed(2)} / 5.00)';
-      } else if (finalPercent >= 65) {
+      } else if (finalPercent >= passThreshold) {
         label = 'ACCELERATE PREP';
         color = const Color(0xFFF59E0B);
-        grade = '${gpaVal.toStringAsFixed(2)} GPA';
-        scoreRange = 'Second Class Upper (${gpaVal.toStringAsFixed(2)} / 5.00)';
-      } else if (finalPercent >= 55) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = '${gpaVal.toStringAsFixed(2)} GPA';
-        scoreRange = 'Second Class Lower (${gpaVal.toStringAsFixed(2)} / 5.00)';
-      } else if (finalPercent >= 45) {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = '${gpaVal.toStringAsFixed(2)} GPA';
-        scoreRange = 'Second Class Lower (${gpaVal.toStringAsFixed(2)} / 5.00)';
       } else {
         label = 'NEEDS TRIAGE';
         color = const Color(0xFFEF4444);
-        grade = '< 2.0 GPA';
-        scoreRange = 'Third Class / Pass (${gpaVal.toStringAsFixed(2)} / 5.00)';
       }
+      grade = '${gpaVal.toStringAsFixed(2)} GPA';
+      scoreRange = '$degreeClass (${gpaVal.toStringAsFixed(2)} / 5.00 GPA)';
+    } else if (isProfessional) {
+      final profGrade = getProfessionalGrade(finalPercent);
+      final passThreshold = daysRemaining > 30 ? 40 : 50;
+      if (finalPercent >= 70) {
+        label = 'ON TRACK';
+        color = const Color(0xFF10B981);
+      } else if (finalPercent >= passThreshold) {
+        label = 'ACCELERATE PREP';
+        color = const Color(0xFFF59E0B);
+      } else {
+        label = 'NEEDS TRIAGE';
+        color = const Color(0xFFEF4444);
+      }
+      grade = profGrade;
+      scoreRange = '$finalPercent% Projected ($profGrade)';
     } else {
       // Default JAMB 400-point scale
       final maxTarget = totalMaxPoints > 0 ? totalMaxPoints : 400;
       final bandStr = _getJambBandString(projectedPoints);
-      if (finalPercent >= 85) {
+      if (finalPercent >= 70 || projectedPoints >= 280) {
         label = 'ON TRACK';
         color = const Color(0xFF10B981);
-        grade = '320+';
+        grade = projectedPoints >= 320 ? '320+' : '280+';
         scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
-      } else if (finalPercent >= 75) {
-        label = 'ON TRACK';
-        color = const Color(0xFF10B981);
-        grade = '280+';
-        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
-      } else if (finalPercent >= 65) {
+      } else if (finalPercent >= 50 || projectedPoints >= 200) {
         label = 'ACCELERATE PREP';
         color = const Color(0xFFF59E0B);
-        grade = '250+';
-        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
-      } else if (finalPercent >= 55) {
-        label = 'ACCELERATE PREP';
-        color = const Color(0xFFF59E0B);
-        grade = '220+';
-        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
-      } else if (finalPercent >= 45) {
-        label = 'NEEDS TRIAGE';
-        color = const Color(0xFFEF4444);
-        grade = '190+';
+        grade = projectedPoints >= 250 ? '250+' : '220+';
         scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
       } else {
         label = 'NEEDS TRIAGE';
         color = const Color(0xFFEF4444);
-        grade = '< 180';
+        grade = projectedPoints >= 180 ? '190+' : '< 180';
         scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
       }
     }
@@ -710,9 +809,9 @@ class CbtReadinessCalculator {
     required double ret,
     required double mock,
   }) {
-    final lower = examType.toLowerCase();
+    final archetype = resolveArchetype(examType);
 
-    if (lower.contains('waec') || lower.contains('neco')) {
+    if (archetype == CbtTrackArchetype.secondary) {
       return [
         SubjectReadinessBreakdown(
           subjectName: 'English Language',
@@ -721,6 +820,7 @@ class CbtReadinessCalculator {
           accuracyPercent: (mock * 1.02).clamp(0.0, 1.0),
           projectedScore: 82,
           maxScore: 100,
+          projectedGrade: 'A1',
           statusColor: const Color(0xFF10B981),
         ),
         SubjectReadinessBreakdown(
@@ -730,6 +830,7 @@ class CbtReadinessCalculator {
           accuracyPercent: (mock * 0.94).clamp(0.0, 1.0),
           projectedScore: 76,
           maxScore: 100,
+          projectedGrade: 'B2',
           statusColor: const Color(0xFF10B981),
         ),
         SubjectReadinessBreakdown(
@@ -739,6 +840,7 @@ class CbtReadinessCalculator {
           accuracyPercent: (ret * 0.88).clamp(0.0, 1.0),
           projectedScore: 68,
           maxScore: 100,
+          projectedGrade: 'B3',
           statusColor: const Color(0xFFF59E0B),
         ),
         SubjectReadinessBreakdown(
@@ -748,6 +850,7 @@ class CbtReadinessCalculator {
           accuracyPercent: (mock * 0.91).clamp(0.0, 1.0),
           projectedScore: 74,
           maxScore: 100,
+          projectedGrade: 'B2',
           statusColor: const Color(0xFF10B981),
         ),
         SubjectReadinessBreakdown(
@@ -757,20 +860,32 @@ class CbtReadinessCalculator {
           accuracyPercent: (ret * 0.96).clamp(0.0, 1.0),
           projectedScore: 80,
           maxScore: 100,
+          projectedGrade: 'A1',
           statusColor: const Color(0xFF10B981),
         ),
       ];
     }
 
-    if (lower.contains('uni') || lower.contains('degree')) {
+    if (archetype == CbtTrackArchetype.tertiary) {
       return [
         SubjectReadinessBreakdown(
-          subjectName: 'MTH 101 (Calculus)',
+          subjectName: 'GST 111 (Communication & Logic)',
+          readinessPercent: (overallScorePercent * 1.02).round().clamp(0, 100),
+          coveragePercent: (cov * 1.05).clamp(0.0, 1.0),
+          accuracyPercent: (ret * 1.02).clamp(0.0, 1.0),
+          projectedScore: 84,
+          maxScore: 100,
+          projectedGrade: '4.5 GP',
+          statusColor: const Color(0xFF10B981),
+        ),
+        SubjectReadinessBreakdown(
+          subjectName: 'MTH 101 (Foundational Calculus)',
           readinessPercent: (overallScorePercent * 0.96).round().clamp(0, 100),
           coveragePercent: cov,
           accuracyPercent: mock,
           projectedScore: 78,
           maxScore: 100,
+          projectedGrade: '4.0 GP',
           statusColor: const Color(0xFF10B981),
         ),
         SubjectReadinessBreakdown(
@@ -780,6 +895,7 @@ class CbtReadinessCalculator {
           accuracyPercent: ret * 0.89,
           projectedScore: 71,
           maxScore: 100,
+          projectedGrade: '3.5 GP',
           statusColor: const Color(0xFFF59E0B),
         ),
         SubjectReadinessBreakdown(
@@ -789,16 +905,53 @@ class CbtReadinessCalculator {
           accuracyPercent: mock * 0.95,
           projectedScore: 75,
           maxScore: 100,
+          projectedGrade: '4.0 GP',
+          statusColor: const Color(0xFF10B981),
+        ),
+      ];
+    }
+
+    if (archetype == CbtTrackArchetype.professional) {
+      return [
+        SubjectReadinessBreakdown(
+          subjectName: 'Professional Ethics & Standards',
+          readinessPercent: (overallScorePercent * 1.02).round().clamp(0, 100),
+          coveragePercent: (cov * 1.04).clamp(0.0, 1.0),
+          accuracyPercent: (mock * 1.02).clamp(0.0, 1.0),
+          projectedScore: 85,
+          maxScore: 100,
+          projectedGrade: 'Distinction',
           statusColor: const Color(0xFF10B981),
         ),
         SubjectReadinessBreakdown(
-          subjectName: 'GST 101 (Use of English)',
-          readinessPercent: (overallScorePercent * 1.02).round().clamp(0, 100),
-          coveragePercent: (cov * 1.05).clamp(0.0, 1.0),
-          accuracyPercent: (ret * 1.02).clamp(0.0, 1.0),
-          projectedScore: 84,
+          subjectName: 'Quantitative & Core Analysis',
+          readinessPercent: (overallScorePercent * 0.95).round().clamp(0, 100),
+          coveragePercent: (cov * 0.92).clamp(0.0, 1.0),
+          accuracyPercent: (mock * 0.95).clamp(0.0, 1.0),
+          projectedScore: 76,
           maxScore: 100,
+          projectedGrade: 'Merit',
           statusColor: const Color(0xFF10B981),
+        ),
+        SubjectReadinessBreakdown(
+          subjectName: 'Strategic Case Studies',
+          readinessPercent: (overallScorePercent * 0.90).round().clamp(0, 100),
+          coveragePercent: (cov * 0.88).clamp(0.0, 1.0),
+          accuracyPercent: (ret * 0.90).clamp(0.0, 1.0),
+          projectedScore: 72,
+          maxScore: 100,
+          projectedGrade: 'Merit',
+          statusColor: const Color(0xFF10B981),
+        ),
+        SubjectReadinessBreakdown(
+          subjectName: 'Regulatory & Governance Framework',
+          readinessPercent: (overallScorePercent * 0.88).round().clamp(0, 100),
+          coveragePercent: (cov * 0.86).clamp(0.0, 1.0),
+          accuracyPercent: (ret * 0.88).clamp(0.0, 1.0),
+          projectedScore: 70,
+          maxScore: 100,
+          projectedGrade: 'Merit',
+          statusColor: const Color(0xFFF59E0B),
         ),
       ];
     }
@@ -817,6 +970,7 @@ class CbtReadinessCalculator {
         accuracyPercent: (ret * 1.02).clamp(0.0, 1.0),
         projectedScore: pEng,
         maxScore: 100,
+        projectedGrade: '$pEng pts',
         statusColor: const Color(0xFF10B981),
       ),
       SubjectReadinessBreakdown(
@@ -826,6 +980,7 @@ class CbtReadinessCalculator {
         accuracyPercent: (mock * 0.95).clamp(0.0, 1.0),
         projectedScore: pMath,
         maxScore: 100,
+        projectedGrade: '$pMath pts',
         statusColor: const Color(0xFF10B981),
       ),
       SubjectReadinessBreakdown(
@@ -835,6 +990,7 @@ class CbtReadinessCalculator {
         accuracyPercent: (ret * 0.86).clamp(0.0, 1.0),
         projectedScore: pPhy,
         maxScore: 100,
+        projectedGrade: '$pPhy pts',
         statusColor: const Color(0xFFF59E0B),
       ),
       SubjectReadinessBreakdown(
@@ -844,6 +1000,7 @@ class CbtReadinessCalculator {
         accuracyPercent: (mock * 0.92).clamp(0.0, 1.0),
         projectedScore: pChm,
         maxScore: 100,
+        projectedGrade: '$pChm pts',
         statusColor: const Color(0xFF10B981),
       ),
     ];

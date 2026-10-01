@@ -769,8 +769,6 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
     return _PreparedAudioChunk(
       sessionId: sessionId,
       text: sentence,
-      bytes: null,
-      extension: null,
       engine: TtsEngineType.systemFallback,
     );
   }
@@ -978,9 +976,8 @@ class _PreparedAudioChunk {
   const _PreparedAudioChunk({
     required this.sessionId,
     required this.text,
-    this.bytes,
+    required this.engine, this.bytes,
     this.extension,
-    required this.engine,
   });
 
   final int sessionId;
@@ -989,4 +986,3 @@ class _PreparedAudioChunk {
   final String? extension;
   final TtsEngineType engine;
 }
-

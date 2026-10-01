@@ -221,25 +221,188 @@ void main() {
       );
     });
 
-    test('StreamErrorEvent sets error text directly to backend error and generates valid UUID', () async {
-      const backendError = 'Luna stream error (429 Too Many Requests): You have no credits remaining.';
-      bloc.add(const StreamErrorEvent(backendError));
+    test(
+      'StreamErrorEvent sets error text directly to backend error and generates valid UUID',
+      () async {
+        const backendError =
+            'Luna stream error (429 Too Many Requests): You have no credits remaining.';
+        bloc.add(const StreamErrorEvent(backendError));
+
+        await expectLater(
+          bloc.stream,
+          emits(
+            predicate<SyllabotChatState>((s) {
+              if (s.status != SyllabotStatus.error || s.messages.isEmpty) {
+                return false;
+              }
+              final errorMsg = s.messages.last;
+              return errorMsg.isError &&
+                  errorMsg.text == backendError &&
+                  s.errorMessage == backendError &&
+                  UuidUtils.isValidUuid(errorMsg.id);
+            }),
+          ),
+        );
+      },
+    );
+
+    test(
+      'AcknowledgeDeckGeneratedEvent resets status to idle and clears generatedDeck',
+      () async {
+        bloc.add(
+          const ConvertToDeckEvent(
+            sessionId: 'session_123',
+            deckTitle: 'Mechanics Deck',
+            courseCode: 'PHYS 301',
+          ),
+        );
+
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<SyllabotChatState>(
+              (s) =>
+                  s.status == SyllabotStatus.deckGenerated &&
+                  s.generatedDeck != null &&
+                  s.isConvertedToDeck,
+            ),
+          ),
+        );
+
+        bloc.add(const AcknowledgeDeckGeneratedEvent());
+
+        await expectLater(
+          bloc.stream,
+          emits(
+            predicate<SyllabotChatState>(
+              (s) =>
+                  s.status == SyllabotStatus.idle &&
+                  s.generatedDeck == null &&
+                  s.isConvertedToDeck,
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'StartNewSessionEvent clears isConvertedToDeck and generatedDeck',
+      () async {
+        bloc.add(
+          const ConvertToDeckEvent(
+            sessionId: 'session_123',
+            deckTitle: 'Mechanics Deck',
+            courseCode: 'PHYS 301',
+          ),
+        );
+
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<SyllabotChatState>(
+              (s) => s.status == SyllabotStatus.deckGenerated,
+            ),
+          ),
+        );
+
+        bloc.add(const StartNewSessionEvent());
+
+        await expectLater(
+          bloc.stream,
+          emits(
+            predicate<SyllabotChatState>(
+              (s) =>
+                  s.status == SyllabotStatus.idle &&
+                  s.generatedDeck == null &&
+                  !s.isConvertedToDeck,
+            ),
+          ),
+        );
+      },
+    );
+
+    test('ConvertToDeckEvent emits error if chat is already converted', () async {
+      bloc.add(
+        const ConvertToDeckEvent(
+          sessionId: 'session_123',
+          deckTitle: 'Mechanics Deck',
+          courseCode: 'PHYS 301',
+        ),
+      );
+
+      await expectLater(
+        bloc.stream,
+        emitsThrough(
+          predicate<SyllabotChatState>(
+            (s) => s.status == SyllabotStatus.deckGenerated,
+          ),
+        ),
+      );
+
+      // Try generating again from same chat
+      bloc.add(
+        const ConvertToDeckEvent(
+          sessionId: 'session_123',
+          deckTitle: 'Another Deck',
+          courseCode: 'PHYS 301',
+        ),
+      );
 
       await expectLater(
         bloc.stream,
         emits(
-          predicate<SyllabotChatState>((s) {
-            if (s.status != SyllabotStatus.error || s.messages.isEmpty) {
-              return false;
-            }
-            final errorMsg = s.messages.last;
-            return errorMsg.isError &&
-                errorMsg.text == backendError &&
-                s.errorMessage == backendError &&
-                UuidUtils.isValidUuid(errorMsg.id);
-          }),
+          predicate<SyllabotChatState>(
+            (s) =>
+                s.status == SyllabotStatus.error &&
+                s.errorMessage ==
+                    'A study deck has already been synthesized from this conversation.',
+          ),
         ),
       );
     });
+
+    test(
+      'LoadChatMessagesEvent resets generatedDeck and loads session state',
+      () async {
+        bloc.add(
+          const ConvertToDeckEvent(
+            sessionId: 'session_123',
+            deckTitle: 'Mechanics Deck',
+            courseCode: 'PHYS 301',
+          ),
+        );
+
+        await expectLater(
+          bloc.stream,
+          emitsThrough(
+            predicate<SyllabotChatState>(
+              (s) => s.status == SyllabotStatus.deckGenerated,
+            ),
+          ),
+        );
+
+        bloc.add(const LoadChatMessagesEvent('session_456'));
+
+        await expectLater(
+          bloc.stream,
+          emitsInOrder([
+            predicate<SyllabotChatState>(
+              (s) =>
+                  s.status == SyllabotStatus.loading &&
+                  s.sessionId == 'session_456' &&
+                  s.generatedDeck == null &&
+                  !s.isConvertedToDeck,
+            ),
+            predicate<SyllabotChatState>(
+              (s) =>
+                  s.status == SyllabotStatus.idle &&
+                  s.sessionId == 'session_456' &&
+                  s.generatedDeck == null &&
+                  !s.isConvertedToDeck,
+            ),
+          ]),
+        );
+      },
+    );
   });
 }

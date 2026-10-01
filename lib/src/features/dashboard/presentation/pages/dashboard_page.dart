@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:auto_route/auto_route.dart';
@@ -19,6 +20,7 @@ import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/course_track_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
@@ -572,26 +574,9 @@ class _CompactDashboardLayout extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // 7. CBT Readiness Score Progress Gauge
-                CbtReadinessGaugeCard(
-                  readinessResult: const CbtReadinessCalculator().compute(
-                    syllabusCoverage:
-                        (feed.analyticsSummary.overallRetentionRate * 0.95)
-                            .clamp(0.0, 1.0),
-                    fsrsRetentionRate:
-                        feed.analyticsSummary.overallRetentionRate,
-                    mockScoreRatio:
-                        (feed.analyticsSummary.overallRetentionRate * 0.90)
-                            .clamp(0.0, 1.0),
-                    daysRemaining: 14,
-                    registeredCourses: feed.curatedCourses,
-                    examType: (targetTrack ?? '').trim().isNotEmpty
-                        ? targetTrack!
-                        : 'JAMB',
-                  ),
-                  examTitle: (targetTrack ?? '').trim().isNotEmpty
-                      ? targetTrack!
-                      : 'Standardized CBT Track',
-                  daysRemaining: 14,
+                DashboardCbtReadinessGaugeCard(
+                  feed: feed,
+                  targetTrack: targetTrack,
                 ),
                 const SizedBox(height: 16),
 
@@ -603,6 +588,97 @@ class _CompactDashboardLayout extends StatelessWidget {
               .animate(interval: 50.ms)
               .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
               .slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint),
+    );
+  }
+}
+
+/// Dynamic CBT Readiness Score Gauge Card for the executive dashboard.
+/// Resolves real days remaining from CramPlannerCubit or track defaults,
+/// maps academic tracks to their proper archetypes and labels, and computes comprehensive readiness.
+class DashboardCbtReadinessGaugeCard extends StatelessWidget {
+  const DashboardCbtReadinessGaugeCard({
+    required this.feed,
+    this.targetTrack,
+    super.key,
+  });
+
+  final DashboardFeedEntity feed;
+  final String? targetTrack;
+
+  @override
+  Widget build(BuildContext context) {
+    final plannerState = context.watch<CramPlannerCubit>().state;
+    final selectedExam = plannerState.selectedExam;
+    final upcomingExams = plannerState.upcomingUncompletedExams;
+
+    // Resolve accurate days remaining dynamically from real planner state or track default
+    final int effectiveDaysRemaining;
+    if (selectedExam != null) {
+      effectiveDaysRemaining = selectedExam.daysRemaining;
+    } else if (upcomingExams.isNotEmpty) {
+      effectiveDaysRemaining = upcomingExams
+          .map((e) => e.daysRemaining)
+          .reduce(math.min);
+    } else {
+      final defaultTrackMatch = CourseTrackEntity.defaultTracks
+          .where(
+            (t) =>
+                t.id.toLowerCase() == (targetTrack ?? '').toLowerCase() ||
+                (targetTrack != null &&
+                    t.name.toLowerCase().contains(targetTrack!.toLowerCase())),
+          )
+          .firstOrNull;
+      effectiveDaysRemaining = defaultTrackMatch?.examCountdownDays ?? 45;
+    }
+
+    // Resolve human-readable exam title
+    final String effectiveExamTitle;
+    if (selectedExam != null && selectedExam.examName.trim().isNotEmpty) {
+      effectiveExamTitle = selectedExam.examName.trim();
+    } else if (targetTrack != null && targetTrack!.trim().isNotEmpty) {
+      final match = CourseTrackEntity.defaultTracks
+          .where(
+            (t) =>
+                t.id.toLowerCase() == targetTrack!.toLowerCase() ||
+                t.name.toLowerCase().contains(targetTrack!.toLowerCase()),
+          )
+          .firstOrNull;
+      effectiveExamTitle = match != null ? match.name : targetTrack!.trim();
+    } else {
+      effectiveExamTitle = 'Standardized CBT Track';
+    }
+
+    final effectiveExamType = (selectedExam != null && selectedExam.subjectTrack.isNotEmpty)
+        ? selectedExam.subjectTrack
+        : (targetTrack ?? 'JAMB');
+
+    // Real syllabus coverage average from curated courses if present
+    final double realSyllabusCoverage;
+    if (feed.curatedCourses.isNotEmpty) {
+      final total = feed.curatedCourses.fold<double>(
+        0,
+        (sum, c) => sum + c.syllabusCoverage.clamp(0.0, 1.0),
+      );
+      realSyllabusCoverage = (total / feed.curatedCourses.length).clamp(0.0, 1.0);
+    } else {
+      realSyllabusCoverage =
+          (feed.analyticsSummary.overallRetentionRate * 0.95).clamp(0.0, 1.0);
+    }
+
+    final readinessResult = const CbtReadinessCalculator().compute(
+      syllabusCoverage: realSyllabusCoverage,
+      fsrsRetentionRate: feed.analyticsSummary.overallRetentionRate,
+      mockScoreRatio: (feed.analyticsSummary.overallRetentionRate * 0.92)
+          .clamp(0.0, 1.0),
+      daysRemaining: effectiveDaysRemaining,
+      registeredCourses: feed.curatedCourses,
+      examType: effectiveExamType,
+    );
+
+    return CbtReadinessGaugeCard(
+      readinessResult: readinessResult,
+      examTitle: effectiveExamTitle,
+      daysRemaining: effectiveDaysRemaining,
     );
   }
 }
@@ -1298,6 +1374,11 @@ class _MediumDashboardLayout extends StatelessWidget {
                                     targetTrack: targetTrack,
                                   ),
                                   const SizedBox(height: 20),
+                                  DashboardCbtReadinessGaugeCard(
+                                    feed: feed,
+                                    targetTrack: targetTrack,
+                                  ),
+                                  const SizedBox(height: 20),
                                   RetentionHeatMapWidget(
                                     analytics: feed.analyticsSummary,
                                   ),
@@ -1465,6 +1546,13 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                 [
                                       // Real-time Cohort Presence
                                       _StudyCirclePodPulseCard(
+                                        targetTrack: targetTrack,
+                                      ),
+                                      const SizedBox(height: 20),
+
+                                      // CBT Readiness Score Progress Gauge
+                                      DashboardCbtReadinessGaugeCard(
+                                        feed: feed,
                                         targetTrack: targetTrack,
                                       ),
                                       const SizedBox(height: 20),

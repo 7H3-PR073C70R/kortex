@@ -931,7 +931,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     emit(
       state.copyWith(
         isVoicePodEnabled: nextEnabled,
-        isAmbientAudioPlaying: nextEnabled ? false : state.isAmbientAudioPlaying,
+        isAmbientAudioPlaying: !nextEnabled && state.isAmbientAudioPlaying,
       ),
     );
   }
@@ -1044,7 +1044,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     emit(
       state.copyWith(
         isMuted: nextMuted,
-        isAmbientAudioPlaying: !nextMuted ? false : state.isAmbientAudioPlaying,
+        isAmbientAudioPlaying: nextMuted && state.isAmbientAudioPlaying,
         ephemeralParticipants: updatedList,
         microphonePermissionDenied: false,
         isPermanentlyDeniedMic: false,

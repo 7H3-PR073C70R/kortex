@@ -20,8 +20,6 @@ import 'package:kortex/src/features/community/domain/repositories/community_repo
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
@@ -39,6 +37,7 @@ import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_capa
 import 'package:kortex/src/features/syllabot/presentation/widgets/local_llm_download_bar.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/streaming_text_typing_indicator.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_chat_input_bar.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_deck_generation_progress_card.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_history_sheet.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/voice_dialogue_modal.dart';
@@ -116,6 +115,8 @@ class _SyllabotChatView extends HookWidget {
     final isDownloadingModel = useState<bool>(false);
     final downloadProgress = useState<double>(0);
     final downloadSubscription = useRef<StreamSubscription<double>?>(null);
+    final lastAnnouncedDeckId = useRef<String?>(null);
+    final isGeneratingRef = useRef<bool>(false);
 
     useEffect(
       () {
@@ -296,6 +297,13 @@ class _SyllabotChatView extends HookWidget {
     }
 
     void openConvertToDeck(BuildContext sheetContext, SyllabotChatState state) {
+      if (state.isGeneratingDeck) {
+        sheetContext.showSnackBar(
+          message: l10n.generatingDeckProgress,
+        );
+        return;
+      }
+
       if (state.messages.isEmpty) {
         sheetContext.showSnackBar(
           message: 'Start a conversation with Syllabot to generate cards',
@@ -303,17 +311,22 @@ class _SyllabotChatView extends HookWidget {
         return;
       }
 
-      final storage = locator<LocalStorageService>();
+      final storage = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>()
+          : null;
+      final targetSessionId = state.sessionId;
       final isAlreadyConverted =
           state.isConvertedToDeck ||
-          storage.getPreference(key: 'syllabot_converted_${state.sessionId}') !=
-              null;
+          (storage?.getPreference(key: 'syllabot_converted_$targetSessionId') !=
+              null);
       if (isAlreadyConverted) {
         sheetContext.showSnackBar(
           message: l10n.deckAlreadyGeneratedFromChat,
         );
         return;
       }
+
+
 
       final userPrompts = state.messages
           .where((m) => m.sender == MessageSender.user)
@@ -435,26 +448,47 @@ class _SyllabotChatView extends HookWidget {
           scrollToBottom(force: true);
         }
 
-        if (state.generatedDeck != null) {
+        if (state.status == SyllabotStatus.generatingDeck) {
+          isGeneratingRef.value = true;
+        }
+
+        if (state.status == SyllabotStatus.deckGenerated &&
+            state.generatedDeck != null) {
           final deck = state.generatedDeck!;
-          locator<DecksBloc>().add(const DecksRefreshed());
+          if (deck.id != lastAnnouncedDeckId.value) {
+            lastAnnouncedDeckId.value = deck.id;
+            isGeneratingRef.value = false;
+            context.read<SyllabotChatBloc>().add(
+              const AcknowledgeDeckGeneratedEvent(),
+            );
+            context.showSnackBar(
+              message:
+                  '${l10n.deckCreatedFromSyllabot(deck.title, deck.totalCards)}\n${l10n.deckTapToView}',
+              type: SnackBarType.success,
+              onTap: () {
+                onCollapse?.call();
+                if (context.router.canPop()) {
+                  unawaited(context.router.maybePop());
+                }
+                unawaited(
+                  context.router.root.navigate(
+                    const MainRoute(children: [DecksRoute()]),
+                  ),
+                );
+              },
+            );
+          }
+        } else if (state.status == SyllabotStatus.error &&
+            isGeneratingRef.value &&
+            state.errorMessage != null &&
+            state.errorMessage!.isNotEmpty) {
+          isGeneratingRef.value = false;
           context.showSnackBar(
-            message:
-                '${l10n.deckCreatedFromSyllabot(deck.title, deck.totalCards)}\n${l10n.deckTapToView}',
-            type: SnackBarType.success,
-            onTap: () {
-              onCollapse?.call();
-              if (context.router.canPop()) {
-                unawaited(context.router.maybePop());
-              }
-              unawaited(
-                context.router.root.navigate(
-                  const MainRoute(children: [DecksRoute()]),
-                ),
-              );
-            },
+            message: state.errorMessage!,
+            type: SnackBarType.error,
           );
         }
+
       },
       child: Scaffold(
         backgroundColor: colors.backgroundPrimary,
@@ -534,14 +568,42 @@ class _SyllabotChatView extends HookWidget {
               },
             ),
 
-            // 2. Turn to Flashcard Deck Action (hidden if already converted)
+            // 2. Turn to Flashcard Deck Action
             BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
               builder: (context, state) {
-                if (state.isConvertedToDeck ||
-                    state.status == SyllabotStatus.deckGenerated ||
-                    state.generatedDeck != null) {
-                  return const SizedBox.shrink();
+                if (state.isGeneratingDeck) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Tooltip(
+                      message: l10n.generatingDeckProgress,
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.syllabotAccent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
                 }
+
+                if (state.isConvertedToDeck) {
+                  return Tooltip(
+                    message: l10n.deckAlreadyGeneratedFromChat,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: colors.syllabotAccent.withAlpha(160),
+                        size: 22,
+                      ),
+                    ),
+                  );
+                }
+
                 return PlatformHoverBuilder(
                   builder: (context, isHovered, child) {
                     return AnimatedContainer(
@@ -566,6 +628,7 @@ class _SyllabotChatView extends HookWidget {
                 );
               },
             ),
+
 
             // Share Insight to Study Circle / Forum Action
             BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
@@ -675,30 +738,36 @@ class _SyllabotChatView extends HookWidget {
             ),
 
             // 4. New Chat Session Action
-            PlatformHoverBuilder(
-              builder: (context, isHovered, child) {
-                return AnimatedContainer(
-                  duration: AppMotion.snappy,
-                  decoration: BoxDecoration(
-                    color: isHovered
-                        ? colors.surfaceSecondary
-                        : context.colors.transparent,
-                    borderRadius: BorderRadius.circular(AppRadius.badge),
-                  ),
-                  child: IconButton(
-                    tooltip: l10n.newConversationTooltip,
-                    icon: Icon(
-                      Icons.add_comment_outlined,
-                      color: colors.textSecondary,
-                      size: 21,
-                    ),
-                    onPressed: () {
-                      unawaited(HapticFeedback.lightImpact());
-                      context.read<SyllabotChatBloc>().add(
-                        const StartNewSessionEvent(),
-                      );
-                    },
-                  ),
+            BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+              builder: (context, state) {
+                return PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.surfaceSecondary
+                            : context.colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: IconButton(
+                        tooltip: l10n.newConversationTooltip,
+                        icon: Icon(
+                          Icons.add_comment_outlined,
+                          color: colors.textSecondary,
+                          size: 21,
+                        ),
+                        onPressed: state.isGeneratingDeck
+                            ? null
+                            : () {
+                                unawaited(HapticFeedback.lightImpact());
+                                context.read<SyllabotChatBloc>().add(
+                                  const StartNewSessionEvent(),
+                                );
+                              },
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -739,6 +808,17 @@ class _SyllabotChatView extends HookWidget {
                         );
                       },
                     ),
+                  ),
+
+                  // 1.5 Dedicated Flashcard Deck Generation Progress Card
+                  BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
+                    buildWhen: (p, c) => p.status != c.status,
+                    builder: (context, state) {
+                      if (!state.isGeneratingDeck) {
+                        return const SizedBox.shrink();
+                      }
+                      return const SyllabotDeckGenerationProgressCard();
+                    },
                   ),
 
                   // 2. Actionable Error Banner with 1-Tap Prompt Retry & Offline
@@ -937,11 +1017,13 @@ class _SyllabotChatView extends HookWidget {
                                 socraticMode: state.socraticMode,
                                 engineType: state.engineType,
                                 isLoading:
-                                    state.status == SyllabotStatus.streaming,
+                                    state.status == SyllabotStatus.streaming ||
+                                    state.isGeneratingDeck,
                                 isAiSpeaking: isAiSpeaking,
                                 onInterruptAi: ttsHandler.stop,
-                                onVoiceDialogueTap: () =>
-                                    openVoiceDialogue(context, state),
+                                onVoiceDialogueTap: state.isGeneratingDeck
+                                    ? null
+                                    : () => openVoiceDialogue(context, state),
                                 onModeChanged: (mode) {
                                   context.read<SyllabotChatBloc>().add(
                                     ChangeSocraticModeEvent(mode),
@@ -949,24 +1031,29 @@ class _SyllabotChatView extends HookWidget {
                                 },
                                 onEngineChanged: (engine) =>
                                     handleEngineSwitch(context, engine),
-                                onSubmit: (prompt) {
-                                  unawaited(ttsHandler.stop());
-                                  final sid =
-                                      UuidUtils.isValidUuid(state.sessionId)
-                                      ? state.sessionId
-                                      : UuidUtils.generate();
+                                onSubmit: state.isGeneratingDeck
+                                    ? (_) {}
+                                    : (prompt) {
+                                        unawaited(ttsHandler.stop());
+                                        final sid =
+                                            UuidUtils.isValidUuid(
+                                              state.sessionId,
+                                            )
+                                            ? state.sessionId
+                                            : UuidUtils.generate();
 
-                                  context.read<SyllabotChatBloc>().add(
-                                    SubmitPromptEvent(
-                                      prompt: prompt,
-                                      sessionId: sid,
-                                      socraticMode: state.socraticMode,
-                                      engineType: state.engineType,
-                                    ),
-                                  );
-                                  scrollToBottom();
-                                },
+                                        context.read<SyllabotChatBloc>().add(
+                                          SubmitPromptEvent(
+                                            prompt: prompt,
+                                            sessionId: sid,
+                                            socraticMode: state.socraticMode,
+                                            engineType: state.engineType,
+                                          ),
+                                        );
+                                        scrollToBottom();
+                                      },
                               ),
+
                       );
                     },
                   ),

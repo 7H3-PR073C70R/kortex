@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 /// Real-time speech recognition service for Syllabot AI voice input.
@@ -13,7 +14,8 @@ class SpeechToTextHandler {
     this.onResultWithFinal,
     this.onError,
     this.onSoundLevelChange,
-  });
+    SpeechToText? speechToText,
+  }) : _speechToText = speechToText ?? SpeechToText();
 
   final ValueChanged<String> onResult;
   final void Function(String text, {required bool isFinal})? onResultWithFinal;
@@ -21,10 +23,9 @@ class SpeechToTextHandler {
   final ValueChanged<String>? onError;
   final ValueChanged<double>? onSoundLevelChange;
 
-  final SpeechToText _speechToText = SpeechToText();
+  final SpeechToText _speechToText;
   bool _isAvailable = false;
-  bool _isInitializing = false;
-  bool _isStarting = false;
+  Completer<bool>? _initCompleter;
 
   bool get isListening => _speechToText.isListening;
   bool get isAvailable => _isAvailable;
@@ -33,40 +34,50 @@ class SpeechToTextHandler {
   /// Initializes speech recognition engine and permissions.
   Future<bool> initialize() async {
     if (_isAvailable) return true;
-    if (_isInitializing) return false;
-    _isInitializing = true;
+    if (_initCompleter != null) {
+      return _initCompleter!.future;
+    }
+    final completer = Completer<bool>();
+    _initCompleter = completer;
+
     try {
       try {
-        final micStatus = await Permission.microphone.status;
-        if (!micStatus.isGranted) {
-          final res = await Permission.microphone.request();
-          if (!res.isGranted) {
-            _isAvailable = false;
-            _isInitializing = false;
-            onError?.call(
-              'Microphone permission required for speech recognition',
-            );
-            return false;
+        if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+          final micStatus = await Permission.microphone.status;
+          if (!micStatus.isGranted) {
+            final res = await Permission.microphone.request();
+            if (res.isPermanentlyDenied) {
+              _isAvailable = false;
+              completer.complete(false);
+              onError?.call(
+                'Microphone permission is required. Please enable it in Settings.',
+              );
+              return false;
+            }
           }
-        }
 
-        final speechStatus = await Permission.speech.status;
-        if (!speechStatus.isGranted) {
-          final res = await Permission.speech.request();
-          if (!res.isGranted) {
-            _isAvailable = false;
-            _isInitializing = false;
-            onError?.call(
-              'Speech recognition permission required for voice input',
-            );
-            return false;
+          if (Platform.isIOS) {
+            final speechStatus = await Permission.speech.status;
+            if (!speechStatus.isGranted) {
+              final res = await Permission.speech.request();
+              if (res.isPermanentlyDenied) {
+                _isAvailable = false;
+                completer.complete(false);
+                onError?.call(
+                  'Speech recognition permission is required. Please enable it in Settings.',
+                );
+                return false;
+              }
+            }
           }
         }
       } on Object catch (_) {
-        // Continue if permission_handler is not configured for the target platform
+        // Continue if permission_handler is not configured for the target platform;
+        // _speechToText.initialize() will handle native permission requests internally.
       }
 
       _isAvailable = await _speechToText.initialize(
+        debugLogging: kDebugMode,
         onError: (val) {
           // If error is normal silence timeout or no match, do not treat as fatal error
           final errorMsg = val.errorMsg.toLowerCase();
@@ -74,36 +85,32 @@ class SpeechToTextHandler {
               errorMsg.contains('timeout') ||
               errorMsg.contains('error_no_match') ||
               errorMsg.contains('error_speech_timeout')) {
-            if (!_isStarting && !_isInitializing) {
-              onListeningChanged(false);
-            }
+            onListeningChanged(false);
             return;
           }
-          if (!_isStarting && !_isInitializing) {
-            onListeningChanged(false);
-          }
+          onListeningChanged(false);
           onError?.call(val.errorMsg);
         },
         onStatus: (status) async {
           if (status == 'listening') {
-            _isStarting = false;
             onListeningChanged(true);
           } else if (status == 'notListening' || status == 'done') {
-            if (_isStarting || _isInitializing) return;
             // Delay by one microtask so the audio session fully closes
-            // before the caller attempts a restart — avoids the isListening
-            // race where startListening() sees isListening==true and bails.
+            // before the caller attempts a restart.
             await Future<void>.microtask(() => onListeningChanged(false));
           }
         },
       );
-      _isInitializing = false;
+
+      completer.complete(_isAvailable);
       return _isAvailable;
     } on Object catch (e) {
       _isAvailable = false;
-      _isInitializing = false;
+      completer.complete(false);
       onError?.call('Speech recognition initialization error: $e');
       return false;
+    } finally {
+      _initCompleter = null;
     }
   }
 
@@ -112,18 +119,18 @@ class SpeechToTextHandler {
     Duration listenFor = const Duration(minutes: 10),
     Duration pauseFor = const Duration(seconds: 30),
   }) async {
+    // If already listening, stop previous session cleanly before starting a new one
     if (_speechToText.isListening) {
-      return;
+      await _speechToText.stop();
+      onListeningChanged(false);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     }
-
-    _isStarting = true;
 
     if (!_isAvailable) {
       final initialized = await initialize();
       if (!initialized) {
-        _isStarting = false;
         onError?.call(
-          'Microphone or Speech Recognition unavailable on this device',
+          'Microphone or speech recognition is unavailable on this device.',
         );
         return;
       }
@@ -132,12 +139,17 @@ class SpeechToTextHandler {
     try {
       unawaited(HapticFeedback.mediumImpact());
       await _speechToText.listen(
-        onResult: (SpeechRecognitionResult result) {
+        onResult: (result) {
           if (result.recognizedWords.isNotEmpty) {
             onResult(result.recognizedWords);
             onResultWithFinal?.call(
               result.recognizedWords,
               isFinal: result.finalResult,
+            );
+          } else if (result.finalResult) {
+            onResultWithFinal?.call(
+              '',
+              isFinal: true,
             );
           }
         },
@@ -148,10 +160,9 @@ class SpeechToTextHandler {
           pauseFor: pauseFor,
         ),
       );
-      // onStatus already fires onListeningChanged(true); no duplicate needed.
-      _isStarting = false;
+      // Immediately reflect listening state in UI
+      onListeningChanged(true);
     } on Object catch (e) {
-      _isStarting = false;
       onListeningChanged(false);
       onError?.call('Speech recognition error: $e');
     }
@@ -159,7 +170,6 @@ class SpeechToTextHandler {
 
   /// Stops speech listening session.
   Future<void> stopListening() async {
-    _isStarting = false;
     try {
       unawaited(HapticFeedback.lightImpact());
       await _speechToText.stop();
@@ -172,7 +182,6 @@ class SpeechToTextHandler {
 
   /// Cancels listening session.
   Future<void> cancel() async {
-    _isStarting = false;
     try {
       await _speechToText.cancel();
       onListeningChanged(false);
@@ -181,7 +190,6 @@ class SpeechToTextHandler {
 
   /// Releases resources.
   void dispose() {
-    _isStarting = false;
     try {
       unawaited(_speechToText.cancel());
     } on Object catch (_) {}

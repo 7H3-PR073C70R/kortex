@@ -9,7 +9,6 @@ import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Controller to allow external widgets (such as pinned top recording banners)
@@ -88,11 +87,8 @@ class VoiceNoteRecorderWidget extends HookWidget {
     final isDark = context.isDarkMode;
 
     final isRecording = useState<bool>(false);
-    final isStarting = useState<bool>(false);  // true only during the brief async startup gap
     final durationSeconds = useState<int>(0);
     final transcriptText = useState<String>('');
-    final finalTranscriptText = useState<String>('');  // only updated on isFinal results
-    final initialText = useRef<String>('');
     final recordingTimer = useRef<Timer?>(null);
     final isProcessing = useState<bool>(false);
 
@@ -100,145 +96,81 @@ class VoiceNoteRecorderWidget extends HookWidget {
       locator.get<AudioRecordingService>,
     );
 
-    // Indirection ref so onListeningChanged can call startListening() without
-    // a forward-reference compile error (handler self-references via closure).
-    final sttHandlerRef = useRef<SpeechToTextHandler?>(null);
-
-    final sttHandler = useMemoized(
-      () {
-        final h = SpeechToTextHandler(
-          onResult: (words) {
-            // Live intermediate preview only — do not save as authoritative transcript
-            if (words.trim().isNotEmpty) {
-              transcriptText.value = words;
-              onTranscriptUpdate?.call(words);
-
-              if (controller != null) {
-                final base = initialText.value;
-                final newContent = base.isEmpty ? words : '$base $words';
-                controller!.text = newContent;
-                controller!.selection =
-                    TextSelection.collapsed(offset: newContent.length);
-              }
-
-              onRecordingStateChanged?.call(
-                isRecording: isRecording.value,
-                isLocked: false,
-                durationSeconds: durationSeconds.value,
-                transcript: words,
-              );
-            }
-          },
-          onResultWithFinal: (words, {required isFinal}) {
-            // Accumulate final-only results as the authoritative transcript
-            if (isFinal && words.trim().isNotEmpty) {
-              final prev = finalTranscriptText.value.trim();
-              finalTranscriptText.value =
-                  prev.isEmpty ? words.trim() : '$prev ${words.trim()}';
-            }
-          },
-          onListeningChanged: (listening) {
-            // Auto-restart STT if it pauses mid-session (iOS pauses after silence)
-            if (!listening && isRecording.value && !isStarting.value) {
-              Future<void>.delayed(const Duration(milliseconds: 200), () {
-                if (isRecording.value) {
-                  unawaited(sttHandlerRef.value?.startListening(
-                    listenFor: const Duration(minutes: 30),
-                    pauseFor: const Duration(seconds: 60),
-                  ));
-                }
-              });
-            }
-          },
-          onError: (err) {
-            debugPrint('VoiceNoteRecorder: STT error: $err');
-          },
-        );
-        sttHandlerRef.value = h;
-        return h;
-      },
-    );
-
     useEffect(() {
-      unawaited(sttHandler.initialize());
       return () {
         recordingTimer.value?.cancel();
-        sttHandler.dispose();
       };
     }, const []);
 
     Future<void> startRecordingSession() async {
-      if (isProcessing.value || isRecording.value || isStarting.value) return;
+      if (isProcessing.value || isRecording.value) return;
+
+      // Unfocus keyboard so the recording banner is clearly visible
+      FocusManager.instance.primaryFocus?.unfocus();
+
+      // 1. Instantly flip UI to recording on the very first tap — zero delay
+      isRecording.value = true;
       isProcessing.value = true;
-      // Show starting state immediately so first tap always gives visual feedback
-      isStarting.value = true;
+      durationSeconds.value = 0;
+      transcriptText.value = '';
+
+      unawaited(HapticFeedback.mediumImpact());
+
+      // Immediately notify parent widget so banner appears on the exact frame of the tap
+      onRecordingStateChanged?.call(
+        isRecording: true,
+        isLocked: false,
+        durationSeconds: 0,
+        transcript: '',
+      );
+
+      // Start duration timer immediately
+      recordingTimer.value?.cancel();
+      recordingTimer.value = Timer.periodic(
+        const Duration(seconds: 1),
+        (timer) {
+          durationSeconds.value = timer.tick;
+          onRecordingStateChanged?.call(
+            isRecording: true,
+            isLocked: false,
+            durationSeconds: timer.tick,
+            transcript: '',
+          );
+        },
+      );
 
       try {
         final hasPerm = await recordingService.hasPermission();
         if (!hasPerm) {
+          recordingTimer.value?.cancel();
+          isRecording.value = false;
+          onRecordingStateChanged?.call(
+            isRecording: false,
+            isLocked: false,
+            durationSeconds: 0,
+            transcript: '',
+          );
           if (context.mounted) {
             context.showSnackBar(
               message: 'Microphone permission is required to record voice notes',
               type: SnackBarType.error,
             );
           }
-          isStarting.value = false;
           isProcessing.value = false;
           return;
         }
 
-        unawaited(HapticFeedback.mediumImpact());
-        transcriptText.value = '';
-        finalTranscriptText.value = '';
-        initialText.value = controller?.text ?? '';
-
-        // ── Step 1: Start audio recorder immediately ──────────────────────────
-        // This is fast (< 50ms) and gives instant feedback. The UI flips to
-        // isRecording=true right after so there's zero perceived double-tap lag.
         await recordingService.startRecording();
-
-        // ── Step 2: Flip to recording state right away ────────────────────────
-        isStarting.value = false;
-        isRecording.value = true;
-        durationSeconds.value = 0;
+      } on Object catch (e) {
+        debugPrint('VoiceNoteRecorder: Failed to start audio recording: $e');
+        recordingTimer.value?.cancel();
+        isRecording.value = false;
         onRecordingStateChanged?.call(
-          isRecording: true,
+          isRecording: false,
           isLocked: false,
           durationSeconds: 0,
           transcript: '',
         );
-
-        recordingTimer.value?.cancel();
-        recordingTimer.value = Timer.periodic(
-          const Duration(seconds: 1),
-          (timer) {
-            durationSeconds.value = timer.tick;
-            onRecordingStateChanged?.call(
-              isRecording: isRecording.value,
-              isLocked: false,
-              durationSeconds: timer.tick,
-              transcript: transcriptText.value,
-            );
-          },
-        );
-
-        // ── Step 3: Start STT unawaited — never blocks the UI ────────────────
-        // STT is initialized ahead-of-time in useEffect so by now it should be
-        // ready. We fire it unawaited to avoid any remaining latency.
-        // The auto-restart in onListeningChanged handles mid-session pauses.
-        unawaited(
-          sttHandler.startListening(
-            listenFor: const Duration(minutes: 30),
-            pauseFor: const Duration(seconds: 60),
-          ).catchError((Object e) {
-            debugPrint('VoiceNoteRecorder: STT start failed: $e');
-          }),
-        );
-
-      } on Object catch (e) {
-        debugPrint('VoiceNoteRecorder: Failed to start audio recording: $e');
-        isStarting.value = false;
-        isRecording.value = false;
         if (context.mounted) {
           context.showSnackBar(
             message: 'Failed to access microphone: $e',
@@ -251,36 +183,29 @@ class VoiceNoteRecorderWidget extends HookWidget {
     }
 
     Future<void> finishRecordingSession() async {
-      if (isProcessing.value) return;
+      // If startRecording is still starting up, wait briefly for it to complete
+      var attempts = 0;
+      while (isProcessing.value && attempts < 15) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        attempts++;
+      }
       isProcessing.value = true;
 
       unawaited(HapticFeedback.lightImpact());
       recordingTimer.value?.cancel();
       final finalDuration = durationSeconds.value;
-      // Prefer accumulated final results; fall back to last live preview
-      final finalTranscript = finalTranscriptText.value.trim().isNotEmpty
-          ? finalTranscriptText.value.trim()
-          : transcriptText.value.trim();
 
-      unawaited(sttHandler.stopListening());
       isRecording.value = false;
-
-      final recordedPath = await recordingService.stopRecording();
-
       onRecordingStateChanged?.call(
         isRecording: false,
         isLocked: false,
         durationSeconds: finalDuration,
-        transcript: finalTranscript,
+        transcript: '',
       );
 
-      if (recordedPath != null && File(recordedPath).existsSync()) {
-        onRecordingComplete(
-          audioUrl: recordedPath,
-          durationSeconds: finalDuration > 0 ? finalDuration : 1,
-          transcript: finalTranscript,
-        );
-      } else {
+      final recordedPath = await recordingService.stopRecording();
+
+      if (recordedPath == null || !File(recordedPath).existsSync()) {
         debugPrint('VoiceNoteRecorder: No audio captured or empty file');
         if (context.mounted) {
           context.showSnackBar(
@@ -288,29 +213,27 @@ class VoiceNoteRecorderWidget extends HookWidget {
           );
         }
         onCancel();
+        isProcessing.value = false;
+        return;
       }
+
+      // Transcription is intentionally omitted client-side.
+      // A Supabase Edge Function (transcribe-voice-note) handles Groq Whisper
+      // transcription server-side after the VN is uploaded, so transcripts are
+      // only visible to viewers — never to the person who recorded the note.
+      onRecordingComplete(
+        audioUrl: recordedPath,
+        durationSeconds: finalDuration > 0 ? finalDuration : 1,
+        transcript: '',
+      );
+
       isProcessing.value = false;
     }
 
     Future<void> cancelRecordingSession() async {
-      if (isProcessing.value) return;
-      isProcessing.value = true;
-
-      unawaited(HapticFeedback.lightImpact());
       recordingTimer.value?.cancel();
-      unawaited(sttHandler.cancel());
-      await recordingService.cancelRecording();
-
-      if (controller != null) {
-        controller!.text = initialText.value;
-        controller!.selection =
-            TextSelection.collapsed(offset: initialText.value.length);
-      }
-
-      isStarting.value = false;
       isRecording.value = false;
       transcriptText.value = '';
-      finalTranscriptText.value = '';
       durationSeconds.value = 0;
 
       onRecordingStateChanged?.call(
@@ -319,6 +242,10 @@ class VoiceNoteRecorderWidget extends HookWidget {
         durationSeconds: 0,
         transcript: '',
       );
+
+      try {
+        await recordingService.cancelRecording();
+      } on Object catch (_) {}
 
       onCancel();
       isProcessing.value = false;
@@ -344,55 +271,40 @@ class VoiceNoteRecorderWidget extends HookWidget {
           durationSeconds: durationSeconds.value,
           transcriptText: transcriptText.value,
           amplitudeStream: recordingService.amplitudeStream,
+          onCancel: cancelRecordingSession,
+          onDone: finishRecordingSession,
         ),
       );
     }
 
-    // Single-Tap Mic Button — starts on first tap, stops on second tap.
-    // While recording shows a pulsing radial indicator; while starting shows a spinner.
-    final triggerButton = ShrinkableButton(
+    // Single-tap mic button: tap once to instantly show banner and record;
+    // tap again to finish recording.
+    final triggerButton = GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         if (isRecording.value) {
           unawaited(finishRecordingSession());
-        } else if (!isStarting.value) {
+        } else {
           unawaited(startRecordingSession());
         }
       },
-      child: isStarting.value
-          // ── Startup spinner ───────────────────────────────────────────────
-          ? SizedBox(
-              width: 36,
-              height: 36,
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    valueColor: AlwaysStoppedAnimation<Color>(colors.error),
-                  ),
-                ),
-              ),
-            )
-          : isRecording.value
-              // ── Pulsing radial "tap to stop" indicator ────────────────────
+      child: SizedBox(
+        width: 44,
+        height: 44,
+        child: Center(
+          child: isRecording.value
               ? _PulsingMicButton(
                   compact: compact,
                   isDark: isDark,
                   errorColor: colors.error,
                 )
-              // ── Idle mic ──────────────────────────────────────────────────
-              : SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: Center(
-                    child: Icon(
-                      Icons.mic_rounded,
-                      size: compact ? 19 : 21,
-                      color: colors.textSecondary,
-                    ),
-                  ),
+              : Icon(
+                  Icons.mic_rounded,
+                  size: compact ? 19 : 21,
+                  color: colors.textSecondary,
                 ),
+        ),
+      ),
     );
 
     if (showBanner && bannerWidget != null) {
@@ -630,12 +542,56 @@ class VoiceRecordingBannerWidget extends HookWidget {
               ),
               const SizedBox(width: 8),
 
-              // Animated Waveform Visualizer — takes all remaining space
+              // Animated Waveform Visualizer — takes remaining space
               Expanded(
                 child: AudioWaveformVisualizer(
                   amplitudeStream: amplitudeStream,
                 ),
               ),
+              if (onCancel != null) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    onCancel?.call();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.error.withAlpha(isDark ? 50 : 25),
+                    ),
+                    child: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 16,
+                      color: colors.error,
+                    ),
+                  ),
+                ),
+              ],
+              if (onDone != null) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    unawaited(HapticFeedback.mediumImpact());
+                    onDone?.call();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.primary.withAlpha(isDark ? 70 : 40),
+                    ),
+                    child: Icon(
+                      Icons.check_rounded,
+                      size: 16,
+                      color: colors.primary,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           if (transcriptText.trim().isNotEmpty) ...[

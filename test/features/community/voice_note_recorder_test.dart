@@ -54,7 +54,6 @@ void main() {
       await tester.pumpApp(
         Scaffold(
           body: VoiceRecordingBannerWidget(
-            isLocked: false,
             durationSeconds: 12,
             transcriptText: 'Testing live STT auto-fill',
             onCancel: () {},

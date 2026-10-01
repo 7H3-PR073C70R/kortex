@@ -1927,11 +1927,16 @@ class ForumThreadDetailPage extends HookWidget {
                                       VoiceNotePlayerWidget(
                                         audioUrl:
                                             currentPost.value.voiceNoteUrl!,
+                                        postId: currentPost.value.id,
                                         durationSeconds: currentPost
                                             .value
                                             .voiceNoteDurationSeconds,
                                         transcript:
                                             currentPost.value.voiceNoteTranscript,
+                                        onTranscriptLoaded: (newTranscript) {
+                                          currentPost.value = currentPost.value
+                                              .copyWith(voiceNoteTranscript: newTranscript);
+                                        },
                                       ),
                                     ],
 
@@ -2544,7 +2549,15 @@ class ForumThreadDetailPage extends HookWidget {
                                     onDeleteReply: () => unawaited(confirmDeleteReply(context, reply)),
                                     onEditChildReply: (child) => unawaited(showEditReplySheet(context, child)),
                                     onDeleteChildReply: (child) => unawaited(confirmDeleteReply(context, child)),
-                                     onVerifySolution: () async {
+                                    onTranscriptUpdated: (targetReplyId, newTranscript) {
+                                      localReplies.value = localReplies.value.map((r) {
+                                        if (r.id == targetReplyId) {
+                                          return r.copyWith(voiceNoteTranscript: newTranscript);
+                                        }
+                                        return r;
+                                      }).toList();
+                                    },
+                                    onVerifySolution: () async {
                                       final res = await repo.verifyForumReply(
                                         postId: currentPost.value.id,
                                         replyId: reply.id,
@@ -2965,6 +2978,7 @@ class ForumThreadDetailPage extends HookWidget {
                                           ? replyController.text.trim()
                                           : null),
                               compact: true,
+                              showTranscript: false,
                               onDelete: () {
                                 replyVoiceNoteUrl.value = null;
                                 replyVoiceNoteDuration.value = 0;
@@ -3401,6 +3415,23 @@ class ForumThreadDetailPage extends HookWidget {
                                                   ...localReplies.value,
                                                   createdReply,
                                                 ];
+                                              }
+
+                                              // Fire-and-forget server-side Groq transcription via Supabase Edge Function.
+                                              // The edge function calls Groq Whisper on the R2 audio URL and patches
+                                              // voice_note_transcript in the DB — transcripts are viewer-only, never
+                                              // shown to the person who recorded the voice note.
+                                              final vnUrl = createdReply.voiceNoteUrl;
+                                              if (vnUrl != null &&
+                                                  vnUrl.trim().isNotEmpty &&
+                                                  locator.isRegistered<MediaUploadService>()) {
+                                                unawaited(
+                                                  locator<MediaUploadService>()
+                                                      .triggerVoiceNoteTranscription(
+                                                    audioUrl: vnUrl,
+                                                    replyId: createdReply.id,
+                                                  ),
+                                                );
                                               }
                                               if (targetParentId != null) {
                                                 localReplies.value =
@@ -3908,6 +3939,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
     this.onDeleteReply,
     this.onEditChildReply,
     this.onDeleteChildReply,
+    this.onTranscriptUpdated,
   });
 
   final ForumReplyEntity parentReply;
@@ -3925,6 +3957,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
   final void Function(int direction) onVote;
   final void Function(ForumReplyEntity child, int direction) onChildVote;
   final VoidCallback onReplyTap;
+  final void Function(String replyId, String newTranscript)? onTranscriptUpdated;
   final void Function(ForumReplyEntity child) onChildReplyTap;
   final VoidCallback onVerifySolution;
   final void Function(ForumReplyEntity target)? onSaveFlashcard;
@@ -4257,9 +4290,13 @@ class _DiscussionThreadGroupCard extends HookWidget {
                 const SizedBox(height: 8),
                 VoiceNotePlayerWidget(
                   audioUrl: parentReply.voiceNoteUrl!,
+                  replyId: parentReply.id,
                   durationSeconds: parentReply.voiceNoteDurationSeconds,
                   transcript: parentReply.voiceNoteTranscript,
                   compact: true,
+                  onTranscriptLoaded: (newTranscript) {
+                    onTranscriptUpdated?.call(parentReply.id, newTranscript);
+                  },
                 ),
               ],
 
@@ -4611,6 +4648,7 @@ class _DiscussionThreadGroupCard extends HookWidget {
                             onDelete: onDeleteChildReply != null
                                 ? () => onDeleteChildReply!(child)
                                 : null,
+                            onTranscriptUpdated: onTranscriptUpdated,
                           );
                         }),
 
@@ -4849,6 +4887,7 @@ class _Level2ChildReplyCard extends HookWidget {
     this.isHighlighted = false,
     this.onEdit,
     this.onDelete,
+    this.onTranscriptUpdated,
   });
 
   final ForumReplyEntity childReply;
@@ -4858,6 +4897,7 @@ class _Level2ChildReplyCard extends HookWidget {
   final bool isHighlighted;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final void Function(String replyId, String newTranscript)? onTranscriptUpdated;
 
   @override
   Widget build(BuildContext context) {
@@ -5194,9 +5234,13 @@ class _Level2ChildReplyCard extends HookWidget {
                     const SizedBox(height: 6),
                     VoiceNotePlayerWidget(
                       audioUrl: childReply.voiceNoteUrl!,
+                      replyId: childReply.id,
                       durationSeconds: childReply.voiceNoteDurationSeconds,
                       transcript: childReply.voiceNoteTranscript,
                       compact: true,
+                      onTranscriptLoaded: (newTranscript) {
+                        onTranscriptUpdated?.call(childReply.id, newTranscript);
+                      },
                     ),
                   ],
 

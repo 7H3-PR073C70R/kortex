@@ -99,6 +99,9 @@ class AppApiEndpoint {
   static const String claimWeeklyXpRpc = '/rest/v1/rpc/claim_weekly_xp';
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
   static const String uploadForumMedia = '/functions/v1/upload-forum-media';
+  /// Triggers server-side Groq Whisper transcription for a voice note.
+  /// Accepts `{ "audio_url": "<r2_url>", "reply_id"/"post_id": "<id>" }`.
+  static const String transcribeVoiceNote = '/functions/v1/transcribe-voice-note';
   static const String rateSharedDeckRpc = '/rest/v1/rpc/rate_shared_deck';
   static const String verifyForumReplyRpc = '/rest/v1/rpc/verify_forum_reply';
   static const String voteForumPostAtomicRpc =
