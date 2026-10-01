@@ -43,6 +43,7 @@ class PrefKeys {
       '__kortex_persisted_shared_decks__';
   static const String userDisplayName = '__kortex_user_display_name__';
   static const String userAvatarUrl = '__kortex_user_avatar_url__';
+  static const String userTargetTrack = '__kortex_user_target_track__';
   static const String dailySyllabotCount = '__kortex_daily_syllabot_count__';
   static const String lastSyllabotDate = '__kortex_last_syllabot_date__';
   static const String proEntitlementCacheDate =

@@ -153,6 +153,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           } on Object catch (_) {}
         }
 
+        // Persist targetTrack locally for leaderboard fallback
+        if (effectiveProfile.targetTrack.isNotEmpty) {
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.userTargetTrack,
+                data: effectiveProfile.targetTrack,
+              ),
+            );
+          } on Object catch (_) {}
+        }
+
         final session = isOnboarded
             ? AuthSessionStatus.authenticatedComplete
             : AuthSessionStatus.authenticatedNeedsOnboarding;
@@ -647,6 +659,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               locator<LocalStorageService>().savePreference(
                 key: PrefKeys.hasSeenWelcomeWalkthrough,
                 data: 'true',
+              ),
+            );
+          } on Object catch (_) {}
+        }
+
+        // Persist targetTrack locally so the leaderboard can read it even
+        // when the auth profile has not yet loaded in the current frame.
+        if (mergedProfile.targetTrack.isNotEmpty) {
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.userTargetTrack,
+                data: mergedProfile.targetTrack,
               ),
             );
           } on Object catch (_) {}

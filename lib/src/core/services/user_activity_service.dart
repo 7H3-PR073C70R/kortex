@@ -576,17 +576,13 @@ class UserActivityServiceImpl implements UserActivityService {
 
   @override
   int getXpPoints() {
-    final sessions = _getSessions();
-    var xp = 0;
-    for (final s in sessions) {
-      final cards = (s['cardsReviewed'] as num?)?.toInt() ?? 0;
-      final minutes = (((s['durationSeconds'] as num?)?.toInt() ?? 0) / 60)
-          .round();
-      xp += (cards * 10) + (minutes * 5) + 50;
-    }
+    // _directXpAccumulatedKey is the single source of truth — every awardXp()
+    // call already writes into it. We do NOT re-sum sessions here to avoid
+    // double-counting with direct XP awards.
+    final directXp = _getDirectXpAccumulated();
     final streak = getCurrentStreak();
-    final totalEarned =
-        xp + (streak * 30) + getBonusKarma() + _getDirectXpAccumulated();
+    final bonusKarma = getBonusKarma();
+    final totalEarned = directXp + (streak * 30) + bonusKarma;
     return (totalEarned - getSpentXp()).clamp(0, 9999999);
   }
 

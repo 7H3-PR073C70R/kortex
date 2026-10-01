@@ -679,6 +679,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
     }).makeRequest();
   }
 
+  /// Tracks the last time we pushed XP to Supabase to prevent spamming.
+  DateTime? _lastClaimWeeklyXpTime;
+
   List<LeaderboardEntryEntity> _processLeaderboardList(
     List<LeaderboardEntryEntity> list, {
     String? track,
@@ -693,22 +696,35 @@ class CommunityRepositoryImpl implements CommunityRepository {
         ? locator<UserActivityService>()
         : null;
 
+    // ── Streak: prefer live activity service, fall back to auth profile ──
     final localStreak = userActivity?.getCurrentStreak() ?? 0;
+    final liveStreak = math.max(
+      authProfile?.streakDays ?? 0,
+      localStreak,
+    );
 
+    // ── XP: prefer live activity service, fall back to auth profile ─────
     final liveXp = math.max(
       authProfile?.xpPoints ?? 0,
       userActivity?.getXpPoints() ?? 0,
     );
 
-    final liveStreak = math.max(
-      authProfile?.streakDays ?? 0,
-      math.max(localStreak, userActivity?.getCurrentStreak() ?? 0),
-    );
-
+    // ── Track: auth profile → LocalStorage pref → 'General' ─────────────
     final profileTrack = authProfile?.targetTrack.trim();
-    final liveTrack = (profileTrack != null && profileTrack.isNotEmpty)
-        ? profileTrack
-        : 'WAEC';
+    String liveTrack;
+    if (profileTrack != null && profileTrack.isNotEmpty) {
+      liveTrack = profileTrack;
+    } else {
+      final storedTrack = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>().getPreference(
+              key: PrefKeys.userTargetTrack,
+            )
+          : null;
+      liveTrack =
+          (storedTrack != null && storedTrack.trim().isNotEmpty)
+          ? storedTrack.trim()
+          : 'General';
+    }
 
     final profileName = authProfile?.displayName?.trim();
     final liveDisplayName = (profileName != null && profileName.isNotEmpty)
@@ -718,8 +734,17 @@ class CommunityRepositoryImpl implements CommunityRepository {
     final liveAvatarUrl =
         authProfile?.photoUrl ?? _userStorage?.getUserAvatarUrl();
 
-    // Trigger async background sync to Supabase so server leaderboards row is updated
-    if (currentUserId != null && currentUserId.isNotEmpty && liveXp > 0) {
+    // ── Throttled background sync to Supabase (at most every 5 minutes) ──
+    final now = DateTime.now();
+    final shouldClaim =
+        currentUserId != null &&
+        currentUserId.isNotEmpty &&
+        liveXp > 0 &&
+        (_lastClaimWeeklyXpTime == null ||
+            now.difference(_lastClaimWeeklyXpTime!) >
+                const Duration(minutes: 5));
+    if (shouldClaim) {
+      _lastClaimWeeklyXpTime = now;
       unawaited(
         _remoteDataSource
             .claimWeeklyXp(xpAmount: liveXp)
