@@ -2,15 +2,21 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/text_to_speech_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/audio_pronounce_button.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/focus_session_cubit.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/focus_session_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/latex_card_content_viewer.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/thought_parking_lot_sheet.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/speech_text_normalizer.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 
 class FlashcardGestureCanvas extends HookWidget {
@@ -22,6 +28,7 @@ class FlashcardGestureCanvas extends HookWidget {
     required this.onSwipeRight,
     this.onSwipeUp,
     this.onSwipeDown,
+    this.onOpenParkingLot,
     this.enableBionicReading = false,
     super.key,
   });
@@ -33,6 +40,7 @@ class FlashcardGestureCanvas extends HookWidget {
   final VoidCallback onSwipeRight;
   final VoidCallback? onSwipeUp;
   final VoidCallback? onSwipeDown;
+  final VoidCallback? onOpenParkingLot;
   final bool enableBionicReading;
 
   @override
@@ -275,6 +283,7 @@ class FlashcardGestureCanvas extends HookWidget {
                             isDark: isDark,
                             card: card,
                             enableBionicReading: enableBionicReading,
+                            onOpenParkingLot: onOpenParkingLot,
                           ),
                         )
                       : _CardFace(
@@ -288,6 +297,7 @@ class FlashcardGestureCanvas extends HookWidget {
                           isDark: isDark,
                           card: card,
                           enableBionicReading: enableBionicReading,
+                          onOpenParkingLot: onOpenParkingLot,
                         ),
                 ),
               ),
@@ -431,6 +441,7 @@ class _CardFace extends StatelessWidget {
     required this.card,
     this.latexFormula,
     this.enableBionicReading = false,
+    this.onOpenParkingLot,
   });
 
   final String badgeText;
@@ -443,9 +454,16 @@ class _CardFace extends StatelessWidget {
   final bool isDark;
   final FlashcardEntity card;
   final bool enableBionicReading;
+  final VoidCallback? onOpenParkingLot;
 
   @override
   Widget build(BuildContext context) {
+    FocusSessionState? focusState;
+    try {
+      focusState = context.watch<FocusSessionCubit?>()?.state;
+    } on Object catch (_) {}
+    final hasParkedThoughts = focusState?.parkedThoughts.isNotEmpty ?? false;
+
     return Semantics(
       container: true,
       button: true,
@@ -544,32 +562,98 @@ class _CardFace extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (card.sourceTopic != null &&
-                            (isBackFace || card.sourceTopic != mainText)) ...[
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 160),
-                            child: Text(
-                              card.sourceTopic!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.end,
-                              style: typography.footnote.regular.copyWith(
-                                color: colors.textMuted,
-                                fontSize: 11.5,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (card.sourceTopic != null &&
+                              (isBackFace || card.sourceTopic != mainText)) ...[
+                            Flexible(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 120),
+                                child: Text(
+                                  card.sourceTopic!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.end,
+                                  style: typography.footnote.regular.copyWith(
+                                    color: colors.textMuted,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 4),
+                          ],
+                          // Listen button — reads the card text aloud
+                          ValueListenableBuilder<bool>(
+                            valueListenable:
+                                locator<TextToSpeechService>().isSpeakingNotifier,
+                            builder: (context, isSpeaking, _) {
+                              return IconButton(
+                                icon: Icon(
+                                  isSpeaking
+                                      ? Icons.volume_up_rounded
+                                      : Icons.volume_up_outlined,
+                                  size: 20,
+                                  color: isSpeaking
+                                      ? colors.primary
+                                      : colors.textMuted,
+                                ),
+                                onPressed: () {
+                                  final tts =
+                                      locator<TextToSpeechService>();
+                                  if (tts.isSpeaking) {
+                                    unawaited(tts.stop());
+                                  } else {
+                                    final spokenText =
+                                        SpeechTextNormalizer.normalizeFlashcard(
+                                      mainText,
+                                    );
+                                    unawaited(tts.speak(spokenText));
+                                  }
+                                },
+                                tooltip: 'Listen to card',
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                                padding: EdgeInsets.zero,
+                              );
+                            },
                           ),
-                          const SizedBox(width: 8),
+                          // Only show parking lot when FocusSessionCubit is
+                          // actually in scope (Focus Workspace) or an explicit
+                          // callback was wired up by the parent.
+                          if (onOpenParkingLot != null || focusState != null)
+                            IconButton(
+                              icon: Icon(
+                                Icons.psychology_rounded,
+                                size: 20,
+                                color: hasParkedThoughts
+                                    ? colors.primary
+                                    : colors.textMuted,
+                              ),
+                              onPressed: () {
+                                if (onOpenParkingLot != null) {
+                                  onOpenParkingLot!();
+                                } else {
+                                  unawaited(
+                                    ThoughtParkingLotSheet.show(context),
+                                  );
+                                }
+                              },
+                              tooltip: 'Thought Parking Lot',
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                              padding: EdgeInsets.zero,
+                            ),
                         ],
-                        AudioPronounceButton(
-                          textToPronounce: mainText,
-                          size: 30,
-                          iconSize: 15,
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -315,7 +316,9 @@ class StudyEngineRouter {
         ? 'Bearer $userToken'
         : 'Bearer ${AppEnv.apiKey}';
 
-    final response = await _dio.post<Map<String, dynamic>>(
+    // The edge function responds with SSE (text/event-stream).
+    // We must read the raw string body and parse each "event: card" line.
+    final response = await _dio.post<String>(
       '${AppApiEndpoint.baseUri}/functions/v1/generate-flashcards-stream',
       data: {
         'topic': topic,
@@ -326,22 +329,67 @@ class StudyEngineRouter {
         headers: {
           'apikey': AppEnv.apiKey,
           'Authorization': authHeader,
+          'Accept': 'text/event-stream',
         },
+        responseType: ResponseType.plain,
       ),
     );
 
-    final data = response.data;
-    if (data != null) {
-      final cardsList = data['cards'] as List<dynamic>?;
-      if (cardsList != null && cardsList.isNotEmpty) {
-        return cardsList
-            .map(
-              (c) => GeneratedFlashcard.fromJson(c as Map<String, dynamic>),
-            )
-            .toList();
+    final rawBody = response.data ?? '';
+    if (rawBody.isEmpty) return const [];
+
+    final cards = <GeneratedFlashcard>[];
+    String? lastEventType;
+
+    for (final rawLine in rawBody.split('\n')) {
+      final line = rawLine.trim();
+      if (line.isEmpty) {
+        lastEventType = null;
+        continue;
+      }
+      if (line.startsWith('event:')) {
+        lastEventType = line.substring(6).trim();
+        continue;
+      }
+      if (line.startsWith('data:')) {
+        final jsonStr = line.substring(5).trim();
+        if (jsonStr == '[DONE]' || jsonStr.isEmpty) continue;
+        // Only parse lines from "card" events (or untyped data lines)
+        if (lastEventType != null &&
+            lastEventType != 'card' &&
+            lastEventType != 'done') {
+          continue;
+        }
+        try {
+          final decoded = json.decode(jsonStr) as Map<String, dynamic>;
+          // SSE "done" event wraps cards in a top-level 'cards' list
+          if (lastEventType == 'done' &&
+              decoded['cards'] is List &&
+              cards.isEmpty) {
+            for (final c in decoded['cards'] as List<dynamic>) {
+              final card = GeneratedFlashcard.fromJson(
+                c as Map<String, dynamic>,
+              );
+              if (card.front.isNotEmpty && card.back.isNotEmpty) {
+                cards.add(card);
+              }
+            }
+          }
+          // SSE "card" event — the card is nested under a "card" key
+          final cardJson = decoded['card'] as Map<String, dynamic>? ?? decoded;
+          final card = GeneratedFlashcard.fromJson(cardJson);
+          if (card.front.isNotEmpty && card.back.isNotEmpty) {
+            // Avoid duplicates when both "card" events and "done" list arrive
+            if (!cards.any((c) => c.front == card.front)) {
+              cards.add(card);
+            }
+          }
+        } on Object catch (_) {
+          // Skip malformed lines
+        }
       }
     }
 
-    return const [];
+    return cards;
   }
 }

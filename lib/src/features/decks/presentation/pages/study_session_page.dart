@@ -23,7 +23,6 @@ import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/sprint_milestone_banner.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/thought_parking_lot_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -459,9 +458,7 @@ class _StudySessionView extends HookWidget {
                             cubit.undoLastRating();
                             context.showSnackBar(message: 'Rating undone ↩️');
                           },
-                          onThoughtParkingLot: () {
-                            unawaited(ThoughtParkingLotSheet.show(context));
-                          },
+
                           elapsedTimeFormatted: cubit.isSpeedRun
                               ? cubit.formattedRemainingTime(
                                   state.elapsedSeconds,
@@ -475,10 +472,14 @@ class _StudySessionView extends HookWidget {
                           },
                         ),
                         // Contextual In-Session Cram Banner (Phase 1 Pillar 2)
-                        if (context.read<StudySessionCubit>().daysUntilExam != null &&
-                            context.read<StudySessionCubit>().daysUntilExam! > 0) ...[
+                        if (context.read<StudySessionCubit>().daysUntilExam !=
+                                null &&
+                            context.read<StudySessionCubit>().daysUntilExam! >
+                                0) ...[
                           _CramSessionBanner(
-                            daysUntilExam: context.read<StudySessionCubit>().daysUntilExam!,
+                            daysUntilExam: context
+                                .read<StudySessionCubit>()
+                                .daysUntilExam!,
                           ),
                           const SizedBox(height: 10),
                         ],
@@ -701,12 +702,16 @@ class _StudySessionView extends HookWidget {
                                               Flexible(
                                                 child: Text(
                                                   '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
-                                                  style: typography.caption.regular
+                                                  style: typography
+                                                      .caption
+                                                      .regular
                                                       .copyWith(
                                                         color: colors.primary
                                                             .withAlpha(
-                                                          isDark ? 210 : 170,
-                                                        ),
+                                                              isDark
+                                                                  ? 210
+                                                                  : 170,
+                                                            ),
                                                         fontSize: 10,
                                                         fontWeight:
                                                             FontWeight.w500,

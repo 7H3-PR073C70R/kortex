@@ -88,8 +88,10 @@ class VoiceNoteRecorderWidget extends HookWidget {
     final isDark = context.isDarkMode;
 
     final isRecording = useState<bool>(false);
+    final isStarting = useState<bool>(false);  // true only during the brief async startup gap
     final durationSeconds = useState<int>(0);
     final transcriptText = useState<String>('');
+    final finalTranscriptText = useState<String>('');  // only updated on isFinal results
     final initialText = useRef<String>('');
     final recordingTimer = useRef<Timer?>(null);
     final isProcessing = useState<bool>(false);
@@ -101,6 +103,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
     final sttHandler = useMemoized(
       () => SpeechToTextHandler(
         onResult: (words) {
+          // Live intermediate preview only — do not save as authoritative transcript
           if (words.trim().isNotEmpty) {
             transcriptText.value = words;
             onTranscriptUpdate?.call(words);
@@ -121,6 +124,14 @@ class VoiceNoteRecorderWidget extends HookWidget {
             );
           }
         },
+        onResultWithFinal: (words, {required isFinal}) {
+          // Accumulate final-only results as the authoritative transcript
+          if (isFinal && words.trim().isNotEmpty) {
+            final prev = finalTranscriptText.value.trim();
+            finalTranscriptText.value =
+                prev.isEmpty ? words.trim() : '$prev ${words.trim()}';
+          }
+        },
         onListeningChanged: (listening) {
           // Handled via AudioRecordingService lifecycle
         },
@@ -131,6 +142,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
     );
 
     useEffect(() {
+      unawaited(sttHandler.initialize());
       return () {
         recordingTimer.value?.cancel();
         sttHandler.dispose();
@@ -138,8 +150,10 @@ class VoiceNoteRecorderWidget extends HookWidget {
     }, const []);
 
     Future<void> startRecordingSession() async {
-      if (isProcessing.value || isRecording.value) return;
+      if (isProcessing.value || isRecording.value || isStarting.value) return;
       isProcessing.value = true;
+      // Immediately show a "starting" state so the button reacts on first tap
+      isStarting.value = true;
 
       try {
         final hasPerm = await recordingService.hasPermission();
@@ -150,16 +164,19 @@ class VoiceNoteRecorderWidget extends HookWidget {
               type: SnackBarType.error,
             );
           }
+          isStarting.value = false;
           isProcessing.value = false;
           return;
         }
 
         unawaited(HapticFeedback.mediumImpact());
         transcriptText.value = '';
+        finalTranscriptText.value = '';
         initialText.value = controller?.text ?? '';
 
         await recordingService.startRecording();
 
+        isStarting.value = false;
         isRecording.value = true;
         durationSeconds.value = 0;
         onRecordingStateChanged?.call(
@@ -190,6 +207,7 @@ class VoiceNoteRecorderWidget extends HookWidget {
         }
       } on Object catch (e) {
         debugPrint('VoiceNoteRecorder: Failed to start audio recording: $e');
+        isStarting.value = false;
         if (context.mounted) {
           context.showSnackBar(
             message: 'Failed to access microphone: $e',
@@ -208,7 +226,10 @@ class VoiceNoteRecorderWidget extends HookWidget {
       unawaited(HapticFeedback.lightImpact());
       recordingTimer.value?.cancel();
       final finalDuration = durationSeconds.value;
-      final finalTranscript = transcriptText.value.trim();
+      // Prefer accumulated final results; fall back to last live preview
+      final finalTranscript = finalTranscriptText.value.trim().isNotEmpty
+          ? finalTranscriptText.value.trim()
+          : transcriptText.value.trim();
 
       unawaited(sttHandler.stopListening());
       isRecording.value = false;
@@ -255,8 +276,10 @@ class VoiceNoteRecorderWidget extends HookWidget {
             TextSelection.collapsed(offset: initialText.value.length);
       }
 
+      isStarting.value = false;
       isRecording.value = false;
       transcriptText.value = '';
+      finalTranscriptText.value = '';
       durationSeconds.value = 0;
 
       onRecordingStateChanged?.call(
@@ -297,11 +320,12 @@ class VoiceNoteRecorderWidget extends HookWidget {
     }
 
     // Single-Tap Mic Trigger Button (Instant Start / Finish)
+    final isActive = isRecording.value || isStarting.value;
     final triggerButton = ShrinkableButton(
       onTap: () {
         if (isRecording.value) {
           unawaited(finishRecordingSession());
-        } else {
+        } else if (!isStarting.value) {
           unawaited(startRecordingSession());
         }
       },
@@ -312,14 +336,14 @@ class VoiceNoteRecorderWidget extends HookWidget {
         height: 36,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isRecording.value
+          color: isActive
               ? colors.error.withAlpha(isDark ? 60 : 35)
               : colors.transparent,
           shape: BoxShape.circle,
-          border: isRecording.value
+          border: isActive
               ? Border.all(color: colors.error.withAlpha(180), width: 1.5)
               : null,
-          boxShadow: isRecording.value
+          boxShadow: isActive
               ? [
                   BoxShadow(
                     color: colors.error.withAlpha(120),
@@ -329,11 +353,21 @@ class VoiceNoteRecorderWidget extends HookWidget {
                 ]
               : null,
         ),
-        child: Icon(
-          isRecording.value ? Icons.stop_rounded : Icons.mic_rounded,
-          size: compact ? 19 : 21,
-          color: isRecording.value ? colors.error : colors.textSecondary,
-        ),
+        child: isStarting.value
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.error),
+                ),
+              )
+            : Icon(
+                isRecording.value ? Icons.stop_rounded : Icons.mic_rounded,
+                size: compact ? 19 : 21,
+                color:
+                    isRecording.value ? colors.error : colors.textSecondary,
+              ),
       ),
     );
 
@@ -381,6 +415,8 @@ class VoiceRecordingBannerWidget extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+
+    final isTranscriptExpanded = useState<bool>(false);
 
     return AnimatedContainer(
       duration: AppMotion.snappy,
@@ -502,15 +538,52 @@ class VoiceRecordingBannerWidget extends HookWidget {
           ),
           if (transcriptText.trim().isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(
-              transcriptText.trim(),
-              style: typography.caption.regular.copyWith(
-                color: colors.textSecondary,
-                fontSize: 11,
+            ShrinkableButton(
+              onTap: () {
+                unawaited(HapticFeedback.lightImpact());
+                isTranscriptExpanded.value = !isTranscriptExpanded.value;
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.subtitles_rounded,
+                    size: 12,
+                    color: colors.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isTranscriptExpanded.value
+                        ? 'Hide Live STT Preview 📝'
+                        : 'Show Live STT Preview 📝',
+                    style: typography.caption.bold.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    isTranscriptExpanded.value
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 14,
+                    color: colors.textSecondary,
+                  ),
+                ],
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
+            if (isTranscriptExpanded.value) ...[
+              const SizedBox(height: 4),
+              Text(
+                transcriptText.trim(),
+                style: typography.caption.regular.copyWith(
+                  color: colors.textSecondary,
+                  fontSize: 11,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ],
       ),

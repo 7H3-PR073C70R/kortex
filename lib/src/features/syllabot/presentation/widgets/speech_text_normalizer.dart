@@ -58,6 +58,101 @@ class SpeechTextNormalizer {
     r'\bapprox\.(?!\w)': 'approximately',
   };
 
+  /// Pre-processes flashcard-specific structural patterns before the generic
+  /// [normalize] pass, producing natural spoken phrasing for card content.
+  ///
+  /// Handles:
+  /// - MCQ option blocks (`**Options:**` + `• A. ...` lines)
+  /// - Answer keys (`**Correct Answer:**`, `**Answer:**`)
+  /// - Section labels (`**Explanation:**`, `**Hint:**`, `**Note:**`)
+  /// - Markdown tables → row-by-row narration
+  /// - Horizontal rules (`---`, `***`)
+  static String normalizeFlashcard(String rawCard) {
+    if (rawCard.trim().isEmpty) return '';
+
+    var text = rawCard;
+
+    // 1. Horizontal rules → silence (remove entirely)
+    text = text.replaceAll(RegExp(r'^\s*[-*_]{3,}\s*$', multiLine: true), '');
+
+    // 2. Strip markdown table alignment rows (e.g. |---|---|)
+    text = text.replaceAll(
+      RegExp(r'^[\s|:-]+$', multiLine: true),
+      '',
+    );
+
+    // 3. Convert markdown table rows into spoken sentences
+    // | Cell A | Cell B | → "Cell A, Cell B."
+    text = text.replaceAllMapped(
+      RegExp(r'^\|(.+)\|\s*$', multiLine: true),
+      (m) {
+        final cells = m[1]!
+            .split('|')
+            .map((c) => c.trim())
+            .where((c) => c.isNotEmpty)
+            .join(', ');
+        return '$cells.';
+      },
+    );
+
+    // 4. Options header → natural spoken intro
+    text = text.replaceAll(
+      RegExp(r'\*{0,2}Options:\*{0,2}', caseSensitive: false),
+      'The options are:',
+    );
+
+    // 5. MCQ option lines (• A. text / • B. text) → "Option A: text,"
+    text = text.replaceAllMapped(
+      RegExp(r'[•·]\s*([A-Ea-e])[.):]\s*(.+)', multiLine: true),
+      (m) => 'Option ${m[1]!.toUpperCase()}: ${m[2]!.trim()},',
+    );
+
+    // 6. Correct Answer / Answer label
+    text = text.replaceAllMapped(
+      RegExp(
+        r'\*{0,2}Correct\s+Answer:\*{0,2}\s*Option\s+([A-Ea-e])(?:\s*[—–-]\s*(.+))?',
+        caseSensitive: false,
+      ),
+      (m) {
+        final letter = m[1]!.toUpperCase();
+        final desc = m[2]?.trim();
+        return desc != null && desc.isNotEmpty
+            ? 'The correct answer is Option $letter: $desc.'
+            : 'The correct answer is Option $letter.';
+      },
+    );
+    text = text.replaceAll(
+      RegExp(r'\*{0,2}(?:Correct\s+)?Answer:\*{0,2}', caseSensitive: false),
+      'The answer is:',
+    );
+
+    // 7. Common section labels → natural speech
+    text = text
+        .replaceAll(
+          RegExp(r'\*{0,2}Explanation:\*{0,2}', caseSensitive: false),
+          'Explanation:',
+        )
+        .replaceAll(
+          RegExp(r'\*{0,2}Hint:\*{0,2}', caseSensitive: false),
+          'Hint:',
+        )
+        .replaceAll(
+          RegExp(r'\*{0,2}Note:\*{0,2}', caseSensitive: false),
+          'Note:',
+        )
+        .replaceAll(
+          RegExp(r'\*{0,2}Example:\*{0,2}', caseSensitive: false),
+          'Example:',
+        )
+        .replaceAll(
+          RegExp(r'\*{0,2}Summary:\*{0,2}', caseSensitive: false),
+          'Summary:',
+        );
+
+    // 8. Delegate to the generic normalizer for remaining markdown/latex/etc.
+    return normalize(text);
+  }
+
   /// Normalizes raw markdown/assistant text into spoken conversational English.
   static String normalize(String rawMarkdown) {
     if (rawMarkdown.trim().isEmpty) return '';
@@ -198,57 +293,331 @@ class SpeechTextNormalizer {
     return text.trim();
   }
 
-  /// Expands common LaTeX syntax to natural spoken phrases.
+  /// Expands LaTeX syntax to natural spoken phrases.
+  ///
+  /// Handles both dollar-sign-delimited math blocks and bare LaTeX commands
+  /// that appear outside delimiters (common in flashcard content).
   static String _normalizeLatex(String input) {
     var text = input;
 
-    // Handle block math $$...$$
-    text = text.replaceAllMapped(
-      RegExp(r'\$\$([\s\S]*?)\$\$'),
-      (m) => ', mathematical equation: ${_expandLatexSymbols(m[1]!)}, ',
+    // 1. LaTeX line-break double-backslash -> space
+    text = text.replaceAll(r'\\', ' ');
+
+    // 2. Strip LaTeX environments
+    text = text.replaceAll(
+      RegExp(r'\\begin\{[^}]*\}|\\end\{[^}]*\}'),
+      '',
     );
 
-    // Handle inline math $...$
+    // 3. Block math -> spoken
     text = text.replaceAllMapped(
-      RegExp(r'\$([^$]+)\$'),
-      (m) => _expandLatexSymbols(m[1]!),
+      RegExp(r'\$\$([\s\S]*?)\$\$'),
+      (m) => ', ${_expandLatexSymbols(m[1]!)}, ',
     );
+
+    // 4. Inline math -> spoken
+    text = text.replaceAllMapped(
+      RegExp(r'\$([^$\n]+)\$'),
+      (m) => ' ${_expandLatexSymbols(m[1]!)} ',
+    );
+
+    // 5. Text/formatting commands outside $: keep inner content only
+    text = text.replaceAllMapped(
+      RegExp(
+        r'\\(?:text|textbf|textit|textrm|textsf|texttt|mathrm|mathbf|mathit|mathsf|mathtt|emph|underline|overline)\{([^}]*)\}',
+      ),
+      (m) => m[1]!,
+    );
+
+    // 6. Strip \left / \right delimiter markers, keep bracket that follows
+    text = text.replaceAll(RegExp(r'\\(?:left|right)\s*'), '');
+
+    // 7. Expand all remaining bare LaTeX commands
+    text = _expandLatexSymbols(text);
+
+    // 8. Catch-all: \commandname -> drop backslash, keep readable word
+    //    Prevents TTS from ever saying "backslash commandname".
+    text = text.replaceAllMapped(
+      RegExp(r'\\([a-zA-Z]+)'),
+      (m) => ' ${m[1]!} ',
+    );
+
+    // 9. Lone remaining backslashes -> space
+    text = text.replaceAll(RegExp(r'\\'), ' ');
 
     return text;
   }
 
   static String _expandLatexSymbols(String math) {
     var s = math;
+
+    // ── Structural: fractions, roots, decorated symbols ──────────────────────
+
     s = s.replaceAllMapped(
       RegExp(r'\\frac\{([^}]+)\}\{([^}]+)\}'),
       (m) => '${m[1]} over ${m[2]}',
     );
     s = s.replaceAllMapped(
+      RegExp(r'\\sqrt\[([^\]]+)\]\{([^}]+)\}'),
+      (m) => '${m[1]} root of ${m[2]}',
+    );
+    s = s.replaceAllMapped(
       RegExp(r'\\sqrt\{([^}]+)\}'),
       (m) => 'square root of ${m[1]}',
     );
+    s = s.replaceAllMapped(
+      RegExp(r'\\vec\{([^}]+)\}'),
+      (m) => 'vector ${m[1]}',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\\hat\{([^}]+)\}'),
+      (m) => '${m[1]} hat',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\\bar\{([^}]+)\}'),
+      (m) => '${m[1]} bar',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\\tilde\{([^}]+)\}'),
+      (m) => '${m[1]} tilde',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\\dot\{([^}]+)\}'),
+      (m) => '${m[1]} dot',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\\ddot\{([^}]+)\}'),
+      (m) => '${m[1]} double dot',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\\mathbb\{([^}]+)\}'),
+      (m) {
+        const sets = {
+          'R': 'the real numbers',
+          'N': 'the natural numbers',
+          'Z': 'the integers',
+          'Q': 'the rational numbers',
+          'C': 'the complex numbers',
+          'P': 'the prime numbers',
+        };
+        return sets[m[1]] ?? m[1]!;
+      },
+    );
+
+    // ── Superscripts & subscripts ─────────────────────────────────────────────
+
+    s = s.replaceAllMapped(
+      RegExp(r'\^\{([^}]+)\}'),
+      (m) => ' to the power of ${m[1]}',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'_\{([^}]+)\}'),
+      (m) => ' sub ${m[1]}',
+    );
+    s = s.replaceAll('^2', ' squared');
+    s = s.replaceAll('^3', ' cubed');
+    s = s.replaceAllMapped(
+      RegExp(r'\^(-?\d+)'),
+      (m) => ' to the power of ${m[1]}',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'\^([a-zA-Z])'),
+      (m) => ' to the power of ${m[1]}',
+    );
+    s = s.replaceAllMapped(
+      RegExp(r'_([a-zA-Z0-9])'),
+      (m) => ' sub ${m[1]}',
+    );
+
+    // ── Trig, inverse trig, hyperbolic ────────────────────────────────────────
+
     s = s
-        .replaceAll(r'\Delta', 'Delta')
-        .replaceAll(r'\pm', 'plus or minus')
-        .replaceAll(r'\to', 'to')
+        .replaceAll(r'\arcsin', 'arc sine')
+        .replaceAll(r'\arccos', 'arc cosine')
+        .replaceAll(r'\arctan', 'arc tangent')
+        .replaceAll(r'\arccot', 'arc cotangent')
+        .replaceAll(r'\arcsec', 'arc secant')
+        .replaceAll(r'\arccsc', 'arc cosecant')
+        .replaceAll(r'\sinh', 'hyperbolic sine')
+        .replaceAll(r'\cosh', 'hyperbolic cosine')
+        .replaceAll(r'\tanh', 'hyperbolic tangent')
+        .replaceAll(r'\coth', 'hyperbolic cotangent')
+        .replaceAll(r'\sin', 'sine')
+        .replaceAll(r'\cos', 'cosine')
+        .replaceAll(r'\tan', 'tangent')
+        .replaceAll(r'\cot', 'cotangent')
+        .replaceAll(r'\sec', 'secant')
+        .replaceAll(r'\csc', 'cosecant')
+        .replaceAll(r'\log', 'log')
+        .replaceAll(r'\ln', 'natural log')
+        .replaceAll(r'\exp', 'e to the power of')
+        .replaceAll(r'\lim', 'limit')
+        .replaceAll(r'\max', 'maximum')
+        .replaceAll(r'\min', 'minimum')
+        .replaceAll(r'\sup', 'supremum')
+        .replaceAll(r'\inf', 'infimum')
+        .replaceAll(r'\gcd', 'G-C-D')
+        .replaceAll(r'\deg', 'degrees');
+
+    // ── Calculus ──────────────────────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\iiint', 'triple integral')
+        .replaceAll(r'\iint', 'double integral')
+        .replaceAll(r'\int', 'integral')
+        .replaceAll(r'\oint', 'contour integral')
+        .replaceAll(r'\sum', 'sum')
+        .replaceAll(r'\prod', 'product')
+        .replaceAll(r'\partial', 'partial')
+        .replaceAll(r'\nabla', 'nabla');
+
+    // ── Comparison & equality ─────────────────────────────────────────────────
+
+    s = s
         .replaceAll(r'\neq', 'is not equal to')
+        .replaceAll(r'\ne', 'is not equal to')
         .replaceAll(r'\geq', 'is greater than or equal to')
+        .replaceAll(r'\ge', 'is greater than or equal to')
         .replaceAll(r'\leq', 'is less than or equal to')
+        .replaceAll(r'\le', 'is less than or equal to')
+        .replaceAll(r'\gg', 'is much greater than')
+        .replaceAll(r'\ll', 'is much less than')
         .replaceAll(r'\approx', 'approximately equals')
-        .replaceAll(r'\infty', 'infinity')
+        .replaceAll(r'\sim', 'is similar to')
+        .replaceAll(r'\cong', 'is congruent to')
+        .replaceAll(r'\equiv', 'is equivalent to')
+        .replaceAll(r'\propto', 'is proportional to')
+        .replaceAll(r'\pm', 'plus or minus')
+        .replaceAll(r'\mp', 'minus or plus');
+
+    // ── Arithmetic ────────────────────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\times', 'times')
+        .replaceAll(r'\cdot', 'times')
+        .replaceAll(r'\div', 'divided by')
+        .replaceAll(r'\oplus', 'plus')
+        .replaceAll(r'\ominus', 'minus')
+        .replaceAll(r'\otimes', 'tensor product')
+        .replaceAll(r'\circ', 'composed with')
+        .replaceAll(r'\%', 'percent');
+
+    // ── Set theory ────────────────────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\notin', 'not in')
+        .replaceAll(r'\in', 'in')
+        .replaceAll(r'\ni', 'contains')
+        .replaceAll(r'\subseteq', 'is a subset of or equal to')
+        .replaceAll(r'\subset', 'is a subset of')
+        .replaceAll(r'\supseteq', 'is a superset of or equal to')
+        .replaceAll(r'\supset', 'is a superset of')
+        .replaceAll(r'\cup', 'union')
+        .replaceAll(r'\cap', 'intersection')
+        .replaceAll(r'\setminus', 'minus')
+        .replaceAll(r'\varnothing', 'empty set')
+        .replaceAll(r'\emptyset', 'empty set')
+        .replaceAll(r'\infty', 'infinity');
+
+    // ── Logic ─────────────────────────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\forall', 'for all')
+        .replaceAll(r'\nexists', 'there does not exist')
+        .replaceAll(r'\exists', 'there exists')
+        .replaceAll(r'\lnot', 'not')
+        .replaceAll(r'\neg', 'not')
+        .replaceAll(r'\land', 'and')
+        .replaceAll(r'\lor', 'or')
+        .replaceAll(r'\Leftrightarrow', 'if and only if')
+        .replaceAll(r'\Rightarrow', 'implies')
+        .replaceAll(r'\Leftarrow', 'is implied by')
+        .replaceAll(r'\leftrightarrow', 'corresponds to')
+        .replaceAll(r'\rightarrow', 'maps to')
+        .replaceAll(r'\leftarrow', 'comes from')
+        .replaceAll(r'\longrightarrow', 'maps to')
+        .replaceAll(r'\mapsto', 'maps to')
+        .replaceAll(r'\to', 'to')
+        .replaceAll(r'\iff', 'if and only if')
+        .replaceAll(r'\implies', 'implies')
+        .replaceAll(r'\therefore', 'therefore')
+        .replaceAll(r'\because', 'because');
+
+    // ── Lowercase Greek ───────────────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\varepsilon', 'epsilon')
+        .replaceAll(r'\epsilon', 'epsilon')
+        .replaceAll(r'\vartheta', 'theta')
+        .replaceAll(r'\varpi', 'pi')
+        .replaceAll(r'\varrho', 'rho')
+        .replaceAll(r'\varsigma', 'sigma')
+        .replaceAll(r'\varphi', 'phi')
         .replaceAll(r'\alpha', 'alpha')
         .replaceAll(r'\beta', 'beta')
         .replaceAll(r'\gamma', 'gamma')
+        .replaceAll(r'\delta', 'delta')
+        .replaceAll(r'\zeta', 'zeta')
+        .replaceAll(r'\eta', 'eta')
         .replaceAll(r'\theta', 'theta')
+        .replaceAll(r'\iota', 'iota')
+        .replaceAll(r'\kappa', 'kappa')
+        .replaceAll(r'\lambda', 'lambda')
+        .replaceAll(r'\mu', 'mu')
+        .replaceAll(r'\nu', 'nu')
+        .replaceAll(r'\xi', 'xi')
         .replaceAll(r'\pi', 'pi')
-        .replaceAll(r'\times', 'times')
-        .replaceAll(r'\div', 'divided by')
-        .replaceAll(r'\cdot', 'times')
-        .replaceAll(r'\circ', 'degrees')
-        .replaceAll('^2', ' squared')
-        .replaceAll('^3', ' cubed')
-        .replaceAll('^', ' to the power of ')
-        .replaceAll(RegExp('[{}]'), ' ');
+        .replaceAll(r'\rho', 'rho')
+        .replaceAll(r'\sigma', 'sigma')
+        .replaceAll(r'\tau', 'tau')
+        .replaceAll(r'\upsilon', 'upsilon')
+        .replaceAll(r'\phi', 'phi')
+        .replaceAll(r'\chi', 'chi')
+        .replaceAll(r'\psi', 'psi')
+        .replaceAll(r'\omega', 'omega');
+
+    // ── Uppercase Greek ───────────────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\Gamma', 'Gamma')
+        .replaceAll(r'\Delta', 'Delta')
+        .replaceAll(r'\Theta', 'Theta')
+        .replaceAll(r'\Lambda', 'Lambda')
+        .replaceAll(r'\Xi', 'Xi')
+        .replaceAll(r'\Pi', 'Pi')
+        .replaceAll(r'\Sigma', 'Sigma')
+        .replaceAll(r'\Upsilon', 'Upsilon')
+        .replaceAll(r'\Phi', 'Phi')
+        .replaceAll(r'\Psi', 'Psi')
+        .replaceAll(r'\Omega', 'Omega');
+
+    // ── Dots, spacing, ellipses ───────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\cdots', ', and so on,')
+        .replaceAll(r'\ldots', ', and so on,')
+        .replaceAll(r'\vdots', '')
+        .replaceAll(r'\ddots', '')
+        .replaceAll(r'\qquad', ' ')
+        .replaceAll(r'\quad', ' ')
+        .replaceAll(r'\;', ' ')
+        .replaceAll(r'\,', ' ')
+        .replaceAll(r'\!', '');
+
+    // ── Brackets / delimiters ─────────────────────────────────────────────────
+
+    s = s
+        .replaceAll(r'\langle', '(')
+        .replaceAll(r'\rangle', ')')
+        .replaceAll(r'\lfloor', 'floor of ')
+        .replaceAll(r'\rfloor', '')
+        .replaceAll(r'\lceil', 'ceiling of ')
+        .replaceAll(r'\rceil', '')
+        .replaceAll(r'\{', '')
+        .replaceAll(r'\}', '');
+
+    // ── Strip remaining curly braces ──────────────────────────────────────────
+    s = s.replaceAll(RegExp('[{}]'), ' ');
 
     return s.trim();
   }

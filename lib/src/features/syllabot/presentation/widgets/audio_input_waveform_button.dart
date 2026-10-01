@@ -46,10 +46,10 @@ class AudioInputWaveformButton extends HookWidget {
       ),
     );
 
-    useEffect(
-      () => sttHandler.dispose,
-      [sttHandler],
-    );
+    useEffect(() {
+      unawaited(sttHandler.initialize());
+      return sttHandler.dispose;
+    }, [sttHandler]);
 
     final pulseController = useAnimationController(
       duration: const Duration(milliseconds: 1000),

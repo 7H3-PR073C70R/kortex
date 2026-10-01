@@ -2,17 +2,20 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 
 /// Real-time speech recognition service for Syllabot AI voice input.
 class SpeechToTextHandler {
   SpeechToTextHandler({
     required this.onResult,
     required this.onListeningChanged,
+    this.onResultWithFinal,
     this.onError,
     this.onSoundLevelChange,
   });
 
   final ValueChanged<String> onResult;
+  final void Function(String text, {required bool isFinal})? onResultWithFinal;
   final ValueChanged<bool> onListeningChanged;
   final ValueChanged<String>? onError;
   final ValueChanged<double>? onSoundLevelChange;
@@ -20,6 +23,7 @@ class SpeechToTextHandler {
   final SpeechToText _speechToText = SpeechToText();
   bool _isAvailable = false;
   bool _isInitializing = false;
+  bool _isStarting = false;
 
   bool get isListening => _speechToText.isListening;
   bool get isAvailable => _isAvailable;
@@ -27,6 +31,7 @@ class SpeechToTextHandler {
 
   /// Initializes speech recognition engine and permissions.
   Future<bool> initialize() async {
+    if (_isAvailable) return true;
     if (_isInitializing) return false;
     _isInitializing = true;
     try {
@@ -68,17 +73,26 @@ class SpeechToTextHandler {
               errorMsg.contains('timeout') ||
               errorMsg.contains('error_no_match') ||
               errorMsg.contains('error_speech_timeout')) {
-            onListeningChanged(false);
+            if (!_isStarting && !_isInitializing) {
+              onListeningChanged(false);
+            }
             return;
           }
-          onListeningChanged(false);
+          if (!_isStarting && !_isInitializing) {
+            onListeningChanged(false);
+          }
           onError?.call(val.errorMsg);
         },
-        onStatus: (status) {
+        onStatus: (status) async {
           if (status == 'listening') {
+            _isStarting = false;
             onListeningChanged(true);
           } else if (status == 'notListening' || status == 'done') {
-            onListeningChanged(false);
+            if (_isStarting || _isInitializing) return;
+            // Delay by one microtask so the audio session fully closes
+            // before the caller attempts a restart — avoids the isListening
+            // race where startListening() sees isListening==true and bails.
+            await Future<void>.microtask(() => onListeningChanged(false));
           }
         },
       );
@@ -101,9 +115,12 @@ class SpeechToTextHandler {
       return;
     }
 
+    _isStarting = true;
+
     if (!_isAvailable) {
       final initialized = await initialize();
       if (!initialized) {
+        _isStarting = false;
         onError?.call(
           'Microphone or Speech Recognition unavailable on this device',
         );
@@ -114,9 +131,13 @@ class SpeechToTextHandler {
     try {
       unawaited(HapticFeedback.mediumImpact());
       await _speechToText.listen(
-        onResult: (result) {
+        onResult: (SpeechRecognitionResult result) {
           if (result.recognizedWords.isNotEmpty) {
             onResult(result.recognizedWords);
+            onResultWithFinal?.call(
+              result.recognizedWords,
+              isFinal: result.finalResult,
+            );
           }
         },
         onSoundLevelChange: onSoundLevelChange,
@@ -126,8 +147,10 @@ class SpeechToTextHandler {
           pauseFor: pauseFor,
         ),
       );
-      onListeningChanged(true);
+      // onStatus already fires onListeningChanged(true); no duplicate needed.
+      _isStarting = false;
     } on Object catch (e) {
+      _isStarting = false;
       onListeningChanged(false);
       onError?.call('Speech recognition error: $e');
     }
@@ -135,6 +158,7 @@ class SpeechToTextHandler {
 
   /// Stops speech listening session.
   Future<void> stopListening() async {
+    _isStarting = false;
     try {
       unawaited(HapticFeedback.lightImpact());
       await _speechToText.stop();
@@ -147,6 +171,7 @@ class SpeechToTextHandler {
 
   /// Cancels listening session.
   Future<void> cancel() async {
+    _isStarting = false;
     try {
       await _speechToText.cancel();
       onListeningChanged(false);
@@ -155,6 +180,7 @@ class SpeechToTextHandler {
 
   /// Releases resources.
   void dispose() {
+    _isStarting = false;
     try {
       unawaited(_speechToText.cancel());
     } on Object catch (_) {}

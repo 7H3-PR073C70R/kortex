@@ -1442,27 +1442,27 @@ class ForumThreadDetailPage extends HookWidget {
           ],
         ),
         actions: [
-          // Live Focus Room Button (Pulsing live audio quick join)
-          IconButton(
-            icon: Icon(
-              Icons.headphones_rounded,
-              color: colors.primary,
-              size: 21,
-            ),
-            tooltip: 'Live Focus Room for Thread',
-            onPressed: () {
-              unawaited(HapticFeedback.lightImpact());
-              final room = StudyRoomEntity(
-                id: 'room-forum-${post.id}',
-                title: 'Focus Room: ${post.title}',
-                subject: post.track,
-                description:
-                    'Live focus room created for thread: ${post.title}',
-                category: post.syllabusTag,
-              );
-              unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
-            },
-          ),
+          // // Live Focus Room Button (Pulsing live audio quick join)
+          // IconButton(
+          //   icon: Icon(
+          //     Icons.headphones_rounded,
+          //     color: colors.primary,
+          //     size: 21,
+          //   ),
+          //   tooltip: 'Live Focus Room for Thread',
+          //   onPressed: () {
+          //     unawaited(HapticFeedback.lightImpact());
+          //     final room = StudyRoomEntity(
+          //       id: 'room-forum-${post.id}',
+          //       title: 'Focus Room: ${post.title}',
+          //       subject: post.track,
+          //       description:
+          //           'Live focus room created for thread: ${post.title}',
+          //       category: post.syllabusTag,
+          //     );
+          //     unawaited(context.router.push(LiveStudyRoomRoute(room: room)));
+          //   },
+          // ),
 
           // 1. Notification Toggle Button (Bell with real-time active status dot)
           Stack(

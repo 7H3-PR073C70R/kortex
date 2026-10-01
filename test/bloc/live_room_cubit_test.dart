@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -17,6 +18,9 @@ import 'package:kortex/src/features/study_rooms/domain/services/livekit_audio_se
 import 'package:kortex/src/features/study_rooms/presentation/bloc/live_room_cubit.dart';
 
 class MockCommunityRepository implements CommunityRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
   final _roomController = StreamController<StudyRoomEntity>.broadcast();
 
   @override
@@ -107,6 +111,7 @@ class MockCommunityRepository implements CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
@@ -124,6 +129,7 @@ class MockCommunityRepository implements CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
   }) async => const Left(ServerFailure(message: 'Unimplemented'));
 
   @override
@@ -574,7 +580,20 @@ void main() {
       subject: 'Mathematics',
     );
 
-    setUp(() {
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers.global'),
+      (call) async => null,
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('xyz.luan/audioplayers'),
+      (call) async => null,
+    );
+  });
+
+  setUp(() {
       mockCommunityRepo = MockCommunityRepository();
       mockEphemeralRepo = MockEphemeralRoomRepository();
       mockAudioService = MockLiveKitAudioService();
@@ -891,6 +910,51 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(cubit.state.remainingSeconds, equals(1450));
+
+      await cubit.close();
+    });
+
+    test('stops ambient music when user joins voice (toggleVoicePod)', () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'user-123',
+        currentUserName: 'Adeola',
+      );
+
+      // Initially ambient audio is playing
+      expect(cubit.state.isAmbientAudioPlaying, isTrue);
+
+      // User joins voice pod
+      cubit.toggleVoicePod();
+
+      expect(cubit.state.isVoicePodEnabled, isTrue);
+      expect(cubit.state.isAmbientAudioPlaying, isFalse);
+
+      await cubit.close();
+    });
+
+    test('stops ambient music when user unmutes mic (toggleMicMute)', () async {
+      final cubit = LiveRoomCubit(
+        initialRoom: initialRoom,
+        repository: mockCommunityRepo,
+        ephemeralRepository: mockEphemeralRepo,
+        audioService: mockAudioService,
+        currentUserId: 'user-123',
+        currentUserName: 'Adeola',
+      );
+
+      // Initially ambient audio is playing and mic is muted
+      expect(cubit.state.isAmbientAudioPlaying, isTrue);
+      expect(cubit.state.isMuted, isTrue);
+
+      // User unmutes mic
+      await cubit.toggleMicMute();
+
+      expect(cubit.state.isMuted, isFalse);
+      expect(cubit.state.isAmbientAudioPlaying, isFalse);
 
       await cubit.close();
     });

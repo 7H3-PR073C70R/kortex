@@ -49,12 +49,11 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
   @override
   Future<bool> hasPermission() async {
     try {
-      final micGranted = await _recorder.hasPermission();
-      if (micGranted) return true;
-
-      // Fallback check through permission_handler if platform-specific
       final status = await Permission.microphone.status;
       if (status.isGranted) return true;
+
+      final micGranted = await _recorder.hasPermission();
+      if (micGranted) return true;
 
       final requested = await Permission.microphone.request();
       return requested.isGranted;

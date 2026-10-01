@@ -78,9 +78,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   String _latestResponse = '';
   late VoiceGender _selectedGender;
   double _soundLevel = 0;
+  bool _isTranscriptExpanded = false;
+  bool _isProcessingPrompt = false;
   Timer? _silenceTimer;
 
-  static const Duration _silenceThreshold = Duration(milliseconds: 2200);
+  static const Duration _silenceThreshold = Duration(milliseconds: 1400);
 
   @override
   void initState() {
@@ -94,7 +96,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     unawaited(_pulseController.repeat(reverse: true));
 
     _sttHandler = SpeechToTextHandler(
-      onResult: (text) {
+      onResult: (text) {},
+      onResultWithFinal: (text, {required isFinal}) {
         if (!mounted || _state != DialogueState.listening) return;
         final words = text.trim();
         if (words.isEmpty) return;
@@ -107,8 +110,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           _liveTranscript = fullTranscript;
         });
 
-        // Reset silence detection timer: only process after user stops speaking for after some time
-        _resetSilenceTimer();
+        if (isFinal) {
+          unawaited(_commitVoicePromptImmediately());
+        } else {
+          _resetSilenceTimer();
+        }
       },
       onSoundLevelChange: (level) {
         if (!mounted || _state != DialogueState.listening) return;
@@ -123,17 +129,18 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       onListeningChanged: (listening) {
         if (!mounted) return;
         if (_state == DialogueState.listening && !listening) {
-          // If silence timer is actively waiting, user is still in the middle of their turn!
-          // The native OS recognizer ended an utterance/paused early.
-          // Keep transcript safe and seamlessly restart listening so user is never cut off!
-          if (_silenceTimer != null && _silenceTimer!.isActive) {
-            if (_liveTranscript.trim().isNotEmpty) {
-              _accumulatedTranscript = _liveTranscript.trim();
-            }
-            unawaited(_sttHandler.startListening());
-          } else if (_liveTranscript.trim().isEmpty) {
-            // User hasn't spoken yet - keep mic listening
-            unawaited(_sttHandler.startListening());
+          final prompt = _liveTranscript.trim();
+          if (prompt.isNotEmpty) {
+            unawaited(_commitVoicePromptImmediately());
+          } else {
+            // Wait briefly so the audio session fully releases before
+            // restarting — prevents startListening() from seeing
+            // isListening==true and bailing without reopening the mic.
+            Future<void>.delayed(const Duration(milliseconds: 300), () {
+              if (mounted && _state == DialogueState.listening) {
+                unawaited(_sttHandler.startListening());
+              }
+            });
           }
         }
       },
@@ -160,17 +167,15 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   Future<void> _onSilenceTimeout() async {
     _silenceTimer?.cancel();
     _silenceTimer = null;
-    final prompt = _liveTranscript.trim();
-    if (prompt.isNotEmpty) {
-      unawaited(HapticFeedback.mediumImpact());
-      await _sttHandler.stopListening();
-      await _processVoicePrompt(prompt);
-    }
+    if (_state != DialogueState.listening) return;
+    await _commitVoicePromptImmediately();
   }
 
   Future<void> _commitVoicePromptImmediately() async {
     _silenceTimer?.cancel();
     _silenceTimer = null;
+    if (_state != DialogueState.listening || _isProcessingPrompt) return;
+
     final prompt = _liveTranscript.trim();
     if (prompt.isNotEmpty) {
       unawaited(HapticFeedback.mediumImpact());
@@ -178,9 +183,11 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
       await _processVoicePrompt(prompt);
     } else {
       unawaited(_sttHandler.stopListening());
-      setState(() {
-        _state = DialogueState.idle;
-      });
+      if (mounted) {
+        setState(() {
+          _state = DialogueState.idle;
+        });
+      }
     }
   }
 
@@ -232,8 +239,15 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
   }
 
   Future<void> _processVoicePrompt(String prompt) async {
+    if (_isProcessingPrompt) return;
+    _isProcessingPrompt = true;
     _silenceTimer?.cancel();
     _silenceTimer = null;
+
+    if (!mounted) {
+      _isProcessingPrompt = false;
+      return;
+    }
 
     setState(() {
       _state = DialogueState.thinking;
@@ -351,6 +365,8 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           _state = DialogueState.idle;
         });
       }
+    } finally {
+      _isProcessingPrompt = false;
     }
   }
 
@@ -659,33 +675,87 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
                   const SizedBox(height: 12),
 
-                  // 5. Live Captions / Transcript Card
-                  if (_liveTranscript.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceSecondary,
-                        borderRadius: AppRadius.radiusCard,
-                        border: Border.all(
-                          color: isListening
-                              ? colors.primary.withAlpha(120)
-                              : colors.surfaceBorder.withAlpha(80),
+                  // 5. Live Captions / Transcript Card with Visibility Toggle
+                  if (_liveTranscript.isNotEmpty) ...[
+                    ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        setState(() {
+                          _isTranscriptExpanded = !_isTranscriptExpanded;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                      ),
-                      child: Text(
-                        '"$_liveTranscript"',
-                        textAlign: TextAlign.center,
-                        style: typography.body.medium.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 35 : 20),
+                          borderRadius: AppRadius.radiusBadge,
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 70 : 40),
+                            width: 0.9,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.subtitles_rounded,
+                              size: 13,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              _isTranscriptExpanded
+                                  ? 'Hide Speech-to-Text 📝'
+                                  : 'Show Speech-to-Text (STT) 📝',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              _isTranscriptExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              size: 15,
+                              color: colors.primary,
+                            ),
+                          ],
                         ),
                       ),
                     ),
+                    if (_isTranscriptExpanded) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceSecondary,
+                          borderRadius: AppRadius.radiusCard,
+                          border: Border.all(
+                            color: isListening
+                                ? colors.primary.withAlpha(120)
+                                : colors.surfaceBorder.withAlpha(80),
+                          ),
+                        ),
+                        child: Text(
+                          '"$_liveTranscript"',
+                          textAlign: TextAlign.center,
+                          style: typography.body.medium.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
 
                   // 6. Spoken Response Markdown / Formula Viewer
                   if (_latestResponse.isNotEmpty)

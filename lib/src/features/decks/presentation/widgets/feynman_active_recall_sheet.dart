@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -44,6 +45,7 @@ class FeynmanActiveRecallSheet extends HookWidget {
     final isListening = useState<bool>(false);
     final transcript = useState<String>('');
     final errorMessage = useState<String?>(null);
+    final isTranscriptExpanded = useState<bool>(false);
 
     final speechHandler = useMemoized(
       () => SpeechToTextHandler(
@@ -58,6 +60,11 @@ class FeynmanActiveRecallSheet extends HookWidget {
         },
       ),
     );
+
+    useEffect(() {
+      unawaited(speechHandler.initialize());
+      return speechHandler.dispose;
+    }, [speechHandler]);
 
     // Calculate keyword match percentage between transcript and card answer
     final keywordCoverage = useMemoized(() {
@@ -215,7 +222,6 @@ class FeynmanActiveRecallSheet extends HookWidget {
 
           // Live Spoken Transcript Display & Pulse Indicator
           Container(
-            height: 120,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isListening.value
@@ -228,8 +234,11 @@ class FeynmanActiveRecallSheet extends HookWidget {
                     : colors.surfaceBorder.withAlpha(60),
               ),
             ),
-            child: transcript.value.isEmpty
-                ? Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (transcript.value.isEmpty)
+                  Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -258,16 +267,77 @@ class FeynmanActiveRecallSheet extends HookWidget {
                       ],
                     ),
                   )
-                : SingleChildScrollView(
-                    child: Text(
-                      transcript.value,
-                      style: typography.body.regular.copyWith(
-                        color: colors.textPrimary,
-                        fontSize: 13.5,
-                        height: 1.4,
+                else ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShrinkableButton(
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        isTranscriptExpanded.value = !isTranscriptExpanded.value;
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withAlpha(isDark ? 35 : 20),
+                          borderRadius: AppRadius.radiusBadge,
+                          border: Border.all(
+                            color: colors.primary.withAlpha(isDark ? 70 : 40),
+                            width: 0.9,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.subtitles_rounded,
+                              size: 13,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isTranscriptExpanded.value
+                                  ? 'Hide Speech-to-Text 📝'
+                                  : 'Show Speech-to-Text (STT) 📝',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              isTranscriptExpanded.value
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              size: 15,
+                              color: colors.primary,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
+                  if (isTranscriptExpanded.value) ...[
+                    const SizedBox(height: 8),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 100),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          transcript.value,
+                          style: typography.body.regular.copyWith(
+                            color: colors.textPrimary,
+                            fontSize: 13.5,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
 

@@ -924,7 +924,16 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   }
 
   void toggleVoicePod() {
-    emit(state.copyWith(isVoicePodEnabled: !state.isVoicePodEnabled));
+    final nextEnabled = !state.isVoicePodEnabled;
+    if (nextEnabled && state.isAmbientAudioPlaying) {
+      unawaited(_ambientPlayer.pause());
+    }
+    emit(
+      state.copyWith(
+        isVoicePodEnabled: nextEnabled,
+        isAmbientAudioPlaying: nextEnabled ? false : state.isAmbientAudioPlaying,
+      ),
+    );
   }
 
   void toggleHandRaise() {
@@ -968,6 +977,11 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
   Future<void> toggleMicMute() async {
     if (isClosed) return;
     final nextMuted = !state.isMuted;
+
+    // When joining voice / unmuting, stop ambient background music
+    if (!nextMuted && state.isAmbientAudioPlaying) {
+      unawaited(_ambientPlayer.pause());
+    }
 
     // If unmuting, attempt to enable microphone track first
     if (!nextMuted && _audioService != null) {
@@ -1030,6 +1044,7 @@ class LiveRoomCubit extends Cubit<LiveRoomState> {
     emit(
       state.copyWith(
         isMuted: nextMuted,
+        isAmbientAudioPlaying: !nextMuted ? false : state.isAmbientAudioPlaying,
         ephemeralParticipants: updatedList,
         microphonePermissionDenied: false,
         isPermanentlyDeniedMic: false,

@@ -427,8 +427,8 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
           ),
         ),
 
-        // Expandable Speech-to-Text Transcript Section
-        if (widget.showTranscript && effectiveTranscript != null) ...[
+        // Expandable Speech-to-Text Transcript Section — always visible when showTranscript is true
+        if (widget.showTranscript) ...[
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
@@ -440,10 +440,14 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: colors.primary.withAlpha(isDark ? 35 : 20),
+                  color: effectiveTranscript != null
+                      ? colors.primary.withAlpha(isDark ? 35 : 20)
+                      : colors.surfaceSecondary.withAlpha(isDark ? 120 : 80),
                   borderRadius: AppRadius.radiusBadge,
                   border: Border.all(
-                    color: colors.primary.withAlpha(isDark ? 70 : 40),
+                    color: effectiveTranscript != null
+                        ? colors.primary.withAlpha(isDark ? 70 : 40)
+                        : colors.surfaceBorder.withAlpha(isDark ? 60 : 35),
                     width: 0.9,
                   ),
                 ),
@@ -453,15 +457,19 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                     Icon(
                       Icons.subtitles_rounded,
                       size: 13,
-                      color: colors.primary,
+                      color: effectiveTranscript != null
+                          ? colors.primary
+                          : colors.textSecondary,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       _isTranscriptExpanded
-                          ? 'Hide Speech-to-Text 📝'
-                          : 'Show Speech-to-Text (STT) 📝',
+                          ? 'Hide Transcript'
+                          : 'Show Speech-to-Text 📝',
                       style: typography.caption.bold.copyWith(
-                        color: colors.primary,
+                        color: effectiveTranscript != null
+                            ? colors.primary
+                            : colors.textSecondary,
                         fontSize: 11,
                       ),
                     ),
@@ -471,7 +479,9 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                           ? Icons.keyboard_arrow_up_rounded
                           : Icons.keyboard_arrow_down_rounded,
                       size: 15,
-                      color: colors.primary,
+                      color: effectiveTranscript != null
+                          ? colors.primary
+                          : colors.textSecondary,
                     ),
                   ],
                 ),
@@ -479,7 +489,7 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
             ),
           ),
 
-          // Expanded Speech-to-Text Transcript Box
+          // Expanded panel — shows transcript text OR an empty state
           if (_isTranscriptExpanded) ...[
             const SizedBox(height: 6),
             AnimatedContainer(
@@ -492,84 +502,109 @@ class _VoiceNotePlayerWidgetState extends State<VoiceNotePlayerWidget> {
                     : colors.surfaceSecondary,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: colors.primary.withAlpha(isDark ? 55 : 35),
+                  color: effectiveTranscript != null
+                      ? colors.primary.withAlpha(isDark ? 55 : 35)
+                      : colors.surfaceBorder.withAlpha(isDark ? 50 : 30),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.graphic_eq_rounded,
-                            size: 14,
-                            color: colors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'SPEECH-TO-TEXT TRANSCRIPT',
-                            style: typography.caption.bold.copyWith(
-                              color: colors.primary,
-                              fontSize: 10,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                      ShrinkableButton(
-                        onTap: () => _copyTranscript(context, effectiveTranscript),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.primary.withAlpha(isDark ? 40 : 20),
-                            borderRadius: AppRadius.radiusMicro,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.copy_rounded,
-                                size: 11,
-                                color: colors.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Copy',
-                                style: typography.caption.bold.copyWith(
+              child: effectiveTranscript != null
+                  // ── Has transcript ──────────────────────────────────────
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.graphic_eq_rounded,
+                                  size: 14,
                                   color: colors.primary,
-                                  fontSize: 10,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'SPEECH-TO-TEXT TRANSCRIPT',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 10,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ShrinkableButton(
+                              onTap: () =>
+                                  _copyTranscript(context, effectiveTranscript),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      colors.primary.withAlpha(isDark ? 40 : 20),
+                                  borderRadius: AppRadius.radiusMicro,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.copy_rounded,
+                                      size: 11,
+                                      color: colors.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Copy',
+                                      style: typography.caption.bold.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 180),
+                          child: SingleChildScrollView(
+                            child: SelectableText(
+                              effectiveTranscript,
+                              style: typography.body.regular.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 12.5,
+                                height: 1.4,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxHeight: 180,
-                    ),
-                    child: SingleChildScrollView(
-                      child: SelectableText(
-                        effectiveTranscript,
-                        style: typography.body.regular.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 12.5,
-                          height: 1.4,
+                      ],
+                    )
+                  // ── No transcript ───────────────────────────────────────
+                  : Row(
+                      children: [
+                        Icon(
+                          Icons.subtitles_off_rounded,
+                          size: 16,
+                          color: colors.textSecondary.withAlpha(160),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'No transcript available for this voice note.',
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ],
         ],

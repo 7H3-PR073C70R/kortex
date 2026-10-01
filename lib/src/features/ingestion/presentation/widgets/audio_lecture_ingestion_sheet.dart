@@ -12,6 +12,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Interactive bottom sheet for uploading and transcribing audio lectures (ING-10).
 class AudioLectureIngestionSheet extends HookWidget {
@@ -56,6 +57,7 @@ class AudioLectureIngestionSheet extends HookWidget {
     final isUploading = useState<bool>(false);
     final uploadProgress = useState<double>(0);
     final transcriptionResult = useState<String>('');
+    final isTranscriptExpanded = useState<bool>(false);
 
     Future<void> handlePickAudio() async {
       AppFeedback.selection();
@@ -296,33 +298,82 @@ class AudioLectureIngestionSheet extends HookWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-              // Transcribed Text Preview
+              // Transcribed Text Preview with Visibility Toggle
               if (transcriptionResult.value.isNotEmpty) ...[
-                Text(
-                  'Transcription Preview:',
-                  style: typography.caption.regular.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 120),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      transcriptionResult.value,
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textPrimary,
-                        height: 1.4,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      isTranscriptExpanded.value = !isTranscriptExpanded.value;
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(context.isDarkMode ? 35 : 20),
+                        borderRadius: AppRadius.radiusBadge,
+                        border: Border.all(
+                          color: colors.primary.withAlpha(context.isDarkMode ? 70 : 40),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.subtitles_rounded,
+                            size: 13,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            isTranscriptExpanded.value
+                                ? 'Hide Speech-to-Text Transcript 📝'
+                                : 'Show Speech-to-Text Transcript (STT) 📝',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            isTranscriptExpanded.value
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            size: 15,
+                            color: colors.primary,
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
+                if (isTranscriptExpanded.value) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 140),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceSecondary,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(context.isDarkMode ? 50 : 30),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        transcriptionResult.value,
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textPrimary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
               ],
               // Action Buttons
