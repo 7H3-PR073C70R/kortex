@@ -17,6 +17,8 @@ import 'package:kortex/src/features/profile/presentation/pages/profile_page.dart
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 class MockAuthBloc extends Mock implements AuthBloc {}
 class MockAuthModeCubit extends Mock implements AuthModeCubit {}
 class MockUserActivityService extends Mock implements UserActivityService {}
@@ -47,6 +49,13 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const AuthProfileFetchRequested());
+    PackageInfo.setMockInitialValues(
+      appName: 'Kortexify',
+      packageName: 'com.kortex.app',
+      version: '1.0.2',
+      buildNumber: '3',
+      buildSignature: '',
+    );
   });
 
   setUp(() async {
@@ -104,6 +113,7 @@ void main() {
       expect(find.text('Profile & Settings'), findsOneWidget);
       expect(find.text('Neural Scholar'), findsWidgets);
       expect(find.text('scholar@kortex.ai'), findsOneWidget);
+      expect(find.text('Kortexify v1.0.2+3 • Neural Study AI'), findsOneWidget);
     });
   });
 }

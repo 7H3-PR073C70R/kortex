@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -140,25 +141,39 @@ class AboutSupportPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfacePrimary,
-                        borderRadius: AppRadius.radiusBadge,
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(90),
-                        ),
-                      ),
-                      child: Text(
-                        'v1.0.0+1 • Production Neural Engine',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 11.5,
-                        ),
-                      ),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final versionStr = snapshot.hasData
+                            ? (snapshot.data!.buildNumber.isNotEmpty
+                                ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+                                : snapshot.data!.version)
+                            : '';
+                        final displayText = versionStr.isNotEmpty
+                            ? 'v$versionStr • Production Neural Engine'
+                            : 'Production Neural Engine';
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius: AppRadius.radiusBadge,
+                            border: Border.all(
+                              color: colors.surfaceBorder.withAlpha(90),
+                            ),
+                          ),
+                          child: Text(
+                            displayText,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -56,6 +57,16 @@ class _ProfileView extends HookWidget {
       context.read<AuthBloc>().add(const AuthProfileFetchRequested());
       return null;
     }, const []);
+
+    final packageInfoMemo = useMemoized(PackageInfo.fromPlatform);
+    final packageInfoSnapshot = useFuture(packageInfoMemo);
+    final appVersionText = useMemoized(() {
+      if (!packageInfoSnapshot.hasData) return '';
+      final info = packageInfoSnapshot.data!;
+      final version = info.version;
+      final buildNumber = info.buildNumber;
+      return buildNumber.isNotEmpty ? '$version+$buildNumber' : version;
+    }, [packageInfoSnapshot.data]);
 
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -386,7 +397,9 @@ class _ProfileView extends HookWidget {
                                       // 4. App Version Footer
                                       Center(
                                         child: Text(
-                                          'Kortexify v1.2.0 • Neural Study AI',
+                                          appVersionText.isNotEmpty
+                                              ? 'Kortexify v$appVersionText • Neural Study AI'
+                                              : 'Kortexify • Neural Study AI',
                                           style: typography.caption.bold
                                               .copyWith(
                                                 color: colors.textMuted,
