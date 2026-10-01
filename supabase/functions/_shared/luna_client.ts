@@ -717,7 +717,7 @@ PEDAGOGICAL & FORMATTING RULES:
 4. EXPLANATION / HINTS: A concise mnemonic, key takeaway, or memory hint.
 5. TAGS: Array of 1-3 strings categorizing this card (e.g. ["${topic}", "${courseCode || "General"}"]).
 6. IMAGE_URL: Only assign an image URL if the card directly questions, explains, or interprets that specific visual diagram. For all other conceptual, textual, code, or definition cards, you MUST set 'image_url' to null. Do NOT arbitrarily attach images to unrelated cards.
-7. CODE BLOCKS: Whenever code, syntax, algorithms, or programming snippets are queried or explained (in either FRONT or BACK), format them cleanly using standard markdown code fences with language identifiers (e.g., ```dart\nvoid main() {\n  runApp(const MyApp());\n}\n```, ```python\n...\n```). Preserve standard indentation and line breaks. Never collapse code snippets into a single unbroken line.
+7. CODE BLOCKS: Whenever code, syntax, algorithms, or programming snippets are queried or explained (in either FRONT or BACK), format them cleanly using standard markdown code fences with language identifiers (e.g., \`\`\`dart\nvoid main() {\n  runApp(const MyApp());\n}\n\`\`\`, \`\`\`python\n...\n\`\`\`). Preserve standard indentation and line breaks. Never collapse code snippets into a single unbroken line.
 8. COMPREHENSIVE COVERAGE: ${cardCountHint ? `Target roughly ${cardCountHint} high-yield cards.` : "Cover every key concept, formula, rule, and definition without omitting important sections."}
 
 ${imageContext}

@@ -99,51 +99,60 @@ export class ServerDocumentParser {
       }
     }
 
-    const uploadedImages: Array<{ url: string; label: string }> = [];
-    for (let i = 0; i < extractedMedia.length; i++) {
-      const media = extractedMedia[i];
-      try {
-        const imgExt = media.mimeType.includes("png") ? "png" : "jpg";
-        const filename = `fig_${i + 1}.${imgExt}`;
-        const uploadRes = await R2StorageProvider.uploadDocumentImage({
-          documentId,
-          filename,
-          bytes: media.bytes,
-          mimeType: media.mimeType,
-          contentHash,
-        });
-
-        uploadedImages.push({
-          url: uploadRes.publicUrl,
-          label: media.label || `Figure ${i + 1}`,
-        });
-      } catch (uploadEx) {
-        console.warn("[ServerDocumentParser] R2 diagram upload warning, checking fallback:", uploadEx);
+    // Upload extracted media diagrams concurrently (capped at top 8 figures)
+    const mediaToUpload = extractedMedia.slice(0, 8);
+    const uploadedImagesResults = await Promise.all(
+      mediaToUpload.map(async (media, i) => {
         try {
           const imgExt = media.mimeType.includes("png") ? "png" : "jpg";
-          const storagePath = `documents/${documentId}/images/fig_${i + 1}.${imgExt}`;
-          const { error: uploadErr } = await this.supabase.storage
-            .from("card-assets")
-            .upload(storagePath, media.bytes, {
-              contentType: media.mimeType,
-              upsert: true,
-            });
+          const filename = `fig_${i + 1}.${imgExt}`;
+          const uploadRes = await R2StorageProvider.uploadDocumentImage({
+            documentId,
+            filename,
+            bytes: media.bytes,
+            mimeType: media.mimeType,
+            contentHash,
+          });
 
-          if (!uploadErr) {
-            const { data: publicUrlData } = this.supabase.storage
+          return {
+            url: uploadRes.publicUrl,
+            label: media.label || `Figure ${i + 1}`,
+          };
+        } catch (uploadEx) {
+          console.warn(
+            "[ServerDocumentParser] R2 diagram upload warning, checking fallback:",
+            uploadEx
+          );
+          try {
+            const imgExt = media.mimeType.includes("png") ? "png" : "jpg";
+            const storagePath = `documents/${documentId}/images/fig_${i + 1}.${imgExt}`;
+            const { error: uploadErr } = await this.supabase.storage
               .from("card-assets")
-              .getPublicUrl(storagePath);
-
-            if (publicUrlData?.publicUrl) {
-              uploadedImages.push({
-                url: publicUrlData.publicUrl,
-                label: media.label || `Figure ${i + 1}`,
+              .upload(storagePath, media.bytes, {
+                contentType: media.mimeType,
+                upsert: true,
               });
+
+            if (!uploadErr) {
+              const { data: publicUrlData } = this.supabase.storage
+                .from("card-assets")
+                .getPublicUrl(storagePath);
+
+              if (publicUrlData?.publicUrl) {
+                return {
+                  url: publicUrlData.publicUrl,
+                  label: media.label || `Figure ${i + 1}`,
+                };
+              }
             }
-          }
-        } catch (_) {}
-      }
-    }
+          } catch (_) {}
+          return null;
+        }
+      })
+    );
+
+    const uploadedImages: Array<{ url: string; label: string }> =
+      uploadedImagesResults.filter((img): img is { url: string; label: string } => img !== null);
 
     const cleanText = this.cleanEducationalText(rawText);
     const sections = this.segmentIntoSections(cleanText, filename);

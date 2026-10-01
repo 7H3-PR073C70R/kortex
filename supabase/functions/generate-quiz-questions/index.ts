@@ -150,7 +150,7 @@ Requirements:
 - Explicitly identify the 0-based index of the correct option.
 - Provide a concise academic explanation.
 - If relevant (mathematics, physics, engineering, chemistry), include a valid LaTeX formula (e.g. "\\Delta G = \\Delta H - T\\Delta S"). If none, set latex_formula to null.
-- If code snippets, programming questions, or algorithms are involved, format them cleanly using standard markdown code fences (e.g. ```dart\n...\n```, ```python\n...\n```) in question, options, or explanation. Preserve proper line breaks and indentation.
+- If code snippets, programming questions, or algorithms are involved, format them cleanly using standard markdown code fences (e.g. \`\`\`dart\\n...\\n\`\`\`, \`\`\`python\\n...\\n\`\`\`) in question, options, or explanation. Preserve proper line breaks and indentation.
 - Set sub_topic to a relevant academic topic area.
 
 You MUST reply with ONLY a single valid JSON object strictly matching this schema:

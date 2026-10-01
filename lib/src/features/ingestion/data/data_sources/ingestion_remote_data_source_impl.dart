@@ -16,6 +16,7 @@ import 'package:kortex/src/features/ingestion/data/models/document_upload_model.
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
 import 'package:kortex/src/features/ingestion/data/services/document_parser_service.dart';
 import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 
 class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
   IngestionRemoteDataSourceImpl(
@@ -406,17 +407,20 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String documentId,
     required String storagePath,
     required String fileType,
+    SynthesisMode synthesisMode = SynthesisMode.aiSmart,
   }) async {
     final performance = _performanceService;
     if (performance != null) {
       return performance.traceAction('document_ingestion_ocr', (trace) async {
         trace
           ..putAttribute('document_id', documentId)
-          ..putAttribute('file_type', fileType);
+          ..putAttribute('file_type', fileType)
+          ..putAttribute('synthesis_mode', synthesisMode.name);
         return _performProcessStemOcr(
           documentId: documentId,
           storagePath: storagePath,
           fileType: fileType,
+          synthesisMode: synthesisMode,
         );
       });
     }
@@ -425,6 +429,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       documentId: documentId,
       storagePath: storagePath,
       fileType: fileType,
+      synthesisMode: synthesisMode,
     );
   }
 
@@ -432,6 +437,7 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     required String documentId,
     required String storagePath,
     required String fileType,
+    SynthesisMode synthesisMode = SynthesisMode.aiSmart,
   }) async {
     var fileBytes = _documentBytesCache[documentId];
     final filename = _documentFilenamesCache[documentId] ?? 'Document';
@@ -450,26 +456,41 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       } on Object catch (_) {}
     }
 
-    String? extractedText;
     final isPdf =
         fileType.toLowerCase().contains('pdf') ||
         storagePath.toLowerCase().endsWith('.pdf') ||
         filename.toLowerCase().endsWith('.pdf');
 
-    if (fileBytes != null && fileBytes.isNotEmpty) {
+    // TIER 1: FAST LOCAL SYNTHESIS (< 2 seconds, 0 external API calls)
+    if (synthesisMode == SynthesisMode.fastLocal &&
+        fileBytes != null &&
+        fileBytes.isNotEmpty) {
+      final text = isPdf
+          ? await _pdfParserService.extractText(fileBytes, filename: filename)
+          : _parserService.extractTextFromBytes(
+              fileBytes,
+              fileType: fileType,
+              filename: filename,
+            );
+      return _parserService.synthesizeSnippetsFromDocument(
+        documentId: documentId,
+        fullText: text,
+        filename: filename,
+      );
+    }
+
+    // TIER 2: AI SMART SYNTHESIS
+    // For non-PDF text/markdown, decoding is instantaneous (< 1ms).
+    // For PDFs, we bypass the heavy client Syncfusion parse because the backend
+    // server extracts text via Wasm unpdf in ~200ms on server compute.
+    String? extractedText;
+    if (!isPdf && fileBytes != null && fileBytes.isNotEmpty) {
       try {
-        if (isPdf) {
-          extractedText = await _pdfParserService.extractText(
-            fileBytes,
-            filename: filename,
-          );
-        } else {
-          extractedText = _parserService.extractTextFromBytes(
-            fileBytes,
-            fileType: fileType,
-            filename: filename,
-          );
-        }
+        extractedText = _parserService.extractTextFromBytes(
+          fileBytes,
+          fileType: fileType,
+          filename: filename,
+        );
       } on Object catch (_) {}
     }
 
@@ -580,11 +601,11 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       final extractedImages = _parserService.extractImagesFromPdfBytes(
         fileBytes,
       );
-      final uploadedImageUrls = <String>[];
 
-      // Upload extracted diagrams to Cloudflare R2 under `documents/{documentId}/images/{filename}`
-      for (var i = 0; i < extractedImages.length; i++) {
-        final img = extractedImages[i];
+      // Upload extracted diagrams to Cloudflare R2 concurrently (capped at 6)
+      final uploadTasks = extractedImages.take(6).toList().asMap().entries.map((entry) async {
+        final i = entry.key;
+        final img = entry.value;
         final filename = 'img_${i + 1}.${img.extension}';
         final contentType = img.extension == 'png' ? 'image/png' : 'image/jpeg';
         String? r2Url;
@@ -601,10 +622,9 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           } on Object catch (_) {}
         }
 
-        final publicUrl =
-            r2Url ?? AppApiEndpoint.getDocumentImagePublicUrl(documentId, filename);
-        uploadedImageUrls.add(publicUrl);
-      }
+        return r2Url ?? AppApiEndpoint.getDocumentImagePublicUrl(documentId, filename);
+      });
+      final uploadedImageUrls = await Future.wait(uploadTasks);
 
       final snippets = _parserService.synthesizeSnippetsFromDocument(
         documentId: documentId,

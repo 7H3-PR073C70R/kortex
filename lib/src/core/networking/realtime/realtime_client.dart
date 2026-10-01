@@ -147,7 +147,9 @@ class RealtimeClient {
       if (event == 'presence_state' ||
           event == 'presence_diff' ||
           event == 'broadcast') {
-        final ctrl = _presenceControllers[topic];
+        final stripped = topic.replaceFirst(RegExp('^realtime:'), '');
+        final ctrl =
+            _presenceControllers[topic] ?? _presenceControllers[stripped];
         if (ctrl != null && !ctrl.isClosed) {
           ctrl.add({'event': event, 'payload': payload});
         }
@@ -181,9 +183,12 @@ class RealtimeClient {
   }
 
   void _joinPresenceTopic(String channelName) {
+    final topic = channelName.startsWith('realtime:')
+        ? channelName
+        : 'realtime:$channelName';
     _send({
       'event': 'phx_join',
-      'topic': channelName,
+      'topic': topic,
       'payload': {
         'config': {
           'presence': {'key': ''},

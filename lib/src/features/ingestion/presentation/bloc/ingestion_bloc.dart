@@ -14,6 +14,7 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 import 'package:kortex/src/features/ingestion/domain/services/deep_document_dedup_service.dart';
 import 'package:kortex/src/features/ingestion/domain/use_cases/fetch_lms_courses_use_case.dart';
@@ -284,6 +285,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
               courseId: event.courseId,
               courseCode: event.courseCode,
               courseTitle: event.courseTitle,
+              synthesisMode: state.synthesisMode,
             ),
           );
         }
@@ -302,9 +304,13 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     IngestionServerProgressEvent event,
     Emitter<IngestionState> emit,
   ) {
+    // Monotonic progress guarantee: never jump backwards
+    final newProgress = event.progress > state.uploadProgress
+        ? event.progress
+        : state.uploadProgress;
     emit(
       state.copyWith(
-        uploadProgress: event.progress,
+        uploadProgress: newProgress.clamp(0.0, 1.0),
         stageMessage: event.stageMessage,
       ),
     );
@@ -315,14 +321,50 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
     Emitter<IngestionState> emit,
   ) async {
     final isDeduplicated = state.wasDeduplicated;
+    final isFastLocal = event.synthesisMode == SynthesisMode.fastLocal;
 
     emit(
       state.copyWith(
         status: ProcessingStatus.parsingOcr,
+        uploadProgress: 0.20,
         stageMessage: isDeduplicated
             ? 'Loading cached study deck...'
-            : 'Extracting document on server compute...',
+            : (isFastLocal
+                ? 'Synthesizing fast local flashcards...'
+                : 'Extracting document on server compute...'),
       ),
+    );
+
+    // Active progressive percentage ticker to guarantee smooth continuous feedback
+    var currentTickerProgress = 0.20;
+    late final Timer smoothProgressTicker;
+    smoothProgressTicker = Timer.periodic(
+      const Duration(milliseconds: 320),
+      (timer) {
+        if (isClosed || state.status != ProcessingStatus.parsingOcr) {
+          timer.cancel();
+          return;
+        }
+        if (currentTickerProgress < 0.88) {
+          currentTickerProgress += isFastLocal ? 0.08 : 0.02;
+          String stageMsg;
+          if (currentTickerProgress < 0.45) {
+            stageMsg = 'Extracting document text and visual structure...';
+          } else if (currentTickerProgress < 0.75) {
+            stageMsg = isFastLocal
+                ? 'Synthesizing deterministic high-yield cards...'
+                : 'Luna AI synthesizing active-recall flashcards...';
+          } else {
+            stageMsg = 'Structuring conceptual cards and LaTeX notation...';
+          }
+          add(
+            IngestionServerProgressEvent(
+              progress: currentTickerProgress,
+              stageMessage: stageMsg,
+            ),
+          );
+        }
+      },
     );
 
     // Listen to real-time server compute progress broadcasts
@@ -331,10 +373,18 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
       progressSub = RealtimeClient.instance
           .watchPresence('document_ingestion:${event.documentId}')
           .listen((msg) {
-            final payload = msg['payload'] as Map<String, dynamic>? ?? {};
+            final rawPayload = msg['payload'] as Map<String, dynamic>? ?? {};
+            // Handle both outer and nested payload structures from Supabase Realtime broadcast
+            final payload = rawPayload['payload'] is Map<String, dynamic>
+                ? rawPayload['payload'] as Map<String, dynamic>
+                : rawPayload;
+
             final progress = (payload['progress'] as num?)?.toDouble();
             final stageMessage = payload['stageMessage'] as String?;
             if (progress != null && stageMessage != null && !isClosed) {
+              if (progress > currentTickerProgress) {
+                currentTickerProgress = progress;
+              }
               add(
                 IngestionServerProgressEvent(
                   progress: progress,
@@ -350,10 +400,12 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         documentId: event.documentId,
         storagePath: event.storagePath,
         fileType: event.fileType,
+        synthesisMode: event.synthesisMode,
       );
 
       ocrResult.fold(
         (failure) {
+          smoothProgressTicker.cancel();
           emit(
             state.copyWith(
               status: ProcessingStatus.failed,
@@ -367,12 +419,16 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
           );
         },
         (snippets) {
+          smoothProgressTicker.cancel();
           emit(
             state.copyWith(
               status: ProcessingStatus.completed,
+              uploadProgress: 1,
               stageMessage: isDeduplicated
                   ? 'Pre-processed asset detected. Study deck synthesized!'
-                  : 'Luna synthesized ${snippets.length} conceptual cards',
+                  : (isFastLocal
+                      ? 'Synthesized ${snippets.length} high-yield study cards!'
+                      : 'Luna synthesized ${snippets.length} conceptual cards!'),
               snippets: snippets,
             ),
           );
@@ -398,6 +454,7 @@ class IngestionBloc extends Bloc<IngestionEvent, IngestionState> {
         },
       );
     } finally {
+      smoothProgressTicker.cancel();
       unawaited(progressSub?.cancel() ?? Future<void>.value());
     }
   }
