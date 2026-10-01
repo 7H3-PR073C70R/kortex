@@ -148,6 +148,8 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   Completer<void>? _queueDrainedCompleter;
   Completer<void>? _currentChunkPlaybackCompleter;
   StreamSubscription<void>? _playerCompleteSub;
+  Future<_PreparedAudioChunk?>? _prefetchFuture;
+  String? _prefetchedSentence;
 
   int _activeSessionId = 0;
   bool _isFlutterTtsSpeaking = false;
@@ -593,12 +595,16 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
       _setSpeakingState(true);
       _isProcessingQueue = true;
       unawaited(_processQueue(sessionId));
+    } else {
+      _prefetchNextIfNeeded(_activeSessionId);
     }
   }
 
   @override
   void clearQueue() {
     _sentenceQueue.clear();
+    _prefetchFuture = null;
+    _prefetchedSentence = null;
   }
 
   @override
@@ -613,6 +619,8 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   Future<void> stop() async {
     _activeSessionId++;
     _sentenceQueue.clear();
+    _prefetchFuture = null;
+    _prefetchedSentence = null;
     _isProcessingQueue = false;
 
     if (_currentChunkPlaybackCompleter != null &&
@@ -642,14 +650,40 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   }
 
   // ---------------------------------------------------------------------------
-  // Internal Queue Execution
+  // Internal Queue Execution & Pipelined Synthesis
   // ---------------------------------------------------------------------------
+
+  void _prefetchNextIfNeeded(int sessionId) {
+    if (sessionId != _activeSessionId) return;
+    if (_sentenceQueue.isNotEmpty && _prefetchFuture == null) {
+      final next = _sentenceQueue.first;
+      _prefetchedSentence = next;
+      _prefetchFuture = _synthesizeSentenceTiered(next, sessionId);
+    }
+  }
 
   Future<void> _processQueue(int sessionId) async {
     while (_sentenceQueue.isNotEmpty && sessionId == _activeSessionId) {
       final sentence = _sentenceQueue.removeAt(0);
+
+      _PreparedAudioChunk? chunk;
+      if (_prefetchedSentence == sentence && _prefetchFuture != null) {
+        chunk = await _prefetchFuture;
+        _prefetchFuture = null;
+        _prefetchedSentence = null;
+      } else {
+        _prefetchFuture = null;
+        _prefetchedSentence = null;
+        chunk = await _synthesizeSentenceTiered(sentence, sessionId);
+      }
+
+      if (sessionId != _activeSessionId || chunk == null) continue;
+
+      // Pipeline synthesis of the next sentence in the background while this chunk plays
+      _prefetchNextIfNeeded(sessionId);
+
       try {
-        await _speakSentenceTiered(sentence, sessionId);
+        await _playChunk(chunk);
       } on Object catch (e) {
         onError?.call(e.toString());
       }
@@ -663,6 +697,8 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
     }
 
     if (sessionId == _activeSessionId) {
+      _prefetchFuture = null;
+      _prefetchedSentence = null;
       _isProcessingQueue = false;
       _setSpeakingState(false);
       if (_queueDrainedCompleter != null &&
@@ -677,8 +713,11 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   /// 1. flutter_edge_tts if internet is available.
   /// 2. flutter_kokoro_tts if offline or Edge TTS fails.
   /// 3. flutter_tts fallback in case of exception.
-  Future<void> _speakSentenceTiered(String sentence, int sessionId) async {
-    if (sessionId != _activeSessionId || sentence.trim().isEmpty) return;
+  Future<_PreparedAudioChunk?> _synthesizeSentenceTiered(
+    String sentence,
+    int sessionId,
+  ) async {
+    if (sessionId != _activeSessionId || sentence.trim().isEmpty) return null;
 
     final isOnline = await _checkInternetConnection();
 
@@ -687,42 +726,68 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
     // -------------------------------------------------------------------------
     if (isOnline) {
       try {
-        final edgeSuccess = await _speakWithEdgeTts(sentence, sessionId);
-        if (edgeSuccess) {
-          _lastEngineUsed = TtsEngineType.edgeOnline;
-          return;
+        final bytes = await _synthesizeWithEdgeTts(sentence, sessionId);
+        if (bytes != null && bytes.isNotEmpty) {
+          return _PreparedAudioChunk(
+            sessionId: sessionId,
+            text: sentence,
+            bytes: bytes,
+            extension: 'mp3',
+            engine: TtsEngineType.edgeOnline,
+          );
         }
       } on Object catch (e) {
         debugPrint('[TTS] Edge TTS failed, falling back to Kokoro: $e');
       }
     }
 
-    if (sessionId != _activeSessionId) return;
+    if (sessionId != _activeSessionId) return null;
 
     // -------------------------------------------------------------------------
     // Tier 2: flutter_kokoro_tts (Offline / High-Quality On-Device)
     // -------------------------------------------------------------------------
     try {
-      final kokoroSuccess = await _speakWithKokoroTts(sentence, sessionId);
-      if (kokoroSuccess) {
-        _lastEngineUsed = TtsEngineType.kokoroOnDevice;
-        return;
+      final wavBytes = await _synthesizeWithKokoroTts(sentence, sessionId);
+      if (wavBytes != null && wavBytes.isNotEmpty) {
+        return _PreparedAudioChunk(
+          sessionId: sessionId,
+          text: sentence,
+          bytes: wavBytes,
+          extension: 'wav',
+          engine: TtsEngineType.kokoroOnDevice,
+        );
       }
     } on Object catch (e) {
       debugPrint('[TTS] Kokoro TTS failed, falling back to system TTS: $e');
     }
 
-    if (sessionId != _activeSessionId) return;
+    if (sessionId != _activeSessionId) return null;
 
     // -------------------------------------------------------------------------
     // Tier 3: flutter_tts (System native fallback)
     // -------------------------------------------------------------------------
-    try {
-      await _speakWithFlutterTts(sentence, sessionId);
-      _lastEngineUsed = TtsEngineType.systemFallback;
-    } on Object catch (e) {
-      debugPrint('[TTS] FlutterTts fallback failed: $e');
-      onError?.call('TTS playback error: $e');
+    return _PreparedAudioChunk(
+      sessionId: sessionId,
+      text: sentence,
+      bytes: null,
+      extension: null,
+      engine: TtsEngineType.systemFallback,
+    );
+  }
+
+  Future<void> _playChunk(_PreparedAudioChunk chunk) async {
+    if (chunk.sessionId != _activeSessionId) return;
+
+    _lastEngineUsed = chunk.engine;
+
+    if (chunk.bytes != null && chunk.extension != null) {
+      await _playBytes(
+        chunk.bytes!,
+        extension: chunk.extension!,
+        sessionId: chunk.sessionId,
+      );
+    } else {
+      await _speakWithFlutterTts(chunk.text, chunk.sessionId);
     }
   }
 
@@ -730,7 +795,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   // Tier 1: Microsoft Edge Online TTS
   // ---------------------------------------------------------------------------
 
-  Future<bool> _speakWithEdgeTts(String text, int sessionId) async {
+  Future<Uint8List?> _synthesizeWithEdgeTts(String text, int sessionId) async {
     final edgeTts = FlutterEdgeTts(
       voice: _edgeVoice,
     );
@@ -748,10 +813,10 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
       );
 
       final result = await edgeTts.synthesize(text, prosody: prosody);
-      if (result.audioBytes.isEmpty) return false;
-      if (sessionId != _activeSessionId) return false;
+      if (result.audioBytes.isEmpty) return null;
+      if (sessionId != _activeSessionId) return null;
 
-      return await _playBytes(result.audioBytes, extension: 'mp3', sessionId: sessionId);
+      return result.audioBytes;
     } finally {
       await edgeTts.close();
     }
@@ -761,7 +826,7 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
   // Tier 2: Kokoro On-Device TTS
   // ---------------------------------------------------------------------------
 
-  Future<bool> _speakWithKokoroTts(String text, int sessionId) async {
+  Future<Uint8List?> _synthesizeWithKokoroTts(String text, int sessionId) async {
     final kokoro = _kokoroTts ??= KokoroTts();
     await kokoro.initialize();
 
@@ -771,11 +836,11 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
       speed: _speechRate,
     );
 
-    if (audioSamples.isEmpty) return false;
-    if (sessionId != _activeSessionId) return false;
+    if (audioSamples.isEmpty) return null;
+    if (sessionId != _activeSessionId) return null;
 
     final wavBytes = buildWavBytes(audioSamples, kokoro.sampleRate);
-    return _playBytes(wavBytes, extension: 'wav', sessionId: sessionId);
+    return wavBytes;
   }
 
   // ---------------------------------------------------------------------------
@@ -907,3 +972,21 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
     isSpeakingNotifier.dispose();
   }
 }
+
+/// Internal container for a synthesized audio chunk awaiting or undergoing playback.
+class _PreparedAudioChunk {
+  const _PreparedAudioChunk({
+    required this.sessionId,
+    required this.text,
+    this.bytes,
+    this.extension,
+    required this.engine,
+  });
+
+  final int sessionId;
+  final String text;
+  final Uint8List? bytes;
+  final String? extension;
+  final TtsEngineType engine;
+}
+

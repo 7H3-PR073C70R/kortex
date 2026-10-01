@@ -633,6 +633,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
   }) async {
     // Duplicate check: verify if an identical question/discussion was already created (local cache + remote)
@@ -687,6 +688,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           : '';
       enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
     }
+    if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty) {
+      enrichedContent +=
+          '\n<!-- voice_transcript: ${voiceNoteTranscript.trim()} -->';
+    }
     if (tags != null && tags.isNotEmpty) {
       enrichedContent += '\n<!-- tags: ${jsonEncode(tags)} -->';
     }
@@ -704,6 +709,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
         'voice_note_url': voiceNoteUrl.trim(),
       'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty)
+        'voice_note_transcript': voiceNoteTranscript.trim(),
       'author_name': authorName,
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
@@ -730,7 +737,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       post = post.copyWith(
         voiceNoteUrl: voiceNoteUrl,
         voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+        voiceNoteTranscript: voiceNoteTranscript,
       );
+    } else if (post.voiceNoteTranscript == null &&
+        voiceNoteTranscript != null &&
+        voiceNoteTranscript.isNotEmpty) {
+      post = post.copyWith(voiceNoteTranscript: voiceNoteTranscript);
     }
     unawaited(_localDataSource?.saveForumPost(post));
     return post;
@@ -767,6 +779,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             ..remove('media_urls')
             ..remove('voice_note_url')
             ..remove('voice_note_duration_seconds')
+            ..remove('voice_note_transcript')
             ..remove('tags')
             ..remove('is_anonymous');
           return _safeCreateForumPost(fallback);
@@ -774,6 +787,56 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<ForumPostModel> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
+  }) async {
+    final body = <String, dynamic>{};
+    if (title != null && title.trim().isNotEmpty) body['title'] = title.trim();
+    if (content != null) {
+      var enrichedContent = content.trim();
+      if (mediaUrls != null && mediaUrls.isNotEmpty) {
+        enrichedContent += '\n<!-- media: ${jsonEncode(mediaUrls)} -->';
+      }
+      if (tags != null && tags.isNotEmpty) {
+        enrichedContent += '\n<!-- tags: ${jsonEncode(tags)} -->';
+      }
+      body['content'] = enrichedContent;
+    }
+    if (track != null && track.trim().isNotEmpty) body['track'] = track.trim();
+    if (latexContent != null && latexContent.trim().isNotEmpty) {
+      body['latex_content'] = latexContent.trim();
+    }
+    if (tags != null && tags.isNotEmpty) body['tags'] = tags;
+    if (mediaUrls != null && mediaUrls.isNotEmpty) body['media_urls'] = mediaUrls;
+
+    final res = await _client.updateForumPost({'id': 'eq.$postId'}, body);
+    final data = res.data;
+    final list = data is List ? data : <dynamic>[];
+    if (list.isNotEmpty) {
+      final updated =
+          ForumPostModel.fromJson(list.first as Map<String, dynamic>);
+      unawaited(_localDataSource?.saveForumPost(updated));
+      return updated;
+    }
+    final fetchedRes = await _client.fetchForumPosts({'id': 'eq.$postId', 'select': '*'});
+    final fetchedData = fetchedRes.data;
+    final fetchedList = fetchedData is List ? fetchedData : <dynamic>[];
+    if (fetchedList.isNotEmpty) {
+      final post =
+          ForumPostModel.fromJson(fetchedList.first as Map<String, dynamic>);
+      unawaited(_localDataSource?.saveForumPost(post));
+      return post;
+    }
+    throw Exception('Failed to update forum post');
   }
 
   @override
@@ -813,6 +876,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
   }) async {
     final rawUserId = _userStorage?.getUserId();
@@ -834,6 +898,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           : '';
       enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
     }
+    if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty) {
+      enrichedContent +=
+          '\n<!-- voice_transcript: ${voiceNoteTranscript.trim()} -->';
+    }
 
     final payload = <String, dynamic>{
       'post_id': postId,
@@ -846,6 +914,8 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
         'voice_note_url': voiceNoteUrl.trim(),
       'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty)
+        'voice_note_transcript': voiceNoteTranscript.trim(),
       'author_name': authorName,
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
@@ -871,7 +941,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       reply = reply.copyWith(
         voiceNoteUrl: voiceNoteUrl,
         voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+        voiceNoteTranscript: voiceNoteTranscript,
       );
+    } else if (reply.voiceNoteTranscript == null &&
+        voiceNoteTranscript != null &&
+        voiceNoteTranscript.isNotEmpty) {
+      reply = reply.copyWith(voiceNoteTranscript: voiceNoteTranscript);
     }
     final cache = _replyCache.putIfAbsent(postId, () => []);
     if (!cache.any((r) => r.id == reply.id)) {
@@ -883,6 +958,59 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       controller.add(List.unmodifiable(cache));
     }
     return reply;
+  }
+
+  @override
+  Future<ForumReplyModel> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
+  }) async {
+    final body = <String, dynamic>{
+      'content': content.trim(),
+      if (latexContent != null && latexContent.trim().isNotEmpty)
+        'latex_content': latexContent.trim(),
+    };
+    final res = await _client.updateForumReply({'id': 'eq.$replyId'}, body);
+    final data = res.data;
+    final list = data is List ? data : <dynamic>[];
+    if (list.isNotEmpty) {
+      final updated =
+          ForumReplyModel.fromJson(list.first as Map<String, dynamic>);
+      unawaited(_localDataSource?.saveForumReply(updated));
+      return updated;
+    }
+    throw Exception('Failed to update forum reply');
+  }
+
+  @override
+  Future<bool> deleteForumReply({
+    required String replyId,
+    required String postId,
+  }) async {
+    try {
+      await _client.deleteForumReply({'id': 'eq.$replyId'});
+      final cache = _replyCache[postId];
+      if (cache != null) {
+        cache.removeWhere((r) => r.id == replyId);
+        final controller = _replyControllers[postId];
+        if (controller != null && !controller.isClosed) {
+          controller.add(List.unmodifiable(cache));
+        }
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.deleteForumReply failed',
+          ),
+        );
+      }
+      return false;
+    }
   }
 
   Future<HttpResponse<dynamic>> _safeReplyToForumPost(
@@ -908,6 +1036,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             ..remove('media_urls')
             ..remove('voice_note_url')
             ..remove('voice_note_duration_seconds')
+            ..remove('voice_note_transcript')
             ..remove('is_anonymous');
           return _safeReplyToForumPost(fallback);
         }

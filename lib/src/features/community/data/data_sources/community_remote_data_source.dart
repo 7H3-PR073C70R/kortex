@@ -76,7 +76,18 @@ abstract class CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
+  });
+
+  Future<ForumPostModel> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
   });
 
   Future<bool> deleteForumPost(String postId);
@@ -89,7 +100,19 @@ abstract class CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
+  });
+
+  Future<ForumReplyModel> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
+  });
+
+  Future<bool> deleteForumReply({
+    required String replyId,
+    required String postId,
   });
 
   Future<bool> voteForumPost({

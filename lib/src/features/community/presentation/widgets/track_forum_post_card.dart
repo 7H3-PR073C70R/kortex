@@ -13,9 +13,11 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
+import 'package:kortex/src/features/community/presentation/widgets/moderation_feedback_dialog.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/subject_master_badge.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
@@ -47,6 +49,172 @@ class TrackForumPostCard extends HookWidget {
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  void _showEditPostSheet(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+    final repo = locator<CommunityRepository>();
+
+    final titleController = TextEditingController(text: post.title);
+    final contentController = TextEditingController(text: post.content);
+    final isSubmitting = ValueNotifier<bool>(false);
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor:
+            isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetCtx) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16,
+            ),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: isSubmitting,
+              builder: (ctx, isSaving, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Edit Discussion',
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: titleController,
+                      enabled: !isSaving,
+                      style: typography.body.medium.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Title',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: contentController,
+                      enabled: !isSaving,
+                      maxLines: 5,
+                      style: typography.body.regular.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Content',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              final newTitle = titleController.text.trim();
+                              final newContent = contentController.text.trim();
+                              if (newTitle.isEmpty || newContent.isEmpty) return;
+
+                              const mod = ContentModerationService();
+                              final modRes = mod.validatePost(
+                                title: newTitle,
+                                content: newContent,
+                              );
+                              if (!modRes.isValid) {
+                                unawaited(
+                                  ModerationFeedbackDialog.show(
+                                    context,
+                                    result: modRes,
+                                    contentTarget: 'discussion',
+                                  ),
+                                );
+                                return;
+                              }
+
+                              isSubmitting.value = true;
+                              final res = await repo.updateForumPost(
+                                postId: post.id,
+                                title: newTitle,
+                                content: newContent,
+                              );
+                              isSubmitting.value = false;
+
+                              res.fold(
+                                (failure) {
+                                  if (context.mounted) {
+                                    context.showSnackBar(
+                                      message: failure.message ??
+                                          'Failed to update discussion',
+                                      type: SnackBarType.error,
+                                    );
+                                  }
+                                },
+                                (updated) {
+                                  if (locator.isRegistered<CommunityHubBloc>()) {
+                                    locator<CommunityHubBloc>().add(
+                                      const RefreshForumPostsEvent(),
+                                    );
+                                  }
+                                  if (context.mounted) {
+                                    Navigator.of(sheetCtx).pop();
+                                    context.showSnackBar(
+                                      message: 'Discussion updated',
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Save Changes'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _showPostOptionsMenu(BuildContext context) {
@@ -178,7 +346,24 @@ class TrackForumPostCard extends HookWidget {
                                 currentUserId == post.authorId) ||
                             (currentUserName != null &&
                                 currentUserName == post.authorName);
-                      }())
+                      }()) ...[
+                        ListTile(
+                          leading: Icon(
+                            Icons.edit_outlined,
+                            color: colors.textPrimary,
+                          ),
+                          title: Text(
+                            'Edit Discussion',
+                            style: typography.body.medium.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                            _showEditPostSheet(context);
+                          },
+                        ),
                         ListTile(
                           leading: Icon(
                             Icons.delete_outline_rounded,
@@ -254,6 +439,7 @@ class TrackForumPostCard extends HookWidget {
                             }
                           },
                         ),
+                      ],
                       Builder(
                         builder: (innerCtx) {
                           final currentUserId = locator<UserStorageService>()

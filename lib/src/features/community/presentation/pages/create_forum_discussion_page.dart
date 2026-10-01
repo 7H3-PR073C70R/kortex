@@ -9,6 +9,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -19,6 +20,7 @@ import 'package:kortex/src/features/community/domain/services/content_moderation
 import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/moderation_feedback_dialog.dart';
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
@@ -97,6 +99,10 @@ class CreateForumDiscussionPage extends HookWidget {
     final recordedVoiceNoteUrl = useState<String?>(null);
     final voiceNoteDurationSeconds = useState<int>(0);
     final recordedVoiceNoteTranscript = useState<String?>(null);
+    final isRecordingVoice = useState<bool>(false);
+    final voiceRecordingDuration = useState<int>(0);
+    final voiceRecorderController =
+        useMemoized(VoiceNoteRecorderController.new);
 
     final characterCount = useState<int>(0);
     final lastSavedTime = useState<String>('Draft');
@@ -503,9 +509,12 @@ class CreateForumDiscussionPage extends HookWidget {
         content: content,
       );
       if (!modResult.isValid) {
-        context.showSnackBar(
-          message: modResult.reason ?? 'Post content failed safety moderation.',
-          type: SnackBarType.error,
+        unawaited(
+          ModerationFeedbackDialog.show(
+            context,
+            result: modResult,
+            contentTarget: 'discussion',
+          ),
         );
         return;
       }
@@ -688,6 +697,10 @@ class CreateForumDiscussionPage extends HookWidget {
           voiceNoteDurationSeconds: voiceNoteDurationSeconds.value > 0
               ? voiceNoteDurationSeconds.value
               : null,
+          voiceNoteTranscript:
+              recordedVoiceNoteTranscript.value?.trim().isNotEmpty == true
+                  ? recordedVoiceNoteTranscript.value!.trim()
+                  : null,
           isAnonymous: isAnonymous.value,
         );
 
@@ -1518,8 +1531,20 @@ class CreateForumDiscussionPage extends HookWidget {
                           const SizedBox(width: 10),
                           VoiceNoteRecorderWidget(
                             compact: true,
-                            showBanner: true,
                             controller: contentController,
+                            recorderController: voiceRecorderController,
+                            onRecordingStateChanged: ({
+                              required isRecording,
+                              required isLocked,
+                              required durationSeconds,
+                              required transcript,
+                            }) {
+                              isRecordingVoice.value = isRecording;
+                              voiceRecordingDuration.value = durationSeconds;
+                              if (transcript.trim().isNotEmpty) {
+                                recordedVoiceNoteTranscript.value = transcript;
+                              }
+                            },
                             onRecordingComplete: ({
                               required audioUrl,
                               required durationSeconds,
@@ -1539,6 +1564,25 @@ class CreateForumDiscussionPage extends HookWidget {
                       ),
                       const SizedBox(height: 10),
 
+                      // Voice recording banner if active
+                      if (isRecordingVoice.value) ...[
+                        VoiceRecordingBannerWidget(
+                          durationSeconds: voiceRecordingDuration.value,
+                          transcriptText:
+                              recordedVoiceNoteTranscript.value ?? '',
+                          amplitudeStream:
+                              locator.isRegistered<AudioRecordingService>()
+                                  ? locator<AudioRecordingService>()
+                                      .amplitudeStream
+                                  : null,
+                          onCancel: () =>
+                              unawaited(voiceRecorderController.cancel()),
+                          onDone: () =>
+                              unawaited(voiceRecorderController.finish()),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+
                       // Voice note player preview if recorded
                       if (recordedVoiceNoteUrl.value != null) ...[
                         VoiceNotePlayerWidget(
@@ -1546,10 +1590,11 @@ class CreateForumDiscussionPage extends HookWidget {
                           durationSeconds: voiceNoteDurationSeconds.value > 0
                               ? voiceNoteDurationSeconds.value
                               : null,
-                          showTranscript: false,
+                          transcript: recordedVoiceNoteTranscript.value,
                           onDelete: () {
                             recordedVoiceNoteUrl.value = null;
                             voiceNoteDurationSeconds.value = 0;
+                            recordedVoiceNoteTranscript.value = null;
                           },
                         ),
                         const SizedBox(height: 10),

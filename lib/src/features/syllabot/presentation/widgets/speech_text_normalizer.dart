@@ -35,20 +35,27 @@ class SpeechTextNormalizer {
     r'\be\.g\.,?': 'for example',
     r'\bi\.e\.,?': 'that is',
     r'\betc\.,?': 'etcetera',
-    r'\bvs\.\b': 'versus',
+    r'\bvs\.(?!\w)': 'versus',
     r'\bvs\b': 'versus',
     r'\bw/o\b': 'without',
     r'\bw/\b': 'with',
-    r'\bDr\.\b': 'Doctor',
-    r'\bMr\.\b': 'Mister',
-    r'\bMrs\.\b': 'Missus',
-    r'\bMs\.\b': 'Miz',
-    r'\bProf\.\b': 'Professor',
-    r'\bFig\.\b': 'Figure',
-    r'\bfig\.\b': 'figure',
-    r'\bEq\.\b': 'Equation',
-    r'\beq\.\b': 'equation',
-    r'\bapprox\.\b': 'approximately',
+    r'\bDr\.(?!\w)': 'Doctor',
+    r'\bMr\.(?!\w)': 'Mister',
+    r'\bMrs\.(?!\w)': 'Missus',
+    r'\bMs\.(?!\w)': 'Miz',
+    r'\bProf\.(?!\w)': 'Professor',
+    r'\bSr\.(?!\w)': 'Senior',
+    r'\bJr\.(?!\w)': 'Junior',
+    r'\bSt\.(?!\w)': 'Saint',
+    r'\bPh\.D\.(?!\w)': 'P-h-D',
+    r'\bNo\.(?!\w)': 'Number',
+    r'\bDept\.(?!\w)': 'Department',
+    r'\bUniv\.(?!\w)': 'University',
+    r'\bFig\.(?!\w)': 'Figure',
+    r'\bfig\.(?!\w)': 'figure',
+    r'\bEq\.(?!\w)': 'Equation',
+    r'\beq\.(?!\w)': 'equation',
+    r'\bapprox\.(?!\w)': 'approximately',
   };
 
   /// Normalizes raw markdown/assistant text into spoken conversational English.
@@ -175,12 +182,17 @@ class SpeechTextNormalizer {
     text = text.replaceAll(RegExp('[—–]'), ', ');
     // Replace ellipses with comma pause
     text = text.replaceAll('...', ', ');
-    // Collapse newlines to natural pause
+    // Collapse newlines: avoid creating double punctuation if preceded by punctuation
+    text = text.replaceAll(RegExp(r'(?<=[.!?])\s*\n+'), ' ');
+    text = text.replaceAll(RegExp(r'(?<=[,;:])\s*\n+'), ' ');
     text = text.replaceAll(RegExp(r'\n+'), '. ');
     // Collapse multi-spaces
     text = text.replaceAll(RegExp(r'\s{2,}'), ' ');
     // Collapse duplicate punctuation
     text = text.replaceAll(RegExp(r'[,\s]+,'), ',');
+    text = text.replaceAll(RegExp(r'([.!?])\s*\.+'), r'$1');
+    text = text.replaceAll(RegExp(r'([,:;])\s*\.+'), r'$1');
+    text = text.replaceAll(RegExp(r'\.\s*([,:;])'), r'$1');
     text = text.replaceAll(RegExp(r'\.\s*\.'), '.');
 
     return text.trim();
@@ -294,8 +306,9 @@ class SpeechTextNormalizer {
     final clean = text.trim();
     if (clean.isEmpty) return [];
 
-    // Split on sentence-ending punctuation (. ! ?) or paragraph linebreaks
-    final sentencePattern = RegExp(r'(?<=[.!?])\s+|\n+');
+    // Split on sentence-ending punctuation (. ! ?) or paragraph linebreaks,
+    // avoiding splitting after single-letter initials (e.g., "A.", "B.").
+    final sentencePattern = RegExp(r'(?<!\b[A-Z])(?<=[.!?])\s+|\n+');
     final rawSentences = clean.split(sentencePattern);
 
     final chunks = <String>[];
@@ -305,8 +318,8 @@ class SpeechTextNormalizer {
       final s = raw.trim();
       if (s.isEmpty) continue;
 
-      // If a single sentence is long (> 100 characters), split along clause pauses (, ; :)
-      if (s.length > 100) {
+      // If a single sentence is exceptionally long (> 200 characters), split along clause pauses (, ; :)
+      if (s.length > 200) {
         final clauseParts = s.split(RegExp(r'(?<=[,;:])\s+'));
         for (final clause in clauseParts) {
           final c = clause.trim();
@@ -314,7 +327,7 @@ class SpeechTextNormalizer {
 
           if (buffer.isEmpty) {
             buffer.write(c);
-          } else if (buffer.length + c.length + 1 > 80) {
+          } else if (buffer.length + c.length + 1 > 140) {
             chunks.add(buffer.toString());
             buffer
               ..clear()
@@ -324,10 +337,12 @@ class SpeechTextNormalizer {
           }
         }
       } else {
-        // For distinct human speech, keep sentences separate unless combining very short phrases (total <= 50 chars)
+        // Group sentences into natural, cadence-friendly chunks (up to ~160 chars)
+        // so neural TTS engines can render natural sentence-to-sentence prosody
+        // without robotic pauses after every period.
         if (buffer.isEmpty) {
           buffer.write(s);
-        } else if (buffer.length + s.length + 1 > 50) {
+        } else if (buffer.length + s.length + 1 > 160) {
           chunks.add(buffer.toString());
           buffer
             ..clear()

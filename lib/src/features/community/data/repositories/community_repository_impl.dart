@@ -213,6 +213,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
   }) {
     return _remoteDataSource
@@ -227,7 +228,32 @@ class CommunityRepositoryImpl implements CommunityRepository {
           mediaUrls: mediaUrls,
           voiceNoteUrl: voiceNoteUrl,
           voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+          voiceNoteTranscript: voiceNoteTranscript,
           isAnonymous: isAnonymous,
+        )
+        .then((model) => model.toEntity())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ForumPostEntity>> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
+  }) {
+    return _remoteDataSource
+        .updateForumPost(
+          postId: postId,
+          title: title,
+          content: content,
+          track: track,
+          latexContent: latexContent,
+          tags: tags,
+          mediaUrls: mediaUrls,
         )
         .then((model) => model.toEntity())
         .makeRequest();
@@ -247,6 +273,7 @@ class CommunityRepositoryImpl implements CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
   }) {
     return _remoteDataSource
@@ -258,9 +285,36 @@ class CommunityRepositoryImpl implements CommunityRepository {
           mediaUrls: mediaUrls,
           voiceNoteUrl: voiceNoteUrl,
           voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+          voiceNoteTranscript: voiceNoteTranscript,
           isAnonymous: isAnonymous,
         )
         .then((model) => model.toEntity())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, ForumReplyEntity>> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
+  }) {
+    return _remoteDataSource
+        .updateForumReply(
+          replyId: replyId,
+          content: content,
+          latexContent: latexContent,
+        )
+        .then((model) => model.toEntity())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteForumReply({
+    required String replyId,
+    required String postId,
+  }) {
+    return _remoteDataSource
+        .deleteForumReply(replyId: replyId, postId: postId)
         .makeRequest();
   }
 

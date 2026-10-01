@@ -9,11 +9,13 @@ class SpeechToTextHandler {
     required this.onResult,
     required this.onListeningChanged,
     this.onError,
+    this.onSoundLevelChange,
   });
 
   final ValueChanged<String> onResult;
   final ValueChanged<bool> onListeningChanged;
   final ValueChanged<String>? onError;
+  final ValueChanged<double>? onSoundLevelChange;
 
   final SpeechToText _speechToText = SpeechToText();
   bool _isAvailable = false;
@@ -21,6 +23,7 @@ class SpeechToTextHandler {
 
   bool get isListening => _speechToText.isListening;
   bool get isAvailable => _isAvailable;
+  SpeechToText get rawInstance => _speechToText;
 
   /// Initializes speech recognition engine and permissions.
   Future<bool> initialize() async {
@@ -59,6 +62,15 @@ class SpeechToTextHandler {
 
       _isAvailable = await _speechToText.initialize(
         onError: (val) {
+          // If error is normal silence timeout or no match, do not treat as fatal error
+          final errorMsg = val.errorMsg.toLowerCase();
+          if (errorMsg.contains('no_match') ||
+              errorMsg.contains('timeout') ||
+              errorMsg.contains('error_no_match') ||
+              errorMsg.contains('error_speech_timeout')) {
+            onListeningChanged(false);
+            return;
+          }
           onListeningChanged(false);
           onError?.call(val.errorMsg);
         },
@@ -81,7 +93,10 @@ class SpeechToTextHandler {
   }
 
   /// Starts listening to microphone and transcribing speech.
-  Future<void> startListening() async {
+  Future<void> startListening({
+    Duration listenFor = const Duration(minutes: 10),
+    Duration pauseFor = const Duration(seconds: 30),
+  }) async {
     if (_speechToText.isListening) {
       return;
     }
@@ -104,10 +119,11 @@ class SpeechToTextHandler {
             onResult(result.recognizedWords);
           }
         },
+        onSoundLevelChange: onSoundLevelChange,
         listenOptions: SpeechListenOptions(
           listenMode: ListenMode.dictation,
-          listenFor: const Duration(minutes: 10),
-          pauseFor: const Duration(seconds: 30),
+          listenFor: listenFor,
+          pauseFor: pauseFor,
         ),
       );
       onListeningChanged(true);

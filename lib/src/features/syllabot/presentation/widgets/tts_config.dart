@@ -19,7 +19,7 @@ class TtsConfig {
     required this.baseSpeechRate,
     required this.pitch,
     required this.volume,
-    this.sentencePauseMs = 250,
+    this.sentencePauseMs = 0,
     this.language = 'en-US',
   });
 
@@ -28,7 +28,7 @@ class TtsConfig {
     VoiceGender gender = VoiceGender.female,
     double speechRateMultiplier = 1.0,
     double pitch = 1.0,
-    int sentencePauseMs = 250,
+    int sentencePauseMs = 0,
     String language = 'en-US',
   }) {
     final isIos = !kIsWeb && Platform.isIOS;

@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -15,6 +14,7 @@ import 'package:kortex/src/features/community/domain/services/content_moderation
 import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/pages/forum_thread_detail_page.dart';
+import 'package:kortex/src/features/community/presentation/widgets/moderation_feedback_dialog.dart';
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
@@ -401,28 +401,24 @@ class CreatePostBottomSheet extends HookWidget {
                   maxLines: 4,
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    VoiceNoteRecorderWidget(
-                      compact: true,
-                      showBanner: true,
-                      controller: contentController,
-                      onRecordingComplete: ({
-                        required audioUrl,
-                        required durationSeconds,
-                        required transcript,
-                      }) {
-                        recordedVoiceNoteUrl.value = audioUrl;
-                        voiceNoteDurationSeconds.value = durationSeconds;
-                        recordedVoiceNoteTranscript.value = transcript;
-                      },
-                      onCancel: () {
-                        recordedVoiceNoteUrl.value = null;
-                        voiceNoteDurationSeconds.value = 0;
-                        recordedVoiceNoteTranscript.value = null;
-                      },
-                    ),
-                  ],
+                VoiceNoteRecorderWidget(
+                  compact: true,
+                  showBanner: true,
+                  controller: contentController,
+                  onRecordingComplete: ({
+                    required audioUrl,
+                    required durationSeconds,
+                    required transcript,
+                  }) {
+                    recordedVoiceNoteUrl.value = audioUrl;
+                    voiceNoteDurationSeconds.value = durationSeconds;
+                    recordedVoiceNoteTranscript.value = transcript;
+                  },
+                  onCancel: () {
+                    recordedVoiceNoteUrl.value = null;
+                    voiceNoteDurationSeconds.value = 0;
+                    recordedVoiceNoteTranscript.value = null;
+                  },
                 ),
                 if (recordedVoiceNoteUrl.value != null) ...[
                   const SizedBox(height: 8),
@@ -432,7 +428,6 @@ class CreatePostBottomSheet extends HookWidget {
                         ? voiceNoteDurationSeconds.value
                         : null,
                     transcript: recordedVoiceNoteTranscript.value,
-                    showTranscript: false,
                     onDelete: () {
                       recordedVoiceNoteUrl.value = null;
                       voiceNoteDurationSeconds.value = 0;
@@ -558,9 +553,12 @@ class CreatePostBottomSheet extends HookWidget {
                         );
 
                         if (!moderation.isValid) {
-                          context.showSnackBar(
-                            message: moderation.reason ?? 'Post content validation failed.',
-                            type: SnackBarType.error,
+                          unawaited(
+                            ModerationFeedbackDialog.show(
+                              context,
+                              result: moderation,
+                              contentTarget: 'post',
+                            ),
                           );
                           return;
                         }

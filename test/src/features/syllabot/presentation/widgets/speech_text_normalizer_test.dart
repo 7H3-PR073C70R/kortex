@@ -73,6 +73,35 @@ void main() {
         expect(chunk.trim().isNotEmpty, isTrue);
       }
     });
+
+    test('normalizes newlines and punctuation cleanly without duplicate dots', () {
+      const input = 'Introduction:\nFirst point!\nSecond point.\nThird point?';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains(':.'), isFalse);
+      expect(result.contains('!.'), isFalse);
+      expect(result.contains('?.'), isFalse);
+      expect(result.contains('..'), isFalse);
+    });
+
+    test('keeps initials together without chopping on single-letter periods', () {
+      const text = 'Dr. J. K. Rowling and Prof. A. Smith published No. 1 paper.';
+      final normalized = SpeechTextNormalizer.normalize(text);
+      expect(normalized, contains('Doctor'));
+      expect(normalized, contains('Professor'));
+      expect(normalized, contains('Number 1'));
+
+      final chunks = SpeechTextNormalizer.splitIntoChunks(normalized);
+      // Shouldn't split into 5 tiny single-word chunks
+      expect(chunks.length, equals(1));
+    });
+
+    test('groups short sentences into continuous natural prosody chunks', () {
+      const text = 'Hello there. How are you today? Let us begin.';
+      final chunks = SpeechTextNormalizer.splitIntoChunks(text);
+      // Entire greeting fits in one natural chunk to avoid awkward pauses after periods
+      expect(chunks.length, equals(1));
+      expect(chunks.first, contains('Hello there. How are you today? Let us begin.'));
+    });
   });
 
   group('TtsConfig', () {
@@ -80,7 +109,7 @@ void main() {
       final config = TtsConfig.forCurrentPlatform();
       expect(config.pitch, equals(1.0));
       expect(config.volume, equals(1.0));
-      expect(config.sentencePauseMs, equals(250));
+      expect(config.sentencePauseMs, equals(0));
       expect(config.effectiveSpeechRate, greaterThan(0));
       expect(config.effectiveSpeechRate, lessThan(2.0));
     });

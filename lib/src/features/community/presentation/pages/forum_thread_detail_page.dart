@@ -27,6 +27,7 @@ import 'package:kortex/src/features/community/domain/services/forum_socratic_hin
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
+import 'package:kortex/src/features/community/presentation/widgets/moderation_feedback_dialog.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/subject_master_badge.dart';
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
@@ -753,6 +754,385 @@ class ForumThreadDetailPage extends HookWidget {
       );
     }
 
+    Future<void> showEditPostSheet(BuildContext context) async {
+      final titleEditController =
+          TextEditingController(text: currentPost.value.title);
+      final contentEditController =
+          TextEditingController(text: currentPost.value.content);
+      final isSubmittingEdit = ValueNotifier<bool>(false);
+
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor:
+            isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetCtx) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16,
+            ),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: isSubmittingEdit,
+              builder: (ctx, isSaving, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Edit Discussion',
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: titleEditController,
+                      enabled: !isSaving,
+                      style: typography.body.medium.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Title',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: contentEditController,
+                      enabled: !isSaving,
+                      maxLines: 5,
+                      style: typography.body.regular.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Content',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              final newTitle = titleEditController.text.trim();
+                              final newContent =
+                                  contentEditController.text.trim();
+                              if (newTitle.isEmpty || newContent.isEmpty) return;
+
+                              const mod = ContentModerationService();
+                              final modRes = mod.validatePost(
+                                title: newTitle,
+                                content: newContent,
+                              );
+                              if (!modRes.isValid) {
+                                unawaited(
+                                  ModerationFeedbackDialog.show(
+                                    context,
+                                    result: modRes,
+                                    contentTarget: 'discussion',
+                                  ),
+                                );
+                                return;
+                              }
+
+                              isSubmittingEdit.value = true;
+                              final res = await repo.updateForumPost(
+                                postId: currentPost.value.id,
+                                title: newTitle,
+                                content: newContent,
+                              );
+                              isSubmittingEdit.value = false;
+
+                              res.fold(
+                                (failure) {
+                                  if (context.mounted) {
+                                    context.showSnackBar(
+                                      message: failure.message ??
+                                          'Failed to update discussion',
+                                      type: SnackBarType.error,
+                                    );
+                                  }
+                                },
+                                (updated) {
+                                  currentPost.value = currentPost.value.copyWith(
+                                    title: updated.title,
+                                    content: updated.content,
+                                  );
+                                  if (context.mounted) {
+                                    Navigator.of(sheetCtx).pop();
+                                    context.showSnackBar(
+                                      message: 'Discussion updated',
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Save Changes'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
+      );
+    }
+
+    Future<void> showEditReplySheet(
+      BuildContext context,
+      ForumReplyEntity reply,
+    ) async {
+      final editController = TextEditingController(text: reply.content);
+      final isSubmitting = ValueNotifier<bool>(false);
+
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor:
+            isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetCtx) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 16,
+            ),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: isSubmitting,
+              builder: (ctx, isSaving, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Edit Reply',
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: editController,
+                      enabled: !isSaving,
+                      maxLines: 4,
+                      style: typography.body.regular.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Reply',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: isSaving
+                          ? null
+                          : () async {
+                              final newText = editController.text.trim();
+                              if (newText.isEmpty) return;
+
+                              const mod = ContentModerationService();
+                              final modRes = mod.validateReply(content: newText);
+                              if (!modRes.isValid) {
+                                unawaited(
+                                  ModerationFeedbackDialog.show(
+                                    context,
+                                    result: modRes,
+                                    contentTarget: 'reply',
+                                  ),
+                                );
+                                return;
+                              }
+
+                              isSubmitting.value = true;
+                              final res = await repo.updateForumReply(
+                                replyId: reply.id,
+                                content: newText,
+                              );
+                              isSubmitting.value = false;
+
+                              res.fold(
+                                (failure) {
+                                  if (context.mounted) {
+                                    context.showSnackBar(
+                                      message: failure.message ??
+                                          'Failed to update reply',
+                                      type: SnackBarType.error,
+                                    );
+                                  }
+                                },
+                                (updated) {
+                                  localReplies.value = localReplies.value.map<ForumReplyEntity>((r) {
+                                    if (r.id == reply.id) {
+                                      return r.copyWith(
+                                        content: updated.content,
+                                      );
+                                    }
+                                    return r;
+                                  }).toList();
+                                  if (context.mounted) {
+                                    Navigator.of(sheetCtx).pop();
+                                    context.showSnackBar(
+                                      message: 'Reply updated',
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Save Changes'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          );
+        },
+      );
+    }
+
+    Future<void> confirmDeleteReply(
+      BuildContext context,
+      ForumReplyEntity reply,
+    ) async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogCtx) => AlertDialog(
+          backgroundColor:
+              isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Delete Reply?',
+            style: typography.title3.bold.copyWith(
+              color: colors.textPrimary,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to permanently delete this reply?',
+            style: typography.body.regular.copyWith(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: Text(
+                'Cancel',
+                style: typography.body.medium.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.error,
+                foregroundColor: colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true && context.mounted) {
+        final res = await repo.deleteForumReply(postId: post.id, replyId: reply.id);
+        res.fold(
+          (failure) {
+            if (context.mounted) {
+              context.showSnackBar(
+                message: failure.message ?? 'Failed to delete reply',
+                type: SnackBarType.error,
+              );
+            }
+          },
+          (_) {
+            localReplies.value =
+                localReplies.value.where((r) => r.id != reply.id).toList();
+            currentPost.value = currentPost.value.copyWith(
+              repliesCount: math.max(0, currentPost.value.repliesCount - 1),
+            );
+            if (context.mounted) {
+              context.showSnackBar(message: 'Reply deleted');
+            }
+          },
+        );
+      }
+    }
+
     void showPostOptionsMenu() {
       unawaited(HapticFeedback.lightImpact());
       final userStorage = locator<UserStorageService>();
@@ -904,7 +1284,24 @@ class ForumThreadDetailPage extends HookWidget {
                         }
                       },
                     ),
-                    if (isAuthor)
+                    if (isAuthor) ...[
+                      ListTile(
+                        leading: Icon(
+                          Icons.edit_outlined,
+                          color: colors.textPrimary,
+                        ),
+                        title: Text(
+                          'Edit Discussion',
+                          style: typography.body.medium.copyWith(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.of(ctx).pop();
+                          unawaited(showEditPostSheet(context));
+                        },
+                      ),
                       ListTile(
                         leading: Icon(
                           Icons.delete_outline_rounded,
@@ -921,8 +1318,8 @@ class ForumThreadDetailPage extends HookWidget {
                           Navigator.of(ctx).pop();
                           unawaited(confirmDeletePost(context));
                         },
-                      )
-                    else
+                      ),
+                    ] else
                       ListTile(
                         leading: Icon(
                           Icons.flag_outlined,
@@ -1150,9 +1547,31 @@ class ForumThreadDetailPage extends HookWidget {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 860),
-                  child: CustomScrollView(
-                    controller: scrollController,
-                    slivers: [
+                  child: RefreshIndicator(
+                    color: colors.primary,
+                    backgroundColor: isDark
+                        ? colors.surfaceSecondary
+                        : colors.surfacePrimary,
+                    onRefresh: () async {
+                      await Future.wait<void>([
+                        fetchTopLevelReplies(),
+                        () async {
+                          final subRes = await repo.isForumPostSubscribed(post.id);
+                          subRes.fold((_) {}, (sub) => isSubscribed.value = sub);
+                          final bookRes = await repo.getBookmarkedForumPostIds();
+                          bookRes.fold(
+                            (_) {},
+                            (ids) => isBookmarked.value = ids.contains(post.id),
+                          );
+                        }(),
+                      ]);
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      controller: scrollController,
+                      slivers: [
                       // Breadcrumb Return Bar & Original Post Card
                       SliverToBoxAdapter(
                         child: Padding(
@@ -2121,6 +2540,10 @@ class ForumThreadDetailPage extends HookWidget {
                                       focusNode.requestFocus();
                                     },
                                     onSaveFlashcard: (target) => unawaited(saveSolutionToFlashcard(target)),
+                                    onEditReply: () => unawaited(showEditReplySheet(context, reply)),
+                                    onDeleteReply: () => unawaited(confirmDeleteReply(context, reply)),
+                                    onEditChildReply: (child) => unawaited(showEditReplySheet(context, child)),
+                                    onDeleteChildReply: (child) => unawaited(confirmDeleteReply(context, child)),
                                      onVerifySolution: () async {
                                       final res = await repo.verifyForumReply(
                                         postId: currentPost.value.id,
@@ -2267,6 +2690,7 @@ class ForumThreadDetailPage extends HookWidget {
                     ],
                   ),
                 ),
+              ),
               ),
             ),
 
@@ -2534,14 +2958,17 @@ class ForumThreadDetailPage extends HookWidget {
                               durationSeconds: replyVoiceNoteDuration.value > 0
                                   ? replyVoiceNoteDuration.value
                                   : null,
-                              transcript: replyController.text.trim().isNotEmpty
-                                  ? replyController.text.trim()
-                                  : null,
+                              transcript:
+                                  replyVoiceTranscript.value.trim().isNotEmpty
+                                      ? replyVoiceTranscript.value.trim()
+                                      : (replyController.text.trim().isNotEmpty
+                                          ? replyController.text.trim()
+                                          : null),
                               compact: true,
-                              showTranscript: false,
                               onDelete: () {
                                 replyVoiceNoteUrl.value = null;
                                 replyVoiceNoteDuration.value = 0;
+                                replyVoiceTranscript.value = '';
                               },
                             ),
                           ),
@@ -2672,6 +3099,9 @@ class ForumThreadDetailPage extends HookWidget {
                                 }) {
                                   replyVoiceNoteUrl.value = audioUrl;
                                   replyVoiceNoteDuration.value = durationSeconds;
+                                  if (transcript.trim().isNotEmpty) {
+                                    replyVoiceTranscript.value = transcript.trim();
+                                  }
                                 },
                                 onCancel: () {
                                   replyVoiceNoteUrl.value = null;
@@ -2858,10 +3288,12 @@ class ForumThreadDetailPage extends HookWidget {
                                             const moderation = ContentModerationService();
                                             final modResult = moderation.validateReply(content: text);
                                             if (!modResult.isValid) {
-                                              context.showSnackBar(
-                                                message: modResult.reason ??
-                                                    'Reply failed safety moderation.',
-                                                type: SnackBarType.error,
+                                              unawaited(
+                                                ModerationFeedbackDialog.show(
+                                                  context,
+                                                  result: modResult,
+                                                  contentTarget: 'reply',
+                                                ),
                                               );
                                               return;
                                             }
@@ -2931,6 +3363,15 @@ class ForumThreadDetailPage extends HookWidget {
                                                     ? replyVoiceNoteDuration
                                                           .value
                                                     : null,
+                                                voiceNoteTranscript:
+                                                    replyVoiceTranscript
+                                                            .value
+                                                            .trim()
+                                                            .isNotEmpty
+                                                        ? replyVoiceTranscript
+                                                            .value
+                                                            .trim()
+                                                        : null,
                                                 isAnonymous:
                                                     isAnonymousReply.value,
                                               );
@@ -3463,6 +3904,10 @@ class _DiscussionThreadGroupCard extends HookWidget {
     required this.onVerifySolution,
     this.highlightReplyId,
     this.onSaveFlashcard,
+    this.onEditReply,
+    this.onDeleteReply,
+    this.onEditChildReply,
+    this.onDeleteChildReply,
   });
 
   final ForumReplyEntity parentReply;
@@ -3483,6 +3928,10 @@ class _DiscussionThreadGroupCard extends HookWidget {
   final void Function(ForumReplyEntity child) onChildReplyTap;
   final VoidCallback onVerifySolution;
   final void Function(ForumReplyEntity target)? onSaveFlashcard;
+  final VoidCallback? onEditReply;
+  final VoidCallback? onDeleteReply;
+  final void Function(ForumReplyEntity child)? onEditChildReply;
+  final void Function(ForumReplyEntity child)? onDeleteChildReply;
 
   @override
   Widget build(BuildContext context) {
@@ -3756,16 +4205,12 @@ class _DiscussionThreadGroupCard extends HookWidget {
                     ),
                   ),
                   ShrinkableButton(
-                    onTap: () {
-                      unawaited(
-                        ReportContentModalSheet.show(
-                          context,
-                          contentType: 'forum_reply',
-                          contentId: parentReply.id,
-                          contentTitle: parentReply.content,
-                        ),
-                      );
-                    },
+                    onTap: () => _showForumReplyOptionsMenu(
+                      context,
+                      parentReply,
+                      onEdit: onEditReply,
+                      onDelete: onDeleteReply,
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(4),
                       child: Icon(
@@ -4160,6 +4605,12 @@ class _DiscussionThreadGroupCard extends HookWidget {
                             onVote: (direction) =>
                                 onChildVote(child, direction),
                             onReplyTap: () => onChildReplyTap(child),
+                            onEdit: onEditChildReply != null
+                                ? () => onEditChildReply!(child)
+                                : null,
+                            onDelete: onDeleteChildReply != null
+                                ? () => onDeleteChildReply!(child)
+                                : null,
                           );
                         }),
 
@@ -4276,6 +4727,118 @@ class _DiscussionThreadGroupCard extends HookWidget {
   }
 }
 
+/// Displays an author action menu (Edit, Delete) or Report menu for any forum reply.
+void _showForumReplyOptionsMenu(
+  BuildContext context,
+  ForumReplyEntity reply, {
+  VoidCallback? onEdit,
+  VoidCallback? onDelete,
+}) {
+  unawaited(HapticFeedback.lightImpact());
+  final colors = context.colors;
+  final typography = context.typography;
+  final isDark = context.isDarkMode;
+  final userStorage = locator<UserStorageService>();
+  final currentUserId = userStorage.getUserId();
+  final currentUserName = userStorage.getUserDisplayName() ?? '';
+  final isReplyAuthor =
+      (currentUserId != null && currentUserId == reply.authorId) ||
+      (!reply.isAnonymous &&
+          currentUserName.isNotEmpty &&
+          currentUserName.toLowerCase() == reply.authorName.toLowerCase());
+
+  unawaited(
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withAlpha(60),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                if (isReplyAuthor) ...[
+                  ListTile(
+                    leading: Icon(
+                      Icons.edit_outlined,
+                      color: colors.textPrimary,
+                    ),
+                    title: Text(
+                      'Edit Reply',
+                      style: typography.body.medium.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetCtx).pop();
+                      onEdit?.call();
+                    },
+                  ),
+                  ListTile(
+                    leading: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colors.error,
+                    ),
+                    title: Text(
+                      'Delete Reply',
+                      style: typography.body.medium.copyWith(
+                        color: colors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetCtx).pop();
+                      onDelete?.call();
+                    },
+                  ),
+                ] else ...[
+                  ListTile(
+                    leading: Icon(
+                      Icons.flag_outlined,
+                      color: colors.error,
+                    ),
+                    title: Text(
+                      'Report Reply',
+                      style: typography.body.medium.copyWith(
+                        color: colors.error,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetCtx).pop();
+                      unawaited(
+                        ReportContentModalSheet.show(
+                          context,
+                          contentType: 'forum_reply',
+                          contentId: reply.id,
+                          contentTitle: reply.content,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
 /// Level 2 Child Reply Node with Horizontal Anchor Indicator and Collapsible state
 class _Level2ChildReplyCard extends HookWidget {
   const _Level2ChildReplyCard({
@@ -4284,6 +4847,8 @@ class _Level2ChildReplyCard extends HookWidget {
     required this.onVote,
     required this.onReplyTap,
     this.isHighlighted = false,
+    this.onEdit,
+    this.onDelete,
   });
 
   final ForumReplyEntity childReply;
@@ -4291,6 +4856,8 @@ class _Level2ChildReplyCard extends HookWidget {
   final void Function(int direction) onVote;
   final VoidCallback onReplyTap;
   final bool isHighlighted;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -4562,6 +5129,23 @@ class _Level2ChildReplyCard extends HookWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
+                      ShrinkableButton(
+                        onTap: () => _showForumReplyOptionsMenu(
+                          context,
+                          childReply,
+                          onEdit: onEdit,
+                          onDelete: onDelete,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2),
+                          child: Icon(
+                            Icons.more_horiz_rounded,
+                            size: 16,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       ShrinkableButton(
                         onTap: () => isCollapsed.value = true,
                         child: Padding(

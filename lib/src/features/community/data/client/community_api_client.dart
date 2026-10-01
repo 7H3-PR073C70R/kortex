@@ -46,6 +46,11 @@ abstract class CommunityApiClient {
     @Header('Prefer') String prefer = 'return=representation',
   });
 
+  @DELETE(AppApiEndpoint.forumReplies)
+  Future<HttpResponse<dynamic>> deleteForumReply(
+    @Queries() Map<String, dynamic> query,
+  );
+
   @POST(AppApiEndpoint.verifyForumReplyRpc)
   Future<HttpResponse<dynamic>> verifyForumReply(
     @Body() Map<String, dynamic> body,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -21,7 +22,8 @@ enum DialogueState {
 }
 
 /// Full-screen interactive voice dialogue mode with live audio waveform,
-/// bidirectional speech-to-text / text-to-speech, and voice gender toggle.
+/// bidirectional speech-to-text / text-to-speech, conversational spiral loop,
+/// and voice gender toggle.
 class VoiceDialogueModal extends StatefulWidget {
   const VoiceDialogueModal({
     required this.ttsHandler,
@@ -72,8 +74,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
   DialogueState _state = DialogueState.idle;
   String _liveTranscript = '';
+  String _accumulatedTranscript = '';
   String _latestResponse = '';
   late VoiceGender _selectedGender;
+  double _soundLevel = 0;
+  Timer? _silenceTimer;
+
+  static const Duration _silenceThreshold = Duration(milliseconds: 2200);
 
   @override
   void initState() {
@@ -88,36 +95,93 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
     _sttHandler = SpeechToTextHandler(
       onResult: (text) {
-        if (!mounted) return;
+        if (!mounted || _state != DialogueState.listening) return;
+        final words = text.trim();
+        if (words.isEmpty) return;
+
+        final fullTranscript = _accumulatedTranscript.isNotEmpty
+            ? '$_accumulatedTranscript $words'
+            : words;
+
         setState(() {
-          _liveTranscript = text;
+          _liveTranscript = fullTranscript;
         });
+
+        // Reset silence detection timer: only process after user stops speaking for after some time
+        _resetSilenceTimer();
       },
-      onListeningChanged: (listening) {
-        if (!mounted) return;
-        if (!listening && _state == DialogueState.listening) {
-          if (_liveTranscript.trim().isNotEmpty) {
-            unawaited(_processVoicePrompt(_liveTranscript.trim()));
-          } else {
-            setState(() {
-              _state = DialogueState.idle;
-            });
-          }
-        }
-      },
-      onError: (err) {
-        if (mounted) {
+      onSoundLevelChange: (level) {
+        if (!mounted || _state != DialogueState.listening) return;
+        // Normalize sound level from dB (-160..0) or relative amplitude to smooth 0.0..1.0
+        final normalized = ((level + 40.0) / 50.0).clamp(0.0, 1.0);
+        if ((normalized - _soundLevel).abs() > 0.06) {
           setState(() {
-            _state = DialogueState.idle;
+            _soundLevel = normalized;
           });
         }
       },
+      onListeningChanged: (listening) {
+        if (!mounted) return;
+        if (_state == DialogueState.listening && !listening) {
+          // If silence timer is actively waiting, user is still in the middle of their turn!
+          // The native OS recognizer ended an utterance/paused early.
+          // Keep transcript safe and seamlessly restart listening so user is never cut off!
+          if (_silenceTimer != null && _silenceTimer!.isActive) {
+            if (_liveTranscript.trim().isNotEmpty) {
+              _accumulatedTranscript = _liveTranscript.trim();
+            }
+            unawaited(_sttHandler.startListening());
+          } else if (_liveTranscript.trim().isEmpty) {
+            // User hasn't spoken yet - keep mic listening
+            unawaited(_sttHandler.startListening());
+          }
+        }
+      },
+      onError: (_) {
+        // Benign errors handled without abruptly closing dialogue
+      },
     );
 
-    // Speak initial AI greeting before listening
+    // Speak initial AI greeting automatically, then start conversational spiral loop!
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_speakInitialGreeting());
     });
+  }
+
+  void _resetSilenceTimer() {
+    _silenceTimer?.cancel();
+    _silenceTimer = Timer(_silenceThreshold, () {
+      if (mounted && _state == DialogueState.listening) {
+        unawaited(_onSilenceTimeout());
+      }
+    });
+  }
+
+  Future<void> _onSilenceTimeout() async {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
+    final prompt = _liveTranscript.trim();
+    if (prompt.isNotEmpty) {
+      unawaited(HapticFeedback.mediumImpact());
+      await _sttHandler.stopListening();
+      await _processVoicePrompt(prompt);
+    }
+  }
+
+  Future<void> _commitVoicePromptImmediately() async {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
+    final prompt = _liveTranscript.trim();
+    if (prompt.isNotEmpty) {
+      unawaited(HapticFeedback.mediumImpact());
+      await _sttHandler.stopListening();
+      await _processVoicePrompt(prompt);
+    } else {
+      unawaited(_sttHandler.stopListening());
+      setState(() {
+        _state = DialogueState.idle;
+      });
+    }
   }
 
   Future<void> _speakInitialGreeting() async {
@@ -131,31 +195,50 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     });
 
     await widget.ttsHandler.speak(greeting);
+    await widget.ttsHandler.waitForQueueDrained();
+
+    // Spirally loop: automatically open microphone for user once greeting finishes!
     if (mounted && _state == DialogueState.speaking) {
-      await _startListening();
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      if (mounted && _state == DialogueState.speaking) {
+        await _startListening();
+      }
     }
   }
 
   @override
   void dispose() {
+    _silenceTimer?.cancel();
     _pulseController.dispose();
     _sttHandler.dispose();
     super.dispose();
   }
 
   Future<void> _startListening() async {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
     await widget.ttsHandler.stop();
+    if (!mounted) return;
+
     setState(() {
       _state = DialogueState.listening;
       _liveTranscript = '';
+      _accumulatedTranscript = '';
+      _soundLevel = 0;
     });
+
+    unawaited(HapticFeedback.selectionClick());
     await _sttHandler.startListening();
   }
 
   Future<void> _processVoicePrompt(String prompt) async {
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
+
     setState(() {
       _state = DialogueState.thinking;
       _latestResponse = '';
+      _soundLevel = 0;
     });
 
     try {
@@ -232,10 +315,12 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
         await widget.ttsHandler.waitForQueueDrained();
 
-        if (mounted) {
-          setState(() {
-            _state = DialogueState.idle;
-          });
+        // Conversational spiral: automatically listen again for user's turn
+        if (mounted && _state == DialogueState.speaking) {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+          if (mounted && _state == DialogueState.speaking) {
+            await _startListening();
+          }
         }
         return;
       }
@@ -250,11 +335,14 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
         });
 
         await widget.ttsHandler.speak(response);
+        await widget.ttsHandler.waitForQueueDrained();
 
-        if (mounted) {
-          setState(() {
-            _state = DialogueState.idle;
-          });
+        // Conversational spiral: automatically listen again for user's turn
+        if (mounted && _state == DialogueState.speaking) {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+          if (mounted && _state == DialogueState.speaking) {
+            await _startListening();
+          }
         }
       }
     } on Object catch (_) {
@@ -263,6 +351,48 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
           _state = DialogueState.idle;
         });
       }
+    }
+  }
+
+  void _onOrbTap() {
+    if (_state == DialogueState.listening) {
+      if (_liveTranscript.trim().isNotEmpty) {
+        unawaited(_commitVoicePromptImmediately());
+      } else {
+        _silenceTimer?.cancel();
+        _silenceTimer = null;
+        unawaited(_sttHandler.stopListening());
+        setState(() {
+          _state = DialogueState.idle;
+        });
+      }
+    } else if (_state == DialogueState.speaking) {
+      // User interrupts Syllabot and speaks immediately
+      unawaited(widget.ttsHandler.stop());
+      unawaited(_startListening());
+    } else if (_state == DialogueState.idle) {
+      unawaited(_startListening());
+    }
+  }
+
+  void _onBottomButtonTap() {
+    if (_state == DialogueState.listening) {
+      if (_liveTranscript.trim().isNotEmpty) {
+        unawaited(_commitVoicePromptImmediately());
+      } else {
+        _silenceTimer?.cancel();
+        _silenceTimer = null;
+        unawaited(_sttHandler.stopListening());
+        setState(() {
+          _state = DialogueState.idle;
+        });
+      }
+    } else if (_state == DialogueState.speaking) {
+      // User interrupts Syllabot and speaks immediately
+      unawaited(widget.ttsHandler.stop());
+      unawaited(_startListening());
+    } else if (_state == DialogueState.idle) {
+      unawaited(_startListening());
     }
   }
 
@@ -282,6 +412,19 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    final isListening = _state == DialogueState.listening;
+    final isSpeaking = _state == DialogueState.speaking;
+    final isThinking = _state == DialogueState.thinking;
+    final hasSpeech = _liveTranscript.trim().isNotEmpty;
+
+    final orbColor = isListening
+        ? colors.error
+        : isSpeaking
+            ? colors.syllabotAccent
+            : isThinking
+                ? colors.warning
+                : colors.primary;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -380,7 +523,9 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                                   : colors.textPrimary,
                             ),
                             onPressed: () {
+                              _silenceTimer?.cancel();
                               unawaited(widget.ttsHandler.stop());
+                              unawaited(_sttHandler.stopListening());
                               Navigator.of(context).pop();
                             },
                           );
@@ -393,56 +538,43 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
                   // 2. Central Interactive Voice Pulse Orb
                   GestureDetector(
-                    onTap: () {
-                      if (_state == DialogueState.listening) {
-                        unawaited(_sttHandler.stopListening());
-                      } else if (_state == DialogueState.speaking) {
-                        unawaited(widget.ttsHandler.stop());
-                        setState(() {
-                          _state = DialogueState.idle;
-                        });
-                      } else {
-                        unawaited(_startListening());
-                      }
-                    },
+                    onTap: _onOrbTap,
                     child: AnimatedBuilder(
                       animation: _pulseController,
                       builder: (context, child) {
                         final pulse = _pulseController.value;
-                        final isListening = _state == DialogueState.listening;
-                        final isSpeaking = _state == DialogueState.speaking;
-                        final isThinking = _state == DialogueState.thinking;
-
-                        final orbColor = isListening
-                            ? colors.error
-                            : isSpeaking
-                            ? colors.syllabotAccent
-                            : isThinking
-                            ? colors.warning
-                            : colors.primary;
+                        final soundExpansion =
+                            isListening ? (_soundLevel * 28.0) : 0.0;
 
                         return Stack(
                           alignment: Alignment.center,
                           children: [
                             // Outer Glow Ring
                             Container(
-                              width: 140 + (pulse * 24),
-                              height: 140 + (pulse * 24),
+                              width: 140 + (pulse * 24) + soundExpansion,
+                              height: 140 + (pulse * 24) + soundExpansion,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: orbColor.withAlpha(
-                                  (30 * (1 - pulse)).toInt(),
+                                  ((30 + (isListening ? _soundLevel * 40 : 0)) *
+                                          (1 - pulse))
+                                      .toInt()
+                                      .clamp(0, 255),
                                 ),
                               ),
                             ),
                             // Middle Ring
                             Container(
-                              width: 110 + (pulse * 12),
-                              height: 110 + (pulse * 12),
+                              width: 110 + (pulse * 12) + (soundExpansion * 0.6),
+                              height:
+                                  110 + (pulse * 12) + (soundExpansion * 0.6),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: orbColor.withAlpha(
-                                  (60 * (1 - pulse)).toInt(),
+                                  ((60 + (isListening ? _soundLevel * 50 : 0)) *
+                                          (1 - pulse))
+                                      .toInt()
+                                      .clamp(0, 255),
                                 ),
                               ),
                             ),
@@ -460,24 +592,29 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.black.withAlpha(
-                                      isDark ? 60 : 25,
+                                    color: orbColor.withAlpha(
+                                      isDark ? 90 : 50,
                                     ),
-                                    blurRadius: 20,
+                                    blurRadius: 24,
+                                    spreadRadius: 2,
                                     offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                isListening
-                                    ? Icons.mic_rounded
-                                    : isSpeaking
-                                    ? Icons.volume_up_rounded
-                                    : isThinking
-                                    ? Icons.auto_awesome_rounded
-                                    : Icons.mic_none_rounded,
-                                color: colors.white,
-                                size: 38,
+                              child: AnimatedSwitcher(
+                                duration: AppMotion.snappy,
+                                child: Icon(
+                                  isListening
+                                      ? Icons.mic_rounded
+                                      : isSpeaking
+                                          ? Icons.volume_up_rounded
+                                          : isThinking
+                                              ? Icons.auto_awesome_rounded
+                                              : Icons.mic_none_rounded,
+                                  key: ValueKey(_state),
+                                  color: colors.white,
+                                  size: 38,
+                                ),
                               ),
                             ),
                           ],
@@ -486,17 +623,34 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  // 3. Status Label
+                  // 3. Dynamic Waveform Bars
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      return _VoiceWaveformBars(
+                        soundLevel: _soundLevel,
+                        state: _state,
+                        color: orbColor,
+                        animationValue: _pulseController.value,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // 4. Status Label
                   Text(
-                    _state == DialogueState.listening
-                        ? l10n.voiceDialogueListening
-                        : _state == DialogueState.thinking
-                        ? l10n.voiceDialogueThinking
-                        : _state == DialogueState.speaking
-                        ? l10n.voiceDialogueSpeaking
-                        : l10n.voiceDialogueTapToSpeak,
+                    isListening
+                        ? (hasSpeech
+                            ? l10n.voiceDialogueListening
+                            : l10n.voiceDialogueListening)
+                        : isThinking
+                            ? l10n.voiceDialogueThinking
+                            : isSpeaking
+                                ? l10n.voiceDialogueSpeaking
+                                : l10n.voiceDialogueTapToSpeak,
                     style: typography.title3.bold.copyWith(
                       color: colors.textPrimary,
                       fontSize: 18,
@@ -505,9 +659,10 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
                   const SizedBox(height: 12),
 
-                  // 4. Live Captions / Transcript Card
+                  // 5. Live Captions / Transcript Card
                   if (_liveTranscript.isNotEmpty)
                     Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -516,21 +671,23 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                         color: colors.surfaceSecondary,
                         borderRadius: AppRadius.radiusCard,
                         border: Border.all(
-                          color: colors.primary.withAlpha(60),
+                          color: isListening
+                              ? colors.primary.withAlpha(120)
+                              : colors.surfaceBorder.withAlpha(80),
                         ),
                       ),
                       child: Text(
                         '"$_liveTranscript"',
                         textAlign: TextAlign.center,
                         style: typography.body.medium.copyWith(
-                          color: colors.primary,
+                          color: colors.textPrimary,
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
                     ),
 
-                  // 5. Spoken Response Markdown / Formula Viewer
+                  // 6. Spoken Response Markdown / Formula Viewer
                   if (_latestResponse.isNotEmpty)
                     Expanded(
                       flex: 3,
@@ -550,35 +707,46 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
 
                   const Spacer(),
 
-                  // 6. Push to Talk Button
+                  // 7. Interactive Bottom Action Button
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: PlatformHoverBuilder(
                       builder: (context, isHovered, child) {
+                        final buttonBg = isListening
+                            ? (hasSpeech
+                                ? colors.primary
+                                : colors.error.withAlpha(220))
+                            : isSpeaking
+                                ? colors.syllabotAccent
+                                : (isHovered
+                                    ? colors.primary.withAlpha(235)
+                                    : colors.primary);
+
+                        final buttonLabel = isListening
+                            ? (hasSpeech
+                                ? l10n.voiceDialogueDoneSpeaking
+                                : l10n.voiceDialogueListening)
+                            : isSpeaking
+                                ? l10n.voiceDialogueTapToSpeak
+                                : l10n.voiceDialogueTapToSpeak;
+
+                        final buttonIcon = isListening
+                            ? (hasSpeech
+                                ? Icons.arrow_upward_rounded
+                                : Icons.mic_rounded)
+                            : isSpeaking
+                                ? Icons.mic_rounded
+                                : Icons.mic_rounded;
+
                         return ShrinkableButton(
-                          onTap: () {
-                            if (_state == DialogueState.listening) {
-                              unawaited(_sttHandler.stopListening());
-                            } else if (_state == DialogueState.speaking) {
-                              unawaited(widget.ttsHandler.stop());
-                              setState(() {
-                                _state = DialogueState.idle;
-                              });
-                            } else {
-                              unawaited(_startListening());
-                            }
-                          },
+                          onTap: _onBottomButtonTap,
                           child: AnimatedContainer(
                             duration: AppMotion.snappy,
                             curve: AppMotion.snappyCurve,
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             decoration: BoxDecoration(
-                              color: _state == DialogueState.listening
-                                  ? colors.error
-                                  : (isHovered
-                                        ? colors.primary.withAlpha(235)
-                                        : colors.primary),
+                              color: buttonBg,
                               borderRadius: AppRadius.radiusPanel,
                               boxShadow: [
                                 BoxShadow(
@@ -596,17 +764,13 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  _state == DialogueState.listening
-                                      ? Icons.stop_rounded
-                                      : Icons.mic_rounded,
+                                  buttonIcon,
                                   color: colors.white,
                                   size: 22,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  _state == DialogueState.listening
-                                      ? l10n.voiceDialogueDoneSpeaking
-                                      : l10n.voiceDialogueTapToSpeak,
+                                  buttonLabel,
                                   style: typography.body.bold.copyWith(
                                     color: colors.white,
                                     fontSize: 15,
@@ -624,6 +788,74 @@ class _VoiceDialogueModalState extends State<VoiceDialogueModal>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Dynamic live audio waveform bars responding fluidly to microphone level and speech synthesis.
+class _VoiceWaveformBars extends StatelessWidget {
+  const _VoiceWaveformBars({
+    required this.soundLevel,
+    required this.state,
+    required this.color,
+    required this.animationValue,
+  });
+
+  final double soundLevel;
+  final DialogueState state;
+  final Color color;
+  final double animationValue;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state == DialogueState.idle) {
+      return const SizedBox(height: 24);
+    }
+
+    return SizedBox(
+      height: 24,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(5, (index) {
+          final isListening = state == DialogueState.listening;
+          final isSpeaking = state == DialogueState.speaking;
+          final isThinking = state == DialogueState.thinking;
+
+          var barHeight = 5.0;
+          if (isListening) {
+            // Live voice volume reactivity + subtle breathing
+            final offset = index * 0.7;
+            final wave =
+                math.sin((animationValue * 2 * math.pi) + offset).abs();
+            barHeight = 5 + (soundLevel * 16) + (wave * 4);
+          } else if (isSpeaking) {
+            // Conversational undulating speaking waves
+            final offset = (index - 2).abs() * 0.6;
+            final wave =
+                math.sin((animationValue * 3 * math.pi) + offset).abs();
+            barHeight = 6 + (wave * 15);
+          } else if (isThinking) {
+            final wave = math
+                .sin((animationValue * 2 * math.pi) + (index * 0.6))
+                .abs();
+            barHeight = 4 + (wave * 8);
+          }
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 90),
+            margin: const EdgeInsets.symmetric(horizontal: 2.5),
+            width: 3.5,
+            height: barHeight.clamp(4, 22),
+            decoration: BoxDecoration(
+              color: color.withAlpha(
+                (180 + (soundLevel * 75)).toInt().clamp(0, 255),
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          );
+        }),
       ),
     );
   }

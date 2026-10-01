@@ -130,11 +130,14 @@ class AudioRecordingServiceImpl implements AudioRecordingService {
 
       if (effectivePath != null && effectivePath.isNotEmpty) {
         final file = File(effectivePath);
-        if (file.existsSync() && file.lengthSync() > 0) {
-          debugPrint(
-            'AudioRecordingService: Successfully saved recording to $effectivePath (${file.lengthSync()} bytes)',
-          );
-          return effectivePath;
+        for (var i = 0; i < 6; i++) {
+          if (file.existsSync() && file.lengthSync() > 0) {
+            debugPrint(
+              'AudioRecordingService: Successfully saved recording to $effectivePath (${file.lengthSync()} bytes)',
+            );
+            return effectivePath;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 100));
         }
       }
       return null;

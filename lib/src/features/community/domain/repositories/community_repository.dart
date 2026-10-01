@@ -89,7 +89,19 @@ abstract class CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
+  });
+
+  /// Updates an existing forum post.
+  Future<Either<Failure, ForumPostEntity>> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
   });
 
   /// Deletes a forum post created by the user.
@@ -104,7 +116,21 @@ abstract class CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
+  });
+
+  /// Updates an existing forum reply.
+  Future<Either<Failure, ForumReplyEntity>> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
+  });
+
+  /// Deletes a forum reply.
+  Future<Either<Failure, bool>> deleteForumReply({
+    required String replyId,
+    required String postId,
   });
 
   /// Upvotes, downvotes, or clears vote on a forum post.
