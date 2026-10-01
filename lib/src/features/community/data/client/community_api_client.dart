@@ -192,6 +192,13 @@ abstract class CommunityApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  /// Atomically syncs XP delta, streak, and track to profiles + leaderboards.
+  @POST(AppApiEndpoint.syncUserProgressRpc)
+  Future<HttpResponse<dynamic>> syncUserProgress(
+    @Body() Map<String, dynamic> body,
+  );
+
+
   @POST(AppApiEndpoint.autoProvisionCommunityRpc)
   Future<HttpResponse<dynamic>> autoProvisionCommunity(
     @Body() Map<String, dynamic> body,

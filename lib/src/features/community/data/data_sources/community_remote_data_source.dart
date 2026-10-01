@@ -187,6 +187,14 @@ abstract class CommunityRemoteDataSource {
 
   Future<Map<String, dynamic>> claimWeeklyXp({required int xpAmount});
 
+  /// Atomically syncs XP delta, streak, and track to profiles + leaderboards.
+  /// Call this after every XP award event so backend data stays current.
+  Future<Map<String, dynamic>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  });
+
   Future<StudyCommunityModel> autoProvisionCommunity({
     required String courseCode,
     required String title,

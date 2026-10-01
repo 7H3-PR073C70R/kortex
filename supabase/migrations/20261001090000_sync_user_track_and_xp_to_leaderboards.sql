@@ -4,6 +4,12 @@
 --              ensuring user_id uniqueness and automatic upserts on profile updates.
 -- ============================================================================
 
+-- 0. Ensure required columns exist on public.profiles
+ALTER TABLE public.profiles
+    ADD COLUMN IF NOT EXISTS xp_points INT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS streak_days INT DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS target_track TEXT DEFAULT 'General';
+
 -- 1. Deduplicate any existing leaderboards rows per user_id keeping the highest weekly_xp
 DELETE FROM public.leaderboards a
 USING public.leaderboards b
@@ -80,14 +86,14 @@ CREATE TRIGGER trg_sync_profile_to_leaderboard
 AFTER INSERT OR UPDATE OF streak_days, display_name, photo_url, target_track, xp_points ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.sync_profile_to_leaderboard();
 
--- 4. Trigger function for user_analytics updates (xp_points, total_xp, current_streak_days)
+-- 4. Trigger function for user_analytics updates (xp_points, current_streak_days)
 CREATE OR REPLACE FUNCTION public.sync_analytics_to_leaderboard()
 RETURNS TRIGGER AS $$
 DECLARE
     v_xp INT := 0;
     v_tier TEXT := 'Bronze';
 BEGIN
-    v_xp := GREATEST(COALESCE(NEW.xp_points, 0), COALESCE(NEW.total_xp, 0));
+    v_xp := COALESCE(NEW.xp_points, 0);
 
     IF v_xp >= 1000 THEN
         v_tier := 'Dean''s List';
@@ -121,7 +127,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_sync_analytics_to_leaderboard ON public.user_analytics;
 CREATE TRIGGER trg_sync_analytics_to_leaderboard
-AFTER UPDATE OF xp_points, total_xp, current_streak_days ON public.user_analytics
+AFTER UPDATE OF xp_points, current_streak_days ON public.user_analytics
 FOR EACH ROW EXECUTE FUNCTION public.sync_analytics_to_leaderboard();
 
 -- 5. Backfill all existing scholars into leaderboards with their real academic track, XP, and streak
@@ -144,8 +150,7 @@ SELECT
     COALESCE(NULLIF(p.target_track, ''), 'WAEC') AS track,
     GREATEST(
         COALESCE(p.xp_points, 0),
-        COALESCE(ua.xp_points, 0),
-        COALESCE(ua.total_xp, 0)
+        COALESCE(ua.xp_points, 0)
     ) AS weekly_xp,
     COALESCE(p.xp_points, 0) AS daily_xp,
     GREATEST(1, COALESCE(p.streak_days, 1), COALESCE(ua.current_streak_days, 1)) AS streak_days,

@@ -227,6 +227,14 @@ abstract class CommunityRepository {
     required int xpAmount,
   });
 
+  /// Atomically syncs XP delta, current streak, and track to Supabase.
+  /// This is the canonical client → backend sync call after any XP event.
+  Future<Either<Failure, Map<String, dynamic>>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  });
+
   /// Fetches snapshot of leaderboard rankings.
   Future<Either<Failure, List<LeaderboardEntryEntity>>> fetchLeaderboards({
     String? track,

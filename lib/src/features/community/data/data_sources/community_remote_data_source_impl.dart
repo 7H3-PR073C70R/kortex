@@ -1916,6 +1916,35 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   }
 
   @override
+  Future<Map<String, dynamic>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  }) async {
+    try {
+      final body = <String, dynamic>{'p_xp_delta': xpDelta};
+      if (streakDays != null) body['p_streak'] = streakDays;
+      if (track != null && track.isNotEmpty) body['p_track'] = track;
+      final res = await _client.syncUserProgress(body);
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true};
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.syncUserProgress failed',
+          ),
+        );
+      }
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  @override
   Future<StudyCommunityModel> autoProvisionCommunity({
     required String courseCode,
     required String title,

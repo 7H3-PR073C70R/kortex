@@ -872,6 +872,21 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Future<Either<Failure, Map<String, dynamic>>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  }) {
+    return _remoteDataSource
+        .syncUserProgress(
+          xpDelta: xpDelta,
+          streakDays: streakDays,
+          track: track,
+        )
+        .makeRequest();
+  }
+
+  @override
   Future<Either<Failure, StudyCommunityEntity>> autoProvisionCommunity({
     required String courseCode,
     required String title,

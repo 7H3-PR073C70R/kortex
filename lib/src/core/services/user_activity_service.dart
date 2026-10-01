@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
+
 
 /// Categories of student activity that award XP across Kortex.
 enum XpActivityCategory {
@@ -204,7 +209,47 @@ class UserActivityServiceImpl implements UserActivityService {
     }
     _notifyAnalyticsUpdated();
 
+    // 4. Fire-and-forget sync to backend so leaderboard stays correct for all users.
+    //    syncUserProgress updates profiles.xp_points atomically, which triggers
+    //    the Supabase leaderboard sync trigger automatically.
+    _syncProgressToBackend(xpDelta: xpEarned);
+
     return event;
+  }
+
+  /// Pushes the latest XP delta + streak + track to Supabase asynchronously.
+  /// Safe to call fire-and-forget — all errors are silently swallowed.
+  void _syncProgressToBackend({int xpDelta = 0}) {
+    try {
+      final communityRepo = locator.isRegistered<CommunityRepository>()
+          ? locator<CommunityRepository>()
+          : null;
+      if (communityRepo == null) return;
+
+      final authProfile = locator.isRegistered<AuthBloc>()
+          ? locator<AuthBloc>().state.userProfile
+          : null;
+
+      final currentStreak = getCurrentStreak();
+      final track = authProfile?.targetTrack.isNotEmpty == true
+          ? authProfile!.targetTrack
+          : null;
+
+      unawaited(
+        communityRepo
+            .syncUserProgress(
+              xpDelta: xpDelta,
+              streakDays: currentStreak,
+              track: track,
+            )
+            .catchError(
+              (_) =>
+                  const Right<Failure, Map<String, dynamic>>(<String, dynamic>{}),
+            ),
+      );
+    } on Object catch (_) {
+      // Offline-safe — never break the UX for a sync failure.
+    }
   }
 
   @override
@@ -414,6 +459,9 @@ class UserActivityServiceImpl implements UserActivityService {
       key: _streakLongestKey,
       data: longestStreak.toString(),
     );
+
+    // Sync updated streak to backend so leaderboard updates in real-time
+    _syncProgressToBackend();
 
     _notifyStreakMilestone(currentStreak);
   }
