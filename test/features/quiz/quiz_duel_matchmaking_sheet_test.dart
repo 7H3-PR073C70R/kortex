@@ -44,10 +44,7 @@ void main() {
         await tester.pumpWidget(
           createTestApp(
             cubit: mockCubit,
-            child: const QuizDuelMatchmakingSheet(
-              initialSubject: 'Physics',
-              initialExamBoard: 'WAEC',
-            ),
+            child: const QuizDuelMatchmakingSheet(),
           ),
         );
         await tester.pump();
