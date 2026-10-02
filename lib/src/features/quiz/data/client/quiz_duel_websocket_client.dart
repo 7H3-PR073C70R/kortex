@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -62,7 +63,7 @@ class QuizDuelWebSocketClient {
   static const int maxSpeedBonus = 50;
   static const int defaultQuestionTimeSeconds = 15;
 
-  /// Returns dynamic question bank from backend RPC, falling back to local questions if offline.
+  /// Returns dynamic question bank from backend RPC or Edge function, returning empty list if offline or unavailable.
   Future<List<QuizQuestionEntity>> fetchRemoteDuelQuestions(
     String subject,
     String examBoard, {
@@ -110,8 +111,57 @@ class QuizDuelWebSocketClient {
           }
         }
       } on Object catch (_) {}
+
+      // Fallback: Attempt Edge Function AI question generation
+      try {
+        final response = await client.post<Map<String, dynamic>>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateQuizQuestions}',
+          data: {
+            'subject': subject,
+            'exam_board': examBoard,
+            'question_count': count,
+            'difficulty': 'intermediate',
+          },
+        );
+        final data = response.data;
+        if (data != null && data['questions'] is List) {
+          final rawList = data['questions'] as List<dynamic>;
+          if (rawList.isNotEmpty) {
+            return rawList.map((item) {
+              final map = item as Map<String, dynamic>;
+              final options =
+                  (map['options'] as List<dynamic>?)
+                      ?.map((e) => e.toString())
+                      .toList() ??
+                  const [];
+              final correctIdx = map['correct_index'] as int? ?? 0;
+              final correctAns =
+                  map['correct_answer']?.toString() ??
+                  (correctIdx < options.length
+                      ? options[correctIdx]
+                      : (options.isNotEmpty ? options.first : ''));
+
+              return QuizQuestionEntity(
+                id: map['id']?.toString() ?? 'q_${Random().nextInt(99999)}',
+                prompt:
+                    map['prompt']?.toString() ??
+                    map['question']?.toString() ??
+                    '',
+                type: QuizQuestionType.multipleChoice,
+                options: options,
+                correctAnswer: correctAns,
+                explanation: map['explanation']?.toString() ?? '',
+                subTopic:
+                    map['sub_topic']?.toString() ??
+                    map['topic']?.toString() ??
+                    subject,
+              );
+            }).toList();
+          }
+        }
+      } on Object catch (_) {}
     }
-    return getDefaultDuelQuestions(subject, examBoard, count: count);
+    return const [];
   }
 
   /// Returns default question bank when dynamic question loading is not active.
@@ -515,6 +565,7 @@ class QuizDuelWebSocketClient {
     int questionCount = 10,
     List<QuizQuestionEntity>? customQuestions,
     String? roomCode,
+    bool fallbackToDefaultQuestions = true,
   }) async {
     _initMatchmakingRealtime();
 
@@ -584,9 +635,23 @@ class QuizDuelWebSocketClient {
     // 2. No open room found locally: Create new match and broadcast search event to peers
     final duelId =
         'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
-    final questions = (customQuestions != null && customQuestions.isNotEmpty)
+    final rawQuestions = (customQuestions != null && customQuestions.isNotEmpty)
         ? customQuestions
         : await fetchRemoteDuelQuestions(subject, examBoard, count: questionCount);
+
+    final questions = rawQuestions.isNotEmpty
+        ? rawQuestions
+        : (fallbackToDefaultQuestions
+            ? getDefaultDuelQuestions(subject, examBoard, count: questionCount)
+            : const <QuizQuestionEntity>[]);
+
+    if (questions.isEmpty) {
+      throw QuizQuestionsUnavailableException(
+        subject: subject,
+        message:
+            'No questions found for "$subject". Connect to the internet to generate questions, or create flashcards for this course to play offline.',
+      );
+    }
 
     final player1 = QuizDuelParticipant(
       userId: userId,

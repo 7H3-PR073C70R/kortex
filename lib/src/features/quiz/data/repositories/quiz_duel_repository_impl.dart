@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -42,11 +43,46 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
     String? roomCode,
   }) async {
     try {
+      // 1. Fetch curated questions from local sources (Past questions + Flashcards)
       final curatedQuestions = await _fetchCuratedQuestions(
         subject: subject,
         examBoard: examBoard,
         count: questionCount,
       );
+
+      final combinedQuestions = <QuizQuestionEntity>[...curatedQuestions];
+
+      // 2. If insufficient local questions, attempt online AI/remote question generation
+      if (combinedQuestions.length < questionCount) {
+        final remoteQuestions = await _client.fetchRemoteDuelQuestions(
+          subject,
+          examBoard,
+          count: questionCount,
+        );
+        if (remoteQuestions.isNotEmpty) {
+          final seenPrompts = combinedQuestions
+              .map((q) => q.prompt.trim().toLowerCase())
+              .toSet();
+          for (final rq in remoteQuestions) {
+            if (seenPrompts.add(rq.prompt.trim().toLowerCase())) {
+              combinedQuestions.add(rq);
+            }
+            if (combinedQuestions.length >= questionCount) break;
+          }
+        }
+      }
+
+      // 3. If STILL 0 questions: the user has no past papers, no decks, AND is offline/no remote questions.
+      // Do NOT fall back to dummy/irrelevant questions. Return NoQuizQuestionsFailure.
+      if (combinedQuestions.isEmpty) {
+        return Left(
+          NoQuizQuestionsFailure(
+            subject: subject,
+            message:
+                'No questions found for "$subject". Connect to the internet to generate questions, or create flashcards for this course to play offline.',
+          ),
+        );
+      }
 
       final match = await _client.findOrCreateDuel(
         subject: subject,
@@ -55,10 +91,18 @@ class QuizDuelRepositoryImpl implements QuizDuelRepository {
         displayName: displayName,
         avatarUrl: avatarUrl,
         questionCount: questionCount,
-        customQuestions: curatedQuestions.isNotEmpty ? curatedQuestions : null,
+        customQuestions: combinedQuestions,
         roomCode: roomCode,
+        fallbackToDefaultQuestions: false,
       );
       return Right(match);
+    } on QuizQuestionsUnavailableException catch (e) {
+      return Left(
+        NoQuizQuestionsFailure(
+          subject: e.subject,
+          message: e.message,
+        ),
+      );
     } on Exception catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

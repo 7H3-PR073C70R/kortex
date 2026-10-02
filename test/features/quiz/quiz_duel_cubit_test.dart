@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/quiz/data/client/quiz_duel_websocket_client.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
@@ -66,6 +67,41 @@ void main() {
           currentUserId: 'user_1',
           match: testMatch,
         ),
+      ],
+    );
+
+    blocTest<QuizDuelCubit, QuizDuelState>(
+      'startMatchmaking emits cancelled and sets failure when questions are unavailable',
+      build: () {
+        when(() => repository.findOrCreateDuel(
+              subject: any(named: 'subject'),
+              examBoard: any(named: 'examBoard'),
+              userId: any(named: 'userId'),
+              displayName: any(named: 'displayName'),
+              avatarUrl: any(named: 'avatarUrl'),
+            )).thenAnswer(
+          (_) async => const Left(
+            NoQuizQuestionsFailure(subject: 'Operating Systems'),
+          ),
+        );
+        return QuizDuelCubit(repository: repository);
+      },
+      act: (cubit) => cubit.startMatchmaking(
+        subject: 'Operating Systems',
+        examBoard: 'BSC',
+        userId: 'user_1',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+      ),
+      expect: () => [
+        const QuizDuelState(
+          currentUserId: 'user_1',
+        ),
+        predicate<QuizDuelState>((state) {
+          return state.status == QuizDuelStatus.cancelled &&
+              state.isQuestionsUnavailable &&
+              state.missingQuestionsSubject == 'Operating Systems';
+        }),
       ],
     );
 

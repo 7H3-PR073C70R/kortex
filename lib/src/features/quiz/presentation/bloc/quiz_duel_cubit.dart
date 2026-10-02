@@ -35,6 +35,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
         status: QuizDuelStatus.matching,
         currentUserId: userId,
         clearSelectedOption: true,
+        clearFailure: true,
       ),
     );
 
@@ -54,6 +55,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
           state.copyWith(
             status: QuizDuelStatus.cancelled,
             errorMessage: failure.message,
+            failure: failure,
           ),
         );
       },
@@ -62,6 +64,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
           state.copyWith(
             match: match,
             status: match.status,
+            clearFailure: true,
           ),
         );
         _subscribeToMatchStream(match.duelId);

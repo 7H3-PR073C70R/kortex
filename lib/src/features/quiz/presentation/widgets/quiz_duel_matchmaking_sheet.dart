@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -19,6 +20,7 @@ import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart'
 import 'package:kortex/src/features/quiz/presentation/pages/quiz_duel_arena_page.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_elo_tier_badge.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_leaderboard_sheet.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_missing_questions_sheet.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
@@ -213,6 +215,28 @@ class QuizDuelMatchmakingSheet extends HookWidget {
               ),
             ),
           );
+        } else if (state.status == QuizDuelStatus.cancelled ||
+            state.errorMessage != null) {
+          isSearching.value = false;
+          if (state.isQuestionsUnavailable ||
+              state.failure is NoQuizQuestionsFailure) {
+            final targetSubject =
+                state.missingQuestionsSubject ?? selectedSubject.value;
+            unawaited(
+              QuizDuelMissingQuestionsSheet.show(
+                context,
+                subject: targetSubject,
+                onRetry: () =>
+                    executeMatchmaking(roomCode: activeRoomCode.value),
+              ),
+            );
+          } else if (state.errorMessage != null &&
+              state.errorMessage!.isNotEmpty) {
+            context.showSnackBar(
+              message: state.errorMessage!,
+              type: SnackBarType.error,
+            );
+          }
         }
       },
       child: Align(
