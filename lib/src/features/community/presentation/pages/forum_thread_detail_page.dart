@@ -18,7 +18,6 @@ import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
-import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -26,17 +25,12 @@ import 'package:kortex/src/features/community/domain/services/content_moderation
 import 'package:kortex/src/features/community/domain/services/forum_socratic_hint_service.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/forum_flashcard_sheets.dart';
 import 'package:kortex/src/features/community/presentation/widgets/forum_media_attachment_card.dart';
 import 'package:kortex/src/features/community/presentation/widgets/moderation_feedback_dialog.dart';
 import 'package:kortex/src/features/community/presentation/widgets/report_content_modal_sheet.dart';
 import 'package:kortex/src/features/community/presentation/widgets/subject_master_badge.dart';
 import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/data/models/deck_model.dart';
-import 'package:kortex/src/features/decks/data/models/flashcard_model.dart';
-import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
-import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
-import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/audio_pronounce_button.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_audio_reader_button.dart';
@@ -522,155 +516,11 @@ class ForumThreadDetailPage extends HookWidget {
     }
 
     Future<void> saveSolutionToFlashcard(ForumReplyEntity reply) async {
-      unawaited(HapticFeedback.mediumImpact());
-      try {
-        final cleanPrompt = currentPost.value.title.trim();
-        final cleanReply = reply.content.trim();
-        final authorCredit = reply.authorName.isNotEmpty
-            ? '\n\n— Verified Solution by @${reply.authorName}'
-            : '';
-        final topicTag = currentPost.value.syllabusTag.isNotEmpty
-            ? currentPost.value.syllabusTag
-            : currentPost.value.track;
-
-        if (locator.isRegistered<DecksRepository>()) {
-          final decksRepo = locator<DecksRepository>();
-          final userDecksRes = await decksRepo.getUserDecks();
-          await userDecksRes.fold(
-            (failure) async {
-              if (context.mounted) {
-                context.showSnackBar(
-                  message: 'Could not fetch decks to save flashcard.',
-                  type: SnackBarType.error,
-                );
-              }
-            },
-            (decks) async {
-              DeckEntity? targetDeck;
-              for (final d in decks) {
-                final titleLower = d.title.toLowerCase();
-                if (titleLower.contains('forum') ||
-                    titleLower.contains('verified') ||
-                    titleLower.contains('saved')) {
-                  targetDeck = d;
-                  break;
-                }
-              }
-
-              if (targetDeck == null && decks.isNotEmpty) {
-                targetDeck = decks.first;
-              }
-
-              if (targetDeck != null) {
-                final newCard = FlashcardEntity(
-                  id: UuidUtils.generate(),
-                  deckId: targetDeck.id,
-                  front: cleanPrompt,
-                  back: '$cleanReply$authorCredit',
-                  frontLatex: currentPost.value.latexContent,
-                  backLatex: reply.latexContent,
-                  sourceTopic: topicTag,
-                );
-
-                final existingCardsRes =
-                    await decksRepo.getDeckCards(targetDeck.id);
-                final existingCards = existingCardsRes.fold(
-                  (_) => <FlashcardEntity>[],
-                  (cards) => cards,
-                );
-
-                final isDuplicate = existingCards.any(
-                  (c) => c.front == newCard.front && c.back == newCard.back,
-                );
-                if (isDuplicate) {
-                  if (context.mounted) {
-                    context.showSnackBar(
-                      message:
-                          'This solution is already in "${targetDeck.title}"! 💡',
-                    );
-                  }
-                  return;
-                }
-
-                await decksRepo.updateDeckCards(targetDeck.id, [
-                  ...existingCards,
-                  newCard,
-                ]);
-
-                if (context.mounted) {
-                  context.showSnackBar(
-                    message:
-                        'Solution saved to "${targetDeck.title}" Flashcards! ✨',
-                    type: SnackBarType.success,
-                  );
-                }
-              } else if (locator.isRegistered<DecksRemoteDataSource>()) {
-                // Auto-provision a dedicated "Saved Forum Solutions" deck
-                final newDeckId = UuidUtils.generate();
-                final cardId = UuidUtils.generate();
-                final card = FlashcardModel(
-                  id: cardId,
-                  deckId: newDeckId,
-                  front: cleanPrompt,
-                  back: '$cleanReply$authorCredit',
-                  frontLatex: currentPost.value.latexContent,
-                  backLatex: reply.latexContent,
-                  sourceTopic: topicTag,
-                );
-                final newDeck = DeckModel(
-                  id: newDeckId,
-                  title: 'Saved Forum Solutions',
-                  subject: currentPost.value.track.isNotEmpty
-                      ? currentPost.value.track
-                      : 'General',
-                  category: 'Saved Solutions',
-                  totalCards: 1,
-                  dueCards: 1,
-                  masteryRate: 0,
-                  description:
-                      'Verified peer answers and step-by-step solutions saved from discussions.',
-                  cards: [card],
-                  lastStudied: DateTime.now(),
-                );
-
-                await locator<DecksRemoteDataSource>().saveGeneratedDeck(
-                  deck: newDeck,
-                  cards: [card],
-                );
-
-                if (context.mounted) {
-                  context.showSnackBar(
-                    message:
-                        'Created "Saved Forum Solutions" deck and added flashcard! ✨',
-                    type: SnackBarType.success,
-                  );
-                }
-              } else {
-                if (context.mounted) {
-                  context.showSnackBar(
-                    message:
-                        'Please create a Flashcard Deck first to save solutions! ✨',
-                  );
-                }
-              }
-            },
-          );
-        } else {
-          if (context.mounted) {
-            context.showSnackBar(
-              message: 'Saved verified solution to Flashcards! ✨',
-              type: SnackBarType.success,
-            );
-          }
-        }
-      } on Object catch (e) {
-        if (context.mounted) {
-          context.showSnackBar(
-            message: 'Failed to save solution to flashcard: $e',
-            type: SnackBarType.error,
-          );
-        }
-      }
+      await ForumSaveFlashcardSheet.show(
+        context,
+        post: currentPost.value,
+        reply: reply,
+      );
     }
 
     Future<void> confirmDeletePost(BuildContext context) async {
@@ -2079,6 +1929,33 @@ class ForumThreadDetailPage extends HookWidget {
                                               color: isBookmarked.value
                                                   ? colors.primary
                                                   : colors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+
+                                        // Generate Deck Button
+                                        ShrinkableButton(
+                                          onTap: () => unawaited(
+                                            ForumGenerateDeckSheet.show(
+                                              context,
+                                              post: currentPost.value,
+                                              replies: localReplies.value,
+                                            ),
+                                          ),
+                                          child: Container(
+                                            width: 34,
+                                            height: 34,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: colors.primary
+                                                  .withValues(alpha: 0.1),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              Icons.auto_awesome_rounded,
+                                              size: 17,
+                                              color: colors.primary,
                                             ),
                                           ),
                                         ),

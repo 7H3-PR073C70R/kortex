@@ -95,48 +95,4 @@ class ForumCubit extends Cubit<ForumState> {
     emit(state.copyWith(posts: updatedPosts));
     await _repository.voteForumPost(postId: postId, voteDirection: value);
   }
-
-  Future<void> compileThreadToFlashcardsWithSyllabot(String postId) async {
-    emit(state.copyWith(isCompilingDeck: true));
-    try {
-      final post = state.posts.firstWhere((p) => p.id == postId);
-      final title = 'Deck: ${post.title}';
-      final res = await _repository.publishDeckToMarketplace(
-        title: title,
-        subject: post.track,
-        description: 'Auto-compiled from verified forum solution "${post.title}" via Syllabot AI.',
-        category: 'Forum Synthesis',
-        syllabusTag: post.track,
-        totalCards: 5,
-        cardsJson: [
-          {
-            'front': 'Key Concept from ${post.title}',
-            'back': post.content,
-          },
-          {
-            'front': 'Verified Solution Context',
-            'back': 'Extracted high-yield insights from verified community resolution.',
-          },
-        ],
-      );
-
-      res.fold(
-        (failure) => emit(state.copyWith(
-          isCompilingDeck: false,
-          errorMessage: 'Syllabot Compilation Failed: ${failure.message}',
-        )),
-        (sharedDeck) {
-          emit(state.copyWith(
-            isCompilingDeck: false,
-            compiledDeckId: sharedDeck.id,
-          ));
-        },
-      );
-    } on Object catch (e) {
-      emit(state.copyWith(
-        isCompilingDeck: false,
-        errorMessage: 'Failed to compile thread: $e',
-      ));
-    }
-  }
 }
