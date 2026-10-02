@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
@@ -9,6 +11,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
@@ -16,6 +19,7 @@ import 'package:kortex/src/features/community/data/models/forum_post_model.dart'
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/forum_offline_sync_queue.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -30,10 +34,48 @@ class CommunityRepositoryImpl implements CommunityRepository {
   CommunityRepositoryImpl(
     this._remoteDataSource, {
     UserStorageService? userStorage,
-  }) : _userStorage = userStorage;
+    ForumOfflineSyncQueue? offlineSyncQueue,
+    Connectivity? connectivity,
+  })  : _userStorage = userStorage,
+        _offlineSyncQueue = offlineSyncQueue {
+    if (connectivity != null) {
+      _initConnectivityListener(connectivity);
+    }
+  }
 
   final CommunityRemoteDataSource _remoteDataSource;
   final UserStorageService? _userStorage;
+  final ForumOfflineSyncQueue? _offlineSyncQueue;
+  bool _isProcessingSyncQueue = false;
+  StreamSubscription<dynamic>? _connectivitySub;
+
+  void _initConnectivityListener(Connectivity connectivity) {
+    _connectivitySub = connectivity.onConnectivityChanged.listen((results) {
+      final isOnline = results.any(
+        (c) =>
+            c == ConnectivityResult.wifi ||
+            c == ConnectivityResult.mobile ||
+            c == ConnectivityResult.ethernet,
+      );
+      if (isOnline && (_offlineSyncQueue?.hasPendingActions ?? false)) {
+        unawaited(flushPendingForumActions());
+      }
+    });
+  }
+
+  @override
+  Future<int> flushPendingForumActions() async {
+    if (_offlineSyncQueue == null || _isProcessingSyncQueue) return 0;
+    _isProcessingSyncQueue = true;
+    try {
+      return await _offlineSyncQueue.processSyncQueue(this);
+    } on Object catch (e) {
+      debugPrint('[CommunityRepositoryImpl] flushPendingForumActions error: $e');
+      return 0;
+    } finally {
+      _isProcessingSyncQueue = false;
+    }
+  }
 
   String? get _currentUserId => _userStorage?.getUserId();
 
@@ -218,24 +260,58 @@ class CommunityRepositoryImpl implements CommunityRepository {
     int? voiceNoteDurationSeconds,
     String? voiceNoteTranscript,
     bool isAnonymous = false,
-  }) {
-    return _remoteDataSource
-        .createForumPost(
-          title: title,
-          content: content,
-          track: track,
-          latexContent: latexContent,
-          isQuestion: isQuestion,
-          syllabusTag: syllabusTag,
-          tags: tags,
-          mediaUrls: mediaUrls,
-          voiceNoteUrl: voiceNoteUrl,
-          voiceNoteDurationSeconds: voiceNoteDurationSeconds,
-          voiceNoteTranscript: voiceNoteTranscript,
-          isAnonymous: isAnonymous,
-        )
-        .then((model) => model.toEntity())
-        .makeRequest();
+  }) async {
+    Either<Failure, ForumPostEntity> result;
+    try {
+      result = await _remoteDataSource
+          .createForumPost(
+            title: title,
+            content: content,
+            track: track,
+            latexContent: latexContent,
+            isQuestion: isQuestion,
+            syllabusTag: syllabusTag,
+            tags: tags,
+            mediaUrls: mediaUrls,
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+          )
+          .then((model) => model.toEntity())
+          .makeRequest();
+    } on Object catch (e) {
+      result = Left(ServerFailure(message: e.toString()));
+    }
+
+    return result.fold(
+      (failure) {
+        if (!_isProcessingSyncQueue && _offlineSyncQueue != null) {
+          final tempPost = ForumPostEntity(
+            id: 'temp-${UuidUtils.generate()}',
+            authorId: _currentUserId ?? 'local_user',
+            authorName: 'You',
+            track: track,
+            title: title,
+            content: content,
+            latexContent: latexContent,
+            isQuestion: isQuestion,
+            syllabusTag: syllabusTag,
+            tags: tags ?? const [],
+            mediaUrls: mediaUrls ?? const [],
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+            createdAt: DateTime.now(),
+          );
+          _offlineSyncQueue.enqueuePost(tempPost);
+          return Right(tempPost);
+        }
+        return Left(failure);
+      },
+      Right.new,
+    );
   }
 
   @override
@@ -278,21 +354,52 @@ class CommunityRepositoryImpl implements CommunityRepository {
     int? voiceNoteDurationSeconds,
     String? voiceNoteTranscript,
     bool isAnonymous = false,
-  }) {
-    return _remoteDataSource
-        .replyToForumPost(
-          postId: postId,
-          content: content,
-          latexContent: latexContent,
-          parentReplyId: parentReplyId,
-          mediaUrls: mediaUrls,
-          voiceNoteUrl: voiceNoteUrl,
-          voiceNoteDurationSeconds: voiceNoteDurationSeconds,
-          voiceNoteTranscript: voiceNoteTranscript,
-          isAnonymous: isAnonymous,
-        )
-        .then((model) => model.toEntity())
-        .makeRequest();
+  }) async {
+    Either<Failure, ForumReplyEntity> result;
+    try {
+      result = await _remoteDataSource
+          .replyToForumPost(
+            postId: postId,
+            content: content,
+            latexContent: latexContent,
+            parentReplyId: parentReplyId,
+            mediaUrls: mediaUrls,
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+          )
+          .then((model) => model.toEntity())
+          .makeRequest();
+    } on Object catch (e) {
+      result = Left(ServerFailure(message: e.toString()));
+    }
+
+    return result.fold(
+      (failure) {
+        if (!_isProcessingSyncQueue && _offlineSyncQueue != null) {
+          final tempReply = ForumReplyEntity(
+            id: 'temp-${UuidUtils.generate()}',
+            postId: postId,
+            parentReplyId: parentReplyId,
+            authorId: _currentUserId ?? 'local_user',
+            authorName: 'You',
+            content: content,
+            latexContent: latexContent,
+            mediaUrls: mediaUrls ?? const [],
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+            createdAt: DateTime.now(),
+          );
+          _offlineSyncQueue.enqueueReply(tempReply);
+          return Right(tempReply);
+        }
+        return Left(failure);
+      },
+      Right.new,
+    );
   }
 
   @override
@@ -325,10 +432,29 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<Either<Failure, bool>> voteForumPost({
     required String postId,
     required int voteDirection,
-  }) {
-    return _remoteDataSource
-        .voteForumPost(postId: postId, voteDirection: voteDirection)
-        .makeRequest();
+  }) async {
+    Either<Failure, bool> result;
+    try {
+      result = await _remoteDataSource
+          .voteForumPost(postId: postId, voteDirection: voteDirection)
+          .makeRequest();
+    } on Object catch (e) {
+      result = Left(ServerFailure(message: e.toString()));
+    }
+
+    return result.fold(
+      (failure) {
+        if (!_isProcessingSyncQueue && _offlineSyncQueue != null) {
+          _offlineSyncQueue.enqueueVote(
+            postId: postId,
+            voteDirection: voteDirection,
+          );
+          return const Right(true);
+        }
+        return Left(failure);
+      },
+      Right.new,
+    );
   }
 
   @override
@@ -948,5 +1074,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<Either<Failure, Set<String>>> getFollowedTopics() {
     return _remoteDataSource.getFollowedTopics().makeRequest();
+  }
+
+  Future<void> dispose() async {
+    await _connectivitySub?.cancel();
   }
 }

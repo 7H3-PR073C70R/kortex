@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -7,9 +8,25 @@ import 'package:record/record.dart';
 class MockAudioRecorder extends Mock implements AudioRecorder {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
     registerFallbackValue(const RecordConfig());
     registerFallbackValue(Duration.zero);
+
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('flutter.baseflow.com/permissions/methods'),
+      (call) async {
+        if (call.method == 'checkPermissionStatus') {
+          return 0; // PermissionStatus.denied, falling back to recorder.hasPermission()
+        }
+        if (call.method == 'requestPermissions') {
+          return {0: 1}; // microphone granted
+        }
+        return null;
+      },
+    );
   });
 
   group('AudioRecordingServiceImpl', () {

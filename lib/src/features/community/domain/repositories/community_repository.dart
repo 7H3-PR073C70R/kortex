@@ -275,4 +275,7 @@ abstract class CommunityRepository {
 
   /// Retrieves the set of followed topics for the current user.
   Future<Either<Failure, Set<String>>> getFollowedTopics();
+
+  /// Flushes any pending offline queued forum actions (posts, replies, votes).
+  Future<int> flushPendingForumActions();
 }

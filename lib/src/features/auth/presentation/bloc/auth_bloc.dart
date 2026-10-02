@@ -6,6 +6,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/sync/app_sync_engine.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
@@ -19,12 +20,14 @@ import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_cas
 import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 /// Main authentication BLoC coordinating domain use cases and reactive state.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -248,9 +251,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             );
           } on Object catch (_) {}
           _syncDeviceToken(profile.id);
-          if (locator.isRegistered<CardSyncQueue>()) {
-            unawaited(locator<CardSyncQueue>().flushPendingLogs());
-          }
+          _flushAllPendingSyncs();
         }
       },
     );
@@ -276,6 +277,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthAppResumed event,
     Emitter<AuthState> emit,
   ) async {
+    _flushAllPendingSyncs();
     if (locator.isRegistered<UserStorageService>()) {
       final storage = locator<UserStorageService>();
       if (storage.hasActiveSession()) {
@@ -295,6 +297,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     }
     add(const AuthCheckRequested());
+  }
+
+  void _flushAllPendingSyncs() {
+    if (locator.isRegistered<CardSyncQueue>()) {
+      unawaited(locator<CardSyncQueue>().flushPendingLogs());
+    }
+    if (locator.isRegistered<QuizRepository>()) {
+      unawaited(locator<QuizRepository>().flushPendingQuizSubmissions());
+    }
+    if (locator.isRegistered<UserActivityService>()) {
+      unawaited(locator<UserActivityService>().syncPendingProgressToBackend());
+    }
+    if (locator.isRegistered<CommunityRepository>()) {
+      unawaited(locator<CommunityRepository>().flushPendingForumActions());
+    }
+    if (locator.isRegistered<AppSyncEngine>()) {
+      unawaited(locator<AppSyncEngine>().flush());
+    }
   }
 
   void _syncDeviceToken([String? userId]) {

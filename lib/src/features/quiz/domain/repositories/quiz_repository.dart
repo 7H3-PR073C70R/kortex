@@ -20,4 +20,6 @@ abstract class QuizRepository {
     required List<QuizQuestionEntity> questions,
     required int durationSeconds,
   });
+
+  Future<int> flushPendingQuizSubmissions();
 }

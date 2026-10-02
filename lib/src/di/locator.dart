@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -51,6 +52,7 @@ import 'package:kortex/src/features/community/data/data_sources/community_remote
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source_impl.dart';
 import 'package:kortex/src/features/community/data/repositories/community_repository_impl.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/forum_offline_sync_queue.dart';
 import 'package:kortex/src/features/community/domain/use_cases/auto_provision_community_use_case.dart';
 import 'package:kortex/src/features/community/domain/use_cases/fetch_course_community_stats_use_case.dart';
 import 'package:kortex/src/features/community/domain/use_cases/fetch_forum_posts_use_case.dart';

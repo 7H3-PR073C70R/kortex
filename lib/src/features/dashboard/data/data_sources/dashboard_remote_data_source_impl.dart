@@ -554,6 +554,18 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
           } on Object catch (_) {}
         }
         return remoteCourses;
+      } else {
+        final localCourses = _getLocallySavedCourses();
+        if (localCourses.isNotEmpty) {
+          try {
+            unawaited(
+              _client.syncUserCourses({
+                'p_courses': localCourses.map((c) => c.toJson()).toList(),
+              }),
+            );
+          } on Object catch (_) {}
+          return localCourses;
+        }
       }
     } on Object catch (_) {}
 

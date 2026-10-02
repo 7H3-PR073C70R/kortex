@@ -56,7 +56,15 @@ void _initServices() {
       ),
     )
     ..registerLazySingleton<UserActivityService>(
-      () => UserActivityServiceImpl(locator<LocalStorageService>()),
+      () => UserActivityServiceImpl(
+        locator<LocalStorageService>(),
+        connectivity: Connectivity(),
+      ),
+    )
+    ..registerLazySingleton<ForumOfflineSyncQueue>(
+      () => ForumOfflineSyncQueue(
+        localStorageService: locator<LocalStorageService>(),
+      ),
     )
     ..registerLazySingleton<StudyActivityTracker>(
       StudyActivityTrackerImpl.new,

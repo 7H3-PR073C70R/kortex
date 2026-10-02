@@ -45,6 +45,8 @@ void _initRepositoryLocator() {
       () => CommunityRepositoryImpl(
         locator<CommunityRemoteDataSource>(),
         userStorage: locator<UserStorageService>(),
+        offlineSyncQueue: locator<ForumOfflineSyncQueue>(),
+        connectivity: Connectivity(),
       ),
     )
     ..registerLazySingleton<RagRepository>(

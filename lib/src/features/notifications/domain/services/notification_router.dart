@@ -2,9 +2,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
-import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
-import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 
@@ -237,9 +235,11 @@ class NotificationRouter {
       }
 
       // Generic fallback for standard slash paths
-      if (clean.startsWith('/')) {
-        await router.pushPath(clean);
-        return true;
+      if (clean.startsWith('/') && clean != '/forum/thread') {
+        try {
+          await router.pushPath(clean);
+          return true;
+        } on Object catch (_) {}
       }
 
       return false;
@@ -455,26 +455,7 @@ class NotificationRouter {
     String postId, {
     String? replyId,
   }) async {
-    if (locator.isRegistered<CommunityRepository>()) {
-      try {
-        final repo = locator<CommunityRepository>();
-        final treeRes = await repo.fetchForumThreadTree(postId: postId);
-        final tree = treeRes.fold((_) => null, (val) => val);
-        if (tree != null) {
-          await router.push(
-            ForumThreadDetailRoute(
-              post: tree.post,
-              highlightReplyId: replyId,
-            ),
-          );
-          return true;
-        }
-      } on Object catch (e) {
-        debugPrint('[NotificationRouter] Error fetching thread tree: $e');
-      }
-    }
-
-    // Fallback: create entity placeholder so navigation succeeds even offline
+    // Fallback: create entity placeholder so navigation succeeds even offline or before thread cache resolves
     final fallbackPost = ForumPostEntity(
       id: postId,
       title: 'Academic Discussion',

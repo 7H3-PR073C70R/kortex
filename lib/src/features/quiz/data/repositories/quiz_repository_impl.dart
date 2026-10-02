@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:dio/dio.dart';
@@ -559,27 +560,27 @@ class QuizRepositoryImpl implements QuizRepository {
       }
 
       // 3. Persist to Remote Database table public.quizzes
+      final userStorage = _effectiveUserStorage;
+      final token = userStorage?.getToken();
+      final userId = userStorage?.getUserId();
+      final authHeader = token != null && token.isNotEmpty
+          ? 'Bearer $token'
+          : 'Bearer ${AppEnv.apiKey}';
+
+      final payload = <String, dynamic>{
+        'title': quizTitle,
+        'total_questions': total,
+        'correct_answers': correctCount,
+        'score_percent': scorePercent,
+        'duration_seconds': durationSeconds,
+        'weak_subtopics': weakSubtopics,
+        'completed_at': completedAt.toUtc().toIso8601String(),
+      };
+      if (userId != null && userId.isNotEmpty) {
+        payload['user_id'] = userId;
+      }
+
       try {
-        final userStorage = _effectiveUserStorage;
-        final token = userStorage?.getToken();
-        final userId = userStorage?.getUserId();
-        final authHeader = token != null && token.isNotEmpty
-            ? 'Bearer $token'
-            : 'Bearer ${AppEnv.apiKey}';
-
-        final payload = <String, dynamic>{
-          'title': quizTitle,
-          'total_questions': total,
-          'correct_answers': correctCount,
-          'score_percent': scorePercent,
-          'duration_seconds': durationSeconds,
-          'weak_subtopics': weakSubtopics,
-          'completed_at': completedAt.toUtc().toIso8601String(),
-        };
-        if (userId != null && userId.isNotEmpty) {
-          payload['user_id'] = userId;
-        }
-
         await _effectiveDio.post<dynamic>(
           '${AppApiEndpoint.baseUri}${AppApiEndpoint.quizzes}',
           data: payload,
@@ -597,10 +598,106 @@ class QuizRepositoryImpl implements QuizRepository {
         debugPrint(
           '[QuizRepository] Remote quiz submission sync postponed/failed: $remoteErr',
         );
+        await _enqueuePendingQuizSubmission(payload);
       }
+
+      unawaited(flushPendingQuizSubmissions());
 
       return resultModel;
     }).makeRequest();
+  }
+
+  static const String _pendingQuizSubmissionsKey =
+      '__kortex_pending_quiz_submissions';
+
+  Future<void> _enqueuePendingQuizSubmission(
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final storage = _effectiveLocalStorage;
+      if (storage == null) return;
+      final raw = storage.getPreference(key: _pendingQuizSubmissionsKey);
+      final list = ((raw != null && raw.isNotEmpty)
+          ? (jsonDecode(raw) as List<dynamic>)
+          : <dynamic>[])
+        ..add(payload);
+      await storage.savePreference(
+        key: _pendingQuizSubmissionsKey,
+        data: jsonEncode(list),
+      );
+    } on Object catch (e) {
+      debugPrint('[QuizRepository] Failed to enqueue pending quiz submission: $e');
+    }
+  }
+
+  @override
+  Future<int> flushPendingQuizSubmissions() async {
+    final storage = _effectiveLocalStorage;
+    if (storage == null) return 0;
+
+    final raw = storage.getPreference(key: _pendingQuizSubmissionsKey);
+    if (raw == null || raw.isEmpty) return 0;
+
+    List<dynamic> list;
+    try {
+      list = jsonDecode(raw) as List<dynamic>;
+    } on Object catch (_) {
+      return 0;
+    }
+
+    if (list.isEmpty) return 0;
+
+    final userStorage = _effectiveUserStorage;
+    final token = userStorage?.getToken();
+    final userId = userStorage?.getUserId();
+    final authHeader = token != null && token.isNotEmpty
+        ? 'Bearer $token'
+        : 'Bearer ${AppEnv.apiKey}';
+
+    var syncedCount = 0;
+    final remaining = <Map<String, dynamic>>[];
+
+    for (final item in list) {
+      if (item is Map) {
+        final payload = Map<String, dynamic>.from(item);
+        if (userId != null &&
+            userId.isNotEmpty &&
+            !payload.containsKey('user_id')) {
+          payload['user_id'] = userId;
+        }
+        try {
+          final res = await _effectiveDio.post<dynamic>(
+            '${AppApiEndpoint.baseUri}${AppApiEndpoint.quizzes}',
+            data: payload,
+            options: Options(
+              headers: {
+                'apikey': AppEnv.apiKey,
+                'Authorization': authHeader,
+                'Prefer': 'return=representation',
+              },
+              sendTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 20),
+            ),
+          );
+          if (res.statusCode == 200 || res.statusCode == 201) {
+            syncedCount++;
+            continue;
+          }
+        } on Object catch (_) {}
+        remaining.add(payload);
+      }
+    }
+
+    if (remaining.isEmpty) {
+      await storage.deletePreference(key: _pendingQuizSubmissionsKey);
+    } else {
+      await storage.savePreference(
+        key: _pendingQuizSubmissionsKey,
+        data: jsonEncode(remaining),
+      );
+    }
+
+    return syncedCount;
   }
 
   List<QuizQuestionModel> _synthesizeQuestionsFromCards({

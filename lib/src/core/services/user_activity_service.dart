@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:kortex/src/core/error/failure.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
-import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
@@ -115,12 +114,23 @@ abstract class UserActivityService {
     int? streakFreezes,
     List<HeatMapDayModel>? heatMapData,
   });
+  Future<void> syncPendingProgressToBackend();
+  Future<void> dispose();
 }
 
 class UserActivityServiceImpl implements UserActivityService {
-  UserActivityServiceImpl(this._localStorageService);
+  UserActivityServiceImpl(
+    this._localStorageService, {
+    Connectivity? connectivity,
+  }) : _connectivity = connectivity {
+    if (_connectivity != null) {
+      _initConnectivityListener();
+    }
+  }
 
   final LocalStorageService _localStorageService;
+  final Connectivity? _connectivity;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   final StreamController<AnalyticsSummaryModel> _analyticsStreamController =
       StreamController<AnalyticsSummaryModel>.broadcast();
   final StreamController<XpEarnedEvent> _xpEarnedStreamController =
@@ -135,6 +145,45 @@ class UserActivityServiceImpl implements UserActivityService {
   static const String _bonusKarmaKey = '__kortex_bonus_karma';
   static const String _xpTransactionsKey = '__kortex_xp_transactions_list';
   static const String _directXpAccumulatedKey = '__kortex_direct_xp_total';
+  static const String _pendingXpDeltaKey = '__kortex_pending_xp_delta';
+
+  void _initConnectivityListener() {
+    try {
+      _connectivitySub = _connectivity?.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
+        if (isOnline && _getPendingXpDelta() > 0) {
+          unawaited(syncPendingProgressToBackend());
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  int _getPendingXpDelta() {
+    try {
+      final raw = _localStorageService.getPreference(key: _pendingXpDeltaKey);
+      return int.tryParse(raw ?? '0') ?? 0;
+    } on Object {
+      return 0;
+    }
+  }
+
+  Future<void> _setPendingXpDelta(int delta) async {
+    try {
+      if (delta <= 0) {
+        await _localStorageService.deletePreference(key: _pendingXpDeltaKey);
+      } else {
+        await _localStorageService.savePreference(
+          key: _pendingXpDeltaKey,
+          data: delta.toString(),
+        );
+      }
+    } on Object catch (_) {}
+  }
 
   @override
   Stream<AnalyticsSummaryModel> get analyticsSummaryStream =>
@@ -219,15 +268,24 @@ class UserActivityServiceImpl implements UserActivityService {
     // 4. Fire-and-forget sync to backend so leaderboard stays correct for all users.
     //    syncUserProgress updates profiles.xp_points atomically, which triggers
     //    the Supabase leaderboard sync trigger automatically.
-    _syncProgressToBackend(xpDelta: xpEarned);
+    unawaited(_syncProgressToBackend(xpDelta: xpEarned));
 
     return event;
   }
 
-  /// Pushes the latest XP delta + streak + track to Supabase asynchronously.
-  /// Safe to call fire-and-forget — all errors are silently swallowed.
-  void _syncProgressToBackend({int xpDelta = 0}) {
+  @override
+  Future<void> syncPendingProgressToBackend() => _syncProgressToBackend();
+
+  /// Pushes accumulated XP delta + streak + track to Supabase.
+  /// If offline, retains pending delta in storage and retries on reconnect.
+  Future<void> _syncProgressToBackend({int xpDelta = 0}) async {
     try {
+      final previousPending = _getPendingXpDelta();
+      final totalDelta = previousPending + xpDelta;
+      if (totalDelta > 0) {
+        await _setPendingXpDelta(totalDelta);
+      }
+
       final communityRepo = locator.isRegistered<CommunityRepository>()
           ? locator<CommunityRepository>()
           : null;
@@ -242,17 +300,20 @@ class UserActivityServiceImpl implements UserActivityService {
           ? authProfile!.targetTrack
           : null;
 
-      unawaited(
-        communityRepo
-            .syncUserProgress(
-              xpDelta: xpDelta,
-              streakDays: currentStreak,
-              track: track,
-            )
-            .catchError(
-              (_) =>
-                  const Right<Failure, Map<String, dynamic>>(<String, dynamic>{}),
-            ),
+      final result = await communityRepo.syncUserProgress(
+        xpDelta: totalDelta,
+        streakDays: currentStreak,
+        track: track,
+      );
+
+      await result.fold(
+        (_) async {
+          // Offline/error: retain totalDelta in _pendingXpDeltaKey for automatic retry on reconnect
+        },
+        (_) async {
+          // Successfully synced to backend: reset pending delta
+          await _setPendingXpDelta(0);
+        },
       );
     } on Object catch (_) {
       // Offline-safe — never break the UX for a sync failure.
@@ -468,7 +529,7 @@ class UserActivityServiceImpl implements UserActivityService {
     );
 
     // Sync updated streak to backend so leaderboard updates in real-time
-    _syncProgressToBackend();
+    unawaited(_syncProgressToBackend());
 
     _notifyStreakMilestone(currentStreak);
   }
@@ -860,5 +921,12 @@ class UserActivityServiceImpl implements UserActivityService {
       );
     }
     return DateTime.now();
+  }
+
+  @override
+  Future<void> dispose() async {
+    await _connectivitySub?.cancel();
+    await _analyticsStreamController.close();
+    await _xpEarnedStreamController.close();
   }
 }

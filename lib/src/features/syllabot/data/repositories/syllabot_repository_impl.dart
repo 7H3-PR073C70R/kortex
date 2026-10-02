@@ -86,8 +86,28 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
   @override
   Future<Either<Failure, List<ConversationSessionEntity>>> getChatSessions() {
     return Future<List<ConversationSessionEntity>>.sync(() async {
+      final localModels = await _local.getCachedSessions();
       try {
         final remoteModels = await _remote.getChatSessions();
+        final remoteIds = remoteModels.map((m) => m.id).toSet();
+
+        // Auto-upload offline-created sessions to remote
+        for (final local in localModels) {
+          if (!remoteIds.contains(local.id) && UuidUtils.isValidUuid(local.id)) {
+            try {
+              final created = await _remote.createChatSession(
+                title: local.title,
+                socraticMode: SocraticMode.values.firstWhere(
+                  (m) => m.nameString == local.socraticMode,
+                  orElse: () => SocraticMode.stepByStep,
+                ),
+                id: local.id,
+              );
+              remoteModels.add(created);
+            } on Object catch (_) {}
+          }
+        }
+
         if (remoteModels.isNotEmpty) {
           final entities = remoteModels.map((m) => m.toEntity()).toList();
           for (final model in remoteModels) {
@@ -98,7 +118,6 @@ class SyllabotRepositoryImpl implements SyllabotRepository {
       } on Object catch (_) {}
 
       // Fall back to persistent local storage sessions
-      final localModels = await _local.getCachedSessions();
       return localModels.map((m) => m.toEntity()).toList();
     }).makeRequest();
   }
