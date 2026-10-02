@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,7 @@ import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/sync/app_sync_engine.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -18,6 +21,11 @@ import 'package:kortex/src/features/community/domain/services/forum_offline_sync
 import 'package:kortex/src/features/dashboard/data/client/dashboard_api_client.dart';
 import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source_impl.dart';
 import 'package:kortex/src/features/dashboard/data/models/dashboard_feed_model.dart';
+import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source_impl.dart';
+import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/domain/services/study_engine_router.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
@@ -34,12 +42,16 @@ class MockUserStorageService extends Mock implements UserStorageService {}
 
 class MockDio extends Mock implements Dio {}
 
+class MockConnectivity extends Mock implements Connectivity {}
+
 class MockCommunityRemoteDataSource extends Mock
     implements CommunityRemoteDataSource {}
 
 class MockCommunityRepository extends Mock implements CommunityRepository {}
 
 class MockDashboardApiClient extends Mock implements DashboardApiClient {}
+
+class MockDecksApiClient extends Mock implements DecksApiClient {}
 
 class MockDecksRepository extends Mock implements DecksRepository {}
 
@@ -86,6 +98,12 @@ void main() {
 
       when(() => mockUserStorage.getToken()).thenReturn('mock-token-jwt');
       when(() => mockUserStorage.getUserId()).thenReturn('mock-user-uuid');
+    });
+
+    tearDown(() async {
+      if (locator.isRegistered<CommunityRepository>()) {
+        await locator.unregister<CommunityRepository>();
+      }
     });
 
     test('1. Planner: Offline created exam uses valid RFC4122 UUID and is pushed on getActiveExams', () async {
@@ -357,6 +375,263 @@ void main() {
       expect(result.isNotEmpty, isTrue);
       expect(result.first.courseCode, 'PHY');
       expect(syncedToRemote, isTrue);
+    });
+
+    test('6. Flashcards / FSRS: Offline reviews are buffered in CardSyncQueue and flushed via RPC on reconnection', () async {
+      final queue = CardSyncQueue(
+        dio: mockDio,
+        storageService: mockStorage,
+        userStorageService: mockUserStorage,
+        authToken: 'test-token',
+      );
+
+      final log = FsrsReviewLog(
+        id: 'log-1',
+        transactionUuid: UuidUtils.generate(),
+        cardId: 'card-123',
+        rating: FsrsRating.good,
+        stability: 2.5,
+        difficulty: 4,
+        elapsedDays: 1,
+        scheduledDays: 3,
+        reviewedAtUtc: DateTime.now().toUtc(),
+        reviewedAtEpoch: DateTime.now().millisecondsSinceEpoch,
+        state: FsrsCardState.review,
+      );
+
+      // Enqueue offline review
+      await queue.enqueueReview(log);
+      expect(queue.getPendingCount(), 1);
+
+      // Verify stored locally in storageKey
+      final storedLogs = inMemoryStorage[CardSyncQueue.storageKey];
+      expect(storedLogs, isNotNull);
+      expect(storedLogs!.contains(log.transactionUuid), isTrue);
+
+      // Reconnect and flush
+      var rpcCalled = false;
+      when(() => mockDio.post<dynamic>(
+            any(that: contains('upsert_fsrs_review_batch')),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          )).thenAnswer((inv) async {
+        rpcCalled = true;
+        return Response(
+          requestOptions: RequestOptions(),
+          statusCode: 200,
+          data: {'processed': 1},
+        );
+      });
+
+      final syncedCount = await queue.flushPendingLogs();
+      expect(syncedCount, 1);
+      expect(rpcCalled, isTrue);
+      expect(queue.getPendingCount(), 0);
+    });
+
+    test('7. Decks: Offline created deck with UUID is synced to Supabase when back online via getUserDecks', () async {
+      final mockDecksClient = MockDecksApiClient();
+      final offlineDeckId = UuidUtils.generate();
+      final offlineDeck = DeckModel(
+        id: offlineDeckId,
+        title: 'Offline Chemistry Deck',
+        subject: 'Chemistry',
+        category: 'General',
+        totalCards: 5,
+        dueCards: 5,
+        masteryRate: 0,
+      );
+
+      // Pre-populate offline deck in local storage
+      inMemoryStorage[PrefKeys.persistedUserDecks] =
+          jsonEncode([offlineDeck.toJson()]);
+
+      final dataSource = DecksRemoteDataSourceImpl(
+        mockDecksClient,
+        userStorage: mockUserStorage,
+        storageService: mockStorage,
+      );
+
+      // Remote returns empty list (first time online after offline creation)
+      when(mockDecksClient.getUserDecks).thenAnswer((_) async => <DeckModel>[]);
+
+      var createdRemoteRecord = false;
+      when(() => mockDecksClient.createDeckRecord(any())).thenAnswer((inv) async {
+        createdRemoteRecord = true;
+        final data = inv.positionalArguments[0] as Map<String, dynamic>;
+        expect(data['id'], offlineDeckId);
+        expect(data['title'], 'Offline Chemistry Deck');
+        return HttpResponse(null, Response(requestOptions: RequestOptions()));
+      });
+
+      final decks = await dataSource.getUserDecks();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(decks.length, 1);
+      expect(decks.first.id, offlineDeckId);
+      expect(createdRemoteRecord, isTrue);
+    });
+
+    test('8. Connectivity Auto-Flush: QuizRepository triggers flushPendingQuizSubmissions on network reconnection', () async {
+      final connectivityController = StreamController<List<ConnectivityResult>>.broadcast();
+      final mockConnectivity = MockConnectivity();
+      when(() => mockConnectivity.onConnectivityChanged)
+          .thenAnswer((_) => connectivityController.stream);
+
+      // Queue an offline quiz submission
+      final pendingSubmissions = [
+        {
+          'id': UuidUtils.generate(),
+          'quiz_id': 'quiz-offline-1',
+          'title': 'Offline Math Exam',
+          'score': 85.0,
+          'user_id': 'mock-user-uuid',
+        }
+      ];
+      inMemoryStorage['__kortex_pending_quiz_submissions'] =
+          jsonEncode(pendingSubmissions);
+
+      var remotePostCount = 0;
+      when(() => mockDio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          )).thenAnswer((_) async {
+        remotePostCount++;
+        return Response(
+          requestOptions: RequestOptions(),
+          statusCode: 201,
+          data: {'status': 'success'},
+        );
+      });
+
+      final repo = QuizRepositoryImpl(
+        decksRepository: MockDecksRepository(),
+        ingestionRepository: MockIngestionRepository(),
+        studyEngineRouter: MockStudyEngineRouter(),
+        dio: mockDio,
+        localStorageService: mockStorage,
+        userStorageService: mockUserStorage,
+        connectivity: mockConnectivity,
+      );
+
+      expect(inMemoryStorage['__kortex_pending_quiz_submissions'], isNotNull);
+
+      // Emit network restored event (wifi)
+      connectivityController.add([ConnectivityResult.wifi]);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(remotePostCount, 1);
+      expect(inMemoryStorage['__kortex_pending_quiz_submissions'], isNull);
+
+      await connectivityController.close();
+      await repo.dispose();
+    });
+
+    test('9. Connectivity Auto-Sync: PlannerRepository triggers getActiveExams and flushes deletions on reconnection', () async {
+      final connectivityController = StreamController<List<ConnectivityResult>>.broadcast();
+      final mockConnectivity = MockConnectivity();
+      when(() => mockConnectivity.onConnectivityChanged)
+          .thenAnswer((_) => connectivityController.stream);
+
+      // Record a pending deletion offline
+      final deletedExamId = UuidUtils.generate();
+      inMemoryStorage['__kortex_pending_exam_deletions'] =
+          jsonEncode([deletedExamId]);
+
+      var remoteDeleteCalled = false;
+      when(() => mockDio.delete<dynamic>(any())).thenAnswer((inv) async {
+        remoteDeleteCalled = true;
+        return Response(requestOptions: RequestOptions(), statusCode: 204);
+      });
+      when(() => mockDio.get<dynamic>(any(), options: any(named: 'options')))
+          .thenAnswer((_) async => Response(
+                requestOptions: RequestOptions(),
+                statusCode: 200,
+                data: <Map<String, dynamic>>[],
+              ));
+
+      final repo = PlannerRepositoryImpl(
+        storageService: mockStorage,
+        userStorageService: mockUserStorage,
+        dio: mockDio,
+        connectivity: mockConnectivity,
+      );
+
+      // Emit network reconnect
+      connectivityController.add([ConnectivityResult.mobile]);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(remoteDeleteCalled, isTrue);
+      expect(inMemoryStorage['__kortex_pending_exam_deletions'], isNull);
+
+      await connectivityController.close();
+      await repo.dispose();
+    });
+
+    test('10. AppSyncEngine: Merges CRDT deltas and dispatches syncAll on network reconnection', () async {
+      final connectivityController = StreamController<List<ConnectivityResult>>.broadcast();
+      final mockConnectivity = MockConnectivity();
+      when(() => mockConnectivity.onConnectivityChanged)
+          .thenAnswer((_) => connectivityController.stream);
+
+      final engine = AppSyncEngine(
+        dio: mockDio,
+        connectivity: mockConnectivity,
+        storageService: mockStorage,
+        userStorageService: mockUserStorage,
+      );
+
+      // Verify CRDT field-level delta merging
+      final payload1 = AppSyncPayload(
+        id: 'settings_doc',
+        type: 'settings',
+        data: {'theme': 'dark', 'volume': 80},
+        timestampEpoch: 1000,
+      );
+      final payload2 = AppSyncPayload(
+        id: 'settings_doc',
+        type: 'settings',
+        data: {'volume': 95, 'notifications': true},
+        timestampEpoch: 2000,
+      );
+
+      final merged = engine.mergeCrdtPayload(payload1, payload2);
+      expect(merged.data['theme'], 'dark');
+      expect(merged.data['volume'], 95);
+      expect(merged.data['notifications'], true);
+      expect(merged.timestampEpoch, 2000);
+
+      // Pre-seed storage queue with merged payload to simulate offline state
+      inMemoryStorage[AppSyncEngine.storageKey] = jsonEncode([merged.toMap()]);
+
+      // Re-instantiate engine to load persisted queue safely
+      final onlineEngine = AppSyncEngine(
+        dio: mockDio,
+        connectivity: mockConnectivity,
+        storageService: mockStorage,
+        userStorageService: mockUserStorage,
+      );
+
+      var upsertCalled = false;
+      when(() => mockDio.post<dynamic>(
+            any(that: contains('app_sync_engine_upsert')),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          )).thenAnswer((inv) async {
+        upsertCalled = true;
+        return Response(requestOptions: RequestOptions(), statusCode: 200);
+      });
+
+      // Emit network online event
+      connectivityController.add([ConnectivityResult.wifi]);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(upsertCalled, isTrue);
+      expect(inMemoryStorage[AppSyncEngine.storageKey], isNull);
+
+      await connectivityController.close();
+      await engine.dispose();
+      await onlineEngine.dispose();
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
@@ -27,7 +28,7 @@ import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repo
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 class QuizRepositoryImpl implements QuizRepository {
-  const QuizRepositoryImpl({
+  QuizRepositoryImpl({
     DecksRepository? decksRepository,
     IngestionRepository? ingestionRepository,
     PastQuestionsRepository? pastQuestionsRepository,
@@ -36,6 +37,7 @@ class QuizRepositoryImpl implements QuizRepository {
     LocalStorageService? localStorageService,
     UserStorageService? userStorageService,
     UserActivityService? userActivityService,
+    Connectivity? connectivity,
   }) : _decksRepository = decksRepository,
        _ingestionRepository = ingestionRepository,
        _pastQuestionsRepository = pastQuestionsRepository,
@@ -43,7 +45,12 @@ class QuizRepositoryImpl implements QuizRepository {
        _dio = dio,
        _localStorageService = localStorageService,
        _userStorageService = userStorageService,
-       _userActivityService = userActivityService;
+       _userActivityService = userActivityService,
+       _connectivity = connectivity {
+    if (_connectivity != null) {
+      _initConnectivityListener();
+    }
+  }
 
   final DecksRepository? _decksRepository;
   final IngestionRepository? _ingestionRepository;
@@ -53,6 +60,28 @@ class QuizRepositoryImpl implements QuizRepository {
   final LocalStorageService? _localStorageService;
   final UserStorageService? _userStorageService;
   final UserActivityService? _userActivityService;
+  final Connectivity? _connectivity;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
+  void _initConnectivityListener() {
+    try {
+      _connectivitySub = _connectivity?.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
+        if (isOnline) {
+          unawaited(flushPendingQuizSubmissions());
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  Future<void> dispose() async {
+    await _connectivitySub?.cancel();
+  }
 
   static const String cbtSubmissionsStorageKey = 'kortex_cbt_test_submissions';
 

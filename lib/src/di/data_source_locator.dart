@@ -45,6 +45,7 @@ void _initDataSource() {
         userStorage: locator<UserStorageService>(),
         storageService: locator<LocalStorageService>(),
         localDataSource: locator<DecksLocalDataSource>(),
+        connectivity: Connectivity(),
       ),
     )
     ..registerLazySingleton<SyllabotRemoteDataSource>(

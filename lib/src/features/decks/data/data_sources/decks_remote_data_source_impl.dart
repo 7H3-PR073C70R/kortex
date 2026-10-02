@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
@@ -20,14 +21,42 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
     UserStorageService? userStorage,
     LocalStorageService? storageService,
     DecksLocalDataSource? localDataSource,
+    Connectivity? connectivity,
   }) : _userStorage = userStorage,
        _storageService = storageService,
-       _localDataSourceOverride = localDataSource;
+       _localDataSourceOverride = localDataSource,
+       _connectivity = connectivity {
+    if (_connectivity != null) {
+      _initConnectivityListener();
+    }
+  }
 
   final DecksApiClient _client;
   final UserStorageService? _userStorage;
   final LocalStorageService? _storageService;
   final DecksLocalDataSource? _localDataSourceOverride;
+  final Connectivity? _connectivity;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
+  void _initConnectivityListener() {
+    try {
+      _connectivitySub = _connectivity?.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
+        if (isOnline) {
+          unawaited(getUserDecks());
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  Future<void> dispose() async {
+    await _connectivitySub?.cancel();
+  }
 
   final Map<String, List<FlashcardModel>> _localDeckCards = {};
   final List<DeckModel> _localCreatedDecks = [];

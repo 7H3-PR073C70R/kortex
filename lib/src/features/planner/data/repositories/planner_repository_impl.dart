@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -27,17 +28,45 @@ class PlannerRepositoryImpl implements PlannerRepository {
     LocalStorageService? storageService,
     UserStorageService? userStorageService,
     Dio? dio,
+    Connectivity? connectivity,
   }) : _calculator = calculator ?? const CramWorkloadCalculator(),
        _database = database,
        _storageService = storageService,
        _userStorageService = userStorageService,
-       _dio = dio;
+       _dio = dio,
+       _connectivity = connectivity {
+    if (_connectivity != null) {
+      _initConnectivityListener();
+    }
+  }
 
   final CramWorkloadCalculator _calculator;
   final AppDatabase? _database;
   final LocalStorageService? _storageService;
   final UserStorageService? _userStorageService;
   final Dio? _dio;
+  final Connectivity? _connectivity;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
+  void _initConnectivityListener() {
+    try {
+      _connectivitySub = _connectivity?.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
+        if (isOnline) {
+          unawaited(getActiveExams());
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  Future<void> dispose() async {
+    await _connectivitySub?.cancel();
+  }
 
   Dio? get _effectiveDio {
     if (_dio != null) return _dio;

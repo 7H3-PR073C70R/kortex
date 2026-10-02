@@ -67,7 +67,15 @@ void _initRepositoryLocator() {
       ),
     )
     ..registerLazySingleton<PlannerRepository>(
-      PlannerRepositoryImpl.new,
+      () => PlannerRepositoryImpl(
+        database: locator.isRegistered<AppDatabase>()
+            ? locator<AppDatabase>()
+            : null,
+        storageService: locator<LocalStorageService>(),
+        userStorageService: locator<UserStorageService>(),
+        dio: locator<Dio>(),
+        connectivity: Connectivity(),
+      ),
     )
     ..registerLazySingleton<QuizRepository>(
       () => QuizRepositoryImpl(
@@ -78,6 +86,7 @@ void _initRepositoryLocator() {
         localStorageService: locator<LocalStorageService>(),
         userStorageService: locator<UserStorageService>(),
         userActivityService: locator<UserActivityService>(),
+        connectivity: Connectivity(),
       ),
     )
     ..registerLazySingleton<PastQuestionsRepository>(

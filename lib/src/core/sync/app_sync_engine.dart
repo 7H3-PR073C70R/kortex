@@ -6,8 +6,14 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/planner/domain/repositories/planner_repository.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 enum SyncStatus { online, syncing, offline }
 
@@ -70,6 +76,7 @@ class AppSyncEngine {
   final Connectivity _connectivity;
   final LocalStorageService? _storageService;
   final UserStorageService? _userStorageService;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   
   final List<AppSyncPayload> _queue = [];
   bool _isSyncing = false;
@@ -131,20 +138,76 @@ class AppSyncEngine {
   }
 
   void _initConnectivityListener() {
-    _connectivity.onConnectivityChanged.listen((results) {
-      final isOnline = results.any(
-        (c) =>
-            c == ConnectivityResult.wifi ||
-            c == ConnectivityResult.mobile ||
-            c == ConnectivityResult.ethernet,
-      );
+    try {
+      _connectivitySub = _connectivity.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
 
-      _syncStatusController.add(isOnline ? SyncStatus.online : SyncStatus.offline);
+        _syncStatusController.add(isOnline ? SyncStatus.online : SyncStatus.offline);
 
-      if (isOnline && _queue.isNotEmpty) {
-        unawaited(flush());
+        if (isOnline) {
+          unawaited(syncAll());
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  /// Dispatches full synchronization across all domain stores and queues
+  /// when returning online.
+  Future<void> syncAll() async {
+    await flush();
+
+    if (locator.isRegistered<CardSyncQueue>()) {
+      try {
+        await locator<CardSyncQueue>().flushPendingLogs();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] CardSyncQueue flush failed: $e');
       }
-    });
+    }
+
+    if (locator.isRegistered<QuizRepository>()) {
+      try {
+        await locator<QuizRepository>().flushPendingQuizSubmissions();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] QuizRepository flush failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<UserActivityService>()) {
+      try {
+        await locator<UserActivityService>().syncPendingProgressToBackend();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] UserActivityService sync failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<CommunityRepository>()) {
+      try {
+        await locator<CommunityRepository>().flushPendingForumActions();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] CommunityRepository flush failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<PlannerRepository>()) {
+      try {
+        await locator<PlannerRepository>().getActiveExams();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] PlannerRepository sync failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<DecksRemoteDataSource>()) {
+      try {
+        await locator<DecksRemoteDataSource>().getUserDecks();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] DecksRemoteDataSource sync failed: $e');
+      }
+    }
   }
 
   /// CRDT Field-Level Delta Merge helper
@@ -263,6 +326,7 @@ class AppSyncEngine {
   }
 
   Future<void> dispose() async {
+    await _connectivitySub?.cancel();
     await _syncStatusController.close();
     await _pendingCountController.close();
   }
