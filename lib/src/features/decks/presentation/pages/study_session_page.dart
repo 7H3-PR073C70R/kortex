@@ -138,6 +138,8 @@ class _StudySessionView extends HookWidget {
     // banner shown; null while no banner is on screen.
     final milestoneTick = useState<int?>(null);
 
+    final hasNavigatedToSummary = useRef<bool>(false);
+
     useEffect(
       () {
         focusNode.requestFocus();
@@ -153,17 +155,23 @@ class _StudySessionView extends HookWidget {
       body: SafeArea(
         child: BlocConsumer<StudySessionCubit, StudySessionState>(
           listener: (context, state) {
-            if (state.status == StudySessionStatus.finished) {
+            if (state.status == StudySessionStatus.finished &&
+                !hasNavigatedToSummary.value) {
+              hasNavigatedToSummary.value = true;
+              final reviewedCount = state.totalReviewedCards;
+              final nextDays = context
+                  .read<StudySessionCubit>()
+                  .nextReviewInDays;
               unawaited(
                 context.router.replace(
                   SessionSummaryRoute(
                     deckId: deckId,
-                    cardsReviewed: state.cards.length,
+                    cardsReviewed: reviewedCount > 0
+                        ? reviewedCount
+                        : state.cards.length,
                     durationSeconds: state.elapsedSeconds,
                     retentionScore: state.retentionScore,
-                    nextReviewInDays: context
-                        .read<StudySessionCubit>()
-                        .nextReviewInDays,
+                    nextReviewInDays: nextDays,
                   ),
                 ),
               );
@@ -178,6 +186,11 @@ class _StudySessionView extends HookWidget {
             }
           },
           builder: (context, state) {
+            if (state.status == StudySessionStatus.finished ||
+                state.status == StudySessionStatus.finishing) {
+              return const SizedBox.shrink();
+            }
+
             if (state.status == StudySessionStatus.loading) {
               return _buildSessionShimmerSkeleton(colors, isDark);
             }

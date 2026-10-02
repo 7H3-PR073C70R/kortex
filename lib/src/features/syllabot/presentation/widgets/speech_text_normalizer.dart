@@ -168,12 +168,33 @@ class SpeechTextNormalizer {
 
     var text = rawMarkdown;
 
-    // 0. Clean zero-width, non-breaking, and invisible control characters
+    // 0. Clean model thinking tags, prompt leakage, control characters & zero-width tokens
     text = text
+        .replaceAll(
+          RegExp(r'<think>[\s\S]*?<\/think>|<\/?think>|<\|[a-zA-Z0-9_\-]+\|>'),
+          ' ',
+        )
+        .replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]'), '')
         .replaceAll('\u00A0', ' ')
-        .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF\u200E\u200F]'), '');
+        .replaceAll(
+          RegExp(
+            r'[\u200B-\u200D\uFEFF\u200E\u200F\u2028\u2029\u2060\u00AD]',
+          ),
+          '',
+        );
 
-    // 1. Decode HTML entities so they do not leak as codes or ampersands
+    // 1. Process literal string / whitespace escape sequences (\n, \r, \t)
+    text = text
+        .replaceAll(r'\r\n', '\n')
+        .replaceAll(r'\n', '\n')
+        .replaceAll(r'\r', ' ')
+        .replaceAll(r'\t', ' ');
+
+    // 1.1 Explicitly cut out $1, escaped \$1, and regex/placeholder tokens ($2, $3, etc.)
+    text = text.replaceAll(RegExp(r'\\?\$1(?!\.\d|\d)'), '');
+    text = text.replaceAll(RegExp(r'\\?\$[0-9]+(?!\.\d)'), '');
+
+    // 2. Decode HTML entities so they do not leak as codes or ampersands
     text = text
         .replaceAll('&nbsp;', ' ')
         .replaceAll('&amp;', ' and ')
@@ -185,12 +206,16 @@ class SpeechTextNormalizer {
         .replaceAll('&cent;', ' cents')
         .replaceAll('&copy;', ' copyright')
         .replaceAll('&deg;', ' degrees')
-        .replaceAll(RegExp(r'&#\d+;'), ' ');
+        .replaceAll('&pound;', ' pounds ')
+        .replaceAll('&euro;', ' euros ')
+        .replaceAll(RegExp(r'&#\d+;'), ' ')
+        .replaceAll(RegExp('&#x[0-9a-fA-F]+;'), ' ');
 
-    // 2. Strip HTML tags (e.g. <br>, <b>, <span>, <div>, <p>)
+    // 3. Strip HTML comments and tags (e.g. <br>, <b>, <span>, <div>, <p>, <!-- -->)
+    text = text.replaceAll(RegExp(r'<!--[\s\S]*?-->'), ' ');
     text = text.replaceAll(RegExp('<[^>]+>'), ' ');
 
-    // 3. Intelligently process code blocks and inline code for speech
+    // 4. Intelligently process code blocks and inline code for speech
     text = text.replaceAllMapped(
       RegExp(r'```(?:[a-zA-Z0-9_\-+]*\r?\n)?[\s\S]*?```'),
       (m) => _normalizeCodeBlock(m[0]!),
@@ -201,46 +226,91 @@ class SpeechTextNormalizer {
     );
     text = text.replaceAll('`', '');
 
-    // 4. Expand LaTeX math commands into spoken words
+    // 5. Expand and normalize Markdown tables before symbol stripping
+    text = text.replaceAll(
+      RegExp(r'^\s*\|?[\s|:-]+\|?\s*$', multiLine: true),
+      '',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'^\s*\|(.+)\|\s*$', multiLine: true),
+      (m) {
+        final cells = m[1]!
+            .split('|')
+            .map((c) => c.trim())
+            .where((c) => c.isNotEmpty && !RegExp(r'^[-:]+$').hasMatch(c))
+            .join(', ');
+        return cells.isNotEmpty ? '$cells.' : '';
+      },
+    );
+
+    // 6. Expand LaTeX math commands into spoken words
     text = _normalizeLatex(text);
 
-    // 5. Clean Blockquotes (strip leading > without confusing with math)
-    text = text.replaceAll(RegExp(r'^\s*>\s*', multiLine: true), '');
+    // 7. Strip Markdown task list checkboxes (- [ ], - [x], * [x])
+    text = text.replaceAll(
+      RegExp(r'^\s*[-*+]\s+\[[ xX]\]\s+', multiLine: true),
+      ', ',
+    );
+    text = text.replaceAll(RegExp(r'\[[ xX]\]'), '');
 
-    // 6. Strip Markdown headings (#, ##, etc.) and horizontal rules
+    // 8. Strip Footnotes ([^1], [^note], [^1]: ...)
+    text = text.replaceAll(
+      RegExp(r'^\s*\[\^[^\]]+\]:\s*', multiLine: true),
+      '',
+    );
+    text = text.replaceAll(RegExp(r'\[\^[^\]]+\]'), '');
+
+    // 9. Clean Blockquotes (strip leading > without confusing with math)
+    text = text.replaceAll(RegExp(r'^\s*>+\s*', multiLine: true), '');
+
+    // 10. Strip Markdown headings (#, ##, etc.), trailing hashes, and horizontal rules
     text = text.replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'\s*#{1,6}\s*$', multiLine: true), '');
     text = text.replaceAll(RegExp(r'^\s*[-*_]{3,}\s*$', multiLine: true), '');
     // Clean number signs like #1 -> number 1
     text = text.replaceAllMapped(RegExp(r'#(\d+)'), (m) => 'number ${m[1]}');
     text = text.replaceAll('#', '');
 
-    // 7. Strip Markdown bold, italic, strikethrough syntax cleanly
+    // 11. Unescape markdown backslash escapes (\*, \_, \[, \], etc.)
+    text = text.replaceAllMapped(
+      RegExp(r"""\\([*#_\[\](){}+.!?~$|><"'`^=~-])"""),
+      (m) => m[1]!,
+    );
+
+    // 12. Strip Markdown bold, italic, strikethrough syntax cleanly
     text = text.replaceAllMapped(RegExp(r'(\*{1,3}|_{1,3})(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp(r'(\*\*|__)(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp(r'(\*|_)(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp('~~(.*?)~~'), (m) => m[1]!);
 
-    // 8. Markdown links: retain link title, remove URL
+    // 13. Markdown images and links:
+    // Images: ![alt](url) -> keep alt text if present, strip syntax & URL
+    text = text.replaceAllMapped(
+      RegExp(r'!\[([^\]]*)\]\([^)]+\)'),
+      (m) => m[1]!.isNotEmpty ? '${m[1]} ' : '',
+    );
+    // Links: [title](url) -> retain link title, remove URL
     text = text.replaceAllMapped(
       RegExp(r'\[([^\]]+)\]\([^)]+\)'),
       (m) => m[1]!,
     );
 
-    // 9. Remove standalone raw URLs
+    // 14. Remove standalone raw URLs
     text = text.replaceAll(RegExp(r'https?://\S+'), '');
+    text = text.replaceAll(RegExp(r'\bwww\.\S+'), '');
 
-    // 10. Clean bullet points & numbered lists
+    // 15. Clean bullet points & numbered lists
     // Convert list markers into natural pauses
     text = text.replaceAll(RegExp(r'^\s*[-•*+]\s+', multiLine: true), ', ');
-    text = text.replaceAll(RegExp(r'^\s*\d+\.\s+', multiLine: true), ', ');
+    text = text.replaceAll(RegExp(r'^\s*\d+[\.\)]\s+', multiLine: true), ', ');
 
-    // 11. Normalize Unicode bullets & special symbols
+    // 16. Normalize Unicode bullets & special symbols
     text = text.replaceAll(RegExp('[•·▪▫◦‣⁃■□●○★☆]'), ', ');
     text = text
         .replaceAll(RegExp('[✓✔]'), ' correct ')
         .replaceAll(RegExp('[✕✖✗✘]'), ' incorrect ');
 
-    // 12. Strip emojis (all standard Unicode emoji ranges)
+    // 17. Strip emojis (all standard Unicode emoji ranges)
     text = text.replaceAll(
       RegExp(
         r'[\u{1F000}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]',
@@ -249,7 +319,11 @@ class SpeechTextNormalizer {
       '',
     );
 
-    // 13. Normalise Currencies
+    // 18. Explicitly cut out $1, escaped \$1, and regex/placeholder tokens
+    text = text.replaceAll(RegExp(r'\\?\$1(?!\.\d|\d)'), '');
+    text = text.replaceAll(RegExp(r'\\?\$[0-9]+(?!\.\d)'), '');
+
+    // 19. Normalise Currencies
     text = text.replaceAllMapped(
       RegExp(r'₦\s*(\d+(?:,\d+)*(?:\.\d{1,2})?)'),
       (m) => '${m[1]} Naira',
@@ -267,7 +341,7 @@ class SpeechTextNormalizer {
       (m) => '${m[1]} euros',
     );
 
-    // 14. Normalise Degrees, Percentages, and Math Symbols
+    // 20. Normalise Degrees, Percentages, and Math Symbols
     text = text.replaceAllMapped(
       RegExp(r'(\d+(?:\.\d+)?)\s*°\s*C\b'),
       (m) => '${m[1]} degrees Celsius',
@@ -375,7 +449,7 @@ class SpeechTextNormalizer {
         .replaceAll(RegExp(r'\band/or\b', caseSensitive: false), 'and or')
         .replaceAll(RegExp(r'\bapprox\.\s*', caseSensitive: false), 'approximately ');
 
-    // 15. Normalise Times (e.g. "10:30 AM", "8:15 pm")
+    // 21. Normalise Times (e.g. "10:30 AM", "8:15 pm")
     text = text.replaceAllMapped(
       RegExp(r'\b(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)\b'),
       (m) {
@@ -386,7 +460,7 @@ class SpeechTextNormalizer {
       },
     );
 
-    // 16. Normalise Academic Acronyms & Abbreviations
+    // 22. Normalise Academic Acronyms & Abbreviations
     for (final entry in _commonAbbreviations.entries) {
       text = text.replaceAll(
         RegExp(entry.key, caseSensitive: false),
@@ -400,7 +474,7 @@ class SpeechTextNormalizer {
       );
     }
 
-    // 17. Conversational Year Pronunciation (e.g. 2024 -> "twenty twenty-four")
+    // 23. Conversational Year Pronunciation (e.g. 2024 -> "twenty twenty-four")
     text = text.replaceAllMapped(
       RegExp(r'\b(19\d{2}|20\d{2})\b'),
       (m) {
@@ -420,7 +494,7 @@ class SpeechTextNormalizer {
       },
     );
 
-    // 18. Clean remaining stray syntax characters that would be read aloud by TTS
+    // 24. Clean remaining stray syntax characters that would be read aloud by TTS
     // Fill in the blanks: ______ -> ", blank, "
     text = text.replaceAll(RegExp('_{2,}'), ', blank, ');
     // Snake_case between words: user_id -> user id
@@ -448,14 +522,15 @@ class SpeechTextNormalizer {
         .replaceAll('|', ', ')
         .replaceAll(r'\', ' ')
         .replaceAll('^', ' ')
-        .replaceAll('~', ' ');
+        .replaceAll('~', ' ')
+        .replaceAll(RegExp(r'\$'), '');
 
     // Normalize quotes
     text = text
         .replaceAll(RegExp('[“”«»]'), '"')
         .replaceAll(RegExp('[‘’`]'), "'");
 
-    // 19. Clean punctuation & whitespace
+    // 25. Clean punctuation & whitespace
     // Replace em-dash or en-dash with comma pause
     text = text.replaceAll(RegExp('[—–―]'), ', ');
     // Replace ellipses with comma pause
@@ -465,14 +540,25 @@ class SpeechTextNormalizer {
     text = text.replaceAll(RegExp(r'(?<=[.!?])\s*\n+'), ' ');
     text = text.replaceAll(RegExp(r'(?<=[,;:])\s*\n+'), ' ');
     text = text.replaceAll(RegExp(r'\n+'), '. ');
+    // Collapse duplicate punctuation safely with replaceAllMapped (NEVER use r'$1' in replaceAll)
+    text = text.replaceAll(RegExp(r'[,\s]+,'), ',');
+    text = text.replaceAllMapped(RegExp(r'([.!?])\s*\.+'), (m) => m[1]!);
+    text = text.replaceAllMapped(RegExp(r'([,:;])\s*\.+'), (m) => m[1]!);
+    text = text.replaceAllMapped(RegExp(r'\.\s*([,:;])'), (m) => m[1]!);
+    text = text.replaceAll(RegExp(r'\.\s*\.'), '.');
+    text = text.replaceAll(RegExp('!+'), '!');
+    text = text.replaceAll(RegExp(r'\?+'), '?');
+    text = text.replaceAll(RegExp(r'[,;]\s*[,;]+'), ',');
+
+    // Remove stray spaces before punctuation
+    text = text.replaceAllMapped(RegExp(r'\s+([,.:;!?])'), (m) => m[1]!);
+
+    // Final cut-out of any residual $1, placeholder tokens, or stray dollar symbols
+    text = text.replaceAll(RegExp(r'\\?\$[0-9]+(?!\.\d)'), '');
+    text = text.replaceAll(RegExp(r'\$'), '');
+
     // Collapse multi-spaces
     text = text.replaceAll(RegExp(r'\s{2,}'), ' ');
-    // Collapse duplicate punctuation
-    text = text.replaceAll(RegExp(r'[,\s]+,'), ',');
-    text = text.replaceAll(RegExp(r'([.!?])\s*\.+'), r'$1');
-    text = text.replaceAll(RegExp(r'([,:;])\s*\.+'), r'$1');
-    text = text.replaceAll(RegExp(r'\.\s*([,:;])'), r'$1');
-    text = text.replaceAll(RegExp(r'\.\s*\.'), '.');
 
     return text.trim();
   }
@@ -493,16 +579,16 @@ class SpeechTextNormalizer {
       '',
     );
 
-    // 3. Block math -> spoken
+    // 3. Block math -> spoken ($$...$$ or \[...\])
     text = text.replaceAllMapped(
-      RegExp(r'\$\$([\s\S]*?)\$\$'),
-      (m) => ', ${_expandLatexSymbols(m[1]!)}, ',
+      RegExp(r'(?<!\\)\$\$([\s\S]*?)(?<!\\)\$\$|\\\[([\s\S]*?)\\\]'),
+      (m) => ', ${_expandLatexSymbols(m[1] ?? m[2]!)}, ',
     );
 
-    // 4. Inline math -> spoken
+    // 4. Inline math -> spoken ($...$ or \(...\))
     text = text.replaceAllMapped(
-      RegExp(r'\$([^$\n]+)\$'),
-      (m) => ' ${_expandLatexSymbols(m[1]!)} ',
+      RegExp(r'(?<!\\)\$(?!\s)([^$\n]+?)(?<!\s)(?<!\\)\$|\\\(([^)\n]+)\\\)'),
+      (m) => ' ${_expandLatexSymbols(m[1] ?? m[2]!)} ',
     );
 
     // 5. Text/formatting commands outside $: keep inner content only

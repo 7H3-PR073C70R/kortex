@@ -35,8 +35,10 @@ abstract class StudySessionState with _$StudySessionState {
   double get progressFactor =>
       totalCards == 0 ? 0.0 : ((currentIndex + 1) / totalCards).clamp(0.0, 1.0);
 
+  int get totalReviewedCards => againCount + hardCount + goodCount + easyCount;
+
   double get retentionScore {
-    final totalReviewed = againCount + hardCount + goodCount + easyCount;
+    final totalReviewed = totalReviewedCards;
     if (totalReviewed == 0) return 1;
     final weighted = (hardCount * 0.7) + (goodCount * 1.0) + (easyCount * 1.0);
     return (weighted / totalReviewed).clamp(0.0, 1.0);

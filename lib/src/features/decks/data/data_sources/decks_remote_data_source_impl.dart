@@ -6,6 +6,7 @@ import 'package:kortex/src/core/services/crashlytics_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/decks/data/client/decks_api_client.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -279,18 +280,86 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
           .where((d) => !pendingDeletions.contains(d.id))
           .toList();
       final remoteIds = activeRemoteDecks.map((d) => d.id).toSet();
+      final dashboardFeed = locator.isRegistered<DashboardBloc>()
+          ? locator<DashboardBloc>().state.feed
+          : null;
+      final dashDueMap = {
+        if (dashboardFeed != null)
+          for (final d in dashboardFeed.dueStudyDecks)
+            d.id: d,
+      };
+
       final updatedRemote = activeRemoteDecks.map((remote) {
         final localMatch = _localCreatedDecks
             .where((d) => d.id == remote.id)
             .firstOrNull;
-        if (localMatch != null && localMatch.masteryRate > remote.masteryRate) {
-          return remote.copyWith(
-            masteryRate: localMatch.masteryRate,
-            dueCards: localMatch.dueCards,
-            lastStudied: localMatch.lastStudied,
-          );
+        final dashMatch = dashDueMap[remote.id];
+
+        final inMemCards = _localDeckCards[remote.id];
+        final inMemDue = inMemCards != null && inMemCards.isNotEmpty
+            ? inMemCards.where((c) => c.isDueToday).length
+            : 0;
+
+        var effectiveDue = remote.dueCards;
+        if (localMatch != null && localMatch.dueCards > effectiveDue) {
+          effectiveDue = localMatch.dueCards;
         }
-        return remote;
+        if (dashMatch != null && dashMatch.dueCards > effectiveDue) {
+          effectiveDue = dashMatch.dueCards;
+        }
+        if (inMemDue > effectiveDue) {
+          effectiveDue = inMemDue;
+        }
+
+        var effectiveMastery = remote.masteryRate;
+        if (localMatch != null && localMatch.masteryRate > effectiveMastery) {
+          effectiveMastery = localMatch.masteryRate;
+        }
+
+        var effectiveTotal = remote.totalCards;
+        if (localMatch != null && localMatch.totalCards > effectiveTotal) {
+          effectiveTotal = localMatch.totalCards;
+        }
+        if (dashMatch != null && dashMatch.totalCards > effectiveTotal) {
+          effectiveTotal = dashMatch.totalCards;
+        }
+        if (inMemCards != null && inMemCards.length > effectiveTotal) {
+          effectiveTotal = inMemCards.length;
+        }
+
+        var effectiveLastStudied = remote.lastStudied;
+        if (localMatch != null && localMatch.lastStudied != null) {
+          if (effectiveLastStudied == null ||
+              localMatch.lastStudied!.isAfter(effectiveLastStudied)) {
+            effectiveLastStudied = localMatch.lastStudied;
+          }
+        }
+        if (dashMatch != null) {
+          if (effectiveLastStudied == null ||
+              dashMatch.lastReviewed.isAfter(effectiveLastStudied)) {
+            effectiveLastStudied = dashMatch.lastReviewed;
+          }
+        }
+
+        // If effective due cards were higher than remote due cards, sync back to Supabase in background
+        if (effectiveDue > remote.dueCards && _isValidUuid(remote.id)) {
+          unawaited(() async {
+            try {
+              await _client.updateDeckRecord(remote.id, {
+                'due_cards': effectiveDue,
+                if (effectiveLastStudied != null)
+                  'last_studied': effectiveLastStudied.toIso8601String(),
+              });
+            } on Object catch (_) {}
+          }());
+        }
+
+        return remote.copyWith(
+          totalCards: effectiveTotal,
+          dueCards: effectiveDue,
+          masteryRate: effectiveMastery,
+          lastStudied: effectiveLastStudied,
+        );
       }).toList();
 
       // 2. Auto-sync offline-created decks to Supabase now that we are online
@@ -347,8 +416,40 @@ class DecksRemoteDataSourceImpl implements DecksRemoteDataSource {
         }());
       }
 
+      final updatedLocalOnly = _localCreatedDecks
+          .where((d) => !remoteIds.contains(d.id))
+          .map((localDeck) {
+            final dashMatch = dashDueMap[localDeck.id];
+            final inMemCards = _localDeckCards[localDeck.id];
+            final inMemDue = inMemCards != null && inMemCards.isNotEmpty
+                ? inMemCards.where((c) => c.isDueToday).length
+                : 0;
+
+            var effectiveDue = localDeck.dueCards;
+            if (dashMatch != null && dashMatch.dueCards > effectiveDue) {
+              effectiveDue = dashMatch.dueCards;
+            }
+            if (inMemDue > effectiveDue) {
+              effectiveDue = inMemDue;
+            }
+
+            var effectiveTotal = localDeck.totalCards;
+            if (dashMatch != null && dashMatch.totalCards > effectiveTotal) {
+              effectiveTotal = dashMatch.totalCards;
+            }
+            if (inMemCards != null && inMemCards.length > effectiveTotal) {
+              effectiveTotal = inMemCards.length;
+            }
+
+            return localDeck.copyWith(
+              totalCards: effectiveTotal,
+              dueCards: effectiveDue,
+            );
+          })
+          .toList();
+
       final merged = [
-        ..._localCreatedDecks.where((d) => !remoteIds.contains(d.id)),
+        ...updatedLocalOnly,
         ...updatedRemote,
       ];
 

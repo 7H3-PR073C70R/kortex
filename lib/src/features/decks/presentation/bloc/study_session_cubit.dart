@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -606,136 +607,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       final remainingDue = updatedCards.where((c) => c.isDueToday).length;
       final calculatedMasteryRate = finalRetention.clamp(0.0, 1.0);
 
-      // Emit finishing state instantly to present responsive loading/waiting state to the user
-      emit(
-        state.copyWith(
-          status: StudySessionStatus.finishing,
-          cards: updatedCards,
-          againCount: newAgain,
-          hardCount: newHard,
-          goodCount: newGood,
-          easyCount: newEasy,
-          correctCount: newCorrect,
-        ),
-      );
-
-      // Execute all persistence operations concurrently in parallel
-      try {
-        await Future.wait([
-          if (locator.isRegistered<UserActivityService>()) ...[
-            locator<UserActivityService>().recordStudySession(
-              cardsReviewed: totalReviewed,
-              durationSeconds: state.elapsedSeconds,
-              retentionScore: finalRetention.clamp(0.0, 1.0),
-              masteredCards: mastered,
-              activityCategory: 'flashcard',
-              subject: state.deckId,
-            ),
-            locator<UserActivityService>().awardXp(
-              XpActivityCategory.deckCompletion,
-              sourceId: state.deckId,
-              metadata: {
-                'deckId': state.deckId,
-                'cardsReviewed': totalReviewed,
-              },
-            ),
-          ] else
-            Future<void>.value(),
-          if (locator.isRegistered<StudyActivityTracker>())
-            locator<StudyActivityTracker>().recordActivityCompletion(
-              durationSeconds: state.elapsedSeconds,
-              activityType: 'deck',
-              metadata: {
-                'deckId': state.deckId,
-                'cardsReviewed': totalReviewed,
-              },
-            )
-          else
-            Future<void>.value(),
-          if (locator.isRegistered<DecksRemoteDataSource>())
-            locator<DecksRemoteDataSource>().updateDeckCards(
-              state.deckId,
-              updatedCards.map(FlashcardModel.fromEntity).toList(),
-            )
-          else
-            Future<void>.value(),
-          _saveSessionResultsUseCase(
-            SaveSessionResultsParams(
-              deckId: state.deckId,
-              cardsReviewed: totalReviewed,
-              durationSeconds: state.elapsedSeconds,
-              retentionScore: finalRetention.clamp(0.0, 1.0),
-              masteryRate: calculatedMasteryRate,
-              dueCards: remainingDue,
-              updatedCards: updatedCards,
-            ),
-          ),
-        ]);
-      } on Object catch (_) {}
-
-      // Flush queued card reviews upon session completion before refreshing UI
-      try {
-        await _cardSyncQueue.flushPendingLogs();
-      } on Object catch (_) {}
-
-      // Clear cached feed so Dashboard loads fresh review queue immediately
-      try {
-        if (locator.isRegistered<DashboardRepository>()) {
-          locator<DashboardRepository>().clearFeedCache();
-        }
-      } on Object catch (_) {}
-
-      // Increment streak in AuthBloc
-      try {
-        if (locator.isRegistered<AuthBloc>()) {
-          locator<AuthBloc>().add(const AuthStreakIncremented());
-        }
-      } on Object catch (_) {}
-
-      // Trigger live refresh on DecksBloc and DashboardBloc
-      try {
-        if (locator.isRegistered<DecksBloc>()) {
-          locator<DecksBloc>().add(const DecksRefreshed());
-        }
-      } on Object catch (_) {}
-      try {
-        if (locator.isRegistered<DashboardBloc>()) {
-          locator<DashboardBloc>().add(const DashboardRefreshed());
-        }
-      } on Object catch (_) {}
-      try {
-        if (locator.isRegistered<CramPlannerCubit>()) {
-          unawaited(locator<CramPlannerCubit>().loadExams());
-        }
-      } on Object catch (_) {}
-
-      // Telemetry: Performance trace and Crashlytics completion metrics
-      try {
-        if (locator.isRegistered<CrashlyticsService>()) {
-          final crashlytics = locator<CrashlyticsService>();
-          unawaited(
-            crashlytics.log(
-              'Study session completed: deckId=${state.deckId}, cards=$totalReviewed, '
-              'duration=${state.elapsedSeconds}s, retention=$finalRetention',
-            ),
-          );
-          unawaited(crashlytics.setCustomKey('last_study_deck', state.deckId));
-          unawaited(crashlytics.setCustomKey('last_study_cards', totalReviewed));
-        }
-
-        if (locator.isRegistered<PerformanceService>()) {
-          final performance = locator<PerformanceService>();
-          final trace = performance.newTrace('study_session_completion')
-            ..putAttribute('deck_id', state.deckId)
-            ..setMetric('cards_reviewed', totalReviewed)
-            ..setMetric('duration_seconds', state.elapsedSeconds);
-          unawaited(trace.start().then((_) => trace.stop()));
-        }
-      } on Object catch (_) {}
-
-      // Clear checkpoint when all cards in deck are fully reviewed
+      // Clear checkpoint immediately when all cards in deck are fully reviewed
       unawaited(clearSessionCheckpoint(state.deckId));
 
+      // Immediately emit finished state so the UI navigates to SessionSummaryPage with zero delay
       emit(
         state.copyWith(
           status: StudySessionStatus.finished,
@@ -745,6 +620,20 @@ class StudySessionCubit extends Cubit<StudySessionState> {
           goodCount: newGood,
           easyCount: newEasy,
           correctCount: newCorrect,
+        ),
+      );
+
+      // Execute all persistence operations and network sync in the background without blocking the UI
+      unawaited(
+        _persistSessionCompletion(
+          deckId: state.deckId,
+          totalReviewed: totalReviewed,
+          elapsedSeconds: state.elapsedSeconds,
+          finalRetention: finalRetention,
+          mastered: mastered,
+          remainingDue: remainingDue,
+          calculatedMasteryRate: calculatedMasteryRate,
+          updatedCards: updatedCards,
         ),
       );
     } else {
@@ -784,8 +673,6 @@ class StudySessionCubit extends Cubit<StudySessionState> {
       return;
     }
 
-    emit(state.copyWith(status: StudySessionStatus.finishing));
-
     final finalRetention =
         ((state.hardCount * 0.7) +
             (state.goodCount * 1.0) +
@@ -795,56 +682,133 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     final remainingDue = state.cards.where((c) => c.isDueToday).length;
     final calculatedMasteryRate = finalRetention.clamp(0.0, 1.0);
 
+    // Save checkpoint so the user can resume exactly where they left off when taking a break
+    unawaited(
+      saveSessionCheckpoint(
+        index: state.currentIndex,
+        elapsedSeconds: state.elapsedSeconds,
+      ),
+    );
+
+    // Immediately emit finished state so the UI transitions to SessionSummaryPage with zero latency
+    emit(
+      state.copyWith(
+        status: StudySessionStatus.finished,
+      ),
+    );
+
+    // Execute background persistence without blocking the UI transition
+    unawaited(
+      _persistSessionCompletion(
+        deckId: state.deckId,
+        totalReviewed: totalReviewed,
+        elapsedSeconds: state.elapsedSeconds,
+        finalRetention: finalRetention,
+        mastered: mastered,
+        remainingDue: remainingDue,
+        calculatedMasteryRate: calculatedMasteryRate,
+        updatedCards: state.cards,
+      ),
+    );
+  }
+
+  /// Concurrently executes background persistence, telemetry, and cache invalidation.
+  Future<void> _persistSessionCompletion({
+    required String deckId,
+    required int totalReviewed,
+    required int elapsedSeconds,
+    required double finalRetention,
+    required int mastered,
+    required int remainingDue,
+    required double calculatedMasteryRate,
+    required List<FlashcardEntity> updatedCards,
+  }) async {
+    // 1. Parallel persistence across SQLite, Supabase RPC, and XP awards
     try {
       await Future.wait([
-        if (locator.isRegistered<UserActivityService>())
+        if (locator.isRegistered<UserActivityService>()) ...[
           locator<UserActivityService>().recordStudySession(
             cardsReviewed: totalReviewed,
-            durationSeconds: state.elapsedSeconds,
+            durationSeconds: elapsedSeconds,
             retentionScore: finalRetention.clamp(0.0, 1.0),
             masteredCards: mastered,
             activityCategory: 'flashcard',
-            subject: state.deckId,
+            subject: deckId,
+          ),
+          locator<UserActivityService>().awardXp(
+            XpActivityCategory.deckCompletion,
+            sourceId: deckId,
+            metadata: {
+              'deckId': deckId,
+              'cardsReviewed': totalReviewed,
+            },
+          ),
+        ] else
+          Future<void>.value(),
+        if (locator.isRegistered<StudyActivityTracker>())
+          locator<StudyActivityTracker>().recordActivityCompletion(
+            durationSeconds: elapsedSeconds,
+            activityType: 'deck',
+            metadata: {
+              'deckId': deckId,
+              'cardsReviewed': totalReviewed,
+            },
           )
         else
           Future<void>.value(),
         if (locator.isRegistered<DecksRemoteDataSource>())
           locator<DecksRemoteDataSource>().updateDeckCards(
-            state.deckId,
-            state.cards.map(FlashcardModel.fromEntity).toList(),
+            deckId,
+            updatedCards.map(FlashcardModel.fromEntity).toList(),
           )
         else
           Future<void>.value(),
         _saveSessionResultsUseCase(
           SaveSessionResultsParams(
-            deckId: state.deckId,
+            deckId: deckId,
             cardsReviewed: totalReviewed,
-            durationSeconds: state.elapsedSeconds,
+            durationSeconds: elapsedSeconds,
             retentionScore: finalRetention.clamp(0.0, 1.0),
             masteryRate: calculatedMasteryRate,
             dueCards: remainingDue,
-            updatedCards: state.cards,
+            updatedCards: updatedCards,
           ),
         ),
       ]);
-    } on Object catch (_) {}
-    // Flush queued card reviews upon session completion before refreshing UI
+    } on Object catch (e, st) {
+      developer.log(
+        'Failed to persist session results: $e',
+        error: e,
+        stackTrace: st,
+      );
+    }
+
+    // 2. Flush queued card reviews upon session completion before refreshing UI
     try {
       await _cardSyncQueue.flushPendingLogs();
-    } on Object catch (_) {}
+    } on Object catch (e, st) {
+      developer.log(
+        'Failed to flush card sync queue: $e',
+        error: e,
+        stackTrace: st,
+      );
+    }
 
-    // Clear cached feed so Dashboard loads fresh review queue immediately
+    // 3. Clear cached feed so Dashboard loads fresh review queue immediately
     try {
       if (locator.isRegistered<DashboardRepository>()) {
         locator<DashboardRepository>().clearFeedCache();
       }
     } on Object catch (_) {}
 
+    // 4. Increment streak in AuthBloc
     try {
       if (locator.isRegistered<AuthBloc>()) {
         locator<AuthBloc>().add(const AuthStreakIncremented());
       }
     } on Object catch (_) {}
+
+    // 5. Trigger live refresh on DecksBloc and DashboardBloc
     try {
       if (locator.isRegistered<DecksBloc>()) {
         locator<DecksBloc>().add(const DecksRefreshed());
@@ -855,20 +819,35 @@ class StudySessionCubit extends Cubit<StudySessionState> {
         locator<DashboardBloc>().add(const DashboardRefreshed());
       }
     } on Object catch (_) {}
+    try {
+      if (locator.isRegistered<CramPlannerCubit>()) {
+        unawaited(locator<CramPlannerCubit>().loadExams());
+      }
+    } on Object catch (_) {}
 
-    // Save checkpoint so the user can resume exactly where they left off when taking a break
-    unawaited(
-      saveSessionCheckpoint(
-        index: state.currentIndex,
-        elapsedSeconds: state.elapsedSeconds,
-      ),
-    );
+    // 6. Telemetry: Performance trace and Crashlytics completion metrics
+    try {
+      if (locator.isRegistered<CrashlyticsService>()) {
+        final crashlytics = locator<CrashlyticsService>();
+        unawaited(
+          crashlytics.log(
+            'Study session completed: deckId=$deckId, cards=$totalReviewed, '
+            'duration=${elapsedSeconds}s, retention=$finalRetention',
+          ),
+        );
+        unawaited(crashlytics.setCustomKey('last_study_deck', deckId));
+        unawaited(crashlytics.setCustomKey('last_study_cards', totalReviewed));
+      }
 
-    emit(
-      state.copyWith(
-        status: StudySessionStatus.finished,
-      ),
-    );
+      if (locator.isRegistered<PerformanceService>()) {
+        final performance = locator<PerformanceService>();
+        final trace = performance.newTrace('study_session_completion')
+          ..putAttribute('deck_id', deckId)
+          ..setMetric('cards_reviewed', totalReviewed)
+          ..setMetric('duration_seconds', elapsedSeconds);
+        unawaited(trace.start().then((_) => trace.stop()));
+      }
+    } on Object catch (_) {}
   }
 
   @override

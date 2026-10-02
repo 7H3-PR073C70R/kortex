@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/delete_deck_use_case.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
@@ -22,10 +24,36 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
     on<DecksFilterChanged>(_onDecksFilterChanged);
     on<DecksSearchQueryChanged>(_onDecksSearchQueryChanged);
     on<DecksDeckDeleted>(_onDeckDeleted);
+
+    if (locator.isRegistered<DashboardBloc>()) {
+      _dashboardSubscription =
+          locator<DashboardBloc>().stream.listen((dashState) {
+        final feed = dashState.feed;
+        if (feed != null &&
+            feed.dueStudyDecks.isNotEmpty &&
+            state.allDecks.isNotEmpty) {
+          final hasDiscrepancy = feed.dueStudyDecks.any((dashDeck) {
+            final local =
+                state.allDecks.where((d) => d.id == dashDeck.id).firstOrNull;
+            return local != null && local.dueCards < dashDeck.dueCards;
+          });
+          if (hasDiscrepancy) {
+            add(const DecksRefreshed());
+          }
+        }
+      });
+    }
   }
 
   final GetUserDecksUseCase _getUserDecksUseCase;
   final DeleteDeckUseCase? _deleteDeckUseCase;
+  StreamSubscription<DashboardState>? _dashboardSubscription;
+
+  @override
+  Future<void> close() {
+    _dashboardSubscription?.cancel();
+    return super.close();
+  }
 
   Future<void> _onDeckDeleted(
     DecksDeckDeleted event,
@@ -61,6 +89,31 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
     }
   }
 
+  List<DeckEntity> _reconcileWithDashboard(List<DeckEntity> decks) {
+    if (!locator.isRegistered<DashboardBloc>()) return decks;
+    final feed = locator<DashboardBloc>().state.feed;
+    if (feed == null || feed.dueStudyDecks.isEmpty) return decks;
+
+    final dashDueMap = {
+      for (final d in feed.dueStudyDecks)
+        d.id: d,
+    };
+
+    return decks.map((deck) {
+      final dashDeck = dashDueMap[deck.id];
+      if (dashDeck != null && dashDeck.dueCards > deck.dueCards) {
+        return deck.copyWith(
+          dueCards: dashDeck.dueCards,
+          totalCards: dashDeck.totalCards > deck.totalCards
+              ? dashDeck.totalCards
+              : deck.totalCards,
+          lastStudied: deck.lastStudied ?? dashDeck.lastReviewed,
+        );
+      }
+      return deck;
+    }).toList();
+  }
+
   Future<void> _onDecksStarted(
     DecksStarted event,
     Emitter<DecksState> emit,
@@ -76,12 +129,13 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
         ),
       ),
       (decks) {
+        final reconciledDecks = _reconcileWithDashboard(decks);
         emit(
           state.copyWith(
             status: DecksStatus.loaded,
-            allDecks: decks,
+            allDecks: reconciledDecks,
             filteredDecks: _applyFilterAndSearch(
-              decks,
+              reconciledDecks,
               state.activeFilter,
               state.searchQuery,
             ),
@@ -105,12 +159,13 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
         ),
       ),
       (decks) {
+        final reconciledDecks = _reconcileWithDashboard(decks);
         emit(
           state.copyWith(
             status: DecksStatus.loaded,
-            allDecks: decks,
+            allDecks: reconciledDecks,
             filteredDecks: _applyFilterAndSearch(
-              decks,
+              reconciledDecks,
               state.activeFilter,
               state.searchQuery,
             ),

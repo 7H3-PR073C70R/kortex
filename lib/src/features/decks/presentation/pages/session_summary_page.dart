@@ -374,6 +374,7 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 16),
                             // CBT Readiness Score Impact Banner
                             CbtReadinessImpactCard(
                               cardsReviewed: cardsReviewed,

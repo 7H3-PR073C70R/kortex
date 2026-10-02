@@ -695,7 +695,7 @@ class AppDatabase extends _$AppDatabase {
       }
     }
 
-    if (deck.id.present) {
+    if (deck.id.present && effectiveCards.isNotEmpty) {
       await recalculateDeckStatsForId(deck.id.value);
     }
   }
@@ -709,6 +709,14 @@ class AppDatabase extends _$AppDatabase {
     )..where((t) => t.deckId.equals(deckId))).get();
 
     if (allCards.isEmpty) {
+      final existingDeck = await (select(
+        decks,
+      )..where((t) => t.id.equals(deckId))).getSingleOrNull();
+      // If the deck already has metadata (e.g. from remote sync before cards are downloaded),
+      // do not overwrite totalCards, dueCards, and masteryRate with zeros.
+      if (existingDeck != null && existingDeck.totalCards > 0) {
+        return;
+      }
       await (update(decks)..where((t) => t.id.equals(deckId))).write(
         DecksCompanion(
           totalCards: const Value(0),

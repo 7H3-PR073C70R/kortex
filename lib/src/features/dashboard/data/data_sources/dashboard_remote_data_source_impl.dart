@@ -374,6 +374,38 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     }
     feed = feed.copyWith(dueStudyDecks: combinedDueDecks);
 
+    // Keep persisted user decks up to date with any newly identified due cards
+    try {
+      final raw = _storage?.getPreference(key: PrefKeys.persistedUserDecks);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        var changed = false;
+        final updatedList = list.map((e) {
+          final m = Map<String, dynamic>.from(e as Map<String, dynamic>);
+          final deckId = m['id'] as String?;
+          final match = combinedDueDecks
+              .where((d) => d.id == deckId)
+              .firstOrNull;
+          final existingDue =
+              ((m['due_cards'] ?? m['dueCards']) as num?)?.toInt() ?? 0;
+          if (match != null && match.dueCards > existingDue) {
+            m['due_cards'] = match.dueCards;
+            m['dueCards'] = match.dueCards;
+            changed = true;
+          }
+          return m;
+        }).toList();
+        if (changed) {
+          unawaited(
+            _storage?.savePreference(
+              key: PrefKeys.persistedUserDecks,
+              data: jsonEncode(updatedList),
+            ),
+          );
+        }
+      }
+    } on Object catch (_) {}
+
     // Security: clamp overallRetentionRate to [0.0, 1.0] so malformed server
     // responses cannot corrupt the CBT readiness calculator or UI gauges.
     final rawRate = feed.analyticsSummary.overallRetentionRate;

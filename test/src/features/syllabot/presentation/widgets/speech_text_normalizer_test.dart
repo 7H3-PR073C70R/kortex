@@ -160,6 +160,102 @@ void main() {
       expect(chunks.length, equals(1));
       expect(chunks.first, contains('Hello there. How are you today? Let us begin.'));
     });
+
+    test(r'never generates $1 from duplicate punctuation collapse', () {
+      const input = 'Great job!... Can you solve this?... Yes!.... Exactly.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains(r'$1'), isFalse);
+      expect(result.contains('1'), isFalse);
+      expect(result.toLowerCase().contains('dollar'), isFalse);
+      expect(result, contains('Great job!'));
+      expect(result, contains('Can you solve this?'));
+      expect(result, contains('Yes!'));
+      expect(result, contains('Exactly.'));
+    });
+
+    test(r'explicitly cuts out $1, escaped \$1, and placeholder tokens', () {
+      const input = r'Replace $1 with value and ignore \$1 or $2 or $3.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains(r'$1'), isFalse);
+      expect(result.contains(r'$2'), isFalse);
+      expect(result.contains(r'$3'), isFalse);
+      expect(result.contains(r'\$1'), isFalse);
+      expect(result.contains(r'$'), isFalse);
+      expect(result.toLowerCase().contains('dollar'), isFalse);
+      expect(result, contains('Replace with value and ignore or or.'));
+    });
+
+    test('strips escape characters and unescapes markdown escapes cleanly', () {
+      const input = r'Here is \*bold\* and \_italic\_ with \# heading, \[brackets\], and \{braces\}. Also literal\nnewline and\ttab.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains(r'\'), isFalse);
+      expect(result.contains('*'), isFalse);
+      expect(result.contains('_'), isFalse);
+      expect(result.contains('#'), isFalse);
+      expect(result.contains('['), isFalse);
+      expect(result.contains(']'), isFalse);
+      expect(result.contains('{'), isFalse);
+      expect(result.contains('}'), isFalse);
+      expect(result, contains('Here is bold and italic with heading'));
+      expect(result, contains('brackets'));
+      expect(result, contains('braces'));
+      expect(result, contains('newline'));
+      expect(result, contains('tab'));
+    });
+
+    test('strips markdown tables into natural spoken sentences', () {
+      const input = '''
+| Organelle | Primary Function |
+| :--- | :--- |
+| Mitochondria | Cellular respiration |
+| Ribosome | Protein synthesis |
+''';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('|'), isFalse);
+      expect(result.contains('---'), isFalse);
+      expect(result, contains('Organelle, Primary Function.'));
+      expect(result, contains('Mitochondria, Cellular respiration.'));
+      expect(result, contains('Ribosome, Protein synthesis.'));
+    });
+
+    test('strips markdown images cleanly while preserving alt text', () {
+      const input = 'Look at this diagram: ![Plant Cell Structure](https://example.com/cell.png). Also empty image: ![](https://example.com/empty.jpg).';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('!['), isFalse);
+      expect(result.contains('https://'), isFalse);
+      expect(result.contains('.png'), isFalse);
+      expect(result.contains('.jpg'), isFalse);
+      expect(result, contains('Look at this diagram: Plant Cell Structure'));
+      expect(result, contains('Also empty image:'));
+    });
+
+    test('strips task list checkboxes and footnotes cleanly', () {
+      const input = '''
+Review tasks:
+- [ ] Review mitosis
+- [x] Complete WAEC practice
+* [X] Study meiosis
+Fact stated[^1].
+[^1]: Citation from 2020.
+''';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('[ ]'), isFalse);
+      expect(result.contains('[x]'), isFalse);
+      expect(result.contains('[X]'), isFalse);
+      expect(result.contains('[^1]'), isFalse);
+      expect(result, contains('Review mitosis'));
+      expect(result, contains('Complete Way-eck practice'));
+      expect(result, contains('Study meiosis'));
+      expect(result, contains('Fact stated'));
+    });
+
+    test('strips AI thinking tags and internal reasoning', () {
+      const input = '<think>I should break down photosynthesis into light and dark reactions.</think>Photosynthesis occurs in chloroplasts.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result.contains('think'), isFalse);
+      expect(result.contains('break down'), isFalse);
+      expect(result, equals('Photosynthesis occurs in chloroplasts.'));
+    });
   });
 
   group('TtsConfig', () {
