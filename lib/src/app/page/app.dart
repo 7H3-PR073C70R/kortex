@@ -43,7 +43,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     _appRouter = locator<AppRouter>();
     _routerConfig = _appRouter.config(
       reevaluateListenable: ReevaluateListenable.stream(
-        locator<AuthBloc>().stream,
+        locator<AuthBloc>()
+            .stream
+            .map((state) => (state.sessionStatus, state.userProfile?.isOnboarded))
+            .distinct(),
       ),
       deepLinkTransformer: _transformDeepLink,
       deepLinkBuilder: _handlePlatformDeepLink,

@@ -723,6 +723,10 @@ class StudySessionCubit extends Cubit<StudySessionState> {
     required double calculatedMasteryRate,
     required List<FlashcardEntity> updatedCards,
   }) async {
+    // 0. Yield briefly so the UI route transition (replace to SessionSummaryRoute)
+    // executes smoothly at 60/120fps with zero serialization or disk I/O contention.
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+
     // 1. Parallel persistence across SQLite, Supabase RPC, and XP awards
     try {
       await Future.wait([

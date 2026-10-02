@@ -173,7 +173,12 @@ class _StudySessionView extends HookWidget {
                     retentionScore: state.retentionScore,
                     nextReviewInDays: nextDays,
                   ),
-                ),
+                ).catchError((Object error, StackTrace stackTrace) {
+                  if (context.mounted) {
+                    hasNavigatedToSummary.value = false;
+                  }
+                  return null;
+                }),
               );
             } else if (state.status == StudySessionStatus.studying &&
                 state.currentIndex > 0 &&
@@ -186,9 +191,12 @@ class _StudySessionView extends HookWidget {
             }
           },
           builder: (context, state) {
-            if (state.status == StudySessionStatus.finished ||
-                state.status == StudySessionStatus.finishing) {
-              return const SizedBox.shrink();
+            if (state.status == StudySessionStatus.finishing) {
+              return Center(
+                child: CircularProgressIndicator.adaptive(
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                ),
+              );
             }
 
             if (state.status == StudySessionStatus.loading) {
