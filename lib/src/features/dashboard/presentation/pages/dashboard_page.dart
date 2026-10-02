@@ -764,7 +764,6 @@ class DailyRecallStatusBanner extends StatelessWidget {
                         ],
                       ),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
                             width: 40,

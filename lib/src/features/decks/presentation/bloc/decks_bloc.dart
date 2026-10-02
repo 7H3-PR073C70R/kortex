@@ -50,8 +50,8 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
   StreamSubscription<DashboardState>? _dashboardSubscription;
 
   @override
-  Future<void> close() {
-    _dashboardSubscription?.cancel();
+  Future<void> close() async {
+    await _dashboardSubscription?.cancel();
     return super.close();
   }
 
