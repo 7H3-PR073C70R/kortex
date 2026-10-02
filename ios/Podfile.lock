@@ -311,6 +311,8 @@ PODS:
     - onnxruntime-objc/Core (= 1.23.0)
   - onnxruntime-objc/Core (1.23.0):
     - onnxruntime-c (= 1.23.0)
+  - package_info_plus (0.4.5):
+    - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -373,6 +375,7 @@ DEPENDENCIES:
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - livekit_client (from `.symlinks/plugins/livekit_client/ios`)
   - local_auth_darwin (from `.symlinks/plugins/local_auth_darwin/darwin`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
@@ -484,6 +487,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/livekit_client/ios"
   local_auth_darwin:
     :path: ".symlinks/plugins/local_auth_darwin/darwin"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
@@ -570,6 +575,7 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   onnxruntime-c: 3174c63a963d9abbc2bf9627e3d622819c0ed5f7
   onnxruntime-objc: 1254d12f8160e562e7693ff17f5aa3dd17dc409e
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
