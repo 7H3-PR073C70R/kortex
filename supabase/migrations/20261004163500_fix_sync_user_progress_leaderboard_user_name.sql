@@ -1,10 +1,8 @@
 -- ============================================================================
 -- Migration: 20261004163500_fix_sync_user_progress_leaderboard_user_name.sql
 -- Description: Fix NOT NULL constraint violation for leaderboards.user_name in
---              public.sync_user_progress.
---              1. Adds DEFAULT 'Scholar' to leaderboards.user_name.
---              2. Replaces sync_user_progress to retrieve display_name and avatar_url
---                 from profiles/auth.users and pass them to leaderboards upsert.
+--              public.sync_user_progress, ensure default value, backfill
+--              user_analytics, notification_preferences, and sync leaderboards.
 -- ============================================================================
 
 -- 1. Ensure leaderboards.user_name has a safe default to prevent any NOT NULL violations
@@ -157,3 +155,80 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.sync_user_progress(INT, INT, TEXT) TO authenticated;
+
+-- 3. Backfill user_analytics for all profiles
+INSERT INTO public.user_analytics (
+    user_id,
+    xp_points,
+    current_streak_days,
+    longest_streak_days,
+    weekly_minutes_studied,
+    overall_retention_rate,
+    total_cards_mastered,
+    academic_rank,
+    updated_at
+)
+SELECT
+    p.id,
+    COALESCE(p.xp_points, 0),
+    COALESCE(p.streak_days, 0),
+    COALESCE(p.streak_days, 0),
+    0,
+    0.0,
+    0,
+    CASE
+        WHEN COALESCE(p.xp_points, 0) >= 1000 THEN 'Dean''s List'
+        WHEN COALESCE(p.xp_points, 0) >= 600 THEN 'Diamond Scholar'
+        WHEN COALESCE(p.xp_points, 0) >= 350 THEN 'Gold Scholar'
+        WHEN COALESCE(p.xp_points, 0) >= 150 THEN 'Silver Scholar'
+        ELSE 'Novice Scholar'
+    END,
+    now()
+FROM public.profiles p
+ON CONFLICT (user_id) DO UPDATE SET
+    xp_points = GREATEST(user_analytics.xp_points, EXCLUDED.xp_points),
+    current_streak_days = EXCLUDED.current_streak_days,
+    updated_at = now();
+
+-- 4. Backfill notification_preferences for any profile missing it
+INSERT INTO public.notification_preferences (user_id)
+SELECT id FROM public.profiles
+ON CONFLICT (user_id) DO NOTHING;
+
+-- 5. Backfill leaderboards for all profiles with safe defaults
+INSERT INTO public.leaderboards (
+    user_id, user_name, avatar_url, track,
+    weekly_xp, daily_xp, streak_days, league_tier, rank, updated_at
+)
+SELECT
+    p.id,
+    COALESCE(NULLIF(p.display_name, ''), 'Scholar'),
+    p.photo_url,
+    COALESCE(NULLIF(p.target_track, ''), 'General'),
+    COALESCE(p.xp_points, 0),
+    COALESCE(p.xp_points, 0),
+    GREATEST(0, COALESCE(p.streak_days, 0)),
+    CASE
+        WHEN COALESCE(p.xp_points, 0) >= 1000 THEN 'Dean''s List'
+        WHEN COALESCE(p.xp_points, 0) >= 600 THEN 'Diamond'
+        WHEN COALESCE(p.xp_points, 0) >= 350 THEN 'Gold'
+        WHEN COALESCE(p.xp_points, 0) >= 150 THEN 'Silver'
+        ELSE 'Bronze'
+    END,
+    1, now()
+FROM public.profiles p
+ON CONFLICT (user_id) DO UPDATE SET
+    user_name = COALESCE(NULLIF(EXCLUDED.user_name, ''), leaderboards.user_name, 'Scholar'),
+    avatar_url = COALESCE(EXCLUDED.avatar_url, leaderboards.avatar_url),
+    track = COALESCE(NULLIF(EXCLUDED.track, ''), leaderboards.track),
+    weekly_xp = GREATEST(leaderboards.weekly_xp, EXCLUDED.weekly_xp),
+    streak_days = EXCLUDED.streak_days,
+    league_tier = EXCLUDED.league_tier,
+    updated_at = now();
+
+-- 6. Recalculate ranks across all leaderboards rows
+WITH ranked AS (
+    SELECT id, DENSE_RANK() OVER (ORDER BY weekly_xp DESC NULLS LAST) AS new_rank
+    FROM public.leaderboards
+)
+UPDATE public.leaderboards l SET rank = r.new_rank FROM ranked r WHERE l.id = r.id;

@@ -220,7 +220,7 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                       ),
                       const SizedBox(height: 8),
                       _MetricBar(
-                        label: 'FSRS Retention',
+                        label: 'Memory Retention',
                         value: readinessResult.fsrsRetentionRate,
                         color: const Color(0xFF10B981),
                       ),

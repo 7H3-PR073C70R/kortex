@@ -159,7 +159,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
         higherEdField: 'Professional Board & Licensing',
         higherEdGoals: [
           'High-Yield Practice',
-          'Spaced Repetition (FSRS-6) Mastery',
+          'Long-Term Memory Mastery',
         ],
         isCalibrated: true,
       );
@@ -170,7 +170,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
         higherEdField: 'Independent Studies',
         higherEdGoals: [
           'Concept Mastery',
-          'Spaced Repetition (FSRS-6) Mastery',
+          'Long-Term Memory Mastery',
         ],
         isCalibrated: true,
       );
@@ -178,7 +178,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
       defaultProfile = const CalibrationProfile(
         higherEdLevel: HigherEdLevel.bsc,
         higherEdField: 'General Studies',
-        higherEdGoals: ['Spaced Repetition (FSRS-6) Mastery'],
+        higherEdGoals: ['Long-Term Memory Mastery'],
         isCalibrated: true,
       );
     } else {
@@ -321,7 +321,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
               locator<NotificationService>().showLocalNotification(
                 id: 1004,
                 title: '🎓 Your study profile is set!',
-                body: 'FSRS tuned for 90% retention. Your first deck is ready.',
+                body: 'Study scheduler set for 90% target retention. Your first deck is ready.',
                 payload: 'route:/dashboard',
                 channelId: 'kortex_system',
               ),

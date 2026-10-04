@@ -605,8 +605,8 @@ class ManageExamModalSheet extends StatelessWidget {
                                       const SizedBox(width: 5),
                                       Text(
                                         exam.achievedScorePercent != null
-                                            ? 'Bimodal Readiness (FSRS & Quiz)'
-                                            : 'Predicted FSRS Retention',
+                                            ? 'Overall Readiness (Memory & Quiz)'
+                                            : 'Predicted Memory Retention',
                                         style: typography.caption.bold.copyWith(
                                           color: colors.textSecondary,
                                           fontSize: 10.5,

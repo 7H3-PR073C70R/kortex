@@ -244,7 +244,7 @@ class CbtReadinessImpactCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _MetricBar(
-                    label: 'FSRS Retention',
+                    label: 'Memory Retention',
                     valuePercent: (result.fsrsRetentionRate * 100).round(),
                     barColor: const Color(0xFF10B981),
                   ),

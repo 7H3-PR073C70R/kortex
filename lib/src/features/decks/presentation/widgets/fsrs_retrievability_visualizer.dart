@@ -99,7 +99,7 @@ class FsrsRetrievabilityVisualizer extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'FSRS Memory Forgetting Curve',
+                            'Memory Retention Forecast',
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                             style: typography.body.bold.copyWith(
@@ -138,7 +138,7 @@ class FsrsRetrievabilityVisualizer extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '$currentPercentage% Retrievability',
+                      '$currentPercentage% Recall Chance',
                       style: typography.caption.bold.copyWith(
                         color: statusColor,
                         fontSize: 11,
@@ -174,7 +174,7 @@ class FsrsRetrievabilityVisualizer extends StatelessWidget {
             children: [
               Expanded(
                 child: _StatBadge(
-                  label: 'Stability (S)',
+                  label: 'Memory Duration',
                   value: '${stabilityDays.toStringAsFixed(1)} days',
                   icon: Icons.timer_outlined,
                 ),

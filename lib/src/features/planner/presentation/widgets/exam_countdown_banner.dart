@@ -960,7 +960,7 @@ void _showCbtReadinessBreakdownSheet(
                         _buildWeightRow(
                           context,
                           icon: Icons.psychology_rounded,
-                          label: 'FSRS Memory Retention Rate (50%)',
+                          label: 'Flashcard Memory Retention (50%)',
                           value: '86%',
                           color: neural.emerald400,
                         ),

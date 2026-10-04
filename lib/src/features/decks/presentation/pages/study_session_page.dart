@@ -1103,7 +1103,7 @@ class _CramSessionBanner extends StatelessWidget {
                 Text(
                   isCrunch
                       ? 'Intervals condensed to 24h for acute recall before your test.'
-                      : 'FSRS-6 intervals clamped so cards stay fresh before exam day.',
+                      : 'Review intervals adjusted so cards stay fresh in your memory before exam day.',
                   style: typography.caption.regular.copyWith(
                     color: colors.textSecondary,
                     fontSize: 10.5,

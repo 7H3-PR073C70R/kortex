@@ -356,11 +356,49 @@ class SpeechTextNormalizer {
     );
     text = text.replaceAll('°', ' degrees ');
 
+    // Percentage ranges (e.g. "0-100%" -> "zero to hundred percent", "10-20%" -> "10 to 20 percent")
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)\s*%'),
+      (m) {
+        final start = m[1]!;
+        final end = m[2]!;
+        final spokenStart = start == '0' ? 'zero' : start;
+        final spokenEnd = end == '100' ? 'hundred' : end;
+        return '$spokenStart to $spokenEnd percent';
+      },
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*%\s*[-–—]\s*(\d+(?:\.\d+)?)\s*%'),
+      (m) {
+        final start = m[1]!;
+        final end = m[2]!;
+        final spokenStart = start == '0' ? 'zero' : start;
+        final spokenEnd = end == '100' ? 'hundred' : end;
+        return '$spokenStart to $spokenEnd percent';
+      },
+    );
+
+    // Single percentages: e.g. 0% -> "zero percent", 100% -> "hundred percent"
     text = text.replaceAllMapped(
       RegExp(r'(\d+(?:\.\d+)?)\s*%'),
-      (m) => '${m[1]} percent',
+      (m) {
+        final val = m[1]!;
+        if (val == '0') return 'zero percent';
+        if (val == '100') return 'hundred percent';
+        return '$val percent';
+      },
     );
     text = text.replaceAll('%', ' percent ');
+
+    // Conversational number ranges (e.g. "0-100" -> "zero to hundred", "10-20" -> "10 to 20")
+    text = text.replaceAllMapped(
+      RegExp(r'(?<=\b|\s)0\s*[-–—]\s*100(?=\b|\s)'),
+      (m) => 'zero to hundred',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(?<!\d{4}-)(?<!\d{2}-)\b(\d{1,4})\s*[-–—]\s*(\d{1,4})\b(?!-\d)'),
+      (m) => '${m[1]} to ${m[2]}',
+    );
 
     // Powers and exponents outside LaTeX: e.g. x^2, 10^3, 2^5
     text = text.replaceAllMapped(
@@ -441,13 +479,56 @@ class SpeechTextNormalizer {
         .replaceAll(RegExp(r'(\s*<[-=]|\s*←)'), ' comes from ')
         .replaceAll(RegExp(r'(\s*<[-=]>|\s*↔)'), ' is equivalent to ');
 
-    // Units with slashes
+    // Units with slashes (pronounced as "per")
     text = text
         .replaceAll(RegExp(r'\bkm/h\b', caseSensitive: false), 'kilometers per hour')
         .replaceAll(RegExp(r'\bm/s\^?2\b', caseSensitive: false), 'meters per second squared')
         .replaceAll(RegExp(r'\bm/s\b', caseSensitive: false), 'meters per second')
+        .replaceAll(RegExp(r'\bkg/m\^?3\b', caseSensitive: false), 'kilograms per cubic meter')
+        .replaceAll(RegExp(r'\bkg/m³\b', caseSensitive: false), 'kilograms per cubic meter')
+        .replaceAll(RegExp(r'\bg/cm\^?3\b', caseSensitive: false), 'grams per cubic centimeter')
+        .replaceAll(RegExp(r'\bg/cm³\b', caseSensitive: false), 'grams per cubic centimeter')
+        .replaceAll(RegExp(r'\brad/s\b', caseSensitive: false), 'radians per second')
+        .replaceAll(RegExp(r'\brev/min\b', caseSensitive: false), 'revolutions per minute')
+        .replaceAll(RegExp(r'\bmiles/h\b', caseSensitive: false), 'miles per hour')
+        .replaceAll(RegExp(r'\bmol/dm\^?3\b', caseSensitive: false), 'moles per decimeter cubed')
+        .replaceAll(RegExp(r'\bmol/dm³\b', caseSensitive: false), 'moles per decimeter cubed')
+        .replaceAll(RegExp(r'\bmol/L\b', caseSensitive: false), 'moles per liter')
+        .replaceAll(RegExp(r'\bft/s\b', caseSensitive: false), 'feet per second')
+        .replaceAll(RegExp(r'\bbytes/s\b', caseSensitive: false), 'bytes per second')
+        .replaceAll(RegExp(r'\bkb/s\b', caseSensitive: false), 'kilobits per second')
+        .replaceAll(RegExp(r'\bmb/s\b', caseSensitive: false), 'megabits per second')
         .replaceAll(RegExp(r'\band/or\b', caseSensitive: false), 'and or')
+        .replaceAll(RegExp(r'\beither/or\b', caseSensitive: false), 'either or')
         .replaceAll(RegExp(r'\bapprox\.\s*', caseSensitive: false), 'approximately ');
+
+    // Common fractions with slashes (e.g. 1/2 -> "one half", 3/4 -> "three quarters")
+    text = text
+        .replaceAll(RegExp(r'\b1/2\b'), 'one half')
+        .replaceAll(RegExp(r'\b1/3\b'), 'one third')
+        .replaceAll(RegExp(r'\b1/4\b'), 'one quarter')
+        .replaceAll(RegExp(r'\b3/4\b'), 'three quarters')
+        .replaceAll(RegExp(r'\b2/3\b'), 'two thirds');
+
+    // Words separated by slashes pronounced as "or" (e.g. true/false -> "true or false", yes/no, A/B, pass/fail)
+    text = text.replaceAllMapped(
+      RegExp(r'(?<=[a-zA-Z])\s*\/\s*(?=[a-zA-Z])'),
+      (m) => ' or ',
+    );
+
+    // Standalone slash between words or options (e.g. "red / blue" -> "red or blue", "0/1" -> "0 or 1")
+    text = text.replaceAllMapped(
+      RegExp(r'(?<=\w)\s+\/\s+(?=\w)'),
+      (m) => ' or ',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'\b0\s*\/\s*1\b'),
+      (m) => '0 or 1',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'\b1\s*\/\s*0\b'),
+      (m) => '1 or 0',
+    );
 
     // 21. Normalise Times (e.g. "10:30 AM", "8:15 pm")
     text = text.replaceAllMapped(

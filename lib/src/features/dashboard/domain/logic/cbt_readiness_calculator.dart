@@ -850,7 +850,7 @@ class CbtReadinessCalculator {
       } else if (speedFactor < 0.8) {
         weakestArea = 'Time Pressure & Solving Speed';
       } else if (ret < cov && ret < mock) {
-        weakestArea = 'FSRS Memory Retention';
+        weakestArea = 'Memory Retention';
       } else if (cov < ret && cov < mock) {
         weakestArea = 'Syllabus Module Coverage';
       } else {
@@ -875,13 +875,13 @@ class CbtReadinessCalculator {
           ? weakestCourseInput.title.trim()
           : weakestCourseInput.courseCode;
       remediation =
-          'Focus on $courseName: Complete 1 topic module & review 15 FSRS flashcards to boost course readiness.';
+          'Focus on $courseName: Complete 1 topic module & review 15 flashcards to boost course readiness.';
     } else if (speedFactor < 0.8) {
       remediation =
           'Pacing Alert: Practice 15 timed sprint questions to improve your $speedDiag pace.';
     } else if (ret < 0.70) {
       remediation =
-          'Review 15 high-priority FSRS flashcards to repair decaying memory stability.';
+          'Review 15 high-priority flashcards to refresh fading topics.';
     } else if (cov < 0.60) {
       remediation =
           'Complete 1 new syllabus topic module to boost overall syllabus coverage.';

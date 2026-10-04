@@ -25,9 +25,9 @@ class SchedulerToggleTile extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Spaced Repetition Scheduler: FSRS-6 Neural Engine Active',
+      label: 'Spaced Repetition Scheduler: Adaptive Memory Engine Active',
       hint:
-          'Kortex uses the FSRS-6 21-parameter adaptive neural spaced repetition algorithm',
+          'Kortex predicts when you are about to forget each card and schedules reviews at the ideal time.',
       child: PlatformHoverBuilder(
         builder: (context, isHovered, child) {
           return ShrinkableButton(
@@ -100,7 +100,7 @@ class SchedulerToggleTile extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'FSRS-6',
+                              'SMART RECALL',
                               style: typography.caption.bold.copyWith(
                                 fontSize: 11,
                                 color: colors.primary,

@@ -527,7 +527,7 @@ class _ExecutiveKpiGrid extends StatelessWidget {
     if (!hasCards) {
       cardsSubtitle = '0 Active Cards';
     } else if (timeframeIndex == 0) {
-      cardsSubtitle = '${analytics.totalCardsMastered} Active FSRS-6 (7d)';
+      cardsSubtitle = '${analytics.totalCardsMastered} Active Cards (7d)';
     } else if (timeframeIndex == 1) {
       cardsSubtitle = '${analytics.totalCardsMastered} Active (30d)';
     } else {
@@ -1706,7 +1706,7 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                   iconColor: colors.error,
                   title: 'Subject Decay Alert: ${weakEntry.key}',
                   description:
-                      'Retrievability is currently at ${(weakEntry.value.avgRetention * 100).toInt()}%. '
+                      'Memory recall chance is currently at ${(weakEntry.value.avgRetention * 100).toInt()}%. '
                       'Syllabot recommends a 15-minute targeted review session today.',
                   colors: colors,
                 ),
@@ -1729,8 +1729,7 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                   iconColor: colors.success,
                   title: 'Memory Consolidation Tracking',
                   description:
-                      'Daily spaced reviews prevent Ebbinghaus forgetting '
-                      'decay and promote long-term neural retention.',
+                      'Daily spaced reviews protect against memory fade and promote long-term recall.',
                   colors: colors,
                 ),
               ] else ...[
@@ -1753,7 +1752,7 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                       onPressed: () {
                         AppFeedback.selection();
                         context.showSnackBar(
-                          message: 'Syllabot: "Reviewing your retention telemetry. Your highest memory stability is in morning sessions!"',
+                          message: 'Syllabot: "Reviewing your study trends. Your memory retention is strongest during morning sessions!"',
                         );
                       },
                       icon: const Icon(Icons.chat_bubble_outline_rounded, size: 15),
@@ -1909,7 +1908,7 @@ void _showNeuralRepairBottomSheet(
                           ),
                         ),
                         Text(
-                          'Targeted memory reinforcement ($percent% retrievability)',
+                          'Targeted memory reinforcement ($percent% recall chance)',
                           style: typography.caption.regular.copyWith(
                             color: colors.textSecondary,
                           ),
@@ -1923,7 +1922,7 @@ void _showNeuralRepairBottomSheet(
               _NeuralRepairOptionTile(
                 icon: Icons.style_rounded,
                 title: 'Quick Flashcard Memory Refresh',
-                subtitle: 'Focus on due cards for optimal FSRS interval boost',
+                subtitle: 'Focus on due cards to strengthen memory retention',
                 color: colors.primary,
                 onTap: () {
                   Navigator.of(modalContext).pop();

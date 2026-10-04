@@ -479,7 +479,7 @@ class _DecksView extends HookWidget {
                           AppEmptyState(
                             title: 'No Mastered Decks Yet 🎯',
                             subtitle:
-                                'Keep reviewing your flashcards using FSRS-6 spaced repetition. As your retention reaches 90%+, mastered decks will appear here.',
+                                'Keep reviewing your flashcards with smart spaced repetition. As your memory retention reaches 90%+, mastered decks will appear here.',
                             primaryActionLabel: 'Review All Decks',
                             onPrimaryAction: () =>
                                 context.read<DecksBloc>().add(

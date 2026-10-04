@@ -2740,7 +2740,7 @@ class _RoomControlDrawer extends StatelessWidget {
                   const SizedBox(height: 8),
                   _buildModeTile(
                     title: 'Study Deck',
-                    subtitle: state.activeDeckTitle ?? 'Active Recall & FSRS',
+                    subtitle: state.activeDeckTitle ?? 'Active Recall & Flashcards',
                     icon: Icons.style_rounded,
                     isSelected: state.activeViewMode == RoomViewMode.deckStudy,
                     onTap: () {

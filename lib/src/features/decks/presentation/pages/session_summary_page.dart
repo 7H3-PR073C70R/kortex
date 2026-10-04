@@ -386,7 +386,7 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                             FsrsRetrievabilityVisualizer(
                               stabilityDays: (cardsReviewed * 1.5).clamp(2.0, 30.0),
                               targetRetention: retentionScore.clamp(0.70, 0.95),
-                              subjectTitle: 'Consolidated Session Retrievability',
+                              subjectTitle: 'Overall Session Memory Strength',
                             ),
 
                             // Forward-looking line: what the effort buys later.

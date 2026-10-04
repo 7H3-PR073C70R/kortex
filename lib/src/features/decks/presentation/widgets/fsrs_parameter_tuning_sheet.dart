@@ -48,8 +48,8 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
 
     context.showSnackBar(
       message: success
-          ? 'FSRS parameters updated & synced with server! 🎯'
-          : 'FSRS parameters saved locally.',
+          ? 'Memory settings updated & synced with server! 🎯'
+          : 'Memory settings saved locally.',
       type: success ? SnackBarType.success : SnackBarType.info,
     );
     Navigator.of(context).pop();
@@ -101,7 +101,7 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
               Icon(Icons.tune_rounded, color: colors.primary, size: 24),
               const SizedBox(width: 10),
               Text(
-                'FSRS-6 Algorithm Tuning',
+                'Advanced Memory Tuning',
                 style: typography.title2.bold.copyWith(
                   color: colors.textPrimary,
                 ),
@@ -230,7 +230,7 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
               child: _isSaving
                   ? const CircularProgressIndicator(color: Colors.white)
                   : Text(
-                      'Save FSRS Parameters',
+                      'Save Memory Settings',
                       style: typography.body.bold.copyWith(color: Colors.white),
                     ),
             ),

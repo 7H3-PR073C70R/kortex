@@ -553,7 +553,7 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                         const SizedBox(height: 6),
                         Text(
                           'You missed $mistakes question${mistakes > 1 ? 's' : ''}. '
-                          'Syllabot has extracted key concept rules into an instant FSRS recovery deck.',
+                          'Syllabot has extracted key concept rules into an instant review recovery deck.',
                           style: typography.footnote.regular.copyWith(
                             color: colors.textSecondary,
                             height: 1.3,
