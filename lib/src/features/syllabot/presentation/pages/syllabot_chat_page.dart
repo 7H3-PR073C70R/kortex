@@ -20,6 +20,7 @@ import 'package:kortex/src/features/community/domain/repositories/community_repo
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/create_post_bottom_sheet.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/repositories/calibration_repository.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
@@ -184,6 +185,17 @@ class _SyllabotChatView extends HookWidget {
       ExecutionEngineType targetEngine,
     ) async {
       if (targetEngine == ExecutionEngineType.cloudRemote) {
+        final guard = locator.isRegistered<SubscriptionGuard>()
+            ? locator<SubscriptionGuard>()
+            : SubscriptionGuard();
+        if (!guard.canAccessCloudAi()) {
+          final upgraded = await guard.requirePro(
+            pageContext,
+            featureName: 'Cloud AI Streaming Engine',
+          );
+          if (!upgraded) return;
+        }
+        if (!pageContext.mounted) return;
         pageContext.read<SyllabotChatBloc>().add(
           const ChangeEngineTypeEvent(ExecutionEngineType.cloudRemote),
         );
@@ -260,14 +272,26 @@ class _SyllabotChatView extends HookWidget {
       );
     }
 
-    void openVoiceDialogue(
+    Future<void> openVoiceDialogue(
       BuildContext dialogContext,
       SyllabotChatState state,
-    ) {
+    ) async {
+      final guard = locator.isRegistered<SubscriptionGuard>()
+          ? locator<SubscriptionGuard>()
+          : SubscriptionGuard();
+      if (!guard.canAccessVoiceDialogue()) {
+        final isPro = await guard.requirePro(
+          dialogContext,
+          featureName: 'Syllabot Voice Dialogue',
+        );
+        if (!isPro || !dialogContext.mounted) return;
+      }
+
       final persistentSessionId = UuidUtils.isValidUuid(state.sessionId)
           ? state.sessionId
           : UuidUtils.generate();
 
+      if (!dialogContext.mounted) return;
       unawaited(
         VoiceDialogueModal.show(
           context: dialogContext,
@@ -301,7 +325,21 @@ class _SyllabotChatView extends HookWidget {
       );
     }
 
-    void openConvertToDeck(BuildContext sheetContext, SyllabotChatState state) {
+    Future<void> openConvertToDeck(
+      BuildContext sheetContext,
+      SyllabotChatState state,
+    ) async {
+      final guard = locator.isRegistered<SubscriptionGuard>()
+          ? locator<SubscriptionGuard>()
+          : SubscriptionGuard();
+      if (!guard.canConvertChatToDeck()) {
+        final isPro = await guard.requirePro(
+          sheetContext,
+          featureName: 'Chat to Deck AI Synthesis',
+        );
+        if (!isPro || !sheetContext.mounted) return;
+      }
+
       if (state.isGeneratingDeck) {
         sheetContext.showSnackBar(
           message: l10n.generatingDeckProgress,
@@ -619,14 +657,44 @@ class _SyllabotChatView extends HookWidget {
                             : context.colors.transparent,
                         borderRadius: BorderRadius.circular(AppRadius.badge),
                       ),
-                      child: IconButton(
-                        tooltip: l10n.convertToDeckTitle,
-                        icon: Icon(
-                          Icons.style_rounded,
-                          color: colors.primary,
-                          size: 22,
-                        ),
-                        onPressed: () => openConvertToDeck(context, state),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            tooltip: l10n.convertToDeckTitle,
+                            icon: Icon(
+                              Icons.style_rounded,
+                              color: colors.primary,
+                              size: 22,
+                            ),
+                            onPressed: () => openConvertToDeck(context, state),
+                          ),
+                          if (!SubscriptionGuard().isPro)
+                            Positioned(
+                              top: 6,
+                              right: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colors.primary,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.micro,
+                                  ),
+                                ),
+                                child: Text(
+                                  'PRO',
+                                  style: typography.caption.bold.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 7.5,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     );
                   },
@@ -1009,56 +1077,164 @@ class _SyllabotChatView extends HookWidget {
                   // 3. Syllabot Chat Bottom Bar (Download Progress vs Input Bar)
                   BlocBuilder<SyllabotChatBloc, SyllabotChatState>(
                     builder: (context, state) {
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
-                        child: isDownloadingModel.value
-                            ? LocalLlmDownloadBar(
-                                progress: downloadProgress.value,
-                                onCancel: () => cancelModelDownload(context),
-                                currentEngine: state.engineType,
-                              )
-                            : SyllabotChatInputBar(
-                                controller: textController,
-                                socraticMode: state.socraticMode,
-                                engineType: state.engineType,
-                                isLoading:
-                                    state.status == SyllabotStatus.streaming ||
-                                    state.isGeneratingDeck,
-                                isAiSpeaking: isAiSpeaking,
-                                onInterruptAi: ttsHandler.stop,
-                                onVoiceDialogueTap: state.isGeneratingDeck
-                                    ? null
-                                    : () => openVoiceDialogue(context, state),
-                                onModeChanged: (mode) {
-                                  context.read<SyllabotChatBloc>().add(
-                                    ChangeSocraticModeEvent(mode),
-                                  );
-                                },
-                                onEngineChanged: (engine) =>
-                                    handleEngineSwitch(context, engine),
-                                onSubmit: state.isGeneratingDeck
-                                    ? (_) {}
-                                    : (prompt) {
-                                        unawaited(ttsHandler.stop());
-                                        final sid =
-                                            UuidUtils.isValidUuid(
-                                              state.sessionId,
-                                            )
-                                            ? state.sessionId
-                                            : UuidUtils.generate();
+                      final guard = locator.isRegistered<SubscriptionGuard>()
+                          ? locator<SubscriptionGuard>()
+                          : SubscriptionGuard();
+                      final isPro = guard.isPro;
+                      final usedQueries = guard.getTodaySyllabotQueryCount();
+                      const limit = SubscriptionGuard.freeDailySyllabotLimit;
 
-                                        context.read<SyllabotChatBloc>().add(
-                                          SubmitPromptEvent(
-                                            prompt: prompt,
-                                            sessionId: sid,
-                                            socraticMode: state.socraticMode,
-                                            engineType: state.engineType,
-                                          ),
-                                        );
-                                        scrollToBottom();
-                                      },
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!isPro)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 18,
+                                right: 18,
+                                bottom: 6,
                               ),
+                              child: ShrinkableButton(
+                                onTap: () => guard.requirePro(
+                                  context,
+                                  featureName: 'Unlimited Syllabot AI Queries',
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: (usedQueries >= limit
+                                            ? colors.error
+                                            : colors.primary)
+                                        .withAlpha(isDark ? 30 : 16),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.card,
+                                    ),
+                                    border: Border.all(
+                                      color: (usedQueries >= limit
+                                              ? colors.error
+                                              : colors.primary)
+                                          .withAlpha(isDark ? 80 : 50),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 13,
+                                        color: usedQueries >= limit
+                                            ? colors.error
+                                            : colors.primary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '$usedQueries / $limit free queries used today',
+                                        style: typography.caption.medium
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                              fontSize: 11,
+                                            ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Upgrade',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 11,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                            child: isDownloadingModel.value
+                                ? LocalLlmDownloadBar(
+                                    progress: downloadProgress.value,
+                                    onCancel: () =>
+                                        cancelModelDownload(context),
+                                    currentEngine: state.engineType,
+                                  )
+                                : SyllabotChatInputBar(
+                                    controller: textController,
+                                    socraticMode: state.socraticMode,
+                                    engineType: state.engineType,
+                                    isLoading:
+                                        state.status ==
+                                            SyllabotStatus.streaming ||
+                                        state.isGeneratingDeck,
+                                    isAiSpeaking: isAiSpeaking,
+                                    onInterruptAi: ttsHandler.stop,
+                                    onVoiceDialogueTap: state.isGeneratingDeck
+                                        ? null
+                                        : () =>
+                                            openVoiceDialogue(context, state),
+                                    onModeChanged: (mode) {
+                                      context.read<SyllabotChatBloc>().add(
+                                        ChangeSocraticModeEvent(mode),
+                                      );
+                                    },
+                                    onEngineChanged: (engine) =>
+                                        handleEngineSwitch(context, engine),
+                                    onSubmit: state.isGeneratingDeck
+                                        ? (_) {}
+                                        : (prompt) async {
+                                            unawaited(ttsHandler.stop());
+                                            final guard =
+                                                locator
+                                                    .isRegistered<
+                                                      SubscriptionGuard
+                                                    >()
+                                                ? locator<SubscriptionGuard>()
+                                                : SubscriptionGuard();
 
+                                            if (!guard.canQuerySyllabot()) {
+                                              final isPro = await guard
+                                                  .requirePro(
+                                                    context,
+                                                    featureName:
+                                                        'Unlimited Syllabot AI Queries',
+                                                  );
+                                              if (!isPro || !context.mounted) {
+                                                return;
+                                              }
+                                            }
+
+                                            unawaited(
+                                              guard.recordSyllabotQuery(),
+                                            );
+
+                                            final sid =
+                                                UuidUtils.isValidUuid(
+                                                  state.sessionId,
+                                                )
+                                                ? state.sessionId
+                                                : UuidUtils.generate();
+
+                                            if (!context.mounted) return;
+                                            context
+                                                .read<SyllabotChatBloc>()
+                                                .add(
+                                                  SubmitPromptEvent(
+                                                    prompt: prompt,
+                                                    sessionId: sid,
+                                                    socraticMode:
+                                                        state.socraticMode,
+                                                    engineType:
+                                                        state.engineType,
+                                                  ),
+                                                );
+                                            scrollToBottom();
+                                          },
+                                  ),
+                          ),
+                        ],
                       );
                     },
                   ),

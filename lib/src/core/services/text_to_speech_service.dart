@@ -689,7 +689,15 @@ class TextToSpeechServiceImpl implements TextToSpeechService {
       }
 
       if (_sentenceQueue.isNotEmpty && sessionId == _activeSessionId) {
-        final pauseMs = _config.sentencePauseMs;
+        final next = _sentenceQueue.first;
+        final isSectionBreak = next.startsWith('Question ') ||
+            next.startsWith('Section ') ||
+            next.startsWith('Part ') ||
+            next.startsWith('Topic ') ||
+            next.startsWith('Week ');
+        final pauseMs = isSectionBreak
+            ? (_config.sentencePauseMs * 2).clamp(250, 400)
+            : _config.sentencePauseMs;
         if (pauseMs > 0) {
           await Future<void>.delayed(Duration(milliseconds: pauseMs));
         }

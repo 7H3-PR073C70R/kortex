@@ -17,6 +17,8 @@ class SubjectReadinessBreakdown {
     this.statusColor,
     this.isCalibrated = true,
     this.diagnosticCta = '',
+    this.courseCode = '',
+    this.hasPastQuestions = false,
   });
 
   final String subjectName;
@@ -29,6 +31,8 @@ class SubjectReadinessBreakdown {
   final Color? statusColor;
   final bool isCalibrated;
   final String diagnosticCta;
+  final String courseCode;
+  final bool hasPastQuestions;
 }
 
 /// Algorithmic CBT Exam Readiness score calculator based on syllabus coverage,
@@ -651,6 +655,7 @@ class CbtReadinessCalculator {
 
         final breakdown = SubjectReadinessBreakdown(
           subjectName: courseName,
+          courseCode: course.courseCode,
           readinessPercent: courseReadinessPercent,
           coveragePercent: courseCov,
           accuracyPercent: courseAcc,
@@ -706,7 +711,7 @@ class CbtReadinessCalculator {
                   : ((finalPercent / 100.0) * 400).round().clamp(0, 400)));
     }
 
-    final bool isAllUncalibrated = convertedRegisteredCourses.isNotEmpty &&
+    final isAllUncalibrated = convertedRegisteredCourses.isNotEmpty &&
         calibratedCoursesCount == 0 &&
         mock == 0.0 &&
         ret == 0.0 &&

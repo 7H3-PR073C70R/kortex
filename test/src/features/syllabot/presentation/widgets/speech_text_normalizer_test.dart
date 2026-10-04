@@ -288,6 +288,66 @@ Fact stated[^1].
       expect(result, contains('one half'));
       expect(result.contains('/'), isFalse);
     });
+
+    test('preserves list numbers and question headers without deleting numbers', () {
+      const input = '''
+### 1. Kinematics
+1. Calculate the velocity when distance is 50 meters and time is 5 seconds.
+2. Find the acceleration.
+''';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('Question 1: Kinematics'));
+      expect(result, contains('1. Calculate the velocity when distance is 50 meters and time is 5 seconds.'));
+      expect(result, contains('2. Find the acceleration.'));
+    });
+
+    test('normalizes LaTeX text units without uttering est or ext', () {
+      const input = r'The acceleration is $9.8\ \text{m/s}^2$ and frequency is $50\ \text{Hz}$.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, isNot(contains('est')));
+      expect(result, isNot(contains('ext')));
+      expect(result, contains('9.8 meters per second squared'));
+      expect(result, contains('50 hertz'));
+    });
+
+    test('normalizes electrical and physics units attached to numbers', () {
+      const input = r'A circuit has $5\ \text{V}$, $10\ \Omega$, and $20\ \mu\text{F}$.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('5 volts'));
+      expect(result, contains('10 ohms'));
+      expect(result, contains('20 microfarads'));
+    });
+
+    test('converts --- into a distinct pause marker and splitIntoChunks isolates it', () {
+      const input = '''
+Here is the first question.
+---
+Question 2: What is gravity?
+''';
+      final chunks = SpeechTextNormalizer.splitIntoChunks(input);
+      expect(chunks.length, greaterThanOrEqualTo(2));
+      expect(chunks.any((c) => c.contains('Here is the first question.')), isTrue);
+      expect(chunks.any((c) => c.contains('Question 2')), isTrue);
+    });
+
+    test('formats multiple-choice options with natural pause cadence', () {
+      const input = '''
+**A)** 10 m/s
+**B)** 20 m/s
+''';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('Option A: 10 meters per second'));
+      expect(result, contains('Option B: 20 meters per second'));
+    });
+
+    test('replaces checkmarks and crosses with clear audio equivalents', () {
+      const input = '✅ Correct answer! ❌ Incorrect approach.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('correct Correct answer!'));
+      expect(result, contains('incorrect Incorrect approach.'));
+      expect(result.contains('✅'), isFalse);
+      expect(result.contains('❌'), isFalse);
+    });
   });
 
   group('TtsConfig', () {
@@ -295,7 +355,7 @@ Fact stated[^1].
       final config = TtsConfig.forCurrentPlatform();
       expect(config.pitch, equals(1.0));
       expect(config.volume, equals(1.0));
-      expect(config.sentencePauseMs, equals(0));
+      expect(config.sentencePauseMs, equals(140));
       expect(config.effectiveSpeechRate, greaterThan(0));
       expect(config.effectiveSpeechRate, lessThan(2.0));
     });

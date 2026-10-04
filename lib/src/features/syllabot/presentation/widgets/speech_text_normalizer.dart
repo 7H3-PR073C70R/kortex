@@ -183,16 +183,8 @@ class SpeechTextNormalizer {
           '',
         );
 
-    // 1. Process literal string / whitespace escape sequences (\n, \r, \t)
-    text = text
-        .replaceAll(r'\r\n', '\n')
-        .replaceAll(r'\n', '\n')
-        .replaceAll(r'\r', ' ')
-        .replaceAll(r'\t', ' ');
-
-    // 1.1 Explicitly cut out $1, escaped \$1, and regex/placeholder tokens ($2, $3, etc.)
-    text = text.replaceAll(RegExp(r'\\?\$1(?!\.\d|\d)'), '');
-    text = text.replaceAll(RegExp(r'\\?\$[0-9]+(?!\.\d)'), '');
+    // 1. Normalize real tab characters without stripping \t from LaTeX commands
+    text = text.replaceAll('\t', ' ');
 
     // 2. Decode HTML entities so they do not leak as codes or ampersands
     text = text
@@ -211,11 +203,17 @@ class SpeechTextNormalizer {
         .replaceAll(RegExp(r'&#\d+;'), ' ')
         .replaceAll(RegExp('&#x[0-9a-fA-F]+;'), ' ');
 
-    // 3. Strip HTML comments and tags (e.g. <br>, <b>, <span>, <div>, <p>, <!-- -->)
+    // 3. Strip HTML comments and tags
     text = text.replaceAll(RegExp(r'<!--[\s\S]*?-->'), ' ');
     text = text.replaceAll(RegExp('<[^>]+>'), ' ');
 
-    // 4. Intelligently process code blocks and inline code for speech
+    // 4. Horizontal rules (---, ***, ___) -> explicit section breath pause
+    text = text.replaceAll(
+      RegExp(r'^\s*[-*_]{3,}\s*$', multiLine: true),
+      '\n\n—\n\n',
+    );
+
+    // 5. Intelligently process code blocks and inline code for speech
     text = text.replaceAllMapped(
       RegExp(r'```(?:[a-zA-Z0-9_\-+]*\r?\n)?[\s\S]*?```'),
       (m) => _normalizeCodeBlock(m[0]!),
@@ -226,7 +224,10 @@ class SpeechTextNormalizer {
     );
     text = text.replaceAll('`', '');
 
-    // 5. Expand and normalize Markdown tables before symbol stripping
+    // 6. Expand LaTeX math commands into spoken words EARLY (protects numbers and units)
+    text = _normalizeLatex(text);
+
+    // 7. Expand and normalize Markdown tables before symbol stripping
     text = text.replaceAll(
       RegExp(r'^\s*\|?[\s|:-]+\|?\s*$', multiLine: true),
       '',
@@ -243,74 +244,87 @@ class SpeechTextNormalizer {
       },
     );
 
-    // 6. Expand LaTeX math commands into spoken words
-    text = _normalizeLatex(text);
+    // 8. Question headings and section titles: e.g. "### 1. Mechanics" -> "Question 1: Mechanics."
+    text = text.replaceAllMapped(
+      RegExp(r'^\s*#{1,6}\s*(\d+)[\.\:]\s*(.+)$', multiLine: true),
+      (m) => 'Question ${m[1]}: ${m[2]}.',
+    );
+    text = text.replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'\s*#{1,6}\s*$', multiLine: true), '. ');
+    text = text.replaceAllMapped(RegExp(r'#(\d+)'), (m) => 'number ${m[1]}');
+    text = text.replaceAll('#', '');
 
-    // 7. Strip Markdown task list checkboxes (- [ ], - [x], * [x])
+    // 9. Strip Markdown task list checkboxes (- [ ], - [x], * [x])
     text = text.replaceAll(
       RegExp(r'^\s*[-*+]\s+\[[ xX]\]\s+', multiLine: true),
       ', ',
     );
     text = text.replaceAll(RegExp(r'\[[ xX]\]'), '');
 
-    // 8. Strip Footnotes ([^1], [^note], [^1]: ...)
+    // 10. Strip Footnotes ([^1], [^note], [^1]: ...)
     text = text.replaceAll(
       RegExp(r'^\s*\[\^[^\]]+\]:\s*', multiLine: true),
       '',
     );
     text = text.replaceAll(RegExp(r'\[\^[^\]]+\]'), '');
 
-    // 9. Clean Blockquotes (strip leading > without confusing with math)
+    // 11. Clean Blockquotes (strip leading > without confusing with math)
     text = text.replaceAll(RegExp(r'^\s*>+\s*', multiLine: true), '');
 
-    // 10. Strip Markdown headings (#, ##, etc.), trailing hashes, and horizontal rules
-    text = text.replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '');
-    text = text.replaceAll(RegExp(r'\s*#{1,6}\s*$', multiLine: true), '');
-    text = text.replaceAll(RegExp(r'^\s*[-*_]{3,}\s*$', multiLine: true), '');
-    // Clean number signs like #1 -> number 1
-    text = text.replaceAllMapped(RegExp(r'#(\d+)'), (m) => 'number ${m[1]}');
-    text = text.replaceAll('#', '');
+    // 12. MCQ Option labels e.g. "**A)**" or "A)" or "• A)" -> "Option A: "
+    text = text.replaceAllMapped(
+      RegExp(
+        r'^\s*(?:[•·*-]\s*)?(?:\*{0,2})\(?([A-Ea-e])\)[.:]?(?:\*{0,2})\s*',
+        multiLine: true,
+      ),
+      (m) => 'Option ${m[1]!.toUpperCase()}: ',
+    );
 
-    // 11. Unescape markdown backslash escapes (\*, \_, \[, \], etc.)
+    // 13. Numbered lists: keep numbers intact for speech! (e.g. "1. Read..." -> "1. Read...")
+    text = text.replaceAllMapped(
+      RegExp(r'^\s*(\d+)[\.\)]\s+', multiLine: true),
+      (m) => '${m[1]}. ',
+    );
+
+    // 14. Unescape markdown backslash escapes (\*, \_, \[, \], etc.)
     text = text.replaceAllMapped(
       RegExp(r"""\\([*#_\[\](){}+.!?~$|><"'`^=~-])"""),
       (m) => m[1]!,
     );
 
-    // 12. Strip Markdown bold, italic, strikethrough syntax cleanly
-    text = text.replaceAllMapped(RegExp(r'(\*{1,3}|_{1,3})(.*?)\1'), (m) => m[2]!);
+    // 15. Strip Markdown bold, italic, strikethrough syntax cleanly
+    text = text.replaceAllMapped(
+      RegExp(r'(\*{1,3}|_{1,3})(.*?)\1'),
+      (m) => m[2]!,
+    );
     text = text.replaceAllMapped(RegExp(r'(\*\*|__)(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp(r'(\*|_)(.*?)\1'), (m) => m[2]!);
     text = text.replaceAllMapped(RegExp('~~(.*?)~~'), (m) => m[1]!);
 
-    // 13. Markdown images and links:
-    // Images: ![alt](url) -> keep alt text if present, strip syntax & URL
+    // 16. Markdown images and links:
     text = text.replaceAllMapped(
       RegExp(r'!\[([^\]]*)\]\([^)]+\)'),
       (m) => m[1]!.isNotEmpty ? '${m[1]} ' : '',
     );
-    // Links: [title](url) -> retain link title, remove URL
     text = text.replaceAllMapped(
       RegExp(r'\[([^\]]+)\]\([^)]+\)'),
       (m) => m[1]!,
     );
 
-    // 14. Remove standalone raw URLs
+    // 17. Remove standalone raw URLs
     text = text.replaceAll(RegExp(r'https?://\S+'), '');
     text = text.replaceAll(RegExp(r'\bwww\.\S+'), '');
 
-    // 15. Clean bullet points & numbered lists
-    // Convert list markers into natural pauses
+    // 18. Clean remaining bullet points into natural pauses
     text = text.replaceAll(RegExp(r'^\s*[-•*+]\s+', multiLine: true), ', ');
-    text = text.replaceAll(RegExp(r'^\s*\d+[\.\)]\s+', multiLine: true), ', ');
-
-    // 16. Normalize Unicode bullets & special symbols
     text = text.replaceAll(RegExp('[•·▪▫◦‣⁃■□●○★☆]'), ', ');
-    text = text
-        .replaceAll(RegExp('[✓✔]'), ' correct ')
-        .replaceAll(RegExp('[✕✖✗✘]'), ' incorrect ');
 
-    // 17. Strip emojis (all standard Unicode emoji ranges)
+    // 19. Checkmarks and crossmarks (including emojis before generic emoji strip)
+    text = text
+        .replaceAll(RegExp('[✓✔✅]'), ' correct ')
+        .replaceAll(RegExp('[✕✖✗✘❌]'), ' incorrect ');
+
+    // 20. Strip emojis (all standard Unicode emoji ranges)
     text = text.replaceAll(
       RegExp(
         r'[\u{1F000}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]',
@@ -319,11 +333,12 @@ class SpeechTextNormalizer {
       '',
     );
 
-    // 18. Explicitly cut out $1, escaped \$1, and regex/placeholder tokens
+    // 21. Cut out standalone placeholder tokens ($1, $2, etc., and escaped \$1)
     text = text.replaceAll(RegExp(r'\\?\$1(?!\.\d|\d)'), '');
     text = text.replaceAll(RegExp(r'\\?\$[0-9]+(?!\.\d)'), '');
+    text = text.replaceAll(RegExp(r'\$'), '');
 
-    // 19. Normalise Currencies
+    // 22. Normalise Currencies
     text = text.replaceAllMapped(
       RegExp(r'₦\s*(\d+(?:,\d+)*(?:\.\d{1,2})?)'),
       (m) => '${m[1]} Naira',
@@ -340,6 +355,9 @@ class SpeechTextNormalizer {
       RegExp(r'€\s*(\d+(?:,\d+)*(?:\.\d{1,2})?)'),
       (m) => '${m[1]} euros',
     );
+
+    // 23. Expand SI Units and Scientific Measurements
+    text = _normalizeUnits(text);
 
     // 20. Normalise Degrees, Percentages, and Math Symbols
     text = text.replaceAllMapped(
@@ -481,26 +499,80 @@ class SpeechTextNormalizer {
 
     // Units with slashes (pronounced as "per")
     text = text
-        .replaceAll(RegExp(r'\bkm/h\b', caseSensitive: false), 'kilometers per hour')
-        .replaceAll(RegExp(r'\bm/s\^?2\b', caseSensitive: false), 'meters per second squared')
-        .replaceAll(RegExp(r'\bm/s\b', caseSensitive: false), 'meters per second')
-        .replaceAll(RegExp(r'\bkg/m\^?3\b', caseSensitive: false), 'kilograms per cubic meter')
-        .replaceAll(RegExp(r'\bkg/m³\b', caseSensitive: false), 'kilograms per cubic meter')
-        .replaceAll(RegExp(r'\bg/cm\^?3\b', caseSensitive: false), 'grams per cubic centimeter')
-        .replaceAll(RegExp(r'\bg/cm³\b', caseSensitive: false), 'grams per cubic centimeter')
-        .replaceAll(RegExp(r'\brad/s\b', caseSensitive: false), 'radians per second')
-        .replaceAll(RegExp(r'\brev/min\b', caseSensitive: false), 'revolutions per minute')
-        .replaceAll(RegExp(r'\bmiles/h\b', caseSensitive: false), 'miles per hour')
-        .replaceAll(RegExp(r'\bmol/dm\^?3\b', caseSensitive: false), 'moles per decimeter cubed')
-        .replaceAll(RegExp(r'\bmol/dm³\b', caseSensitive: false), 'moles per decimeter cubed')
-        .replaceAll(RegExp(r'\bmol/L\b', caseSensitive: false), 'moles per liter')
-        .replaceAll(RegExp(r'\bft/s\b', caseSensitive: false), 'feet per second')
-        .replaceAll(RegExp(r'\bbytes/s\b', caseSensitive: false), 'bytes per second')
-        .replaceAll(RegExp(r'\bkb/s\b', caseSensitive: false), 'kilobits per second')
-        .replaceAll(RegExp(r'\bmb/s\b', caseSensitive: false), 'megabits per second')
+        .replaceAll(
+          RegExp(r'\bkm/h\b', caseSensitive: false),
+          'kilometers per hour',
+        )
+        .replaceAll(
+          RegExp(r'\bm/s\^?2\b', caseSensitive: false),
+          'meters per second squared',
+        )
+        .replaceAll(
+          RegExp(r'\bm/s\b', caseSensitive: false),
+          'meters per second',
+        )
+        .replaceAll(
+          RegExp(r'\bkg/m\^?3\b', caseSensitive: false),
+          'kilograms per cubic meter',
+        )
+        .replaceAll(
+          RegExp(r'\bkg/m³\b', caseSensitive: false),
+          'kilograms per cubic meter',
+        )
+        .replaceAll(
+          RegExp(r'\bg/cm\^?3\b', caseSensitive: false),
+          'grams per cubic centimeter',
+        )
+        .replaceAll(
+          RegExp(r'\bg/cm³\b', caseSensitive: false),
+          'grams per cubic centimeter',
+        )
+        .replaceAll(
+          RegExp(r'\brad/s\b', caseSensitive: false),
+          'radians per second',
+        )
+        .replaceAll(
+          RegExp(r'\brev/min\b', caseSensitive: false),
+          'revolutions per minute',
+        )
+        .replaceAll(
+          RegExp(r'\bmiles/h\b', caseSensitive: false),
+          'miles per hour',
+        )
+        .replaceAll(
+          RegExp(r'\bmol/dm\^?3\b', caseSensitive: false),
+          'moles per decimeter cubed',
+        )
+        .replaceAll(
+          RegExp(r'\bmol/dm³\b', caseSensitive: false),
+          'moles per decimeter cubed',
+        )
+        .replaceAll(
+          RegExp(r'\bmol/L\b', caseSensitive: false),
+          'moles per liter',
+        )
+        .replaceAll(
+          RegExp(r'\bft/s\b', caseSensitive: false),
+          'feet per second',
+        )
+        .replaceAll(
+          RegExp(r'\bbytes/s\b', caseSensitive: false),
+          'bytes per second',
+        )
+        .replaceAll(
+          RegExp(r'\bkb/s\b', caseSensitive: false),
+          'kilobits per second',
+        )
+        .replaceAll(
+          RegExp(r'\bmb/s\b', caseSensitive: false),
+          'megabits per second',
+        )
         .replaceAll(RegExp(r'\band/or\b', caseSensitive: false), 'and or')
         .replaceAll(RegExp(r'\beither/or\b', caseSensitive: false), 'either or')
-        .replaceAll(RegExp(r'\bapprox\.\s*', caseSensitive: false), 'approximately ');
+        .replaceAll(
+          RegExp(r'\bapprox\.\s*', caseSensitive: false),
+          'approximately ',
+        );
 
     // Common fractions with slashes (e.g. 1/2 -> "one half", 3/4 -> "three quarters")
     text = text
@@ -634,8 +706,8 @@ class SpeechTextNormalizer {
     // Remove stray spaces before punctuation
     text = text.replaceAllMapped(RegExp(r'\s+([,.:;!?])'), (m) => m[1]!);
 
-    // Final cut-out of any residual $1, placeholder tokens, or stray dollar symbols
-    text = text.replaceAll(RegExp(r'\\?\$[0-9]+(?!\.\d)'), '');
+    // Final cut-out of any residual $1 placeholder tokens
+    text = text.replaceAll(RegExp(r'\\?\$[0-9]+(?!\w)'), '');
     text = text.replaceAll(RegExp(r'\$'), '');
 
     // Collapse multi-spaces
@@ -672,28 +744,20 @@ class SpeechTextNormalizer {
       (m) => ' ${_expandLatexSymbols(m[1] ?? m[2]!)} ',
     );
 
-    // 5. Text/formatting commands outside $: keep inner content only
-    text = text.replaceAllMapped(
-      RegExp(
-        r'\\(?:text|textbf|textit|textrm|textsf|texttt|mathrm|mathbf|mathit|mathsf|mathtt|emph|underline|overline)\{([^}]*)\}',
-      ),
-      (m) => m[1]!,
-    );
-
-    // 6. Strip \left / \right delimiter markers, keep bracket that follows
+    // 5. Strip \left / \right delimiter markers, keep bracket that follows
     text = text.replaceAll(RegExp(r'\\(?:left|right)\s*'), '');
 
-    // 7. Expand all remaining bare LaTeX commands
+    // 6. Expand all remaining bare LaTeX commands
     text = _expandLatexSymbols(text);
 
-    // 8. Catch-all: \commandname -> drop backslash, keep readable word
+    // 7. Catch-all: \commandname -> drop backslash, keep readable word
     //    Prevents TTS from ever saying "backslash commandname".
     text = text.replaceAllMapped(
       RegExp(r'\\([a-zA-Z]+)'),
       (m) => ' ${m[1]!} ',
     );
 
-    // 9. Lone remaining backslashes -> space
+    // 8. Lone remaining backslashes -> space
     text = text.replaceAll(RegExp(r'\\'), ' ');
 
     return text;
@@ -701,6 +765,17 @@ class SpeechTextNormalizer {
 
   static String _expandLatexSymbols(String math) {
     var s = math;
+
+    // ── Unpack text formatting commands inside math mode (\text{...}) ────────
+    s = s.replaceAllMapped(
+      RegExp(
+        r'\\(?:text|mathrm|mathbf|mathit|mathsf|mathtt|textbf|textit|textrm)\{([^}]*)\}',
+      ),
+      (m) => ' ${m[1]!} ',
+    );
+
+    // LaTeX escaped non-breaking space (\ ) -> space
+    s = s.replaceAll(r'\ ', ' ');
 
     // ── Structural: fractions, roots, decorated symbols ──────────────────────
 
@@ -833,6 +908,10 @@ class SpeechTextNormalizer {
         .replaceAll(r'\le', 'is less than or equal to')
         .replaceAll(r'\gg', 'is much greater than')
         .replaceAll(r'\ll', 'is much less than')
+        .replaceAllMapped(
+          RegExp(r'\\approx\s*(\d)'),
+          (m) => 'approximately ${m[1]}',
+        )
         .replaceAll(r'\approx', 'approximately equals')
         .replaceAll(r'\sim', 'is similar to')
         .replaceAll(r'\cong', 'is congruent to')
@@ -1038,6 +1117,21 @@ class SpeechTextNormalizer {
       final s = raw.trim();
       if (s.isEmpty) continue;
 
+      // Handle explicit section break marker (—) by flushing the current buffer immediately
+      if (s == '—' || s == '–') {
+        if (buffer.isNotEmpty) {
+          chunks.add(buffer.toString());
+          buffer.clear();
+        }
+        continue;
+      }
+
+      // If sentence starts a new question, flush preceding content so question starts a new chunk
+      if (s.startsWith('Question ') && buffer.isNotEmpty) {
+        chunks.add(buffer.toString());
+        buffer.clear();
+      }
+
       // If a single sentence is exceptionally long (> 200 characters), split along clause pauses (, ; :)
       if (s.length > 200) {
         final clauseParts = s.split(RegExp(r'(?<=[,;:])\s+'));
@@ -1078,6 +1172,238 @@ class SpeechTextNormalizer {
     }
 
     return chunks.where((c) => c.trim().isNotEmpty).toList();
+  }
+
+  /// Normalizes scientific measurements, electricity, and SI units into natural spoken words.
+  static String _normalizeUnits(String input) {
+    var text = input;
+
+    // Compound units with /
+    text = text
+        .replaceAll(
+          RegExp(r'\bkm/h\b', caseSensitive: false),
+          'kilometers per hour',
+        )
+        .replaceAll(
+          RegExp(r'\bm/s\^?2\b', caseSensitive: false),
+          'meters per second squared',
+        )
+        .replaceAll(
+          RegExp(r'\bm/s²\b', caseSensitive: false),
+          'meters per second squared',
+        )
+        .replaceAll(
+          RegExp(r'\bm/s\b', caseSensitive: false),
+          'meters per second',
+        )
+        .replaceAll(
+          RegExp(r'\bkg/m\^?3\b', caseSensitive: false),
+          'kilograms per cubic meter',
+        )
+        .replaceAll(
+          RegExp(r'\bkg/m³\b', caseSensitive: false),
+          'kilograms per cubic meter',
+        )
+        .replaceAll(
+          RegExp(r'\bg/cm\^?3\b', caseSensitive: false),
+          'grams per cubic centimeter',
+        )
+        .replaceAll(
+          RegExp(r'\bg/cm³\b', caseSensitive: false),
+          'grams per cubic centimeter',
+        )
+        .replaceAll(
+          RegExp(r'\brad/s\b', caseSensitive: false),
+          'radians per second',
+        )
+        .replaceAll(
+          RegExp(r'\brev/min\b', caseSensitive: false),
+          'revolutions per minute',
+        )
+        .replaceAll(
+          RegExp(r'\bmiles/h\b', caseSensitive: false),
+          'miles per hour',
+        )
+        .replaceAll(
+          RegExp(r'\bmol/dm\^?3\b', caseSensitive: false),
+          'moles per decimeter cubed',
+        )
+        .replaceAll(
+          RegExp(r'\bmol/dm³\b', caseSensitive: false),
+          'moles per decimeter cubed',
+        )
+        .replaceAll(
+          RegExp(r'\bmol/L\b', caseSensitive: false),
+          'moles per liter',
+        )
+        .replaceAll(
+          RegExp(r'\bft/s\b', caseSensitive: false),
+          'feet per second',
+        )
+        .replaceAll(
+          RegExp(r'\bbytes/s\b', caseSensitive: false),
+          'bytes per second',
+        )
+        .replaceAll(
+          RegExp(r'\bkb/s\b', caseSensitive: false),
+          'kilobits per second',
+        )
+        .replaceAll(
+          RegExp(r'\bmb/s\b', caseSensitive: false),
+          'megabits per second',
+        );
+
+    // Units attached to numbers (e.g. 10μF, 5V, 4A, 2kg, 30kJ, 500Hz)
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:μ|u|mu|micro)\s*F\b', caseSensitive: false),
+      (m) => '${m[1]} microfarads',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:nF)\b'),
+      (m) => '${m[1]} nanofarads',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:pF)\b'),
+      (m) => '${m[1]} picofarads',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:mF)\b'),
+      (m) => '${m[1]} millifarads',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:kHz)\b', caseSensitive: false),
+      (m) => '${m[1]} kilohertz',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:MHz)\b'),
+      (m) => '${m[1]} megahertz',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:GHz)\b'),
+      (m) => '${m[1]} gigahertz',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:Hz)\b', caseSensitive: false),
+      (m) => '${m[1]} hertz',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:kJ)\b', caseSensitive: false),
+      (m) => '${m[1]} kilojoules',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:mJ)\b'),
+      (m) => '${m[1]} millijoules',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:MJ)\b'),
+      (m) => '${m[1]} megajoules',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*J\b'),
+      (m) => '${m[1]} joules',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:kN)\b', caseSensitive: false),
+      (m) => '${m[1]} kilonewtons',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*N\b'),
+      (m) => '${m[1]} newtons',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:kW)\b', caseSensitive: false),
+      (m) => '${m[1]} kilowatts',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:MW)\b'),
+      (m) => '${m[1]} megawatts',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*W\b'),
+      (m) => '${m[1]} watts',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:kΩ|kOmega)\b', caseSensitive: false),
+      (m) => '${m[1]} kilo-ohms',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:MΩ|MOmega)\b'),
+      (m) => '${m[1]} mega-ohms',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:Ω|Omega|ohms?)\b', caseSensitive: false),
+      (m) => '${m[1]} ohms',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:kV)\b', caseSensitive: false),
+      (m) => '${m[1]} kilovolts',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:mV)\b'),
+      (m) => '${m[1]} millivolts',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*V\b'),
+      (m) => '${m[1]} volts',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:mA)\b'),
+      (m) => '${m[1]} milliamperes',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*A\b'),
+      (m) => '${m[1]} amperes',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*T\b'),
+      (m) => '${m[1]} teslas',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:kg)\b', caseSensitive: false),
+      (m) => '${m[1]} kilograms',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:mg)\b', caseSensitive: false),
+      (m) => '${m[1]} milligrams',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:km)\b', caseSensitive: false),
+      (m) => '${m[1]} kilometers',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:cm)\b', caseSensitive: false),
+      (m) => '${m[1]} centimeters',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:mm)\b', caseSensitive: false),
+      (m) => '${m[1]} millimeters',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:nm)\b', caseSensitive: false),
+      (m) => '${m[1]} nanometers',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*m\b'),
+      (m) => '${m[1]} meters',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:mL)\b', caseSensitive: false),
+      (m) => '${m[1]} milliliters',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*L\b'),
+      (m) => '${m[1]} liters',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*(?:ms)\b'),
+      (m) => '${m[1]} milliseconds',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'(\d+(?:\.\d+)?)\s*s\b'),
+      (m) => '${m[1]} seconds',
+    );
+
+    return text;
   }
 
   /// Converts a fenced code block into speech-friendly conversational English.

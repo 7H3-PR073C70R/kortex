@@ -13,6 +13,7 @@ import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/study_rooms/data/client/ephemeral_presence_client.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_room_entity.dart';
 import 'package:kortex/src/features/study_rooms/domain/repositories/ephemeral_room_repository.dart';
@@ -3033,13 +3034,28 @@ class _RoomControlDrawer extends StatelessWidget {
                   const SizedBox(height: 18),
 
                   // Voice Pod & Audio Presence
-                  _buildSectionHeader('VOICE POD', Icons.mic_rounded),
+                  _buildSectionHeader(
+                    'VOICE POD',
+                    Icons.mic_rounded,
+                    isPro: !(locator.isRegistered<SubscriptionGuard>() &&
+                        locator<SubscriptionGuard>().canBroadcastRoomVoice()),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
                         child: ShrinkableButton(
-                          onTap: () {
+                          onTap: () async {
+                            final guard = locator.isRegistered<SubscriptionGuard>()
+                                ? locator<SubscriptionGuard>()
+                                : SubscriptionGuard();
+                            if (!guard.canBroadcastRoomVoice()) {
+                              final upgraded = await guard.requirePro(
+                                context,
+                                featureName: 'Live Voice Pod Broadcasting',
+                              );
+                              if (!upgraded) return;
+                            }
                             if (state.isVoicePodEnabled) {
                               unawaited(cubit.toggleMicMute());
                             } else {
@@ -3249,7 +3265,7 @@ class _RoomControlDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(String title, IconData icon, {bool isPro = false}) {
     return Row(
       children: [
         Icon(icon, size: 13, color: colors.primary),
@@ -3262,6 +3278,26 @@ class _RoomControlDrawer extends StatelessWidget {
             letterSpacing: 0.8,
           ),
         ),
+        if (isPro) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [colors.primary, colors.primary.withAlpha(200)],
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              'PRO',
+              style: typography.caption.bold.copyWith(
+                color: Colors.white,
+                fontSize: 8.5,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

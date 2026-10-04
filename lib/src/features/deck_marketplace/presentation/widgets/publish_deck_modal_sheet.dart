@@ -11,6 +11,7 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/services/content_safety_moderation_service.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
 import 'package:kortex/src/features/decks/data/models/deck_model.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -45,7 +46,20 @@ class PublishDeckModalSheet extends HookWidget {
       List<Map<String, dynamic>> cardsJson,
     })
     onSubmit,
-  }) {
+  }) async {
+    final guard = locator.isRegistered<SubscriptionGuard>()
+        ? locator<SubscriptionGuard>()
+        : SubscriptionGuard();
+    if (!guard.canPublishToMarketplace()) {
+      final upgraded = await guard.requirePro(
+        context,
+        featureName: 'Publish to Marketplace',
+      );
+      if (!upgraded) return;
+    }
+
+    if (!context.mounted) return;
+
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -164,6 +178,24 @@ class PublishDeckModalSheet extends HookWidget {
                       'Share Deck to Marketplace',
                       style: typography.title2.bold.copyWith(
                         color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [colors.primary, colors.primary.withAlpha(200)],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: Text(
+                        'PRO',
+                        style: typography.caption.bold.copyWith(
+                          color: Colors.white,
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                        ),
                       ),
                     ),
                   ],

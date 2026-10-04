@@ -495,10 +495,14 @@ class _FormattedMessageBody extends StatelessWidget {
         color: colors.textPrimary,
         fontSize: 13,
       ),
+      tableHeadAlign: TextAlign.left,
       tableBorder: TableBorder.all(
         color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
       ),
-      tablePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      tableColumnWidth: const IntrinsicColumnWidth(),
+      tableCellsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      tablePadding: const EdgeInsets.all(8),
+      tableScrollbarThumbVisibility: true,
     );
 
     final widgets = <Widget>[];
@@ -525,7 +529,8 @@ class _FormattedMessageBody extends StatelessWidget {
         widgets
           ..add(
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 color: isDark
                     ? colors.black.withAlpha(40)
@@ -535,15 +540,10 @@ class _FormattedMessageBody extends StatelessWidget {
                   color: colors.surfaceBorder.withAlpha(80),
                 ),
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: MarkdownBody(
-                    data: tableText,
-                    styleSheet: markdownStyleSheet,
-                  ),
-                ),
+              clipBehavior: Clip.antiAlias,
+              child: MarkdownBody(
+                data: tableText,
+                styleSheet: markdownStyleSheet,
               ),
             ),
           )

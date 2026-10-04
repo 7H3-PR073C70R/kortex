@@ -8,11 +8,13 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/lms_import_data_source.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -509,44 +511,88 @@ class LmsImportModalSheet extends HookWidget {
 
                     // Loaded Courses List
                     if (state.lmsCourses.isNotEmpty) ...[
-                      Text(
-                        'Available Courses (${state.lmsCourses.length})',
-                        style: typography.callout.bold.copyWith(
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: state.lmsCourses.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final course = state.lmsCourses[index];
-                          return _LmsCourseCard(
-                            course: course,
-                            isImporting:
-                                state.status == ProcessingStatus.parsingOcr &&
-                                state.selectedCourse?.id == course.id,
-                            onImport: () {
-                              AppFeedback.medium();
-                              final authToken =
-                                  connectedAccount.value?.accessToken ??
-                                  'demo_oauth_token';
-                              final domain =
-                                  connectedAccount.value?.canvasDomain ??
-                                  selectedInstitution.value;
+                      Builder(
+                        builder: (ctx) {
+                          final guard = locator.isRegistered<SubscriptionGuard>()
+                              ? locator<SubscriptionGuard>()
+                              : SubscriptionGuard();
+                          final isPro = guard.isPro;
 
-                              context.read<IngestionBloc>().add(
-                                ImportLmsCourseEvent(
-                                  platform: course.platform,
-                                  courseId: course.id,
-                                  authToken: authToken,
-                                  canvasDomain: domain,
-                                ),
-                              );
-                            },
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Available Courses (${state.lmsCourses.length})',
+                                    style: typography.callout.bold.copyWith(
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                  if (!isPro)
+                                    Text(
+                                      'Free Tier: 1 Course',
+                                      style: typography.caption.medium.copyWith(
+                                        color: colors.primary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: state.lmsCourses.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  final course = state.lmsCourses[index];
+                                  final isLocked = !isPro && index > 0;
+                                  return _LmsCourseCard(
+                                    course: course,
+                                    isLocked: isLocked,
+                                    isImporting:
+                                        state.status ==
+                                            ProcessingStatus.parsingOcr &&
+                                        state.selectedCourse?.id == course.id,
+                                    onImport: () async {
+                                      if (isLocked) {
+                                        final upgraded = await guard.requirePro(
+                                          context,
+                                          featureName:
+                                              'Multiple LMS Courses Sync',
+                                        );
+                                        if (!upgraded || !context.mounted) {
+                                          return;
+                                        }
+                                      }
+                                      AppFeedback.medium();
+                                      final authToken =
+                                          connectedAccount.value?.accessToken ??
+                                          'demo_oauth_token';
+                                      final domain =
+                                          connectedAccount
+                                              .value
+                                              ?.canvasDomain ??
+                                          selectedInstitution.value;
+
+                                      if (!context.mounted) return;
+                                      context.read<IngestionBloc>().add(
+                                        ImportLmsCourseEvent(
+                                          platform: course.platform,
+                                          courseId: course.id,
+                                          authToken: authToken,
+                                          canvasDomain: domain,
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
                           );
                         },
                       ),
@@ -562,16 +608,17 @@ class LmsImportModalSheet extends HookWidget {
   }
 }
 
-
 class _LmsCourseCard extends StatelessWidget {
   const _LmsCourseCard({
     required this.course,
     required this.isImporting,
     required this.onImport,
+    this.isLocked = false,
   });
 
   final LmsCourse course;
   final bool isImporting;
+  final bool isLocked;
   final VoidCallback onImport;
 
   @override
@@ -659,7 +706,7 @@ class _LmsCourseCard extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.primary,
+                          color: isLocked ? colors.primary.withAlpha(220) : colors.primary,
                           borderRadius: BorderRadius.circular(
                             AppRadius.card - 4,
                           ),
@@ -669,11 +716,24 @@ class _LmsCourseCard extends StatelessWidget {
                                 size: 16,
                                 color: colors.white,
                               )
-                            : Text(
-                                'Import',
-                                style: typography.caption.bold.copyWith(
-                                  color: colors.white,
-                                ),
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isLocked) ...[
+                                    const Icon(
+                                      Icons.lock_rounded,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    isLocked ? 'PRO' : 'Import',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.white,
+                                    ),
+                                  ),
+                                ],
                               ),
                       ),
                     ),

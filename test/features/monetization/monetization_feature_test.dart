@@ -71,6 +71,26 @@ void main() {
       expect(guard.isOfflineEntitlementValid(), isTrue);
     });
 
+    test('entitlement methods properly verify Pro privileges', () {
+      when(() => mockUserStorage.isProSubscriber()).thenReturn(false);
+      expect(guard.canAccessVoiceDialogue(), isFalse);
+      expect(guard.canConvertChatToDeck(), isFalse);
+      expect(guard.canTranscribeAudioLecture(), isFalse);
+      expect(guard.canPublishToMarketplace(), isFalse);
+      expect(guard.canBroadcastRoomVoice(), isFalse);
+      expect(guard.canSyncMultipleLmsCourses(0), isTrue);
+      expect(guard.canSyncMultipleLmsCourses(1), isFalse);
+
+      when(() => mockUserStorage.isProSubscriber()).thenReturn(true);
+      expect(guard.canAccessVoiceDialogue(), isTrue);
+      expect(guard.canConvertChatToDeck(), isTrue);
+      expect(guard.canTranscribeAudioLecture(), isTrue);
+      expect(guard.canPublishToMarketplace(), isTrue);
+      expect(guard.canBroadcastRoomVoice(), isTrue);
+      expect(guard.canSyncMultipleLmsCourses(1), isTrue);
+      expect(guard.canSyncMultipleLmsCourses(5), isTrue);
+    });
+
     test('RedeemPromoCodeUseCase delegates code to repository', () async {
       final mockRepo = MockPromoCodeRepository();
       final useCase = RedeemPromoCodeUseCase(mockRepo);

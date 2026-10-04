@@ -32,6 +32,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class QuizResultsPage extends StatefulWidget {
@@ -77,17 +78,41 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
           final orchestrator = locator<AssessmentOrchestratorService>();
           final activeTrack =
               context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+          final effectiveSubject = widget.courseCode?.trim().isNotEmpty == true
+              ? widget.courseCode!.trim()
+              : (widget.result.quizTitle.contains('(')
+                  ? widget.result.quizTitle.split('(').first.trim()
+                  : widget.result.quizTitle.trim());
+          final cleanSubject = effectiveSubject
+              .replaceAll(
+                RegExp(
+                  r'\s+(Diagnostic Quiz|Practice Quiz|Practice Test|Mock Exam|Quiz|Exam)\b',
+                  caseSensitive: false,
+                ),
+                '',
+              )
+              .trim();
+          final subjectToRecord =
+              cleanSubject.isNotEmpty ? cleanSubject : effectiveSubject;
+
           unawaited(
             orchestrator.processQuizCompletion(
               scorePercent: widget.result.scorePercent.toDouble(),
               totalQuestions: widget.result.totalQuestions,
               correctAnswers: widget.result.correctAnswers,
               questions: widget.questions,
-              userAnswers: widget.questions.map((q) => q.isCorrect ? 1 : 0).toList(),
-              courseCode: widget.courseCode,
-              explicitTrack: activeTrack ?? widget.courseCode,
+              userAnswers:
+                  widget.questions.map((q) => q.isCorrect ? 1 : 0).toList(),
+              courseCode: subjectToRecord,
+              explicitTrack: activeTrack ?? subjectToRecord,
             ),
           );
+        } on Object catch (_) {}
+      }
+
+      if (locator.isRegistered<DashboardBloc>()) {
+        try {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
         } on Object catch (_) {}
       }
 
@@ -624,92 +649,209 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                     ),
                   ),
                 )
-              else
-                ...result.weaknesses.asMap().entries.map((entry) {
-                  final weakness = entry.value;
-                  final acc = (weakness.accuracy * 100).toInt();
-                  final isWeak = weakness.isWeak;
-                  final badgeColor = isWeak ? colors.error : colors.success;
+              else ...[
+                () {
+                  final guard = locator.isRegistered<SubscriptionGuard>()
+                      ? locator<SubscriptionGuard>()
+                      : SubscriptionGuard();
+                  final isPro = guard.canAccessAiDiagnostics();
+                  final displayedWeaknesses = isPro
+                      ? result.weaknesses
+                      : result.weaknesses.take(1).toList();
+                  final hiddenCount =
+                      result.weaknesses.length - displayedWeaknesses.length;
 
-                  return QuizStaggeredFade(
-                    index: 1 + (entry.key % 6),
-                    distance: 10,
-                    reduceMotion: reduceMotion,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.surfaceSecondary
-                            : colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(
-                          color: isWeak
-                              ? colors.error.withValues(alpha: 0.3)
-                              : colors.surfaceBorder,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.black.withAlpha(isDark ? 20 : 4),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  return Column(
+                    children: [
+                      ...displayedWeaknesses.asMap().entries.map((entry) {
+                        final weakness = entry.value;
+                        final acc = (weakness.accuracy * 100).toInt();
+                        final isWeak = weakness.isWeak;
+                        final badgeColor =
+                            isWeak ? colors.error : colors.success;
+
+                        return QuizStaggeredFade(
+                          index: 1 + (entry.key % 6),
+                          distance: 10,
+                          reduceMotion: reduceMotion,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary
+                                  : colors.surfacePrimary,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
+                              border: Border.all(
+                                color: isWeak
+                                    ? colors.error.withValues(alpha: 0.3)
+                                    : colors.surfaceBorder,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.black.withAlpha(
+                                    isDark ? 20 : 4,
+                                  ),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  weakness.subTopic,
-                                  style: typography.body.bold.copyWith(
-                                    color: colors.textPrimary,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        weakness.subTopic,
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${weakness.correctCount} of '
+                                        '${weakness.totalQuestions} correct',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textMuted,
+                                            ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${weakness.correctCount} of '
-                                  '${weakness.totalQuestions} correct',
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.textMuted,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.badge,
+                                    ),
+                                    border: Border.all(
+                                      color: badgeColor.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '$acc%',
+                                    style: typography.caption.bold.copyWith(
+                                      color: badgeColor,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
+                        );
+                      }),
+                      if (hiddenCount > 0)
+                        QuizStaggeredFade(
+                          index: 2,
+                          distance: 10,
+                          reduceMotion: reduceMotion,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: badgeColor.withValues(alpha: 0.15),
+                              gradient: LinearGradient(
+                                colors: [
+                                  colors.primary.withAlpha(isDark ? 35 : 18),
+                                  if (isDark)
+                                    colors.surfaceSecondary
+                                  else
+                                    colors.surfacePrimary,
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(
-                                AppRadius.badge,
+                                AppRadius.card,
                               ),
                               border: Border.all(
-                                color: badgeColor.withValues(alpha: 0.4),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 80 : 50,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              '$acc%',
-                              style: typography.caption.bold.copyWith(
-                                color: badgeColor,
-                                fontSize: 13,
-                              ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(25),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.psychology_rounded,
+                                    color: colors.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '$hiddenCount more cognitive weakness breakdown${hiddenCount > 1 ? 's' : ''}',
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Unlock complete AI diagnostic insights and personalized weak-point flashcards',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ShrinkableButton(
+                                  onTap: () => guard.requirePro(
+                                    context,
+                                    featureName: 'Cognitive AI Diagnostics',
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.card - 4,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Unlock',
+                                      style: typography.caption.bold.copyWith(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                    ],
                   );
-                }),
+                }(),
+              ],
 
               // 4. What to look at next, framed forward instead of punitive.
               if (mistakes > 0) ...[

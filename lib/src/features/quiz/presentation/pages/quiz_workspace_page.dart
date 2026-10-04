@@ -65,7 +65,7 @@ class QuizWorkspacePage extends StatelessWidget {
       deckId: deckId,
       deckTitle: deckTitle ?? subject,
       courseId: courseId,
-      courseCode: courseCode,
+      courseCode: courseCode ?? subject,
       reviewMode: reviewMode,
     );
     try {
@@ -144,7 +144,10 @@ class _QuizWorkspaceView extends HookWidget {
     final isDark = context.isDarkMode;
 
     var effectiveCourseId = courseId;
-    var effectiveCourseCode = courseCode;
+    var effectiveCourseCode = courseCode ??
+        (deckTitle != null && deckTitle!.contains('(')
+            ? deckTitle!.split('(').first.trim()
+            : deckTitle);
 
     if (effectiveCourseId == null || effectiveCourseCode == null) {
       if (locator.isRegistered<DecksBloc>()) {
