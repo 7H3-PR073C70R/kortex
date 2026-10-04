@@ -126,17 +126,26 @@ class NotificationsCubit extends Cubit<NotificationsState> {
                 ))
             .toList();
 
+        // Deduplicate remote notifications by ID
+        final seenIds = <String>{};
+        final uniqueRemote = <NotificationItemEntity>[];
+        for (final item in remoteNotifications) {
+          if (seenIds.add(item.id)) {
+            uniqueRemote.add(item);
+          }
+        }
+
         // Persist to local storage
         if (localStore != null) {
           final encoded = jsonEncode(
-            remoteNotifications.map((n) => n.toJson()).toList(),
+            uniqueRemote.map((n) => n.toJson()).toList(),
           );
           unawaited(localStore.savePreference(key: _cacheKey, data: encoded));
         }
 
         emit(state.copyWith(
           status: NotificationsStatus.loaded,
-          notifications: remoteNotifications,
+          notifications: uniqueRemote,
         ));
         return;
       }
@@ -152,6 +161,15 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   }
 
   void addNotification(NotificationItemEntity notification) {
+    final alreadyExists = state.notifications.any(
+      (n) =>
+          n.id == notification.id ||
+          (n.title == notification.title &&
+              n.message == notification.message &&
+              n.timestamp.difference(notification.timestamp).abs().inMinutes < 5),
+    );
+    if (alreadyExists) return;
+
     final updated = [notification, ...state.notifications];
     emit(state.copyWith(notifications: updated));
     _persistCache(updated);

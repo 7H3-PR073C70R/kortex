@@ -109,8 +109,25 @@ class AuthRepositoryImpl implements AuthRepository {
             }
           }
           await _userStorageService.saveUserEmail(email);
+          final emailPrefix =
+              email.contains('@') ? email.split('@').first : '';
+          var resolvedEntity = entity;
+          if (entity.displayName != null &&
+              entity.displayName!.trim().isNotEmpty &&
+              entity.displayName!.trim() != emailPrefix) {
+            await _userStorageService.saveUserDisplayName(
+              entity.displayName!.trim(),
+            );
+          } else {
+            final storedName = _userStorageService.getUserDisplayName();
+            if (storedName != null &&
+                storedName.trim().isNotEmpty &&
+                storedName.trim() != emailPrefix) {
+              resolvedEntity = entity.copyWith(displayName: storedName.trim());
+            }
+          }
           _authStateController.add(AuthSessionStatus.authenticatedComplete);
-          return entity;
+          return resolvedEntity;
         })
         .makeRequest();
   }
@@ -142,10 +159,33 @@ class AuthRepositoryImpl implements AuthRepository {
             }
           }
           await _userStorageService.saveUserEmail(email);
+          final emailPrefix =
+              email.contains('@') ? email.split('@').first : '';
+          if (displayName != null &&
+              displayName.trim().isNotEmpty &&
+              displayName.trim() != emailPrefix) {
+            await _userStorageService.saveUserDisplayName(displayName.trim());
+          }
+          final storedName = _userStorageService.getUserDisplayName();
+          final effectiveName = (displayName != null &&
+                  displayName.trim().isNotEmpty &&
+                  displayName.trim() != emailPrefix)
+              ? displayName.trim()
+              : (storedName != null &&
+                      storedName.trim().isNotEmpty &&
+                      storedName.trim() != emailPrefix)
+                  ? storedName.trim()
+                  : null;
+          final resolvedEntity = (entity.displayName == null ||
+                  entity.displayName!.trim().isEmpty ||
+                  entity.displayName!.trim() == emailPrefix) &&
+                  effectiveName != null
+              ? entity.copyWith(displayName: effectiveName)
+              : entity;
           _authStateController.add(
             AuthSessionStatus.authenticatedNeedsOnboarding,
           );
-          return entity;
+          return resolvedEntity;
         })
         .makeRequest();
   }
@@ -215,8 +255,25 @@ class AuthRepositoryImpl implements AuthRepository {
             }
           }
           await _userStorageService.saveUserEmail(email);
+          final emailPrefix =
+              email.contains('@') ? email.split('@').first : '';
+          var resolvedEntity = entity;
+          if (entity.displayName != null &&
+              entity.displayName!.trim().isNotEmpty &&
+              entity.displayName!.trim() != emailPrefix) {
+            await _userStorageService.saveUserDisplayName(
+              entity.displayName!.trim(),
+            );
+          } else {
+            final storedName = _userStorageService.getUserDisplayName();
+            if (storedName != null &&
+                storedName.trim().isNotEmpty &&
+                storedName.trim() != emailPrefix) {
+              resolvedEntity = entity.copyWith(displayName: storedName.trim());
+            }
+          }
           _authStateController.add(AuthSessionStatus.authenticatedComplete);
-          return entity;
+          return resolvedEntity;
         })
         .makeRequest();
   }

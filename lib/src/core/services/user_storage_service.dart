@@ -226,29 +226,78 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   String? getUserDisplayName() {
+    final map = _decodeJwtPayload();
+    final metadata = map?['user_metadata'] as Map<String, dynamic>?;
+    final jwtName =
+        metadata?['display_name'] as String? ??
+        metadata?['full_name'] as String? ??
+        metadata?['name'] as String? ??
+        map?['display_name'] as String? ??
+        map?['full_name'] as String? ??
+        map?['name'] as String?;
+    final email = map?['email'] as String? ?? _cachedEmail;
+    final emailPrefix =
+        (email != null && email.contains('@')) ? email.split('@').first : '';
+
     if (_cachedDisplayName != null && _cachedDisplayName!.trim().isNotEmpty) {
-      return _cachedDisplayName!.trim();
+      final cached = _cachedDisplayName!.trim();
+      if (emailPrefix.isNotEmpty &&
+          cached == emailPrefix &&
+          jwtName != null &&
+          jwtName.trim().isNotEmpty &&
+          jwtName.trim() != emailPrefix) {
+        final cleanJwtName = jwtName.trim();
+        _cachedDisplayName = cleanJwtName;
+        unawaited(
+          _localStorageService.savePreference(
+            key: PrefKeys.userDisplayName,
+            data: cleanJwtName,
+          ),
+        );
+        return cleanJwtName;
+      }
+      return cached;
     }
+
     final fromStorage = _localStorageService.getPreference(
       key: PrefKeys.userDisplayName,
     );
     if (fromStorage != null && fromStorage.trim().isNotEmpty) {
-      return _cachedDisplayName = fromStorage.trim();
+      final stored = fromStorage.trim();
+      if (emailPrefix.isNotEmpty &&
+          stored == emailPrefix &&
+          jwtName != null &&
+          jwtName.trim().isNotEmpty &&
+          jwtName.trim() != emailPrefix) {
+        final cleanJwtName = jwtName.trim();
+        _cachedDisplayName = cleanJwtName;
+        unawaited(
+          _localStorageService.savePreference(
+            key: PrefKeys.userDisplayName,
+            data: cleanJwtName,
+          ),
+        );
+        return cleanJwtName;
+      }
+      return _cachedDisplayName = stored;
     }
-    final map = _decodeJwtPayload();
-    if (map == null) return null;
-    final metadata = map['user_metadata'] as Map<String, dynamic>?;
-    final name =
-        metadata?['display_name'] as String? ??
-        metadata?['full_name'] as String? ??
-        metadata?['name'] as String? ??
-        map['display_name'] as String? ??
-        map['full_name'] as String? ??
-        map['name'] as String?;
-    if (name != null && name.trim().isNotEmpty) return name.trim();
-    final email = map['email'] as String?;
-    if (email != null && email.contains('@')) {
-      return email.split('@').first;
+
+    if (jwtName != null && jwtName.trim().isNotEmpty) {
+      final cleanJwtName = jwtName.trim();
+      if (emailPrefix.isEmpty || cleanJwtName != emailPrefix) {
+        _cachedDisplayName = cleanJwtName;
+        unawaited(
+          _localStorageService.savePreference(
+            key: PrefKeys.userDisplayName,
+            data: cleanJwtName,
+          ),
+        );
+      }
+      return cleanJwtName;
+    }
+
+    if (emailPrefix.isNotEmpty) {
+      return emailPrefix;
     }
     return null;
   }
@@ -388,6 +437,7 @@ class UserStorageServiceImpl implements UserStorageService {
   @override
   Future<void> saveUserDisplayName(String displayName) async {
     final clean = displayName.trim();
+    if (clean.isEmpty) return;
     _cachedDisplayName = clean;
     try {
       await _localStorageService.savePreference(
@@ -416,11 +466,28 @@ class UserStorageServiceImpl implements UserStorageService {
   @override
   Future<void> saveUserProfile(UserProfileEntity profile) async {
     _cachedProfile = profile;
-    if (profile.displayName != null && profile.displayName!.trim().isNotEmpty) {
-      _cachedDisplayName = profile.displayName!.trim();
+    final incomingName = profile.displayName?.trim();
+    final emailPrefix =
+        profile.email.contains('@') ? profile.email.split('@').first : '';
+    if (incomingName != null &&
+        incomingName.isNotEmpty &&
+        incomingName != emailPrefix) {
+      _cachedDisplayName = incomingName;
+      try {
+        await _localStorageService.savePreference(
+          key: PrefKeys.userDisplayName,
+          data: incomingName,
+        );
+      } on Object catch (_) {}
     }
     if (profile.photoUrl != null && profile.photoUrl!.trim().isNotEmpty) {
       _cachedAvatarUrl = profile.photoUrl!.trim();
+      try {
+        await _localStorageService.savePreference(
+          key: PrefKeys.userAvatarUrl,
+          data: profile.photoUrl!.trim(),
+        );
+      } on Object catch (_) {}
     }
     try {
       final model = UserProfileModel(

@@ -10,6 +10,7 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -278,13 +279,36 @@ class _ProfileView extends HookWidget {
                                       ScholarHubCard(
                                         state: state,
                                         profile: profile,
-                                        onEditName: () =>
-                                            _showEditProfileDialog(
-                                              context,
+                                        onEditName: () {
+                                          final email = profile?.email ??
+                                              state.user?.email ??
+                                              '';
+                                          final emailPrefix = email.contains('@')
+                                              ? email.split('@').first
+                                              : '';
+                                          var initialName =
                                               profile?.displayName ??
                                                   state.user?.displayName ??
-                                                  '',
-                                            ),
+                                                  '';
+                                          if (initialName.isEmpty ||
+                                              (emailPrefix.isNotEmpty &&
+                                                  initialName == emailPrefix)) {
+                                            if (locator
+                                                .isRegistered<UserStorageService>()) {
+                                              final stored = locator<UserStorageService>()
+                                                  .getUserDisplayName();
+                                              if (stored != null &&
+                                                  stored.trim().isNotEmpty &&
+                                                  stored.trim() != emailPrefix) {
+                                                initialName = stored.trim();
+                                              }
+                                            }
+                                          }
+                                          _showEditProfileDialog(
+                                            context,
+                                            initialName,
+                                          );
+                                        },
                                       ),
                                       const SizedBox(height: 20),
 
@@ -453,8 +477,12 @@ class _ProfileView extends HookWidget {
           final newName = controller.text.trim();
           if (newName.isNotEmpty) {
             Navigator.of(context).pop();
-            // Immediate optimistic reflection
             context.read<AuthBloc>().add(AuthDisplayNameUpdated(newName));
+            if (locator.isRegistered<UserStorageService>()) {
+              unawaited(
+                locator<UserStorageService>().saveUserDisplayName(newName),
+              );
+            }
             final result = await locator<UpdateDisplayNameUseCase>()(newName);
             result.fold(
               (failure) {

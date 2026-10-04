@@ -30,4 +30,25 @@ class UserEntity extends Equatable {
     token,
     refreshToken,
   ];
+
+  UserEntity copyWith({
+    String? id,
+    String? email,
+    String? displayName,
+    String? photoUrl,
+    String? academicInstitution,
+    String? token,
+    String? refreshToken,
+  }) {
+    return UserEntity(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      photoUrl: photoUrl ?? this.photoUrl,
+      academicInstitution: academicInstitution ?? this.academicInstitution,
+      token: token ?? this.token,
+      refreshToken: refreshToken ?? this.refreshToken,
+    );
+  }
 }
+

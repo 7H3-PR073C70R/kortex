@@ -27,12 +27,20 @@ abstract class RegisterRequestModel with _$RegisterRequestModel {
   Map<String, dynamic> toJson() => {
     'email': email.trim(),
     'password': password,
-    if (displayName != null && displayName!.trim().isNotEmpty)
+    if (displayName != null && displayName!.trim().isNotEmpty) ...{
       'data': {
         'display_name': displayName!.trim(),
         'full_name': displayName!.trim(),
         'name': displayName!.trim(),
       },
+      'options': {
+        'data': {
+          'display_name': displayName!.trim(),
+          'full_name': displayName!.trim(),
+          'name': displayName!.trim(),
+        },
+      },
+    },
   };
 
   factory RegisterRequestModel.fromJson(Map<String, dynamic> json) =>

@@ -17,6 +17,7 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/chat_auth_message.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -273,10 +274,27 @@ class AuthChatView extends HookWidget {
       thinkingLabel.value = 'Creating your Kortexify neural profile...';
       scrollToBottom(animate: true);
 
-      final regEmail = draftState.email;
-      final regPassword = draftState.password;
-      final regName = draftState.displayName;
-      final regPromo = (promoOverride ?? draftState.promoCode).trim();
+      final currentDraft = context.read<AuthDraftCubit>().state;
+      final regEmail =
+          currentDraft.email.isNotEmpty ? currentDraft.email : draftState.email;
+      final regPassword = currentDraft.password.isNotEmpty
+          ? currentDraft.password
+          : draftState.password;
+      final regName = currentDraft.displayName.isNotEmpty
+          ? currentDraft.displayName
+          : draftState.displayName;
+      final regPromo = (promoOverride ??
+              (currentDraft.promoCode.isNotEmpty
+                  ? currentDraft.promoCode
+                  : draftState.promoCode))
+          .trim();
+
+      if (regName.trim().isNotEmpty &&
+          locator.isRegistered<UserStorageService>()) {
+        unawaited(
+          locator<UserStorageService>().saveUserDisplayName(regName.trim()),
+        );
+      }
 
       lastRetryDescription.value = 'Sign Up';
       lastRetryAction.value = () {
@@ -328,6 +346,11 @@ class AuthChatView extends HookWidget {
 
           addUserMessage(input);
           draftCubit.updateDisplayName(input);
+          if (locator.isRegistered<UserStorageService>()) {
+            unawaited(
+              locator<UserStorageService>().saveUserDisplayName(input.trim()),
+            );
+          }
           context.read<AuthModeCubit>().setFormType(AuthFormType.register);
           textController.clear();
           currentFlow.value = _ChatFlowStep.signUpEmail;

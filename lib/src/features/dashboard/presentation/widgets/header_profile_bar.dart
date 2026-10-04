@@ -10,6 +10,7 @@ import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
@@ -86,14 +87,31 @@ class HeaderProfileBar extends StatelessWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final authProfile = authState?.userProfile;
-    final effectiveName =
+    final email = authProfile?.email ?? authState?.user?.email ?? '';
+    final emailPrefix = email.contains('@') ? email.split('@').first : '';
+
+    var candidateName =
         userName ?? authProfile?.displayName ?? authState?.user?.displayName;
+    if (candidateName == null ||
+        candidateName.trim().isEmpty ||
+        (emailPrefix.isNotEmpty && candidateName.trim() == emailPrefix)) {
+      if (locator.isRegistered<UserStorageService>()) {
+        final storedName = locator<UserStorageService>().getUserDisplayName();
+        if (storedName != null &&
+            storedName.trim().isNotEmpty &&
+            storedName.trim() != emailPrefix) {
+          candidateName = storedName;
+        }
+      }
+    }
+
+    final effectiveName = candidateName;
     final effectivePhoto =
         userPhotoUrl ?? authProfile?.photoUrl ?? authState?.user?.photoUrl;
 
     final displayName =
         (effectiveName != null && effectiveName.trim().isNotEmpty)
-        ? effectiveName.trim().split(' ').first
+        ? effectiveName.trim().split(RegExp(r'\s+')).first
         : l10n.dashboardScholarFallback;
 
     final trimmedName = effectiveName?.trim() ?? '';

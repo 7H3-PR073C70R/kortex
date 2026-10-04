@@ -27,6 +27,7 @@ import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 /// Main authentication BLoC coordinating domain use cases and reactive state.
@@ -411,8 +412,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
+          final emailPrefix =
+              user.email.contains('@') ? user.email.split('@').first : '';
+          var resolvedUser = user;
+          if (event.displayName != null &&
+              event.displayName!.trim().isNotEmpty &&
+              event.displayName!.trim() != emailPrefix) {
+            resolvedUser =
+                user.copyWith(displayName: event.displayName!.trim());
+            if (locator.isRegistered<UserStorageService>()) {
+              unawaited(
+                locator<UserStorageService>().saveUserDisplayName(
+                  event.displayName!.trim(),
+                ),
+              );
+            }
+          }
           final hasActiveSession =
-              user.token != null && user.token!.trim().isNotEmpty;
+              resolvedUser.token != null &&
+              resolvedUser.token!.trim().isNotEmpty;
           if (hasActiveSession) {
             try {
               unawaited(
@@ -440,15 +458,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 status: AuthStatus.needsOnboarding,
                 sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
                 needsEmailVerification: false,
-                user: user,
+                user: resolvedUser,
               ),
             );
-            if (user.id.isNotEmpty) {
-              _syncDeviceToken(user.id);
+            if (resolvedUser.id.isNotEmpty) {
+              _syncDeviceToken(resolvedUser.id);
             }
             add(const AuthProfileFetchRequested());
           } else {
-            if (event.promoCode != null && event.promoCode!.trim().isNotEmpty) {
+            if (event.promoCode != null &&
+                event.promoCode!.trim().isNotEmpty) {
               try {
                 unawaited(
                   locator<LocalStorageService>().savePreference(
@@ -463,7 +482,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 status: AuthStatus.needsEmailVerification,
                 sessionStatus: AuthSessionStatus.unauthenticated,
                 needsEmailVerification: true,
-                user: user,
+                user: resolvedUser,
               ),
             );
           }
@@ -503,6 +522,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
+          final emailPrefix =
+              user.email.contains('@') ? user.email.split('@').first : '';
+          var resolvedUser = user;
+          if (locator.isRegistered<UserStorageService>()) {
+            final storedName =
+                locator<UserStorageService>().getUserDisplayName();
+            if ((resolvedUser.displayName == null ||
+                    resolvedUser.displayName!.trim().isEmpty ||
+                    resolvedUser.displayName!.trim() == emailPrefix) &&
+                storedName != null &&
+                storedName.trim().isNotEmpty &&
+                storedName.trim() != emailPrefix) {
+              resolvedUser =
+                  resolvedUser.copyWith(displayName: storedName.trim());
+            }
+          }
           // Only maintain isNewlyRegistered if explicitly initiated by a new registration
           final currentIsNew =
               locator<LocalStorageService>().getPreference(
@@ -540,14 +575,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               status: AuthStatus.needsOnboarding,
               sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
               needsEmailVerification: false,
-              user: user,
+              user: resolvedUser,
             ),
           );
-          if (user.id.isNotEmpty) {
+          if (resolvedUser.id.isNotEmpty) {
             try {
-              unawaited(RevenueCatService.instance.init(user.id));
+              unawaited(RevenueCatService.instance.init(resolvedUser.id));
             } on Object catch (_) {}
-            _syncDeviceToken(user.id);
+            _syncDeviceToken(resolvedUser.id);
           }
           add(const AuthProfileFetchRequested());
         },
@@ -673,6 +708,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (_) async {},
       (profile) async {
         var mergedProfile = profile;
+        final emailPrefix = mergedProfile.email.contains('@')
+            ? mergedProfile.email.split('@').first
+            : '';
+        if (locator.isRegistered<UserStorageService>()) {
+          final userStorage = locator<UserStorageService>();
+          final storedName = userStorage.getUserDisplayName();
+          final hasDefaultedName = mergedProfile.displayName == null ||
+              mergedProfile.displayName!.trim().isEmpty ||
+              (emailPrefix.isNotEmpty &&
+                  mergedProfile.displayName!.trim() == emailPrefix);
+          if (hasDefaultedName &&
+              storedName != null &&
+              storedName.trim().isNotEmpty &&
+              storedName.trim() != emailPrefix) {
+            mergedProfile =
+                mergedProfile.copyWith(displayName: storedName.trim());
+            if (locator.isRegistered<UpdateDisplayNameUseCase>()) {
+              try {
+                unawaited(
+                  locator<UpdateDisplayNameUseCase>()(storedName.trim()),
+                );
+              } on Object catch (_) {}
+            }
+          }
+          unawaited(userStorage.saveUserProfile(mergedProfile));
+        }
         try {
           final liveStreak = locator<UserActivityService>().getCurrentStreak();
           if (liveStreak > profile.streakDays) {
@@ -855,15 +916,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthDisplayNameUpdated event,
     Emitter<AuthState> emit,
   ) {
-    if (state.userProfile != null) {
-      emit(
-        state.copyWith(
-          userProfile: state.userProfile!.copyWith(
-            displayName: event.displayName,
-          ),
-        ),
+    if (locator.isRegistered<UserStorageService>()) {
+      unawaited(
+        locator<UserStorageService>().saveUserDisplayName(event.displayName),
       );
     }
+    final updatedProfile = state.userProfile?.copyWith(
+      displayName: event.displayName,
+    );
+    final updatedUser = state.user?.copyWith(
+      displayName: event.displayName,
+    );
+    emit(
+      state.copyWith(
+        userProfile: updatedProfile,
+        user: updatedUser,
+      ),
+    );
   }
 
   void _onStreakIncremented(
