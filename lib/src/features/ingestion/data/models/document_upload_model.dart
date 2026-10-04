@@ -14,19 +14,9 @@ class DocumentUploadModel {
     required this.createdAt,
     this.isDeduplicated = false,
     this.deckId,
+    this.courseId,
+    this.courseCode,
   });
-
-  final String id;
-  final String userId;
-  final String filename;
-  final String fileType;
-  final int fileSizeBytes;
-  final String storagePath;
-  final String contentHash;
-  final String processingStatus;
-  final DateTime createdAt;
-  final bool isDeduplicated;
-  final String? deckId;
 
   factory DocumentUploadModel.fromJson(
     Map<String, dynamic> json, {
@@ -45,8 +35,42 @@ class DocumentUploadModel {
       createdAt: DateTime.parse(json['created_at'] as String),
       isDeduplicated: isDeduplicated,
       deckId: deckId ?? json['deck_id'] as String?,
+      courseId: json['course_id'] as String?,
+      courseCode: json['course_code'] as String?,
     );
   }
+
+  factory DocumentUploadModel.fromEntity(DocumentUploadEntity entity) {
+    return DocumentUploadModel(
+      id: entity.id,
+      userId: entity.userId,
+      filename: entity.filename,
+      fileType: entity.fileType,
+      fileSizeBytes: entity.fileSizeBytes,
+      storagePath: entity.storagePath,
+      contentHash: entity.contentHash,
+      processingStatus: entity.status.nameString,
+      createdAt: entity.createdAt,
+      isDeduplicated: entity.isDeduplicated,
+      deckId: entity.deckId,
+      courseId: entity.courseId,
+      courseCode: entity.courseCode,
+    );
+  }
+
+  final String id;
+  final String userId;
+  final String filename;
+  final String fileType;
+  final int fileSizeBytes;
+  final String storagePath;
+  final String contentHash;
+  final String processingStatus;
+  final DateTime createdAt;
+  final bool isDeduplicated;
+  final String? deckId;
+  final String? courseId;
+  final String? courseCode;
 
   Map<String, dynamic> toJson() {
     return {
@@ -60,6 +84,8 @@ class DocumentUploadModel {
       'processing_status': processingStatus,
       'created_at': createdAt.toIso8601String(),
       if (deckId != null) 'deck_id': deckId,
+      if (courseId != null) 'course_id': courseId,
+      if (courseCode != null) 'course_code': courseCode,
     };
   }
 
@@ -76,22 +102,8 @@ class DocumentUploadModel {
       createdAt: createdAt,
       isDeduplicated: isDeduplicated,
       deckId: deckId,
-    );
-  }
-
-  static DocumentUploadModel fromEntity(DocumentUploadEntity entity) {
-    return DocumentUploadModel(
-      id: entity.id,
-      userId: entity.userId,
-      filename: entity.filename,
-      fileType: entity.fileType,
-      fileSizeBytes: entity.fileSizeBytes,
-      storagePath: entity.storagePath,
-      contentHash: entity.contentHash,
-      processingStatus: entity.status.nameString,
-      createdAt: entity.createdAt,
-      isDeduplicated: entity.isDeduplicated,
-      deckId: entity.deckId,
+      courseId: courseId,
+      courseCode: courseCode,
     );
   }
 }

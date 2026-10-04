@@ -16,6 +16,8 @@ class DocumentUploadEntity extends Equatable {
     required this.createdAt,
     this.isDeduplicated = false,
     this.deckId,
+    this.courseId,
+    this.courseCode,
   });
 
   final String id;
@@ -29,6 +31,8 @@ class DocumentUploadEntity extends Equatable {
   final DateTime createdAt;
   final bool isDeduplicated;
   final String? deckId;
+  final String? courseId;
+  final String? courseCode;
 
   DocumentUploadEntity copyWith({
     String? id,
@@ -42,6 +46,8 @@ class DocumentUploadEntity extends Equatable {
     DateTime? createdAt,
     bool? isDeduplicated,
     String? deckId,
+    String? courseId,
+    String? courseCode,
   }) {
     return DocumentUploadEntity(
       id: id ?? this.id,
@@ -55,6 +61,8 @@ class DocumentUploadEntity extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       isDeduplicated: isDeduplicated ?? this.isDeduplicated,
       deckId: deckId ?? this.deckId,
+      courseId: courseId ?? this.courseId,
+      courseCode: courseCode ?? this.courseCode,
     );
   }
 
@@ -71,5 +79,7 @@ class DocumentUploadEntity extends Equatable {
     createdAt,
     isDeduplicated,
     deckId,
+    courseId,
+    courseCode,
   ];
 }

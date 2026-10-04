@@ -1,92 +1,16 @@
-
-ALTER TABLE public.flashcards 
-    ADD COLUMN IF NOT EXISTS explanation TEXT,
-    ADD COLUMN IF NOT EXISTS image_url TEXT;
-
-CREATE TABLE IF NOT EXISTS public.canonical_documents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    content_hash TEXT UNIQUE NOT NULL,       -- SHA-256 of raw file
-    text_stream_hash TEXT,                  -- Optional normalized text hash
-    storage_path TEXT NOT NULL,             -- canonical/{content_hash}.pdf
-    file_size_bytes BIGINT NOT NULL DEFAULT 0,
-    file_type TEXT NOT NULL DEFAULT 'pdf',
-    processing_status TEXT NOT NULL DEFAULT 'processing' 
-        CHECK (processing_status IN ('processing', 'completed', 'failed', 'reprocess_required')),
-    reference_count INT NOT NULL DEFAULT 1,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_canonical_docs_hash ON public.canonical_documents(content_hash);
-CREATE INDEX IF NOT EXISTS idx_canonical_docs_text_hash ON public.canonical_documents(text_stream_hash);
-
-CREATE TABLE IF NOT EXISTS public.canonical_decks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    canonical_document_id UUID UNIQUE NOT NULL REFERENCES public.canonical_documents(id) ON DELETE CASCADE,
-    default_title TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    total_cards INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS public.canonical_cards (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    canonical_deck_id UUID NOT NULL REFERENCES public.canonical_decks(id) ON DELETE CASCADE,
-    order_index INT NOT NULL DEFAULT 0,
-    front TEXT NOT NULL,
-    back TEXT NOT NULL,
-    front_latex TEXT,
-    back_latex TEXT,
-    explanation TEXT,
-    image_url TEXT,
-    source_topic TEXT,
-    tags TEXT[] DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_canonical_cards_deck ON public.canonical_cards(canonical_deck_id);
-
-CREATE TABLE IF NOT EXISTS public.storage_cleanup_queue (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    bucket_id TEXT NOT NULL,
-    storage_path TEXT NOT NULL,
-    queued_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    processed_at TIMESTAMPTZ
-);
-
-CREATE INDEX IF NOT EXISTS idx_storage_cleanup_unprocessed 
-    ON public.storage_cleanup_queue(processed_at) 
-    WHERE processed_at IS NULL;
-
-ALTER TABLE public.decks 
-    ADD COLUMN IF NOT EXISTS canonical_deck_id UUID REFERENCES public.canonical_decks(id) ON DELETE SET NULL,
-    ADD COLUMN IF NOT EXISTS is_forked BOOLEAN NOT NULL DEFAULT false;
+-- ==============================================================================
+-- Migration: Add course_id and course_code columns to documents table
+-- Ensures compatibility with claim_or_create_document_preflight RPC and course-based document scoping
+-- ==============================================================================
 
 ALTER TABLE public.documents 
     ADD COLUMN IF NOT EXISTS course_id TEXT,
     ADD COLUMN IF NOT EXISTS course_code TEXT;
 
-CREATE INDEX IF NOT EXISTS idx_decks_canonical_deck_id ON public.decks(canonical_deck_id);
 CREATE INDEX IF NOT EXISTS idx_documents_course_id ON public.documents(course_id);
 CREATE INDEX IF NOT EXISTS idx_documents_course_code ON public.documents(course_code);
 
-ALTER TABLE public.canonical_documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.canonical_decks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.canonical_cards ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.storage_cleanup_queue ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Authenticated users can read canonical documents" ON public.canonical_documents;
-CREATE POLICY "Authenticated users can read canonical documents"
-    ON public.canonical_documents FOR SELECT TO authenticated USING (true);
-
-DROP POLICY IF EXISTS "Authenticated users can read canonical decks" ON public.canonical_decks;
-CREATE POLICY "Authenticated users can read canonical decks"
-    ON public.canonical_decks FOR SELECT TO authenticated USING (true);
-
-DROP POLICY IF EXISTS "Authenticated users can read canonical cards" ON public.canonical_cards;
-CREATE POLICY "Authenticated users can read canonical cards"
-    ON public.canonical_cards FOR SELECT TO authenticated USING (true);
-
+-- Refresh claim_or_create_document_preflight function
 CREATE OR REPLACE FUNCTION claim_or_create_document_preflight(
     p_content_hash TEXT,
     p_filename TEXT,
@@ -282,80 +206,6 @@ BEGIN
         'canonical_doc_id', v_canonical.id,
         'user_doc_id', v_existing_user_doc.id,
         'storage_path', v_canonical.storage_path
-    );
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION handle_document_ref_decrement()
-RETURNS TRIGGER AS $$
-DECLARE
-    v_rem_refs INT;
-    v_storage_path TEXT;
-    v_content_hash TEXT := OLD.content_hash;
-BEGIN
-    IF v_content_hash IS NULL THEN
-        RETURN OLD;
-    END IF;
-
-    UPDATE canonical_documents
-    SET reference_count = reference_count - 1,
-        updated_at = now()
-    WHERE content_hash = v_content_hash
-    RETURNING reference_count, storage_path INTO v_rem_refs, v_storage_path;
-
-    IF v_rem_refs IS NOT NULL AND v_rem_refs <= 0 THEN
-        IF v_storage_path IS NOT NULL THEN
-            INSERT INTO storage_cleanup_queue (bucket_id, storage_path)
-            VALUES ('study-documents', v_storage_path);
-        END IF;
-
-        INSERT INTO storage_cleanup_queue (bucket_id, storage_path)
-        VALUES ('card-assets', 'canonical/' || v_content_hash);
-
-        DELETE FROM canonical_documents WHERE content_hash = v_content_hash;
-    END IF;
-
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS trg_decrement_doc_ref ON public.documents;
-CREATE TRIGGER trg_decrement_doc_ref
-AFTER DELETE ON public.documents
-FOR EACH ROW EXECUTE FUNCTION handle_document_ref_decrement();
-
-CREATE OR REPLACE FUNCTION purge_orphaned_storage_files(p_batch_limit INT DEFAULT 50)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, storage
-AS $$
-DECLARE
-    v_item RECORD;
-    v_purged_count INT := 0;
-BEGIN
-    FOR v_item IN 
-        SELECT id, bucket_id, storage_path 
-        FROM storage_cleanup_queue 
-        WHERE processed_at IS NULL 
-        ORDER BY queued_at ASC 
-        LIMIT p_batch_limit 
-        FOR UPDATE SKIP LOCKED
-    LOOP
-        DELETE FROM storage.objects
-        WHERE bucket_id = v_item.bucket_id
-          AND (name = v_item.storage_path OR name LIKE v_item.storage_path || '/%');
-
-        UPDATE storage_cleanup_queue
-        SET processed_at = now()
-        WHERE id = v_item.id;
-
-        v_purged_count := v_purged_count + 1;
-    END LOOP;
-
-    RETURN jsonb_build_object(
-        'purged_count', v_purged_count,
-        'batch_limit', p_batch_limit
     );
 END;
 $$;
