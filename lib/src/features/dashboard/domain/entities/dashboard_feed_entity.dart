@@ -56,7 +56,7 @@ class CuratedCourseEntity extends Equatable {
     required this.iconName,
     required this.colorHex,
     this.pdfDownloadUrl,
-    this.syllabusCoverage = 0.75,
+    this.syllabusCoverage = 0.0,
     this.accuracyPercent,
     this.retentionRate,
   });

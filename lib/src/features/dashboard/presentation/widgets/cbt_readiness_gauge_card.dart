@@ -423,7 +423,9 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              '${widget.readinessResult.subjectBreakdowns.length} Enrolled Courses',
+                              widget.readinessResult.isFullyCalibrated
+                                  ? '${widget.readinessResult.subjectBreakdowns.length} Enrolled Courses'
+                                  : '${widget.readinessResult.calibratedCourseCount}/${widget.readinessResult.totalCourseCount} Calibrated',
                               style: typography.caption.bold.copyWith(color: colors.primary, fontSize: 11),
                             ),
                           ),
@@ -446,66 +448,148 @@ class _CbtReadinessGaugeCardState extends State<CbtReadinessGaugeCard>
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      sub.subjectName,
-                                      style: typography.body.bold.copyWith(color: colors.textPrimary),
+                                    child: Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            sub.subjectName,
+                                            style: typography.body.bold.copyWith(color: colors.textPrimary),
+                                          ),
+                                        ),
+                                        if (!sub.isCalibrated) ...[
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: colors.warning.withAlpha(25),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: colors.warning.withAlpha(100),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              'Diagnostic Required',
+                                              style: typography.caption.bold.copyWith(
+                                                color: colors.warning,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
                                   Text(
-                                    sub.projectedGrade.isNotEmpty
-                                        ? (sub.projectedGrade.endsWith('pts')
-                                            ? '${sub.projectedScore} / ${sub.maxScore} pts'
-                                            : '${sub.projectedScore}% • ${sub.projectedGrade}')
-                                        : '${sub.projectedScore} / ${sub.maxScore}',
+                                    sub.isCalibrated
+                                        ? (sub.projectedGrade.isNotEmpty
+                                            ? (sub.projectedGrade.endsWith('pts')
+                                                ? '${sub.projectedScore} / ${sub.maxScore} pts'
+                                                : '${sub.projectedScore}% • ${sub.projectedGrade}')
+                                            : '${sub.projectedScore} / ${sub.maxScore}')
+                                        : 'Pending Diagnostic',
                                     style: typography.body.bold.copyWith(
-                                      color: sub.statusColor ?? colors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Syllabus: ${(sub.coveragePercent * 100).round()}%',
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Accuracy: ${(sub.accuracyPercent * 100).round()}%',
-                                    style: typography.caption.regular.copyWith(
-                                      color: colors.textSecondary,
-                                      fontSize: 11,
+                                      color: sub.isCalibrated
+                                          ? (sub.statusColor ?? colors.primary)
+                                          : colors.textSecondary,
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(AppRadius.micro),
-                                      child: LinearProgressIndicator(
-                                        value: sub.readinessPercent / 100.0,
-                                        minHeight: 6,
-                                        backgroundColor: colors.surfaceBorder.withAlpha(60),
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          sub.statusColor ?? colors.primary,
+                              if (sub.isCalibrated) ...[
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Syllabus: ${(sub.coveragePercent * 100).round()}%',
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Accuracy: ${(sub.accuracyPercent * 100).round()}%',
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(AppRadius.micro),
+                                        child: LinearProgressIndicator(
+                                          value: sub.readinessPercent / 100.0,
+                                          minHeight: 6,
+                                          backgroundColor: colors.surfaceBorder.withAlpha(60),
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            sub.statusColor ?? colors.primary,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    '${sub.readinessPercent}%',
-                                    style: typography.caption.bold.copyWith(color: colors.textSecondary),
-                                  ),
-                                ],
-                              ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      '${sub.readinessPercent}%',
+                                      style: typography.caption.bold.copyWith(color: colors.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              ] else ...[
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'No quiz or study activity recorded yet for this course.',
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                    InkWell(
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        final prompt =
+                                            "Let's do a 10-item diagnostic quiz for ${sub.subjectName} to assess my baseline accuracy and calibrate my ${widget.examTitle} readiness index.";
+                                        unawaited(
+                                          context.router.push(
+                                            SyllabotChatRoute(initialPrompt: prompt),
+                                          ),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: colors.primary.withAlpha(25),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: colors.primary.withAlpha(100)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.play_arrow_rounded, size: 14, color: colors.primary),
+                                            const SizedBox(width: 2),
+                                            Text(
+                                              'Take Diagnostic',
+                                              style: typography.caption.bold.copyWith(
+                                                color: colors.primary,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),

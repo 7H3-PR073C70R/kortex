@@ -153,7 +153,7 @@ class _AcademicTrackSettingsView extends HookWidget {
                   children: [
                     Text(
                       'Calibrate your academic focus, exam countdown, and '
-                      'FSRS daily retention targets.',
+                      'daily memory retention targets.',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         fontSize: 12.5,
@@ -266,7 +266,7 @@ class _AcademicTrackSettingsView extends HookWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'FSRS Tuning & Daily Reminders',
+                                      'Study Pace & Daily Reminders',
                                       style: typography.body.bold.copyWith(
                                         color: colors.textPrimary,
                                         fontSize: 14,

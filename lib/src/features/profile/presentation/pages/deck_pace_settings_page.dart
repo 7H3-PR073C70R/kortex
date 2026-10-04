@@ -164,7 +164,7 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              'Configure daily review workload, FSRS-6 algorithm retention targets, and notification schedules in one place.',
+                              'Configure daily review workload, target memory retention, and study reminder schedules in one place.',
                               style: typography.footnote.regular.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 12.5,
@@ -289,12 +289,15 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Target Recall Retention Rate',
-                            style: typography.body.medium.copyWith(
-                              color: colors.textPrimary,
+                          Expanded(
+                            child: Text(
+                              'Target Recall Retention Rate',
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             '$retentionPercent%',
                             style: typography.title3.bold.copyWith(
@@ -337,7 +340,7 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'FSRS Interval Multiplier: ${intervalMultiplier}x relative to baseline',
+                        'Review Frequency: ${intervalMultiplier}x of standard pace',
                         style: typography.footnote.medium.copyWith(
                           color: colors.textSecondary,
                           fontSize: 11.5,
@@ -346,104 +349,140 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
                       const Divider(height: 28),
 
                       // New Cards Per Day
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Daily New Cards Target',
-                                style: typography.body.medium.copyWith(
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                'New flashcards introduced daily per deck',
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11.5,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'Daily New Cards Target',
+                            style: typography.body.medium.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          DropdownButton<int>(
-                            value: _newCardsPerDay,
-                            dropdownColor: colors.surfacePrimary,
-                            items: [5, 10, 15, 20, 30, 40, 50, 100].map((count) {
-                              return DropdownMenuItem<int>(
-                                value: count,
-                                child: Text(
-                                  '$count / day',
-                                  style: typography.body.medium.copyWith(
-                                    color: colors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'New flashcards introduced daily per deck',
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceSecondary,
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: colors.surfaceBorder.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: _newCardsPerDay,
+                                isExpanded: true,
+                                dropdownColor: colors.surfacePrimary,
+                                icon: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: colors.textSecondary,
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _newCardsPerDay = val;
-                                  _selectedPreset = DeckPacePreset.custom;
-                                });
-                              }
-                            },
+                                items: [5, 10, 15, 20, 30, 40, 50, 100].map((count) {
+                                  return DropdownMenuItem<int>(
+                                    value: count,
+                                    child: Text(
+                                      '$count / day',
+                                      style: typography.body.medium.copyWith(
+                                        color: colors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      _newCardsPerDay = val;
+                                      _selectedPreset = DeckPacePreset.custom;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
+                      const Divider(height: 28),
 
                       // Max Reviews Per Day
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Daily Review Cap',
-                                style: typography.body.medium.copyWith(
-                                  color: colors.textPrimary,
-                                ),
-                              ),
-                              Text(
-                                'Maximum review cards due per deck daily',
-                                style: typography.caption.regular.copyWith(
-                                  color: colors.textSecondary,
-                                  fontSize: 11.5,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'Daily Review Cap',
+                            style: typography.body.medium.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          DropdownButton<int>(
-                            value: _maxReviewsPerDay,
-                            dropdownColor: colors.surfacePrimary,
-                            items: [25, 50, 100, 150, 200, 300, 500].map((cap) {
-                              return DropdownMenuItem<int>(
-                                value: cap,
-                                child: Text(
-                                  '$cap / day',
-                                  style: typography.body.medium.copyWith(
-                                    color: colors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Maximum review cards due per deck daily',
+                            style: typography.caption.regular.copyWith(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.surfaceSecondary,
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: colors.surfaceBorder.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: _maxReviewsPerDay,
+                                isExpanded: true,
+                                dropdownColor: colors.surfacePrimary,
+                                icon: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: colors.textSecondary,
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _maxReviewsPerDay = val;
-                                  _selectedPreset = DeckPacePreset.custom;
-                                });
-                              }
-                            },
+                                items: [25, 50, 100, 150, 200, 300, 500].map((cap) {
+                                  return DropdownMenuItem<int>(
+                                    value: cap,
+                                    child: Text(
+                                      '$cap / day',
+                                      style: typography.body.medium.copyWith(
+                                        color: colors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      _maxReviewsPerDay = val;
+                                      _selectedPreset = DeckPacePreset.custom;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      const Divider(height: 24),
+                      const Divider(height: 28),
 
                       // Soft Catch-up Toggle
                       Row(

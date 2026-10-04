@@ -409,5 +409,93 @@ void main() {
         expect(result.projectedScoreRange, contains('Credits'));
       },
     );
+
+    test(
+      'Returns DIAGNOSTIC PENDING with 0 score when user has newly registered courses and zero activity',
+      () {
+        final freshCourses = [
+          const RegisteredCourseInput(
+            courseCode: 'ENG',
+            title: 'Use of English',
+            syllabusCoverage: 0,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'MTH',
+            title: 'Mathematics',
+            syllabusCoverage: 0,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'PHY',
+            title: 'Physics',
+            syllabusCoverage: 0,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'CHM',
+            title: 'Chemistry',
+            syllabusCoverage: 0,
+          ),
+        ];
+
+        final result = calculator.compute(
+          syllabusCoverage: 0,
+          fsrsRetentionRate: 0,
+          mockScoreRatio: 0,
+          daysRemaining: 45,
+          examType: 'JAMB',
+          registeredCourses: freshCourses,
+        );
+
+        expect(result.scorePercent, equals(0));
+        expect(result.projectedTotalScore, equals(0));
+        expect(result.statusLabel, equals('DIAGNOSTIC PENDING'));
+        expect(result.projectedScoreRange, contains('Diagnostics Pending'));
+        expect(result.calibratedCourseCount, equals(0));
+        expect(result.totalCourseCount, equals(4));
+        expect(result.isFullyCalibrated, isFalse);
+
+        for (final sub in result.subjectBreakdowns) {
+          expect(sub.isCalibrated, isFalse);
+          expect(sub.diagnosticCta, equals('Take 10-Item Diagnostic'));
+          expect(sub.projectedGrade, equals('Uncalibrated'));
+        }
+      },
+    );
+
+    test(
+      'Correctly tracks calibratedCourseCount and partial calibration status',
+      () {
+        final courses = [
+          const RegisteredCourseInput(
+            courseCode: 'ENG',
+            title: 'Use of English',
+            syllabusCoverage: 0.80,
+            accuracyPercent: 0.85,
+            retentionRate: 0.82,
+          ),
+          const RegisteredCourseInput(
+            courseCode: 'MTH',
+            title: 'Mathematics',
+            syllabusCoverage: 0,
+          ),
+        ];
+
+        final result = calculator.compute(
+          syllabusCoverage: 0.40,
+          fsrsRetentionRate: 0.82,
+          mockScoreRatio: 0.85,
+          daysRemaining: 30,
+          examType: 'JAMB',
+          registeredCourses: courses,
+        );
+
+        expect(result.calibratedCourseCount, equals(1));
+        expect(result.totalCourseCount, equals(2));
+        expect(result.isFullyCalibrated, isFalse);
+        expect(result.subjectBreakdowns[0].isCalibrated, isTrue);
+        expect(result.subjectBreakdowns[1].isCalibrated, isFalse);
+        expect(result.subjectBreakdowns[1].diagnosticCta, equals('Take 10-Item Diagnostic'));
+        expect(result.projectedScoreRange, contains('1 of 2 Calibrated'));
+      },
+    );
   });
 }

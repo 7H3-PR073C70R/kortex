@@ -221,7 +221,7 @@ class AboutSupportPage extends StatelessWidget {
               _buildLinkCard(
                 icon: Icons.help_outline_rounded,
                 title: 'Documentation & Knowledgebase',
-                subtitle: 'Guides on Syllabot AI and FSRS spaced repetition',
+                subtitle: 'Guides on Syllabot AI and smart memory retention',
                 onTap: () => _launchExternalUrl(context, docsUrl),
                 colors: colors,
                 typography: typography,

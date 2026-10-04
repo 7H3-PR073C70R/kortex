@@ -661,18 +661,37 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
       );
       realSyllabusCoverage = (total / feed.curatedCourses.length).clamp(0.0, 1.0);
     } else {
-      realSyllabusCoverage =
-          (feed.analyticsSummary.overallRetentionRate * 0.95).clamp(0.0, 1.0);
+      realSyllabusCoverage = 0.0;
     }
+
+    Map<String, double> subjectAccuracies = const {};
+    Map<String, double> subjectRetentions = const {};
+    double realMockScoreRatio = 0.0;
+
+    try {
+      if (locator.isRegistered<UserActivityService>()) {
+        final activityService = locator<UserActivityService>();
+        final metrics = activityService.getQuizPerformanceMetrics();
+        subjectAccuracies = metrics.subjectAccuracies;
+        subjectRetentions = metrics.subjectRetentions;
+        if (metrics.totalQuizSessions > 0) {
+          realMockScoreRatio = metrics.overallMockAccuracy;
+        } else if (feed.analyticsSummary.overallRetentionRate > 0.0) {
+          // If student has card retention data from flashcards, use as baseline
+          realMockScoreRatio = feed.analyticsSummary.overallRetentionRate;
+        }
+      }
+    } on Object catch (_) {}
 
     final readinessResult = const CbtReadinessCalculator().compute(
       syllabusCoverage: realSyllabusCoverage,
       fsrsRetentionRate: feed.analyticsSummary.overallRetentionRate,
-      mockScoreRatio: (feed.analyticsSummary.overallRetentionRate * 0.92)
-          .clamp(0.0, 1.0),
+      mockScoreRatio: realMockScoreRatio,
       daysRemaining: effectiveDaysRemaining,
       registeredCourses: feed.curatedCourses,
       examType: effectiveExamType,
+      subjectAccuracies: subjectAccuracies,
+      subjectRetentions: subjectRetentions,
     );
 
     return CbtReadinessGaugeCard(

@@ -78,6 +78,12 @@ abstract class UserActivityService {
   Stream<XpEarnedEvent> get xpEarnedStream;
   Map<String, ({int totalItems, double avgRetention, int minutes})>
       getSubjectBreakdown();
+  ({
+    Map<String, double> subjectAccuracies,
+    Map<String, double> subjectRetentions,
+    double overallMockAccuracy,
+    int totalQuizSessions,
+  }) getQuizPerformanceMetrics();
 
   int getCurrentStreak();
   int getLongestStreak();
@@ -383,6 +389,73 @@ class UserActivityServiceImpl implements UserActivityService {
       );
     }
     return result;
+  }
+
+  @override
+  ({
+    Map<String, double> subjectAccuracies,
+    Map<String, double> subjectRetentions,
+    double overallMockAccuracy,
+    int totalQuizSessions,
+  }) getQuizPerformanceMetrics() {
+    final sessions = _getSessions();
+    final quizSessions = sessions.where((s) {
+      final cat =
+          (s['category'] ?? s['activityCategory'])?.toString().toLowerCase();
+      return cat == 'quiz' || cat == 'cbt_mock' || cat == 'exam';
+    }).toList();
+
+    final subjectAccSum = <String, double>{};
+    final subjectCount = <String, int>{};
+    final subjectRetSum = <String, double>{};
+    final subjectRetCount = <String, int>{};
+
+    var totalQuizScoreSum = 0.0;
+
+    for (final s in quizSessions) {
+      final subj = (s['subject'] as String?)?.trim();
+      final score = (s['retentionScore'] as num?)?.toDouble() ?? 0.0;
+      totalQuizScoreSum += score;
+
+      if (subj != null && subj.isNotEmpty) {
+        final key = subj.toLowerCase();
+        subjectAccSum[key] = (subjectAccSum[key] ?? 0.0) + score;
+        subjectCount[key] = (subjectCount[key] ?? 0) + 1;
+      }
+    }
+
+    for (final s in sessions) {
+      final subj = (s['subject'] as String?)?.trim();
+      final score = (s['retentionScore'] as num?)?.toDouble() ?? 0.0;
+      if (subj != null && subj.isNotEmpty) {
+        final key = subj.toLowerCase();
+        subjectRetSum[key] = (subjectRetSum[key] ?? 0.0) + score;
+        subjectRetCount[key] = (subjectRetCount[key] ?? 0) + 1;
+      }
+    }
+
+    final accMap = <String, double>{};
+    for (final entry in subjectAccSum.entries) {
+      final count = subjectCount[entry.key] ?? 1;
+      accMap[entry.key] = (entry.value / count).clamp(0.0, 1.0);
+    }
+
+    final retMap = <String, double>{};
+    for (final entry in subjectRetSum.entries) {
+      final count = subjectRetCount[entry.key] ?? 1;
+      retMap[entry.key] = (entry.value / count).clamp(0.0, 1.0);
+    }
+
+    final overallMock = quizSessions.isNotEmpty
+        ? (totalQuizScoreSum / quizSessions.length).clamp(0.0, 1.0)
+        : 0.0;
+
+    return (
+      subjectAccuracies: accMap,
+      subjectRetentions: retMap,
+      overallMockAccuracy: overallMock,
+      totalQuizSessions: quizSessions.length,
+    );
   }
 
   @override

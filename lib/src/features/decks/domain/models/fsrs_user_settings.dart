@@ -5,7 +5,7 @@ enum DeckPacePreset {
   relaxed('Relaxed', '80% target retention • Light daily workload', 0.80, 10, 50),
   balanced('Balanced', '90% target retention • Optimal recall efficiency', 0.90, 20, 100),
   intensive('Intensive', '95% target retention • Fast-track exam prep', 0.95, 40, 200),
-  custom('Custom FSRS-6', 'Fine-tuned parameters & custom review bounds', 0.90, 20, 100);
+  custom('Custom Pace', 'Fine-tuned parameters & custom review bounds', 0.90, 20, 100);
 
   const DeckPacePreset(
     this.displayName,

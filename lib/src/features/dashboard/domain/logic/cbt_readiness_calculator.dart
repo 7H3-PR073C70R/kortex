@@ -15,6 +15,8 @@ class SubjectReadinessBreakdown {
     required this.maxScore,
     this.projectedGrade = '',
     this.statusColor,
+    this.isCalibrated = true,
+    this.diagnosticCta = '',
   });
 
   final String subjectName;
@@ -25,6 +27,8 @@ class SubjectReadinessBreakdown {
   final int maxScore;
   final String projectedGrade;
   final Color? statusColor;
+  final bool isCalibrated;
+  final String diagnosticCta;
 }
 
 /// Algorithmic CBT Exam Readiness score calculator based on syllabus coverage,
@@ -49,7 +53,19 @@ class CbtReadinessResult {
     this.targetScoreGoal = 300,
     this.projectedTotalScore = 295,
     this.subjectBreakdowns = const [],
+    this.calibratedCourseCount = 0,
+    this.totalCourseCount = 0,
   });
+
+  /// Number of enrolled courses that have active study/quiz data
+  final int calibratedCourseCount;
+
+  /// Total number of enrolled courses evaluated
+  final int totalCourseCount;
+
+  /// True if all enrolled courses have diagnostic calibration
+  bool get isFullyCalibrated =>
+      totalCourseCount == 0 || calibratedCourseCount == totalCourseCount;
 
   /// Overall readiness index (0 to 100)
   final int scorePercent;
@@ -482,9 +498,11 @@ class CbtReadinessCalculator {
     // Build subject breakdowns based on registered courses if available
     final List<SubjectReadinessBreakdown> effectiveSubjectBreakdowns;
     RegisteredCourseInput? weakestCourseInput;
+    SubjectReadinessBreakdown? weakestBreakdown;
     var lowestCourseReadinessVal = 101;
     var totalProjectedPoints = 0;
     var totalMaxPoints = 0;
+    var calibratedCoursesCount = 0;
 
     if (convertedRegisteredCourses.isNotEmpty) {
       final hasAnyExplicitCoursePerf = convertedRegisteredCourses.any((c) =>
@@ -513,21 +531,36 @@ class CbtReadinessCalculator {
         final courseCov = course.syllabusCoverage.clamp(0.0, 1.0);
         final double courseAcc;
         final double courseRet;
+        final bool isCourseCalibrated;
+        final String diagnosticCta;
 
         if (resolvedPerf != null) {
+          isCourseCalibrated = true;
           courseAcc = resolvedPerf.accuracy.clamp(0.0, 1.0);
           courseRet = resolvedPerf.retention.clamp(0.0, 1.0);
+          diagnosticCta = '';
         } else if (course.accuracyPercent != null || course.retentionRate != null) {
+          isCourseCalibrated = true;
           courseAcc = (course.accuracyPercent ?? course.retentionRate ?? 0.0).clamp(0.0, 1.0);
           courseRet = (course.retentionRate ?? course.accuracyPercent ?? 0.0).clamp(0.0, 1.0);
+          diagnosticCta = '';
         } else if (hasAnyExplicitCoursePerf) {
           // Explicit per-course performance exists elsewhere, keep unattempted course at 0.0
+          isCourseCalibrated = false;
           courseAcc = 0.0;
           courseRet = 0.0;
+          diagnosticCta = 'Take 10-Item Diagnostic';
         } else {
-          // No per-course overrides exist; inherit student's aggregate baseline
+          // No per-course overrides exist; inherit student's aggregate baseline if active
+          final hasAggregate = mockScoreRatio > 0.0 || fsrsRetentionRate > 0.0;
+          isCourseCalibrated = hasAggregate;
           courseAcc = mockScoreRatio.clamp(0.0, 1.0);
           courseRet = fsrsRetentionRate.clamp(0.0, 1.0);
+          diagnosticCta = hasAggregate ? '' : 'Take 10-Item Diagnostic';
+        }
+
+        if (isCourseCalibrated) {
+          calibratedCoursesCount++;
         }
 
         final double covWeight;
@@ -556,59 +589,84 @@ class CbtReadinessCalculator {
         final int subjectMaxScore;
         final int subjectProjectedScore;
         final String subjectGrade;
+        final Color statusColor;
 
-        if (isWaecOrNeco) {
-          subjectMaxScore = 100;
-          subjectProjectedScore = courseReadinessPercent;
-          subjectGrade = getWaecGrade(courseReadinessPercent);
-        } else if (isUniversity) {
-          subjectMaxScore = 100;
-          subjectProjectedScore = courseReadinessPercent;
-          final gpaVal = (courseReadinessPercent / 100.0) * 5.0;
-          subjectGrade = '${gpaVal.toStringAsFixed(1)} GP';
-        } else if (isProfessional) {
-          subjectMaxScore = 100;
-          subjectProjectedScore = courseReadinessPercent;
-          subjectGrade = getProfessionalGrade(courseReadinessPercent);
+        if (!isCourseCalibrated && courseCov == 0.0 && courseAcc == 0.0) {
+          // Completely uncalibrated course with zero activity
+          statusColor = const Color(0xFF6B7280);
+          if (isWaecOrNeco) {
+            subjectMaxScore = 100;
+            subjectProjectedScore = 0;
+            subjectGrade = 'Uncalibrated';
+          } else if (isUniversity) {
+            subjectMaxScore = 100;
+            subjectProjectedScore = 0;
+            subjectGrade = '0.0 GP';
+          } else if (isProfessional) {
+            subjectMaxScore = 100;
+            subjectProjectedScore = 0;
+            subjectGrade = 'Uncalibrated';
+          } else {
+            subjectMaxScore =
+                (400 / convertedRegisteredCourses.length).round().clamp(50, 200);
+            subjectProjectedScore = 0;
+            subjectGrade = 'Uncalibrated';
+          }
         } else {
-          // JAMB
-          subjectMaxScore =
-              (400 / convertedRegisteredCourses.length).round().clamp(50, 200);
-          subjectProjectedScore =
-              ((courseReadinessPercent / 100.0) * subjectMaxScore)
-                  .round()
-                  .clamp(0, subjectMaxScore);
-          subjectGrade = '$subjectProjectedScore pts';
+          if (isWaecOrNeco) {
+            subjectMaxScore = 100;
+            subjectProjectedScore = courseReadinessPercent;
+            subjectGrade = getWaecGrade(courseReadinessPercent);
+          } else if (isUniversity) {
+            subjectMaxScore = 100;
+            subjectProjectedScore = courseReadinessPercent;
+            final gpaVal = (courseReadinessPercent / 100.0) * 5.0;
+            subjectGrade = '${gpaVal.toStringAsFixed(1)} GP';
+          } else if (isProfessional) {
+            subjectMaxScore = 100;
+            subjectProjectedScore = courseReadinessPercent;
+            subjectGrade = getProfessionalGrade(courseReadinessPercent);
+          } else {
+            // JAMB
+            subjectMaxScore =
+                (400 / convertedRegisteredCourses.length).round().clamp(50, 200);
+            subjectProjectedScore =
+                ((courseReadinessPercent / 100.0) * subjectMaxScore)
+                    .round()
+                    .clamp(0, subjectMaxScore);
+            subjectGrade = '$subjectProjectedScore pts';
+          }
+
+          if (courseReadinessPercent >= 75) {
+            statusColor = const Color(0xFF10B981);
+          } else if (courseReadinessPercent >= 55) {
+            statusColor = const Color(0xFFF59E0B);
+          } else {
+            statusColor = const Color(0xFFEF4444);
+          }
         }
 
         totalProjectedPoints += subjectProjectedScore;
         totalMaxPoints += subjectMaxScore;
 
-        final Color statusColor;
-        if (courseReadinessPercent >= 75) {
-          statusColor = const Color(0xFF10B981);
-        } else if (courseReadinessPercent >= 55) {
-          statusColor = const Color(0xFFF59E0B);
-        } else {
-          statusColor = const Color(0xFFEF4444);
-        }
-
-        breakdowns.add(
-          SubjectReadinessBreakdown(
-            subjectName: courseName,
-            readinessPercent: courseReadinessPercent,
-            coveragePercent: courseCov,
-            accuracyPercent: courseAcc,
-            projectedScore: subjectProjectedScore,
-            maxScore: subjectMaxScore,
-            projectedGrade: subjectGrade,
-            statusColor: statusColor,
-          ),
+        final breakdown = SubjectReadinessBreakdown(
+          subjectName: courseName,
+          readinessPercent: courseReadinessPercent,
+          coveragePercent: courseCov,
+          accuracyPercent: courseAcc,
+          projectedScore: subjectProjectedScore,
+          maxScore: subjectMaxScore,
+          projectedGrade: subjectGrade,
+          statusColor: statusColor,
+          isCalibrated: isCourseCalibrated,
+          diagnosticCta: diagnosticCta,
         );
+        breakdowns.add(breakdown);
 
         if (courseReadinessPercent < lowestCourseReadinessVal) {
           lowestCourseReadinessVal = courseReadinessPercent;
           weakestCourseInput = course;
+          weakestBreakdown = breakdown;
         }
       }
       effectiveSubjectBreakdowns = breakdowns;
@@ -648,12 +706,32 @@ class CbtReadinessCalculator {
                   : ((finalPercent / 100.0) * 400).round().clamp(0, 400)));
     }
 
+    final bool isAllUncalibrated = convertedRegisteredCourses.isNotEmpty &&
+        calibratedCoursesCount == 0 &&
+        mock == 0.0 &&
+        ret == 0.0 &&
+        cov == 0.0;
+
     final String label;
     final Color color;
     String grade;
     String scoreRange;
 
-    if (isWaecOrNeco) {
+    if (isAllUncalibrated) {
+      label = 'DIAGNOSTIC PENDING';
+      color = const Color(0xFF6366F1); // Indigo
+      grade = 'Pending';
+      if (isWaecOrNeco) {
+        scoreRange = '0 / ${convertedRegisteredCourses.length} Credits (Diagnostics Pending)';
+      } else if (isUniversity) {
+        scoreRange = '0.00 / 5.00 GPA (Diagnostics Pending)';
+      } else if (isProfessional) {
+        scoreRange = '0% Projected (Diagnostics Pending)';
+      } else {
+        final maxTarget = totalMaxPoints > 0 ? totalMaxPoints : 400;
+        scoreRange = '0 / $maxTarget (Diagnostics Pending)';
+      }
+    } else if (isWaecOrNeco) {
       final creditsCount = effectiveSubjectBreakdowns
           .where((b) => isWaecCredit(b.projectedGrade.isNotEmpty ? b.projectedGrade : getWaecGrade(b.readinessPercent)))
           .length;
@@ -677,10 +755,16 @@ class CbtReadinessCalculator {
       }
 
       final gradeLabel = getWaecGradeLabel(averageGrade);
+      final isPartial = calibratedCoursesCount > 0 &&
+          calibratedCoursesCount < convertedRegisteredCourses.length;
+      final calSuffix = isPartial
+          ? ' - $calibratedCoursesCount of ${convertedRegisteredCourses.length} Calibrated'
+          : '';
+
       if (creditsCount >= 5 || (totalCount < 5 && creditsCount == totalCount)) {
-        scoreRange = '$creditsCount / $totalCount Credits ($gradeLabel)';
+        scoreRange = '$creditsCount / $totalCount Credits ($gradeLabel$calSuffix)';
       } else {
-        scoreRange = '$creditsCount / $totalCount Credits ($gradeLabel / Requires Remediation)';
+        scoreRange = '$creditsCount / $totalCount Credits ($gradeLabel / Requires Remediation$calSuffix)';
       }
     } else if (isUniversity) {
       final gpaVal = (finalPercent / 100.0) * 5.0;
@@ -697,7 +781,12 @@ class CbtReadinessCalculator {
         color = const Color(0xFFEF4444);
       }
       grade = '${gpaVal.toStringAsFixed(2)} GPA';
-      scoreRange = '$degreeClass (${gpaVal.toStringAsFixed(2)} / 5.00 GPA)';
+      final isPartial = calibratedCoursesCount > 0 &&
+          calibratedCoursesCount < convertedRegisteredCourses.length;
+      final calSuffix = isPartial
+          ? ' - $calibratedCoursesCount of ${convertedRegisteredCourses.length} Calibrated'
+          : '';
+      scoreRange = '$degreeClass (${gpaVal.toStringAsFixed(2)} / 5.00 GPA$calSuffix)';
     } else if (isProfessional) {
       final profGrade = getProfessionalGrade(finalPercent);
       final passThreshold = daysRemaining > 30 ? 40 : 50;
@@ -712,33 +801,48 @@ class CbtReadinessCalculator {
         color = const Color(0xFFEF4444);
       }
       grade = profGrade;
-      scoreRange = '$finalPercent% Projected ($profGrade)';
+      final isPartial = calibratedCoursesCount > 0 &&
+          calibratedCoursesCount < convertedRegisteredCourses.length;
+      final calSuffix = isPartial
+          ? ' - $calibratedCoursesCount of ${convertedRegisteredCourses.length} Calibrated'
+          : '';
+      scoreRange = '$finalPercent% Projected ($profGrade$calSuffix)';
     } else {
       // Default JAMB 400-point scale
       final maxTarget = totalMaxPoints > 0 ? totalMaxPoints : 400;
       final bandStr = _getJambBandString(projectedPoints);
+      final isPartial = calibratedCoursesCount > 0 &&
+          calibratedCoursesCount < convertedRegisteredCourses.length;
+      final calSuffix = isPartial
+          ? ' - $calibratedCoursesCount of ${convertedRegisteredCourses.length} Calibrated'
+          : '';
+
       if (finalPercent >= 70 || projectedPoints >= 280) {
         label = 'ON TRACK';
         color = const Color(0xFF10B981);
         grade = projectedPoints >= 320 ? '320+' : '280+';
-        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr$calSuffix)';
       } else if (finalPercent >= 50 || projectedPoints >= 200) {
         label = 'ACCELERATE PREP';
         color = const Color(0xFFF59E0B);
         grade = projectedPoints >= 250 ? '250+' : '220+';
-        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr$calSuffix)';
       } else {
         label = 'NEEDS TRIAGE';
         color = const Color(0xFFEF4444);
         grade = projectedPoints >= 180 ? '190+' : '< 180';
-        scoreRange = '$projectedPoints / $maxTarget ($bandStr)';
+        scoreRange = '$projectedPoints / $maxTarget ($bandStr$calSuffix)';
       }
     }
 
     // Determine primary bottleneck diagnostic
     var weakestArea = explicitWeakestTopic ?? '';
     if (weakestArea.isEmpty) {
-      if (weakestCourseInput != null) {
+      if (isAllUncalibrated) {
+        weakestArea = 'Diagnostic Assessment Required';
+      } else if (weakestBreakdown != null && !weakestBreakdown.isCalibrated) {
+        weakestArea = '${weakestBreakdown.subjectName} (Diagnostic Required)';
+      } else if (weakestCourseInput != null) {
         final courseName = weakestCourseInput.title.trim().isNotEmpty
             ? weakestCourseInput.title.trim()
             : weakestCourseInput.courseCode;
@@ -756,9 +860,16 @@ class CbtReadinessCalculator {
 
     // Actionable Socratic remediation suggestion
     final String remediation;
-    if (finalPercent >= 85) {
+    if (isAllUncalibrated) {
+      remediation = isWaecOrNeco
+          ? 'Complete a 10-item diagnostic quiz per subject to unlock your projected grades.'
+          : 'Complete a 10-item diagnostic quiz per course to calibrate your CBT readiness index.';
+    } else if (finalPercent >= 85) {
       remediation =
           'Maintain momentum with a 10-minute timed mock sprint to lock in distinction status.';
+    } else if (weakestBreakdown != null && !weakestBreakdown.isCalibrated) {
+      remediation =
+          'Calibrate ${weakestBreakdown.subjectName}: Complete a 10-item diagnostic quiz to unlock accurate readiness tracking.';
     } else if (weakestCourseInput != null) {
       final courseName = weakestCourseInput.title.trim().isNotEmpty
           ? weakestCourseInput.title.trim()
@@ -799,6 +910,10 @@ class CbtReadinessCalculator {
       targetScoreGoal: targetScoreGoal,
       projectedTotalScore: projectedPoints,
       subjectBreakdowns: effectiveSubjectBreakdowns,
+      calibratedCourseCount: calibratedCoursesCount,
+      totalCourseCount: convertedRegisteredCourses.isNotEmpty
+          ? convertedRegisteredCourses.length
+          : effectiveSubjectBreakdowns.length,
     );
   }
 

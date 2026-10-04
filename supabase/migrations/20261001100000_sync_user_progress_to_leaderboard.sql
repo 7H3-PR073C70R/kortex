@@ -7,11 +7,14 @@
 --   realtime visibility.
 -- ============================================================================
 
--- 0. Ensure profiles table columns exist
+-- 0. Ensure profiles table columns exist and leaderboards.user_name has default
 ALTER TABLE public.profiles
     ADD COLUMN IF NOT EXISTS xp_points INT DEFAULT 0,
     ADD COLUMN IF NOT EXISTS streak_days INT DEFAULT 0,
     ADD COLUMN IF NOT EXISTS target_track TEXT DEFAULT 'General';
+
+ALTER TABLE public.leaderboards
+    ALTER COLUMN user_name SET DEFAULT 'Scholar';
 
 -- 1. sync_user_progress: canonical client-driven leaderboard sync endpoint
 --    Parameters:
@@ -29,13 +32,15 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-    v_user_id        UUID;
-    v_new_xp         INT;
-    v_new_streak     INT;
-    v_effective_track TEXT;
-    v_tier           TEXT;
-    v_multiplier     NUMERIC(3,2) := 1.00;
-    v_xp_to_add      INT;
+    v_user_id         UUID;
+    v_new_xp          INT;
+    v_new_streak      INT;
+    v_effective_track  TEXT;
+    v_tier            TEXT;
+    v_multiplier      NUMERIC(3,2) := 1.00;
+    v_xp_to_add       INT;
+    v_display_name    TEXT;
+    v_avatar_url      TEXT;
 BEGIN
     v_user_id := auth.uid();
     IF v_user_id IS NULL THEN
@@ -66,13 +71,23 @@ BEGIN
                        END,
         updated_at   = now()
     WHERE id = v_user_id
-    RETURNING xp_points, streak_days, target_track
-    INTO v_new_xp, v_new_streak, v_effective_track;
+    RETURNING xp_points, streak_days, target_track, display_name, photo_url
+    INTO v_new_xp, v_new_streak, v_effective_track, v_display_name, v_avatar_url;
 
     IF NOT FOUND THEN
-        INSERT INTO public.profiles (id, xp_points, streak_days, target_track)
+        SELECT 
+            COALESCE(raw_user_meta_data->>'display_name', raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1), 'Scholar'),
+            raw_user_meta_data->>'avatar_url'
+        INTO v_display_name, v_avatar_url
+        FROM auth.users
+        WHERE id = v_user_id;
+
+        INSERT INTO public.profiles (id, email, display_name, photo_url, xp_points, streak_days, target_track)
         VALUES (
             v_user_id,
+            COALESCE((SELECT email FROM auth.users WHERE id = v_user_id), ''),
+            COALESCE(NULLIF(v_display_name, ''), 'Scholar'),
+            v_avatar_url,
             v_xp_to_add,
             GREATEST(0, COALESCE(p_streak, 0)),
             COALESCE(NULLIF(p_track, ''), 'General')
@@ -81,9 +96,19 @@ BEGIN
             xp_points    = profiles.xp_points + v_xp_to_add,
             streak_days  = CASE WHEN p_streak IS NOT NULL THEN GREATEST(0, p_streak) ELSE profiles.streak_days END,
             target_track = CASE WHEN p_track IS NOT NULL AND p_track <> '' THEN p_track ELSE profiles.target_track END
-        RETURNING xp_points, streak_days, target_track
-        INTO v_new_xp, v_new_streak, v_effective_track;
+        RETURNING xp_points, streak_days, target_track, display_name, photo_url
+        INTO v_new_xp, v_new_streak, v_effective_track, v_display_name, v_avatar_url;
     END IF;
+
+    -- Ensure we have a valid display_name fallback
+    IF v_display_name IS NULL OR TRIM(v_display_name) = '' THEN
+        SELECT 
+            COALESCE(raw_user_meta_data->>'display_name', raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1), 'Scholar')
+        INTO v_display_name
+        FROM auth.users
+        WHERE id = v_user_id;
+    END IF;
+    v_display_name := COALESCE(NULLIF(TRIM(v_display_name), ''), 'Scholar');
 
     IF v_new_xp >= 1000 THEN v_tier := 'Dean''s List';
     ELSIF v_new_xp >= 600 THEN v_tier := 'Diamond';
@@ -94,15 +119,22 @@ BEGIN
 
     -- Direct upsert for immediate realtime push (belt-and-suspenders).
     INSERT INTO public.leaderboards (
-        user_id, weekly_xp, streak_days, track, league_tier, updated_at
-    ) SELECT
+        user_id, user_name, avatar_url, weekly_xp, daily_xp, streak_days, track, league_tier, rank, updated_at
+    ) VALUES (
         v_user_id,
+        v_display_name,
+        v_avatar_url,
+        v_new_xp,
         v_new_xp,
         GREATEST(0, v_new_streak),
         COALESCE(NULLIF(v_effective_track, ''), 'General'),
         v_tier,
+        1,
         now()
+    )
     ON CONFLICT (user_id) DO UPDATE SET
+        user_name   = COALESCE(NULLIF(EXCLUDED.user_name, ''), leaderboards.user_name, 'Scholar'),
+        avatar_url  = COALESCE(EXCLUDED.avatar_url, leaderboards.avatar_url),
         weekly_xp   = EXCLUDED.weekly_xp,
         streak_days = EXCLUDED.streak_days,
         track       = COALESCE(NULLIF(EXCLUDED.track, ''), leaderboards.track),

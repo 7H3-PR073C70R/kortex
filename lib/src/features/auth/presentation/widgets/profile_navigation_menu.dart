@@ -66,8 +66,8 @@ class ProfileNavigationMenu extends StatelessWidget {
                   : const Color.fromRGBO(6, 182, 212, 0.2),
               hoverIconColor: neural.cyan400,
               hoverChipBorder: neural.cyan400.withValues(alpha: 0.4),
-              title: 'Deck Study Pace & FSRS-6',
-              subtitle: 'Workload limits, recall retention targets & schedule',
+              title: 'Study Pace & Review Schedule',
+              subtitle: 'Daily card limits, memory retention goals & reminders',
               onTap: () {
                 AppFeedback.light();
                 unawaited(

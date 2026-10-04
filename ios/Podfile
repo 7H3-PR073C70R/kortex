@@ -33,6 +33,9 @@ end
 
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
+mlkit_patch_script = File.expand_path('.symlinks/plugins/google_mlkit_commons/ios/scripts/apple_silicon_simulator', __dir__)
+require mlkit_patch_script if File.exist?("#{mlkit_patch_script}.rb")
+
 flutter_ios_podfile_setup
 
 target 'Runner' do
@@ -64,4 +67,6 @@ post_install do |installer|
       config.build_settings['CODE_SIGNING_ALLOWED'] = "NO"
     end
   end
+
+  mlkit_apple_silicon_simulator_patch(installer) if defined?(mlkit_apple_silicon_simulator_patch)
 end

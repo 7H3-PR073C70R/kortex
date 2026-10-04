@@ -20,7 +20,7 @@ abstract class CuratedCourseModel with _$CuratedCourseModel {
     required String iconName,
     required String colorHex,
     String? pdfDownloadUrl,
-    @Default(0.75) double syllabusCoverage,
+    @Default(0.0) double syllabusCoverage,
   }) = _CuratedCourseModel;
 
   const CuratedCourseModel._();
@@ -46,7 +46,7 @@ abstract class CuratedCourseModel with _$CuratedCourseModel {
     syllabusCoverage:
         (json['syllabusCoverage'] ?? json['syllabus_coverage'] as num?)
             ?.toDouble() ??
-        0.75,
+        0.0,
   );
 
   CuratedCourseEntity toEntity() => CuratedCourseEntity(
