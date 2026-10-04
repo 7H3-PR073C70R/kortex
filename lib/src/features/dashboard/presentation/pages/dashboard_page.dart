@@ -1410,11 +1410,13 @@ class _MediumDashboardLayout extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left Column (Core Learning & Curriculum - flex 6)
+                    // Left Column (Quick Actions, Active Recall, Curated Courses & Cohort Pulse)
                     Expanded(
-                      flex: 6,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const QuickActionSpeedDial(),
+                          const SizedBox(height: 20),
                           if (feed.dueStudyDecks.isNotEmpty)
                             FsrsReviewDeckCard(
                               deck: feed.dueStudyDecks.first,
@@ -1451,22 +1453,20 @@ class _MediumDashboardLayout extends StatelessWidget {
                           else
                             _EmptyCoursesCard(l10n: context.l10n),
                           const SizedBox(height: 20),
-                          const QuickActionSpeedDial(),
+                          _StudyCirclePodPulseCard(
+                            targetTrack: targetTrack,
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 20),
 
-                    // Right Column (Social Cohort & Analytics - flex 4)
+                    // Right Column (CBT Readiness & Retention Analytics)
                     Expanded(
-                      flex: 4,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children:
                             [
-                                  _StudyCirclePodPulseCard(
-                                    targetTrack: targetTrack,
-                                  ),
-                                  const SizedBox(height: 20),
                                   DashboardCbtReadinessGaugeCard(
                                     feed: feed,
                                     targetTrack: targetTrack,
@@ -1567,13 +1567,15 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Primary Focus Workstation Column (flex: 7)
+                        // Left Workstation Column (Quick Actions, Active Recall, Curated Courses & Cohort Pulse)
                         Expanded(
-                          flex: 7,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children:
                                 [
+                                      const QuickActionSpeedDial(),
+                                      const SizedBox(height: 20),
+
                                       // 1-Tap Sprint Tile
                                       if (feed.dueStudyDecks.any(
                                         (d) => d.totalCards > 0,
@@ -1615,6 +1617,12 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                         )
                                       else
                                         _EmptyCoursesCard(l10n: context.l10n),
+                                      const SizedBox(height: 20),
+
+                                      // Real-time Cohort Presence
+                                      _StudyCirclePodPulseCard(
+                                        targetTrack: targetTrack,
+                                      ),
                                     ]
                                     .animate(interval: 50.ms)
                                     .fadeIn(
@@ -1630,19 +1638,12 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                         ),
                         const SizedBox(width: 24),
 
-                        // Workstation Telemetry & Toolbox Column (flex: 5)
+                        // Right Workstation Column (CBT Telemetry & Retention Heatmap)
                         Expanded(
-                          flex: 5,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children:
                                 [
-                                      // Real-time Cohort Presence
-                                      _StudyCirclePodPulseCard(
-                                        targetTrack: targetTrack,
-                                      ),
-                                      const SizedBox(height: 20),
-
                                       // CBT Readiness Score Progress Gauge
                                       DashboardCbtReadinessGaugeCard(
                                         feed: feed,
@@ -1654,10 +1655,6 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                       RetentionHeatMapWidget(
                                         analytics: feed.analyticsSummary,
                                       ),
-                                      const SizedBox(height: 20),
-
-                                      // Speed Dial / Action Toolbox
-                                      const QuickActionSpeedDial(),
                                     ]
                                     .animate(interval: 50.ms)
                                     .fadeIn(
