@@ -165,4 +165,7 @@ class AppApiEndpoint {
 
   // Monetization & Promo Codes
   static const String redeemPromoCodeRpc = '/rest/v1/rpc/redeem_promo_code';
+
+  // App Version / Force-Update
+  static const String appVersionConfig = '/rest/v1/app_version_config';
 }

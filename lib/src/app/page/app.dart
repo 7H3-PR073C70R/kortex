@@ -16,6 +16,9 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/force_update/domain/services/force_update_service.dart';
+import 'package:kortex/src/features/force_update/domain/use_cases/check_force_update_use_case.dart';
+import 'package:kortex/src/features/force_update/presentation/pages/force_update_screen.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
 import 'package:kortex/src/features/notifications/domain/services/notification_router.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
@@ -35,6 +38,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   StreamSubscription<String>? _sessionExpiredSubscription;
   StreamSubscription<String>? _notificationPayloadSubscription;
   StreamSubscription<DynamicLinkPayload>? _dynamicLinkSubscription;
+  StreamSubscription<VersionForceRequired>? _forceUpdateSubscription;
+
+  /// Non-null when the force-update gate is active.
+  VersionForceRequired? _forceUpdateResult;
 
   @override
   void initState() {
@@ -66,6 +73,18 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       _dynamicLinkSubscription = locator<DynamicLinkService>()
           .onLinkReceived
           .listen(_handleDynamicLinkPayload);
+    }
+
+    // ── Force-Update gate ────────────────────────────────────────────────────
+    if (locator.isRegistered<ForceUpdateService>()) {
+      _forceUpdateSubscription = locator<ForceUpdateService>()
+          .onForceUpdateRequired
+          .listen(_handleForceUpdate);
+
+      // Run an initial check shortly after launch (non-blocking).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(locator<ForceUpdateService>().check());
+      });
     }
   }
 
@@ -203,11 +222,19 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     });
   }
 
+  void _handleForceUpdate(VersionForceRequired result) {
+    if (mounted) setState(() => _forceUpdateResult = result);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       if (locator.isRegistered<AuthBloc>()) {
         locator<AuthBloc>().add(const AuthAppResumed());
+      }
+      // Re-check version on every app resume.
+      if (locator.isRegistered<ForceUpdateService>()) {
+        unawaited(locator<ForceUpdateService>().check());
       }
     }
   }
@@ -218,6 +245,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     unawaited(_sessionExpiredSubscription?.cancel());
     unawaited(_notificationPayloadSubscription?.cancel());
     unawaited(_dynamicLinkSubscription?.cancel());
+    unawaited(_forceUpdateSubscription?.cancel());
     super.dispose();
   }
 
@@ -260,7 +288,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
                       ),
                     ),
                     child: BiometricLockOverlay(
-                      child: child ?? const SizedBox.shrink(),
+                      child: _forceUpdateResult != null
+                          // ── Force-update gate: replaces entire widget tree ──
+                          ? ForceUpdateScreen(result: _forceUpdateResult!)
+                          : child ?? const SizedBox.shrink(),
                     ),
                   );
                 },

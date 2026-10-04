@@ -127,5 +127,10 @@ void _initDataSource() {
       () => PromoCodeRemoteDataSourceImpl(
         dio: locator<Dio>(),
       ),
+    )
+    ..registerLazySingleton<AppVersionRemoteDataSource>(
+      () => AppVersionRemoteDataSourceImpl(
+        apiClient: locator<AppVersionApiClient>(),
+      ),
     );
 }

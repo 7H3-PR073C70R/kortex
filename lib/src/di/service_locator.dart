@@ -199,5 +199,17 @@ void _initServices() {
       () => QuizDuelCubit(
         repository: locator<QuizDuelRepository>(),
       ),
+    )
+
+    // ── Force-Update ─────────────────────────────────────────────────────────
+    ..registerLazySingleton<CheckForceUpdateUseCase>(
+      () => CheckForceUpdateUseCase(
+        repository: locator<AppVersionRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ForceUpdateService>(
+      () => ForceUpdateService(
+        checkForceUpdateUseCase: locator<CheckForceUpdateUseCase>(),
+      ),
     );
 }

@@ -121,5 +121,10 @@ void _initRepositoryLocator() {
         remoteDataSource: locator<PromoCodeRemoteDataSource>(),
         userStorageService: locator<UserStorageService>(),
       ),
+    )
+    ..registerLazySingleton<AppVersionRepository>(
+      () => AppVersionRepositoryImpl(
+        remoteDataSource: locator<AppVersionRemoteDataSource>(),
+      ),
     );
 }

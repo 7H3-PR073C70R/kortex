@@ -50,4 +50,7 @@ class PrefKeys {
       '__kortex_pro_entitlement_cache_date__';
   static const String pendingPromoCode = '__kortex_pending_promo_code__';
   static const String cachedUserProfile = '__kortex_cached_user_profile__';
+
+  /// ISO-8601 timestamp of the last successful app-version check.
+  static const String lastVersionCheckTime = '__kortex_last_version_check_time__';
 }
