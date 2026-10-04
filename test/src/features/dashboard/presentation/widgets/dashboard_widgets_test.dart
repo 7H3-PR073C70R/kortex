@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
-import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
@@ -11,9 +11,8 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
 import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
-import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 Widget createTestApp(Widget child) {
   return MaterialApp(
@@ -226,9 +225,9 @@ void main() {
     testWidgets(
       'DailyRecallStatusBanner renders synced state when no cards are due',
       (tester) async {
-        final feed = DashboardFeedEntity(
-          calibrationProfile: const CalibrationProfile(),
-          analyticsSummary: const AnalyticsSummaryEntity(
+        const feed = DashboardFeedEntity(
+          calibrationProfile: CalibrationProfile(),
+          analyticsSummary: AnalyticsSummaryEntity(
             currentStreakDays: 1,
             longestStreakDays: 1,
             weeklyMinutesStudied: 10,
@@ -238,13 +237,13 @@ void main() {
             xpPoints: 100,
             academicRank: 'Scholar',
           ),
-          dueStudyDecks: const [],
-          curatedCourses: const [],
+          dueStudyDecks: [],
+          curatedCourses: [],
         );
 
         await tester.pumpWidget(
           createTestApp(
-            DailyRecallStatusBanner(feed: feed),
+            const DailyRecallStatusBanner(feed: feed),
           ),
         );
         await tester.pumpAndSettle();

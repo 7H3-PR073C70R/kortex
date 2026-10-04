@@ -183,7 +183,7 @@ void main() {
         totalCards: 8,
         dueCards: 6,
         retentionRate: 0.95,
-        lastReviewed: DateTime(2026, 10, 1),
+        lastReviewed: DateTime(2026, 10),
         category: 'Biology',
       );
       final feed = DashboardFeedEntity(
@@ -212,9 +212,9 @@ void main() {
 
       final newBloc = DecksBloc(
         getUserDecksUseCase: GetUserDecksUseCase(repo),
-      );
+      )
 
-      newBloc.add(const DecksStarted());
+      ..add(const DecksStarted());
       await expectLater(
         newBloc.stream,
         emitsThrough(

@@ -141,7 +141,6 @@ class CurateCoursesCubit extends Cubit<CurateCoursesState> {
       hasActivePastPapers: false,
       iconName: 'school',
       colorHex: '#6366F1',
-      syllabusCoverage: 0,
     );
 
     final updatedCustom = List<CuratedCourseEntity>.from(state.customCourses)

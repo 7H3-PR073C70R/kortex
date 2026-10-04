@@ -441,7 +441,6 @@ void main() {
           fsrsRetentionRate: 0,
           mockScoreRatio: 0,
           daysRemaining: 45,
-          examType: 'JAMB',
           registeredCourses: freshCourses,
         );
 
@@ -484,7 +483,6 @@ void main() {
           fsrsRetentionRate: 0.82,
           mockScoreRatio: 0.85,
           daysRemaining: 30,
-          examType: 'JAMB',
           registeredCourses: courses,
         );
 

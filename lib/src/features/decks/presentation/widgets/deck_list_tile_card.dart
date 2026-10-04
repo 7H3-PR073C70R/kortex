@@ -118,6 +118,14 @@ class DeckListTileCard extends StatelessWidget {
       100,
     );
 
+    final normalizedSubject = effectiveDeck.subject.trim().toLowerCase();
+    final normalizedCourseCode = effectiveDeck.courseCode?.trim().toLowerCase();
+    final hasDistinctCourseCode = normalizedCourseCode != null &&
+        normalizedCourseCode.isNotEmpty &&
+        normalizedCourseCode != normalizedSubject &&
+        normalizedCourseCode != 'general' &&
+        normalizedCourseCode != 'null';
+
     return Semantics(
       button: true,
       label:
@@ -152,7 +160,7 @@ class DeckListTileCard extends StatelessWidget {
               child: AnimatedContainer(
                 duration: AppMotion.snappy,
                 curve: AppMotion.snappyCurve,
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.panel),
                   color: isDark
@@ -189,13 +197,13 @@ class DeckListTileCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Row 1: Subject & course tags + overflow menu
+                    // Row 1: Subject & distinct course tags + status badge + overflow menu
                     Row(
                       children: [
                         Expanded(
                           child: Wrap(
                             spacing: 6,
-                            runSpacing: 6,
+                            runSpacing: 4,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Container(
@@ -205,49 +213,56 @@ class DeckListTileCard extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: colors.primary.withAlpha(
-                                    isDark ? 50 : 25,
+                                    isDark ? 45 : 20,
                                   ),
                                   borderRadius: BorderRadius.circular(
                                     AppRadius.badge,
+                                  ),
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(
+                                      isDark ? 80 : 40,
+                                    ),
                                   ),
                                 ),
                                 child: Text(
                                   effectiveDeck.subject.toUpperCase(),
                                   style: typography.caption.bold.copyWith(
                                     color: colors.primary,
-                                    fontSize: 10.5,
+                                    fontSize: 10,
                                     letterSpacing: 0.6,
                                   ),
                                 ),
                               ),
-                              if (effectiveDeck.courseCode != null &&
-                                  effectiveDeck.courseCode!.isNotEmpty)
+                              if (hasDistinctCourseCode)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
+                                    horizontal: 7,
                                     vertical: 3.5,
                                   ),
                                   decoration: BoxDecoration(
                                     color: isDark
-                                        ? colors.surfaceSecondary.withAlpha(150)
+                                        ? colors.surfaceSecondary.withAlpha(180)
                                         : colors.surfacePrimary,
                                     borderRadius: BorderRadius.circular(
                                       AppRadius.badge,
                                     ),
                                     border: Border.all(
-                                      color: colors.surfaceBorder.withAlpha(
-                                        120,
-                                      ),
+                                      color: isDark
+                                          ? colors.surfaceBorderHighlight
+                                              .withAlpha(80)
+                                          : colors.surfaceBorder.withAlpha(140),
                                     ),
                                   ),
                                   child: Text(
-                                    effectiveDeck.courseCode!,
+                                    effectiveDeck.courseCode!.toUpperCase(),
                                     style: typography.caption.bold.copyWith(
                                       color: colors.textSecondary,
                                       fontSize: 10,
+                                      letterSpacing: 0.4,
                                     ),
                                   ),
                                 ),
+                              _DueStatusBadge(deck: effectiveDeck),
                             ],
                           ),
                         ),
@@ -263,117 +278,102 @@ class DeckListTileCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-                    // Row 2: Title block (left) and dominant due signal (right)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                effectiveDeck.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: typography.callout.bold.copyWith(
-                                  color: colors.textPrimary,
-                                  fontSize: 15.5,
-                                  height: 1.3,
-                                ),
-                              ),
-                              if (effectiveDeck.description != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  effectiveDeck.description!,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: typography.footnote.regular.copyWith(
-                                    color: colors.textSecondary,
-                                    fontSize: 12,
-                                    height: 1.25,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.topRight,
-                            child: _DueSignal(deck: effectiveDeck),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Row 3: Mastery progress bar — scannable growth signal
-                    ClipRRect(
-                      borderRadius: AppRadius.concentricBorderRadius(
-                        AppRadius.card,
-                        2.5,
+                    // Row 2: Full-width Title block and description
+                    Text(
+                      effectiveDeck.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.callout.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 15.5,
+                        height: 1.3,
                       ),
+                    ),
+                    if (effectiveDeck.description != null &&
+                        effectiveDeck.description!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        effectiveDeck.description!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.footnote.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+
+                    // Row 3: Mastery progress bar
+                    ClipRRect(
+                      borderRadius: AppRadius.radiusMicro,
                       child: Container(
                         height: 5,
                         color: isDark
-                            ? colors.surfaceBorderHighlight.withAlpha(60)
-                            : colors.surfaceBorder.withAlpha(120),
-                        child: AnimatedFractionallySizedBox(
-                          duration: AppMotion.standard,
-                          curve: AppMotion.easeOutCubic,
+                            ? colors.surfaceBorderHighlight.withAlpha(50)
+                            : colors.surfaceBorder.withAlpha(100),
+                        child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
-                          widthFactor: masteryPercent / 100,
+                          widthFactor: (masteryPercent / 100).clamp(0.0, 1.0),
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [
-                                  colors.primary,
-                                  colors.syllabotAccent,
-                                ],
+                                colors: masteryPercent == 100
+                                    ? [
+                                        colors.success,
+                                        colors.success.withAlpha(200),
+                                      ]
+                                    : [
+                                        colors.primary,
+                                        colors.syllabotAccent,
+                                      ],
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
 
-                    // Row 4: Caption + explicit start affordance
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${l10n.decksMasteryPercent(masteryPercent)} · '
-                            '${l10n.decksTotalCards(effectiveDeck.totalCards)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textMuted,
-                              fontSize: 11.5,
+                    // Row 4: Caption + responsive start affordance (No Overflow)
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 320;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${l10n.decksMasteryPercent(masteryPercent)} · '
+                                '${l10n.decksTotalCards(effectiveDeck.totalCards)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: typography.footnote.regular.copyWith(
+                                  color: colors.textMuted,
+                                  fontSize: 11.5,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: _StartSessionPill(
-                              onTap: () {
-                                unawaited(HapticFeedback.lightImpact());
-                                unawaited(
-                                  context.router.push(
-                                    StudySessionRoute(deckId: effectiveDeck.id),
-                                  ),
-                                );
-                              },
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: _StartSessionPill(
+                                isCompact: isCompact,
+                                onTap: () {
+                                  unawaited(HapticFeedback.lightImpact());
+                                  unawaited(
+                                    context.router.push(
+                                      StudySessionRoute(
+                                        deckId: effectiveDeck.id,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -386,10 +386,9 @@ class DeckListTileCard extends StatelessWidget {
   }
 }
 
-/// Right-aligned "how much is waiting for me" block. The due count is the
-/// single most actionable number on the tile, so it reads at a glance.
-class _DueSignal extends StatelessWidget {
-  const _DueSignal({required this.deck});
+/// Status badge in header row indicating either due cards or up-to-date state.
+class _DueStatusBadge extends StatelessWidget {
+  const _DueStatusBadge({required this.deck});
 
   final DeckEntity deck;
 
@@ -398,24 +397,32 @@ class _DueSignal extends StatelessWidget {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     if (!deck.hasDueCards) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 4),
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: colors.success.withAlpha(isDark ? 30 : 16),
+          borderRadius: BorderRadius.circular(AppRadius.badge),
+          border: Border.all(
+            color: colors.success.withAlpha(isDark ? 70 : 40),
+          ),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.check_circle_rounded,
-              size: 14,
-              color: colors.success.withAlpha(180),
+              size: 11,
+              color: colors.success,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3.5),
             Text(
               l10n.deckTileUpToDate,
-              style: typography.caption.regular.copyWith(
-                color: colors.textMuted,
-                fontSize: 11,
+              style: typography.caption.bold.copyWith(
+                color: colors.success,
+                fontSize: 10,
               ),
             ),
           ],
@@ -423,81 +430,89 @@ class _DueSignal extends StatelessWidget {
       );
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          '${deck.dueCards}',
-          style: typography.title2.bold.copyWith(
-            color: colors.error,
-            fontSize: 22,
-            height: 1.1,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: colors.warning.withAlpha(isDark ? 35 : 20),
+        borderRadius: BorderRadius.circular(AppRadius.badge),
+        border: Border.all(
+          color: colors.warning.withAlpha(isDark ? 80 : 45),
         ),
-        Text(
-          l10n.deckTileDueLabel,
-          style: typography.caption.bold.copyWith(
-            color: colors.textMuted,
-            fontSize: 10.5,
-            letterSpacing: 0.4,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.alarm_rounded,
+            size: 11,
+            color: colors.warning,
           ),
-        ),
-      ],
+          const SizedBox(width: 3.5),
+          Text(
+            '${deck.dueCards} ${l10n.deckTileDueLabel}',
+            style: typography.caption.bold.copyWith(
+              color: colors.warning,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Explicit entry into deck management (cards, metadata, hierarchy) without
-/// leaving the one-handed "tap to study" habit intact.
+/// Responsive affordance to jump right into study session.
 class _StartSessionPill extends StatelessWidget {
-  const _StartSessionPill({required this.onTap});
+  const _StartSessionPill({
+    required this.onTap,
+    this.isCompact = false,
+  });
 
   final VoidCallback onTap;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+    final isDark = context.isDarkMode;
 
     return Semantics(
       button: true,
       label: l10n.decksStartSession,
       child: Material(
-        color: context.colors.transparent,
+        color: colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.badge),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? 9 : 12,
+              vertical: 6,
+            ),
             decoration: BoxDecoration(
-              color: colors.primary.withAlpha(context.isDarkMode ? 45 : 22),
+              color: colors.primary.withAlpha(isDark ? 40 : 20),
               borderRadius: BorderRadius.circular(AppRadius.badge),
               border: Border.all(
-                color: colors.primary.withAlpha(context.isDarkMode ? 110 : 70),
+                color: colors.primary.withAlpha(isDark ? 100 : 60),
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  l10n.decksStartSession,
+                  isCompact ? l10n.studyNowAction : l10n.decksStartSession,
                   style: typography.caption.bold.copyWith(
                     color: colors.primary,
-                    fontSize: 12,
+                    fontSize: 11.5,
                   ),
                 ),
                 const SizedBox(width: 4),
-                // Optical nudge: arrow reads better 0.5px right of center
-                Transform.translate(
-                  offset: const Offset(0.5, 0),
-                  child: Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 13,
-                    color: colors.primary,
-                  ),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: colors.primary,
                 ),
               ],
             ),

@@ -664,9 +664,9 @@ class DashboardCbtReadinessGaugeCard extends StatelessWidget {
       realSyllabusCoverage = 0.0;
     }
 
-    Map<String, double> subjectAccuracies = const {};
-    Map<String, double> subjectRetentions = const {};
-    double realMockScoreRatio = 0.0;
+    var subjectAccuracies = const <String, double>{};
+    var subjectRetentions = const <String, double>{};
+    var realMockScoreRatio = 0.0;
 
     try {
       if (locator.isRegistered<UserActivityService>()) {
