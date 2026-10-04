@@ -63,9 +63,12 @@ void main() {
       expect(activityService.getTotalCardsMastered(), equals(18));
       expect(activityService.getWeeklyMinutesStudied(), equals(5));
       expect(activityService.getOverallRetentionRate(), equals(0.90));
-      // XP: (20 * 10) + (5 * 5) + 50 + (1 * 30) = 200 + 25 + 50 + 30 = 305
-      expect(activityService.getXpPoints(), equals(530));
-      expect(activityService.getAcademicRank(), equals('Neural Scholar II'));
+      // XP formula: directXp + (streak * 30)
+      // directXp = (20 cards * 10) + (round(300/60) mins * 5) = 200 + 25 = 225
+      // getXpPoints() = 225 + (1 * 30) = 255
+      expect(activityService.getXpPoints(), equals(255));
+      // 255 XP < 300 threshold → rank stays at Neural Scholar I
+      expect(activityService.getAcademicRank(), equals('Neural Scholar I'));
 
       final heatMap = activityService.getHeatMapData();
       final now = DateTime.now();
@@ -160,20 +163,21 @@ void main() {
       expect(activityService.getSpentXp(), equals(0));
 
       // Study session to earn XP:
-      // (20 * 10) + (5 * 5) + 50 + (1 * 30) = 305 XP
+      // directXp = (20 cards * 10) + (round(300/60) mins * 5) = 200 + 25 = 225
+      // getXpPoints() = directXp + (streak * 30) = 225 + 30 = 255
       await activityService.recordStudySession(
         cardsReviewed: 20,
         durationSeconds: 300,
         retentionScore: 1,
       );
-      expect(activityService.getXpPoints(), equals(530));
+      expect(activityService.getXpPoints(), equals(255));
 
       // Successful purchase of streak freeze (costs 200 XP)
       final successPurchase = await activityService.purchaseStreakFreeze();
       expect(successPurchase, isTrue);
       expect(activityService.getStreakFreezes(), equals(2));
       expect(activityService.getSpentXp(), equals(200));
-      expect(activityService.getXpPoints(), equals(330)); // 530 - 200 = 330
+      expect(activityService.getXpPoints(), equals(55)); // 255 - 200 = 55
     });
 
     test('addBonusKarma persists bonus karma and increases overall XP', () async {

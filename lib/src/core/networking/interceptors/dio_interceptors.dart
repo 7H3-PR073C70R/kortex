@@ -57,10 +57,24 @@ class LoggingInterceptor extends Interceptor {
         }
       }
 
+      // Redact sensitive headers before logging — never log raw tokens or keys.
+      final safeHeaders = Map<String, dynamic>.from(options.headers)
+        ..updateAll((key, value) {
+          final lower = key.toLowerCase();
+          if (lower == 'authorization' ||
+              lower == 'apikey' ||
+              lower == 'api-key' ||
+              lower == 'cookie' ||
+              lower == 'set-cookie' ||
+              lower == 'x-api-key') {
+            return '[REDACTED]';
+          }
+          return value;
+        });
       logger?.i(
         'REQUEST[${options.method}] => URL: ${options.uri}\n'
         'REQUEST DATA => $dataStr\n'
-        'Headers: ${options.headers}',
+        'Headers: $safeHeaders',
       );
     }
 

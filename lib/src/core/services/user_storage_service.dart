@@ -63,12 +63,15 @@ class UserStorageServiceImpl implements UserStorageService {
   final _tokenKey = '__token';
   final _refreshTokenKey = '__refresh_token';
   final _emailKey = '__user_email';
+  // Stored in secure enclave — NOT plaintext SharedPreferences.
+  final _proStatusKey = '__is_pro_subscriber';
 
   String? _cachedToken;
   String? _cachedRefreshToken;
   String? _cachedEmail;
   String? _cachedDisplayName;
   String? _cachedAvatarUrl;
+  bool? _cachedProStatus;
   UserProfileEntity? _cachedProfile;
 
   @override
@@ -98,9 +101,20 @@ class UserStorageServiceImpl implements UserStorageService {
       _cachedEmail = _localStorageService.getPreference(key: _emailKey);
     }
 
-    // Defensive migration: Purge legacy sensitive tokens from plaintext SharedPreferences if present
+    // Read pro status from secure storage and seed cache.
+    final rawProStatus = await _secureStorage.read(key: _proStatusKey);
+    _cachedProStatus = rawProStatus == 'true';
+
+    // Defensive migration: Purge legacy sensitive data from plaintext SharedPreferences if present.
     unawaited(_safeLocalDelete(_tokenKey));
     unawaited(_safeLocalDelete(_refreshTokenKey));
+    // Migrate legacy plaintext pro status flag to secure storage.
+    final legacyPro = _localStorageService.getPreference(key: PrefKeys.isProSubscriber);
+    if (legacyPro != null) {
+      _cachedProStatus = legacyPro == 'true';
+      unawaited(_secureStorage.write(key: _proStatusKey, value: legacyPro));
+      unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
+    }
 
     _cachedDisplayName = _localStorageService.getPreference(
       key: PrefKeys.userDisplayName,
@@ -396,11 +410,14 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   Future<void> saveProStatus({required bool isPro}) async {
+    _cachedProStatus = isPro;
     try {
-      await _localStorageService.savePreference(
-        key: PrefKeys.isProSubscriber,
-        data: isPro ? 'true' : 'false',
+      await _secureStorage.write(
+        key: _proStatusKey,
+        value: isPro ? 'true' : 'false',
       );
+      // Purge any legacy plaintext copy on write.
+      unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
     } on Object {
       return;
     }
@@ -408,14 +425,8 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   bool isProSubscriber() {
-    try {
-      final value = _localStorageService.getPreference(
-        key: PrefKeys.isProSubscriber,
-      );
-      return value == 'true';
-    } on Object {
-      return false;
-    }
+    // Use the in-memory cache populated during initStorage().
+    return _cachedProStatus ?? false;
   }
 
   Future<void> _safeSecureDelete(String key) async {
@@ -535,12 +546,15 @@ class UserStorageServiceImpl implements UserStorageService {
     _cachedEmail = null;
     _cachedDisplayName = null;
     _cachedAvatarUrl = null;
+    _cachedProStatus = null;
     _cachedProfile = null;
     unawaited(_safeSecureDelete(_tokenKey));
     unawaited(_safeSecureDelete(_refreshTokenKey));
     unawaited(_safeSecureDelete(_emailKey));
+    unawaited(_safeSecureDelete(_proStatusKey));
     unawaited(_safeLocalDelete(_tokenKey));
     unawaited(_safeLocalDelete(_refreshTokenKey));
+    // Belt-and-suspenders: also wipe legacy plaintext pro key on sign-out.
     unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
     unawaited(_safeLocalDelete(_emailKey));
     unawaited(_safeLocalDelete(PrefKeys.userDisplayName));
