@@ -201,17 +201,19 @@ serve(async (req) => {
       });
       parsedDoc.images = parsedFromFile.images;
       parsedDoc.isScannedOrImage = parsedFromFile.isScannedOrImage;
-      if (parsedFromFile.fullText && parsedFromFile.fullText.length > (extractedText?.length ?? 0)) {
+      if (parsedFromFile.fullText && !parsedFromFile.fullText.startsWith("[Scanned") && parsedFromFile.fullText.length > (extractedText?.length ?? 0)) {
         parsedDoc.fullText = parsedFromFile.fullText;
         parsedDoc.sections = parsedFromFile.sections;
       }
     }
 
-    if ((!parsedDoc.fullText || parsedDoc.fullText.trim().length === 0) && extractedText) {
-      parsedDoc.fullText = extractedText;
+    const hasClientText = Boolean(extractedText && extractedText.trim().length > 0);
+    if (hasClientText && (!parsedDoc.fullText || parsedDoc.fullText.trim().length === 0 || extractedText!.length >= parsedDoc.fullText.length)) {
+      parsedDoc.fullText = extractedText!;
+      parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
-    if (parsedDoc.sections.length === 0 && parsedDoc.fullText.trim().length > 0) {
+    if (parsedDoc.sections.length === 0 && parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")) {
       parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
@@ -259,7 +261,7 @@ serve(async (req) => {
     }> = [];
 
     const textForSynthesis =
-      parsedDoc.fullText.trim().length > 0
+      parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")
         ? (parsedDoc.fullText.length > 45000
             ? parsedDoc.fullText.slice(0, 45000)
             : parsedDoc.fullText)

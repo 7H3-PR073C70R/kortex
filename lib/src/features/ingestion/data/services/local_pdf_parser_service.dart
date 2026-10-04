@@ -237,11 +237,11 @@ class LocalPdfParserService {
           continue;
         }
 
-        // Strip standalone URLs, web addresses, and domain watermarks
+        // Strip standalone URLs, web addresses, and domain watermarks (e.g. EdgeSkool. Ne, site.com)
         final clean = trimmed
             .replaceAll(
               RegExp(
-                r'https?://\S+|www\.\S+|\b[A-Za-z0-9_\-\.]+\.(?:com|net|org|io|edu|gov|co|ai)\b',
+                r'https?://\S+|www\.\S+|\b[A-Za-z0-9_\-]+\s*\.\s*(?:com|net|org|io|edu|gov|co|ai|ne|app)\b',
                 caseSensitive: false,
               ),
               '',
@@ -254,13 +254,52 @@ class LocalPdfParserService {
       }
     }
 
-    return _unwrapContinuousLines(collectedValidLines);
+    return repairDetachedInitialCapitals(_unwrapContinuousLines(collectedValidLines));
+  }
+
+  /// Repairs detached initial capital letters and drop-cap glyph splits common
+  /// in exported PDF documents (e.g. "T o" -> "To", "Y ou" -> "You", "T he" -> "The").
+  static String repairDetachedInitialCapitals(String text) {
+    if (text.isEmpty) return '';
+
+    // Standard drop-caps for B-Z (excluding A and I which can be single-letter words)
+    var repaired = text.replaceAllMapped(
+      RegExp(r'\b([B-HJ-Z])\s+([a-z]{1,15})\b'),
+      (match) => '${match.group(1)}${match.group(2)}',
+    );
+
+    // Specific drop-cap cases for A and I that are unambiguous English words
+    repaired = repaired.replaceAllMapped(
+      RegExp(
+        r'\b(A)\s+(s|n|t|ll|re|nd|fter|bout|bove|gainst|lign|lso|lways|mong|nother|round)\b',
+        caseSensitive: false,
+      ),
+      (match) => 'A${match.group(2)}',
+    );
+    repaired = repaired.replaceAllMapped(
+      RegExp(
+        r'\b(I)\s+(n|s|t|f|nto|dentify|mbalance|ndicate|nstead|nside|nformation)\b',
+        caseSensitive: false,
+      ),
+      (match) => 'I${match.group(2)}',
+    );
+
+    // Strip common watermark and domain artifacts with spaces before extension (e.g. "EdgeSkool. Ne", "Site. com")
+    repaired = repaired.replaceAll(
+      RegExp(
+        r'\b[A-Za-z0-9_\-]+\s*\.\s*(?:com|net|org|io|edu|gov|co|ai|ne|app)\b',
+        caseSensitive: false,
+      ),
+      '',
+    );
+
+    return repaired;
   }
 
   /// Sanitizes raw single-block extracted text into coherent paragraphs.
   static String sanitizeExtractedText(String rawText) {
     if (rawText.isEmpty) return '';
-    return sanitizeExtractedPages([rawText]);
+    return repairDetachedInitialCapitals(sanitizeExtractedPages([rawText]));
   }
 
   static String _normalizeLineForFrequency(String line) {

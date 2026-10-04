@@ -209,16 +209,12 @@ export class ServerDocumentParser {
 
     if (isScanned) {
       const pageCount = this.estimatePdfPageCount(bytes);
-      const imgNote = images.length > 0
-        ? `Contains ${images.length} embedded diagram(s)/figure(s).`
-        : "No extractable embedded images detected.";
-
-      fullText = `[Scanned PDF Document — ${filename}]
-Estimated pages: ${pageCount}. File size: ${Math.round(bytes.byteLength / 1024)} KB.
-${imgNote}
-This document appears to be a scanned image-based PDF. Synthesize active-recall flashcards covering all visual, conceptual, and mathematical content visible in the attached diagram(s).`;
-
-      console.log(`[ServerDocumentParser] ${filename} detected as scanned PDF (${pageCount} pages, ${images.length} images).`);
+      if (images.length > 0) {
+        fullText = `[Scanned Visual Document — ${filename}] Containing ${images.length} extracted diagram(s).`;
+      } else {
+        fullText = "";
+      }
+      console.log(`[ServerDocumentParser] ${filename} scanned PDF check: ${pageCount} pages, ${images.length} images.`);
     }
 
     return { text: fullText, images, isScanned };

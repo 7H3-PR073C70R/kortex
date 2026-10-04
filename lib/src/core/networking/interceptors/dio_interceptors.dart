@@ -22,9 +22,44 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (options.extra['silent'] != true) {
+      final dynamic data = options.data;
+      String dataStr;
+      if (data is String) {
+        dataStr = data.length > 500
+            ? '${data.substring(0, 500)}... [truncated ${data.length} chars]'
+            : data;
+      } else if (data is Map) {
+        final previewMap = Map<dynamic, dynamic>.from(data);
+        if (previewMap.containsKey('raw_text') &&
+            previewMap['raw_text'] is String) {
+          final t = previewMap['raw_text'] as String;
+          if (t.length > 300) {
+            previewMap['raw_text'] =
+                '${t.substring(0, 300)}... [truncated ${t.length} chars]';
+          }
+        }
+        if (previewMap.containsKey('rawText') &&
+            previewMap['rawText'] is String) {
+          final t = previewMap['rawText'] as String;
+          if (t.length > 300) {
+            previewMap['rawText'] =
+                '${t.substring(0, 300)}... [truncated ${t.length} chars]';
+          }
+        }
+        dataStr = previewMap.toString();
+        if (dataStr.length > 800) {
+          dataStr = '${dataStr.substring(0, 800)}... [truncated]';
+        }
+      } else {
+        dataStr = '$data';
+        if (dataStr.length > 800) {
+          dataStr = '${dataStr.substring(0, 800)}... [truncated]';
+        }
+      }
+
       logger?.i(
         'REQUEST[${options.method}] => URL: ${options.uri}\n'
-        'REQUEST DATA => ${options.data}\n'
+        'REQUEST DATA => $dataStr\n'
         'Headers: ${options.headers}',
       );
     }
@@ -38,10 +73,14 @@ class LoggingInterceptor extends Interceptor {
     ResponseInterceptorHandler handler,
   ) {
     if (response.requestOptions.extra['silent'] != true) {
+      final resStr = '${response.data}';
+      final truncatedRes = resStr.length > 1000
+          ? '${resStr.substring(0, 1000)}... [truncated ${resStr.length} chars]'
+          : resStr;
       logger?.i(
         'RESPONSE[${response.statusCode}] =>'
         ' PATH:${response.requestOptions.path}\n'
-        'RESPONSE DATA: ${response.data}',
+        'RESPONSE DATA: $truncatedRes',
       );
     }
     super.onResponse(response, handler);
@@ -52,11 +91,22 @@ class LoggingInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    final responseData = err.response?.data;
+    final isStorageDuplicate = err.response?.statusCode == 409 ||
+        (err.response?.statusCode == 400 &&
+            responseData is Map &&
+            (responseData['code'] == 'KeyAlreadyExists' ||
+                responseData['error'] == 'Duplicate' ||
+                responseData['statusCode'] == 409 ||
+                responseData['statusCode'] == '409'));
+
     if (err.requestOptions.extra['silent'] == true) {
-      logger?.d(
-        'SILENT_HANDLED_ERROR[${err.requestOptions.uri}]\n'
-        'STATUS[${err.response?.statusCode}] => ${err.response?.data}',
-      );
+      if (!isStorageDuplicate) {
+        logger?.d(
+          'SILENT_HANDLED_ERROR[${err.requestOptions.uri}]\n'
+          'STATUS[${err.response?.statusCode}] => ${err.response?.data}',
+        );
+      }
     } else {
       logger?.e(
         'ERROR[${err.requestOptions.uri}]\n'

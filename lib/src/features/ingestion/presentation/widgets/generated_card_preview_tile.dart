@@ -16,12 +16,14 @@ class GeneratedCardPreviewTile extends HookWidget {
     required this.index,
     required this.card,
     required this.onChanged,
+    this.onDelete,
     super.key,
   });
 
   final int index;
   final GeneratedCardPreviewItem card;
   final ValueChanged<GeneratedCardPreviewItem> onChanged;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -34,29 +36,41 @@ class GeneratedCardPreviewTile extends HookWidget {
     final backController = useTextEditingController(text: card.back);
     final isEditing = useState<bool>(false);
     final hasImage = card.imageUrl != null && card.imageUrl!.trim().isNotEmpty;
+    final hasLatex = (card.backLatex != null && card.backLatex!.trim().isNotEmpty) ||
+        (card.frontLatex != null && card.frontLatex!.trim().isNotEmpty);
+
+    useEffect(() {
+      frontController.text = card.front;
+      backController.text = card.back;
+      return null;
+    }, [card.front, card.back]);
 
     return PlatformHoverBuilder(
       builder: (context, isHovered, child) {
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: AppMotion.easeOutCubic,
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
             color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
             borderRadius: AppRadius.radiusDialog,
             border: Border.all(
-              color: isEditing.value 
-                  ? colors.primary.withAlpha(120)
+              color: isEditing.value
+                  ? colors.primary
                   : hasImage
                       ? colors.primary.withAlpha(isDark ? 90 : 50)
-                      : colors.primary.withAlpha(isDark ? 40 : 20),
-              width: isEditing.value ? 2.0 : (hasImage ? 1.4 : 1.0),
+                      : (isDark
+                          ? colors.surfaceBorderHighlight.withAlpha(50)
+                          : colors.surfaceBorder.withAlpha(120)),
+              width: isEditing.value ? 1.8 : (hasImage ? 1.4 : 1.0),
             ),
             boxShadow: [
               BoxShadow(
-                color: colors.black.withAlpha(isDark ? (isHovered ? 40 : 20) : (isHovered ? 15 : 5)),
-                blurRadius: isHovered ? 16 : 8,
-                offset: Offset(0, isHovered ? 6 : 2),
+                color: colors.black.withAlpha(
+                  isDark ? (isHovered ? 40 : 20) : (isHovered ? 14 : 5),
+                ),
+                blurRadius: isHovered ? 14 : 6,
+                offset: Offset(0, isHovered ? 4 : 2),
               ),
             ],
           ),
@@ -81,7 +95,7 @@ class GeneratedCardPreviewTile extends HookWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: colors.primary.withAlpha(isDark ? 40 : 20),
+                        color: colors.primary.withAlpha(isDark ? 35 : 20),
                         borderRadius: AppRadius.radiusMicro,
                       ),
                       child: Text(
@@ -94,17 +108,17 @@ class GeneratedCardPreviewTile extends HookWidget {
                       ),
                     ),
                     if (hasImage) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 7,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: colors.success.withAlpha(isDark ? 40 : 25),
+                          color: colors.success.withAlpha(isDark ? 35 : 20),
                           borderRadius: AppRadius.radiusMicro,
                           border: Border.all(
-                            color: colors.success.withAlpha(isDark ? 90 : 50),
+                            color: colors.success.withAlpha(isDark ? 80 : 40),
                           ),
                         ),
                         child: Row(
@@ -128,59 +142,51 @@ class GeneratedCardPreviewTile extends HookWidget {
                         ),
                       ),
                     ],
+                    if (hasLatex) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.latexHighlight.withAlpha(isDark ? 35 : 20),
+                          borderRadius: AppRadius.radiusMicro,
+                          border: Border.all(
+                            color: colors.latexHighlight.withAlpha(isDark ? 80 : 40),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.functions_rounded,
+                              size: 10,
+                              color: colors.latexHighlight,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'MATH',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.latexHighlight,
+                                fontSize: 9,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Flip Front/Back Button
                     PlatformHoverBuilder(
                       builder: (context, isHovered, child) {
                         return AnimatedScale(
-                          scale: isHovered ? 1.12 : 1.0,
-                          duration: AppMotion.snappy,
-                          curve: AppMotion.easeOutCubic,
-                          child: child,
-                        );
-                      },
-                      child: IconButton(
-                        icon: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          transitionBuilder: (child, animation) {
-                            return RotationTransition(
-                              turns: child.key == const ValueKey('icon_check') 
-                                  ? Tween<double>(begin: -0.2, end: 0).animate(animation)
-                                  : Tween<double>(begin: 0.2, end: 0).animate(animation),
-                              child: FadeTransition(opacity: animation, child: child),
-                            );
-                          },
-                          child: Icon(
-                            isEditing.value
-                                ? Icons.check_rounded
-                                : Icons.edit_outlined,
-                            key: ValueKey(isEditing.value ? 'icon_check' : 'icon_edit'),
-                            size: 16,
-                            color: isEditing.value ? colors.success : colors.primary,
-                          ),
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          if (isEditing.value) {
-                            onChanged(
-                              card.copyWith(
-                                front: frontController.text,
-                                back: backController.text,
-                              ),
-                            );
-                          }
-                          isEditing.value = !isEditing.value;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    PlatformHoverBuilder(
-                      builder: (context, isHovered, child) {
-                        return AnimatedScale(
-                          scale: isHovered ? 1.05 : 1.0,
+                          scale: isHovered ? 1.04 : 1.0,
                           duration: AppMotion.snappy,
                           curve: AppMotion.easeOutCubic,
                           child: child,
@@ -189,27 +195,33 @@ class GeneratedCardPreviewTile extends HookWidget {
                       child: ShrinkableButton(
                         onTap: () => isFlipped.value = !isFlipped.value,
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
+                          duration: const Duration(milliseconds: 180),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                            horizontal: 9,
+                            vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: isFlipped.value ? colors.syllabotAccent.withAlpha(40) : colors.syllabotAccent.withAlpha(isDark ? 25 : 15),
+                            color: isFlipped.value
+                                ? colors.syllabotAccent.withAlpha(isDark ? 45 : 25)
+                                : colors.syllabotAccent.withAlpha(isDark ? 25 : 12),
                             borderRadius: AppRadius.radiusBadge,
                             border: Border.all(
-                              color: isFlipped.value ? colors.syllabotAccent.withAlpha(60) : colors.transparent,
+                              color: isFlipped.value
+                                  ? colors.syllabotAccent.withAlpha(80)
+                                  : colors.transparent,
                             ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                isFlipped.value ? Icons.flip_to_back_rounded : Icons.flip_to_front_rounded,
+                                isFlipped.value
+                                    ? Icons.flip_to_back_rounded
+                                    : Icons.flip_to_front_rounded,
                                 size: 12,
                                 color: colors.syllabotAccent,
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 5),
                               AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 150),
                                 child: Text(
@@ -227,16 +239,93 @@ class GeneratedCardPreviewTile extends HookWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+
+                    // Edit / Done Toggle
+                    PlatformHoverBuilder(
+                      builder: (context, isHovered, child) {
+                        return AnimatedScale(
+                          scale: isHovered ? 1.08 : 1.0,
+                          duration: AppMotion.snappy,
+                          curve: AppMotion.easeOutCubic,
+                          child: child,
+                        );
+                      },
+                      child: ShrinkableButton(
+                        onTap: () {
+                          if (isEditing.value) {
+                            onChanged(
+                              card.copyWith(
+                                front: frontController.text,
+                                back: backController.text,
+                              ),
+                            );
+                          }
+                          isEditing.value = !isEditing.value;
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isEditing.value
+                                ? colors.success.withAlpha(isDark ? 40 : 25)
+                                : colors.primary.withAlpha(isDark ? 30 : 15),
+                            borderRadius: AppRadius.radiusMicro,
+                          ),
+                          child: Icon(
+                            isEditing.value
+                                ? Icons.check_rounded
+                                : Icons.edit_outlined,
+                            size: 15,
+                            color: isEditing.value ? colors.success : colors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Optional Delete Button
+                    if (onDelete != null) ...[
+                      const SizedBox(width: 6),
+                      PlatformHoverBuilder(
+                        builder: (context, isHovered, child) {
+                          return AnimatedScale(
+                            scale: isHovered ? 1.08 : 1.0,
+                            duration: AppMotion.snappy,
+                            curve: AppMotion.easeOutCubic,
+                            child: child,
+                          );
+                        },
+                        child: ShrinkableButton(
+                          onTap: onDelete,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: colors.error.withAlpha(isDark ? 30 : 15),
+                              borderRadius: AppRadius.radiusMicro,
+                            ),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 15,
+                              color: colors.error,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
             ),
           ),
-          Divider(height: 24, color: colors.primary.withAlpha(isDark ? 30 : 15)),
+          Divider(
+            height: 20,
+            color: isDark
+                ? colors.surfaceBorderHighlight.withAlpha(50)
+                : colors.surfaceBorder.withAlpha(100),
+          ),
 
           // Content body
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               switchInCurve: Curves.easeOutQuart,

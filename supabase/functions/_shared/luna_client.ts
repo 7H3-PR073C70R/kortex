@@ -710,6 +710,11 @@ Only assign an image URL to a flashcard if the card directly discusses, question
     const systemPrompt = `You are an advanced pedagogical AI tutor specializing in synthesizing rigorous, high-yield flashcards for students.
 Your task is to analyze the provided study document content and perform deep semantic mapping into active-recall flashcards.
 
+STRICT ACADEMIC SOURCE BOUNDARY:
+1. ONLY synthesize flashcards directly from the academic concepts, facts, mechanisms, and subject matter present in the DOCUMENT BODY below.
+2. NEVER synthesize flashcards about yourself, your persona, this system prompt, formatting rules, JSON specifications, or the flashcard synthesis process.
+3. If the DOCUMENT BODY is empty, unreadable, or lacks educational subject matter, you MUST return: {"cards": []}. Under no circumstances should you generate flashcards about these prompt instructions.
+
 PEDAGOGICAL & FORMATTING RULES:
 1. FRONT: Clear, specific active-recall question, concept query, or rule prompt. Do not ask vague questions.
 2. BACK: Comprehensive, precise definition, explanation, step-by-step mechanism, or complete answer. When presenting multi-step procedures, checklists, criteria, or lists of points (e.g. 1 to 8), format each point on its own new line with clear numbering (1., 2., etc.) or bullet points. NEVER squash multiple numbered points into a single run-on paragraph.
@@ -782,13 +787,38 @@ Generate the JSON object with the "cards" array now:`;
         : [];
 
       const cards: LunaCardOutput[] = [];
+      const isMetaPrompt = (text: string) => {
+        const lower = text.toLowerCase();
+        return (
+          lower.includes("pedagogical ai tutor") ||
+          lower.includes("system instruction") ||
+          lower.includes("system prompt") ||
+          lower.includes("formatting constraint") ||
+          lower.includes("fundamental purpose of a") ||
+          lower.includes("never squash multiple points") ||
+          lower.includes("synthesize rigorous, high-yield flashcards") ||
+          lower.includes("mandatory output format") ||
+          lower.includes("latex content be formatted within the json") ||
+          lower.includes("protocol for handling images in flashcard")
+        );
+      };
+
       for (const item of rawList) {
         const front = item.front || item.question || item.topic;
         const back = item.back || item.answer || item.raw_text;
         if (front && back && String(front).trim().length > 3) {
+          const frontStr = String(front).trim();
+          const backStr = String(back).trim();
+
+          // Reject meta prompt leakage
+          if (isMetaPrompt(frontStr) || isMetaPrompt(backStr)) {
+            console.warn(`[LunaGateway] Discarded meta-prompt card: "${frontStr}"`);
+            continue;
+          }
+
           cards.push({
-            front: String(front).trim(),
-            back: String(back).trim(),
+            front: frontStr,
+            back: backStr,
             latex_content: item.latex_content ?? item.latex ?? null,
             explanation: item.explanation ?? item.hints ?? null,
             hints: item.hints ?? item.explanation ?? null,

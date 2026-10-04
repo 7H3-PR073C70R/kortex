@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class DocumentParserService {
@@ -545,7 +546,9 @@ class DocumentParserService {
     required String filename,
     List<String> imageUrls = const [],
   }) {
-    final cleanFullText = fullText.trim();
+    final cleanFullText = LocalPdfParserService.repairDetachedInitialCapitals(
+      fullText.trim(),
+    );
     if (cleanFullText.isEmpty) {
       return [];
     }

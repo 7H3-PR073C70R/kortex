@@ -277,9 +277,18 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
           },
         );
       } on DioException catch (e, stack) {
-        // Storage Lock Handling: 409 Conflict indicates the file already exists in canonical storage.
+        // Storage Lock Handling: 409 Conflict or 400 KeyAlreadyExists indicates the file already exists in canonical storage.
         // This is a benign redundant upload from a concurrent user, proceed without failing.
-        if (e.response?.statusCode != 409) {
+        final resData = e.response?.data;
+        final isDuplicate = e.response?.statusCode == 409 ||
+            (e.response?.statusCode == 400 &&
+                resData is Map &&
+                (resData['code'] == 'KeyAlreadyExists' ||
+                    resData['error'] == 'Duplicate' ||
+                    resData['statusCode'] == 409 ||
+                    resData['statusCode'] == '409'));
+
+        if (!isDuplicate) {
           final crashlytics = _crashlyticsService;
           if (crashlytics != null) {
             unawaited(
@@ -480,17 +489,24 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     }
 
     // TIER 2: AI SMART SYNTHESIS
-    // For non-PDF text/markdown, decoding is instantaneous (< 1ms).
-    // For PDFs, we bypass the heavy client Syncfusion parse because the backend
-    // server extracts text via Wasm unpdf in ~200ms on server compute.
+    // Extract authentic text from fileBytes locally beforehand so:
+    // 1) The edge function receives authentic text in the payload even if storage download fails.
+    // 2) If the server is offline or errors, we immediately have the authentic text for local synthesis.
     String? extractedText;
-    if (!isPdf && fileBytes != null && fileBytes.isNotEmpty) {
+    if (fileBytes != null && fileBytes.isNotEmpty) {
       try {
-        extractedText = _parserService.extractTextFromBytes(
-          fileBytes,
-          fileType: fileType,
-          filename: filename,
-        );
+        if (isPdf) {
+          extractedText = await _pdfParserService.extractText(
+            fileBytes,
+            filename: filename,
+          );
+        } else {
+          extractedText = _parserService.extractTextFromBytes(
+            fileBytes,
+            fileType: fileType,
+            filename: filename,
+          );
+        }
       } on Object catch (_) {}
     }
 
@@ -518,22 +534,13 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
             : <String, dynamic>{};
         final rawList = result['snippets'] as List<dynamic>? ?? [];
 
-        // Detect if server returned the 1-card dummy fallback rather than real content
-        final isDummyFallback =
-            rawList.length == 1 &&
-            () {
-              final first = rawList.first;
-              if (first is! Map) return false;
-              final rawText = first['raw_text']?.toString() ?? '';
-              final topic = first['topic']?.toString() ?? '';
-              return rawText.contains('Study content extracted') ||
-                  topic.contains('What are the core concepts covered in') ||
-                  topic.contains('What are the core principles and rules of') ||
-                  topic.contains('What is the key takeaway of');
-            }();
+        // Eliminate prompt-leak jargon cards and dummy placeholders
+        final validRawCards = rawList
+            .where((item) => !_isPromptJargonOrMock(item))
+            .toList();
 
-        if (rawList.isNotEmpty && !isDummyFallback) {
-          return rawList
+        if (validRawCards.isNotEmpty) {
+          return validRawCards
               .map(
                 (e) => OcrExtractionModel.fromJson(e as Map<String, dynamic>),
               )
@@ -557,17 +564,10 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
     // 2. Try fetch from DB directly if available
     try {
       final snippets = await fetchExtractedSnippets(documentId);
-      final isDbDummy =
-          snippets.length == 1 &&
-          (snippets.first.rawText.contains('Study content extracted') ||
-              snippets.first.topic.contains(
-                'What are the core concepts covered in',
-              ) ||
-              snippets.first.topic.contains(
-                'What are the core principles and rules of',
-              ) ||
-              snippets.first.topic.contains('What is the key takeaway of'));
-      if (snippets.isNotEmpty && !isDbDummy) return snippets;
+      final validDbCards = snippets
+          .where((s) => !_isExtractionModelPromptJargonOrMock(s))
+          .toList();
+      if (validDbCards.isNotEmpty) return validDbCards;
     } on Object catch (e, stack) {
       final crashlytics = _crashlyticsService;
       if (crashlytics != null) {
@@ -635,11 +635,64 @@ class IngestionRemoteDataSourceImpl implements IngestionRemoteDataSource {
       return snippets;
     }
 
-    return _parserService.synthesizeSnippetsFromDocument(
-      documentId: documentId,
-      fullText: extractedText ?? '',
-      filename: filename,
-    );
+    if (extractedText != null && extractedText.trim().isNotEmpty) {
+      return _parserService.synthesizeSnippetsFromDocument(
+        documentId: documentId,
+        fullText: extractedText,
+        filename: filename,
+      );
+    }
+
+    return [];
+  }
+
+  static bool _isPromptJargonOrMock(dynamic rawItem) {
+    if (rawItem is! Map) return false;
+    final text = [
+      rawItem['topic']?.toString() ?? '',
+      rawItem['raw_text']?.toString() ?? '',
+      rawItem['card_type']?.toString() ?? '',
+      rawItem['latex_formula']?.toString() ?? '',
+    ].join(' ').toLowerCase();
+
+    return text.contains('pedagogical ai tutor') ||
+        text.contains('system prompt') ||
+        text.contains('system instruction') ||
+        text.contains('flashcard synthesis') ||
+        text.contains('formatting constraint') ||
+        text.contains('active-recall format') ||
+        text.contains('never squash multiple points') ||
+        text.contains('deep semantic mapping') ||
+        text.contains('study concepts & cards extracted') ||
+        text.contains('what are the core concepts covered in') ||
+        text.contains('what are the core principles and rules of') ||
+        text.contains('what is the key takeaway of') ||
+        text.contains('study content extracted') ||
+        text.contains('advanced pedagogical') ||
+        text.contains('multi-step procedure');
+  }
+
+  static bool _isExtractionModelPromptJargonOrMock(OcrExtractionModel model) {
+    final text = [
+      model.topic,
+      model.rawText,
+      model.latexContent ?? '',
+    ].join(' ').toLowerCase();
+
+    return text.contains('pedagogical ai tutor') ||
+        text.contains('system prompt') ||
+        text.contains('system instruction') ||
+        text.contains('flashcard synthesis') ||
+        text.contains('formatting constraint') ||
+        text.contains('active-recall format') ||
+        text.contains('never squash multiple points') ||
+        text.contains('deep semantic mapping') ||
+        text.contains('what are the core concepts covered in') ||
+        text.contains('what are the core principles and rules of') ||
+        text.contains('what is the key takeaway of') ||
+        text.contains('study content extracted') ||
+        text.contains('advanced pedagogical') ||
+        text.contains('multi-step procedure');
   }
 
   @override

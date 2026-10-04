@@ -162,12 +162,12 @@ void main() {
         IngestionState(
           status: ProcessingStatus.parsingOcr,
           stageMessage: 'Extracting document on server compute...',
-          uploadProgress: 1,
+          uploadProgress: 0.2,
           currentDocument: testDoc,
         ),
         IngestionState(
           status: ProcessingStatus.completed,
-          stageMessage: 'Luna synthesized 1 conceptual cards',
+          stageMessage: 'Luna synthesized 1 conceptual cards!',
           uploadProgress: 1,
           currentDocument: testDoc,
           snippets: const [testSnippet],
