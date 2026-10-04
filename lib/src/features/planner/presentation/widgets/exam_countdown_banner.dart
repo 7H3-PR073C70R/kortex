@@ -15,7 +15,6 @@ import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.da
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
-import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -127,7 +126,11 @@ class ExamCountdownBanner extends StatelessWidget {
                           ),
                           child: InkWell(
                             onTap: () {
-                              unawaited(AddExamModalSheet.show(context));
+                              unawaited(
+                                context.router.push(
+                                  AddAcademicAssessmentRoute(),
+                                ),
+                              );
                             },
                             borderRadius: BorderRadius.circular(16),
                             child: ClipRRect(
@@ -245,10 +248,11 @@ class ExamCountdownBanner extends StatelessWidget {
 
         final isTopPriority = exam.id == state.topPriorityExamId;
         final readinessResult = const CbtReadinessCalculator().compute(
-          syllabusCoverage: 0.78,
-          fsrsRetentionRate: 0.86,
-          mockScoreRatio: 0.80,
+          syllabusCoverage: exam.completionProgress,
+          fsrsRetentionRate: (exam.achievedScorePercent ?? 0.80).clamp(0.0, 1.0),
+          mockScoreRatio: (exam.achievedScorePercent ?? 0.75).clamp(0.0, 1.0),
           daysRemaining: days,
+          explicitWeakestTopic: exam.examName,
         );
 
         // Headline calculation with sub-daily granularity
@@ -436,7 +440,11 @@ class ExamCountdownBanner extends StatelessWidget {
                         }),
                         // Quick Add pill
                         InkWell(
-                          onTap: () => AddExamModalSheet.show(context),
+                          onTap: () => unawaited(
+                            context.router.push(
+                              AddAcademicAssessmentRoute(),
+                            ),
+                          ),
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -707,7 +715,11 @@ class ExamCountdownBanner extends StatelessWidget {
                               ),
                               tooltip: l10n.addExamTitle,
                               onPressed: () {
-                                unawaited(AddExamModalSheet.show(context));
+                                unawaited(
+                                  context.router.push(
+                                    AddAcademicAssessmentRoute(),
+                                  ),
+                                );
                               },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -948,7 +960,7 @@ void _showCbtReadinessBreakdownSheet(
                         _buildWeightRow(
                           context,
                           icon: Icons.psychology_rounded,
-                          label: 'FSRS Memory Retention Rate (50%)',
+                          label: 'Flashcard Memory Retention (50%)',
                           value: '86%',
                           color: neural.emerald400,
                         ),

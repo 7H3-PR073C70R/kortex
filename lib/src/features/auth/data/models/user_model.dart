@@ -41,13 +41,22 @@ class UserModel extends Equatable {
         refreshToken: refreshToken,
       );
     }
+    final userMeta = json['user_metadata'] as Map<String, dynamic>?;
     return UserModel(
       id: json['id'] as String? ?? '',
       email: json['email'] as String? ?? '',
       displayName:
-          json['displayName'] as String? ?? json['display_name'] as String?,
-      photoUrl: json['photoUrl'] as String? ?? json['photo_url'] as String?,
+          userMeta?['display_name'] as String? ??
+          userMeta?['full_name'] as String? ??
+          userMeta?['name'] as String? ??
+          json['displayName'] as String? ??
+          json['display_name'] as String?,
+      photoUrl:
+          userMeta?['avatar_url'] as String? ??
+          json['photoUrl'] as String? ??
+          json['photo_url'] as String?,
       academicInstitution:
+          userMeta?['academic_institution'] as String? ??
           json['academicInstitution'] as String? ??
           json['academic_institution'] as String?,
       token: json['token'] as String? ?? json['access_token'] as String?,

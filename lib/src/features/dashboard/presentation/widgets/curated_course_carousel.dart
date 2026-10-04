@@ -305,7 +305,7 @@ class _CourseCard extends StatelessWidget {
         ? (matchingDecks.fold<double>(0, (s, d) => s + d.masteryRate) /
                   matchingDecks.length)
               .clamp(0.0, 1.0)
-        : 0.0;
+        : course.syllabusCoverage.clamp(0.0, 1.0);
     final coveragePercent = (realCoverage * 100).toInt();
     final deckCountText = hasDecks
         ? '${matchingDecks.length} ${matchingDecks.length == 1 ? 'Deck' : 'Decks'} • $totalCards Cards'

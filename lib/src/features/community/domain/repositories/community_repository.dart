@@ -89,7 +89,19 @@ abstract class CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
+  });
+
+  /// Updates an existing forum post.
+  Future<Either<Failure, ForumPostEntity>> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
   });
 
   /// Deletes a forum post created by the user.
@@ -104,6 +116,21 @@ abstract class CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
+    bool isAnonymous = false,
+  });
+
+  /// Updates an existing forum reply.
+  Future<Either<Failure, ForumReplyEntity>> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
+  });
+
+  /// Deletes a forum reply.
+  Future<Either<Failure, bool>> deleteForumReply({
+    required String replyId,
+    required String postId,
   });
 
   /// Upvotes, downvotes, or clears vote on a forum post.
@@ -133,6 +160,9 @@ abstract class CommunityRepository {
     String? track,
   });
 
+  /// Real-time stream of Study Circles / Pods via WebSocket.
+  Stream<List<StudyCircleEntity>> watchStudyCircles({String? track});
+
   /// Joins an existing Study Circle.
   Future<Either<Failure, StudyCircleEntity>> joinStudyCircle(String circleId);
 
@@ -148,6 +178,7 @@ abstract class CommunityRepository {
   Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
     required String circleId,
     required int minutes,
+    String? activityType,
   });
 
   /// Creates a new Study Circle.
@@ -196,6 +227,14 @@ abstract class CommunityRepository {
     required int xpAmount,
   });
 
+  /// Atomically syncs XP delta, current streak, and track to Supabase.
+  /// This is the canonical client → backend sync call after any XP event.
+  Future<Either<Failure, Map<String, dynamic>>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  });
+
   /// Fetches snapshot of leaderboard rankings.
   Future<Either<Failure, List<LeaderboardEntryEntity>>> fetchLeaderboards({
     String? track,
@@ -236,4 +275,7 @@ abstract class CommunityRepository {
 
   /// Retrieves the set of followed topics for the current user.
   Future<Either<Failure, Set<String>>> getFollowedTopics();
+
+  /// Flushes any pending offline queued forum actions (posts, replies, votes).
+  Future<int> flushPendingForumActions();
 }

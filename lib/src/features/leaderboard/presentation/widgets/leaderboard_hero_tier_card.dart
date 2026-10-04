@@ -1,13 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/features/leaderboard/presentation/widgets/leaderboard_league_rules_sheet.dart';
 import 'package:kortex/src/features/leaderboard/presentation/widgets/streak_freeze_shield_sheet.dart';
 
-class LeaderboardHeroTierCard extends StatelessWidget {
+/// Top hero card highlighting the active league division, weekly countdown,
+/// and fast-access streak freeze shield equipping.
+class LeaderboardHeroTierCard extends StatefulWidget {
   const LeaderboardHeroTierCard({
     required this.currentTier,
     this.streakFreezeCount = 0,
@@ -18,6 +21,59 @@ class LeaderboardHeroTierCard extends StatelessWidget {
   final int streakFreezeCount;
 
   @override
+  State<LeaderboardHeroTierCard> createState() => _LeaderboardHeroTierCardState();
+}
+
+class _LeaderboardHeroTierCardState extends State<LeaderboardHeroTierCard> {
+  Timer? _timer;
+  late Duration _timeRemaining;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeRemaining = _calculateTimeUntilReset();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _timeRemaining = _calculateTimeUntilReset();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Duration _calculateTimeUntilReset() {
+    final now = DateTime.now();
+    var daysUntilMonday = (DateTime.monday - now.toUtc().weekday) % 7;
+    if (daysUntilMonday == 0 &&
+        (now.toUtc().hour > 0 || now.toUtc().minute > 0)) {
+      daysUntilMonday = 7;
+    }
+    final nextMondayUtc = DateTime.utc(
+      now.toUtc().year,
+      now.toUtc().month,
+      now.toUtc().day + daysUntilMonday,
+    );
+    final diff = nextMondayUtc.difference(now.toUtc());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  String _formatCountdown(Duration duration) {
+    final days = duration.inDays;
+    final hours = duration.inHours % 24;
+    final minutes = duration.inMinutes % 60;
+    if (days > 0) {
+      return '${days}d ${hours}h left';
+    }
+    return '${hours}h ${minutes}m left';
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
@@ -25,6 +81,7 @@ class LeaderboardHeroTierCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
+        unawaited(HapticFeedback.selectionClick());
         unawaited(
           showModalBottomSheet<void>(
             context: context,
@@ -35,18 +92,27 @@ class LeaderboardHeroTierCard extends StatelessWidget {
         );
       },
       child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: _getTierGradient(currentTier, colors, isDark),
+            colors: _getTierGradient(widget.currentTier, colors, isDark),
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: AppRadius.radiusPanel,
           border: Border.all(
-            color: _getTierBorderColor(currentTier, colors),
+            color: _getTierBorderColor(widget.currentTier, colors),
             width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: _getTierBorderColor(widget.currentTier, colors)
+                  .withAlpha(isDark ? 30 : 15),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,20 +122,70 @@ class LeaderboardHeroTierCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      _getTierEmoji(currentTier),
-                      style: context.typography.body.regular.copyWith(fontSize: 24),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? colors.surfaceElevated.withAlpha(160)
+                            : colors.white.withAlpha(180),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.black.withAlpha(isDark ? 40 : 10),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        _getTierEmoji(widget.currentTier),
+                        style: const TextStyle(fontSize: 22),
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '$currentTier League',
-                          style: typography.subhead.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              '${widget.currentTier} League',
+                              style: typography.subhead.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary.withAlpha(isDark ? 50 : 25),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.timer_outlined,
+                                    size: 10,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    _formatCountdown(_timeRemaining),
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 9.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           _formatWeeklyResetLocalTime(),
                           style: typography.caption.regular.copyWith(
@@ -81,29 +197,52 @@ class LeaderboardHeroTierCard extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                // Rules & Prizes Trigger
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                    horizontal: 10,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: colors.primary.withAlpha(isDark ? 40 : 25),
-                    borderRadius: AppRadius.radiusMicro,
-                  ),
-                  child: Text(
-                    'Rules & Prizes',
-                    style: typography.caption.bold.copyWith(
-                      color: colors.primary,
-                      fontSize: 10,
+                    color: isDark
+                        ? colors.surfaceElevated.withAlpha(200)
+                        : colors.white.withAlpha(220),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: colors.surfaceBorder.withAlpha(isDark ? 70 : 40),
                     ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Rules',
+                        style: typography.caption.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 14,
+                        color: colors.textSecondary,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            if (streakFreezeCount >= 0) ...[
+
+            if (widget.streakFreezeCount >= 0) ...[
               const SizedBox(height: 12),
               GestureDetector(
-                onTap: () => StreakFreezeShieldSheet.show(context),
+                onTap: () {
+                  unawaited(HapticFeedback.lightImpact());
+                  unawaited(StreakFreezeShieldSheet.show(context));
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -113,7 +252,7 @@ class LeaderboardHeroTierCard extends StatelessWidget {
                     color: colors.syllabotAccent.withAlpha(isDark ? 35 : 20),
                     borderRadius: AppRadius.radiusBadge,
                     border: Border.all(
-                      color: colors.syllabotAccent.withAlpha(60),
+                      color: colors.syllabotAccent.withAlpha(80),
                     ),
                   ),
                   child: Row(
@@ -121,16 +260,17 @@ class LeaderboardHeroTierCard extends StatelessWidget {
                     children: [
                       Text(
                         '🛡️',
-                        style: context.typography.body.regular.copyWith(
-                          fontSize: 13,
+                        style: typography.caption.regular.copyWith(
+                          fontSize: 12,
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '$streakFreezeCount Streak Freeze Shield${streakFreezeCount == 1 ? "" : "s"} • Tap to equip',
+                        '${widget.streakFreezeCount} Streak Freeze Shield${widget.streakFreezeCount == 1 ? "" : "s"} • Tap to protect streak',
                         style: typography.caption.bold.copyWith(
                           color: colors.syllabotAccent,
                           fontSize: 11,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -229,6 +369,6 @@ class LeaderboardHeroTierCard extends StatelessWidget {
     final period = hour >= 12 ? 'PM' : 'AM';
     final formattedHour = (hour % 12 == 0) ? 12 : hour % 12;
     final minuteStr = minute == 0 ? '00' : minute.toString().padLeft(2, '0');
-    return 'Resets on Mon at $formattedHour:$minuteStr $period';
+    return 'Resets Mon $formattedHour:$minuteStr $period';
   }
 }

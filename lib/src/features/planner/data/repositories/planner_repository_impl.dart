@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -11,6 +12,7 @@ import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_algorithm_engine.dart';
 import 'package:kortex/src/features/planner/data/models/exam_event_model.dart';
@@ -26,17 +28,45 @@ class PlannerRepositoryImpl implements PlannerRepository {
     LocalStorageService? storageService,
     UserStorageService? userStorageService,
     Dio? dio,
+    Connectivity? connectivity,
   }) : _calculator = calculator ?? const CramWorkloadCalculator(),
        _database = database,
        _storageService = storageService,
        _userStorageService = userStorageService,
-       _dio = dio;
+       _dio = dio,
+       _connectivity = connectivity {
+    if (_connectivity != null) {
+      _initConnectivityListener();
+    }
+  }
 
   final CramWorkloadCalculator _calculator;
   final AppDatabase? _database;
   final LocalStorageService? _storageService;
   final UserStorageService? _userStorageService;
   final Dio? _dio;
+  final Connectivity? _connectivity;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
+  void _initConnectivityListener() {
+    try {
+      _connectivitySub = _connectivity?.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
+        if (isOnline) {
+          unawaited(getActiveExams());
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  Future<void> dispose() async {
+    await _connectivitySub?.cancel();
+  }
 
   Dio? get _effectiveDio {
     if (_dio != null) return _dio;
@@ -75,6 +105,33 @@ class PlannerRepositoryImpl implements PlannerRepository {
       }
     } on Object catch (_) {}
     return null;
+  }
+
+  static const String _pendingExamDeletionsKey =
+      '__kortex_pending_exam_deletions';
+
+  Set<String> _getPendingExamDeletions() {
+    try {
+      final raw = _storage?.getPreference(key: _pendingExamDeletionsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final list = jsonDecode(raw) as List<dynamic>;
+        return list.map((e) => e.toString()).toSet();
+      }
+    } on Object catch (_) {}
+    return <String>{};
+  }
+
+  Future<void> _savePendingExamDeletions(Set<String> deletions) async {
+    try {
+      if (deletions.isEmpty) {
+        await _storage?.deletePreference(key: _pendingExamDeletionsKey);
+      } else {
+        await _storage?.savePreference(
+          key: _pendingExamDeletionsKey,
+          data: jsonEncode(deletions.toList()),
+        );
+      }
+    } on Object catch (_) {}
   }
 
   // In-memory local cache / fallback list
@@ -219,9 +276,28 @@ class PlannerRepositoryImpl implements PlannerRepository {
         _loadFromStorage();
       }
 
-      // Attempt background/active sync with Supabase backend
       final client = _effectiveDio;
       final userId = _userStorage?.getUserId() ?? '';
+
+      // 1. Flush any pending offline exam deletions to Supabase
+      final pendingDeletions = _getPendingExamDeletions();
+      if (pendingDeletions.isNotEmpty &&
+          client != null &&
+          AppApiEndpoint.baseUri.isNotEmpty) {
+        final remainingPending = Set<String>.from(pendingDeletions);
+        for (final deletedId in pendingDeletions) {
+          try {
+            final uri = userId.isNotEmpty
+                ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$deletedId&user_id=eq.$userId'
+                : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$deletedId';
+            await client.delete<dynamic>(uri);
+            remainingPending.remove(deletedId);
+          } on Object catch (_) {}
+        }
+        await _savePendingExamDeletions(remainingPending);
+      }
+
+      // 2. Attempt background/active sync with Supabase backend
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
         try {
           final uri = userId.isNotEmpty
@@ -229,17 +305,69 @@ class PlannerRepositoryImpl implements PlannerRepository {
               : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?order=target_date.asc';
           final response = await client.get<dynamic>(uri);
           if (response.statusCode == 200 && response.data is List) {
-            final remoteList =
-                (response.data as List<dynamic>)
-                    .map(
-                      (e) => ExamEventModel.fromJson(e as Map<String, dynamic>),
-                    )
-                    .toList()
-                  ..sort((a, b) => a.targetDate.compareTo(b.targetDate));
+            final remoteList = (response.data as List<dynamic>)
+                .map(
+                  (e) => ExamEventModel.fromJson(e as Map<String, dynamic>),
+                )
+                .where((e) => !pendingDeletions.contains(e.id))
+                .toList();
+
+            final remoteIds = remoteList.map((e) => e.id).toSet();
+
+            // 3. Auto-sync offline-created exams to Supabase
+            final localOnlyExams = _cachedExams
+                .where(
+                  (e) =>
+                      !remoteIds.contains(e.id) &&
+                      !pendingDeletions.contains(e.id),
+                )
+                .toList();
+
+            for (final localExam in localOnlyExams) {
+              unawaited(() async {
+                try {
+                  final syncPayload = <String, dynamic>{
+                    if (UuidUtils.isValidUuid(localExam.id)) 'id': localExam.id,
+                    'exam_name': localExam.examName,
+                    'target_date':
+                        localExam.targetDate.toIso8601String().split('T').first,
+                    'subject_track': localExam.subjectTrack,
+                    'assessment_type': localExam.assessmentType.name,
+                    'scoped_deck_ids': localExam.scopedDeckIds,
+                    'scoped_topics': localExam.scopedTopics,
+                    'weight_percent': ?localExam.weightPercent,
+                    'total_cards_count': localExam.totalCardsCount,
+                    'mastered_cards_count': localExam.masteredCardsCount,
+                    'total_lapses': localExam.totalLapses,
+                    'daily_target': localExam.dailyTarget,
+                    'target_score_percent': localExam.targetScorePercent,
+                    'is_completed': localExam.isCompleted,
+                    'is_postponed': localExam.isPostponed,
+                    'is_cancelled': localExam.isCancelled,
+                    if (userId.isNotEmpty) 'user_id': userId,
+                  };
+                  await client.post<dynamic>(
+                    '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
+                    data: syncPayload,
+                    options: Options(
+                      headers: {'Prefer': 'resolution=merge-duplicates'},
+                    ),
+                  );
+                } on Object catch (_) {}
+              }());
+            }
+
+            // 4. Safely merge: remoteList + any local-only exams
+            final merged = <ExamEventModel>[...remoteList];
+            for (final local in localOnlyExams) {
+              if (!merged.any((m) => m.id == local.id)) {
+                merged.add(local);
+              }
+            }
 
             _cachedExams
               ..clear()
-              ..addAll(remoteList);
+              ..addAll(merged);
             _saveToStorage();
           }
         } on Object catch (e) {
@@ -279,13 +407,14 @@ class PlannerRepositoryImpl implements PlannerRepository {
         daysRemaining: daysRemaining < 1 ? 1 : daysRemaining,
       );
 
-      var examId = 'exam-${DateTime.now().millisecondsSinceEpoch}';
+      var examId = UuidUtils.generate();
       final client = _effectiveDio;
       final userId = _userStorage?.getUserId() ?? '';
 
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
         try {
           final payload = <String, dynamic>{
+            'id': examId,
             'exam_name': examName,
             'target_date': targetDate.toIso8601String().split('T').first,
             'subject_track': subjectTrack,
@@ -303,7 +432,11 @@ class PlannerRepositoryImpl implements PlannerRepository {
           final response = await client.post<dynamic>(
             '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}',
             data: payload,
-            options: Options(headers: {'Prefer': 'return=representation'}),
+            options: Options(
+              headers: {
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+            ),
           );
 
           if (response.statusCode == 201 || response.statusCode == 200) {
@@ -676,6 +809,9 @@ class PlannerRepositoryImpl implements PlannerRepository {
   @override
   Future<Either<Failure, void>> deleteExam(String examId) {
     return Future<void>.sync(() async {
+      final pending = _getPendingExamDeletions()..add(examId);
+      await _savePendingExamDeletions(pending);
+
       final client = _effectiveDio;
       final userId = _userStorage?.getUserId() ?? '';
       if (client != null && AppApiEndpoint.baseUri.isNotEmpty) {
@@ -684,6 +820,8 @@ class PlannerRepositoryImpl implements PlannerRepository {
               ? '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId&user_id=eq.$userId'
               : '${AppApiEndpoint.baseUri}${AppApiEndpoint.examEvents}?id=eq.$examId';
           await client.delete<dynamic>(uri);
+          final remaining = _getPendingExamDeletions()..remove(examId);
+          await _savePendingExamDeletions(remaining);
         } on Object catch (e) {
           developer.log('Failed to delete exam from Supabase: $e');
         }

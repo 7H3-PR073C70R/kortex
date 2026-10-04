@@ -14,6 +14,7 @@ class ForumPostEntity extends Equatable {
     this.latexContent,
     this.isQuestion = false,
     this.isVerifiedSolution = false,
+    this.isAnonymous = false,
     this.syllabusTag = 'General',
     this.upvotes = 0,
     this.downvotes = 0,
@@ -23,6 +24,7 @@ class ForumPostEntity extends Equatable {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
     this.socraticHint,
     this.socraticHintGeneratedAt,
     this.karmaBounty = 0,
@@ -39,6 +41,7 @@ class ForumPostEntity extends Equatable {
   final String? latexContent;
   final bool isQuestion;
   final bool isVerifiedSolution;
+  final bool isAnonymous;
   final String syllabusTag;
   final int upvotes;
   final int downvotes;
@@ -48,6 +51,7 @@ class ForumPostEntity extends Equatable {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final String? socraticHint;
   final DateTime? socraticHintGeneratedAt;
   final int karmaBounty;
@@ -70,6 +74,7 @@ class ForumPostEntity extends Equatable {
     String? latexContent,
     bool? isQuestion,
     bool? isVerifiedSolution,
+    bool? isAnonymous,
     String? syllabusTag,
     int? upvotes,
     int? downvotes,
@@ -79,6 +84,7 @@ class ForumPostEntity extends Equatable {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     String? socraticHint,
     DateTime? socraticHintGeneratedAt,
     int? karmaBounty,
@@ -96,6 +102,7 @@ class ForumPostEntity extends Equatable {
       latexContent: latexContent ?? this.latexContent,
       isQuestion: isQuestion ?? this.isQuestion,
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
       syllabusTag: syllabusTag ?? this.syllabusTag,
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
@@ -106,6 +113,7 @@ class ForumPostEntity extends Equatable {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       socraticHint: socraticHint ?? this.socraticHint,
       socraticHintGeneratedAt:
           socraticHintGeneratedAt ?? this.socraticHintGeneratedAt,
@@ -127,6 +135,7 @@ class ForumPostEntity extends Equatable {
     latexContent,
     isQuestion,
     isVerifiedSolution,
+    isAnonymous,
     syllabusTag,
     upvotes,
     downvotes,
@@ -136,6 +145,7 @@ class ForumPostEntity extends Equatable {
     mediaUrls,
     voiceNoteUrl,
     voiceNoteDurationSeconds,
+    voiceNoteTranscript,
     socraticHint,
     socraticHintGeneratedAt,
     karmaBounty,
@@ -157,6 +167,7 @@ class ForumReplyEntity extends Equatable {
     this.authorAvatar,
     this.latexContent,
     this.isVerifiedSolution = false,
+    this.isAnonymous = false,
     this.upvotes = 0,
     this.downvotes = 0,
     this.userVote = 0,
@@ -164,6 +175,7 @@ class ForumReplyEntity extends Equatable {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
   });
 
   final String id;
@@ -175,6 +187,7 @@ class ForumReplyEntity extends Equatable {
   final String content;
   final String? latexContent;
   final bool isVerifiedSolution;
+  final bool isAnonymous;
   final int upvotes;
   final int downvotes;
   final int userVote;
@@ -182,6 +195,7 @@ class ForumReplyEntity extends Equatable {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final DateTime createdAt;
 
   int get netVotes => upvotes - downvotes;
@@ -197,6 +211,7 @@ class ForumReplyEntity extends Equatable {
     String? content,
     String? latexContent,
     bool? isVerifiedSolution,
+    bool? isAnonymous,
     int? upvotes,
     int? downvotes,
     int? userVote,
@@ -204,6 +219,7 @@ class ForumReplyEntity extends Equatable {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     DateTime? createdAt,
   }) {
     return ForumReplyEntity(
@@ -216,6 +232,7 @@ class ForumReplyEntity extends Equatable {
       content: content ?? this.content,
       latexContent: latexContent ?? this.latexContent,
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
       userVote: userVote ?? this.userVote,
@@ -224,6 +241,7 @@ class ForumReplyEntity extends Equatable {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -239,6 +257,7 @@ class ForumReplyEntity extends Equatable {
     content,
     latexContent,
     isVerifiedSolution,
+    isAnonymous,
     upvotes,
     downvotes,
     userVote,
@@ -246,6 +265,7 @@ class ForumReplyEntity extends Equatable {
     mediaUrls,
     voiceNoteUrl,
     voiceNoteDurationSeconds,
+    voiceNoteTranscript,
     createdAt,
   ];
 }

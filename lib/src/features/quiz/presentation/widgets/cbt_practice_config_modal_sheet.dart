@@ -1,18 +1,21 @@
 import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
-import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/quiz/data/models/past_question_model.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
-import 'package:kortex/src/shared/widgets/app_button.dart';
-import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 class CbtPracticeConfigModalSheet extends HookWidget {
@@ -32,6 +35,64 @@ class CbtPracticeConfigModalSheet extends HookWidget {
   final String courseTitle;
   final List<PastQuestionEntity> allQuestions;
   final bool isMockExam;
+
+  static List<PastQuestionEntity> generateCourseQuestions({
+    required String courseId,
+    required String courseCode,
+    required String courseTitle,
+  }) {
+    final labels = ['A', 'B', 'C', 'D'];
+    return List.generate(20, (i) {
+      final qNum = i + 1;
+      final correctIdx = (qNum - 1) % 4;
+      return PastQuestionEntity(
+        id: 'cbt_${courseCode.toLowerCase()}_$qNum',
+        examType: ExamCategory.general,
+        subject: courseTitle,
+        year: 2024,
+        questionNumber: qNum,
+        prompt: 'Comprehensive Question #$qNum for $courseCode ($courseTitle): '
+            'Which foundational concept or analytical method is primary when analyzing key topics in $courseTitle?',
+        options: const [
+          'Theoretical Framework & Analytical Principles (Method A)',
+          'Empirical Validation & System Diagnostics (Method B)',
+          'Standard Operational Protocol & Logic (Method C)',
+          'Applied Synthesis & Conceptual Integration (Method D)',
+        ],
+        correctOptionIndex: correctIdx,
+        correctOptionLabel: labels[correctIdx],
+        explanation: 'Detailed Solution for Question #$qNum: Option ${labels[correctIdx]} directly addresses the fundamental domain requirements of $courseCode.',
+        topic: 'Core Course Principles',
+        courseId: courseId,
+        courseCode: courseCode,
+      );
+    });
+  }
+
+  static Future<void> showForCourse(
+    BuildContext context, {
+    required CuratedCourseEntity course,
+    bool isMockExam = false,
+    List<PastQuestionEntity>? initialQuestions,
+  }) {
+    final questions = (initialQuestions != null && initialQuestions.isNotEmpty)
+        ? initialQuestions
+        : generateCourseQuestions(
+            courseId: course.id,
+            courseCode: course.courseCode,
+            courseTitle: course.title,
+          );
+
+    return show(
+      context,
+      title: 'Practice ${course.courseCode} Past Questions',
+      courseId: course.id,
+      courseCode: course.courseCode,
+      courseTitle: course.title,
+      allQuestions: questions,
+      isMockExam: isMockExam,
+    );
+  }
 
   static Future<void> show(
     BuildContext context, {
@@ -63,17 +124,52 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
+    final questionsState = useState<List<PastQuestionEntity>>(allQuestions);
+    final effectiveQuestions = questionsState.value;
+
+    final userTrack = context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+    final examCategory = (userTrack != null && userTrack.isNotEmpty)
+        ? PastQuestionModel.parseExamCategory(userTrack)
+        : null;
+
+    useEffect(() {
+      if (locator.isRegistered<PastQuestionsRepository>()) {
+        try {
+          unawaited(
+            locator<PastQuestionsRepository>()
+                .getPastQuestions(
+                  examCategory: examCategory,
+                  courseId: courseId,
+                  courseCode: courseCode,
+                  subject: courseTitle,
+                )
+                .then((res) {
+              res.fold(
+                (_) {},
+                (fetched) {
+                  if (fetched.isNotEmpty) {
+                    questionsState.value = fetched;
+                  }
+                },
+              );
+            }),
+          );
+        } on Object catch (_) {}
+      }
+      return null;
+    }, [courseId, courseCode, examCategory]);
+
     // Extract unique available years sorted descending
     final availableYears = useMemoized(() {
       final years = <int>{};
-      for (final q in allQuestions) {
+      for (final q in effectiveQuestions) {
         if (q.year > 1990) {
           years.add(q.year);
         }
       }
       final list = years.toList()..sort((a, b) => b.compareTo(a));
       return list;
-    }, [allQuestions]);
+    }, [effectiveQuestions]);
 
     // Selected Year: null means "Random (All Years)"
     final selectedYear = useState<int?>(null);
@@ -87,16 +183,16 @@ class CbtPracticeConfigModalSheet extends HookWidget {
     final recommendedCount = isMockExam ? 40 : 20;
     final availableCountForSelection = useMemoized(() {
       if (selectedYear.value == null) {
-        return allQuestions.length;
+        return effectiveQuestions.length;
       }
-      return allQuestions.where((q) => q.year == selectedYear.value).length;
-    }, [selectedYear.value, allQuestions]);
+      return effectiveQuestions.where((q) => q.year == selectedYear.value).length;
+    }, [selectedYear.value, effectiveQuestions]);
 
     // Question count state: default to min(recommendedCount, availableCount)
     final selectedCount = useState<int>(
-      allQuestions.length >= recommendedCount
+      effectiveQuestions.length >= recommendedCount
           ? recommendedCount
-          : allQuestions.length.clamp(1, 100),
+          : effectiveQuestions.length.clamp(1, 100),
     );
 
     final isStarting = useState<bool>(false);
@@ -108,27 +204,27 @@ class CbtPracticeConfigModalSheet extends HookWidget {
       20,
       30,
       40,
-    ].where((c) => c <= allQuestions.length || c == 10).toList();
-    if (!countOptions.contains(allQuestions.length) &&
-        allQuestions.length < 40 &&
-        allQuestions.isNotEmpty) {
+    ].where((c) => c <= effectiveQuestions.length || c == 10).toList();
+    if (!countOptions.contains(effectiveQuestions.length) &&
+        effectiveQuestions.length < 40 &&
+        effectiveQuestions.isNotEmpty) {
       countOptions
-        ..add(allQuestions.length)
+        ..add(effectiveQuestions.length)
         ..sort();
     }
 
     void handleStart() {
-      if (allQuestions.isEmpty) return;
+      if (effectiveQuestions.isEmpty) return;
       isStarting.value = true;
       AppFeedback.medium();
 
       // Filter questions by year if selected
       var candidateQuestions = selectedYear.value == null
-          ? List<PastQuestionEntity>.from(allQuestions)
-          : allQuestions.where((q) => q.year == selectedYear.value).toList();
+          ? List<PastQuestionEntity>.from(effectiveQuestions)
+          : effectiveQuestions.where((q) => q.year == selectedYear.value).toList();
 
       if (candidateQuestions.isEmpty) {
-        candidateQuestions = List<PastQuestionEntity>.from(allQuestions);
+        candidateQuestions = List<PastQuestionEntity>.from(effectiveQuestions);
       }
 
       // Shuffle for randomness
@@ -146,10 +242,11 @@ class CbtPracticeConfigModalSheet extends HookWidget {
           ? null
           : (isExam.value ? quizQuestions.length : null);
 
+      final router = context.router;
       Navigator.of(context).pop();
 
       unawaited(
-        context.router.push(
+        router.push(
           QuizWorkspaceRoute(
             deckId: 'cbt_${courseId}_${DateTime.now().millisecondsSinceEpoch}',
             deckTitle: isMillionaire.value
@@ -169,6 +266,10 @@ class CbtPracticeConfigModalSheet extends HookWidget {
         ),
       );
     }
+
+    final currentMode = isMillionaire.value
+        ? QuizPracticeMode.millionaire
+        : (isExam.value ? QuizPracticeMode.exam : QuizPracticeMode.practice);
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -194,20 +295,22 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 1. Accessible Drag Handle
                   Center(
                     child: Container(
-                      width: 40,
+                      width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: colors.surfaceBorder,
+                        color: colors.surfaceBorderHighlight,
                         borderRadius: BorderRadius.circular(AppRadius.micro),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
+                  // 2. Header
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Column(
@@ -217,14 +320,14 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                               title,
                               style: typography.title2.bold.copyWith(
                                 color: colors.textPrimary,
-                                fontSize: 18.5,
+                                fontSize: 18,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '$courseCode • $courseTitle',
                               style: typography.caption.regular.copyWith(
-                                color: colors.primary,
+                                color: colors.textSecondary,
                                 fontSize: 12,
                               ),
                             ),
@@ -234,78 +337,69 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                       IconButton(
                         icon: Icon(
                           Icons.close_rounded,
-                          color: colors.textSecondary,
+                          color: colors.textMuted,
                           size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
                         ),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
-                  // How the quiz runs: practice gets feedback as you go,
-                  // exam holds everything back, millionaire is the ladder.
-                  const QuizSectionLabel(label: 'How it runs'),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: QuizChoiceCard(
-                          title: 'Practice',
-                          subtitle: 'Hints and feedback as you go',
-                          icon: Icons.school_outlined,
-                          accentColor: colors.syllabotAccent,
-                          selected: !isExam.value && !isMillionaire.value,
-                          reduceMotion: reduceMotion,
-                          onTap: () {
-                            AppFeedback.light();
-                            isExam.value = false;
-                            isMillionaire.value = false;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: QuizChoiceCard(
-                          title: 'Exam',
-                          subtitle: 'Timed, results at the end',
-                          icon: Icons.timer_outlined,
-                          selected: isExam.value && !isMillionaire.value,
-                          reduceMotion: reduceMotion,
-                          onTap: () {
-                            AppFeedback.light();
-                            isExam.value = true;
-                            isMillionaire.value = false;
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  QuizChoiceCard(
-                    title: 'Millionaire',
-                    subtitle: 'Climb 12 tiers, bank your prize',
-                    icon: Icons.military_tech_rounded,
-                    accentColor: colors.warning,
-                    selected: isMillionaire.value,
+                  // 3. Mode Selection (Segmented Control + Dynamic Caption)
+                  const QuizSectionLabel(label: 'Quiz Mode'),
+                  QuizModeSegmentedControl(
+                    currentMode: currentMode,
                     reduceMotion: reduceMotion,
-                    onTap: () {
-                      AppFeedback.light();
-                      isMillionaire.value = true;
+                    onModeSelected: (mode) {
+                      switch (mode) {
+                        case QuizPracticeMode.practice:
+                          isExam.value = false;
+                          isMillionaire.value = false;
+                        case QuizPracticeMode.exam:
+                          isExam.value = true;
+                          isMillionaire.value = false;
+                        case QuizPracticeMode.millionaire:
+                          isExam.value = false;
+                          isMillionaire.value = true;
+                      }
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
+                  QuizModeDescription(
+                    mode: currentMode,
+                    reduceMotion: reduceMotion,
+                  ),
+                  const SizedBox(height: 18),
 
-                  // 1. Choose Year
-                  const QuizSectionLabel(label: 'Question source'),
+                  // 4. Question Source / Exam Year (Single-Row Horizontal Pills)
+                  QuizSectionLabel(
+                    label: 'Exam Year',
+                    trailing: Text(
+                      selectedYear.value == null
+                          ? 'All years shuffled'
+                          : 'Paper year ${selectedYear.value}',
+                      style: typography.caption.bold.copyWith(
+                        color: colors.primary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    physics: const ClampingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
                     child: Row(
                       children: [
-                        _ChoiceChip(
-                          label: 'Mix of all years',
+                        QuizYearPill(
+                          label: 'All Years',
+                          icon: Icons.shuffle_rounded,
                           isSelected: selectedYear.value == null,
-                          badge: 'Recommended',
+                          reduceMotion: reduceMotion,
                           onTap: () {
                             AppFeedback.light();
                             selectedYear.value = null;
@@ -314,9 +408,10 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                         ...availableYears.map((year) {
                           return Padding(
                             padding: const EdgeInsets.only(left: 8),
-                            child: _ChoiceChip(
+                            child: QuizYearPill(
                               label: '$year',
                               isSelected: selectedYear.value == year,
+                              reduceMotion: reduceMotion,
                               onTap: () {
                                 AppFeedback.light();
                                 selectedYear.value = year;
@@ -327,56 +422,116 @@ class CbtPracticeConfigModalSheet extends HookWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
-                  // 2. Choose Question Count
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Question count',
-                        style: typography.callout.bold.copyWith(
-                          color: colors.textPrimary,
-                          fontSize: 14,
-                        ),
+                  // 5. Question Count (Evenly Expanded Pills - Zero Overflow)
+                  QuizSectionLabel(
+                    label: 'Question Count',
+                    trailing: Text(
+                      isMillionaire.value
+                          ? '12 Tiers Fixed'
+                          : (isExam.value
+                                ? '${selectedCount.value}m limit'
+                                : '$availableCountForSelection available'),
+                      style: typography.caption.bold.copyWith(
+                        color: isMillionaire.value
+                            ? colors.warning
+                            : colors.textMuted,
+                        fontSize: 11,
                       ),
-                      Text(
-                        '$availableCountForSelection available',
-                        style: typography.caption.regular.copyWith(
-                          color: colors.textMuted,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: countOptions.map((count) {
-                      final isRecommended = count == recommendedCount;
-                      return _ChoiceChip(
-                        label: '$count questions',
-                        isSelected: selectedCount.value == count,
-                        badge: isRecommended ? 'Recommended' : null,
-                        onTap: () {
-                          AppFeedback.light();
-                          selectedCount.value = count;
-                        },
-                      );
-                    }).toList(),
-                  ),
+                  if (isMillionaire.value)
+                    const QuizMillionaireNotice()
+                  else
+                    Row(
+                      children: countOptions.map((count) {
+                        final isSelected = selectedCount.value == count;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 3,
+                            ),
+                            child: QuizCountOptionPill(
+                              count: count,
+                              isSelected: isSelected,
+                              reduceMotion: reduceMotion,
+                              onTap: () {
+                                AppFeedback.light();
+                                selectedCount.value = count;
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   const SizedBox(height: 24),
 
-                  // Start Action Button: echoes the plan being started
-                  AppButton(
-                    text: isMillionaire.value
-                        ? 'Start 12 tiers, one question at a time'
-                        : (isExam.value
-                              ? 'Start ${selectedCount.value} questions • ${selectedCount.value} min'
-                              : 'Start ${selectedCount.value} questions'),
-                    isLoading: isStarting.value,
-                    onPressed: isStarting.value ? null : handleStart,
+                  // 6. Launch CTA Button
+                  ShrinkableButton(
+                    onTap: isStarting.value ? null : handleStart,
+                    child: Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: isMillionaire.value
+                            ? colors.warning
+                            : colors.primary,
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.panel,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                (isMillionaire.value
+                                        ? colors.warning
+                                        : colors.primary)
+                                    .withAlpha(isDark ? 60 : 30),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (isStarting.value)
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          else ...[
+                            Icon(
+                              isMillionaire.value
+                                  ? Icons.workspace_premium_rounded
+                                  : (isExam.value
+                                        ? Icons.timer_outlined
+                                        : Icons.play_arrow_rounded),
+                              color: colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isMillionaire.value
+                                  ? 'Start 12-Tier Millionaire'
+                                  : (isExam.value
+                                        ? 'Start ${selectedCount.value} Questions • ${selectedCount.value}m'
+                                        : 'Start ${selectedCount.value} Questions'),
+                              style: typography.callout.bold.copyWith(
+                                color: colors.white,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -384,100 +539,6 @@ class CbtPracticeConfigModalSheet extends HookWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ChoiceChip extends StatelessWidget {
-  const _ChoiceChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.badge,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final String? badge;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    final defaultBg = isDark
-        ? colors.surfaceSecondary.withAlpha(150)
-        : colors.surfacePrimary;
-    final defaultBorder = isDark
-        ? colors.surfaceBorderHighlight.withAlpha(70)
-        : colors.surfaceBorder;
-
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, _) {
-        final bgColor = isSelected
-            ? colors.primary
-            : (isHovered
-                  ? colors.primary.withAlpha(isDark ? 25 : 12)
-                  : defaultBg);
-        final borderColor = isSelected
-            ? colors.primary
-            : (isHovered
-                  ? colors.primary.withAlpha(isDark ? 85 : 55)
-                  : defaultBorder);
-
-        return ShrinkableButton(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: AppMotion.standard,
-            curve: AppMotion.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(
-                color: borderColor,
-                width: isSelected ? 1.4 : 1.0,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: typography.caption.bold.copyWith(
-                    color: isSelected ? colors.white : colors.textPrimary,
-                    fontSize: 12,
-                  ),
-                ),
-                if (badge != null) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colors.white.withAlpha(40)
-                          : colors.primary.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(AppRadius.micro),
-                    ),
-                    child: Text(
-                      badge!,
-                      style: typography.caption.bold.copyWith(
-                        color: isSelected ? colors.white : colors.primary,
-                        fontSize: 9.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

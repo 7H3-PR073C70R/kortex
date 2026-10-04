@@ -22,11 +22,11 @@ class ProfileApiClient {
       'display_name': ?displayName,
       'photo_url': ?photoUrl,
       'streak_days': ?streakDays,
-      'streak_freeze_count': ?streakFreezeCount,
       'updated_at': DateTime.now().toIso8601String(),
     };
 
-    if (userId.isNotEmpty && data.isNotEmpty) {
+    if (userId.isNotEmpty &&
+        (displayName != null || photoUrl != null || streakDays != null)) {
       await _dio.patch<dynamic>(
         '${AppApiEndpoint.baseUri}${AppApiEndpoint.userProfiles}?id=eq.$userId',
         data: data,
@@ -50,6 +50,9 @@ class ProfileApiClient {
       if (isDataUri) ...{
         'photo_url': null,
         'avatar_url': null,
+      },
+      if (streakFreezeCount != null) ...{
+        'streak_freeze_count': streakFreezeCount,
       },
     };
 

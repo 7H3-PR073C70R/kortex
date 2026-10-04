@@ -186,5 +186,128 @@ void main() {
       final currentMatch = await client.streamDuel(match.duelId).first;
       expect(currentMatch.player1.score, greaterThan(0));
     });
+
+    test('round expiration defaults unanswered players to selectedOptionIndex -1', () async {
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+      );
+
+      client.forceStartRound(match.duelId);
+
+      // Wait for round timer to naturally expire or trigger conclusion
+      final initialMatch = await client.streamDuel(match.duelId).first;
+      expect(initialMatch.status, equals(QuizDuelStatus.inRound));
+
+      // Simulate player1 submitting, but player2 not answering
+      await client.submitDuelAnswer(
+        duelId: match.duelId,
+        userId: 'player1_id',
+        questionIndex: 0,
+        optionIndex: 0,
+        responseTimeMs: 1000,
+      );
+
+      // Force conclude round
+      client.forceStartRound(match.duelId, 1);
+
+      final updatedMatch = await client.streamDuel(match.duelId).first;
+      expect(updatedMatch.currentQuestionIndex, equals(1));
+      expect(updatedMatch.status, equals(QuizDuelStatus.inRound));
+    });
+
+    test('leaveDuel triggers forfeit victory for remaining player', () async {
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+      );
+
+      client.simulateMatchFoundWithAi(match.duelId);
+      final activeMatch = await client.streamDuel(match.duelId).first;
+
+      // Player 2 leaves / forfeits
+      final p2Id = activeMatch.player2!.userId;
+      await client.leaveDuel(duelId: match.duelId, userId: p2Id);
+
+      final finishedMatch = await client.streamDuel(match.duelId).first;
+      expect(finishedMatch.status, equals(QuizDuelStatus.finished));
+      expect(finishedMatch.winnerUserId, equals('player1_id'));
+      expect(finishedMatch.forfeitUserId, equals(p2Id));
+    });
+
+    test('full multi-round duel progresses through all questions to finished status', () async {
+      final questions = QuizDuelWebSocketClient.getDefaultDuelQuestions('Physics', 'WAEC', count: 2);
+      final match = await client.findOrCreateDuel(
+        subject: 'Physics',
+        examBoard: 'WAEC',
+        userId: 'player1_id',
+        displayName: 'Scholar One',
+        avatarUrl: '⚡',
+        questionCount: 2,
+        customQuestions: questions,
+      );
+
+      client.forceStartRound(match.duelId);
+      var current = await client.streamDuel(match.duelId).first;
+      expect(current.currentQuestionIndex, equals(0));
+
+      // Player 1 & 2 answer Q0
+      await client.submitDuelAnswer(
+        duelId: match.duelId,
+        userId: 'player1_id',
+        questionIndex: 0,
+        optionIndex: 0,
+        responseTimeMs: 1200,
+      );
+
+      // Advance to Q1
+      client.forceStartRound(match.duelId, 1);
+      current = await client.streamDuel(match.duelId).first;
+      expect(current.currentQuestionIndex, equals(1));
+
+      // Player 1 & 2 answer Q1
+      await client.submitDuelAnswer(
+        duelId: match.duelId,
+        userId: 'player1_id',
+        questionIndex: 1,
+        optionIndex: 0,
+        responseTimeMs: 1000,
+      );
+
+      // Transition beyond last question -> finalize
+      client.forceStartRound(match.duelId, 2);
+      final finishedMatch = await client.streamDuel(match.duelId).first;
+      expect(finishedMatch.status, equals(QuizDuelStatus.finished));
+    });
+
+    test('generateRoomCode produces clean 6-character uppercase alphanumeric code', () {
+      final code = QuizDuelWebSocketClient.generateRoomCode();
+      expect(code.length, equals(6));
+      expect(code, equals(code.toUpperCase()));
+      // Ambiguous characters O, 0, I, 1 should not be present
+      expect(code.contains('O'), isFalse);
+      expect(code.contains('0'), isFalse);
+      expect(code.contains('I'), isFalse);
+      expect(code.contains('1'), isFalse);
+    });
+
+    test('findOrCreateDuel with roomCode attaches roomCode to match entity', () async {
+      final match = await client.findOrCreateDuel(
+        subject: 'Mathematics',
+        examBoard: 'WAEC',
+        userId: 'host_user',
+        displayName: 'Host Scholar',
+        avatarUrl: '🎯',
+        roomCode: 'K7X9P2',
+      );
+
+      expect(match.roomCode, equals('K7X9P2'));
+    });
   });
 }

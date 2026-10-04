@@ -24,6 +24,7 @@ import 'package:kortex/src/features/quiz/presentation/widgets/mcq_option_card.da
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_audience_poll_dialog.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_ladder_drawer.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/millionaire_lifeline_bar.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_audio_reader_button.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -64,7 +65,7 @@ class QuizWorkspacePage extends StatelessWidget {
       deckId: deckId,
       deckTitle: deckTitle ?? subject,
       courseId: courseId,
-      courseCode: courseCode,
+      courseCode: courseCode ?? subject,
       reviewMode: reviewMode,
     );
     try {
@@ -143,7 +144,10 @@ class _QuizWorkspaceView extends HookWidget {
     final isDark = context.isDarkMode;
 
     var effectiveCourseId = courseId;
-    var effectiveCourseCode = courseCode;
+    var effectiveCourseCode = courseCode ??
+        (deckTitle != null && deckTitle!.contains('(')
+            ? deckTitle!.split('(').first.trim()
+            : deckTitle);
 
     if (effectiveCourseId == null || effectiveCourseCode == null) {
       if (locator.isRegistered<DecksBloc>()) {
@@ -639,6 +643,25 @@ class _QuizWorkspaceView extends HookWidget {
                             return const SizedBox.shrink();
                           }
 
+                          final userPick = current.userSelectedAnswer ??
+                              (isPractice ? state.pendingAnswer : null);
+                          final isOptSelected = userPick != null &&
+                              userPick.trim().isNotEmpty &&
+                              (userPick == opt || _isSameAnswer(userPick, opt));
+                          final isCorrectOption = _isSameAnswer(
+                            opt,
+                            current.correctAnswer,
+                          );
+                          final isAnsweredState = reviewMode || current.isAnswered;
+
+                          final optionTrailingLabel = isAnsweredState
+                              ? (isOptSelected
+                                  ? (isCorrectOption
+                                      ? 'Your Answer'
+                                      : 'Your Answer')
+                                  : (isCorrectOption ? 'Correct Answer' : null))
+                              : null;
+
                           return QuizStaggeredFade(
                             index: 3 + idx,
                             distance: 10,
@@ -647,29 +670,11 @@ class _QuizWorkspaceView extends HookWidget {
                               optionText: opt,
                               index: idx,
                               reduceMotion: reduceMotion,
+                              trailingLabel: optionTrailingLabel,
                               state: McqOptionCard.resolveState(
-                                isSelected: reviewMode
-                                    ? (current.userSelectedAnswer == opt ||
-                                        _isSameAnswer(
-                                          current.userSelectedAnswer ?? '',
-                                          opt,
-                                        ))
-                                    : (isPractice
-                                        ? (state.pendingAnswer == opt ||
-                                            _isSameAnswer(
-                                              state.pendingAnswer ?? '',
-                                              opt,
-                                            ))
-                                        : (current.userSelectedAnswer == opt ||
-                                            _isSameAnswer(
-                                              current.userSelectedAnswer ?? '',
-                                              opt,
-                                            ))),
-                                isAnswered: reviewMode || current.isAnswered,
-                                isCorrect: _isSameAnswer(
-                                  opt,
-                                  current.correctAnswer,
-                                ),
+                                isSelected: isOptSelected,
+                                isAnswered: isAnsweredState,
+                                isCorrect: isCorrectOption,
                               ),
                               onTap: () {
                                 // Review is read-only: taps do nothing.
@@ -1030,12 +1035,25 @@ class _QuizPromptCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LatexRichViewer(
-            text: question.prompt,
-            style: typography.title3.bold.copyWith(
-              color: colors.textPrimary,
-              height: 1.4,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: LatexRichViewer(
+                  text: question.prompt,
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              QuizAudioReaderButton(
+                questionText: question.prompt,
+                options: question.options,
+                size: 34,
+              ),
+            ],
           ),
           if (question.imageUrl != null &&
               question.imageUrl!.trim().isNotEmpty) ...[

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -62,7 +63,10 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
            (locator.isRegistered<LocalStorageService>()
                ? locator<LocalStorageService>()
                : null),
-       _ttsHandler = ttsHandler,
+       _ttsHandler = ttsHandler ??
+           (locator.isRegistered<TextToSpeechService>()
+               ? TextToSpeechHandler()
+               : null),
        super(const FocusSessionState()) {
     _initTtsListener();
   }
@@ -436,6 +440,23 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
           durationSeconds: state.elapsedSeconds,
           retentionScore: finalRetention.clamp(0.0, 1.0),
           masteredCards: mastered,
+          activityCategory: 'focus_session',
+          subject: state.deckTitle,
+        );
+      }
+    } on Object catch (_) {}
+
+    try {
+      if (locator.isRegistered<StudyActivityTracker>()) {
+        unawaited(
+          locator<StudyActivityTracker>().recordActivityCompletion(
+            durationSeconds: state.elapsedSeconds,
+            activityType: 'focus_session',
+            metadata: {
+              'deckId': state.deckId,
+              'deckTitle': state.deckTitle,
+            },
+          ),
         );
       }
     } on Object catch (_) {}
@@ -463,6 +484,9 @@ class FocusSessionCubit extends Cubit<FocusSessionState> {
         );
       } on Object catch (_) {}
     }
+
+    // Flush any pending FSRS review logs to backend
+    unawaited(_cardSyncQueue.flushPendingLogs());
 
     AppFeedback.celebration();
 

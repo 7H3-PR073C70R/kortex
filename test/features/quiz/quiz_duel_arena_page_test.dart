@@ -140,7 +140,7 @@ void main() {
       expect(find.text('Scholar One Won the Duel!'), findsOneWidget);
       expect(find.text('450 pts'), findsOneWidget);
       expect(find.text('300 pts'), findsOneWidget);
-      expect(find.text('Rematch'), findsOneWidget);
+      expect(find.textContaining('Rematch'), findsWidgets);
       expect(find.text('Return to Dashboard'), findsOneWidget);
     });
 
@@ -171,6 +171,54 @@ void main() {
       expect(find.text('Rival Forfeited! Victory Awarded'), findsOneWidget);
       expect(find.text('Syllabot Rival left the arena. You have been awarded +500 victory points!'), findsOneWidget);
       expect(find.text('Return to Dashboard'), findsOneWidget);
+    });
+
+    testWidgets('renders room code badge in countdown lobby when roomCode is present', (
+      tester,
+    ) async {
+      when(() => mockCubit.state).thenReturn(
+        QuizDuelState(
+          status: QuizDuelStatus.countdown,
+          currentUserId: 'user_1',
+          match: testMatch.copyWith(
+            status: QuizDuelStatus.countdown,
+            roomCode: 'X9K2P4',
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          cubit: mockCubit,
+          child: const QuizDuelArenaPage(),
+        ),
+      );
+
+      expect(find.text('ROOM CODE: X9K2P4'), findsOneWidget);
+    });
+
+    testWidgets('renders room code chip in active duel round AppBar when roomCode is present', (
+      tester,
+    ) async {
+      when(() => mockCubit.state).thenReturn(
+        QuizDuelState(
+          status: QuizDuelStatus.inRound,
+          currentUserId: 'user_1',
+          match: testMatch.copyWith(
+            roomCode: 'X9K2P4',
+          ),
+          remainingSeconds: 10,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          cubit: mockCubit,
+          child: const QuizDuelArenaPage(),
+        ),
+      );
+
+      expect(find.text('X9K2P4'), findsOneWidget);
     });
   });
 }

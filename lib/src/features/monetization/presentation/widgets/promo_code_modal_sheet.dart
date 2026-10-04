@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -50,6 +51,7 @@ class PromoCodeModalSheet extends StatefulWidget {
 
 class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
   late final TextEditingController _codeController;
+  late final ConfettiController _confettiController;
   bool _isLoading = false;
   String? _errorMessage;
   bool _isSuccess = false;
@@ -59,11 +61,13 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
   void initState() {
     super.initState();
     _codeController = TextEditingController(text: widget.initialCode ?? '');
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
   }
 
   @override
   void dispose() {
     _codeController.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
@@ -108,6 +112,7 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
               _isSuccess = true;
               _grantedDays = redemption.durationDays ?? 365;
             });
+            _confettiController.play();
             widget.onRedeemed?.call();
           } else {
             setState(() {
@@ -140,33 +145,37 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
       elevation: 0,
       insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
       alignment: Alignment.center,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 460),
-        child: ClipRRect(
-          borderRadius: AppRadius.radiusDialog,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: EdgeInsets.all(22.r),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? colors.surfaceSecondary.withAlpha(245)
-                    : colors.surfacePrimary.withAlpha(250),
-                borderRadius: AppRadius.radiusDialog,
-                border: Border.all(
-                  color: isDark
-                      ? colors.surfaceBorderHighlight.withAlpha(90)
-                      : colors.surfaceBorder,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.black.withAlpha(isDark ? 160 : 40),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
+      child: Stack(
+        alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: ClipRRect(
+              borderRadius: AppRadius.radiusDialog,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: EdgeInsets.all(22.r),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colors.surfaceSecondary.withAlpha(245)
+                        : colors.surfacePrimary.withAlpha(250),
+                    borderRadius: AppRadius.radiusDialog,
+                    border: Border.all(
+                      color: isDark
+                          ? colors.surfaceBorderHighlight.withAlpha(90)
+                          : colors.surfaceBorder,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 160 : 40),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: SingleChildScrollView(
+                  child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -355,13 +364,26 @@ class _PromoCodeModalSheetState extends State<PromoCodeModalSheet> {
                         onPressed: _redeem,
                       ),
                     ],
-                  ].animate(interval: 80.ms).fadeIn(duration: 250.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint),
-                ),
+                  ],
+                ).animate().fadeIn(duration: 250.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint),
               ),
             ),
           ),
         ),
       ),
+        ConfettiWidget(
+          confettiController: _confettiController,
+          blastDirectionality: BlastDirectionality.explosive,
+          colors: [
+            colors.primary,
+            colors.syllabotAccent,
+            colors.success,
+            colors.warning,
+            colors.info,
+          ],
+        ),
+      ],
+    ),
     );
   }
 }

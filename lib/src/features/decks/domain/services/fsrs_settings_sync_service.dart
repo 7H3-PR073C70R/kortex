@@ -52,6 +52,49 @@ class FsrsSettingsSyncService {
     return const FsrsUserSettings();
   }
 
+  /// Restores user notification preferences and desired retention from Supabase
+  /// if local storage is missing or default.
+  Future<FsrsUserSettings?> restoreFromRemote() async {
+    try {
+      final dio = _effectiveDio;
+      if (dio == null) return null;
+
+      final response = await dio.get<dynamic>(
+        '${AppApiEndpoint.baseUri}${AppApiEndpoint.userProfiles}?select=*&limit=1',
+        options: Options(
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        final list = response.data as List<dynamic>;
+        if (list.isNotEmpty && list.first is Map<String, dynamic>) {
+          final row = list.first as Map<String, dynamic>;
+          final hour = (row['notification_reminder_hour'] as num?)?.toInt();
+          final minute = (row['notification_reminder_minute'] as num?)?.toInt();
+          final retention = (row['fsrs_desired_retention'] as num?)?.toDouble() ??
+              (row['retention_benchmark'] as num?)?.toDouble();
+          final dailyTarget = (row['daily_card_target'] as num?)?.toInt();
+
+          if (hour != null || retention != null || dailyTarget != null) {
+            final current = load();
+            final restored = current.copyWith(
+              preferredReminderHour: hour ?? current.preferredReminderHour,
+              preferredReminderMinute: minute ?? current.preferredReminderMinute,
+              desiredRetention: retention ?? current.desiredRetention,
+              newCardsPerDay: dailyTarget ?? current.newCardsPerDay,
+            );
+            await _saveLocally(restored);
+            return restored;
+          }
+        }
+      }
+    } on Object catch (e) {
+      developer.log('FsrsSettingsSyncService.restoreFromRemote error: $e');
+    }
+    return null;
+  }
+
   // ── Private helpers ────────────────────────────────────────────────────────
 
   LocalStorageService? get _storage {
@@ -94,6 +137,11 @@ class FsrsSettingsSyncService {
           'p_reminder_minute': settings.preferredReminderMinute,
           'p_user_timezone': deviceTz,
           'p_desired_retention': settings.clampedRetention,
+          'p_pace_preset': settings.pacePreset.name,
+          'p_new_cards_per_day': settings.newCardsPerDay,
+          'p_max_reviews_per_day': settings.maxReviewsPerDay,
+          'p_is_soft_catch_up': settings.isSoftCatchUpEnabled,
+          'p_reminders_enabled': settings.remindersEnabled,
         },
       );
 

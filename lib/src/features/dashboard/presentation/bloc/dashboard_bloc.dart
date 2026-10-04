@@ -23,6 +23,41 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     DashboardStarted event,
     Emitter<DashboardState> emit,
   ) async {
+    // If we already have a valid feed (e.g. from a previous load in the same
+    // session), surface it immediately as aboveFoldReady so the UI skips the
+    // full shimmer pass and starts a silent background revalidation instead.
+    if (state.feed != null) {
+      emit(
+        state.copyWith(
+          status: DashboardStatus.loaded,
+          sectionStatus: DashboardSectionStatus.revalidating,
+          previousFeed: state.feed,
+        ),
+      );      // Background revalidation — does not show loading shimmer.
+      final result = await getDashboardFeedUseCase(
+        const GetDashboardFeedParams(),
+      );
+      result.fold(
+        (_) {
+          // Silently ignore — keep showing the previous feed.
+          emit(
+            state.copyWith(
+              sectionStatus: DashboardSectionStatus.fullyLoaded,
+            ),
+          );
+        },
+        (feed) => emit(
+          state.copyWith(
+            status: DashboardStatus.loaded,
+            sectionStatus: DashboardSectionStatus.fullyLoaded,
+            feed: feed,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Cold start — show loading shimmer, then transition to content.
     emit(state.copyWith(status: DashboardStatus.loading));
     final result = await getDashboardFeedUseCase(const NoParams());
 
@@ -30,12 +65,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       (failure) => emit(
         state.copyWith(
           status: DashboardStatus.error,
+          sectionStatus: DashboardSectionStatus.error,
           errorMessage: failure.message ?? 'Failed to load dashboard feed.',
         ),
       ),
       (feed) => emit(
         state.copyWith(
           status: DashboardStatus.loaded,
+          sectionStatus: DashboardSectionStatus.fullyLoaded,
           feed: feed,
         ),
       ),
@@ -46,6 +83,15 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     DashboardRefreshed event,
     Emitter<DashboardState> emit,
   ) async {
+    // Stale-while-revalidate: mark as revalidating so the UI keeps showing
+    // the existing feed while the fresh data loads in the background.
+    emit(
+      state.copyWith(
+        sectionStatus: DashboardSectionStatus.revalidating,
+        previousFeed: state.feed,
+      ),
+    );
+
     final result = await getDashboardFeedUseCase(
       const GetDashboardFeedParams(forceRefresh: true),
     );
@@ -54,11 +100,13 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       (failure) => emit(
         state.copyWith(
           errorMessage: failure.message,
+          sectionStatus: DashboardSectionStatus.fullyLoaded,
         ),
       ),
       (feed) => emit(
         state.copyWith(
           status: DashboardStatus.loaded,
+          sectionStatus: DashboardSectionStatus.fullyLoaded,
           feed: feed,
         ),
       ),

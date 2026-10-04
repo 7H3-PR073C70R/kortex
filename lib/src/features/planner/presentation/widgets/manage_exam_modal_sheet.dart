@@ -15,7 +15,6 @@ import 'package:kortex/src/features/planner/domain/entities/exam_event_entity.da
 import 'package:kortex/src/features/planner/domain/logic/cram_workload_calculator.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state.dart';
-import 'package:kortex/src/features/planner/presentation/widgets/add_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/cancel_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/postpone_exam_modal_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
@@ -322,15 +321,13 @@ class ManageExamModalSheet extends StatelessWidget {
                   AppButton(
                     text: l10n.addExamTitle,
                     onPressed: () {
-                      final cubit = context.read<CramPlannerCubit>();
-                      final nav = Navigator.of(context)
-                      ..pop();
+                      final nav = Navigator.of(context)..pop();
                       unawaited(
-                        AddExamModalSheet.show(
-                          nav.context,
-                          preselectedCourseCode: scopedCourseCode,
-                          preselectedCourseTitle: scopedCourseTitle,
-                          cubit: cubit,
+                        nav.context.router.push(
+                          AddAcademicAssessmentRoute(
+                            preselectedCourseCode: scopedCourseCode,
+                            preselectedCourseTitle: scopedCourseTitle,
+                          ),
                         ),
                       );
                     },
@@ -608,8 +605,8 @@ class ManageExamModalSheet extends StatelessWidget {
                                       const SizedBox(width: 5),
                                       Text(
                                         exam.achievedScorePercent != null
-                                            ? 'Bimodal Readiness (FSRS & Quiz)'
-                                            : 'Predicted FSRS Retention',
+                                            ? 'Overall Readiness (Memory & Quiz)'
+                                            : 'Predicted Memory Retention',
                                         style: typography.caption.bold.copyWith(
                                           color: colors.textSecondary,
                                           fontSize: 10.5,
@@ -975,14 +972,12 @@ class ManageExamModalSheet extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          final cubit = context.read<CramPlannerCubit>();
-                          final nav = Navigator.of(context)
-                          ..pop();
+                          final nav = Navigator.of(context)..pop();
                           unawaited(
-                            AddExamModalSheet.show(
-                              nav.context,
-                              initialExam: exam,
-                              cubit: cubit,
+                            nav.context.router.push(
+                              AddAcademicAssessmentRoute(
+                                initialExam: exam,
+                              ),
                             ),
                           );
                         },
@@ -1001,13 +996,10 @@ class ManageExamModalSheet extends StatelessWidget {
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: () {
-                          final cubit = context.read<CramPlannerCubit>();
-                          final nav = Navigator.of(context)
-                          ..pop();
+                          final nav = Navigator.of(context)..pop();
                           unawaited(
-                            AddExamModalSheet.show(
-                              nav.context,
-                              cubit: cubit,
+                            nav.context.router.push(
+                              AddAcademicAssessmentRoute(),
                             ),
                           );
                         },

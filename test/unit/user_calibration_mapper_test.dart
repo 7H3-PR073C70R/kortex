@@ -110,5 +110,74 @@ void main() {
       expect(jamb.name, equals('JAMB / UTME'));
       expect(jamb.defaultDailyTarget, equals(25));
     });
+
+    test(
+      'isProfileUncalibrated is false when isCalibrated is false BUT track is selected and courses are enrolled',
+      () {
+        const calibration = CalibrationProfile(
+          highSchoolExam: 'JAMB / UTME',
+        );
+
+        const dummyCourse = CuratedCourseEntity(
+          id: 'c1',
+          courseCode: 'MTH101',
+          title: 'General Mathematics',
+          department: 'Mathematics',
+          totalMaterials: 10,
+          hasActivePastPapers: true,
+          iconName: 'school',
+          colorHex: '#6366F1',
+        );
+
+        const feed = DashboardFeedEntity(
+          calibrationProfile: calibration,
+          analyticsSummary: AnalyticsSummaryEntity(
+            currentStreakDays: 1,
+            longestStreakDays: 1,
+            weeklyMinutesStudied: 10,
+            overallRetentionRate: 0.8,
+            totalCardsMastered: 5,
+            heatMapData: [],
+            xpPoints: 50,
+            academicRank: 'Novice',
+          ),
+          dueStudyDecks: [],
+          curatedCourses: [dummyCourse],
+        );
+
+        expect(feed.hasTrackSelected, isTrue);
+        expect(feed.curatedCourses.isNotEmpty, isTrue);
+        expect(feed.isProfileUncalibrated, isFalse);
+      },
+    );
+
+    test(
+      'isProfileUncalibrated is true when track is selected BUT no courses enrolled and isCalibrated is false',
+      () {
+        const calibration = CalibrationProfile(
+          highSchoolExam: 'JAMB / UTME',
+        );
+
+        const feed = DashboardFeedEntity(
+          calibrationProfile: calibration,
+          analyticsSummary: AnalyticsSummaryEntity(
+            currentStreakDays: 0,
+            longestStreakDays: 0,
+            weeklyMinutesStudied: 0,
+            overallRetentionRate: 0,
+            totalCardsMastered: 0,
+            heatMapData: [],
+            xpPoints: 0,
+            academicRank: 'Novice',
+          ),
+          dueStudyDecks: [],
+          curatedCourses: [],
+        );
+
+        expect(feed.hasTrackSelected, isTrue);
+        expect(feed.curatedCourses.isEmpty, isTrue);
+        expect(feed.isProfileUncalibrated, isTrue);
+      },
+    );
   });
 }

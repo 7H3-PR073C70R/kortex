@@ -918,7 +918,7 @@ class _InRoomDeckStudyWorkspaceState extends State<InRoomDeckStudyWorkspace>
                       ),
                     ),
                     Text(
-                      'Study alongside your pod with active FSRS recall',
+                      'Study alongside your study group with active memory recall',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         fontSize: 12,

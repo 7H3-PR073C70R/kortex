@@ -32,6 +32,7 @@ class AppApiEndpoint {
   static const String magicLink = '/auth/v1/magiclink';
   static const String otpVerify = '/auth/v1/verify';
   static const String userProfiles = '/rest/v1/profiles';
+  static const String userCalibrations = '/rest/v1/user_calibrations';
   static const String courseTracks = '/rest/v1/course_tracks';
   static const String updateProfileRpc =
       '/rest/v1/rpc/update_user_profile_track_and_goal';
@@ -88,6 +89,12 @@ class AppApiEndpoint {
   static String getCardAssetPublicUrl(String path) =>
       '$baseUri/storage/v1/object/public/card-assets/$path';
 
+  static String get r2PublicDomain =>
+      AppEnv.r2PublicDomain.replaceAll(RegExp(r'/+$'), '');
+
+  static String getDocumentImagePublicUrl(String documentId, String filename) =>
+      '$r2PublicDomain/documents/$documentId/images/$filename';
+
   // Community & Peer Study Hub Endpoints
   static const String studyRooms = '/rest/v1/study_rooms';
   static const String forumPosts = '/rest/v1/forum_posts';
@@ -97,8 +104,13 @@ class AppApiEndpoint {
   static const String sharedDecks = '/rest/v1/shared_decks';
   static const String leaderboards = '/rest/v1/leaderboards';
   static const String claimWeeklyXpRpc = '/rest/v1/rpc/claim_weekly_xp';
+  static const String syncUserProgressRpc = '/rest/v1/rpc/sync_user_progress';
+
   static const String cloneSharedDeckRpc = '/rest/v1/rpc/clone_shared_deck';
   static const String uploadForumMedia = '/functions/v1/upload-forum-media';
+  /// Triggers server-side Groq Whisper transcription for a voice note.
+  /// Accepts `{ "audio_url": "<r2_url>", "reply_id"/"post_id": "<id>" }`.
+  static const String transcribeVoiceNote = '/functions/v1/transcribe-voice-note';
   static const String rateSharedDeckRpc = '/rest/v1/rpc/rate_shared_deck';
   static const String verifyForumReplyRpc = '/rest/v1/rpc/verify_forum_reply';
   static const String voteForumPostAtomicRpc =
@@ -153,4 +165,7 @@ class AppApiEndpoint {
 
   // Monetization & Promo Codes
   static const String redeemPromoCodeRpc = '/rest/v1/rpc/redeem_promo_code';
+
+  // App Version / Force-Update
+  static const String appVersionConfig = '/rest/v1/app_version_config';
 }

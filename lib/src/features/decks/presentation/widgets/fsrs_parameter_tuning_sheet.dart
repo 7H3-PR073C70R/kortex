@@ -1,22 +1,18 @@
-import 'dart:async';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 import 'package:kortex/src/features/decks/domain/services/fsrs_settings_sync_service.dart';
 
-/// Modal bottom sheet allowing scholars to customize FSRS-6 algorithm parameters
-/// (target retention rate, daily study reminder time, and interval scaling).
+/// Legacy entry point for FSRS tuning. Redirects to [DeckPaceSettingsRoute] in Profile.
 class FsrsParameterTuningSheet extends StatefulWidget {
   const FsrsParameterTuningSheet({super.key});
 
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const FsrsParameterTuningSheet(),
-    );
+    return context.router.push(const DeckPaceSettingsRoute());
   }
 
   @override
@@ -50,14 +46,11 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success
-              ? 'FSRS parameters updated & synced with server! 🎯'
-              : 'FSRS parameters saved locally.',
-        ),
-      ),
+    context.showSnackBar(
+      message: success
+          ? 'Memory settings updated & synced with server! 🎯'
+          : 'Memory settings saved locally.',
+      type: success ? SnackBarType.success : SnackBarType.info,
     );
     Navigator.of(context).pop();
   }
@@ -70,8 +63,9 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
 
     final retentionPercent = (_desiredRetention * 100).round();
     // Approximate FSRS interval multiplier relative to 90% baseline
-    final intervalMultiplier =
-        (0.90 / _desiredRetention).clamp(0.5, 2.0).toStringAsFixed(2);
+    final intervalMultiplier = (0.90 / _desiredRetention)
+        .clamp(0.5, 2.0)
+        .toStringAsFixed(2);
 
     return Container(
       padding: EdgeInsets.only(
@@ -107,8 +101,10 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
               Icon(Icons.tune_rounded, color: colors.primary, size: 24),
               const SizedBox(width: 10),
               Text(
-                'FSRS-6 Algorithm Tuning',
-                style: typography.title2.bold.copyWith(color: colors.textPrimary),
+                'Advanced Memory Tuning',
+                style: typography.title2.bold.copyWith(
+                  color: colors.textPrimary,
+                ),
               ),
             ],
           ),
@@ -234,7 +230,7 @@ class _FsrsParameterTuningSheetState extends State<FsrsParameterTuningSheet> {
               child: _isSaving
                   ? const CircularProgressIndicator(color: Colors.white)
                   : Text(
-                      'Save FSRS Parameters',
+                      'Save Memory Settings',
                       style: typography.body.bold.copyWith(color: Colors.white),
                     ),
             ),

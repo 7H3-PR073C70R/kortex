@@ -18,11 +18,11 @@ import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_cubit.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/study_session_state.dart';
 import 'package:kortex/src/features/decks/presentation/pages/focus_workspace_page.dart';
+import 'package:kortex/src/features/decks/presentation/widgets/feynman_active_recall_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/flashcard_gesture_canvas.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/fsrs_rating_action_bar.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/sprint_milestone_banner.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/study_progress_top_bar.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/thought_parking_lot_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -138,6 +138,8 @@ class _StudySessionView extends HookWidget {
     // banner shown; null while no banner is on screen.
     final milestoneTick = useState<int?>(null);
 
+    final hasNavigatedToSummary = useRef<bool>(false);
+
     useEffect(
       () {
         focusNode.requestFocus();
@@ -153,19 +155,30 @@ class _StudySessionView extends HookWidget {
       body: SafeArea(
         child: BlocConsumer<StudySessionCubit, StudySessionState>(
           listener: (context, state) {
-            if (state.status == StudySessionStatus.finished) {
+            if (state.status == StudySessionStatus.finished &&
+                !hasNavigatedToSummary.value) {
+              hasNavigatedToSummary.value = true;
+              final reviewedCount = state.totalReviewedCards;
+              final nextDays = context
+                  .read<StudySessionCubit>()
+                  .nextReviewInDays;
               unawaited(
                 context.router.replace(
                   SessionSummaryRoute(
                     deckId: deckId,
-                    cardsReviewed: state.cards.length,
+                    cardsReviewed: reviewedCount > 0
+                        ? reviewedCount
+                        : state.cards.length,
                     durationSeconds: state.elapsedSeconds,
                     retentionScore: state.retentionScore,
-                    nextReviewInDays: context
-                        .read<StudySessionCubit>()
-                        .nextReviewInDays,
+                    nextReviewInDays: nextDays,
                   ),
-                ),
+                ).catchError((Object error, StackTrace stackTrace) {
+                  if (context.mounted) {
+                    hasNavigatedToSummary.value = false;
+                  }
+                  return null;
+                }),
               );
             } else if (state.status == StudySessionStatus.studying &&
                 state.currentIndex > 0 &&
@@ -178,6 +191,14 @@ class _StudySessionView extends HookWidget {
             }
           },
           builder: (context, state) {
+            if (state.status == StudySessionStatus.finishing) {
+              return Center(
+                child: CircularProgressIndicator.adaptive(
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
+                ),
+              );
+            }
+
             if (state.status == StudySessionStatus.loading) {
               return _buildSessionShimmerSkeleton(colors, isDark);
             }
@@ -458,9 +479,7 @@ class _StudySessionView extends HookWidget {
                             cubit.undoLastRating();
                             context.showSnackBar(message: 'Rating undone ↩️');
                           },
-                          onThoughtParkingLot: () {
-                            unawaited(ThoughtParkingLotSheet.show(context));
-                          },
+
                           elapsedTimeFormatted: cubit.isSpeedRun
                               ? cubit.formattedRemainingTime(
                                   state.elapsedSeconds,
@@ -469,15 +488,25 @@ class _StudySessionView extends HookWidget {
                           onClose: () async {
                             await cubit.saveSessionCheckpoint();
                             if (context.mounted) {
-                              unawaited(context.router.maybePop());
+                              if (context.router.canPop()) {
+                                context.router.pop();
+                              } else {
+                                unawaited(
+                                  context.router.replaceAll([const MainRoute()]),
+                                );
+                              }
                             }
                           },
                         ),
                         // Contextual In-Session Cram Banner (Phase 1 Pillar 2)
-                        if (context.read<StudySessionCubit>().daysUntilExam != null &&
-                            context.read<StudySessionCubit>().daysUntilExam! > 0) ...[
+                        if (context.read<StudySessionCubit>().daysUntilExam !=
+                                null &&
+                            context.read<StudySessionCubit>().daysUntilExam! >
+                                0) ...[
                           _CramSessionBanner(
-                            daysUntilExam: context.read<StudySessionCubit>().daysUntilExam!,
+                            daysUntilExam: context
+                                .read<StudySessionCubit>()
+                                .daysUntilExam!,
                           ),
                           const SizedBox(height: 10),
                         ],
@@ -660,9 +689,12 @@ class _StudySessionView extends HookWidget {
                             child: !state.isFlipped
                                 ? Container(
                                     key: const ValueKey('study-hint'),
-                                    height: 52,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 2,
+                                    ),
                                     alignment: Alignment.center,
                                     child: Column(
+                                      mainAxisSize: MainAxisSize.min,
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
@@ -671,20 +703,59 @@ class _StudySessionView extends HookWidget {
                                           style: typography.footnote.regular
                                               .copyWith(
                                                 color: colors.textMuted,
-                                                fontSize: 12,
+                                                fontSize: 11.5,
                                               ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
-                                          style: typography.caption.regular
-                                              .copyWith(
-                                                color: colors.primary.withAlpha(
-                                                  isDark ? 210 : 170,
-                                                ),
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.w500,
+                                        const SizedBox(height: 2),
+                                        ShrinkableButton(
+                                          onTap: () {
+                                            unawaited(
+                                              FeynmanActiveRecallSheet.show(
+                                                context,
+                                                card: currentCard,
+                                                onRevealCard: () {
+                                                  context
+                                                      .read<StudySessionCubit>()
+                                                      .toggleFlip();
+                                                },
                                               ),
+                                            );
+                                          },
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  '💡 Pro-Tip: Explain aloud before flipping (Feynman Active Recall)',
+                                                  style: typography
+                                                      .caption
+                                                      .regular
+                                                      .copyWith(
+                                                        color: colors.primary
+                                                            .withAlpha(
+                                                              isDark
+                                                                  ? 210
+                                                                  : 170,
+                                                            ),
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.mic_rounded,
+                                                size: 12,
+                                                color: colors.primary,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1032,7 +1103,7 @@ class _CramSessionBanner extends StatelessWidget {
                 Text(
                   isCrunch
                       ? 'Intervals condensed to 24h for acute recall before your test.'
-                      : 'FSRS-6 intervals clamped so cards stay fresh before exam day.',
+                      : 'Review intervals adjusted so cards stay fresh in your memory before exam day.',
                   style: typography.caption.regular.copyWith(
                     color: colors.textSecondary,
                     fontSize: 10.5,

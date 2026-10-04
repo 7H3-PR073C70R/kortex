@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Standard top header for the Community Hub displaying title and active filter indicator.
@@ -116,6 +118,7 @@ class CommunitySearchHeader extends StatelessWidget {
                         color: colors.textSecondary.withAlpha(160),
                         fontSize: 13,
                       ),
+                      fillColor: Colors.transparent,
                       border: InputBorder.none,
                       errorBorder: InputBorder.none,
                       disabledBorder: InputBorder.none,
@@ -220,6 +223,135 @@ class CommunitySearchHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Dynamic action capsule containing Search & Filter triggers for Community/Forum header.
+class CommunitySearchFilterCapsule extends StatelessWidget {
+  const CommunitySearchFilterCapsule({
+    required this.hasActiveFilters,
+    required this.activeFilterCount,
+    required this.isDark,
+    required this.onOpenSearch,
+    required this.onOpenFilter,
+    super.key,
+  });
+
+  final bool hasActiveFilters;
+  final int activeFilterCount;
+  final bool isDark;
+  final VoidCallback onOpenSearch;
+  final VoidCallback onOpenFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Container(
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark
+              ? colors.surfaceSecondary
+              : colors.surfaceSecondary.withAlpha(140),
+          borderRadius: AppRadius.radiusSheet,
+          border: Border.all(
+            color: hasActiveFilters
+                ? colors.primary.withAlpha(isDark ? 80 : 50)
+                : colors.surfaceBorder.withAlpha(isDark ? 80 : 60),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Search Button
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) => AnimatedScale(
+                scale: isHovered ? 1.08 : 1.0,
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                child: child,
+              ),
+              child: ShrinkableButton(
+                onTap: () {
+                  unawaited(HapticFeedback.lightImpact());
+                  onOpenSearch();
+                },
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.search_rounded,
+                    size: 19,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+            // Subtle Hairline Divider
+            Container(
+              width: 1,
+              height: 18,
+              color: colors.surfaceBorder.withAlpha(isDark ? 90 : 70),
+            ),
+            // Filter Button with Badge
+            PlatformHoverBuilder(
+              builder: (context, isHovered, child) => AnimatedScale(
+                scale: isHovered ? 1.08 : 1.0,
+                duration: AppMotion.snappy,
+                curve: AppMotion.easeOutCubic,
+                child: child,
+              ),
+              child: ShrinkableButton(
+                onTap: () {
+                  unawaited(HapticFeedback.lightImpact());
+                  onOpenFilter();
+                },
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  alignment: Alignment.center,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        Icons.tune_rounded,
+                        size: 18,
+                        color: hasActiveFilters
+                            ? colors.primary
+                            : colors.textSecondary,
+                      ),
+                      if (hasActiveFilters && activeFilterCount > 0)
+                        Positioned(
+                          top: 5,
+                          right: 5,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colors.primary,
+                              border: Border.all(
+                                color: isDark
+                                    ? colors.surfaceSecondary
+                                    : colors.surfacePrimary,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

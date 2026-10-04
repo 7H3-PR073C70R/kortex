@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -38,7 +39,7 @@ class _MainNavItem {
   final String Function(AppLocalizations l10n) labelBuilder;
 }
 
-final List<_MainNavItem> _kNavItems = [
+final List<_MainNavItem> _kNavItems5 = [
   const _MainNavItem(
     route: DashboardRoute(),
     icon: Icons.grid_view_rounded,
@@ -53,14 +54,41 @@ final List<_MainNavItem> _kNavItems = [
   ),
   const _MainNavItem(
     route: CommunityHubRoute(),
-    icon: Icons.chat_bubble_outline,
-    activeIcon: Icons.chat_bubble,
+    icon: Icons.forum_outlined,
+    activeIcon: Icons.forum_rounded,
     labelBuilder: _getForumLabel,
   ),
   const _MainNavItem(
     route: StudyHubRoute(),
-    icon: Icons.device_hub,
-    activeIcon: Icons.device_hub_rounded,
+    icon: Icons.hub_outlined,
+    activeIcon: Icons.hub_rounded,
+    labelBuilder: _getStudyHubLabel,
+  ),
+  const _MainNavItem(
+    route: ProfileRoute(),
+    icon: Icons.person_outline_rounded,
+    activeIcon: Icons.person_rounded,
+    labelBuilder: _getProfileLabel,
+  ),
+];
+
+final List<_MainNavItem> _kNavItems4 = [
+  const _MainNavItem(
+    route: DashboardRoute(),
+    icon: Icons.grid_view_rounded,
+    activeIcon: Icons.grid_view_rounded,
+    labelBuilder: _getHomeLabel,
+  ),
+  const _MainNavItem(
+    route: DecksRoute(),
+    icon: Icons.layers_outlined,
+    activeIcon: Icons.layers_rounded,
+    labelBuilder: _getDecksLabel,
+  ),
+  const _MainNavItem(
+    route: StudyHubRoute(),
+    icon: Icons.hub_outlined,
+    activeIcon: Icons.hub_rounded,
     labelBuilder: _getStudyHubLabel,
   ),
   const _MainNavItem(
@@ -73,7 +101,7 @@ final List<_MainNavItem> _kNavItems = [
 
 String _getHomeLabel(AppLocalizations l10n) => l10n.navTabHome;
 String _getDecksLabel(AppLocalizations l10n) => l10n.navTabDecks;
-String _getForumLabel(AppLocalizations l10n) => l10n.forumTab;
+String _getForumLabel(AppLocalizations l10n) => l10n.navTabCommunity;
 String _getStudyHubLabel(AppLocalizations l10n) => l10n.navTabStudyHub;
 String _getProfileLabel(AppLocalizations l10n) => l10n.navTabProfile;
 
@@ -97,7 +125,7 @@ class MainPage extends HookWidget {
         fit: StackFit.expand,
         children: [
           AutoTabsScaffold(
-            routes: _kNavItems.map((item) => item.route).toList(),
+            routes: _kNavItems5.map((item) => item.route).toList(),
             homeIndex: 0,
             animationDuration: AppMotion.standard,
             animationCurve: AppMotion.easeOutCubic,
@@ -253,11 +281,11 @@ class _DesktopNavRail extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _kNavItems.length,
+                  itemCount: _kNavItems5.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 6),
                   itemBuilder: (context, index) {
-                    final item = _kNavItems[index];
+                    final item = _kNavItems5[index];
                     final isSelected = tabsRouter.activeIndex == index;
                     final label = item.labelBuilder(l10n);
 
@@ -266,7 +294,7 @@ class _DesktopNavRail extends StatelessWidget {
                       label: label,
                       isSelected: isSelected,
                       itemIndex: index,
-                      totalItems: _kNavItems.length,
+                      totalItems: _kNavItems5.length,
                       onTap: () => _handleTabTap(
                         context,
                         tabsRouter,
@@ -450,25 +478,63 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
   @override
   void initState() {
     super.initState();
-    _currentUnitPosition = widget.tabsRouter.activeIndex.toDouble();
-    _lastHapticIndex = widget.tabsRouter.activeIndex;
+    _currentUnitPosition = 0.0;
+    _lastHapticIndex = 0;
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 320),
     );
+    widget.tabsRouter.addListener(_onTabsRouterChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final width = MediaQuery.sizeOf(context).width;
+    final initialDockIndex = AppTabNavigation.mainIndexToDockIndex(
+      widget.tabsRouter.activeIndex,
+      width,
+    );
+    _currentUnitPosition = initialDockIndex.toDouble();
+    _lastHapticIndex = initialDockIndex;
+  }
+
+  void _onTabsRouterChanged() {
+    if (!mounted) return;
+    final width = MediaQuery.sizeOf(context).width;
+    final dockIndex = AppTabNavigation.mainIndexToDockIndex(
+      widget.tabsRouter.activeIndex,
+      width,
+    );
+    if (dockIndex != _lastHapticIndex && !_isDragging) {
+      _lastHapticIndex = dockIndex;
+      _animateToTab(dockIndex);
+    }
   }
 
   @override
   void didUpdateWidget(covariant _AdaptiveBottomNavDock oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.tabsRouter.activeIndex != oldWidget.tabsRouter.activeIndex &&
-        !_isDragging) {
-      _animateToTab(widget.tabsRouter.activeIndex);
+    if (oldWidget.tabsRouter != widget.tabsRouter) {
+      oldWidget.tabsRouter.removeListener(_onTabsRouterChanged);
+      widget.tabsRouter.addListener(_onTabsRouterChanged);
+    }
+    if (mounted) {
+      final width = MediaQuery.sizeOf(context).width;
+      final dockIndex = AppTabNavigation.mainIndexToDockIndex(
+        widget.tabsRouter.activeIndex,
+        width,
+      );
+      if (dockIndex != _lastHapticIndex && !_isDragging) {
+        _lastHapticIndex = dockIndex;
+        _animateToTab(dockIndex);
+      }
     }
   }
 
   @override
   void dispose() {
+    widget.tabsRouter.removeListener(_onTabsRouterChanged);
     _animController.dispose();
     super.dispose();
   }
@@ -501,7 +567,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
   }
 
   void _onDragUpdate(DragUpdateDetails details, double trackWidth) {
-    final tabCount = _kNavItems.length;
+    const tabCount = 4;
     final tabWidth = trackWidth / tabCount;
     final deltaUnit = (details.primaryDelta ?? 0) / tabWidth;
 
@@ -523,23 +589,25 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
   }
 
   void _onDragEnd(DragEndDetails details, double trackWidth) {
-    final tabCount = _kNavItems.length;
+    const tabCount = 4;
     // Fling velocity adjustment for flick gestures
     final velocityUnit = (details.primaryVelocity ?? 0.0) / 700.0;
-    final targetIndex =
+    final targetDockIndex =
         (_currentUnitPosition + velocityUnit * 0.35).round().clamp(0, tabCount - 1);
 
     setState(() {
       _isDragging = false;
       _dragVelocityX = 0;
-      _lastHapticIndex = targetIndex;
+      _lastHapticIndex = targetDockIndex;
     });
 
-    _animateToTab(targetIndex);
+    _animateToTab(targetDockIndex);
 
+    final width = MediaQuery.sizeOf(context).width;
+    final mainIndex = AppTabNavigation.dockIndexToMainIndex(targetDockIndex, width);
     final l10n = context.l10n;
-    final label = _kNavItems[targetIndex].labelBuilder(l10n);
-    _handleTabTap(context, widget.tabsRouter, targetIndex, label);
+    final label = _kNavItems4[targetDockIndex].labelBuilder(l10n);
+    _handleTabTap(context, widget.tabsRouter, mainIndex, label);
   }
 
   void _onDragCancel() {
@@ -547,21 +615,28 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
       _isDragging = false;
       _dragVelocityX = 0.0;
     });
-    _animateToTab(widget.tabsRouter.activeIndex);
+    final width = MediaQuery.sizeOf(context).width;
+    final dockIndex = AppTabNavigation.mainIndexToDockIndex(
+      widget.tabsRouter.activeIndex,
+      width,
+    );
+    _animateToTab(dockIndex);
   }
 
-  void _onTabTapped(int index) {
+  void _onTabTapped(int dockIndex) {
+    final width = MediaQuery.sizeOf(context).width;
+    final mainIndex = AppTabNavigation.dockIndexToMainIndex(dockIndex, width);
     final l10n = context.l10n;
-    final label = _kNavItems[index].labelBuilder(l10n);
+    final label = _kNavItems4[dockIndex].labelBuilder(l10n);
 
-    if (widget.tabsRouter.activeIndex == index) {
-      _handleTabTap(context, widget.tabsRouter, index, label);
+    if (widget.tabsRouter.activeIndex == mainIndex) {
+      _handleTabTap(context, widget.tabsRouter, mainIndex, label);
       return;
     }
 
-    _lastHapticIndex = index;
-    _animateToTab(index);
-    _handleTabTap(context, widget.tabsRouter, index, label);
+    _lastHapticIndex = dockIndex;
+    _animateToTab(dockIndex);
+    _handleTabTap(context, widget.tabsRouter, mainIndex, label);
   }
 
   @override
@@ -702,7 +777,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final totalWidth = constraints.maxWidth;
-                      final tabCount = _kNavItems.length;
+                      const tabCount = 4;
                       final tabWidth = totalWidth / tabCount;
 
                       // Dynamic Lerp Geometry for WhatsApp 1-1 Transition Expansion
@@ -764,15 +839,22 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                             // -----------------------------------------------
                             Positioned.fill(
                               child: Row(
-                                children: List.generate(tabCount, (index) {
-                                  final item = _kNavItems[index];
+                                children: List.generate(tabCount, (dockIndex) {
+                                  final item = _kNavItems4[dockIndex];
                                   final label = item.labelBuilder(l10n);
 
                                   final distance =
-                                      (_currentUnitPosition - index).abs();
+                                      (_currentUnitPosition - dockIndex).abs();
                                   final activeWeight =
                                       (1.0 - distance).clamp(0.0, 1.0);
                                   final isSelected = activeWeight > 0.5;
+
+                                  final mainIndex = AppTabNavigation.dockIndexToMainIndex(
+                                    dockIndex,
+                                    totalWidth,
+                                  );
+                                  final isRouteSelected =
+                                      widget.tabsRouter.activeIndex == mainIndex;
 
                                   final iconColor = isSelected && transitionWeight <= 0.01
                                       ? colors.transparent
@@ -784,16 +866,15 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                   return Expanded(
                                     child: Semantics(
                                       button: true,
-                                      selected:
-                                          widget.tabsRouter.activeIndex == index,
+                                      selected: isRouteSelected,
                                       label: l10n.navTabSemantics(
                                         label,
-                                        index + 1,
+                                        dockIndex + 1,
                                         tabCount,
                                       ),
                                       child: GestureDetector(
                                         behavior: HitTestBehavior.opaque,
-                                        onTap: () => _onTabTapped(index),
+                                        onTap: () => _onTabTapped(dockIndex),
                                         child: Center(
                                           child: Column(
                                             mainAxisAlignment:
@@ -975,7 +1056,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(
-                                          _kNavItems[widget.tabsRouter.activeIndex]
+                                          _kNavItems4[_currentUnitPosition.round().clamp(0, _kNavItems4.length - 1)]
                                               .activeIcon,
                                           size: 21,
                                           color: colors.white,
@@ -984,7 +1065,7 @@ class _AdaptiveBottomNavDockState extends State<_AdaptiveBottomNavDock>
                                         FittedBox(
                                           fit: BoxFit.scaleDown,
                                           child: Text(
-                                            _kNavItems[widget.tabsRouter.activeIndex]
+                                            _kNavItems4[_currentUnitPosition.round().clamp(0, _kNavItems4.length - 1)]
                                                 .labelBuilder(l10n),
                                             maxLines: 1,
                                             style: typography.caption.bold.copyWith(

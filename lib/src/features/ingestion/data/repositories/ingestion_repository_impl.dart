@@ -13,6 +13,7 @@ import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/processing_status.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 import 'package:kortex/src/features/ingestion/domain/repositories/ingestion_repository.dart';
 
 class IngestionRepositoryImpl implements IngestionRepository {
@@ -157,12 +158,14 @@ class IngestionRepositoryImpl implements IngestionRepository {
     required String documentId,
     required String storagePath,
     required String fileType,
+    SynthesisMode synthesisMode = SynthesisMode.aiSmart,
   }) {
     return _remoteDataSource
         .processStemOcr(
           documentId: documentId,
           storagePath: storagePath,
           fileType: fileType,
+          synthesisMode: synthesisMode,
         )
         .then((models) => models.map((m) => m.toEntity()).toList())
         .makeRequest();
@@ -191,7 +194,18 @@ class IngestionRepositoryImpl implements IngestionRepository {
     String? courseCode,
   }) {
     return Future<DeckEntity>.sync(() async {
-      final deckId = UuidUtils.generate();
+      // Check if an auto-synthesized deck already exists for this documentId to avoid creating duplicates
+      DeckModel? existingDeck;
+      try {
+        final existingDecks = await _decksRemoteDataSource?.getUserDecks() ?? [];
+        existingDeck = existingDecks.where((d) =>
+          (documentId.isNotEmpty && d.description?.contains(documentId) == true) ||
+          (d.title.trim().toLowerCase() == deckTitle.trim().toLowerCase() &&
+           (courseId == null || d.courseId == courseId)),
+        ).firstOrNull;
+      } on Object catch (_) {}
+
+      final deckId = existingDeck?.id ?? UuidUtils.generate();
       final cards = <FlashcardEntity>[];
 
       for (var i = 0; i < snippets.length; i++) {

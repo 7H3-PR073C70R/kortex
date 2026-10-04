@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
@@ -158,7 +159,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
         higherEdField: 'Professional Board & Licensing',
         higherEdGoals: [
           'High-Yield Practice',
-          'Spaced Repetition (FSRS-6) Mastery',
+          'Long-Term Memory Mastery',
         ],
         isCalibrated: true,
       );
@@ -169,7 +170,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
         higherEdField: 'Independent Studies',
         higherEdGoals: [
           'Concept Mastery',
-          'Spaced Repetition (FSRS-6) Mastery',
+          'Long-Term Memory Mastery',
         ],
         isCalibrated: true,
       );
@@ -177,7 +178,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
       defaultProfile = const CalibrationProfile(
         higherEdLevel: HigherEdLevel.bsc,
         higherEdField: 'General Studies',
-        higherEdGoals: ['Spaced Repetition (FSRS-6) Mastery'],
+        higherEdGoals: ['Long-Term Memory Mastery'],
         isCalibrated: true,
       );
     } else {
@@ -245,6 +246,14 @@ class CalibrationCubit extends Cubit<CalibrationState> {
           dailyTarget: 20,
         ),
       );
+      if (locator.isRegistered<UserActivityService>()) {
+        unawaited(
+          locator<UserActivityService>().awardXp(
+            XpActivityCategory.onboardingCalibration,
+            sourceId: 'calibration',
+          ),
+        );
+      }
       locator<AuthBloc>().add(
         const AuthStatusChanged(AuthSessionStatus.authenticatedComplete),
       );
@@ -312,7 +321,7 @@ class CalibrationCubit extends Cubit<CalibrationState> {
               locator<NotificationService>().showLocalNotification(
                 id: 1004,
                 title: '🎓 Your study profile is set!',
-                body: 'FSRS tuned for 90% retention. Your first deck is ready.',
+                body: 'Study scheduler set for 90% target retention. Your first deck is ready.',
                 payload: 'route:/dashboard',
                 channelId: 'kortex_system',
               ),

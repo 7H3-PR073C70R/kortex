@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
@@ -47,25 +49,12 @@ class AddExamModalSheet extends StatefulWidget {
     AssessmentType? preselectedType,
     CramPlannerCubit? cubit,
   }) {
-    final cramPlannerCubit = cubit ?? context.read<CramPlannerCubit>();
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.colors.transparent,
-      builder: (sheetContext) => BlocProvider.value(
-        value: cramPlannerCubit,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: AddExamModalSheet(
-              initialExam: initialExam,
-              preselectedCourseCode: preselectedCourseCode,
-              preselectedCourseTitle: preselectedCourseTitle,
-              preselectedType: preselectedType,
-            ),
-          ),
-        ),
+    return context.router.push(
+      AddAcademicAssessmentRoute(
+        initialExam: initialExam,
+        preselectedCourseCode: preselectedCourseCode,
+        preselectedCourseTitle: preselectedCourseTitle,
+        preselectedType: preselectedType,
       ),
     );
   }

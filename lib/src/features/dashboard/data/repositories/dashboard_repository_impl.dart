@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/utils/either.dart';
@@ -56,7 +57,18 @@ class DashboardRepositoryImpl implements DashboardRepository {
         },
       );
 
-      return feedModel.toEntity(calibrationProfile: userProfile);
+      final feed = feedModel.toEntity(calibrationProfile: userProfile);
+      if (!userProfile.isCalibrated &&
+          feed.hasTrackSelected &&
+          feed.curatedCourses.isNotEmpty) {
+        final calibratedProfile = userProfile.copyWith(isCalibrated: true);
+        unawaited(
+          calibrationRepository.saveCalibrationProfile(calibratedProfile),
+        );
+        return feed.copyWith(calibrationProfile: calibratedProfile);
+      }
+
+      return feed;
     })().makeRequest();
 
     return result.fold(

@@ -243,6 +243,28 @@ serve(async (req: Request) => {
     );
   } catch (error: any) {
     console.error("[IngestionWorker] Fatal error:", error);
+
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      if (supabaseUrl && supabaseServiceKey && userId && userId !== "system") {
+        const client = createClient(supabaseUrl, supabaseServiceKey);
+        await client.from("notifications").insert({
+          user_id: userId,
+          title: "⚠️ Flashcard Synthesis Incomplete",
+          body: `We encountered an issue processing your document. Please try again or re-upload a cleaner PDF or photo.`,
+          category: "ai_ingestion",
+          data: {
+            documentId: documentId ?? "",
+            route: "/ingestion",
+            error: error.message ?? "Parsing error",
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.warn("[IngestionWorker] Failed to dispatch failure notification:", notifErr);
+    }
+
     return new Response(
       JSON.stringify({ error: error.message ?? "Internal worker error" }),
       {

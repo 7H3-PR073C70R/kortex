@@ -10,11 +10,13 @@ import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
@@ -28,6 +30,7 @@ import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/app_tour_keys.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 @RoutePage()
 class ProfilePage extends StatelessWidget {
@@ -56,9 +59,20 @@ class _ProfileView extends HookWidget {
       return null;
     }, const []);
 
+    final packageInfoMemo = useMemoized(PackageInfo.fromPlatform);
+    final packageInfoSnapshot = useFuture(packageInfoMemo);
+    final appVersionText = useMemoized(() {
+      if (!packageInfoSnapshot.hasData) return '';
+      final info = packageInfoSnapshot.data!;
+      final version = info.version;
+      final buildNumber = info.buildNumber;
+      return buildNumber.isNotEmpty ? '$version+$buildNumber' : version;
+    }, [packageInfoSnapshot.data]);
+
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (!state.isAuthenticated) {
+        if (state.sessionStatus == AuthSessionStatus.unauthenticated ||
+            state.status == AuthStatus.unauthenticated) {
           locator<AuthModeCubit>().resetToAiChat();
           unawaited(context.router.root.replaceAll([const AuthRoute()]));
         }
@@ -265,13 +279,36 @@ class _ProfileView extends HookWidget {
                                       ScholarHubCard(
                                         state: state,
                                         profile: profile,
-                                        onEditName: () =>
-                                            _showEditProfileDialog(
-                                              context,
+                                        onEditName: () {
+                                          final email = profile?.email ??
+                                              state.user?.email ??
+                                              '';
+                                          final emailPrefix = email.contains('@')
+                                              ? email.split('@').first
+                                              : '';
+                                          var initialName =
                                               profile?.displayName ??
                                                   state.user?.displayName ??
-                                                  '',
-                                            ),
+                                                  '';
+                                          if (initialName.isEmpty ||
+                                              (emailPrefix.isNotEmpty &&
+                                                  initialName == emailPrefix)) {
+                                            if (locator
+                                                .isRegistered<UserStorageService>()) {
+                                              final stored = locator<UserStorageService>()
+                                                  .getUserDisplayName();
+                                              if (stored != null &&
+                                                  stored.trim().isNotEmpty &&
+                                                  stored.trim() != emailPrefix) {
+                                                initialName = stored.trim();
+                                              }
+                                            }
+                                          }
+                                          _showEditProfileDialog(
+                                            context,
+                                            initialName,
+                                          );
+                                        },
                                       ),
                                       const SizedBox(height: 20),
 
@@ -281,7 +318,11 @@ class _ProfileView extends HookWidget {
                                        ),
                                        const SizedBox(height: 20),
                                        ProfileNavigationMenu(
-                                         key: AppTourKeys.profileCardKey,
+                                         key: AppTourKeys.profileCardKey =
+                                             AppTourKeys.safeKey(
+                                           AppTourKeys.profileCardKey,
+                                           'tour_profile_card',
+                                         ),
                                          targetTrack: targetTrack,
                                          dailyTarget: dailyTarget,
                                        ),
@@ -380,7 +421,9 @@ class _ProfileView extends HookWidget {
                                       // 4. App Version Footer
                                       Center(
                                         child: Text(
-                                          'Kortexify v1.2.0 • Neural Study AI',
+                                          appVersionText.isNotEmpty
+                                              ? 'Kortexify v$appVersionText • Neural Study AI'
+                                              : 'Kortexify • Neural Study AI',
                                           style: typography.caption.bold
                                               .copyWith(
                                                 color: colors.textMuted,
@@ -434,8 +477,12 @@ class _ProfileView extends HookWidget {
           final newName = controller.text.trim();
           if (newName.isNotEmpty) {
             Navigator.of(context).pop();
-            // Immediate optimistic reflection
             context.read<AuthBloc>().add(AuthDisplayNameUpdated(newName));
+            if (locator.isRegistered<UserStorageService>()) {
+              unawaited(
+                locator<UserStorageService>().saveUserDisplayName(newName),
+              );
+            }
             final result = await locator<UpdateDisplayNameUseCase>()(newName);
             result.fold(
               (failure) {

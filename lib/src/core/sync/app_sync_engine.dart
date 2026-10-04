@@ -6,8 +6,14 @@ import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
+import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
+import 'package:kortex/src/features/planner/domain/repositories/planner_repository.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 enum SyncStatus { online, syncing, offline }
 
@@ -70,6 +76,7 @@ class AppSyncEngine {
   final Connectivity _connectivity;
   final LocalStorageService? _storageService;
   final UserStorageService? _userStorageService;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   
   final List<AppSyncPayload> _queue = [];
   bool _isSyncing = false;
@@ -131,28 +138,121 @@ class AppSyncEngine {
   }
 
   void _initConnectivityListener() {
-    _connectivity.onConnectivityChanged.listen((results) {
-      final isOnline = results.any(
-        (c) =>
-            c == ConnectivityResult.wifi ||
-            c == ConnectivityResult.mobile ||
-            c == ConnectivityResult.ethernet,
-      );
+    try {
+      _connectivitySub = _connectivity.onConnectivityChanged.listen((results) {
+        final isOnline = results.any(
+          (c) =>
+              c == ConnectivityResult.wifi ||
+              c == ConnectivityResult.mobile ||
+              c == ConnectivityResult.ethernet,
+        );
 
-      _syncStatusController.add(isOnline ? SyncStatus.online : SyncStatus.offline);
+        _syncStatusController.add(isOnline ? SyncStatus.online : SyncStatus.offline);
 
-      if (isOnline && _queue.isNotEmpty) {
-        unawaited(flush());
+        if (isOnline) {
+          unawaited(syncAll());
+        }
+      });
+    } on Object catch (_) {}
+  }
+
+  /// Dispatches full synchronization across all domain stores and queues
+  /// when returning online.
+  Future<void> syncAll() async {
+    await flush();
+
+    if (locator.isRegistered<CardSyncQueue>()) {
+      try {
+        await locator<CardSyncQueue>().flushPendingLogs();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] CardSyncQueue flush failed: $e');
       }
-    });
+    }
+
+    if (locator.isRegistered<QuizRepository>()) {
+      try {
+        await locator<QuizRepository>().flushPendingQuizSubmissions();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] QuizRepository flush failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<UserActivityService>()) {
+      try {
+        await locator<UserActivityService>().syncPendingProgressToBackend();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] UserActivityService sync failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<CommunityRepository>()) {
+      try {
+        await locator<CommunityRepository>().flushPendingForumActions();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] CommunityRepository flush failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<PlannerRepository>()) {
+      try {
+        await locator<PlannerRepository>().getActiveExams();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] PlannerRepository sync failed: $e');
+      }
+    }
+
+    if (locator.isRegistered<DecksRemoteDataSource>()) {
+      try {
+        await locator<DecksRemoteDataSource>().getUserDecks();
+      } on Object catch (e) {
+        debugPrint('[AppSyncEngine] DecksRemoteDataSource sync failed: $e');
+      }
+    }
+  }
+
+  /// CRDT Field-Level Delta Merge helper
+  AppSyncPayload mergeCrdtPayload(AppSyncPayload existing, AppSyncPayload incoming) {
+    final mergedData = Map<String, dynamic>.from(existing.data);
+
+    void mergeMap(Map<String, dynamic> target, Map<String, dynamic> source) {
+      for (final entry in source.entries) {
+        if (target.containsKey(entry.key) &&
+            target[entry.key] is Map<String, dynamic> &&
+            entry.value is Map<String, dynamic>) {
+          mergeMap(
+            target[entry.key] as Map<String, dynamic>,
+            entry.value as Map<String, dynamic>,
+          );
+        } else {
+          target[entry.key] = entry.value;
+        }
+      }
+    }
+
+    if (incoming.timestampEpoch >= existing.timestampEpoch) {
+      mergeMap(mergedData, incoming.data);
+    } else {
+      final temp = Map<String, dynamic>.from(incoming.data);
+      mergeMap(temp, mergedData);
+      mergedData.addAll(temp);
+    }
+
+    final latestTimestamp = incoming.timestampEpoch > existing.timestampEpoch
+        ? incoming.timestampEpoch
+        : existing.timestampEpoch;
+
+    return AppSyncPayload(
+      id: incoming.id,
+      type: incoming.type,
+      data: mergedData,
+      timestampEpoch: latestTimestamp,
+    );
   }
 
   Future<void> enqueue(AppSyncPayload payload) async {
     final existingIndex = _queue.indexWhere((p) => p.id == payload.id && p.type == payload.type);
     if (existingIndex != -1) {
-      if (payload.timestampEpoch > _queue[existingIndex].timestampEpoch) {
-        _queue[existingIndex] = payload;
-      }
+      _queue[existingIndex] = mergeCrdtPayload(_queue[existingIndex], payload);
     } else {
       _queue.add(payload);
     }
@@ -174,24 +274,24 @@ class AppSyncEngine {
     }
 
     final toSync = List<AppSyncPayload>.from(_queue);
-    
+
     try {
       for (var i = 0; i < toSync.length; i += syncBatchSize) {
         final end = (i + syncBatchSize < toSync.length) ? i + syncBatchSize : toSync.length;
         final batch = toSync.sublist(i, end);
-        
+
         final requestPayload = batch.map((p) => p.toMap()).toList();
-        
-        await _dio.post<dynamic>(
-          '${AppApiEndpoint.baseUri}/rest/v1/rpc/app_sync_engine_upsert',
+
+        await _postWithExponentialBackoff(
+          url: '${AppApiEndpoint.baseUri}/rest/v1/rpc/app_sync_engine_upsert',
           data: {'payloads': requestPayload},
-          options: Options(headers: headers),
+          headers: headers,
         );
-        
+
         _queue.removeWhere((p) => batch.any((b) => b.id == p.id));
       }
     } on Object catch (e, stack) {
-      debugPrint('[AppSyncEngine] Flush error: $e\n$stack');
+      debugPrint('[AppSyncEngine] Flush error after retries: $e\n$stack');
     } finally {
       await _persistQueue();
       _isSyncing = false;
@@ -199,7 +299,34 @@ class AppSyncEngine {
     }
   }
 
+  Future<void> _postWithExponentialBackoff({
+    required String url,
+    required Map<String, dynamic> data,
+    required Map<String, String> headers,
+    int maxRetries = 3,
+  }) async {
+    var attempts = 0;
+    while (true) {
+      try {
+        await _dio.post<dynamic>(
+          url,
+          data: data,
+          options: Options(headers: headers),
+        );
+        return;
+      } on Object catch (_) {
+        attempts++;
+        if (attempts > maxRetries) {
+          rethrow;
+        }
+        final backoffMs = 150 * (1 << attempts);
+        await Future<void>.delayed(Duration(milliseconds: backoffMs));
+      }
+    }
+  }
+
   Future<void> dispose() async {
+    await _connectivitySub?.cancel();
     await _syncStatusController.close();
     await _pendingCountController.close();
   }

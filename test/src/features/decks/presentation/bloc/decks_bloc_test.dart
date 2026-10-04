@@ -2,6 +2,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
@@ -9,6 +15,10 @@ import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_ca
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
+import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockDashboardBloc extends Mock implements DashboardBloc {}
 
 class _FakeDecksRepository implements DecksRepository {
   List<DeckEntity> decksToReturn = const [
@@ -163,5 +173,62 @@ void main() {
         ),
       ],
     );
+
+    test('reconciles due cards with DashboardBloc feed when present', () async {
+      final mockDashBloc = MockDashboardBloc();
+      final dueStudyDeck = StudyDeckEntity(
+        id: 'd2',
+        title: 'Neurotransmission',
+        subject: 'Medicine',
+        totalCards: 8,
+        dueCards: 6,
+        retentionRate: 0.95,
+        lastReviewed: DateTime(2026, 10),
+        category: 'Biology',
+      );
+      final feed = DashboardFeedEntity(
+        calibrationProfile: const CalibrationProfile(),
+        analyticsSummary: const AnalyticsSummaryEntity(
+          currentStreakDays: 1,
+          longestStreakDays: 1,
+          weeklyMinutesStudied: 10,
+          overallRetentionRate: 0.9,
+          totalCardsMastered: 8,
+          heatMapData: [],
+          xpPoints: 100,
+          academicRank: 'Scholar',
+        ),
+        dueStudyDecks: [dueStudyDeck],
+        curatedCourses: const [],
+      );
+
+      when(() => mockDashBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockDashBloc.state).thenReturn(DashboardState(feed: feed));
+
+      if (locator.isRegistered<DashboardBloc>()) {
+        locator.unregister<DashboardBloc>();
+      }
+      locator.registerSingleton<DashboardBloc>(mockDashBloc);
+
+      final newBloc = DecksBloc(
+        getUserDecksUseCase: GetUserDecksUseCase(repo),
+      )
+
+      ..add(const DecksStarted());
+      await expectLater(
+        newBloc.stream,
+        emitsThrough(
+          predicate<DecksState>((state) {
+            final d2 = state.allDecks.where((d) => d.id == 'd2').firstOrNull;
+            return state.status == DecksStatus.loaded &&
+                d2 != null &&
+                d2.dueCards == 6;
+          }),
+        ),
+      );
+
+      await newBloc.close();
+      locator.unregister<DashboardBloc>();
+    });
   });
 }

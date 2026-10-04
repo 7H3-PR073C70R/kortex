@@ -10,8 +10,10 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/ingestion/data/data_sources/ingestion_remote_data_source.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Interactive bottom sheet for uploading and transcribing audio lectures (ING-10).
 class AudioLectureIngestionSheet extends HookWidget {
@@ -28,7 +30,19 @@ class AudioLectureIngestionSheet extends HookWidget {
     BuildContext context, {
     ValueChanged<String>? onTranscriptionCompleted,
     ValueChanged<String>? onGenerateCards,
-  }) {
+  }) async {
+    final guard = locator.isRegistered<SubscriptionGuard>()
+        ? locator<SubscriptionGuard>()
+        : SubscriptionGuard();
+    if (!guard.canTranscribeAudioLecture()) {
+      final isPro = await guard.requirePro(
+        context,
+        featureName: 'Audio Lecture Ingestion',
+      );
+      if (!isPro || !context.mounted) return;
+    }
+
+    if (!context.mounted) return;
     final colors = context.colors;
     return showModalBottomSheet<void>(
       context: context,
@@ -56,6 +70,7 @@ class AudioLectureIngestionSheet extends HookWidget {
     final isUploading = useState<bool>(false);
     final uploadProgress = useState<double>(0);
     final transcriptionResult = useState<String>('');
+    final isTranscriptExpanded = useState<bool>(false);
 
     Future<void> handlePickAudio() async {
       AppFeedback.selection();
@@ -75,6 +90,17 @@ class AudioLectureIngestionSheet extends HookWidget {
     }
 
     Future<void> startWhisperProcessing() async {
+      final guard = locator.isRegistered<SubscriptionGuard>()
+          ? locator<SubscriptionGuard>()
+          : SubscriptionGuard();
+      if (!guard.canTranscribeAudioLecture()) {
+        final isPro = await guard.requirePro(
+          context,
+          featureName: 'Audio Lecture Ingestion',
+        );
+        if (!isPro || !context.mounted) return;
+      }
+
       AppFeedback.light();
       isUploading.value = true;
       uploadProgress.value = 0.1;
@@ -171,11 +197,36 @@ class AudioLectureIngestionSheet extends HookWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Audio Lecture Ingestion',
-                          style: typography.title2.bold.copyWith(
-                            color: colors.textPrimary,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              'Audio Lecture Ingestion',
+                              style: typography.title2.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.primary,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.micro,
+                                ),
+                              ),
+                              child: Text(
+                                'PRO',
+                                style: typography.caption.bold.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 8.5,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         Text(
                           'Upload recorded lectures & voice memos to auto-generate flashcards',
@@ -296,33 +347,82 @@ class AudioLectureIngestionSheet extends HookWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-              // Transcribed Text Preview
+              // Transcribed Text Preview with Visibility Toggle
               if (transcriptionResult.value.isNotEmpty) ...[
-                Text(
-                  'Transcription Preview:',
-                  style: typography.caption.regular.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  constraints: const BoxConstraints(maxHeight: 120),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceSecondary,
-                    borderRadius: BorderRadius.circular(AppRadius.card),
-                  ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      transcriptionResult.value,
-                      style: typography.caption.regular.copyWith(
-                        color: colors.textPrimary,
-                        height: 1.4,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      isTranscriptExpanded.value = !isTranscriptExpanded.value;
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withAlpha(context.isDarkMode ? 35 : 20),
+                        borderRadius: AppRadius.radiusBadge,
+                        border: Border.all(
+                          color: colors.primary.withAlpha(context.isDarkMode ? 70 : 40),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.subtitles_rounded,
+                            size: 13,
+                            color: colors.primary,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            isTranscriptExpanded.value
+                                ? 'Hide Speech-to-Text Transcript 📝'
+                                : 'Show Speech-to-Text Transcript (STT) 📝',
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            isTranscriptExpanded.value
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            size: 15,
+                            color: colors.primary,
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
+                if (isTranscriptExpanded.value) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 140),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceSecondary,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: colors.primary.withAlpha(context.isDarkMode ? 50 : 30),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        transcriptionResult.value,
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textPrimary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
               ],
               // Action Buttons

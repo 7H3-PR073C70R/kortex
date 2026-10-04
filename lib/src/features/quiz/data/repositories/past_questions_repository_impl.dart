@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
+import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -52,6 +54,34 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           _bookmarkedIds.addAll(decoded.map((e) => e.toString()));
         }
       }
+
+      // If local cache has no bookmarks (e.g. fresh reinstall), attempt restore from remote user_metadata
+      if (_bookmarkedIds.isEmpty && locator.isRegistered<Dio>()) {
+        unawaited(() async {
+          try {
+            final dio = locator<Dio>();
+            final response = await dio.get<dynamic>(
+              '${AppApiEndpoint.baseUri}/auth/v1/user',
+              options: Options(
+                validateStatus: (status) => status != null && status < 500,
+              ),
+            );
+            final resData = response.data;
+            if (response.statusCode == 200 && resData is Map<String, dynamic>) {
+              final userMeta = resData['user_metadata'] as Map<String, dynamic>?;
+              final remoteBookmarks = userMeta?['past_question_bookmarks'] as List<dynamic>?;
+              if (remoteBookmarks != null && remoteBookmarks.isNotEmpty) {
+                _bookmarkedIds.addAll(remoteBookmarks.map((e) => e.toString()));
+                final currentStorage = _effectiveLocalStorage;
+                await currentStorage?.savePreference(
+                  key: PrefKeys.pastQuestionBookmarks,
+                  data: jsonEncode(_bookmarkedIds.toList()),
+                );
+              }
+            }
+          } on Object catch (_) {}
+        }());
+      }
     } on Object catch (_) {}
   }
 
@@ -62,6 +92,24 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         await storage.savePreference(
           key: PrefKeys.pastQuestionBookmarks,
           data: jsonEncode(_bookmarkedIds.toList()),
+        );
+      }
+
+      // Sync bookmark list to remote user_metadata so bookmarks survive reinstalls
+      if (locator.isRegistered<Dio>()) {
+        final dio = locator<Dio>();
+        unawaited(
+          dio.put<dynamic>(
+            '${AppApiEndpoint.baseUri}/auth/v1/user',
+            data: {
+              'data': {
+                'past_question_bookmarks': _bookmarkedIds.toList(),
+              },
+            },
+            options: Options(
+              validateStatus: (status) => status != null && status < 500,
+            ),
+          ).catchError((_) => Response<dynamic>(requestOptions: RequestOptions())),
         );
       }
     } on Object catch (_) {}
@@ -77,7 +125,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
     String? courseCode,
   }) {
     return Future<List<PastQuestionEntity>>.sync(() async {
-      // 1. Fetch remote data from Supabase actively
+      Object? remoteError;
       var remote = <PastQuestionModel>[];
       try {
         remote = await _remoteDataSource.getPastQuestions(
@@ -93,7 +141,9 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
           // Write-through caching to local SQLite database so subsequent queries work offline
           unawaited(_effectiveLocalDataSource.savePastQuestions(remote));
         }
-      } on Object catch (_) {}
+      } on Object catch (e) {
+        remoteError = e;
+      }
 
       // 2. Fetch local offline/cached questions
       var local = <PastQuestionModel>[];
@@ -108,7 +158,7 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         );
       } on Object catch (_) {}
 
-      // 3. Merge results, preferring remote/updated items
+      // 3. Merge results: remote items take precedence over local items for matching IDs
       final seenIds = <String>{};
       final merged = <PastQuestionModel>[];
 
@@ -121,6 +171,13 @@ class PastQuestionsRepositoryImpl implements PastQuestionsRepository {
         if (seenIds.add(q.id)) {
           merged.add(q);
         }
+      }
+
+      if (merged.isEmpty && remoteError != null) {
+        if (remoteError is Exception) {
+          throw remoteError;
+        }
+        throw Exception(remoteError.toString());
       }
 
       return merged.map((m) {

@@ -68,9 +68,55 @@ class SyllabotAiSettingsPage extends HookWidget {
       return 1.0;
     }();
 
+    final initialPitch = () {
+      final raw = storage?.getPreference(key: PrefKeys.syllabotVoicePitch);
+      if (raw != null) {
+        final parsed = double.tryParse(raw);
+        if (parsed != null && parsed > 0) return parsed;
+      }
+      return 1.0;
+    }();
+
+    final initialVoiceName = () {
+      final raw = storage?.getPreference(key: PrefKeys.kokoroVoiceName) ??
+          storage?.getPreference(key: PrefKeys.syllabotVoiceName);
+      return (raw != null && raw.isNotEmpty) ? raw : 'Bella';
+    }();
+
+    final initialPersona = () {
+      final raw = storage?.getPreference(key: '__syllabot_tutor_persona');
+      return raw ?? 'Socratic Tutor';
+    }();
+
     final socraticMode = useState<SocraticMode>(initialMode);
     final voiceGender = useState<VoiceGender>(initialGender);
     final speechRate = useState<double>(initialRate);
+    final speechPitch = useState<double>(initialPitch);
+    final selectedVoiceName = useState<String?>(initialVoiceName);
+    final tutorPersona = useState<String>(initialPersona);
+    final isPlayingPreview = useState<bool>(false);
+    final availableVoices = useState<List<Map<String, dynamic>>>([]);
+    final isLoadingVoices = useState<bool>(true);
+
+    final ttsHandler = useMemoized(
+      () => TextToSpeechHandler(
+        localStorageService: storage,
+        onSpeakingChanged: (speaking) {
+          isPlayingPreview.value = speaking;
+        },
+      ),
+      const [],
+    );
+
+    useEffect(() {
+      unawaited(
+        ttsHandler.getAvailableVoices().then((voices) {
+          availableVoices.value = voices;
+          isLoadingVoices.value = false;
+        }),
+      );
+      return ttsHandler.stop;
+    }, const []);
 
     final activeMode = socraticMode.value;
 
@@ -280,14 +326,157 @@ class SyllabotAiSettingsPage extends HookWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Section 2: Voice Dialogue Persona
+                  // Section 2: Voice Dialogue Persona & AI Character
                   _buildSectionContainer(
-                    title: 'VOICE DIALOGUE PERSONA',
-                    subtitle: 'Audio characteristics for spoken interactions',
+                    title: 'VOICE DIALOGUE & TUTOR PERSONA',
+                    subtitle: 'Select personality archetype and audio characteristics',
                     colors: colors,
                     typography: typography,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Persona Archetype Selector Cards
+                        Text(
+                          'TUTOR ARCHETYPE',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.textSecondary.withAlpha(140),
+                            fontSize: 10,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Column(
+                          children: [
+                            {
+                              'title': 'Socratic Tutor',
+                              'icon': '🏛️',
+                              'desc': 'Scaffolded questions & deep conceptual breakdown.',
+                              'sample': 'Hello! I am your Socratic AI Tutor. What concept would you like to explore today?'
+                            },
+                            {
+                              'title': 'Strict Exam Coach',
+                              'icon': '⏱️',
+                              'desc': 'High precision, timed drill pressure & direct feedback.',
+                              'sample': 'Welcome scholar. Let us jump right into your exam drill questions and master key formulas.'
+                            },
+                            {
+                              'title': 'Friendly Peer',
+                              'icon': '🤝',
+                              'desc': 'Encouraging tone with relatable study analogies.',
+                              'sample': 'Hey there! Ready to crush some study flashcards together? We got this!'
+                            },
+                          ].map((p) {
+                            final title = p['title']!;
+                            final isSelected = tutorPersona.value == title;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: PlatformHoverBuilder(
+                                builder: (context, isHovered, child) {
+                                  return AnimatedScale(
+                                    scale: isHovered && !isSelected ? 1.01 : 1.0,
+                                    duration: AppMotion.snappy,
+                                    curve: Curves.easeOutCubic,
+                                    child: child,
+                                  );
+                                },
+                                child: ShrinkableButton(
+                                  onTap: () {
+                                    AppFeedback.selection();
+                                    tutorPersona.value = title;
+                                    if (storage != null) {
+                                      unawaited(
+                                        storage.savePreference(
+                                          key: '__syllabot_tutor_persona',
+                                          data: title,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? colors.primary.withAlpha(isDark ? 40 : 20)
+                                          : colors.surfaceSecondary,
+                                      borderRadius: AppRadius.radiusCard,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? colors.primary
+                                            : colors.surfaceBorder.withAlpha(70),
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(p['icon']!, style: const TextStyle(fontSize: 20)),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                title,
+                                                style: typography.body.bold.copyWith(
+                                                  color: isSelected ? colors.primary : colors.textPrimary,
+                                                  fontSize: 13.5,
+                                                ),
+                                              ),
+                                              Text(
+                                                p['desc']!,
+                                                style: typography.caption.regular.copyWith(
+                                                  color: colors.textSecondary,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        ShrinkableButton(
+                                          onTap: () async {
+                                            AppFeedback.light();
+                                            if (isPlayingPreview.value) {
+                                              await ttsHandler.stop();
+                                            } else {
+                                              await ttsHandler.setSpeechRate(speechRate.value);
+                                              await ttsHandler.setVoiceGender(voiceGender.value);
+                                              await ttsHandler.speak(p['sample']!);
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary.withAlpha(30),
+                                              borderRadius: AppRadius.radiusBadge,
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  isPlayingPreview.value ? Icons.stop_rounded : Icons.volume_up_rounded,
+                                                  size: 14,
+                                                  color: colors.primary,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Sample',
+                                                  style: typography.caption.bold.copyWith(
+                                                    color: colors.primary,
+                                                    fontSize: 10.5,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const Divider(height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -327,6 +516,7 @@ class SyllabotAiSettingsPage extends HookWidget {
                                   AppFeedback.selection();
                                   final g = set.first;
                                   voiceGender.value = g;
+                                  selectedVoiceName.value = null;
                                   if (storage != null) {
                                     unawaited(
                                       storage.savePreference(
@@ -403,6 +593,334 @@ class SyllabotAiSettingsPage extends HookWidget {
                             ),
                           ],
                         ),
+                        const Divider(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Pitch Tuning',
+                              style: typography.body.medium.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            AppSpacing.horizontalSpaceMedium,
+
+                            Expanded(
+                              child: SegmentedButton<double>(
+                                showSelectedIcon: false,
+                                segments: [
+                                  ButtonSegment(
+                                    value: 0.9,
+                                    label: Text(
+                                      'Warm (0.9x)',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                  ButtonSegment(
+                                    value: 1,
+                                    label: Text(
+                                      'Natural',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                  ButtonSegment(
+                                    value: 1.1,
+                                    label: Text(
+                                      'Crisp (1.1x)',
+                                      style: typography.caption.bold.copyWith(
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                selected: {speechPitch.value},
+                                onSelectionChanged: (set) {
+                                  AppFeedback.selection();
+                                  final p = set.first;
+                                  speechPitch.value = p;
+                                  if (storage != null) {
+                                    unawaited(
+                                      storage.savePreference(
+                                        key: PrefKeys.syllabotVoicePitch,
+                                        data: p.toString(),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 24),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'KOKORO ON-DEVICE & EDGE NEURAL VOICE',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textSecondary.withAlpha(140),
+                                    fontSize: 10,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(25),
+                                    borderRadius: AppRadius.radiusBadge,
+                                  ),
+                                  child: Text(
+                                    '24 kHz Studio Model',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 9.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Offline-capable ONNX Kokoro voice with automatic cloud Microsoft Edge neural acceleration when online.',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Kokoro Voice Cards Grid
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                {
+                                  'id': 'Default',
+                                  'label': 'Default',
+                                  'tag': 'Studio Female',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Bella',
+                                  'label': 'Bella',
+                                  'tag': 'Warm Female',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Nicole',
+                                  'label': 'Nicole',
+                                  'tag': 'Crisp Tutor',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Sarah',
+                                  'label': 'Sarah',
+                                  'tag': 'Articulate UK',
+                                  'gender': VoiceGender.female,
+                                },
+                                {
+                                  'id': 'Adam',
+                                  'label': 'Adam',
+                                  'tag': 'Mentor Male',
+                                  'gender': VoiceGender.male,
+                                },
+                                {
+                                  'id': 'Michael',
+                                  'label': 'Michael',
+                                  'tag': 'Academic Male',
+                                  'gender': VoiceGender.male,
+                                },
+                              ].map((voice) {
+                                final voiceId = voice['id']! as String;
+                                final label = voice['label']! as String;
+                                final tag = voice['tag']! as String;
+                                final vGender = voice['gender']! as VoiceGender;
+                                final isSelected =
+                                    selectedVoiceName.value == voiceId ||
+                                    (selectedVoiceName.value == null &&
+                                        voiceId == 'Bella');
+
+                                return ShrinkableButton(
+                                  onTap: () async {
+                                    AppFeedback.selection();
+                                    selectedVoiceName.value = voiceId;
+                                    voiceGender.value = vGender;
+                                    await ttsHandler.setKokoroVoice(voiceId);
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: AppMotion.snappy,
+                                    width: 105,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? colors.primary.withAlpha(isDark ? 50 : 25)
+                                          : colors.surfaceSecondary,
+                                      borderRadius: AppRadius.radiusCard,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? colors.primary
+                                            : colors.surfaceBorder.withAlpha(70),
+                                        width: isSelected ? 1.5 : 1,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              label,
+                                              style: typography.body.bold.copyWith(
+                                                color: isSelected
+                                                    ? colors.primary
+                                                    : colors.textPrimary,
+                                                fontSize: 12.5,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            if (isSelected)
+                                              Icon(
+                                                Icons.check_circle_rounded,
+                                                size: 14,
+                                                color: colors.primary,
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          tag,
+                                          style: typography.caption.regular.copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            // Tiered Pipeline Status Card
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.surfaceSecondary.withAlpha(120),
+                                borderRadius: AppRadius.radiusBadge,
+                                border: Border.all(
+                                  color: colors.surfaceBorder.withAlpha(60),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 14,
+                                    color: colors.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Tiered: Edge Neural (Online) → Kokoro 24 kHz (Offline) → System Fallback',
+                                      style: typography.caption.medium.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Interactive "Test Selected Voice Mode" Banner Card
+                        ShrinkableButton(
+                          onTap: () async {
+                            AppFeedback.light();
+                            if (isPlayingPreview.value) {
+                              await ttsHandler.stop();
+                            } else {
+                              await ttsHandler.setSpeechRate(speechRate.value);
+                              await ttsHandler.setVoicePitch(speechPitch.value);
+                              await ttsHandler.setVoiceGender(voiceGender.value);
+                              await ttsHandler.setVoiceName(selectedVoiceName.value);
+                              await ttsHandler.speak(
+                                'Hello scholar! This is your custom neural voice mode preview for Syllabot AI.',
+                              );
+                            }
+                          },
+                          child: AnimatedContainer(
+                            duration: AppMotion.snappy,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isPlayingPreview.value
+                                  ? colors.error.withAlpha(30)
+                                  : colors.primary.withAlpha(isDark ? 40 : 20),
+                              borderRadius: AppRadius.radiusCard,
+                              border: Border.all(
+                                color: isPlayingPreview.value ? colors.error : colors.primary.withAlpha(90),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: isPlayingPreview.value ? colors.error : colors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isPlayingPreview.value ? Icons.stop_rounded : Icons.play_arrow_rounded,
+                                    color: colors.white,
+                                    size: 22,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isPlayingPreview.value ? 'Speaking Sample...' : 'Test Selected Voice Mode',
+                                        style: typography.body.bold.copyWith(
+                                          color: isPlayingPreview.value ? colors.error : colors.primary,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Click to preview human voice audio synthesis',
+                                        style: typography.caption.regular.copyWith(
+                                          color: colors.textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -472,11 +990,23 @@ class SyllabotAiSettingsPage extends HookWidget {
                             key: PrefKeys.syllabotSpeechRate,
                             data: speechRate.value.toString(),
                           );
+                          await storage.savePreference(
+                            key: PrefKeys.syllabotVoicePitch,
+                            data: speechPitch.value.toString(),
+                          );
+                          await storage.savePreference(
+                            key: PrefKeys.syllabotVoiceName,
+                            data: selectedVoiceName.value ?? '',
+                          );
+                          await storage.savePreference(
+                            key: '__syllabot_tutor_persona',
+                            data: tutorPersona.value,
+                          );
                         }
                         if (context.mounted) {
                           context.showSnackBar(
                             message:
-                                'Syllabot AI preferences updated successfully!',
+                                'Syllabot AI neural voice preferences updated successfully!',
                             type: SnackBarType.success,
                           );
                           Navigator.of(context).pop();

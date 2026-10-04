@@ -59,12 +59,9 @@ class DeviceCapabilityService {
 
     try {
       final docDir = await getApplicationDocumentsDirectory();
-      // Inspect storage via file stat or root directory check
       if (docDir.existsSync()) {
-        final stat = docDir.statSync();
-        if (stat.size > 0) {
-          availableMb = (stat.size / (1024 * 1024)).round();
-        }
+        // Documents directory exists and is accessible for model storage
+        availableMb = 2048;
       }
     } on Object catch (e) {
       if (kDebugMode) {

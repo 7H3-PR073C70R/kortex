@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
@@ -38,6 +39,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     on<CloneDeckEvent>(_onCloneDeck);
     on<PublishDeckEvent>(_onPublishDeck);
     on<LeaderboardUpdatedEvent>(_onLeaderboardUpdated);
+    on<StudyCirclesUpdatedEvent>(_onStudyCirclesUpdated);
     on<FetchMoreForumPostsEvent>(_onFetchMoreForumPosts);
     on<ToggleBookmarkForumPostEvent>(_onToggleBookmarkForumPost);
     on<ToggleFollowTopicEvent>(_onToggleFollowTopic);
@@ -46,6 +48,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
 
   final CommunityRepository _repository;
   StreamSubscription<dynamic>? _leaderboardSubscription;
+  StreamSubscription<dynamic>? _studyCirclesSubscription;
 
   void _onClearCommunityError(
     ClearCommunityErrorEvent event,
@@ -162,6 +165,16 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
             add(LeaderboardUpdatedEvent(entries));
           }
         });
+
+    // Subscribe to live study circles / pod pulse stream
+    await _studyCirclesSubscription?.cancel();
+    _studyCirclesSubscription = _repository
+        .watchStudyCircles(track: effectiveTrack)
+        .listen((circles) {
+          if (!isClosed) {
+            add(StudyCirclesUpdatedEvent(circles));
+          }
+        });
   }
 
   void _onLeaderboardUpdated(
@@ -169,6 +182,13 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
     Emitter<CommunityState> emit,
   ) {
     emit(state.copyWith(leaderboardEntries: event.entries));
+  }
+
+  void _onStudyCirclesUpdated(
+    StudyCirclesUpdatedEvent event,
+    Emitter<CommunityState> emit,
+  ) {
+    emit(state.copyWith(studyCircles: event.circles));
   }
 
   void _onSwitchCommunityTab(
@@ -454,6 +474,15 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         ),
       ),
       (post) {
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.communityPost,
+              sourceId: post.id,
+              metadata: {'title': post.title, 'track': post.track},
+            ),
+          );
+        }
         emit(state.copyWith(forumPosts: [post, ...state.forumPosts]));
       },
     );
@@ -471,6 +500,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       mediaUrls: event.mediaUrls,
       voiceNoteUrl: event.voiceNoteUrl,
       voiceNoteDurationSeconds: event.voiceNoteDurationSeconds,
+      isAnonymous: event.isAnonymous,
     );
     res.fold(
       (failure) => emit(
@@ -480,6 +510,15 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
         ),
       ),
       (reply) {
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.communityAnswer,
+              sourceId: reply.id,
+              metadata: {'postId': event.postId},
+            ),
+          );
+        }
         final updatedPosts = state.forumPosts.map((p) {
           if (p.id == event.postId) {
             return p.copyWith(
@@ -646,6 +685,15 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
       (_) {},
       (circles) => emit(state.copyWith(studyCircles: circles)),
     );
+
+    await _studyCirclesSubscription?.cancel();
+    _studyCirclesSubscription = _repository
+        .watchStudyCircles(track: effectiveTrack)
+        .listen((circles) {
+          if (!isClosed) {
+            add(StudyCirclesUpdatedEvent(circles));
+          }
+        });
   }
 
   Future<void> _onCreateStudyCircle(
@@ -801,6 +849,7 @@ class CommunityHubBloc extends Bloc<CommunityEvent, CommunityState> {
   @override
   Future<void> close() async {
     await _leaderboardSubscription?.cancel();
+    await _studyCirclesSubscription?.cancel();
     await super.close();
   }
 }

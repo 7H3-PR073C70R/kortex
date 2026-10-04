@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
@@ -37,6 +39,9 @@ class QuizDuelArenaPage extends HookWidget {
     final lastEmoteTs = useState<int?>(null);
     final activePostMatchTab = useState<int>(0);
     final lastEmoteSentMs = useState<int>(0);
+    final previousStatus = useRef<QuizDuelStatus?>(null);
+    final previousSeconds = useRef<int?>(null);
+    final previousRivalSelected = useRef<bool>(false);
 
     void onSelectOption(int index) {
       AppFeedback.selection();
@@ -60,6 +65,51 @@ class QuizDuelArenaPage extends HookWidget {
 
     return BlocConsumer<QuizDuelCubit, QuizDuelState>(
       listener: (context, state) {
+        // Countdown Audio / Haptic Tick
+        if (state.status == QuizDuelStatus.countdown &&
+            state.remainingSeconds != previousSeconds.value) {
+          previousSeconds.value = state.remainingSeconds;
+          AppFeedback.light();
+        }
+
+        // Duel Timer Urgent Tick (last 5 seconds)
+        if (state.status == QuizDuelStatus.inRound &&
+            state.remainingSeconds <= 5 &&
+            state.remainingSeconds > 0 &&
+            state.remainingSeconds != previousSeconds.value) {
+          previousSeconds.value = state.remainingSeconds;
+          AppFeedback.duelTimerTick();
+        }
+
+        // Rival Locked Answer Haptic Cue
+        final rivalLocked = state.opponentParticipant?.selectedOptionIndex != null;
+        if (state.status == QuizDuelStatus.inRound &&
+            rivalLocked &&
+            !previousRivalSelected.value) {
+          AppFeedback.medium();
+        }
+        previousRivalSelected.value = rivalLocked;
+
+        // Round Summary Verdict Feedback (Correct / Streak / Incorrect)
+        if (previousStatus.value == QuizDuelStatus.inRound &&
+            state.status == QuizDuelStatus.roundSummary) {
+          final myIdx = state.selectedOptionIndex ?? state.myParticipant?.selectedOptionIndex;
+          final q = state.match?.currentQuestion;
+          if (myIdx != null && q != null && myIdx >= 0 && myIdx < q.options.length) {
+            final isCorrect = q.options[myIdx] == q.correctAnswer;
+            if (isCorrect) {
+              final streak = state.myParticipant?.comboStreak ?? 0;
+              if (streak >= 3) {
+                AppFeedback.comboStreak(streak);
+              } else {
+                AppFeedback.correct();
+              }
+            } else {
+              AppFeedback.incorrect();
+            }
+          }
+        }
+
         if (state.match?.latestEmote != null &&
             state.match?.latestEmoteTimestamp != null &&
             state.match!.latestEmoteTimestamp != lastEmoteTs.value &&
@@ -74,7 +124,10 @@ class QuizDuelArenaPage extends HookWidget {
           });
         }
 
-        if (state.status == QuizDuelStatus.finished && !hasCelebrated.value) {
+        if (state.status == QuizDuelStatus.finished &&
+            previousStatus.value != null &&
+            previousStatus.value != QuizDuelStatus.finished &&
+            !hasCelebrated.value) {
           hasCelebrated.value = true;
           final isWinner = state.isWinner;
           final isDraw = state.isDraw;
@@ -84,6 +137,16 @@ class QuizDuelArenaPage extends HookWidget {
           final opponentScore = state.opponentParticipant?.score ?? 0;
           final opponentName =
               state.opponentParticipant?.displayName ?? 'Rival';
+
+          if (previousStatus.value != QuizDuelStatus.finished) {
+            if (isWinner || forfeitByRival) {
+              AppFeedback.duelVictory();
+            } else if (!isDraw) {
+              AppFeedback.duelDefeat();
+            } else {
+              AppFeedback.medium();
+            }
+          }
 
           final String title;
           final String subtitle;
@@ -148,10 +211,20 @@ class QuizDuelArenaPage extends HookWidget {
               motivationalBadge: badge,
               buttonText: buttonText,
               onDismiss: onDismissAction,
+              secondaryButtonText: forfeitByRival ? null : 'Rematch Now ⚔️',
+              onSecondaryAction: forfeitByRival
+                  ? null
+                  : () {
+                      unawaited(context.read<QuizDuelCubit>().requestRematch());
+                    },
               emoji: emoji,
             ),
           );
+        } else if (state.status != QuizDuelStatus.finished) {
+          hasCelebrated.value = false;
         }
+
+        previousStatus.value = state.status;
       },
       builder: (context, state) {
         final match = state.match;
@@ -170,6 +243,208 @@ class QuizDuelArenaPage extends HookWidget {
               avatarUrl: '🧠',
             );
         final currentQuestion = match?.currentQuestion;
+
+        if (state.status == QuizDuelStatus.matching) {
+          return Scaffold(
+            backgroundColor: isDark
+                ? colors.surfaceSecondary
+                : colors.surfacePrimary,
+            appBar: AppBar(
+              backgroundColor: colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () async {
+                  AppFeedback.light();
+                  await context.read<QuizDuelCubit>().leaveMatch();
+                  if (context.mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
+                },
+              ),
+              title: Text(
+                match?.subject ?? 'Finding Duel',
+                style: typography.body.bold,
+              ),
+              centerTitle: true,
+            ),
+            body: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.9, end: 1.15),
+                          duration: const Duration(milliseconds: 900),
+                          curve: Curves.easeInOut,
+                          builder: (context, scale, child) {
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                width: 104,
+                                height: 104,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: colors.primary.withAlpha(25),
+                                  border: Border.all(
+                                    color: colors.primary.withAlpha(80),
+                                    width: 2.2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Container(
+                                    width: 68,
+                                    height: 68,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: colors.primary,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.primary.withAlpha(90),
+                                          blurRadius: 18,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.radar_rounded,
+                                        color: Colors.white,
+                                        size: 32,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 28),
+                        Text(
+                          'Searching for Challenger...',
+                          style: typography.title2.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${match?.subject ?? "Academic"} • ${match?.examBoard ?? "WAEC"}\nLooking for active scholars nearby...',
+                          style: typography.body.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 36),
+                        AppButton(
+                          text: 'Play with AI Bot Now ⚡',
+                          onPressed: () async {
+                            AppFeedback.selection();
+                            await context
+                                .read<QuizDuelCubit>()
+                                .matchWithAiImmediately();
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        AppButton(
+                          text: 'Cancel Search',
+                          variant: AppButtonVariant.secondary,
+                          onPressed: () async {
+                            AppFeedback.light();
+                            await context.read<QuizDuelCubit>().leaveMatch();
+                            if (context.mounted) {
+                              Navigator.of(context)
+                                  .popUntil((route) => route.isFirst);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (state.status == QuizDuelStatus.cancelled) {
+          return Scaffold(
+            backgroundColor: isDark
+                ? colors.surfaceSecondary
+                : colors.surfacePrimary,
+            body: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: colors.warning.withAlpha(30),
+                          ),
+                          child: const Icon(
+                            Icons.exit_to_app_rounded,
+                            size: 48,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Duel Ended',
+                          style: typography.title2.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          state.errorMessage ??
+                              'The duel match was cancelled or completed.',
+                          style: typography.body.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        AppButton(
+                          text: 'Find Another Duel ⚔️',
+                          onPressed: () async {
+                            AppFeedback.selection();
+                            await context.read<QuizDuelCubit>().startMatchmaking(
+                              subject: match?.subject ?? 'Physics',
+                              examBoard: match?.examBoard ?? 'WAEC',
+                              userId: state.currentUserId,
+                              displayName: myPlayer.displayName,
+                              avatarUrl: myPlayer.avatarUrl,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        AppButton(
+                          text: 'Return to Dashboard',
+                          variant: AppButtonVariant.ghost,
+                          onPressed: () {
+                            AppFeedback.light();
+                            Navigator.of(context)
+                                .popUntil((route) => route.isFirst);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
 
         if (state.status == QuizDuelStatus.countdown) {
           return Scaffold(
@@ -236,6 +511,70 @@ class QuizDuelArenaPage extends HookWidget {
                             fontSize: 13.5,
                           ),
                         ),
+                        if (match?.roomCode != null &&
+                            match!.roomCode!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 35 : 20),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.micro,
+                              ),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(80),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.vpn_key_rounded,
+                                  size: 14,
+                                  color: colors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'ROOM CODE: ${match.roomCode}',
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    letterSpacing: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.micro,
+                                  ),
+                                  onTap: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(text: match.roomCode!),
+                                    );
+                                    AppFeedback.light();
+                                    if (context.mounted) {
+                                      context.showSnackBar(
+                                        message:
+                                            'Room code ${match.roomCode} copied!',
+                                        type: SnackBarType.success,
+                                      );
+                                    }
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2),
+                                    child: Icon(
+                                      Icons.copy_rounded,
+                                      size: 14,
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 36),
 
                         // VS Battle Ring Cards: they arrive together in one
@@ -582,6 +921,11 @@ class QuizDuelArenaPage extends HookWidget {
                             child: QuizDuelReviewTab(
                               match: match,
                               currentUserId: state.currentUserId,
+                              onRematch: () {
+                                unawaited(
+                                  context.read<QuizDuelCubit>().requestRematch(),
+                                );
+                              },
                             ),
                           )
                         else
@@ -615,6 +959,34 @@ class QuizDuelArenaPage extends HookWidget {
                                   letterSpacing: 1.2,
                                 ),
                               ),
+                              if (match?.roomCode != null &&
+                                  match!.roomCode!.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(25),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.micro,
+                                    ),
+                                    border: Border.all(
+                                      color: colors.primary.withAlpha(60),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'ROOM: ${match.roomCode}',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.primary,
+                                      fontSize: 11,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 20),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -754,17 +1126,172 @@ class QuizDuelArenaPage extends HookWidget {
                         ),
                         const SizedBox(height: 32),
 
-                        if (forfeitByRival) ...[
+                        if (state.didOpponentRequestRematch) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(25),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.panel),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(120),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Text('⚔️', style: TextStyle(fontSize: 28)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '${opponent.displayName} challenged you to a rematch!',
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Accept to immediately launch into a new duel with fresh questions.',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                          color: colors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           AppButton(
-                            text: 'Return to Dashboard',
+                            text: 'Accept Rematch! ⚔️',
+                            isLoading: state.isRematchLoading,
                             onPressed: () {
-                              Navigator.of(context).popUntil((route) => route.isFirst);
+                              AppFeedback.selection();
+                              unawaited(
+                                context.read<QuizDuelCubit>().acceptRematch(),
+                              );
                             },
                           ),
-                        ] else ...[
+                          const SizedBox(height: 12),
                           AppButton(
-                            text: 'Rematch',
+                            text: 'Decline / Return to Dashboard',
+                            variant: AppButtonVariant.ghost,
                             onPressed: () async {
+                              AppFeedback.light();
+                              await context
+                                  .read<QuizDuelCubit>()
+                                  .declineRematch();
+                              if (context.mounted) {
+                                await context
+                                    .read<QuizDuelCubit>()
+                                    .leaveMatch();
+                                if (context.mounted) {
+                                  Navigator.of(context)
+                                      .popUntil((route) => route.isFirst);
+                                }
+                              }
+                            },
+                          ),
+                        ] else if (state.didIRequestRematch) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colors.surfacePrimary,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.panel),
+                              border: Border.all(
+                                color:
+                                    colors.surfaceBorder.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      colors.primary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Waiting for ${opponent.displayName} to accept...',
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Your rematch challenge was sent over live arena.',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                          color: colors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          AppButton(
+                            text: 'Play with AI Bot Now ⚡',
+                            onPressed: () {
+                              AppFeedback.selection();
+                              unawaited(
+                                context
+                                    .read<QuizDuelCubit>()
+                                    .rematchWithAiImmediately(),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            text: 'Cancel Rematch Request',
+                            variant: AppButtonVariant.secondary,
+                            onPressed: () {
+                              AppFeedback.light();
+                              unawaited(
+                                context.read<QuizDuelCubit>().declineRematch(),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            text: 'Return to Dashboard',
+                            variant: AppButtonVariant.ghost,
+                            onPressed: () async {
+                              AppFeedback.light();
+                              await context
+                                  .read<QuizDuelCubit>()
+                                  .leaveMatch();
+                              if (context.mounted) {
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst);
+                              }
+                            },
+                          ),
+                        ] else if (forfeitByRival) ...[
+                          AppButton(
+                            text: 'Find New Rival ⚔️',
+                            isLoading: state.isRematchLoading,
+                            onPressed: () async {
+                              AppFeedback.selection();
                               await context
                                   .read<QuizDuelCubit>()
                                   .startMatchmaking(
@@ -778,10 +1305,76 @@ class QuizDuelArenaPage extends HookWidget {
                           ),
                           const SizedBox(height: 12),
                           AppButton(
-                            text: 'Return to Dashboard',
+                            text: 'Practice Solo with AI ⚡',
                             variant: AppButtonVariant.secondary,
                             onPressed: () {
-                              Navigator.of(context).popUntil((route) => route.isFirst);
+                              AppFeedback.selection();
+                              unawaited(
+                                context
+                                    .read<QuizDuelCubit>()
+                                    .rematchWithAiImmediately(),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            text: 'Return to Dashboard',
+                            variant: AppButtonVariant.ghost,
+                            onPressed: () async {
+                              AppFeedback.light();
+                              await context
+                                  .read<QuizDuelCubit>()
+                                  .leaveMatch();
+                              if (context.mounted) {
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst);
+                              }
+                            },
+                          ),
+                        ] else ...[
+                          AppButton(
+                            text: state.isOpponentAi
+                                ? 'Rematch with ${opponent.displayName} ⚔️'
+                                : 'Rematch Rival ⚔️',
+                            isLoading: state.isRematchLoading,
+                            onPressed: () {
+                              AppFeedback.selection();
+                              unawaited(
+                                context.read<QuizDuelCubit>().requestRematch(),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            text: 'Share Duel & Invite 🚀',
+                            variant: AppButtonVariant.secondary,
+                            onPressed: () async {
+                              final code = match?.roomCode;
+                              final inviteSuffix = code != null && code.isNotEmpty
+                                  ? ' Challenge me back with room code: $code'
+                                  : ' Challenge me on Kortex!';
+                              final shareText =
+                                  'I scored $p1Score pts in a 1v1 Quiz Duel on ${match?.subject ?? "Academic Trivia"}!$inviteSuffix';
+                              await Clipboard.setData(ClipboardData(text: shareText));
+                              AppFeedback.light();
+                              if (context.mounted) {
+                                context.showSnackBar(
+                                  message: 'Duel results & invite copied to clipboard!',
+                                  type: SnackBarType.success,
+                                );
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          AppButton(
+                            text: 'Return to Dashboard',
+                            variant: AppButtonVariant.ghost,
+                            onPressed: () async {
+                              AppFeedback.light();
+                              await context.read<QuizDuelCubit>().leaveMatch();
+                              if (context.mounted) {
+                                Navigator.of(context).popUntil((route) => route.isFirst);
+                              }
                             },
                           ),
                         ],
@@ -889,6 +1482,59 @@ class QuizDuelArenaPage extends HookWidget {
               style: typography.body.bold,
             ),
             centerTitle: true,
+            actions: [
+              if (match?.roomCode != null && match!.roomCode!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Center(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.micro),
+                      onTap: () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: match.roomCode!),
+                        );
+                        AppFeedback.light();
+                        if (context.mounted) {
+                          context.showSnackBar(
+                            message: 'Room code ${match.roomCode} copied!',
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surfacePrimary,
+                          borderRadius: BorderRadius.circular(AppRadius.micro),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.vpn_key_rounded,
+                              size: 12,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              match.roomCode!,
+                              style: typography.caption.bold.copyWith(
+                                letterSpacing: 1,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           body: Stack(
             children: [
@@ -1035,52 +1681,105 @@ class QuizDuelArenaPage extends HookWidget {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 10),
-                                // Live Tug-of-War Score Gauge Bar
+                                const SizedBox(height: 12),
+                                // Live Tug-of-War Score Battle Gauge with Dynamic Delta Pill
                                 Builder(
                                   builder: (_) {
                                     final p1Pts = myPlayer.score;
                                     final p2Pts = opponent.score;
                                     final totalPts = max(1, p1Pts + p2Pts);
-                                    final p1Share = (p1Pts / totalPts).clamp(0.08, 0.92);
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(AppRadius.micro),
-                                      child: SizedBox(
-                                        height: 5,
-                                        child: Row(
+                                    final p1Share = (p1Pts / totalPts).clamp(0.10, 0.90);
+                                    final delta = p1Pts - p2Pts;
+
+                                    return Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Stack(
+                                          alignment: Alignment.center,
                                           children: [
-                                            Expanded(
-                                              flex: (p1Share * 100).round(),
-                                              child: AnimatedContainer(
-                                                duration: AppMotion.snappy,
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      colors.primary,
-                                                      colors.primary.withAlpha(200),
-                                                    ],
-                                                  ),
+                                            // Split Battle Gauge
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(AppRadius.micro),
+                                              child: SizedBox(
+                                                height: 14,
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      flex: (p1Share * 1000).round(),
+                                                      child: AnimatedContainer(
+                                                        duration: AppMotion.snappy,
+                                                        decoration: BoxDecoration(
+                                                          gradient: LinearGradient(
+                                                            colors: [
+                                                              colors.primary,
+                                                              colors.primary.withAlpha(200),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      width: 2,
+                                                      color: colors.surfacePrimary,
+                                                    ),
+                                                    Expanded(
+                                                      flex: ((1 - p1Share) * 1000).round(),
+                                                      child: AnimatedContainer(
+                                                        duration: AppMotion.snappy,
+                                                        decoration: BoxDecoration(
+                                                          gradient: LinearGradient(
+                                                            colors: [
+                                                              colors.secondary.withAlpha(200),
+                                                              colors.secondary,
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),
-                                            const SizedBox(width: 2),
-                                            Expanded(
-                                              flex: ((1 - p1Share) * 100).round(),
-                                              child: AnimatedContainer(
-                                                duration: AppMotion.snappy,
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      colors.secondary.withAlpha(200),
-                                                      colors.secondary,
-                                                    ],
+                                            // Floating Delta Indicator Pill in Center
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: colors.surfacePrimary,
+                                                borderRadius: BorderRadius.circular(AppRadius.badge),
+                                                border: Border.all(
+                                                  color: delta > 0
+                                                      ? colors.success
+                                                      : delta < 0
+                                                          ? colors.secondary
+                                                          : colors.surfaceBorder,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: colors.black.withAlpha(isDark ? 60 : 25),
+                                                    blurRadius: 4,
                                                   ),
+                                                ],
+                                              ),
+                                              child: Text(
+                                                delta > 0
+                                                    ? '+$delta LEAD'
+                                                    : delta < 0
+                                                        ? '${delta.abs()} BEHIND'
+                                                        : 'TIED',
+                                                style: typography.caption.bold.copyWith(
+                                                  fontSize: 9.5,
+                                                  letterSpacing: 0.5,
+                                                  color: delta > 0
+                                                      ? colors.success
+                                                      : delta < 0
+                                                          ? colors.secondary
+                                                          : colors.textSecondary,
                                                 ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
+                                      ],
                                     );
                                   },
                                 ),
@@ -1123,8 +1822,8 @@ class QuizDuelArenaPage extends HookWidget {
                               currentQuestion != null) ...[
                             Builder(
                               builder: (context) {
-                                final mySelection = state.selectedOptionIndex;
-                                final userHasSelected = mySelection != null;
+                                final mySelection = state.selectedOptionIndex ?? myPlayer.selectedOptionIndex;
+                                final userHasSelected = mySelection != null && mySelection >= 0;
                                 final isUserCorrect = userHasSelected &&
                                     (currentQuestion.options.length > mySelection &&
                                         currentQuestion.options[mySelection] ==

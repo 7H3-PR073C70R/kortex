@@ -179,10 +179,10 @@ class _AppGuidedTourOverlayState extends State<AppGuidedTourOverlay>
       // 2. FSRS Spaced-Repetition Queue
       _TourStep(
         badge: 'STEP 2 OF 14 • ACTIVE RECALL',
-        title: 'FSRS-6 Daily Review Queue',
-        subtitle: 'Science-backed spaced repetition engine',
+        title: 'Daily Memory Review Queue',
+        subtitle: 'Smart spaced repetition engine',
         description:
-            'Cards due for review appear here every morning, scheduled by the FSRS-6 algorithm. It predicts exact memory decay curves so you review right before forgetting.',
+            'Cards due for review appear here every morning, scheduled by our smart memory engine. It learns how fast you forget each card and reminds you right before you lose it.',
         proTip:
             'Just 10-15 reviews per day maintains 95%+ retention permanently. Do not skip your queue.',
         icon: Icons.alarm_on_rounded,

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 
 class _FakeLocalStorageService implements LocalStorageService {
@@ -86,6 +87,19 @@ class _FakeUserStorageService implements UserStorageService {
 
   @override
   Future<void> saveToken(String token) async {}
+
+  @override
+  UserProfileEntity? getCachedUserProfile() {
+    return null;
+  }
+
+  @override
+  bool hasActiveSession() {
+    return true;
+  }
+
+  @override
+  Future<void> saveUserProfile(UserProfileEntity profile) async {}
 }
 
 void main() {
@@ -103,19 +117,25 @@ void main() {
   });
 
   group('SubscriptionGuard Entitlement & Feature Gating Suite', () {
-    test('isPro reflects false for free users and true for pro users', () async {
-      expect(guard.isPro, isFalse);
+    test(
+      'isPro reflects false for free users and true for pro users',
+      () async {
+        expect(guard.isPro, isFalse);
 
-      await fakeUser.saveProStatus(isPro: true);
-      expect(guard.isPro, isTrue);
-    });
+        await fakeUser.saveProStatus(isPro: true);
+        expect(guard.isPro, isTrue);
+      },
+    );
 
-    test('Cloud AI access is strictly gated behind Pro (Local AI is free)', () async {
-      expect(guard.canAccessCloudAi(), isFalse);
+    test(
+      'Cloud AI access is strictly gated behind Pro (Local AI is free)',
+      () async {
+        expect(guard.canAccessCloudAi(), isFalse);
 
-      await fakeUser.saveProStatus(isPro: true);
-      expect(guard.canAccessCloudAi(), isTrue);
-    });
+        await fakeUser.saveProStatus(isPro: true);
+        expect(guard.canAccessCloudAi(), isTrue);
+      },
+    );
 
     test('File size limits: 50MB for free, 200MB for Pro', () async {
       const under50Mb = 45 * 1024 * 1024;

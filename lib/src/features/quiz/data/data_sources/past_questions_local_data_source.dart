@@ -142,45 +142,54 @@ class PastQuestionsLocalDataSourceImpl implements PastQuestionsLocalDataSource {
         latexFormula: q.latexFormula,
         imageUrl: q.imageUrl,
         difficulty: q.difficulty,
-        isUserAdded: true,
+        isUserAdded: q.isUserAdded,
         courseId: q.courseId,
         courseCode: q.courseCode,
       );
     }).toList();
 
-    // Prevent duplicates by ID
-    final existingIds = _userAddedQuestions.map((q) => q.id).toSet();
+    // Update in-memory cache preventing duplicates
+    final cachedSet = _cachedQuestions ?? <PastQuestionModel>[];
+    final existingCachedIds = cachedSet.map((q) => q.id).toSet();
+    var userAddedChanged = false;
+
     for (final q in newQuestions) {
-      if (!existingIds.contains(q.id)) {
+      if (!existingCachedIds.contains(q.id)) {
+        cachedSet.insert(0, q);
+        existingCachedIds.add(q.id);
+      }
+      if (q.isUserAdded && !_userAddedQuestions.any((item) => item.id == q.id)) {
         _userAddedQuestions.insert(0, q);
-        _cachedQuestions?.insert(0, q);
-        existingIds.add(q.id);
+        userAddedChanged = true;
       }
     }
 
-    _buildIndices(_cachedQuestions ?? _userAddedQuestions);
+    _cachedQuestions = cachedSet;
+    _buildIndices(_cachedQuestions!);
 
-    // Persist to LocalStorageService
-    try {
-      final storage =
-          _localStorageService ??
-          (locator.isRegistered<LocalStorageService>()
-              ? locator<LocalStorageService>()
-              : null);
-      if (storage != null) {
-        final payload = jsonEncode(
-          _userAddedQuestions.map((q) => q.toJson()).toList(),
-        );
-        await storage.savePreference(
-          key: PrefKeys.userAddedPastQuestions,
-          data: payload,
-        );
+    // Persist user-added items to LocalStorageService if changed
+    if (userAddedChanged) {
+      try {
+        final storage =
+            _localStorageService ??
+            (locator.isRegistered<LocalStorageService>()
+                ? locator<LocalStorageService>()
+                : null);
+        if (storage != null) {
+          final payload = jsonEncode(
+            _userAddedQuestions.map((q) => q.toJson()).toList(),
+          );
+          await storage.savePreference(
+            key: PrefKeys.userAddedPastQuestions,
+            data: payload,
+          );
+        }
+      } on Object catch (_) {
+        // Local storage write failed.
       }
-    } on Object catch (_) {
-      // Local storage write failed.
     }
 
-    // Optionally insert to AppDatabase if available
+    // Insert all items to AppDatabase (SQLite) if available
     if (_appDatabase != null) {
       try {
         final companions = newQuestions.map(_modelToCompanion).toList();

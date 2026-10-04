@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
+import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/pages/quiz_results_page.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
@@ -12,6 +16,72 @@ Widget createTestApp(Widget child) {
     supportedLocales: AppLocalizations.supportedLocales,
     home: child,
   );
+}
+
+/// Minimal [UserStorageService] stub that always reports the user as Pro.
+class _ProUserStorageStub implements UserStorageService {
+  @override
+  bool isProSubscriber() => true;
+
+  @override
+  bool hasActiveSession() => false;
+
+  @override
+  bool isTokenExpired() => true;
+
+  @override
+  String? getToken() => null;
+
+  @override
+  String? getRefreshToken() => null;
+
+  @override
+  String? getUserId() => null;
+
+  @override
+  String? getUserDisplayName() => null;
+
+  @override
+  String? getUserAvatarUrl() => null;
+
+  @override
+  String? getUserEmail() => null;
+
+  @override
+  UserProfileEntity? getCachedUserProfile() => null;
+
+  @override
+  Future<void> saveToken(String token) async {}
+
+  @override
+  Future<void> saveRefreshToken(String refreshToken) async {}
+
+  @override
+  Future<void> saveAuthTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {}
+
+  @override
+  Future<void> saveUserEmail(String email) async {}
+
+  @override
+  Future<void> saveUserDisplayName(String displayName) async {}
+
+  @override
+  Future<void> saveUserAvatarUrl(String avatarUrl) async {}
+
+  @override
+  Future<void> saveProStatus({required bool isPro}) async {}
+
+  @override
+  Future<void> saveUserProfile(UserProfileEntity profile) async {}
+
+  @override
+  void clearStorage() {}
+
+  @override
+  Future<void> initStorage() async {}
 }
 
 void main() {
@@ -35,6 +105,29 @@ void main() {
         ),
       ],
     );
+
+    setUp(() {
+      // Register a Pro-unlocked SubscriptionGuard with a stub UserStorageService
+      // so the paywall gate unlocks all weaknesses during tests.
+      final stub = _ProUserStorageStub();
+      if (!locator.isRegistered<UserStorageService>()) {
+        locator.registerSingleton<UserStorageService>(stub);
+      }
+      if (!locator.isRegistered<SubscriptionGuard>()) {
+        locator.registerSingleton<SubscriptionGuard>(
+          SubscriptionGuard(userStorageService: stub),
+        );
+      }
+    });
+
+    tearDown(() async {
+      if (locator.isRegistered<SubscriptionGuard>()) {
+        await locator.unregister<SubscriptionGuard>();
+      }
+      if (locator.isRegistered<UserStorageService>()) {
+        await locator.unregister<UserStorageService>();
+      }
+    });
 
     testWidgets(
       'renders score arc, sub-topic weaknesses, and the primary action',

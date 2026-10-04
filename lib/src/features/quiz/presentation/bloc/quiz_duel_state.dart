@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 
 /// State of the QuizDuelCubit.
@@ -10,7 +11,9 @@ class QuizDuelState extends Equatable {
     this.selectedOptionIndex,
     this.currentUserId = 'current_user',
     this.errorMessage,
+    this.failure,
     this.isSubmitting = false,
+    this.isRematchLoading = false,
   });
 
   final QuizDuelMatch? match;
@@ -19,7 +22,9 @@ class QuizDuelState extends Equatable {
   final int? selectedOptionIndex;
   final String currentUserId;
   final String? errorMessage;
+  final Failure? failure;
   final bool isSubmitting;
+  final bool isRematchLoading;
 
   QuizDuelParticipant? get myParticipant {
     if (match == null) return null;
@@ -42,6 +47,28 @@ class QuizDuelState extends Equatable {
 
   bool get isDraw => match?.isDraw ?? false;
 
+  bool get hasRematchRequest =>
+      match?.rematchRequestedBy != null &&
+      match!.rematchRequestedBy!.isNotEmpty;
+
+  bool get didIRequestRematch =>
+      match?.rematchRequestedBy != null &&
+      match!.rematchRequestedBy == currentUserId;
+
+  bool get didOpponentRequestRematch =>
+      match?.rematchRequestedBy != null &&
+      match!.rematchRequestedBy!.isNotEmpty &&
+      match!.rematchRequestedBy != currentUserId;
+
+  bool get isOpponentAi => opponentParticipant?.isAiOpponent ?? false;
+
+  bool get isQuestionsUnavailable => failure is NoQuizQuestionsFailure;
+
+  String? get missingQuestionsSubject =>
+      (failure is NoQuizQuestionsFailure)
+          ? (failure! as NoQuizQuestionsFailure).subject
+          : null;
+
   QuizDuelState copyWith({
     QuizDuelMatch? match,
     QuizDuelStatus? status,
@@ -49,8 +76,11 @@ class QuizDuelState extends Equatable {
     int? selectedOptionIndex,
     String? currentUserId,
     String? errorMessage,
+    Failure? failure,
     bool? isSubmitting,
+    bool? isRematchLoading,
     bool clearSelectedOption = false,
+    bool clearFailure = false,
   }) {
     return QuizDuelState(
       match: match ?? this.match,
@@ -61,7 +91,9 @@ class QuizDuelState extends Equatable {
           : (selectedOptionIndex ?? this.selectedOptionIndex),
       currentUserId: currentUserId ?? this.currentUserId,
       errorMessage: errorMessage,
+      failure: clearFailure ? null : (failure ?? this.failure),
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      isRematchLoading: isRematchLoading ?? this.isRematchLoading,
     );
   }
 
@@ -73,6 +105,8 @@ class QuizDuelState extends Equatable {
     selectedOptionIndex,
     currentUserId,
     errorMessage,
+    failure,
     isSubmitting,
+    isRematchLoading,
   ];
 }

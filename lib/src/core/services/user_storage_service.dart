@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/features/auth/data/models/user_profile_model.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 
 abstract class UserStorageService {
   Future<void> saveToken(String token);
@@ -41,6 +43,12 @@ abstract class UserStorageService {
   Future<void> initStorage();
 
   bool isTokenExpired();
+
+  bool hasActiveSession();
+
+  Future<void> saveUserProfile(UserProfileEntity profile);
+
+  UserProfileEntity? getCachedUserProfile();
 }
 
 class UserStorageServiceImpl implements UserStorageService {
@@ -55,12 +63,29 @@ class UserStorageServiceImpl implements UserStorageService {
   final _tokenKey = '__token';
   final _refreshTokenKey = '__refresh_token';
   final _emailKey = '__user_email';
+  // Stored in secure enclave — NOT plaintext SharedPreferences.
+  final _proStatusKey = '__is_pro_subscriber';
 
   String? _cachedToken;
   String? _cachedRefreshToken;
   String? _cachedEmail;
   String? _cachedDisplayName;
   String? _cachedAvatarUrl;
+  bool? _cachedProStatus;
+  UserProfileEntity? _cachedProfile;
+
+  @override
+  bool hasActiveSession() {
+    final refreshToken = getRefreshToken();
+    if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+      return true;
+    }
+    final token = getToken();
+    if (token != null && token.trim().isNotEmpty && !isTokenExpired()) {
+      return true;
+    }
+    return false;
+  }
 
   @override
   Future<void> initStorage() async {
@@ -76,9 +101,20 @@ class UserStorageServiceImpl implements UserStorageService {
       _cachedEmail = _localStorageService.getPreference(key: _emailKey);
     }
 
-    // Defensive migration: Purge legacy sensitive tokens from plaintext SharedPreferences if present
+    // Read pro status from secure storage and seed cache.
+    final rawProStatus = await _secureStorage.read(key: _proStatusKey);
+    _cachedProStatus = rawProStatus == 'true';
+
+    // Defensive migration: Purge legacy sensitive data from plaintext SharedPreferences if present.
     unawaited(_safeLocalDelete(_tokenKey));
     unawaited(_safeLocalDelete(_refreshTokenKey));
+    // Migrate legacy plaintext pro status flag to secure storage.
+    final legacyPro = _localStorageService.getPreference(key: PrefKeys.isProSubscriber);
+    if (legacyPro != null) {
+      _cachedProStatus = legacyPro == 'true';
+      unawaited(_secureStorage.write(key: _proStatusKey, value: legacyPro));
+      unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
+    }
 
     _cachedDisplayName = _localStorageService.getPreference(
       key: PrefKeys.userDisplayName,
@@ -86,6 +122,16 @@ class UserStorageServiceImpl implements UserStorageService {
     _cachedAvatarUrl = _localStorageService.getPreference(
       key: PrefKeys.userAvatarUrl,
     );
+
+    final rawProfile = _localStorageService.getPreference(
+      key: PrefKeys.cachedUserProfile,
+    );
+    if (rawProfile != null && rawProfile.trim().isNotEmpty) {
+      try {
+        final json = jsonDecode(rawProfile) as Map<String, dynamic>;
+        _cachedProfile = UserProfileModel.fromJson(json).toEntity();
+      } on Object catch (_) {}
+    }
   }
 
   static String? _sanitizeToken(String? raw) {
@@ -194,29 +240,78 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   String? getUserDisplayName() {
+    final map = _decodeJwtPayload();
+    final metadata = map?['user_metadata'] as Map<String, dynamic>?;
+    final jwtName =
+        metadata?['display_name'] as String? ??
+        metadata?['full_name'] as String? ??
+        metadata?['name'] as String? ??
+        map?['display_name'] as String? ??
+        map?['full_name'] as String? ??
+        map?['name'] as String?;
+    final email = map?['email'] as String? ?? _cachedEmail;
+    final emailPrefix =
+        (email != null && email.contains('@')) ? email.split('@').first : '';
+
     if (_cachedDisplayName != null && _cachedDisplayName!.trim().isNotEmpty) {
-      return _cachedDisplayName!.trim();
+      final cached = _cachedDisplayName!.trim();
+      if (emailPrefix.isNotEmpty &&
+          cached == emailPrefix &&
+          jwtName != null &&
+          jwtName.trim().isNotEmpty &&
+          jwtName.trim() != emailPrefix) {
+        final cleanJwtName = jwtName.trim();
+        _cachedDisplayName = cleanJwtName;
+        unawaited(
+          _localStorageService.savePreference(
+            key: PrefKeys.userDisplayName,
+            data: cleanJwtName,
+          ),
+        );
+        return cleanJwtName;
+      }
+      return cached;
     }
+
     final fromStorage = _localStorageService.getPreference(
       key: PrefKeys.userDisplayName,
     );
     if (fromStorage != null && fromStorage.trim().isNotEmpty) {
-      return _cachedDisplayName = fromStorage.trim();
+      final stored = fromStorage.trim();
+      if (emailPrefix.isNotEmpty &&
+          stored == emailPrefix &&
+          jwtName != null &&
+          jwtName.trim().isNotEmpty &&
+          jwtName.trim() != emailPrefix) {
+        final cleanJwtName = jwtName.trim();
+        _cachedDisplayName = cleanJwtName;
+        unawaited(
+          _localStorageService.savePreference(
+            key: PrefKeys.userDisplayName,
+            data: cleanJwtName,
+          ),
+        );
+        return cleanJwtName;
+      }
+      return _cachedDisplayName = stored;
     }
-    final map = _decodeJwtPayload();
-    if (map == null) return null;
-    final metadata = map['user_metadata'] as Map<String, dynamic>?;
-    final name =
-        metadata?['display_name'] as String? ??
-        metadata?['full_name'] as String? ??
-        metadata?['name'] as String? ??
-        map['display_name'] as String? ??
-        map['full_name'] as String? ??
-        map['name'] as String?;
-    if (name != null && name.trim().isNotEmpty) return name.trim();
-    final email = map['email'] as String?;
-    if (email != null && email.contains('@')) {
-      return email.split('@').first;
+
+    if (jwtName != null && jwtName.trim().isNotEmpty) {
+      final cleanJwtName = jwtName.trim();
+      if (emailPrefix.isEmpty || cleanJwtName != emailPrefix) {
+        _cachedDisplayName = cleanJwtName;
+        unawaited(
+          _localStorageService.savePreference(
+            key: PrefKeys.userDisplayName,
+            data: cleanJwtName,
+          ),
+        );
+      }
+      return cleanJwtName;
+    }
+
+    if (emailPrefix.isNotEmpty) {
+      return emailPrefix;
     }
     return null;
   }
@@ -315,11 +410,14 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   Future<void> saveProStatus({required bool isPro}) async {
+    _cachedProStatus = isPro;
     try {
-      await _localStorageService.savePreference(
-        key: PrefKeys.isProSubscriber,
-        data: isPro ? 'true' : 'false',
+      await _secureStorage.write(
+        key: _proStatusKey,
+        value: isPro ? 'true' : 'false',
       );
+      // Purge any legacy plaintext copy on write.
+      unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
     } on Object {
       return;
     }
@@ -327,14 +425,8 @@ class UserStorageServiceImpl implements UserStorageService {
 
   @override
   bool isProSubscriber() {
-    try {
-      final value = _localStorageService.getPreference(
-        key: PrefKeys.isProSubscriber,
-      );
-      return value == 'true';
-    } on Object {
-      return false;
-    }
+    // Use the in-memory cache populated during initStorage().
+    return _cachedProStatus ?? false;
   }
 
   Future<void> _safeSecureDelete(String key) async {
@@ -356,6 +448,7 @@ class UserStorageServiceImpl implements UserStorageService {
   @override
   Future<void> saveUserDisplayName(String displayName) async {
     final clean = displayName.trim();
+    if (clean.isEmpty) return;
     _cachedDisplayName = clean;
     try {
       await _localStorageService.savePreference(
@@ -382,20 +475,90 @@ class UserStorageServiceImpl implements UserStorageService {
   }
 
   @override
+  Future<void> saveUserProfile(UserProfileEntity profile) async {
+    _cachedProfile = profile;
+    final incomingName = profile.displayName?.trim();
+    final emailPrefix =
+        profile.email.contains('@') ? profile.email.split('@').first : '';
+    if (incomingName != null &&
+        incomingName.isNotEmpty &&
+        incomingName != emailPrefix) {
+      _cachedDisplayName = incomingName;
+      try {
+        await _localStorageService.savePreference(
+          key: PrefKeys.userDisplayName,
+          data: incomingName,
+        );
+      } on Object catch (_) {}
+    }
+    if (profile.photoUrl != null && profile.photoUrl!.trim().isNotEmpty) {
+      _cachedAvatarUrl = profile.photoUrl!.trim();
+      try {
+        await _localStorageService.savePreference(
+          key: PrefKeys.userAvatarUrl,
+          data: profile.photoUrl!.trim(),
+        );
+      } on Object catch (_) {}
+    }
+    try {
+      final model = UserProfileModel(
+        id: profile.id,
+        email: profile.email,
+        displayName: profile.displayName,
+        photoUrl: profile.photoUrl,
+        targetTrack: profile.targetTrack,
+        dailyCardTarget: profile.dailyCardTarget,
+        retentionBenchmark: profile.retentionBenchmark,
+        level: profile.level,
+        streakDays: profile.streakDays,
+        streakFreezeCount: profile.streakFreezeCount,
+        timezone: profile.timezone,
+        xpPoints: profile.xpPoints,
+        subscriptionTier: profile.subscriptionTier,
+        isOnboarded: profile.isOnboarded,
+      );
+      await _localStorageService.savePreference(
+        key: PrefKeys.cachedUserProfile,
+        data: jsonEncode(model.toJson()),
+      );
+    } on Object catch (_) {}
+  }
+
+  @override
+  UserProfileEntity? getCachedUserProfile() {
+    if (_cachedProfile != null) return _cachedProfile;
+    try {
+      final raw = _localStorageService.getPreference(
+        key: PrefKeys.cachedUserProfile,
+      );
+      if (raw != null && raw.trim().isNotEmpty) {
+        final json = jsonDecode(raw) as Map<String, dynamic>;
+        return _cachedProfile = UserProfileModel.fromJson(json).toEntity();
+      }
+    } on Object catch (_) {}
+    return null;
+  }
+
+  @override
   void clearStorage() {
     _cachedToken = null;
     _cachedRefreshToken = null;
     _cachedEmail = null;
     _cachedDisplayName = null;
     _cachedAvatarUrl = null;
+    _cachedProStatus = null;
+    _cachedProfile = null;
     unawaited(_safeSecureDelete(_tokenKey));
     unawaited(_safeSecureDelete(_refreshTokenKey));
     unawaited(_safeSecureDelete(_emailKey));
+    unawaited(_safeSecureDelete(_proStatusKey));
     unawaited(_safeLocalDelete(_tokenKey));
     unawaited(_safeLocalDelete(_refreshTokenKey));
+    // Belt-and-suspenders: also wipe legacy plaintext pro key on sign-out.
     unawaited(_safeLocalDelete(PrefKeys.isProSubscriber));
     unawaited(_safeLocalDelete(_emailKey));
     unawaited(_safeLocalDelete(PrefKeys.userDisplayName));
     unawaited(_safeLocalDelete(PrefKeys.userAvatarUrl));
+    unawaited(_safeLocalDelete(PrefKeys.cachedUserProfile));
   }
 }

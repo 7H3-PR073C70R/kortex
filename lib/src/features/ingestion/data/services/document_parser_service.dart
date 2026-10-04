@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/data/services/local_pdf_parser_service.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class DocumentParserService {
@@ -407,7 +408,10 @@ class DocumentParserService {
           ? int.tryParse(lMatch.group(1)!) ?? 0
           : 0;
 
-      if (width < 50 || height < 50) continue;
+      // Filter out small non-diagram images (icons, bullet markers, separators, avatars)
+      if (width < 160 || height < 120) continue;
+      final aspectRatio = width / (height > 0 ? height : 1);
+      if (aspectRatio < 0.25 || aspectRatio > 4.0) continue;
 
       final isFlate = dictStr.contains('/FlateDecode');
       final isDct = dictStr.contains('/DCTDecode');
@@ -542,7 +546,9 @@ class DocumentParserService {
     required String filename,
     List<String> imageUrls = const [],
   }) {
-    final cleanFullText = fullText.trim();
+    final cleanFullText = LocalPdfParserService.repairDetachedInitialCapitals(
+      fullText.trim(),
+    );
     if (cleanFullText.isEmpty) {
       return [];
     }
@@ -576,15 +582,18 @@ class DocumentParserService {
 
     final snippets = <OcrExtractionModel>[];
     final seenTopics = <String>{};
+    final usedImageUrls = <String>{};
 
     for (final section in sections) {
       final cleanBody = _extractCompleteParagraphAnswer(section.content);
 
-      // Associate visual diagram assets if available
-      final attachedImage =
-          (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
-          ? imageUrls[snippets.length]
-          : null;
+      // Associate visual diagram assets ONLY if semantically relevant to question & answer
+      final attachedImage = _matchRelevantImageUrl(
+        title: section.title,
+        content: cleanBody,
+        imageUrls: imageUrls,
+        usedImageUrls: usedImageUrls,
+      );
 
       final directQuestion = _synthesizeContextualQuestion(
         section.title,
@@ -707,6 +716,7 @@ class DocumentParserService {
 
     final snippets = <OcrExtractionModel>[];
     final seen = <String>{};
+    final usedImageUrls = <String>{};
     for (var i = 0; i < chunks.length; i++) {
       final chunk = chunks[i];
       final cleanBody = _extractCompleteParagraphAnswer(chunk);
@@ -737,10 +747,12 @@ class DocumentParserService {
       seen.add(norm);
 
       final latex = _extractOrGenerateFormula(question, cleanBody);
-      final attachedImage =
-          (imageUrls.isNotEmpty && snippets.length < imageUrls.length)
-          ? imageUrls[snippets.length]
-          : null;
+      final attachedImage = _matchRelevantImageUrl(
+        title: question,
+        content: cleanBody,
+        imageUrls: imageUrls,
+        usedImageUrls: usedImageUrls,
+      );
 
       snippets.add(
         OcrExtractionModel(
@@ -755,6 +767,99 @@ class DocumentParserService {
     }
 
     return snippets;
+  }
+
+  static const _commonStopWords = {
+    'what', 'which', 'where', 'when', 'who', 'how', 'why', 'with', 'from',
+    'that', 'this', 'these', 'those', 'about', 'into', 'over', 'after',
+    'the', 'and', 'for', 'are', 'is', 'was', 'were', 'has', 'have', 'had',
+    'been', 'being', 'does', 'did', 'done', 'will', 'would', 'shall', 'should',
+    'may', 'might', 'must', 'can', 'could', 'section', 'chapter', 'part',
+    'step', 'rule', 'unit', 'module', 'concept', 'notes', 'review', 'overview',
+  };
+
+  /// Matches an image URL to a card section ONLY if there is an explicit figure reference
+  /// or a strong topical keyword match between the section and image filename/label.
+  String? _matchRelevantImageUrl({
+    required String title,
+    required String content,
+    required List<String> imageUrls,
+    required Set<String> usedImageUrls,
+  }) {
+    if (imageUrls.isEmpty) return null;
+
+    final combined = '$title $content'.toLowerCase();
+
+    // 1. Direct figure/diagram label or number match (e.g. "Figure 2", "Fig 2", "Diagram 3")
+    final figMatch = RegExp(
+      r'\b(?:fig(?:ure)?\.?|diagram|chart|illustration)\s*#?\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(combined);
+
+    if (figMatch != null) {
+      final figNum = figMatch.group(1);
+      final match = imageUrls.where((url) {
+        if (usedImageUrls.contains(url)) return false;
+        final lower = url.toLowerCase();
+        return lower.contains('fig_$figNum.') ||
+            lower.contains('fig$figNum.') ||
+            lower.contains('fig_${figNum}_') ||
+            lower.contains('diagram_$figNum.') ||
+            lower.contains('diagram_${figNum}_') ||
+            lower.contains('diagram$figNum.') ||
+            lower.contains('img_$figNum.') ||
+            lower.contains('figure_$figNum.') ||
+            lower.contains('fig-$figNum') ||
+            lower.contains('figure-$figNum');
+      }).firstOrNull;
+
+      if (match != null) {
+        usedImageUrls.add(match);
+        return match;
+      }
+    }
+
+    // 2. Topical keyword matching between section title and image URL / label
+    // e.g., "mitosis.jpg" matching section with title "Mitosis"
+    final titleWords = title
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((w) => w.length >= 4 && !_commonStopWords.contains(w))
+        .toList();
+
+    for (final word in titleWords) {
+      final match = imageUrls.where((url) {
+        if (usedImageUrls.contains(url)) return false;
+        final urlLower = url.toLowerCase();
+        final filename = urlLower.split('/').last;
+        return filename.contains(word);
+      }).firstOrNull;
+
+      if (match != null) {
+        usedImageUrls.add(match);
+        return match;
+      }
+    }
+
+    // 3. Explicit diagram/chart reference in text (e.g. "as shown in the diagram", "architecture diagram")
+    final hasExplicitDiagramRef = RegExp(
+      r'\b(?:as shown in the (?:diagram|figure|illustration|chart)|refer to the (?:diagram|figure|chart|model)|flowchart below|architecture diagram|schematic diagram|illustrated diagram)\b',
+      caseSensitive: false,
+    ).hasMatch(combined);
+
+    if (hasExplicitDiagramRef) {
+      final available = imageUrls
+          .where((url) => !usedImageUrls.contains(url))
+          .firstOrNull;
+      if (available != null) {
+        usedImageUrls.add(available);
+        return available;
+      }
+    }
+
+    // Purely textual/conceptual card: do NOT attach an unrelated image!
+    return null;
   }
 
   /// Synthesizes natural, context-aware academic questions from formal section headers,
@@ -822,8 +927,13 @@ class DocumentParserService {
 
     final lower = clean.toLowerCase();
 
-    // 2. Visual Diagram / Chart Framing (Item 8)
-    if (hasImage) {
+    // 2. Visual Diagram / Chart Framing (Item 8) - only when header or body explicitly relates to a diagram
+    final isExplicitDiagramContext = RegExp(
+      r'\b(?:diagram|chart|figure|flowchart|schematic|architecture model|visual representation)\b',
+      caseSensitive: false,
+    ).hasMatch('$rawTitle $cleanBody');
+
+    if (hasImage && isExplicitDiagramContext) {
       final subject = clean.replaceAll(
         RegExp(r'^(?:the|a|an)\s+', caseSensitive: false),
         '',
@@ -975,6 +1085,17 @@ class DocumentParserService {
       if (_isValidSubjectNoun(subject)) {
         return 'What is the definition and core role of $subject?';
       }
+    }
+
+    // 11b. Code Block / Implementation pattern
+    if (cleanBody.contains('```') || isCodeSyntaxLine(clean)) {
+      if (clean.toLowerCase().contains('code') ||
+          clean.toLowerCase().contains('example') ||
+          clean.toLowerCase().contains('implementation') ||
+          clean.toLowerCase().contains('snippet')) {
+        return 'Explain the implementation and key components of $clean:';
+      }
+      return 'What is the implementation and function of $clean in the provided code snippet?';
     }
 
     // 12. Short Concept / Subject Noun: "Mitosis", "Timeframes", "Cellular Respiration"
@@ -1311,8 +1432,19 @@ class DocumentParserService {
     // Strip URLs
     text = text.replaceAll(RegExp(r'https?://\S+|www\.\S+'), '');
 
-    // Strip markdown formatting symbols (**, ##, ```) without corrupting math
-    text = text.replaceAll(RegExp(r'(\*\*|\*|##+|```|`|~~)'), '');
+    // Protect fenced code blocks from markdown symbol stripping and whitespace collapse
+    final codeBlocks = <String>[];
+    text = text.replaceAllMapped(
+      RegExp(r'```(?:[a-zA-Z0-9_\-+]*\r?\n)?[\s\S]*?```'),
+      (m) {
+        final idx = codeBlocks.length;
+        codeBlocks.add(m[0]!);
+        return ' __KORTEX_CODE_BLOCK_${idx}__ ';
+      },
+    );
+
+    // Strip markdown formatting symbols (**, ##, ~~) without corrupting math or code blocks
+    text = text.replaceAll(RegExp(r'(\*\*|\*|##+|~~)'), '');
 
     // Restore missing spaces after punctuation when lower case is followed by upper case
     text = text.replaceAllMapped(
@@ -1332,6 +1464,15 @@ class DocumentParserService {
     text = text.replaceAll(RegExp(r'[,;:]+\s*\.+'), '.').trim();
     text = text.replaceAll(RegExp(r'\.{2,}'), '.').trim();
 
+    // Restore protected code blocks
+    for (var i = 0; i < codeBlocks.length; i++) {
+      text = text.replaceAll(
+        '__KORTEX_CODE_BLOCK_${i}__',
+        '\n\n${codeBlocks[i]}\n\n',
+      );
+    }
+    text = text.trim();
+
     if (text.isNotEmpty &&
         !text.endsWith('.') &&
         !text.endsWith('!') &&
@@ -1340,6 +1481,7 @@ class DocumentParserService {
         !text.endsWith("'") &&
         !text.endsWith(')') &&
         !text.endsWith(']') &&
+        !text.endsWith('```') &&
         !text.endsWith(r'$')) {
       text = '$text.';
     }
@@ -1371,13 +1513,10 @@ class DocumentParserService {
       return false;
     }
 
-    // 3. Drop isolated raw code snippets (e.g. testWidgets or class definitions lacking prose)
+    // 3. Drop test harness artifacts but ALLOW legitimate code blocks and implementations
     final lowerA = cleanA.toLowerCase();
     if (lowerA.startsWith('testwidgets(') ||
-        lowerA.startsWith('widgettester ') ||
-        (lowerA.startsWith('class ') &&
-            lowerA.contains('extends statelesswidget') &&
-            !cleanA.contains('.'))) {
+        lowerA.startsWith('widgettester ')) {
       return false;
     }
 
@@ -1424,10 +1563,7 @@ class DocumentParserService {
 
     void commitCurrentSection() {
       if (currentTitle != null && currentLines.isNotEmpty) {
-        final joined = currentLines
-            .join(' ')
-            .replaceAll(RegExp(r'\s+'), ' ')
-            .trim();
+        final joined = _joinLinesPreservingCode(currentLines);
         final lower = joined.toLowerCase();
         if (joined.length >= 20 &&
             !_isNoiseOrMetaHeader(currentTitle!) &&
@@ -1444,7 +1580,7 @@ class DocumentParserService {
           );
         }
       } else if (currentLines.isNotEmpty) {
-        final joined = currentLines.join('\n\n');
+        final joined = _joinLinesPreservingCode(currentLines);
         sections.addAll(_extractSemanticParagraphSections(joined));
       }
       currentLines.clear();
@@ -1624,8 +1760,12 @@ class DocumentParserService {
       // 6. Sentence line-wrapping continuation
       if (currentLines.isNotEmpty) {
         final prev = currentLines.last;
-        final prevEndsPunct =
-            prev.endsWith('.') ||
+        final isCodeContinuation = isCodeSyntaxLine(prev) ||
+            isCodeSyntaxLine(line) ||
+            prev.startsWith('```') ||
+            line.startsWith('```');
+
+        final prevEndsPunct = prev.endsWith('.') ||
             prev.endsWith('!') ||
             prev.endsWith('?') ||
             prev.endsWith(':') ||
@@ -1633,7 +1773,8 @@ class DocumentParserService {
             prev.endsWith('—') ||
             prev.endsWith('–');
 
-        if (!prevEndsPunct &&
+        if (!isCodeContinuation &&
+            !prevEndsPunct &&
             isMeaningfulEducationalText(line) &&
             !_isNoiseOrFooter(line)) {
           currentLines[currentLines.length - 1] = '$prev $line';
@@ -1773,6 +1914,26 @@ class DocumentParserService {
       return true;
     }
 
+    // 2. If line is a markdown code fence or recognized code syntax with adequate alphanumeric content
+    if (clean.startsWith('```') || clean.contains('```')) {
+      return true;
+    }
+
+    if (isCodeSyntaxLine(clean) &&
+        (clean.length <= 15 ||
+            clean.runes
+                    .where(
+                      (r) =>
+                          (r >= 65 && r <= 90) ||
+                          (r >= 97 && r <= 122) ||
+                          (r >= 48 && r <= 57),
+                    )
+                    .length /
+                clean.length >=
+            0.40)) {
+      return true;
+    }
+
     var letterCount = 0;
     var symbolCount = 0;
     var controlCount = 0;
@@ -1888,6 +2049,133 @@ class DocumentParserService {
     }
 
     return null;
+  }
+
+  /// Checks whether a text line exhibits programming syntax (Dart, Flutter, Python, JS, etc.)
+  static bool isCodeSyntaxLine(String line) {
+    final trimmed = line.trim();
+    if (trimmed.isEmpty) return false;
+
+    // Direct code fence check
+    if (trimmed.startsWith('```') || trimmed == '`') return true;
+
+    // Discard glyph / punctuation soup immediately
+    if (trimmed.length > 20) {
+      final symbolCount = trimmed.runes.where((r) {
+        return r != 32 &&
+            r != 9 &&
+            r != 10 &&
+            r != 13 &&
+            !((r >= 65 && r <= 90) ||
+                (r >= 97 && r <= 122) ||
+                (r >= 48 && r <= 57));
+      }).length;
+      if (symbolCount / trimmed.length > 0.55) {
+        return false;
+      }
+    }
+
+    // Structural braces/brackets lines
+    if ((RegExp(r'^[{}()\[\];, ]+$').hasMatch(trimmed) &&
+            trimmed.length <= 15) ||
+        trimmed == '}' ||
+        trimmed == '};' ||
+        trimmed == '});' ||
+        trimmed == '),' ||
+        trimmed == '],' ||
+        trimmed == '{') {
+      return true;
+    }
+
+    // Language keywords & declarations
+    final codeKeywordRegex = RegExp(
+      r'^(?:(?:public|private|protected|static|final|const|var|late|abstract|override|async|await)\s+)?'
+      r'(?:class|interface|enum|mixin|extension|typedef|struct|void|function|def|import|package|export|from)\b'
+      r'|^\s*@(?:override|deprecated|visibleForTesting|pragma)\b'
+      r'|^\s*(?:return|throw|rethrow|yield|break|continue)\b'
+      r'|^\s*(?:if|while|for|switch|case|catch|finally)\s*\('
+      r'|^\s*(?:Widget|BuildContext|State<|StatefulWidget|StatelessWidget)\b'
+      r'|^\s*(?:setState|print|console\.log|System\.out\.println)\s*\('
+      r'|=>\s*[a-zA-Z0-9_\$]|(?:\+\+|--|\+=|-=|\*=|/=|&&|\|\||===|!==)\s+[a-zA-Z0-9_\$]',
+    );
+
+    if (codeKeywordRegex.hasMatch(trimmed)) {
+      return true;
+    }
+
+    // Dart/Flutter constructor / widget instantiation pattern: `child: Container(...)` or `body: Center(...)`
+    if (RegExp(r'^[a-zA-Z0-9_]+\s*:\s*[A-Z][a-zA-Z0-9_]*\s*\(').hasMatch(trimmed) ||
+        RegExp(r'^[A-Z][a-zA-Z0-9_]*\s*\(').hasMatch(trimmed)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Concatenates document lines into a single coherent section while preserving
+  /// code block indentation, newlines, and structure with markdown code fences.
+  static String _joinLinesPreservingCode(List<String> lines) {
+    if (lines.isEmpty) return '';
+
+    final buffer = StringBuffer();
+    var inCodeBlock = false;
+    final pendingCodeLines = <String>[];
+
+    void flushCodeLines() {
+      if (pendingCodeLines.isEmpty) return;
+      // If at least 2 consecutive code lines or contains programming braces/semicolons
+      if (pendingCodeLines.length >= 2 ||
+          pendingCodeLines.any((l) => l.contains('{') || l.contains(';'))) {
+        buffer.writeln('\n```dart');
+        pendingCodeLines.forEach(buffer.writeln);
+        buffer.writeln('```\n');
+      } else {
+        for (final cl in pendingCodeLines) {
+          if (buffer.isNotEmpty &&
+              !buffer.toString().endsWith(' ') &&
+              !buffer.toString().endsWith('\n')) {
+            buffer.write(' ');
+          }
+          buffer.write(cl);
+        }
+      }
+      pendingCodeLines.clear();
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final trimmed = line.trim();
+
+      if (trimmed.startsWith('```')) {
+        flushCodeLines();
+        inCodeBlock = !inCodeBlock;
+        buffer.writeln(trimmed);
+        continue;
+      }
+
+      if (inCodeBlock) {
+        buffer.writeln(line);
+        continue;
+      }
+
+      if (isCodeSyntaxLine(trimmed)) {
+        pendingCodeLines.add(line);
+        continue;
+      }
+
+      flushCodeLines();
+
+      if (trimmed.isEmpty) continue;
+      if (buffer.isNotEmpty &&
+          !buffer.toString().endsWith(' ') &&
+          !buffer.toString().endsWith('\n')) {
+        buffer.write(' ');
+      }
+      buffer.write(trimmed);
+    }
+
+    flushCodeLines();
+    return buffer.toString().trim();
   }
 }
 

@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -16,13 +18,8 @@ import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
 import 'package:kortex/src/features/auth/presentation/widgets/goal_calibration_slider.dart';
-import 'package:kortex/src/features/dashboard/data/data_sources/dashboard_remote_data_source.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
-import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
-import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/fsrs_parameter_tuning_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
@@ -31,8 +28,20 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 /// Subpage for calibrating active academic track, target exams, and goals.
 @RoutePage()
-class AcademicTrackSettingsPage extends HookWidget {
+class AcademicTrackSettingsPage extends StatelessWidget {
   const AcademicTrackSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<AuthBloc>.value(
+      value: locator<AuthBloc>(),
+      child: const _AcademicTrackSettingsView(),
+    );
+  }
+}
+
+class _AcademicTrackSettingsView extends HookWidget {
+  const _AcademicTrackSettingsView();
 
   IconData _getIconData(String iconName) {
     switch (iconName) {
@@ -144,7 +153,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                   children: [
                     Text(
                       'Calibrate your academic focus, exam countdown, and '
-                      'FSRS daily retention targets.',
+                      'daily memory retention targets.',
                       style: typography.caption.regular.copyWith(
                         color: colors.textSecondary,
                         fontSize: 12.5,
@@ -223,7 +232,9 @@ class AcademicTrackSettingsPage extends HookWidget {
                       child: ShrinkableButton(
                         onTap: () {
                           AppFeedback.light();
-                          unawaited(FsrsParameterTuningSheet.show(context));
+                          unawaited(
+                            context.router.push(const DeckPaceSettingsRoute()),
+                          );
                         },
                         child: Container(
                           padding: const EdgeInsets.all(14),
@@ -255,7 +266,7 @@ class AcademicTrackSettingsPage extends HookWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'FSRS Tuning & Daily Reminders',
+                                      'Study Pace & Daily Reminders',
                                       style: typography.body.bold.copyWith(
                                         color: colors.textPrimary,
                                         fontSize: 14,
@@ -310,33 +321,11 @@ class AcademicTrackSettingsPage extends HookWidget {
                                 context: context,
                                 title: 'Switch Academic Track?',
                                 description:
-                                    'Switching from "$currentTrack" to "${selectedTrack.value}" is destructive.\n\n'
-                                    'To keep your database clean and aligned with your new curriculum, all curated courses, study decks, flashcards, and uploaded documents associated with your previous track will be permanently deleted.',
-                                primaryActionText: 'Switch & Reset',
-                                isDestructive: true,
+                                    'Switching your primary focus to "${selectedTrack.value}".\n\n'
+                                    'Your historical study logs, flashcard decks, and day streak will be fully preserved.',
+                                primaryActionText: 'Switch Track',
                                 onPrimaryAction: () async {
-                                  AppFeedback.heavy();
-                                  // 1. Wipe previous track's curated courses
-                                  if (locator
-                                      .isRegistered<
-                                        DashboardRemoteDataSource
-                                      >()) {
-                                    await locator<DashboardRemoteDataSource>()
-                                        .deleteAllCuratedCourses();
-                                  }
-                                  // 2. Wipe previous track's study decks & flashcards
-                                  if (locator
-                                      .isRegistered<DecksRemoteDataSource>()) {
-                                    await locator<DecksRemoteDataSource>()
-                                        .deleteAllDecks();
-                                  }
-                                  // 3. Refresh DecksBloc
-                                  if (locator.isRegistered<DecksBloc>()) {
-                                    locator<DecksBloc>().add(
-                                      const DecksRefreshed(),
-                                    );
-                                  }
-                                  // 4. Update Profile in AuthBloc
+                                  AppFeedback.medium();
                                   if (context.mounted) {
                                     context.read<AuthBloc>().add(
                                       AuthUpdateCourseTrackRequested(
@@ -346,7 +335,6 @@ class AcademicTrackSettingsPage extends HookWidget {
                                             retentionBenchmark.value,
                                       ),
                                     );
-                                    // 5. Refresh Dashboard Feed
                                     if (locator.isRegistered<DashboardBloc>()) {
                                       locator<DashboardBloc>().add(
                                         const DashboardRefreshed(),
@@ -354,7 +342,8 @@ class AcademicTrackSettingsPage extends HookWidget {
                                     }
                                     context.showSnackBar(
                                       message:
-                                          'Switched track to ${selectedTrack.value}. Previous track data cleared.',
+                                          'Switched academic track to ${selectedTrack.value}. Study history preserved!',
+                                      type: SnackBarType.success,
                                     );
                                     Navigator.of(context).pop();
                                   }

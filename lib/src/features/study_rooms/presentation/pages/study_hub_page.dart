@@ -9,13 +9,19 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
+import 'package:kortex/src/features/community/presentation/pages/create_forum_discussion_page.dart';
+import 'package:kortex/src/features/community/presentation/widgets/community_filter_bottom_sheet.dart';
+import 'package:kortex/src/features/community/presentation/widgets/community_forum_feed_list.dart';
+import 'package:kortex/src/features/community/presentation/widgets/community_hub_headers.dart';
 import 'package:kortex/src/features/community/presentation/widgets/community_hub_shimmer.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -23,6 +29,7 @@ import 'package:kortex/src/features/deck_marketplace/presentation/widgets/market
 import 'package:kortex/src/features/deck_marketplace/presentation/widgets/publish_deck_modal_sheet.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
+import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_circle_sheet.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_room_sheet.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/live_focus_room_card.dart';
@@ -40,13 +47,211 @@ class StudyHubPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<CommunityHubBloc>(
-      create: (_) =>
-          locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CommunityHubBloc>.value(
+          value:
+              locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
+        ),
+        BlocProvider<AutoCommunityCubit>.value(
+          value: locator<AutoCommunityCubit>(),
+        ),
+        BlocProvider<NotificationsCubit>.value(
+          value: locator.isRegistered<NotificationsCubit>()
+              ? locator<NotificationsCubit>()
+              : NotificationsCubit(),
+        ),
+      ],
       child: const _StudyHubView(),
     );
   }
 }
+
+Widget _buildHeaderActionButton(
+  BuildContext context, {
+  required int tabIndex,
+  required bool isWide,
+  required String? targetTrack,
+}) {
+  final colors = context.colors;
+  final typography = context.typography;
+  final l10n = context.l10n;
+  final isDark = context.isDarkMode;
+
+  IconData icon;
+  String label;
+  VoidCallback onTap;
+
+  final effectiveActionIndex = isWide ? tabIndex + 1 : tabIndex;
+
+  switch (effectiveActionIndex) {
+    case 0:
+      icon = Icons.edit_note_rounded;
+      label = 'Post Thread';
+      onTap = () async {
+        unawaited(HapticFeedback.lightImpact());
+        final hubBloc = context.read<CommunityHubBloc>();
+        final initialTrack = targetTrack ?? hubBloc.state.selectedTrack;
+        final created = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: hubBloc,
+              child: CreateForumDiscussionPage(
+                initialTrack: initialTrack.isNotEmpty ? initialTrack : 'WAEC',
+              ),
+            ),
+          ),
+        );
+        if (created == true) {
+          hubBloc.add(
+            ChangeForumSortFilterEvent(hubBloc.state.selectedForumFilter),
+          );
+        }
+      };
+    case 1:
+      icon = Icons.add_rounded;
+      label = l10n.newRoomAction;
+      onTap = () {
+        unawaited(HapticFeedback.lightImpact());
+        unawaited(
+          CreateStudyRoomSheet.show(
+            context,
+            onSubmit: ({
+              required title,
+              required subject,
+              required category,
+              required pomodoroMinutes,
+              ambientSoundTrack = 'Lo-Fi Beats',
+              activeGoal,
+              isSilentFocus = true,
+            }) {
+              context.read<CommunityHubBloc>().add(
+                CreateRoomEvent(
+                  title: title,
+                  subject: subject,
+                  category: category,
+                  pomodoroMinutes: pomodoroMinutes,
+                  ambientSoundTrack: ambientSoundTrack,
+                  activeGoal: activeGoal,
+                  isSilentFocus: isSilentFocus,
+                ),
+              );
+              context.showSnackBar(
+                message: '✨ Launching Live Focus Room "$title"...',
+                type: SnackBarType.success,
+              );
+            },
+          ),
+        );
+      };
+    case 2:
+      icon = Icons.groups_rounded;
+      label = 'Start Pod';
+      onTap = () {
+        unawaited(HapticFeedback.lightImpact());
+        unawaited(
+          CreateStudyCircleSheet.show(
+            context,
+            initialTrack: targetTrack ?? 'General',
+            onSubmit: ({
+              required name,
+              required track,
+              required targetWeeklyMinutes,
+            }) {
+              context.read<CommunityHubBloc>().add(
+                CreateStudyCircleEvent(
+                  name: name,
+                  track: track,
+                  targetWeeklyMinutes: targetWeeklyMinutes,
+                ),
+              );
+              context.showSnackBar(
+                message: '🎉 Study Pod "$name" created successfully!',
+                type: SnackBarType.success,
+              );
+            },
+          ),
+        );
+      };
+    default:
+      icon = Icons.publish_rounded;
+      label = 'Publish Deck';
+      onTap = () {
+        unawaited(HapticFeedback.lightImpact());
+        unawaited(
+          PublishDeckModalSheet.show(
+            context,
+            onSubmit: ({
+              required title,
+              required subject,
+              required description,
+              required category,
+              syllabusTag = 'General',
+              totalCards = 10,
+              cardsJson = const [],
+            }) {
+              context.read<CommunityHubBloc>().add(
+                PublishDeckEvent(
+                  title: title,
+                  subject: subject,
+                  description: description,
+                  category: category,
+                  syllabusTag: syllabusTag,
+                  totalCards: totalCards,
+                  cardsJson: cardsJson,
+                ),
+              );
+            },
+          ),
+        );
+      };
+  }
+
+  return PlatformHoverBuilder(
+    builder: (context, isHovered, child) => AnimatedScale(
+      scale: isHovered ? 1.03 : 1,
+      duration: AppMotion.snappy,
+      curve: AppMotion.easeOutCubic,
+      child: ShrinkableButton(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppMotion.snappy,
+          curve: AppMotion.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: isHovered
+                ? colors.primary.withAlpha(isDark ? 65 : 45)
+                : colors.primary.withAlpha(isDark ? 40 : 25),
+            borderRadius: AppRadius.radiusBadge,
+            border: Border.all(
+              color: isHovered
+                  ? colors.primary
+                  : colors.primary.withAlpha(isDark ? 80 : 50),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: colors.primary, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: typography.caption.bold.copyWith(
+                  color: colors.primary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Breakpoint at which Hub tabs switch from a single-column list to a 2-column grid.
+/// Used for tablet, landscape phone, and desktop layouts.
+const double _kHubGridBreakpoint = 600;
 
 class _StudyHubView extends HookWidget {
   const _StudyHubView();
@@ -58,20 +263,75 @@ class _StudyHubView extends HookWidget {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
-    final tabController = useTabController(initialLength: 3);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = AppTabNavigation.isWideLayout(screenWidth);
+
+    final tabController = useTabController(
+      initialLength: isWide ? 3 : 4,
+      keys: [isWide],
+    );
     useListenable(tabController);
 
     useEffect(() {
-      AppTourKeys.onSelectStudyHubSubTab = (index) {
+      void handler(int index) {
         if (tabController.length > index) {
           tabController.animateTo(index);
         }
+      }
+
+      AppTabNavigation.onSelectStudyHubSubTab = handler;
+      AppTourKeys.onSelectStudyHubSubTab = handler;
+
+      return () {
+        AppTabNavigation.onSelectStudyHubSubTab = null;
+        AppTourKeys.onSelectStudyHubSubTab = null;
       };
-      return () => AppTourKeys.onSelectStudyHubSubTab = null;
+    }, [tabController]);
+
+    final isSearchExpanded = useState<bool>(false);
+    final searchQuery = useState<String>('');
+    final searchController = useTextEditingController();
+    final debounceTimer = useRef<Timer?>(null);
+
+    useEffect(() {
+      return () => debounceTimer.value?.cancel();
+    }, const []);
+
+    useEffect(() {
+      void onTabChange() {
+        if (isSearchExpanded.value) {
+          isSearchExpanded.value = false;
+        }
+      }
+
+      tabController.addListener(onTabChange);
+      return () => tabController.removeListener(onTabChange);
     }, [tabController]);
 
     final authState = context.watch<AuthBloc?>()?.state;
     final targetTrack = authState?.userProfile?.targetTrack;
+    final effectiveTrack = (targetTrack != null &&
+            targetTrack.trim().isNotEmpty &&
+            targetTrack != 'General')
+        ? targetTrack.trim()
+        : 'WAEC';
+
+    final availableTracks = useMemoized(
+      () => getAvailableTracks(targetTrack),
+      [targetTrack],
+    );
+
+    final hubState = context.watch<CommunityHubBloc>().state;
+    final hasActiveFilters = hubState.selectedTrack != 'All' ||
+        (hubState.selectedForumFilter != 'trending' &&
+            hubState.selectedForumFilter.isNotEmpty) ||
+        hubState.forumSearchQuery.isNotEmpty;
+    final activeFilterCount = (hubState.selectedTrack != 'All' ? 1 : 0) +
+        (hubState.selectedForumFilter != 'trending' &&
+                hubState.selectedForumFilter.isNotEmpty
+            ? 1
+            : 0) +
+        (hubState.forumSearchQuery.isNotEmpty ? 1 : 0);
 
     return BlocListener<CommunityHubBloc, CommunityState>(
       listenWhen: (previous, current) =>
@@ -98,265 +358,72 @@ class _StudyHubView extends HookWidget {
           elevation: 0,
           scrolledUnderElevation: 0,
           centerTitle: false,
-          title: Text(
-            'Study Hub',
-            style: typography.title2.bold.copyWith(
-              color: colors.textPrimary,
-            ),
+          titleSpacing: 16,
+          title: AnimatedSwitcher(
+            duration: AppMotion.snappy,
+            switchInCurve: AppMotion.easeOutCubic,
+            switchOutCurve: AppMotion.easeOutCubic,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.05),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: isSearchExpanded.value
+                ? CommunitySearchHeader(
+                    searchController: searchController,
+                    searchQuery: searchQuery,
+                    debounceTimer: debounceTimer,
+                    isSearchExpanded: isSearchExpanded,
+                    availableTracks: availableTracks,
+                    effectiveTrack: effectiveTrack,
+                    hasActiveFilters: hasActiveFilters,
+                    activeFilterCount: activeFilterCount,
+                  )
+                : Text(
+                    'Hub',
+                    style: typography.title2.bold.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
           ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: tabController.index == 0
-                  ? PlatformHoverBuilder(
-                      builder: (context, isHovered, child) => AnimatedScale(
-                        scale: isHovered ? 1.03 : 1,
-                        duration: AppMotion.snappy,
-                        curve: AppMotion.easeOutCubic,
-                        child: ShrinkableButton(
-                          onTap: () {
-                            unawaited(HapticFeedback.lightImpact());
-                            unawaited(
-                              CreateStudyRoomSheet.show(
-                                context,
-                                onSubmit:
-                                    ({
-                                      required title,
-                                      required subject,
-                                      required category,
-                                      required pomodoroMinutes,
-                                      ambientSoundTrack = 'Lo-Fi Beats',
-                                      activeGoal,
-                                      isSilentFocus = true,
-                                    }) {
-                                      context.read<CommunityHubBloc>().add(
-                                        CreateRoomEvent(
-                                          title: title,
-                                          subject: subject,
-                                          category: category,
-                                          pomodoroMinutes: pomodoroMinutes,
-                                          ambientSoundTrack: ambientSoundTrack,
-                                          activeGoal: activeGoal,
-                                          isSilentFocus: isSilentFocus,
-                                        ),
-                                      );
-                                      context.showSnackBar(
-                                        message:
-                                            '✨ Launching Live Focus Room "$title"...',
-                                        type: SnackBarType.success,
-                                      );
-                                    },
-                              ),
-                            );
-                          },
-                          child: AnimatedContainer(
-                            duration: AppMotion.snappy,
-                            curve: AppMotion.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isHovered
-                                  ? colors.primary.withAlpha(isDark ? 65 : 45)
-                                  : colors.primary.withAlpha(isDark ? 40 : 25),
-                              borderRadius: AppRadius.radiusBadge,
-                              border: Border.all(
-                                color: isHovered
-                                    ? colors.primary
-                                    : colors.primary.withAlpha(
-                                        isDark ? 80 : 50,
-                                      ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.add_rounded,
-                                  color: colors.primary,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n.newRoomAction,
-                                  style: typography.caption.bold.copyWith(
-                                    color: colors.primary,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : (tabController.index == 1
-                      ? PlatformHoverBuilder(
-                          builder: (context, isHovered, child) => AnimatedScale(
-                            scale: isHovered ? 1.03 : 1,
-                            duration: AppMotion.snappy,
-                            curve: AppMotion.easeOutCubic,
-                            child: ShrinkableButton(
-                              onTap: () {
-                                unawaited(HapticFeedback.lightImpact());
-                                unawaited(
-                                  CreateStudyCircleSheet.show(
-                                    context,
-                                    initialTrack: targetTrack ?? 'General',
-                                    onSubmit:
-                                        ({
-                                          required name,
-                                          required track,
-                                          required targetWeeklyMinutes,
-                                        }) {
-                                          context.read<CommunityHubBloc>().add(
-                                            CreateStudyCircleEvent(
-                                              name: name,
-                                              track: track,
-                                              targetWeeklyMinutes:
-                                                  targetWeeklyMinutes,
-                                            ),
-                                          );
-                                          context.showSnackBar(
-                                            message:
-                                                '🎉 Study Circle "$name" created successfully!',
-                                            type: SnackBarType.success,
-                                          );
-                                        },
-                                  ),
-                                );
-                              },
-                              child: AnimatedContainer(
-                                duration: AppMotion.snappy,
-                                curve: AppMotion.easeOutCubic,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isHovered
-                                      ? colors.primary.withAlpha(
-                                          isDark ? 65 : 45,
-                                        )
-                                      : colors.primary.withAlpha(
-                                          isDark ? 40 : 25,
-                                        ),
-                                  borderRadius: AppRadius.radiusBadge,
-                                  border: Border.all(
-                                    color: isHovered
-                                        ? colors.primary
-                                        : colors.primary.withAlpha(
-                                            isDark ? 80 : 50,
-                                          ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.groups_rounded,
-                                      color: colors.primary,
-                                      size: 15,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Start Circle',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                      : PlatformHoverBuilder(
-                          builder: (context, isHovered, child) => AnimatedScale(
-                            scale: isHovered ? 1.03 : 1,
-                            duration: AppMotion.snappy,
-                            curve: AppMotion.easeOutCubic,
-                            child: ShrinkableButton(
-                              onTap: () {
-                                unawaited(HapticFeedback.lightImpact());
-                                unawaited(
-                                  PublishDeckModalSheet.show(
-                                    context,
-                                    onSubmit:
-                                        ({
-                                          required title,
-                                          required subject,
-                                          required description,
-                                          required category,
-                                          syllabusTag = 'General',
-                                          totalCards = 10,
-                                          cardsJson = const [],
-                                        }) {
-                                          context.read<CommunityHubBloc>().add(
-                                            PublishDeckEvent(
-                                              title: title,
-                                              subject: subject,
-                                              description: description,
-                                              category: category,
-                                              syllabusTag: syllabusTag,
-                                              totalCards: totalCards,
-                                              cardsJson: cardsJson,
-                                            ),
-                                          );
-                                        },
-                                  ),
-                                );
-                              },
-                              child: AnimatedContainer(
-                                duration: AppMotion.snappy,
-                                curve: AppMotion.easeOutCubic,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isHovered
-                                      ? colors.primary.withAlpha(
-                                          isDark ? 65 : 45,
-                                        )
-                                      : colors.primary.withAlpha(
-                                          isDark ? 40 : 25,
-                                        ),
-                                  borderRadius: AppRadius.radiusBadge,
-                                  border: Border.all(
-                                    color: isHovered
-                                        ? colors.primary
-                                        : colors.primary.withAlpha(
-                                            isDark ? 80 : 50,
-                                          ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.publish_rounded,
-                                      color: colors.primary,
-                                      size: 15,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Publish Deck',
-                                      style: typography.caption.bold.copyWith(
-                                        color: colors.primary,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        )),
-            ),
-          ],
+          actions: isSearchExpanded.value
+              ? null
+              : [
+                  if (!isWide && tabController.index == 0) ...[
+                    CommunitySearchFilterCapsule(
+                      hasActiveFilters: hasActiveFilters,
+                      activeFilterCount: activeFilterCount,
+                      isDark: isDark,
+                      onOpenSearch: () {
+                        isSearchExpanded.value = true;
+                      },
+                      onOpenFilter: () {
+                        showCommunityFilterSheet(
+                          context: context,
+                          availableTracks: availableTracks,
+                          effectiveTrack: effectiveTrack,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: _buildHeaderActionButton(
+                      context,
+                      tabIndex: tabController.index,
+                      isWide: isWide,
+                      targetTrack: targetTrack,
+                    ),
+                  ),
+                ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(50),
             child: Padding(
@@ -365,12 +432,22 @@ class _StudyHubView extends HookWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 860),
                   child: AppLiquidGlassTabBar(
-                    key: AppTourKeys.pomodoroCardKey,
-                    tabs: [
-                      l10n.liveRoomsTab,
-                      'Study Circles',
-                      l10n.marketplaceTab,
-                    ],
+                    key: AppTourKeys.pomodoroCardKey = AppTourKeys.safeKey(
+                      AppTourKeys.pomodoroCardKey,
+                      'tour_pomodoro_card',
+                    ),
+                    tabs: isWide
+                        ? [
+                            l10n.liveRoomsTab,
+                            'Study Pods',
+                            l10n.marketplaceTab,
+                          ]
+                        : [
+                            l10n.forumTab,
+                            l10n.liveRoomsTab,
+                            'Study Pods',
+                            l10n.marketplaceTab,
+                          ],
                     selectedIndex: tabController.index,
                     onTabSelected: tabController.animateTo,
                     isCompact: true,
@@ -400,34 +477,76 @@ class _StudyHubView extends HookWidget {
           builder: (context, state) {
             if (state.status == CommunityStatus.loading &&
                 state.studyRooms.isEmpty &&
-                state.sharedDecks.isEmpty) {
+                state.sharedDecks.isEmpty &&
+                state.forumPosts.isEmpty) {
               return CommunityHubShimmer(
-                tabIndex: tabController.index == 0 ? 0 : 2,
+                tabIndex: tabController.index == 1 ? 0 : 2,
               );
             }
 
             return TabBarView(
               controller: tabController,
-              children: [
-                // 1. Live Focus Rooms
-                _LiveRoomsTab(
-                  key: AppTourKeys.liveRoomsCardKey,
-                  state: state,
-                  targetTrack: targetTrack,
-                ),
+              children: isWide
+                  ? [
+                      // 0. Live Focus Rooms
+                      _LiveRoomsTab(
+                        key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
+                          AppTourKeys.liveRoomsCardKey,
+                          'tour_live_rooms_card',
+                        ),
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
 
-                // 2. Study Circles
-                _StudyCirclesTab(
-                  state: state,
-                  targetTrack: targetTrack,
-                ),
+                      // 1. Study Circles
+                      _StudyCirclesTab(
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
 
-                // 3. Deck Marketplace
-                _DeckMarketplaceTab(
-                  key: AppTourKeys.marketplaceCardKey,
-                  state: state,
-                ),
-              ],
+                      // 2. Deck Marketplace
+                      _DeckMarketplaceTab(
+                        key: AppTourKeys.marketplaceCardKey =
+                            AppTourKeys.safeKey(
+                          AppTourKeys.marketplaceCardKey,
+                          'tour_marketplace_card',
+                        ),
+                        state: state,
+                      ),
+                    ]
+                  : [
+                      // 0. Academic Forum Feed
+                      _ForumTab(
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
+
+                      // 1. Live Focus Rooms
+                      _LiveRoomsTab(
+                        key: AppTourKeys.liveRoomsCardKey = AppTourKeys.safeKey(
+                          AppTourKeys.liveRoomsCardKey,
+                          'tour_live_rooms_card',
+                        ),
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
+
+                      // 2. Study Circles
+                      _StudyCirclesTab(
+                        state: state,
+                        targetTrack: targetTrack,
+                      ),
+
+                      // 3. Deck Marketplace
+                      _DeckMarketplaceTab(
+                        key: AppTourKeys.marketplaceCardKey =
+                            AppTourKeys.safeKey(
+                          AppTourKeys.marketplaceCardKey,
+                          'tour_marketplace_card',
+                        ),
+                        state: state,
+                      ),
+                    ],
             );
           },
         ),
@@ -467,6 +586,10 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
     final typography = context.typography;
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isGrid = screenWidth >= _kHubGridBreakpoint;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     final userTrack = widget.targetTrack?.trim();
 
@@ -703,9 +826,48 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
                     ),
                   ),
                 )
-              else
+              else if (isGrid)
+                // 2-column grid layout for tablet / landscape / desktop
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.45,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final room = filteredRooms[index];
+                        return LiveFocusRoomCard(
+                          room: room,
+                          onJoinTap: () {
+                            unawaited(
+                              context.router.push(
+                                LiveStudyRoomRoute(room: room),
+                              ),
+                            );
+                          },
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
+                      },
+                      childCount: filteredRooms.length,
+                    ),
+                  ),
+                )
+              else
+                // Single-column list for compact / portrait phone
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -799,6 +961,7 @@ class _StudyCirclesTab extends StatelessWidget {
     final typography = context.typography;
 
     final isDark = context.isDarkMode;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -836,7 +999,7 @@ class _StudyCirclesTab extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'What are Study Circles?',
+                              'What are Study Pods?',
                               style: typography.subhead.bold.copyWith(
                                 color: colors.textPrimary,
                               ),
@@ -845,7 +1008,7 @@ class _StudyCirclesTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Study Circles (Pods) are small peer study groups of up to 6 scholars taking the same track. Join a pod to commit to a collective weekly focus target, monitor contributions, and send instant nudges to keep each other accountable.',
+                          'Study Pods are small peer study groups of up to 6 scholars taking the same track. Join a pod to commit to a collective weekly focus target, monitor contributions, and send instant nudges to keep each other accountable.',
                           style: typography.caption.regular.copyWith(
                             color: colors.textSecondary,
                             height: 1.35,
@@ -892,14 +1055,14 @@ class _StudyCirclesTab extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Peer Study Circles',
+                        'Peer Study Pods',
                         style: typography.subhead.bold.copyWith(
                           color: colors.textPrimary,
                         ),
                       ),
                       const Spacer(),
                       Text(
-                        '${state.studyCircles.length} Pods',
+                        '${state.studyCircles.length} ${state.studyCircles.length == 1 ? 'Pod' : 'Pods'}',
                         style: typography.caption.medium.copyWith(
                           color: colors.textSecondary,
                         ),
@@ -937,8 +1100,10 @@ class _StudyCirclesTab extends StatelessWidget {
                   ),
                 )
               else
+                // Study Circles stay single-column — cards are tall/complex with
+                // progress bars and member contribution lists.
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -1024,6 +1189,10 @@ class _DeckMarketplaceTab extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isGrid = screenWidth >= _kHubGridBreakpoint;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     final selectedCategory = useState<String>('All');
     final searchQuery = useState<String>('');
@@ -1136,6 +1305,7 @@ class _DeckMarketplaceTab extends HookWidget {
                                   focusedBorder: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   isDense: true,
+                                  fillColor: Colors.transparent,
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 onChanged: (val) {
@@ -1252,9 +1422,53 @@ class _DeckMarketplaceTab extends HookWidget {
                     ),
                   ),
                 )
-              else
+              else if (isGrid)
+                // 2-column grid layout for tablet / landscape / desktop
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.55,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final deck = filteredDecks[index];
+                        return MarketplaceDeckCard(
+                          deck: deck,
+                          onCloneTap: () {
+                            context.read<CommunityHubBloc>().add(
+                              CloneDeckEvent(deck.id),
+                            );
+                          },
+                          onTap: () {
+                            unawaited(
+                              context.router.push(
+                                DeckMarketplaceDetailRoute(deck: deck),
+                              ),
+                            );
+                          },
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
+                      },
+                      childCount: filteredDecks.length,
+                    ),
+                  ),
+                )
+              else
+                // Single-column list for compact / portrait phone
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -1295,6 +1509,34 @@ class _DeckMarketplaceTab extends HookWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ForumTab extends StatelessWidget {
+  const _ForumTab({
+    required this.state,
+    required this.targetTrack,
+  });
+
+  final CommunityState state;
+  final String? targetTrack;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveTrack = (targetTrack != null &&
+            targetTrack!.trim().isNotEmpty &&
+            targetTrack != 'General')
+        ? targetTrack!.trim()
+        : 'WAEC';
+
+    final availableTracks = getAvailableTracks(targetTrack);
+
+    return CommunityForumFeedList(
+      state: state,
+      searchQuery: state.forumSearchQuery,
+      availableTracks: availableTracks,
+      effectiveTrack: effectiveTrack,
     );
   }
 }

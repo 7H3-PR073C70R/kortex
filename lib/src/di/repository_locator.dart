@@ -11,6 +11,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<CalibrationRepository>(
       () => CalibrationRepositoryImpl(
         localDataSource: locator<CalibrationLocalDataSource>(),
+        remoteDataSource: locator<CalibrationRemoteDataSource>(),
       ),
     )
     ..registerLazySingleton<OtpRepository>(
@@ -44,6 +45,8 @@ void _initRepositoryLocator() {
       () => CommunityRepositoryImpl(
         locator<CommunityRemoteDataSource>(),
         userStorage: locator<UserStorageService>(),
+        offlineSyncQueue: locator<ForumOfflineSyncQueue>(),
+        connectivity: Connectivity(),
       ),
     )
     ..registerLazySingleton<RagRepository>(
@@ -64,7 +67,15 @@ void _initRepositoryLocator() {
       ),
     )
     ..registerLazySingleton<PlannerRepository>(
-      PlannerRepositoryImpl.new,
+      () => PlannerRepositoryImpl(
+        database: locator.isRegistered<AppDatabase>()
+            ? locator<AppDatabase>()
+            : null,
+        storageService: locator<LocalStorageService>(),
+        userStorageService: locator<UserStorageService>(),
+        dio: locator<Dio>(),
+        connectivity: Connectivity(),
+      ),
     )
     ..registerLazySingleton<QuizRepository>(
       () => QuizRepositoryImpl(
@@ -75,6 +86,7 @@ void _initRepositoryLocator() {
         localStorageService: locator<LocalStorageService>(),
         userStorageService: locator<UserStorageService>(),
         userActivityService: locator<UserActivityService>(),
+        connectivity: Connectivity(),
       ),
     )
     ..registerLazySingleton<PastQuestionsRepository>(
@@ -108,6 +120,11 @@ void _initRepositoryLocator() {
       () => PromoCodeRepositoryImpl(
         remoteDataSource: locator<PromoCodeRemoteDataSource>(),
         userStorageService: locator<UserStorageService>(),
+      ),
+    )
+    ..registerLazySingleton<AppVersionRepository>(
+      () => AppVersionRepositoryImpl(
+        remoteDataSource: locator<AppVersionRemoteDataSource>(),
       ),
     );
 }

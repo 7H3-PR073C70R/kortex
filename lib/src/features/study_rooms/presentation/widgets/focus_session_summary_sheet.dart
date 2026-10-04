@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
-import 'package:share_plus/share_plus.dart';
 
 class FocusSessionSummarySheet extends StatelessWidget {
   const FocusSessionSummarySheet({
@@ -70,15 +71,13 @@ class FocusSessionSummarySheet extends StatelessWidget {
   }
 
   void _shareSummary() {
-    final goalPart = (activeGoal != null && activeGoal!.trim().isNotEmpty)
-        ? '\n🎯 Goal: "$activeGoal" ${isGoalAchieved ? "✅ Achieved" : "⏳ In Progress"}'
-        : '';
-    final message =
-        '🔥 Just wrapped up a Deep Flow study session in Kortex!\n'
-        '⏱ $totalFocusMinutes mins focused ($completedPomodoros Pomodoro blocks)'
-        '$goalPart\n'
-        '⚡ Earned +$earnedXp XP in #$subject!';
-    unawaited(SharePlus.instance.share(ShareParams(text: message)));
+    unawaited(
+      locator<LinkSharingService>().shareStudyRoom(
+        roomId: 'room-${DateTime.now().millisecondsSinceEpoch}',
+        roomTitle: roomTitle,
+        topic: '$subject ($totalFocusMinutes mins focused)',
+      ),
+    );
   }
 
   @override

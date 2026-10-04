@@ -4,7 +4,7 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from "https://esm.sh/@aw
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-file-name, x-media-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-file-name, x-media-type, x-document-id",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
@@ -90,6 +90,7 @@ serve(async (req: Request) => {
       let fileBytes: Uint8Array;
       let mediaType = req.headers.get("x-media-type") || "image";
       let originalName = req.headers.get("x-file-name") || `upload_${Date.now()}`;
+      const documentId = req.headers.get("x-document-id") || req.headers.get("documentId");
       let mimeType = "application/octet-stream";
 
       if (contentType.includes("multipart/form-data")) {
@@ -129,7 +130,9 @@ serve(async (req: Request) => {
       else if (mimeType.includes("mpeg") || mimeType.includes("mp3")) ext = "mp3";
 
       const cleanFileName = originalName.replace(/[^a-zA-Z0-9_\.-]/g, "_");
-      const objectKey = `forum/${mediaType}/${authenticatedUserId}/${Date.now()}_${cleanFileName}.${ext}`;
+      const objectKey = documentId
+        ? `documents/${documentId}/images/${cleanFileName.endsWith(`.${ext}`) ? cleanFileName : `${cleanFileName}.${ext}`}`
+        : `forum/${mediaType}/${authenticatedUserId}/${Date.now()}_${cleanFileName}.${ext}`;
 
       // Upload binary stream to R2
       const putCmd = new PutObjectCommand({

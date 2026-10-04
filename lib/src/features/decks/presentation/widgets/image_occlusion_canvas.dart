@@ -135,10 +135,19 @@ class _ImageOcclusionCanvasState extends State<ImageOcclusionCanvas> {
                   final index = entry.key;
                   final mask = entry.value;
 
-                  final left = mask.rect.left * width;
-                  final top = mask.rect.top * height;
-                  final maskWidth = mask.rect.width * width;
-                  final maskHeight = mask.rect.height * height;
+                  // Account for BoxFit.contain letterbox/pillarbox destination bounds
+                  final fitted = applyBoxFit(
+                    BoxFit.contain,
+                    const Size(1000, 1000),
+                    Size(width, height),
+                  );
+                  final dx = (width - fitted.destination.width) / 2;
+                  final dy = (height - fitted.destination.height) / 2;
+
+                  final left = dx + (mask.rect.left * fitted.destination.width);
+                  final top = dy + (mask.rect.top * fitted.destination.height);
+                  final maskWidth = mask.rect.width * fitted.destination.width;
+                  final maskHeight = mask.rect.height * fitted.destination.height;
 
                   return Positioned(
                     left: left,

@@ -25,10 +25,25 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     '— action: ${message.data['action']}',
   );
 
-  final notification = message.notification;
-  if (notification == null) return;
+  // If the message contains a notification payload, Android and iOS automatically
+  // display it in the system tray when in the background. Showing a local
+  // notification here causes the notification to appear twice.
+  if (message.notification != null) {
+    developer.log(
+      'Background isolate: skipping local notification display because OS '
+      'already displayed notification banner for message ${message.messageId}',
+    );
+    return;
+  }
 
-  // Show local heads-up so the user sees it immediately.
+  // Handle data-only messages (when message.notification == null).
+  final title = message.data['title']?.toString();
+  final body = message.data['body']?.toString();
+  if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
+    return;
+  }
+
+  // Show local heads-up for data-only messages so the user sees it immediately.
   final plugin = FlutterLocalNotificationsPlugin();
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
   const darwinSettings = DarwinInitializationSettings();
@@ -43,9 +58,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final channelId = _resolveChannelId(message.data['action']?.toString());
 
   await plugin.show(
-    notification.hashCode,
-    notification.title ?? 'Kortex',
-    notification.body ?? '',
+    message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title ?? 'Kortex',
+    body ?? '',
     NotificationDetails(
       android: AndroidNotificationDetails(
         channelId,

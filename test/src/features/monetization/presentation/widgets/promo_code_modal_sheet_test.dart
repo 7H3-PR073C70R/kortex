@@ -86,7 +86,7 @@ void main() {
 
       await tester.tap(find.text('Apply Promo Code'));
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Kortex Pro Activated!'), findsOneWidget);
       expect(

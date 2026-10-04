@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -88,11 +90,19 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
   Future<void> _deleteSession(String sessionId) async {
     final repo = locator<SyllabotRepository>();
     await repo.deleteChatSession(sessionId: sessionId);
+    if (locator.isRegistered<LocalStorageService>()) {
+      unawaited(
+        locator<LocalStorageService>().deletePreference(
+          key: 'syllabot_converted_$sessionId',
+        ),
+      );
+    }
     if (!mounted) return;
     setState(() {
       _sessions.removeWhere((s) => s.id == sessionId);
     });
   }
+
 
   String _formatDate(DateTime dt) {
     final now = DateTime.now();
@@ -181,12 +191,22 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
                         builder: (context, isHovered, child) {
                           return ShrinkableButton(
                             onTap: () {
+                              if (locator<SyllabotChatBloc>().state.isGeneratingDeck) {
+                                Navigator.pop(context);
+                                context.showSnackBar(
+                                  message:
+                                      'Please wait while deck is being generated.',
+                                );
+                                return;
+
+                              }
                               unawaited(HapticFeedback.lightImpact());
                               Navigator.pop(context);
                               locator<SyllabotChatBloc>().add(
                                 const StartNewSessionEvent(),
                               );
                             },
+
                             child: AnimatedContainer(
                               duration: AppMotion.snappy,
                               curve: AppMotion.snappyCurve,
@@ -351,12 +371,26 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
         final session = _sessions[index];
         final isCurrent = session.id == widget.currentSessionId;
 
+        final isConverted = locator.isRegistered<LocalStorageService>() &&
+            locator<LocalStorageService>().getPreference(
+                  key: 'syllabot_converted_${session.id}',
+                ) !=
+                null;
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: PlatformHoverBuilder(
             builder: (context, isHovered, child) {
               return ShrinkableButton(
                 onTap: () {
+                  if (locator<SyllabotChatBloc>().state.isGeneratingDeck) {
+                    Navigator.pop(context);
+                    context.showSnackBar(
+                      message: 'Please wait while deck is being generated.',
+                    );
+                    return;
+
+                  }
                   unawaited(HapticFeedback.lightImpact());
                   Navigator.pop(context);
                   locator<SyllabotChatBloc>().add(
@@ -395,7 +429,9 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
                         child: Center(
                           child: Text(
                             _getModeIcon(session.socraticMode),
-                            style: context.typography.body.regular.copyWith(fontSize: 16),
+                            style: context.typography.body.regular.copyWith(
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ),
@@ -416,12 +452,56 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              _formatDate(session.updatedAt),
-                              style: typography.caption.regular.copyWith(
-                                color: colors.textSecondary,
-                                fontSize: 11,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  _formatDate(session.updatedAt),
+                                  style: typography.caption.regular.copyWith(
+                                    color: colors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                if (isConverted) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 1.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.syllabotAccent.withAlpha(
+                                        isDark ? 30 : 20,
+                                      ),
+                                      borderRadius: AppRadius.radiusMicro,
+                                      border: Border.all(
+                                        color: colors.syllabotAccent.withAlpha(
+                                          isDark ? 70 : 40,
+                                        ),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.style_rounded,
+                                          size: 10.5,
+                                          color: colors.syllabotAccent,
+                                        ),
+                                        const SizedBox(width: 3.5),
+                                        Text(
+                                          'Deck Created',
+                                          style: typography.caption.bold
+                                              .copyWith(
+                                                color: colors.syllabotAccent,
+                                                fontSize: 9.5,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ),
@@ -446,7 +526,8 @@ class _SyllabotHistorySheetState extends State<SyllabotHistorySheet> {
               );
             },
           ),
-        ).animate(delay: (index * 80).ms).fadeIn(duration: 250.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint);
+        )
+.animate(delay: (index * 80).ms).fadeIn(duration: 250.ms, curve: Curves.easeOutQuint).slideY(begin: 0.05, end: 0, duration: 250.ms, curve: Curves.easeOutQuint);
       },
     );
   }

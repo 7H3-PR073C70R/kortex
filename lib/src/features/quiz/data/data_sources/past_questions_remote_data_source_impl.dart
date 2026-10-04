@@ -23,6 +23,10 @@ class PastQuestionsRemoteDataSourceImpl
     }
   }
 
+  String _sanitizeInput(String input) {
+    return input.replaceAll(RegExp('[,()%*]'), '').trim();
+  }
+
   Map<String, dynamic> _buildParams({
     String? examType,
     String? subject,
@@ -37,11 +41,17 @@ class PastQuestionsRemoteDataSourceImpl
     };
 
     if (examType != null && examType.isNotEmpty && examType != 'ALL') {
-      params['exam_type'] = 'ilike.%$examType%';
+      final sanitizedExam = _sanitizeInput(examType);
+      if (sanitizedExam.isNotEmpty) {
+        params['exam_type'] = 'ilike.%$sanitizedExam%';
+      }
     }
 
     if (subject != null && subject.isNotEmpty && subject != 'All') {
-      params['subject'] = 'ilike.%$subject%';
+      final sanitizedSubject = _sanitizeInput(subject);
+      if (sanitizedSubject.isNotEmpty) {
+        params['subject'] = 'ilike.%$sanitizedSubject%';
+      }
     }
 
     if (year != null) {
@@ -49,8 +59,10 @@ class PastQuestionsRemoteDataSourceImpl
     }
 
     if (searchQuery != null && searchQuery.trim().isNotEmpty) {
-      final q = searchQuery.trim();
-      params['or'] = '(prompt.ilike.*$q*,topic.ilike.*$q*,subject.ilike.*$q*)';
+      final q = _sanitizeInput(searchQuery);
+      if (q.isNotEmpty) {
+        params['or'] = '(prompt.ilike.*$q*,topic.ilike.*$q*,subject.ilike.*$q*)';
+      }
     }
 
     return params;

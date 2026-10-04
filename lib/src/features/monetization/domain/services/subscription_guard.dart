@@ -14,6 +14,7 @@ enum DeckExportFormat {
   csv,
   anki,
   pdfPrintable,
+  json,
 }
 
 /// Centralized service for validating Kortex Pro entitlements,
@@ -193,6 +194,22 @@ class SubscriptionGuard {
 
   /// CBT Exam cognitive AI weakness breakdown requires Pro.
   bool canAccessAiDiagnostics() => isPro;
+
+  /// Real-time hands-free voice dialogue with Syllabot AI requires Pro.
+  bool canAccessVoiceDialogue() => isPro;
+
+  /// Automated flashcard deck synthesis from Syllabot chat requires Pro.
+  bool canConvertChatToDeck() => isPro;
+
+  /// Audio lecture ingestion and Whisper speech-to-text synthesis requires Pro.
+  bool canTranscribeAudioLecture() => isPro;
+
+  /// Publishing study decks to the global community marketplace requires Pro.
+  bool canPublishToMarketplace() => isPro;
+
+  /// Live voice pod microphone broadcasting in study rooms requires Pro.
+  /// (Listening, text chat, and collaborative whiteboard remain free).
+  bool canBroadcastRoomVoice() => isPro;
 
   /// Helper to require Pro before executing a feature.
   /// If the user is already Pro, executes immediately.

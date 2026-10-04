@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:kortex/src/app/router/app_router.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
+import 'package:kortex/src/core/services/dynamic_link_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/session_expired_service.dart';
 import 'package:kortex/src/core/themes/theme_cubit.dart';
@@ -14,7 +16,11 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_mode_cubit.dart';
+import 'package:kortex/src/features/force_update/domain/services/force_update_service.dart';
+import 'package:kortex/src/features/force_update/domain/use_cases/check_force_update_use_case.dart';
+import 'package:kortex/src/features/force_update/presentation/pages/force_update_screen.dart';
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_bloc.dart';
+import 'package:kortex/src/features/notifications/domain/services/notification_router.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
 import 'package:kortex/src/shared/widgets/biometric_lock_overlay.dart';
 import 'package:kortex/src/shared/widgets/dismiss_keyboard.dart';
@@ -31,6 +37,11 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   late final RouterConfig<UrlState> _routerConfig;
   StreamSubscription<String>? _sessionExpiredSubscription;
   StreamSubscription<String>? _notificationPayloadSubscription;
+  StreamSubscription<DynamicLinkPayload>? _dynamicLinkSubscription;
+  StreamSubscription<VersionForceRequired>? _forceUpdateSubscription;
+
+  /// Non-null when the force-update gate is active.
+  VersionForceRequired? _forceUpdateResult;
 
   @override
   void initState() {
@@ -39,8 +50,13 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     _appRouter = locator<AppRouter>();
     _routerConfig = _appRouter.config(
       reevaluateListenable: ReevaluateListenable.stream(
-        locator<AuthBloc>().stream,
+        locator<AuthBloc>()
+            .stream
+            .map((state) => (state.sessionStatus, state.userProfile?.isOnboarded))
+            .distinct(),
       ),
+      deepLinkTransformer: _transformDeepLink,
+      deepLinkBuilder: _handlePlatformDeepLink,
     );
 
     _sessionExpiredSubscription = locator<SessionExpiredService>()
@@ -52,6 +68,119 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           .onPayloadTapped
           .listen(_handleNotificationPayload);
     }
+
+    if (locator.isRegistered<DynamicLinkService>()) {
+      _dynamicLinkSubscription = locator<DynamicLinkService>()
+          .onLinkReceived
+          .listen(_handleDynamicLinkPayload);
+    }
+
+    // ── Force-Update gate ────────────────────────────────────────────────────
+    if (locator.isRegistered<ForceUpdateService>()) {
+      _forceUpdateSubscription = locator<ForceUpdateService>()
+          .onForceUpdateRequired
+          .listen(_handleForceUpdate);
+
+      // Run an initial check shortly after launch (non-blocking).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(locator<ForceUpdateService>().check());
+      });
+    }
+  }
+
+  /// Transforms external deep-link URIs into recognized internal routes before matching.
+  Future<Uri> _transformDeepLink(Uri uri) async {
+    developer.log('[App] Transforming deep link: $uri');
+    final isCustomScheme =
+        uri.scheme == 'kortex' || uri.scheme == 'com.kortexify.app';
+    final isShareHost = uri.host == 'share' || uri.path.contains('share');
+    final typeStr =
+        uri.queryParameters['type']?.trim().toLowerCase().replaceAll('-', '_');
+
+    if (isCustomScheme || isShareHost || typeStr != null) {
+      switch (typeStr) {
+        case 'deck':
+          return uri.replace(path: '/deck-detail');
+        case 'study':
+          return uri.replace(path: '/study-session');
+        case 'forum':
+          return uri.replace(path: '/community');
+        case 'quiz_duel':
+          return uri.replace(path: '/quiz-workspace');
+        case 'study_room':
+          return uri.replace(path: '/study-hub');
+        case 'promo':
+          return uri.replace(path: '/paywall');
+        case 'course':
+          return uri.replace(path: '/curate-courses');
+      }
+
+      if (isCustomScheme && uri.host.isNotEmpty) {
+        final hostType = uri.host.toLowerCase();
+        if (hostType == 'study-session') {
+          return uri.replace(path: '/study-session');
+        }
+        if (hostType == 'decks' || hostType == 'deck') {
+          return uri.replace(path: '/decks');
+        }
+        if (hostType == 'planner' || hostType == 'exam') {
+          return uri.replace(path: '/exam-timetable');
+        }
+        if (hostType == 'community') {
+          return uri.replace(path: '/community');
+        }
+        if (hostType == 'chat' || hostType == 'syllabot') {
+          return uri.replace(path: '/syllabot-chat');
+        }
+      }
+    }
+    return uri;
+  }
+
+  /// Resolves the exact [DeepLink] for incoming platform deep links.
+  FutureOr<DeepLink> _handlePlatformDeepLink(
+    PlatformDeepLink platformDeepLink,
+  ) async {
+    final uri = platformDeepLink.uri;
+    developer.log('[App] Resolving platform deep link: $uri');
+
+    // 1. Try parsing through DynamicLinkService
+    if (locator.isRegistered<DynamicLinkService>()) {
+      final dynamicService = locator<DynamicLinkService>();
+      final payload = dynamicService.parseUri(uri);
+      if (payload != null && payload.type != DynamicLinkType.unknown) {
+        dynamicService.handleRawUri(uri);
+        final route = dynamicService.routeForPayload(payload);
+        if (route != null) {
+          return DeepLink.single(route);
+        }
+      }
+    }
+
+    // 2. Try parsing through NotificationRouter
+    final notifRouter = locator.isRegistered<NotificationRouter>()
+        ? locator<NotificationRouter>()
+        : const NotificationRouter();
+    final notifRoute = notifRouter.resolveRouteFromPayload(uri.toString());
+    if (notifRoute != null) {
+      return DeepLink.single(notifRoute);
+    }
+
+    if (platformDeepLink.isValid) {
+      return platformDeepLink;
+    }
+    return DeepLink.defaultPath;
+  }
+
+  void _handleDynamicLinkPayload(DynamicLinkPayload payload) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        locator<DynamicLinkService>().handlePayload(
+          payload: payload,
+          appRouter: _appRouter,
+        ),
+      );
+    });
   }
 
   void _handleSessionExpired(String message) {
@@ -75,110 +204,17 @@ class _AppState extends State<App> with WidgetsBindingObserver {
   void _handleNotificationPayload(String payload) {
     if (payload.trim().isEmpty) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final clean = payload.trim();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        if (clean == '/planner' ||
-            clean == 'planner' ||
-            clean.startsWith('/exam') ||
-            clean.startsWith('exam:')) {
-          unawaited(_appRouter.push(const ExamTimetableRoute()));
-          return;
-        }
-
-        if (clean == '/decks' || clean == 'decks') {
-          unawaited(_appRouter.push(const DecksRoute()));
-          return;
-        }
-
-        if (clean == '/past-questions' || clean == 'past-questions') {
-          unawaited(_appRouter.push(PastQuestionsBoardRoute()));
-          return;
-        }
-
-        if (clean == '/ingestion' ||
-            clean == 'ingestion' ||
-            clean.startsWith('doc:')) {
-          unawaited(_appRouter.push(DocumentIngestionRoute()));
-          return;
-        }
-
-        if (clean == '/chat' || clean == 'syllabot' || clean == '/syllabot') {
-          unawaited(_appRouter.push(SyllabotChatRoute()));
-          return;
-        }
-
-        if (clean.startsWith('deck:')) {
-          final parts = clean.substring(5).split(':');
-          final deckId = parts.first;
-          final mode = parts.length > 1 ? parts[1] : '';
-          if (mode == 'study') {
-            unawaited(
-              _appRouter.push(
-                StudySessionRoute(deckId: deckId),
-              ),
-            );
-          } else {
-            unawaited(_appRouter.push(DeckDetailRoute(deckId: deckId)));
-          }
-          return;
-        }
-
-        if (clean.startsWith('study:')) {
-          final deckId = clean.substring(6);
-          unawaited(
-            _appRouter.push(
-              StudySessionRoute(deckId: deckId),
-            ),
-          );
-          return;
-        }
-
-        // FCM data payload route keys (from trigger-notifications)
-        if (clean == '/study-session' || clean.startsWith('/study-session?')) {
-          // Parse optional deckId query param: /study-session?deckId=xxx
-          final uri = Uri.tryParse(clean);
-          final deckId = uri?.queryParameters['deckId'];
-          if (deckId != null && deckId.isNotEmpty) {
-            unawaited(_appRouter.push(StudySessionRoute(deckId: deckId)));
-          } else {
-            unawaited(_appRouter.push(const DecksRoute()));
-          }
-          return;
-        }
-
-        if (clean == '/quiz-duel' || clean.startsWith('/quiz-duel?')) {
-          // Navigate to the Community hub where Quiz Duels are initiated.
-          // The duelId can be passed via query param when deep-linking is added.
-          unawaited(_appRouter.push(const CommunityHubRoute()));
-          return;
-        }
-
-        if (clean == '/deck-detail' || clean.startsWith('/deck-detail?')) {
-          final uri = Uri.tryParse(clean);
-          final deckId = uri?.queryParameters['deckId'];
-          if (deckId != null && deckId.isNotEmpty) {
-            unawaited(_appRouter.push(DeckDetailRoute(deckId: deckId)));
-          } else {
-            unawaited(_appRouter.push(const DecksRoute()));
-          }
-          return;
-        }
-
-        if (clean == '/dashboard' || clean == 'dashboard') {
-          // Pop to root (dashboard is the root scaffold tab).
-          _appRouter.popUntilRoot();
-          return;
-        }
-
-        if (clean == '/community' || clean == 'community') {
-          unawaited(_appRouter.push(const CommunityHubRoute()));
-          return;
-        }
-
-        // Generic named route fallback
-        if (clean.startsWith('/')) {
-          unawaited(_appRouter.pushPath(clean));
+        final notifRouter = locator.isRegistered<NotificationRouter>()
+            ? locator<NotificationRouter>()
+            : const NotificationRouter();
+        final handled = await notifRouter.handlePayloadString(
+          router: _appRouter,
+          payload: payload,
+        );
+        if (!handled) {
+          debugPrint('[App] Could not route notification payload: "$payload"');
         }
       } on Object catch (e) {
         debugPrint('[App] Failed to route notification payload "$payload": $e');
@@ -186,11 +222,19 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     });
   }
 
+  void _handleForceUpdate(VersionForceRequired result) {
+    if (mounted) setState(() => _forceUpdateResult = result);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       if (locator.isRegistered<AuthBloc>()) {
         locator<AuthBloc>().add(const AuthAppResumed());
+      }
+      // Re-check version on every app resume.
+      if (locator.isRegistered<ForceUpdateService>()) {
+        unawaited(locator<ForceUpdateService>().check());
       }
     }
   }
@@ -200,6 +244,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_sessionExpiredSubscription?.cancel());
     unawaited(_notificationPayloadSubscription?.cancel());
+    unawaited(_dynamicLinkSubscription?.cancel());
+    unawaited(_forceUpdateSubscription?.cancel());
     super.dispose();
   }
 
@@ -242,7 +288,10 @@ class _AppState extends State<App> with WidgetsBindingObserver {
                       ),
                     ),
                     child: BiometricLockOverlay(
-                      child: child ?? const SizedBox.shrink(),
+                      child: _forceUpdateResult != null
+                          // ── Force-update gate: replaces entire widget tree ──
+                          ? ForceUpdateScreen(result: _forceUpdateResult!)
+                          : child ?? const SizedBox.shrink(),
                     ),
                   );
                 },

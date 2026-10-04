@@ -72,7 +72,7 @@
     "@onboardingSlide2Desc": {
         "description": "Description for slide 2"
     },
-    "onboardingSlide3Badge": "FSRS-6 RECALL",
+    "onboardingSlide3Badge": "SMART MEMORY RECALL",
     "@onboardingSlide3Badge": {
         "description": "Badge for slide 3"
     },
@@ -420,7 +420,7 @@
     "@authDesktopFeature1": {
         "description": "Hero bullet feature 1"
     },
-    "authDesktopFeature2": "Adaptive FSRS-6 spaced repetition schedules",
+    "authDesktopFeature2": "Adaptive smart review schedules that fit your pace",
     "@authDesktopFeature2": {
         "description": "Hero bullet feature 2"
     },
@@ -714,7 +714,7 @@
     "@calibrationOptionDeepMastery": {
         "description": "Calibration goal option for deep mastery"
     },
-    "calibrationChatReady": "You're all set! I've personalized your study engine with adaptive FSRS scheduling and tailored your daily quotas. Let's conquer this semester.",
+    "calibrationChatReady": "You're all set! I've personalized your study engine with smart memory scheduling and tailored your daily quotas. Let's conquer this semester.",
     "@calibrationChatReady": {
         "description": "Completion message in conversational calibration"
     },
@@ -856,7 +856,7 @@
     "@calibrationGoalSocratic": {
         "description": "Socratic AI goal"
     },
-    "calibrationGoalSpacedRep": "Spaced Repetition (FSRS-6) Mastery",
+    "calibrationGoalSpacedRep": "Long-Term Memory Mastery",
     "@calibrationGoalSpacedRep": {
         "description": "Spaced repetition goal"
     },
@@ -1090,7 +1090,7 @@
             }
         }
     },
-    "contentFlashcardsDesc": "Dive into structured flashcards for core topics in {field}. Master key concepts instantly with FSRS-6 Spaced Repetition.",
+    "contentFlashcardsDesc": "Dive into structured flashcards for core topics in {field}. Master key concepts with smart spaced reviews scheduled right before you forget.",
     "@contentFlashcardsDesc": {
         "description": "Description for flashcards slide",
         "placeholders": {
@@ -1142,7 +1142,7 @@
     "@contentFeature1": {
         "description": "Content recommendation feature 1"
     },
-    "contentFeature2": "Automated FSRS-6 spaced repetition decks",
+    "contentFeature2": "Automated smart spaced-review decks",
     "@contentFeature2": {
         "description": "Content recommendation feature 2"
     },
@@ -1715,7 +1715,7 @@
             }
         }
     },
-    "deckDetailFsrsQueueBadge": "FSRS-6 ACTIVE QUEUE",
+    "deckDetailFsrsQueueBadge": "ACTIVE REVIEW QUEUE",
     "@deckDetailFsrsQueueBadge": {
         "description": "FSRS-6 queue badge label"
     },
@@ -1805,7 +1805,7 @@
     "@analyticsStreakRecord": {
         "description": "Streak record encouragement subtitle"
     },
-    "analyticsRetentionCurveTitle": "Memory Retention Curve (FSRS-6)",
+    "analyticsRetentionCurveTitle": "Memory Retention Over Time",
     "@analyticsRetentionCurveTitle": {
         "description": "Title for Ebbinghaus retention breakdown"
     },
@@ -1831,7 +1831,7 @@
     "@decksTitle": {
         "description": "Title for Decks page"
     },
-    "decksSubtitle": "Active recall queues powered by SuperMemo-2",
+    "decksSubtitle": "Active recall flashcard decks with smart scheduling",
     "@decksSubtitle": {
         "description": "Subtitle for Decks page"
     },
@@ -1863,7 +1863,7 @@
     "@decksEmptyStateTitle": {
         "description": "Empty state title for decks"
     },
-    "decksEmptyStateSubtitle": "Ingest lecture notes or past papers to generate FSRS-6 spaced repetition decks automatically.",
+    "decksEmptyStateSubtitle": "Upload lecture notes or past papers to generate smart review decks automatically.",
     "@decksEmptyStateSubtitle": {
         "description": "Empty state subtitle for decks"
     },
@@ -2067,7 +2067,7 @@
     "@sessionSummaryTitle": {
         "description": "Title on session summary page"
     },
-    "sessionSummarySubtitle": "Your neural pathways have been reinforced. FSRS-6 intervals updated.",
+    "sessionSummarySubtitle": "Great work! Your memory has been reinforced and review dates have been scheduled.",
     "@sessionSummarySubtitle": {
         "description": "Subtitle on session summary page"
     },
@@ -2100,6 +2100,18 @@
     "sessionSummaryReviewAgain": "Review More Decks",
     "@sessionSummaryReviewAgain": {
         "description": "Button to review another deck"
+    },
+    "sessionSummaryDeckConquered": "Deck Conquered! 🏆",
+    "@sessionSummaryDeckConquered": {
+        "description": "Celebratory title when review session retention is high"
+    },
+    "sessionSummaryStudyAgain": "Study Deck Again",
+    "@sessionSummaryStudyAgain": {
+        "description": "Button to restudy or replay the current deck"
+    },
+    "sessionSummaryBrowseDecks": "Browse All Decks",
+    "@sessionSummaryBrowseDecks": {
+        "description": "Button to browse all flashcard decks"
     },
     "syllabotTitle": "Syllabot AI",
     "@syllabotTitle": {
@@ -2567,21 +2579,21 @@
             }
         }
     },
-    "createStudyCircleTitle": "Create Study Circle",
+    "createStudyCircleTitle": "Create Study Pod",
     "@createStudyCircleTitle": {
-        "description": "Header title for creating a study circle"
+        "description": "Header title for creating a study pod"
     },
     "studyCircleMicroPodsSubtitle": "Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.",
     "@studyCircleMicroPodsSubtitle": {
         "description": "Subtitle explaining micro-pod study circles"
     },
-    "circleNameLabel": "Circle Name",
+    "circleNameLabel": "Pod Name",
     "@circleNameLabel": {
-        "description": "Label for circle name input"
+        "description": "Label for pod name input"
     },
     "circleNameHint": "e.g. 2026 JAMB Physics Slayers",
     "@circleNameHint": {
-        "description": "Hint text for circle name input"
+        "description": "Hint text for pod name input"
     },
     "academicTrackLabel": "Academic Track",
     "@academicTrackLabel": {
@@ -2605,7 +2617,7 @@
             }
         }
     },
-    "launchStudyCircleAction": "Launch Study Circle",
+    "launchStudyCircleAction": "Launch Study Pod",
     "@launchStudyCircleAction": {
         "description": "Button to submit and create a study circle"
     },
@@ -3091,7 +3103,7 @@
     "@syncCompletedNotice": {
         "description": "Toast when offline sync queue completes"
     },
-    "predictedRetentionLabel": "Predicted Retention (FSRS-4.5)",
+    "predictedRetentionLabel": "Predicted Memory Retention",
     "@predictedRetentionLabel": {
         "description": "Label for predicted memory retention curve in dashboard chart"
     },
@@ -3099,7 +3111,7 @@
     "@actualRetentionLabel": {
         "description": "Label for actual measured retention curve in dashboard chart"
     },
-    "fsrsModeDescription": "Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling",
+    "fsrsModeDescription": "Smart adaptive scheduling that learns how fast you forget each card to review at the optimal moment",
     "@fsrsModeDescription": {
         "description": "Description of FSRS-6 scheduler"
     },
@@ -3814,7 +3826,7 @@
     "@paywallFeature2Subtitle": {
         "description": "Feature 2 subtitle on paywall"
     },
-    "paywallFeature3Title": "FSRS-6 Spaced Repetition Engine",
+    "paywallFeature3Title": "Smart Spaced Repetition Engine",
     "@paywallFeature3Title": {
         "description": "Feature 3 title on paywall"
     },
@@ -4277,7 +4289,7 @@
     "@welcomeWalkthroughSlide2Desc": {
         "description": "Description for slide 2 of welcome walkthrough"
     },
-    "welcomeWalkthroughSlide3Title": "Adaptive Spaced Repetition (FSRS-6)",
+    "welcomeWalkthroughSlide3Title": "Smart Memory & Spaced Repetition",
     "@welcomeWalkthroughSlide3Title": {
         "description": "Title for slide 3 of welcome walkthrough"
     },

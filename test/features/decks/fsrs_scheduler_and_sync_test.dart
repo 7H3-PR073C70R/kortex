@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/constants/app_env.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
 import 'package:mocktail/mocktail.dart';
@@ -100,6 +101,20 @@ class _FakeUserStorageService implements UserStorageService {
   void clearStorage() {
     token = null;
     refreshToken = null;
+    cachedProfile = null;
+  }
+
+  UserProfileEntity? cachedProfile;
+
+  @override
+  bool hasActiveSession() => token != null && token!.isNotEmpty;
+
+  @override
+  UserProfileEntity? getCachedUserProfile() => cachedProfile;
+
+  @override
+  Future<void> saveUserProfile(UserProfileEntity profile) async {
+    cachedProfile = profile;
   }
 }
 

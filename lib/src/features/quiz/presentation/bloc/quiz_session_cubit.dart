@@ -1,20 +1,28 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
-import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
+import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/logic/millionaire_tiering_engine.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
@@ -835,6 +843,14 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
       }
     }
 
+    // Flush pending FSRS review logs so missed question reviews are persisted immediately
+    try {
+      final queue = _cardSyncQueue;
+      if (queue != null) {
+        await queue.flushPendingLogs();
+      }
+    } on Object catch (_) {}
+
     final result = await _submitQuizUseCase(
       quizTitle: state.quizTitle,
       questions: gradedQuestions,
@@ -848,7 +864,14 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           errorMessage: failure.message,
         ),
       ),
-      (quizResult) {
+      (quizResult) async {
+        // Clear cached feed so Dashboard loads fresh review queue immediately
+        try {
+          if (locator.isRegistered<DashboardRepository>()) {
+            locator<DashboardRepository>().clearFeedCache();
+          }
+        } on Object catch (_) {}
+
         // Telemetry: Mock exam score submission trace & Crashlytics metrics
         try {
           final crashlytics = locator<CrashlyticsService>();
@@ -881,22 +904,79 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
           unawaited(trace.start().then((_) => trace.stop()));
         } on Object catch (_) {}
 
-        // Live UI state refresh for Auth streak, Dashboard, and Pod Focus Minutes
+        // Live UI state refresh for Auth streak, Decks, Dashboard, and Pod Focus Minutes
         try {
-          locator<AuthBloc>().add(const AuthStreakIncremented());
+          if (locator.isRegistered<AuthBloc>()) {
+            locator<AuthBloc>().add(const AuthStreakIncremented());
+          }
         } on Object catch (_) {}
         try {
-          locator<DashboardBloc>().add(const DashboardRefreshed());
+          if (locator.isRegistered<DecksBloc>()) {
+            locator<DecksBloc>().add(const DecksRefreshed());
+          }
         } on Object catch (_) {}
         try {
-          if (quizResult.durationSeconds >= 60 && locator.isRegistered<CommunityRepository>()) {
-            final minutes = quizResult.durationSeconds ~/ 60;
+          if (locator.isRegistered<DashboardBloc>()) {
+            locator<DashboardBloc>().add(const DashboardRefreshed());
+          }
+        } on Object catch (_) {}
+        try {
+          if (locator.isRegistered<UserActivityService>()) {
+            final isPerfect = quizResult.scorePercent >= 100;
+            final isHigh = quizResult.scorePercent >= 80;
+            final bonus = isPerfect ? 100 : (isHigh ? 50 : 0);
             unawaited(
-              locator<CommunityRepository>().recordPodFocusMinutes(
-                circleId: '',
-                minutes: minutes,
+              locator<UserActivityService>().awardXp(
+                XpActivityCategory.quizCompletion,
+                customBaseAmount:
+                    XpActivityCategory.quizCompletion.defaultBaseXp +
+                    (quizResult.correctAnswers * 15) +
+                    bonus,
+                sourceId: quizResult.quizTitle,
+                metadata: {
+                  'quizTitle': quizResult.quizTitle,
+                  'scorePercent': quizResult.scorePercent,
+                  'correctAnswers': quizResult.correctAnswers,
+                },
               ),
             );
+          }
+        } on Object catch (_) {}
+
+        try {
+          if (locator.isRegistered<StudyActivityTracker>()) {
+            final isCbt =
+                state.assessmentMode == AssessmentMode.examSimulationMode;
+            unawaited(
+              locator<StudyActivityTracker>().recordActivityCompletion(
+                durationSeconds: quizResult.durationSeconds,
+                activityType: isCbt ? 'cbt' : 'quiz',
+              ),
+            );
+          }
+        } on Object catch (_) {}
+
+        // Reschedule daily study reminder forward so streak notifications do not fire redundantly today
+        try {
+          if (locator.isRegistered<NotificationService>()) {
+            final notifs = locator<NotificationService>();
+            final storage = locator.isRegistered<LocalStorageService>()
+                ? locator<LocalStorageService>()
+                : null;
+            final raw = storage?.getPreference(key: FsrsUserSettings.storageKey);
+            final settings = raw != null
+                ? FsrsUserSettings.fromJson(
+                    jsonDecode(raw) as Map<String, dynamic>,
+                  )
+                : const FsrsUserSettings();
+            if (settings.remindersEnabled) {
+              unawaited(
+                notifs.scheduleStudyReminder(
+                  hour: settings.preferredReminderHour,
+                  minute: settings.preferredReminderMinute,
+                ),
+              );
+            }
           }
         } on Object catch (_) {}
 

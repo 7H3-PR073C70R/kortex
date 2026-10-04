@@ -417,6 +417,9 @@ void main() {
           durationSeconds: any(named: 'durationSeconds'),
           retentionScore: any(named: 'retentionScore'),
           masteredCards: any(named: 'masteredCards'),
+          activityCategory: any(named: 'activityCategory'),
+          subject: any(named: 'subject'),
+          topicId: any(named: 'topicId'),
         ),
       ).thenAnswer((_) async {});
 
@@ -444,8 +447,11 @@ void main() {
         () => mockUserActivity.recordStudySession(
           cardsReviewed: 1,
           durationSeconds: 60,
-          retentionScore: 1,
+          retentionScore: any(named: 'retentionScore'),
           masteredCards: 1,
+          activityCategory: any(named: 'activityCategory'),
+          subject: any(named: 'subject'),
+          topicId: any(named: 'topicId'),
         ),
       ).called(1);
 

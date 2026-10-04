@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
+import 'package:kortex/src/features/notifications/domain/services/notification_router.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -64,33 +64,12 @@ class NotificationTile extends StatelessWidget {
   }
 
   void _handleNavigation(BuildContext context) {
-    final route = notification.actionRoute?.trim();
-    if (route == null || route.isEmpty) return;
-
-    if (route == '/planner' || route.startsWith('/exam')) {
-      unawaited(context.router.push(const ExamTimetableRoute()));
-      return;
-    }
-    if (route == '/decks') {
-      unawaited(context.router.push(const DecksRoute()));
-      return;
-    }
-    if (route == '/community') {
-      unawaited(context.router.push(const CommunityHubRoute()));
-      return;
-    }
-    if (route == '/past-questions') {
-      unawaited(context.router.push(PastQuestionsBoardRoute()));
-      return;
-    }
-    if (route == '/chat' || route == '/syllabot') {
-      unawaited(context.router.push(SyllabotChatRoute()));
-      return;
-    }
-    if (route == '/dashboard') {
-      context.router.popUntilRoot();
-      return;
-    }
+    unawaited(
+      const NotificationRouter().handleNotificationNavigation(
+        router: context.router,
+        notification: notification,
+      ),
+    );
   }
 
   @override

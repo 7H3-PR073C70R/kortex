@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:auto_route/auto_route.dart';
@@ -10,15 +11,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/domain/entities/course_track_entity.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/bloc/community_state.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/logic/cbt_readiness_calculator.dart';
@@ -36,6 +42,9 @@ import 'package:kortex/src/features/dashboard/presentation/widgets/welcome_walkt
 import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_cubit.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/exam_countdown_banner.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
+import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/create_study_circle_sheet.dart';
+import 'package:kortex/src/features/study_rooms/presentation/widgets/study_circle_detail_sheet.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
@@ -210,11 +219,14 @@ class _DashboardView extends HookWidget {
             bottom: false,
             child: BlocBuilder<DashboardBloc, DashboardState>(
               builder: (context, state) {
-                if (state.isLoading) {
+                // Show full shimmer only on genuine cold-start loading (no
+                // cached data available). Stale-while-revalidate keeps
+                // existing content visible during background refresh.
+                if (state.isLoading && !state.hasDisplayableFeed) {
                   return const _DashboardShimmerLoading();
                 }
 
-                if (state.isError || state.feed == null) {
+                if (state.isError || state.displayFeed == null) {
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -267,7 +279,7 @@ class _DashboardView extends HookWidget {
                   );
                 }
 
-                final feed = state.feed!;
+                final feed = state.displayFeed!;
 
                 return RefreshIndicator(
                   onRefresh: () async {
@@ -441,8 +453,16 @@ class _DashboardShimmerLoading extends StatelessWidget {
         const ShimmerPlaceholder(height: 48, borderRadius: 22),
         const SizedBox(height: 20),
 
-        // 7. Retention Heatmap Skeleton
-        const ShimmerPlaceholder(height: 160, borderRadius: 22),
+        // 7. Pod Pulse / Study Circle Skeleton
+        const ShimmerPlaceholder(height: 168, borderRadius: 18),
+        const SizedBox(height: 20),
+
+        // 8. CBT Readiness Gauge Skeleton — matches widget height of ~200px
+        const ShimmerPlaceholder(height: 200, borderRadius: 18),
+        const SizedBox(height: 20),
+
+        // 9. Retention Heatmap + Study Matrix Skeleton — full widget height
+        const ShimmerPlaceholder(height: 260, borderRadius: 18),
       ],
     );
   }
@@ -478,9 +498,13 @@ class _CompactDashboardLayout extends StatelessWidget {
           <Widget>[
                 // 1. User Profile Header (Identity & Streak Anchor)
                 HeaderProfileBar(
-                  key: AppTourKeys.headerProfileKey,
+                  key: AppTourKeys.headerProfileKey = AppTourKeys.safeKey(
+                    AppTourKeys.headerProfileKey,
+                    'tour_header_profile',
+                  ),
                   analytics: feed.analyticsSummary,
-                  isProfileUncalibrated: feed.isProfileUncalibrated,
+                  isProfileUncalibrated:
+                      feed.isProfileUncalibratedFor(targetTrack),
                   userName: userName,
                   userPhotoUrl: userPhotoUrl,
                 ),
@@ -500,7 +524,12 @@ class _CompactDashboardLayout extends StatelessWidget {
                   child: Column(
                     children: [
                       if (feed.curatedCourses.isNotEmpty) ...[
-                        ExamCountdownBanner(key: AppTourKeys.countdownKey),
+                        ExamCountdownBanner(
+                          key: AppTourKeys.countdownKey = AppTourKeys.safeKey(
+                            AppTourKeys.countdownKey,
+                            'tour_countdown',
+                          ),
+                        ),
                         const SizedBox(height: 16),
                       ],
                       if (heavyDebtDeck != null) ...[
@@ -513,14 +542,22 @@ class _CompactDashboardLayout extends StatelessWidget {
 
                 // 3. Daily Recall Status Banner ("All caught up!" / due-cards state)
                 _DailyRecallStatusBanner(
-                  key: AppTourKeys.reviewQueueKey,
+                  key: AppTourKeys.reviewQueueKey = AppTourKeys.safeKey(
+                    AppTourKeys.reviewQueueKey,
+                    'tour_review_queue',
+                  ),
                   feed: feed,
                 ),
 
                 const SizedBox(height: 16),
 
                 // 4. Quick Actions Grid (Upload Notes | Q-Bank | 1v1 Duel | New Deck)
-                _QuickActionsGrid(key: AppTourKeys.quickActionsKey),
+                _QuickActionsGrid(
+                  key: AppTourKeys.quickActionsKey = AppTourKeys.safeKey(
+                    AppTourKeys.quickActionsKey,
+                    'tour_quick_actions',
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // 5. Curated Course Repositories
@@ -537,39 +574,140 @@ class _CompactDashboardLayout extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // 7. CBT Readiness Score Progress Gauge
-                CbtReadinessGaugeCard(
-                  readinessResult: const CbtReadinessCalculator().compute(
-                    syllabusCoverage:
-                        (feed.analyticsSummary.overallRetentionRate * 0.95)
-                            .clamp(0.0, 1.0),
-                    fsrsRetentionRate:
-                        feed.analyticsSummary.overallRetentionRate,
-                    mockScoreRatio:
-                        (feed.analyticsSummary.overallRetentionRate * 0.90)
-                            .clamp(0.0, 1.0),
-                    daysRemaining: 14,
-                  ),
-                  examTitle: (targetTrack ?? '').trim().isNotEmpty
-                      ? targetTrack!
-                      : 'Standardized CBT Track',
-                  daysRemaining: 14,
+                DashboardCbtReadinessGaugeCard(
+                  feed: feed,
+                  targetTrack: targetTrack,
                 ),
                 const SizedBox(height: 16),
 
                 // 8. Retention Heat Map & Mastery Stats
                 RetentionHeatMapWidget(analytics: feed.analyticsSummary),
               ]
-              .animate(interval: 80.ms)
-              .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-              .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+              // 50ms stagger — reduces last-item entrance delay from 560ms
+              // to 350ms. Subtler slideY also feels snappier on mobile.
+              .animate(interval: 50.ms)
+              .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint),
     );
   }
 }
 
+/// Dynamic CBT Readiness Score Gauge Card for the executive dashboard.
+/// Resolves real days remaining from CramPlannerCubit or track defaults,
+/// maps academic tracks to their proper archetypes and labels, and computes comprehensive readiness.
+class DashboardCbtReadinessGaugeCard extends StatelessWidget {
+  const DashboardCbtReadinessGaugeCard({
+    required this.feed,
+    this.targetTrack,
+    super.key,
+  });
+
+  final DashboardFeedEntity feed;
+  final String? targetTrack;
+
+  @override
+  Widget build(BuildContext context) {
+    final plannerState = context.watch<CramPlannerCubit>().state;
+    final selectedExam = plannerState.selectedExam;
+    final upcomingExams = plannerState.upcomingUncompletedExams;
+
+    // Resolve accurate days remaining dynamically from real planner state or track default
+    final int effectiveDaysRemaining;
+    if (selectedExam != null) {
+      effectiveDaysRemaining = selectedExam.daysRemaining;
+    } else if (upcomingExams.isNotEmpty) {
+      effectiveDaysRemaining = upcomingExams
+          .map((e) => e.daysRemaining)
+          .reduce(math.min);
+    } else {
+      final defaultTrackMatch = CourseTrackEntity.defaultTracks
+          .where(
+            (t) =>
+                t.id.toLowerCase() == (targetTrack ?? '').toLowerCase() ||
+                (targetTrack != null &&
+                    t.name.toLowerCase().contains(targetTrack!.toLowerCase())),
+          )
+          .firstOrNull;
+      effectiveDaysRemaining = defaultTrackMatch?.examCountdownDays ?? 45;
+    }
+
+    // Resolve human-readable exam title
+    final String effectiveExamTitle;
+    if (selectedExam != null && selectedExam.examName.trim().isNotEmpty) {
+      effectiveExamTitle = selectedExam.examName.trim();
+    } else if (targetTrack != null && targetTrack!.trim().isNotEmpty) {
+      final match = CourseTrackEntity.defaultTracks
+          .where(
+            (t) =>
+                t.id.toLowerCase() == targetTrack!.toLowerCase() ||
+                t.name.toLowerCase().contains(targetTrack!.toLowerCase()),
+          )
+          .firstOrNull;
+      effectiveExamTitle = match != null ? match.name : targetTrack!.trim();
+    } else {
+      effectiveExamTitle = 'Standardized CBT Track';
+    }
+
+    final effectiveExamType = (selectedExam != null && selectedExam.subjectTrack.isNotEmpty)
+        ? selectedExam.subjectTrack
+        : (targetTrack ?? 'JAMB');
+
+    // Real syllabus coverage average from curated courses if present
+    final double realSyllabusCoverage;
+    if (feed.curatedCourses.isNotEmpty) {
+      final total = feed.curatedCourses.fold<double>(
+        0,
+        (sum, c) => sum + c.syllabusCoverage.clamp(0.0, 1.0),
+      );
+      realSyllabusCoverage = (total / feed.curatedCourses.length).clamp(0.0, 1.0);
+    } else {
+      realSyllabusCoverage = 0.0;
+    }
+
+    var subjectAccuracies = const <String, double>{};
+    var subjectRetentions = const <String, double>{};
+    var realMockScoreRatio = 0.0;
+
+    try {
+      if (locator.isRegistered<UserActivityService>()) {
+        final activityService = locator<UserActivityService>();
+        final metrics = activityService.getQuizPerformanceMetrics();
+        subjectAccuracies = metrics.subjectAccuracies;
+        subjectRetentions = metrics.subjectRetentions;
+        if (metrics.totalQuizSessions > 0) {
+          realMockScoreRatio = metrics.overallMockAccuracy;
+        } else if (feed.analyticsSummary.overallRetentionRate > 0.0) {
+          // If student has card retention data from flashcards, use as baseline
+          realMockScoreRatio = feed.analyticsSummary.overallRetentionRate;
+        }
+      }
+    } on Object catch (_) {}
+
+    final readinessResult = const CbtReadinessCalculator().compute(
+      syllabusCoverage: realSyllabusCoverage,
+      fsrsRetentionRate: feed.analyticsSummary.overallRetentionRate,
+      mockScoreRatio: realMockScoreRatio,
+      daysRemaining: effectiveDaysRemaining,
+      registeredCourses: feed.curatedCourses,
+      examType: effectiveExamType,
+      subjectAccuracies: subjectAccuracies,
+      subjectRetentions: subjectRetentions,
+    );
+
+    return CbtReadinessGaugeCard(
+      readinessResult: readinessResult,
+      examTitle: effectiveExamTitle,
+      daysRemaining: effectiveDaysRemaining,
+    );
+  }
+}
+
+typedef _DailyRecallStatusBanner = DailyRecallStatusBanner;
+
 /// Glass "All caught up! SYNCED" banner — mirrors the Stitch DailyStatusRecallBanner.
-/// Shows due-card count + deck title when reviews are pending.
-class _DailyRecallStatusBanner extends StatelessWidget {
-  const _DailyRecallStatusBanner({required this.feed, super.key});
+/// Shows due-card count + deck title when reviews are pending, and is 1-tap actionable.
+class DailyRecallStatusBanner extends StatelessWidget {
+  const DailyRecallStatusBanner({required this.feed, super.key});
 
   final DashboardFeedEntity feed;
 
@@ -589,126 +727,198 @@ class _DailyRecallStatusBanner extends StatelessWidget {
     final accent400 = hasDueCards ? neural.amber400 : neural.emerald400;
     final accent300 = hasDueCards ? neural.amber300 : neural.emerald300;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: neural.glassPanel,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: accent.withAlpha(77)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: accent.withAlpha(51),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: accent400.withAlpha(77)),
-                    ),
-                    child: Icon(
-                      hasDueCards
-                          ? Icons.hourglass_top_rounded
-                          : Icons.check_circle_rounded,
-                      color: accent400,
-                      size: 20,
-                    ),
+    return Semantics(
+      button: true,
+      label: hasDueCards
+          ? '${l10n.dashboardDueCount(topDueDeck!.dueCards)}. ${l10n.dashboardReviewDeck}. ${topDueDeck.title}.'
+          : '${l10n.allCaughtUpTitle}. ${l10n.allCaughtUpSubtitle}.',
+      child: PlatformHoverBuilder(
+        builder: (context, isHovered, _) {
+          return ShrinkableButton(
+            onTap: () {
+              AppFeedback.selection();
+              if (hasDueCards && topDueDeck != null) {
+                unawaited(
+                  context.router.push(
+                    StudySessionRoute(deckId: topDueDeck.id),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                hasDueCards
-                                    ? l10n.dashboardDueCount(
-                                        topDueDeck!.dueCards,
-                                      )
-                                    : l10n.allCaughtUpTitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: typography.callout.bold.copyWith(
-                                  color: neural.slate100,
-                                  fontSize: 14,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: accent.withAlpha(51),
-                                borderRadius: BorderRadius.circular(99),
-                                border: Border.all(
-                                  color: accent.withAlpha(77),
-                                ),
-                              ),
-                              child: Text(
-                                hasDueCards
-                                    ? l10n.dashboardReviewDeck.toUpperCase()
-                                    : 'SYNCED',
-                                style: typography.caption.bold.copyWith(
-                                  color: accent300,
-                                  fontSize: 10,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                          ],
+                );
+              } else {
+                try {
+                  AutoTabsRouter.of(context).setActiveIndex(1);
+                } on Object catch (_) {
+                  unawaited(context.router.push(const DecksRoute()));
+                }
+              }
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? neural.glassPanel.withAlpha(240)
+                            : neural.glassPanel,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isHovered
+                              ? accent.withAlpha(160)
+                              : accent.withAlpha(77),
+                          width: isHovered ? 1.5 : 1.0,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          hasDueCards
-                              ? topDueDeck!.title
-                              : l10n.allCaughtUpSubtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: typography.caption.regular.copyWith(
-                            color: neural.slate300.withAlpha(204),
-                            fontSize: 12,
-                            height: 1.6,
+                        boxShadow: [
+                          if (isHovered)
+                            BoxShadow(
+                              color: accent.withAlpha(40),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: accent.withAlpha(51),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: accent400.withAlpha(77),
+                              ),
+                            ),
+                            child: Icon(
+                              hasDueCards
+                                  ? Icons.hourglass_top_rounded
+                                  : Icons.check_circle_rounded,
+                              color: accent400,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        hasDueCards
+                                            ? l10n.dashboardDueCount(
+                                                topDueDeck!.dueCards,
+                                              )
+                                            : l10n.allCaughtUpTitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: typography.callout.bold.copyWith(
+                                          color: neural.slate100,
+                                          fontSize: 14,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: accent.withAlpha(51),
+                                        borderRadius: BorderRadius.circular(99),
+                                        border: Border.all(
+                                          color: accent.withAlpha(77),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        hasDueCards
+                                            ? l10n.dashboardReviewDeck
+                                                .toUpperCase()
+                                            : 'SYNCED',
+                                        style: typography.caption.bold.copyWith(
+                                          color: accent300,
+                                          fontSize: 10,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  hasDueCards
+                                      ? topDueDeck!.title
+                                      : l10n.allCaughtUpSubtitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: typography.caption.regular.copyWith(
+                                    color: neural.slate300.withAlpha(204),
+                                    fontSize: 12,
+                                    height: 1.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          AnimatedSlide(
+                            duration: AppMotion.snappy,
+                            offset: isHovered
+                                ? const Offset(0.12, 0)
+                                : Offset.zero,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: accent.withAlpha(isHovered ? 45 : 25),
+                              ),
+                              child: Icon(
+                                Icons.chevron_right_rounded,
+                                color: isHovered
+                                    ? accent300
+                                    : accent400.withAlpha(200),
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Ambient accent lighting glow (top-right, clipped by panel)
+                    Positioned(
+                      right: -32,
+                      top: -32,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                accent.withAlpha(isHovered ? 60 : 38),
+                                accent.withAlpha(0),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            // Ambient accent lighting glow (top-right, clipped by panel)
-            Positioned(
-              right: -32,
-              top: -32,
-              child: IgnorePointer(
-                child: Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [accent.withAlpha(38), accent.withAlpha(0)],
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -801,15 +1011,7 @@ class _QuickActionsGrid extends StatelessWidget {
                     accent: neural.violet,
                     onTap: () {
                       AppFeedback.light();
-                      try {
-                        AutoTabsRouter.of(context).setActiveIndex(1);
-                      } on Object catch (_) {
-                        unawaited(
-                          context.navigateTo(
-                            const MainRoute(children: [DecksRoute()]),
-                          ),
-                        );
-                      }
+                      AppTabNavigation.navigateTo(context, AppMainTab.decks);
                     },
                   ),
                 ),
@@ -1168,7 +1370,8 @@ class _MediumDashboardLayout extends StatelessWidget {
           <Widget>[
                 HeaderProfileBar(
                   analytics: feed.analyticsSummary,
-                  isProfileUncalibrated: feed.isProfileUncalibrated,
+                  isProfileUncalibrated:
+                      feed.isProfileUncalibratedFor(targetTrack),
                   userName: userName,
                   userPhotoUrl: userPhotoUrl,
                 ),
@@ -1207,11 +1410,13 @@ class _MediumDashboardLayout extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left Column (Core Learning & Curriculum - flex 6)
+                    // Left Column (Quick Actions, Active Recall, Curated Courses & Cohort Pulse)
                     Expanded(
-                      flex: 6,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const QuickActionSpeedDial(),
+                          const SizedBox(height: 20),
                           if (feed.dueStudyDecks.isNotEmpty)
                             FsrsReviewDeckCard(
                               deck: feed.dueStudyDecks.first,
@@ -1248,19 +1453,22 @@ class _MediumDashboardLayout extends StatelessWidget {
                           else
                             _EmptyCoursesCard(l10n: context.l10n),
                           const SizedBox(height: 20),
-                          const QuickActionSpeedDial(),
+                          _StudyCirclePodPulseCard(
+                            targetTrack: targetTrack,
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 20),
 
-                    // Right Column (Social Cohort & Analytics - flex 4)
+                    // Right Column (CBT Readiness & Retention Analytics)
                     Expanded(
-                      flex: 4,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children:
                             [
-                                  _StudyCirclePodPulseCard(
+                                  DashboardCbtReadinessGaugeCard(
+                                    feed: feed,
                                     targetTrack: targetTrack,
                                   ),
                                   const SizedBox(height: 20),
@@ -1268,13 +1476,13 @@ class _MediumDashboardLayout extends StatelessWidget {
                                     analytics: feed.analyticsSummary,
                                   ),
                                 ]
-                                .animate(interval: 80.ms)
+                                .animate(interval: 50.ms)
                                 .fadeIn(
-                                  duration: 400.ms,
+                                  duration: 380.ms,
                                   curve: Curves.easeOutCubic,
                                 )
                                 .slideY(
-                                  begin: 0.05,
+                                  begin: 0.04,
                                   end: 0,
                                   curve: Curves.easeOutQuint,
                                 ),
@@ -1283,9 +1491,9 @@ class _MediumDashboardLayout extends StatelessWidget {
                   ],
                 ),
               ]
-              .animate(interval: 80.ms)
-              .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-              .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+              .animate(interval: 50.ms)
+              .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
+              .slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint),
     );
   }
 }
@@ -1323,7 +1531,8 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     // 1. Identity & Retention Anchor Header
                     HeaderProfileBar(
                       analytics: feed.analyticsSummary,
-                      isProfileUncalibrated: feed.isProfileUncalibrated,
+                      isProfileUncalibrated:
+                          feed.isProfileUncalibratedFor(targetTrack),
                       userName: userName,
                       userPhotoUrl: userPhotoUrl,
                     ),
@@ -1358,13 +1567,15 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Primary Focus Workstation Column (flex: 7)
+                        // Left Workstation Column (Quick Actions, Active Recall, Curated Courses & Cohort Pulse)
                         Expanded(
-                          flex: 7,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children:
                                 [
+                                      const QuickActionSpeedDial(),
+                                      const SizedBox(height: 20),
+
                                       // 1-Tap Sprint Tile
                                       if (feed.dueStudyDecks.any(
                                         (d) => d.totalCards > 0,
@@ -1406,14 +1617,20 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                         )
                                       else
                                         _EmptyCoursesCard(l10n: context.l10n),
+                                      const SizedBox(height: 20),
+
+                                      // Real-time Cohort Presence
+                                      _StudyCirclePodPulseCard(
+                                        targetTrack: targetTrack,
+                                      ),
                                     ]
-                                    .animate(interval: 80.ms)
+                                    .animate(interval: 50.ms)
                                     .fadeIn(
-                                      duration: 400.ms,
+                                      duration: 380.ms,
                                       curve: Curves.easeOutCubic,
                                     )
                                     .slideY(
-                                      begin: 0.05,
+                                      begin: 0.04,
                                       end: 0,
                                       curve: Curves.easeOutQuint,
                                     ),
@@ -1421,15 +1638,15 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                         ),
                         const SizedBox(width: 24),
 
-                        // Workstation Telemetry & Toolbox Column (flex: 5)
+                        // Right Workstation Column (CBT Telemetry & Retention Heatmap)
                         Expanded(
-                          flex: 5,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children:
                                 [
-                                      // Real-time Cohort Presence
-                                      _StudyCirclePodPulseCard(
+                                      // CBT Readiness Score Progress Gauge
+                                      DashboardCbtReadinessGaugeCard(
+                                        feed: feed,
                                         targetTrack: targetTrack,
                                       ),
                                       const SizedBox(height: 20),
@@ -1438,18 +1655,14 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                                       RetentionHeatMapWidget(
                                         analytics: feed.analyticsSummary,
                                       ),
-                                      const SizedBox(height: 20),
-
-                                      // Speed Dial / Action Toolbox
-                                      const QuickActionSpeedDial(),
                                     ]
-                                    .animate(interval: 80.ms)
+                                    .animate(interval: 50.ms)
                                     .fadeIn(
-                                      duration: 400.ms,
+                                      duration: 380.ms,
                                       curve: Curves.easeOutCubic,
                                     )
                                     .slideY(
-                                      begin: 0.05,
+                                      begin: 0.04,
                                       end: 0,
                                       curve: Curves.easeOutQuint,
                                     ),
@@ -1458,9 +1671,9 @@ class _ExpandedDashboardLayout extends StatelessWidget {
                       ],
                     ),
                   ]
-                  .animate(interval: 80.ms)
-                  .fadeIn(duration: 400.ms, curve: Curves.easeOutCubic)
-                  .slideY(begin: 0.05, end: 0, curve: Curves.easeOutQuint),
+                  .animate(interval: 50.ms)
+                  .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
+                  .slideY(begin: 0.04, end: 0, curve: Curves.easeOutQuint),
         ),
       ),
     );
@@ -1675,146 +1888,660 @@ class _NextBestActionCard extends StatelessWidget {
 }
 
 /// Real-time cohort accountability and peer co-presence indicator
-class _StudyCirclePodPulseCard extends StatelessWidget {
+class _StudyCirclePodPulseCard extends StatefulWidget {
   const _StudyCirclePodPulseCard({this.targetTrack});
 
   final String? targetTrack;
+
+  @override
+  State<_StudyCirclePodPulseCard> createState() =>
+      _StudyCirclePodPulseCardState();
+}
+
+class _StudyCirclePodPulseCardState extends State<_StudyCirclePodPulseCard> {
+  CommunityHubBloc? _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    if (locator.isRegistered<CommunityHubBloc>()) {
+      _bloc = locator<CommunityHubBloc>();
+      if (_bloc!.state.status == CommunityStatus.initial) {
+        _bloc!.add(const LoadCommunityHubEvent());
+      } else if (_bloc!.state.studyCircles.isEmpty) {
+        _bloc!.add(const LoadStudyCirclesEvent());
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final neural = context.neural;
     final typography = context.typography;
     final l10n = context.l10n;
+    final targetTrack = widget.targetTrack;
 
-    final trackLabel = (targetTrack != null && targetTrack!.trim().isNotEmpty)
-        ? l10n.podSuffix(targetTrack!)
-        : l10n.studyCirclePod;
+    final trackLabel = (targetTrack != null && targetTrack.trim().isNotEmpty)
+        ? targetTrack.trim()
+        : 'All Tracks';
+
+    final communityBloc = _bloc ??
+        (locator.isRegistered<CommunityHubBloc>()
+            ? locator<CommunityHubBloc>()
+            : null);
 
     final activityService = locator.isRegistered<UserActivityService>()
         ? locator<UserActivityService>()
         : null;
-    final weeklyMinutes = activityService?.getWeeklyMinutesStudied() ?? 0;
     final userXp = activityService?.getXpPoints() ?? 0;
 
-    var activeMembers = 1;
-    var maxMembers = 6;
-    try {
-      if (locator.isRegistered<CommunityHubBloc>()) {
-        final circles = locator<CommunityHubBloc>().state.studyCircles;
-        if (circles.isNotEmpty) {
-          activeMembers = circles.first.memberCount;
-          maxMembers = circles.first.maxMembers;
-        }
+    Widget contentBuilder(CommunityState state) {
+      final allCircles = state.studyCircles;
+      final effectiveTrack = targetTrack?.trim();
+      final trackCircles = (effectiveTrack != null &&
+              effectiveTrack.isNotEmpty &&
+              effectiveTrack != 'All Tracks' &&
+              effectiveTrack != 'All')
+          ? allCircles
+              .where(
+                (c) => c.track.toLowerCase() == effectiveTrack.toLowerCase(),
+              )
+              .toList()
+          : allCircles;
+
+      final joinedCircles =
+          allCircles.where((c) => c.isCurrentUserMember).toList();
+      final combinedMap = <String, StudyCircleEntity>{};
+      for (final c in joinedCircles) {
+        combinedMap[c.id] = c;
       }
-    } on Object catch (_) {}
+      for (final c in trackCircles) {
+        combinedMap[c.id] = c;
+      }
+      final combined = combinedMap.values.toList();
 
-    final activeStr = '$activeMembers/$maxMembers';
-    final minutesStr = weeklyMinutes > 0 ? '${weeklyMinutes}m' : '0m';
-    final karmaStr = '+$userXp';
+      final circles = combined.isNotEmpty ? combined : allCircles;
 
-    return PlatformHoverBuilder(
-      builder: (context, isHovered, _) {
-        return ShrinkableButton(
-          onTap: () {
-            unawaited(HapticFeedback.lightImpact());
-            unawaited(context.navigateTo(const CommunityHubRoute()));
-          },
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: AnimatedContainer(
-                duration: AppMotion.snappy,
-                curve: AppMotion.easeOutCubic,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: neural.glassPanel,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isHovered
-                        ? neural.emerald.withAlpha(51)
-                        : neural.hairline,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header: live dot + POD PULSE + pod link
-                    Container(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: neural.hairlineSoft),
+      final totalActiveScholars = state.totalActiveScholars > 0
+          ? state.totalActiveScholars
+          : (circles.isNotEmpty ? circles.first.effectiveMemberCount : 1);
+
+      final totalFocusMinutes = state.totalGroupFocusMinutes > 0
+          ? state.totalGroupFocusMinutes
+          : (activityService?.getWeeklyMinutesStudied() ?? 0);
+
+      final activeStr = '$totalActiveScholars Online';
+      final minutesStr = '${totalFocusMinutes}m';
+      final karmaStr = '+$userXp';
+
+      return Container(
+        decoration: BoxDecoration(
+          color: neural.glassPanel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: neural.hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Bar: Pulse Beacon + POD PULSE + Live Tag + Track + View All
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      AppPulsingBeacon(
+                        color: neural.emerald,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.podPulseTitle,
+                        style: typography.caption.bold.copyWith(
+                          color: neural.emerald400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.6,
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: neural.emerald.withAlpha(38),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: neural.emerald.withAlpha(77),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: neural.emerald,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'LIVE SYNC',
+                              style: typography.caption.bold.copyWith(
+                                color: neural.emerald400,
+                                fontSize: 9,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      InkWell(
+                        onTap: () {
+                          unawaited(HapticFeedback.lightImpact());
+                          AppTabNavigation.navigateTo(context, AppMainTab.forum);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                trackLabel,
+                                style: typography.caption.medium.copyWith(
+                                  color: neural.slate300,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 14,
+                                color: neural.slate400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Metrics Summary Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _PodMetricChip(
+                          icon: Icons.groups_rounded,
+                          iconColor: neural.emerald400,
+                          value: activeStr,
+                          label: l10n.activeToday,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _PodMetricChip(
+                          icon: Icons.timer_outlined,
+                          iconColor: neural.amber400,
+                          value: minutesStr,
+                          label: l10n.groupFocus,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _PodMetricChip(
+                          icon: Icons.bolt_rounded,
+                          iconColor: neural.cyan400,
+                          value: karmaStr,
+                          valueColor: neural.cyan300,
+                          label: l10n.podKarma,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Available Pods Cards Section
+            Divider(height: 1, color: neural.hairlineSoft),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'AVAILABLE STUDY PODS',
+                    style: typography.caption.bold.copyWith(
+                      color: neural.slate400,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: neural.obsidian800,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${circles.length}',
+                      style: typography.caption.bold.copyWith(
+                        color: neural.slate200,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  ShrinkableButton(
+                    onTap: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      unawaited(
+                        CreateStudyCircleSheet.show(
+                          context,
+                          initialTrack: targetTrack ?? 'General',
+                          onSubmit: ({
+                            required name,
+                            required track,
+                            required targetWeeklyMinutes,
+                          }) {
+                            if (communityBloc != null) {
+                              communityBloc.add(
+                                CreateStudyCircleEvent(
+                                  name: name,
+                                  track: track,
+                                  targetWeeklyMinutes: targetWeeklyMinutes,
+                                ),
+                              );
+                              context.showSnackBar(
+                                message:
+                                    'Study Pod "$name" created successfully!',
+                              );
+                            }
+                          },
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       child: Row(
                         children: [
-                          AppPulsingBeacon(
-                            color: neural.emerald,
-                            pulseSpread: 5,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.podPulseTitle,
-                            style: typography.caption.bold.copyWith(
-                              color: neural.emerald400,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.6,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            trackLabel,
-                            style: typography.caption.medium.copyWith(
-                              color: neural.slate300,
-                              fontSize: 12,
-                            ),
+                          Icon(
+                            Icons.add_rounded,
+                            size: 14,
+                            color: neural.emerald400,
                           ),
                           const SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: 14,
-                            color: neural.slate400,
+                          Text(
+                            'Create Pod',
+                            style: typography.caption.bold.copyWith(
+                              color: neural.emerald400,
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                ],
+              ),
+            ),
+
+            if (circles.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.groups_outlined,
+                        size: 28,
+                        color: neural.slate400,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'No live pods for $trackLabel yet',
+                        style: typography.caption.medium.copyWith(
+                          color: neural.slate400,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ShrinkableButton(
+                        onTap: () {
+                          unawaited(
+                            CreateStudyCircleSheet.show(
+                              context,
+                              initialTrack: targetTrack ?? 'General',
+                              onSubmit: ({
+                                required name,
+                                required track,
+                                required targetWeeklyMinutes,
+                              }) {
+                                if (communityBloc != null) {
+                                  communityBloc.add(
+                                    CreateStudyCircleEvent(
+                                      name: name,
+                                      track: track,
+                                      targetWeeklyMinutes: targetWeeklyMinutes,
+                                    ),
+                                  );
+                                  context.showSnackBar(
+                                    message:
+                                        'Study Pod "$name" created successfully!',
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: neural.emerald.withAlpha(30),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: neural.emerald.withAlpha(77),
+                            ),
+                          ),
+                          child: Text(
+                            'Start a Pod Sprint',
+                            style: typography.caption.bold.copyWith(
+                              color: neural.emerald400,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: 128,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: circles.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 10),
+                  itemBuilder: (context, index) {
+                    final circle = circles[index];
+                    return _PodPulseCardItem(
+                      circle: circle,
+                      onTap: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        if (communityBloc != null) {
+                          unawaited(
+                            StudyCircleDetailSheet.show(
+                              context,
+                              circle,
+                              bloc: communityBloc,
+                            ),
+                          );
+                        }
+                      },
+                      onJoin: () {
+                        unawaited(HapticFeedback.mediumImpact());
+                        if (communityBloc != null) {
+                          communityBloc.add(JoinStudyCircleEvent(circle.id));
+                          context.showSnackBar(
+                            message:
+                                'Joined ${circle.name}! Welcome to the Pod.',
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
+    }
+
+    if (communityBloc != null) {
+      return BlocBuilder<CommunityHubBloc, CommunityState>(
+        bloc: communityBloc,
+        builder: (context, state) => contentBuilder(state),
+      );
+    }
+
+    return contentBuilder(const CommunityState());
+  }
+}
+
+class _PodPulseCardItem extends StatelessWidget {
+  const _PodPulseCardItem({
+    required this.circle,
+    required this.onTap,
+    required this.onJoin,
+  });
+
+  final StudyCircleEntity circle;
+  final VoidCallback onTap;
+  final VoidCallback onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    final neural = context.neural;
+    final typography = context.typography;
+
+    final isJoined = circle.isCurrentUserMember;
+    final isFull = circle.isFull;
+    final memberCount = circle.effectiveMemberCount;
+    final maxMembers = circle.maxMembers;
+    final progress = circle.weeklyProgressPercent;
+
+    return PlatformHoverBuilder(
+      builder: (context, isHovered, _) {
+        return ShrinkableButton(
+          onTap: onTap,
+          child: Container(
+            width: 220,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: neural.obsidian850.withAlpha(200),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isJoined
+                    ? neural.emerald.withAlpha(128)
+                    : (isHovered
+                        ? neural.emerald.withAlpha(77)
+                        : neural.hairlineSoft),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        circle.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.caption.bold.copyWith(
+                          color: neural.slate100,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isJoined
+                            ? neural.emerald.withAlpha(38)
+                            : (isFull
+                                ? neural.amber400.withAlpha(25)
+                                : neural.cyan.withAlpha(25)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isJoined
+                            ? 'JOINED'
+                            : (isFull ? 'FULL' : '$memberCount/$maxMembers'),
+                        style: typography.caption.bold.copyWith(
+                          color: isJoined
+                              ? neural.emerald400
+                              : (isFull
+                                  ? neural.amber400
+                                  : neural.cyan300),
+                          fontSize: 9,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  circle.podQuest,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.caption.medium.copyWith(
+                    color: neural.slate400,
+                    fontSize: 10,
+                  ),
+                ),
+
+                // Weekly Goal Progress Bar
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: _PodMetricChip(
-                            icon: Icons.group_rounded,
-                            iconColor: neural.emerald400,
-                            value: activeStr,
-                            label: l10n.activeToday,
+                        Text(
+                          'Weekly Sprint',
+                          style: typography.caption.medium.copyWith(
+                            color: neural.slate400,
+                            fontSize: 9,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _PodMetricChip(
-                            icon: Icons.timer_outlined,
-                            iconColor: neural.amber400,
-                            value: minutesStr,
-                            label: l10n.groupFocus,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _PodMetricChip(
-                            icon: Icons.bolt_rounded,
-                            iconColor: neural.cyan400,
-                            value: karmaStr,
-                            valueColor: neural.cyan300,
-                            label: l10n.podKarma,
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: typography.caption.bold.copyWith(
+                            color: neural.emerald400,
+                            fontSize: 9,
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 3),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 4,
+                        backgroundColor: neural.obsidian800,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          neural.emerald400,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
+
+                // Bottom row: Member Avatars / Action Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Member Avatar Stack
+                    Row(
+                      children: [
+                        for (var i = 0;
+                            i < (circle.members.length.clamp(0, 3));
+                            i++)
+                          Align(
+                            widthFactor: 0.6,
+                            child: CircleAvatar(
+                              radius: 9,
+                              backgroundColor: neural.emerald.withAlpha(200),
+                              child: Text(
+                                circle.members[i].userName.isNotEmpty
+                                    ? circle.members[i].userName[0].toUpperCase()
+                                    : 'S',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (circle.members.isEmpty)
+                          CircleAvatar(
+                            radius: 9,
+                            backgroundColor: neural.emerald.withAlpha(200),
+                            child: const Text(
+                              'P',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (!isJoined && !isFull)
+                      ShrinkableButton(
+                        onTap: onJoin,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: neural.emerald.withAlpha(38),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: neural.emerald.withAlpha(102),
+                            ),
+                          ),
+                          child: Text(
+                            'Join Pod',
+                            style: typography.caption.bold.copyWith(
+                              color: neural.emerald400,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Text(
+                        isJoined ? 'Tap details' : 'Pod Full',
+                        style: typography.caption.medium.copyWith(
+                          color: neural.slate400,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
         );

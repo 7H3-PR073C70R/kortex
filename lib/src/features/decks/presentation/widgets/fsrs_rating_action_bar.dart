@@ -103,7 +103,16 @@ class FsrsRatingActionBar extends StatelessWidget {
                           return ShrinkableButton(
                             key: ValueKey('fsrs_rating_${b.rating.name}'),
                             onTap: () {
-                              unawaited(HapticFeedback.mediumImpact());
+                              switch (b.rating) {
+                                case FsrsRating.again:
+                                  unawaited(HapticFeedback.heavyImpact());
+                                case FsrsRating.hard:
+                                  unawaited(HapticFeedback.mediumImpact());
+                                case FsrsRating.good:
+                                  unawaited(HapticFeedback.lightImpact());
+                                case FsrsRating.easy:
+                                  unawaited(HapticFeedback.selectionClick());
+                              }
                               onRateRating(b.rating);
                             },
                             child: AnimatedContainer(
@@ -146,19 +155,29 @@ class FsrsRatingActionBar extends StatelessWidget {
                                       fontSize: 14,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 4),
 
-                                  // Predicted next interval — state-driven,
-                                  // falls back to the static default labels.
-                                  Text(
-                                    preview ??
-                                        _fallbackPreview(context, b.rating),
-                                    style: typography.caption.bold.copyWith(
-                                      color: b.color,
-                                      fontSize: 11,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures(),
-                                      ],
+                                  // High-contrast Predicted Next Interval Pill
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: b.color.withAlpha(isDark ? 60 : 40),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      preview ??
+                                          _fallbackPreview(context, b.rating),
+                                      style: typography.caption.bold.copyWith(
+                                        color: isDark ? colors.white : b.color,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 3),

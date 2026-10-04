@@ -25,8 +25,41 @@ class RetentionHeatMapWidget extends StatefulWidget {
   State<RetentionHeatMapWidget> createState() => _RetentionHeatMapWidgetState();
 }
 
-class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
+class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget>
+    with SingleTickerProviderStateMixin {
   HeatMapDayEntity? _selectedDay;
+
+  late final AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set up wave-entrance animation for the 28 heatmap cells.
+    _waveController = AnimationController(
+      vsync: this,
+      // 28 cells x 30ms stagger + 200ms base = ~1040ms total wave.
+      duration: const Duration(milliseconds: 1040),
+    );
+    // Short delay so the outer container fade-in completes first.
+    unawaited(
+      Future<void>.delayed(const Duration(milliseconds: 120), () {
+        if (mounted) unawaited(_waveController.forward());
+      }),
+    );
+
+    // Default selection: today's entry, or the most recent available.
+    final now = DateTime.now();
+    final normalized = _getNormalized28Days(widget.analytics.heatMapData);
+    final todayMatch =
+        normalized.where((d) => _isSameDay(d.date, now)).firstOrNull;
+    _selectedDay = todayMatch ?? normalized.lastOrNull;
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
+  }
 
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
@@ -78,17 +111,7 @@ class _RetentionHeatMapWidgetState extends State<RetentionHeatMapWidget> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    final normalized = _getNormalized28Days(widget.analytics.heatMapData);
-    final todayMatch = normalized
-        .where((d) => _isSameDay(d.date, now))
-        .firstOrNull;
-    _selectedDay = todayMatch ?? normalized.lastOrNull;
-  }
 
-  @override
   void didUpdateWidget(RetentionHeatMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_selectedDay != null) {

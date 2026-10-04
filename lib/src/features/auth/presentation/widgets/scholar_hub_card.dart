@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
@@ -34,10 +35,30 @@ class ScholarHubCard extends StatelessWidget {
     final typography = context.typography;
     final isDark = context.isDarkMode;
 
-    final displayName =
-        profile?.displayName ?? state.user?.displayName ?? '';
+    final rawDisplayName =
+        profile?.displayName ?? state.user?.displayName;
     final email =
         profile?.email ?? state.user?.email ?? '';
+    final emailPrefix = email.contains('@') ? email.split('@').first : '';
+
+    var displayName =
+        (rawDisplayName != null && rawDisplayName.trim().isNotEmpty)
+        ? rawDisplayName.trim()
+        : '';
+    if (displayName.isEmpty ||
+        (emailPrefix.isNotEmpty && displayName == emailPrefix)) {
+      if (locator.isRegistered<UserStorageService>()) {
+        final stored = locator<UserStorageService>().getUserDisplayName();
+        if (stored != null &&
+            stored.trim().isNotEmpty &&
+            stored.trim() != emailPrefix) {
+          displayName = stored.trim();
+        }
+      }
+    }
+    if (displayName.isEmpty) {
+      displayName = emailPrefix.isNotEmpty ? emailPrefix : 'Scholar';
+    }
 
     var streakDays = profile?.streakDays ?? 0;
     var level = profile?.level ?? 1;

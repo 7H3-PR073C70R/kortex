@@ -214,5 +214,34 @@ void main() {
 
       unawaited(newCubit.close());
     });
+
+    test(
+      'rateCard on last card immediately emits finished without blocking state and populates totalReviewedCards',
+      () async {
+        fakeRepo.cardsToReturn = const [
+          FlashcardEntity(id: 'c1', deckId: 'd1', front: 'F1', back: 'B1'),
+        ];
+
+        await cubit.startSession('d1');
+        expect(cubit.state.currentIndex, 0);
+        expect(cubit.state.isLastCard, isTrue);
+
+        final statesEmitted = <StudySessionStatus>[];
+        final subscription = cubit.stream.listen((s) {
+          statesEmitted.add(s.status);
+        });
+
+        await cubit.rateCard(FsrsRating.good);
+
+        expect(cubit.state.status, StudySessionStatus.finished);
+        expect(cubit.state.totalReviewedCards, 1);
+        expect(cubit.state.retentionScore, 1.0);
+        // Must transition straight to finished without intermediate blocking state
+        expect(statesEmitted, contains(StudySessionStatus.finished));
+        expect(statesEmitted, isNot(contains(StudySessionStatus.finishing)));
+
+        await subscription.cancel();
+      },
+    );
   });
 }

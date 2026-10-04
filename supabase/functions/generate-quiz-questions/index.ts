@@ -150,6 +150,7 @@ Requirements:
 - Explicitly identify the 0-based index of the correct option.
 - Provide a concise academic explanation.
 - If relevant (mathematics, physics, engineering, chemistry), include a valid LaTeX formula (e.g. "\\Delta G = \\Delta H - T\\Delta S"). If none, set latex_formula to null.
+- If code snippets, programming questions, or algorithms are involved, format them cleanly using standard markdown code fences (e.g. \`\`\`dart\\n...\\n\`\`\`, \`\`\`python\\n...\\n\`\`\`) in question, options, or explanation. Preserve proper line breaks and indentation.
 - Set sub_topic to a relevant academic topic area.
 
 You MUST reply with ONLY a single valid JSON object strictly matching this schema:
@@ -198,10 +199,21 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
     }
 
     if (!generatedQuestions || generatedQuestions.length === 0) {
-      console.log(
-        "[generate-quiz-questions] Using graceful fallback mock response (dev/offline mode)"
+      console.error(
+        "[generate-quiz-questions] Quiz generation failed across all AI providers."
       );
-      generatedQuestions = getFallbackQuestions(deckTitle);
+      return new Response(
+        JSON.stringify({
+          error:
+            "Quiz generation failed across all cloud AI providers. Please check your connection and try again.",
+          code: "AI_PROVIDERS_UNAVAILABLE",
+          details: luna.lastAttemptErrors,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 503,
+        }
+      );
     }
 
     const formattedQuestions = generatedQuestions.slice(0, finalQuestionCount).map((q, idx) => {
@@ -267,84 +279,3 @@ You MUST reply with ONLY a single valid JSON object strictly matching this schem
   }
 });
 
-function getFallbackQuestions(subject: string): RawQuizQuestion[] {
-  return [
-    {
-      id: "q-ai-1",
-      question:
-        "Which parameter directly dictates the thermodynamic spontaneity of a closed reaction system?",
-      prompt:
-        "Which parameter directly dictates the thermodynamic spontaneity of a closed reaction system?",
-      options: [
-        "\\Delta G (Gibbs Free Energy)",
-        "\\Delta H (Enthalpy)",
-        "\\Delta S (Entropy)",
-        "E_a (Activation Energy)",
-      ],
-      correct_index: 0,
-      correct_answer: "\\Delta G (Gibbs Free Energy)",
-      explanation:
-        "A process is spontaneous at constant temperature and pressure if and only if \\Delta G < 0.",
-      sub_topic: "Thermodynamics",
-      latex_formula: "\\Delta G = \\Delta H - T\\Delta S",
-    },
-    {
-      id: "q-ai-2",
-      question:
-        "What is the electric field inside a uniformly charged conducting sphere in electrostatic equilibrium?",
-      prompt:
-        "What is the electric field inside a uniformly charged conducting sphere in electrostatic equilibrium?",
-      options: ["0", "\\frac{kQ}{r^2}", "\\frac{kQ}{r}", "\\infty"],
-      correct_index: 0,
-      correct_answer: "0",
-      explanation:
-        "By Gauss's law, electric charges redistribute exclusively onto the outer surface, leaving E = 0 inside the conductor.",
-      sub_topic: "Electromagnetism",
-      latex_formula:
-        "\\oint \\vec{E} \\cdot d\\vec{A} = \\frac{Q_{enc}}{\\varepsilon_0} = 0",
-    },
-    {
-      id: "q-ai-3",
-      question:
-        "True or False: Isothermal expansion of an ideal gas results in zero change in internal energy (\\Delta U = 0).",
-      prompt:
-        "True or False: Isothermal expansion of an ideal gas results in zero change in internal energy (\\Delta U = 0).",
-      type: "trueFalse",
-      options: ["True", "False"],
-      correct_index: 0,
-      correct_answer: "True",
-      explanation:
-        "Internal energy of an ideal gas depends solely on temperature: U = nC_v T. Since \\Delta T = 0, \\Delta U = 0.",
-      sub_topic: "Thermodynamic Cycles",
-      latex_formula: "\\Delta U = n C_v \\Delta T = 0",
-    },
-    {
-      id: "q-ai-4",
-      question:
-        "What is the derivative of the natural exponential composite function f(x) = e^{2x} with respect to x?",
-      prompt:
-        "What is the derivative of the natural exponential composite function f(x) = e^{2x} with respect to x?",
-      options: ["2e^{2x}", "e^{2x}", "4e^{2x}", "\\frac{1}{2}e^{2x}"],
-      correct_index: 0,
-      correct_answer: "2e^{2x}",
-      explanation:
-        "Applying the chain rule d/dx[e^{u}] = e^{u} * du/dx, where u = 2x and du/dx = 2.",
-      sub_topic: "Differential Calculus",
-      latex_formula: "\\frac{d}{dx} e^{2x} = 2e^{2x}",
-    },
-    {
-      id: "q-ai-5",
-      question:
-        "Under Newton's second law, what is the net force acting on an object of invariant mass moving at constant velocity?",
-      prompt:
-        "Under Newton's second law, what is the net force acting on an object of invariant mass moving at constant velocity?",
-      options: ["0 N", "m * v", "m * g", "Infinity"],
-      correct_index: 0,
-      correct_answer: "0 N",
-      explanation:
-        "Constant velocity implies zero acceleration (a = dv/dt = 0). Therefore, net force F = ma = 0.",
-      sub_topic: "Classical Mechanics",
-      latex_formula: "\\vec{F}_{net} = m \\frac{d\\vec{v}}{dt} = 0",
-    },
-  ];
-}

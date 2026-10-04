@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:kortex/src/core/error/exceptions.dart';
 import 'package:kortex/src/core/networking/api/app_api_endpoint.dart';
 import 'package:kortex/src/core/networking/realtime/realtime_client.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -19,8 +21,15 @@ class QuizDuelWebSocketClient {
        _random = random ?? Random(),
        matchmakingTimeout = matchmakingTimeout ?? defaultMatchmakingTimeout,
        _dio = dio;
-  static const Duration defaultMatchmakingTimeout = Duration(minutes: 2);
+  static const Duration defaultMatchmakingTimeout = Duration(seconds: 12);
   final Duration matchmakingTimeout;
+
+  /// Generates a clean 6-character room code for direct student challenges.
+  static String generateRoomCode([Random? random]) {
+    final rng = random ?? Random();
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+  }
 
   final RealtimeClient _realtimeClient;
   final Random _random;
@@ -41,6 +50,9 @@ class QuizDuelWebSocketClient {
 
   final Map<String, StreamController<QuizDuelMatch>> _matchControllers = {};
   final Map<String, QuizDuelMatch> _activeMatches = {};
+
+  @visibleForTesting
+  Map<String, QuizDuelMatch> get activeMatchesForTesting => _activeMatches;
   final Map<String, Timer> _roundTimers = {};
   final Map<String, Timer> _transitionTimers = {};
   final Map<String, Timer> _aiActionTimers = {};
@@ -51,7 +63,7 @@ class QuizDuelWebSocketClient {
   static const int maxSpeedBonus = 50;
   static const int defaultQuestionTimeSeconds = 15;
 
-  /// Returns dynamic question bank from backend RPC, falling back to local questions if offline.
+  /// Returns dynamic question bank from backend RPC or Edge function, returning empty list if offline or unavailable.
   Future<List<QuizQuestionEntity>> fetchRemoteDuelQuestions(
     String subject,
     String examBoard, {
@@ -99,8 +111,57 @@ class QuizDuelWebSocketClient {
           }
         }
       } on Object catch (_) {}
+
+      // Fallback: Attempt Edge Function AI question generation
+      try {
+        final response = await client.post<Map<String, dynamic>>(
+          '${AppApiEndpoint.baseUri}${AppApiEndpoint.generateQuizQuestions}',
+          data: {
+            'subject': subject,
+            'exam_board': examBoard,
+            'question_count': count,
+            'difficulty': 'intermediate',
+          },
+        );
+        final data = response.data;
+        if (data != null && data['questions'] is List) {
+          final rawList = data['questions'] as List<dynamic>;
+          if (rawList.isNotEmpty) {
+            return rawList.map((item) {
+              final map = item as Map<String, dynamic>;
+              final options =
+                  (map['options'] as List<dynamic>?)
+                      ?.map((e) => e.toString())
+                      .toList() ??
+                  const [];
+              final correctIdx = map['correct_index'] as int? ?? 0;
+              final correctAns =
+                  map['correct_answer']?.toString() ??
+                  (correctIdx < options.length
+                      ? options[correctIdx]
+                      : (options.isNotEmpty ? options.first : ''));
+
+              return QuizQuestionEntity(
+                id: map['id']?.toString() ?? 'q_${Random().nextInt(99999)}',
+                prompt:
+                    map['prompt']?.toString() ??
+                    map['question']?.toString() ??
+                    '',
+                type: QuizQuestionType.multipleChoice,
+                options: options,
+                correctAnswer: correctAns,
+                explanation: map['explanation']?.toString() ?? '',
+                subTopic:
+                    map['sub_topic']?.toString() ??
+                    map['topic']?.toString() ??
+                    subject,
+              );
+            }).toList();
+          }
+        }
+      } on Object catch (_) {}
     }
-    return getDefaultDuelQuestions(subject, examBoard, count: count);
+    return const [];
   }
 
   /// Returns default question bank when dynamic question loading is not active.
@@ -244,17 +305,30 @@ class QuizDuelWebSocketClient {
             final remoteDuelId = data['duelId'] as String?;
             final remoteUserId = data['userId'] as String?;
             final remoteMatchJson = data['match'] as Map<String, dynamic>?;
+            final remoteRoomCode =
+                (data['roomCode'] as String?)?.trim().toUpperCase();
 
             if (remoteDuelId == null || remoteUserId == null) return;
 
             for (final localMatch in _activeMatches.values.toList()) {
+              final bool isCodeMatch;
+              if (remoteRoomCode != null && remoteRoomCode.isNotEmpty) {
+                isCodeMatch =
+                    localMatch.roomCode?.trim().toUpperCase() == remoteRoomCode;
+              } else if (localMatch.roomCode != null &&
+                  localMatch.roomCode!.isNotEmpty) {
+                isCodeMatch = false;
+              } else {
+                isCodeMatch = localMatch.subject.trim().toLowerCase() ==
+                        (data['subject'] as String? ?? '').trim().toLowerCase() &&
+                    localMatch.examBoard.trim().toLowerCase() ==
+                        (data['examBoard'] as String? ?? '').trim().toLowerCase();
+              }
+
               if (localMatch.status == QuizDuelStatus.matching &&
                   localMatch.player1.userId != remoteUserId &&
                   localMatch.player2 == null &&
-                  localMatch.subject.trim().toLowerCase() ==
-                      (data['subject'] as String? ?? '').trim().toLowerCase() &&
-                  localMatch.examBoard.trim().toLowerCase() ==
-                      (data['examBoard'] as String? ?? '').trim().toLowerCase()) {
+                  isCodeMatch) {
                 // Deterministic host tie-breaker:
                 // Compare localDuelId vs remoteDuelId. The smaller duelId lexicographically is the host room.
                 // Both clients agree on the exact same host duelId and host question set.
@@ -449,6 +523,31 @@ class QuizDuelWebSocketClient {
             if (userId != null) {
               _applyLeaveLocally(duelId: duelId, userId: userId);
             }
+          } else if (type == 'rematch_requested') {
+            final requestedBy = data['requestedBy'] as String?;
+            final current = _activeMatches[duelId];
+            if (current != null && requestedBy != null) {
+              final updated = current.copyWith(rematchRequestedBy: requestedBy);
+              _updateMatch(duelId, updated);
+            }
+          } else if (type == 'rematch_accepted') {
+            final newDuelId = data['newDuelId'] as String?;
+            final matchJson = data['match'] as Map<String, dynamic>?;
+            if (newDuelId != null && matchJson != null) {
+              final newMatch = QuizDuelMatch.fromJson(matchJson);
+              _activeMatches[newDuelId] = newMatch;
+              _recordAlias(duelId, newDuelId);
+              _updateMatch(duelId, newMatch);
+              _updateMatch(newDuelId, newMatch);
+              _listenToDuelChannel(newDuelId);
+            }
+          } else if (type == 'rematch_declined' ||
+              type == 'rematch_cancelled') {
+            final current = _activeMatches[duelId];
+            if (current != null) {
+              final updated = current.copyWith(clearRematch: true);
+              _updateMatch(duelId, updated);
+            }
           }
         }
       } on Exception catch (_) {}
@@ -456,7 +555,7 @@ class QuizDuelWebSocketClient {
   }
 
   /// Finds or creates a duel match room.
-  /// Looks for real human opponent first; if none is found after 2 minutes, falls back to AI.
+  /// Looks for real human opponent first; if none is found within 12 seconds, falls back to AI.
   Future<QuizDuelMatch> findOrCreateDuel({
     required String subject,
     required String examBoard,
@@ -465,19 +564,32 @@ class QuizDuelWebSocketClient {
     required String avatarUrl,
     int questionCount = 10,
     List<QuizQuestionEntity>? customQuestions,
+    String? roomCode,
+    bool fallbackToDefaultQuestions = true,
   }) async {
     _initMatchmakingRealtime();
+
+    final targetRoomCode = roomCode?.trim().toUpperCase();
 
     // 1. Check if another real player is already waiting in matchmaking locally
     QuizDuelMatch? existingMatch;
     for (final m in _activeMatches.values) {
       if (m.status == QuizDuelStatus.matching &&
-          m.subject.trim().toLowerCase() == subject.trim().toLowerCase() &&
-          m.examBoard.trim().toLowerCase() == examBoard.trim().toLowerCase() &&
           m.player1.userId != userId &&
           m.player2 == null) {
-        existingMatch = m;
-        break;
+        if (targetRoomCode != null && targetRoomCode.isNotEmpty) {
+          if (m.roomCode?.trim().toUpperCase() == targetRoomCode) {
+            existingMatch = m;
+            break;
+          }
+        } else if (m.roomCode == null || m.roomCode!.isEmpty) {
+          if (m.subject.trim().toLowerCase() == subject.trim().toLowerCase() &&
+              m.examBoard.trim().toLowerCase() ==
+                  examBoard.trim().toLowerCase()) {
+            existingMatch = m;
+            break;
+          }
+        }
       }
     }
 
@@ -523,9 +635,23 @@ class QuizDuelWebSocketClient {
     // 2. No open room found locally: Create new match and broadcast search event to peers
     final duelId =
         'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
-    final questions = (customQuestions != null && customQuestions.isNotEmpty)
+    final rawQuestions = (customQuestions != null && customQuestions.isNotEmpty)
         ? customQuestions
         : await fetchRemoteDuelQuestions(subject, examBoard, count: questionCount);
+
+    final questions = rawQuestions.isNotEmpty
+        ? rawQuestions
+        : (fallbackToDefaultQuestions
+            ? getDefaultDuelQuestions(subject, examBoard, count: questionCount)
+            : const <QuizQuestionEntity>[]);
+
+    if (questions.isEmpty) {
+      throw QuizQuestionsUnavailableException(
+        subject: subject,
+        message:
+            'No questions found for "$subject". Connect to the internet to generate questions, or create flashcards for this course to play offline.',
+      );
+    }
 
     final player1 = QuizDuelParticipant(
       userId: userId,
@@ -535,6 +661,8 @@ class QuizDuelWebSocketClient {
       eloRating: 1250,
     );
 
+    final assignedRoomCode = targetRoomCode ?? generateRoomCode(_random);
+
     final match = QuizDuelMatch(
       duelId: duelId,
       subject: subject,
@@ -542,6 +670,7 @@ class QuizDuelWebSocketClient {
       questions: questions,
       player1: player1,
       createdAt: DateTime.now(),
+      roomCode: assignedRoomCode,
     );
 
     _activeMatches[duelId] = match;
@@ -561,6 +690,7 @@ class QuizDuelWebSocketClient {
             'userId': userId,
             'displayName': displayName,
             'avatarUrl': avatarUrl,
+            'roomCode': assignedRoomCode,
             'match': match.toJson(),
           },
         },
@@ -570,7 +700,7 @@ class QuizDuelWebSocketClient {
         payload: {'type': 'announcement_request'},
       );
 
-    // Schedule AI match if no real player joins within matchmakingTimeout (default 2 minutes)
+    // Schedule AI match if no real player joins within matchmakingTimeout
     _matchingTimers[duelId]?.cancel();
     _matchingTimers[duelId] = Timer(matchmakingTimeout, () {
       if (_activeMatches[duelId]?.status == QuizDuelStatus.matching) {
@@ -581,23 +711,59 @@ class QuizDuelWebSocketClient {
     return match;
   }
 
-  /// Immediately pairs with an AI opponent if the user chooses not to wait out the 2-minute search.
+  /// Immediately pairs with an AI opponent if the user chooses not to wait out the matchmaking search.
   void simulateMatchFoundWithAi(String duelId) {
     final current = _activeMatches[duelId];
     if (current == null || current.status != QuizDuelStatus.matching) return;
 
     _matchingTimers[duelId]?.cancel();
 
-    final aiPersonalities = [
-      ('⚡ Speedy Scholar', '🧠'),
-      ('🎯 Calculated Genius', '💡'),
-      ('🚀 Formula Prodigy', '🚀'),
-      ('👑 Syllabot Rival', '🏆'),
-      ('🛡️ Master Duelist', '⚡'),
-    ];
-    final pick = aiPersonalities[_random.nextInt(aiPersonalities.length)];
     final p1Elo = current.player1.eloRating;
-    final aiElo = (p1Elo + (_random.nextInt(101) - 50)).clamp(1000, 2200);
+    final subject = current.subject.toLowerCase();
+
+    final List<(String, String)> aiPersonalities;
+    if (subject.contains('math') ||
+        subject.contains('calc') ||
+        subject.contains('stat')) {
+      aiPersonalities = [
+        ('Amina', '📐'),
+        ('Kofi', '⚡'),
+        ('Ada Lovelace', '💻'),
+        ('Tunde', '🚀'),
+        ('Wuke', '🧠'),
+      ];
+    } else if (subject.contains('phys') || subject.contains('eng')) {
+      aiPersonalities = [
+        ('Chidi', '⚡'),
+        ('Farouk', '💡'),
+        ('Oluwatobi', '🍎'),
+        ('Zainab', '🔬'),
+        ('Maxwell', '🧲'),
+      ];
+    } else if (subject.contains('chem') ||
+        subject.contains('bio') ||
+        subject.contains('med')) {
+      aiPersonalities = [
+        ('Dr. Folake', '🧬'),
+        ('Emeka', '🧪'),
+        ('Curie', '💡'),
+        ('Hauwa', '🩺'),
+        ('Cellular', '🔬'),
+      ];
+    } else {
+      aiPersonalities = [
+        ('Akintola', '🧠'),
+        ('Abiodun', '💡'),
+        ('Barry', '🚀'),
+        ('Taiwo', '🏆'),
+        ('Mark', '⚡'),
+        ('Olatunde', '🌟'),
+        ('Boluwatife', '🏛️'),
+      ];
+    }
+
+    final pick = aiPersonalities[_random.nextInt(aiPersonalities.length)];
+    final aiElo = (p1Elo + (_random.nextInt(61) - 30)).clamp(1000, 2400);
 
     final player2 = QuizDuelParticipant(
       userId: 'ai_bot_${_random.nextInt(9999)}',
@@ -911,7 +1077,33 @@ class QuizDuelWebSocketClient {
 
     _roundTimers[duelId]?.cancel();
 
-    final updated = current.copyWith(status: QuizDuelStatus.roundSummary);
+    // Default any player who has not answered yet to timed out (-1)
+    final timeLimitMs = current.durationPerQuestionSeconds * 1000;
+    var p1 = current.player1;
+    if (p1.selectedOptionIndex == null) {
+      p1 = p1.copyWith(
+        selectedOptionIndex: -1,
+        isAnswerCorrect: false,
+        answeredInMs: timeLimitMs,
+        comboStreak: 0,
+      );
+    }
+
+    var p2 = current.player2;
+    if (p2 != null && p2.selectedOptionIndex == null) {
+      p2 = p2.copyWith(
+        selectedOptionIndex: -1,
+        isAnswerCorrect: false,
+        answeredInMs: timeLimitMs,
+        comboStreak: 0,
+      );
+    }
+
+    final updated = current.copyWith(
+      status: QuizDuelStatus.roundSummary,
+      player1: p1,
+      player2: p2,
+    );
     _updateMatch(duelId, updated);
 
     _realtimeClient.broadcastPresence(
@@ -930,7 +1122,7 @@ class QuizDuelWebSocketClient {
 
   void _scheduleRoundTransition(String duelId, int questionIndex) {
     _transitionTimers[duelId]?.cancel();
-    _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1500), () {
+    _transitionTimers[duelId] = Timer(const Duration(milliseconds: 1800), () {
       final latest = _activeMatches[duelId];
       if (latest == null) return;
 
@@ -1146,6 +1338,242 @@ class QuizDuelWebSocketClient {
       channelName: 'realtime:quiz_duel:$duelId',
       payload: {
         'type': 'leave_duel',
+        'data': {
+          'duelId': duelId,
+          'userId': userId,
+        },
+      },
+    );
+  }
+
+  /// Requests a rematch with the current opponent.
+  /// If the opponent is an AI bot, this starts an instant AI rematch without wait.
+  /// If the opponent already requested a rematch, this automatically accepts it.
+  Future<QuizDuelMatch?> requestRematch({
+    required String duelId,
+    required String userId,
+  }) async {
+    final current = _activeMatches[duelId];
+    if (current == null) return null;
+
+    final opponent = current.player1.userId == userId
+        ? current.player2
+        : current.player1;
+
+    // 1. If playing against AI, instantly start AI rematch
+    if (opponent != null && opponent.isAiOpponent) {
+      return startAiRematch(current, userId);
+    }
+
+    // 2. If opponent already requested a rematch, accept it immediately
+    if (current.rematchRequestedBy != null &&
+        current.rematchRequestedBy != userId) {
+      return acceptRematch(duelId: duelId, userId: userId);
+    }
+
+    // 3. Mark rematch requested locally and broadcast over Realtime
+    final updated = current.copyWith(rematchRequestedBy: userId);
+    _updateMatch(duelId, updated);
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'rematch_requested',
+        'data': {
+          'duelId': duelId,
+          'requestedBy': userId,
+        },
+      },
+    );
+
+    return updated;
+  }
+
+  /// Instantly starts a rematch against an AI bot.
+  Future<QuizDuelMatch> startAiRematch(
+    QuizDuelMatch previousMatch,
+    String userId,
+  ) async {
+    final newDuelId =
+        'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
+
+    final freshQuestions = await fetchRemoteDuelQuestions(
+      previousMatch.subject,
+      previousMatch.examBoard,
+      count: previousMatch.questions.length,
+    );
+
+    final isP1 = previousMatch.player1.userId == userId;
+    final myParticipant = isP1
+        ? previousMatch.player1
+        : (previousMatch.player2 ??
+            QuizDuelParticipant(
+              userId: userId,
+              displayName: 'Scholar',
+              avatarUrl: '⚡',
+              eloRating: 1250,
+            ));
+
+    final oldAi = isP1 ? previousMatch.player2 : previousMatch.player1;
+    final aiParticipant = (oldAi != null && oldAi.isAiOpponent)
+        ? QuizDuelParticipant(
+            userId: oldAi.userId,
+            displayName: oldAi.displayName,
+            avatarUrl: oldAi.avatarUrl,
+            eloRating: oldAi.eloRating,
+            isAiOpponent: true,
+            isReady: true,
+          )
+        : QuizDuelParticipant(
+            userId: 'ai_bot_${_random.nextInt(9999)}',
+            displayName: 'Amina',
+            avatarUrl: '⚡',
+            eloRating: 1250,
+            isAiOpponent: true,
+            isReady: true,
+          );
+
+    final newPlayer1 = QuizDuelParticipant(
+      userId: myParticipant.userId,
+      displayName: myParticipant.displayName,
+      avatarUrl: myParticipant.avatarUrl,
+      eloRating: myParticipant.eloRating,
+      isReady: true,
+    );
+
+    final newMatch = QuizDuelMatch(
+      duelId: newDuelId,
+      subject: previousMatch.subject,
+      examBoard: previousMatch.examBoard,
+      questions: freshQuestions.isNotEmpty
+          ? freshQuestions
+          : previousMatch.questions,
+      player1: newPlayer1,
+      player2: aiParticipant,
+      status: QuizDuelStatus.countdown,
+      roomCode: previousMatch.roomCode,
+      createdAt: DateTime.now(),
+      rematchAccepted: true,
+    );
+
+    _activeMatches[newDuelId] = newMatch;
+    _recordAlias(previousMatch.duelId, newDuelId);
+    _listenToDuelChannel(newDuelId);
+
+    // Update old match with pointer to new duel
+    final updatedOld = previousMatch.copyWith(
+      nextDuelId: newDuelId,
+      rematchAccepted: true,
+    );
+    _updateMatch(previousMatch.duelId, updatedOld);
+    _updateMatch(newDuelId, newMatch);
+
+    // 2.5s countdown into round 0
+    Timer(const Duration(milliseconds: 2500), () {
+      _startRound(newDuelId, 0);
+    });
+
+    return newMatch;
+  }
+
+  /// Accepts a pending rematch request from a peer.
+  Future<QuizDuelMatch?> acceptRematch({
+    required String duelId,
+    required String userId,
+  }) async {
+    final current = _activeMatches[duelId];
+    if (current == null) return null;
+
+    final newDuelId =
+        'duel_${DateTime.now().millisecondsSinceEpoch}_${_random.nextInt(9999)}';
+
+    final freshQuestions = await fetchRemoteDuelQuestions(
+      current.subject,
+      current.examBoard,
+      count: current.questions.length,
+    );
+
+    final p1 = QuizDuelParticipant(
+      userId: current.player1.userId,
+      displayName: current.player1.displayName,
+      avatarUrl: current.player1.avatarUrl,
+      eloRating: current.player1.eloRating,
+      isReady: true,
+      isAiOpponent: current.player1.isAiOpponent,
+    );
+
+    final p2 = current.player2 != null
+        ? QuizDuelParticipant(
+            userId: current.player2!.userId,
+            displayName: current.player2!.displayName,
+            avatarUrl: current.player2!.avatarUrl,
+            eloRating: current.player2!.eloRating,
+            isAiOpponent: current.player2!.isAiOpponent,
+            isReady: true,
+          )
+        : null;
+
+    final newMatch = QuizDuelMatch(
+      duelId: newDuelId,
+      subject: current.subject,
+      examBoard: current.examBoard,
+      questions: freshQuestions.isNotEmpty
+          ? freshQuestions
+          : current.questions,
+      player1: p1,
+      player2: p2,
+      status: QuizDuelStatus.countdown,
+      roomCode: current.roomCode,
+      createdAt: DateTime.now(),
+      rematchAccepted: true,
+    );
+
+    _activeMatches[newDuelId] = newMatch;
+    _recordAlias(duelId, newDuelId);
+    _listenToDuelChannel(newDuelId);
+
+    final updatedOld = current.copyWith(
+      nextDuelId: newDuelId,
+      rematchAccepted: true,
+    );
+    _updateMatch(duelId, updatedOld);
+    _updateMatch(newDuelId, newMatch);
+
+    // Broadcast rematch accepted to peer
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'rematch_accepted',
+        'data': {
+          'oldDuelId': duelId,
+          'newDuelId': newDuelId,
+          'match': newMatch.toJson(),
+        },
+      },
+    );
+
+    Timer(const Duration(milliseconds: 2500), () {
+      _startRound(newDuelId, 0);
+    });
+
+    return newMatch;
+  }
+
+  /// Declines or cancels an active rematch request.
+  Future<void> declineRematch({
+    required String duelId,
+    required String userId,
+  }) async {
+    final current = _activeMatches[duelId];
+    if (current != null) {
+      final updated = current.copyWith(clearRematch: true);
+      _updateMatch(duelId, updated);
+    }
+
+    _realtimeClient.broadcastPresence(
+      channelName: 'realtime:quiz_duel:$duelId',
+      payload: {
+        'type': 'rematch_declined',
         'data': {
           'duelId': duelId,
           'userId': userId,

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -48,6 +49,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     on<StartNewSessionEvent>(_onStartNewSession);
     on<ClearAllHistoryEvent>(_onClearAllHistory);
     on<ConvertToDeckEvent>(_onConvertToDeck);
+    on<AcknowledgeDeckGeneratedEvent>(_onAcknowledgeDeckGenerated);
   }
 
   final StreamSyllabotResponseUseCase _streamResponse;
@@ -71,9 +73,16 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     // All normal interactions use the requested engine without Pro downgrade to on-device LLM
     final effectiveEngine = event.engineType;
 
+    final isNewSession = event.sessionId.isNotEmpty &&
+        state.sessionId.isNotEmpty &&
+        event.sessionId != state.sessionId;
+
     final effectiveSessionId = event.sessionId.isNotEmpty
         ? event.sessionId
         : (state.sessionId.isNotEmpty ? state.sessionId : UuidUtils.generate());
+
+    final initialMessages =
+        isNewSession ? <ChatMessageEntity>[] : state.messages;
 
     final userMessage = ChatMessageEntity(
       id: UuidUtils.generate(),
@@ -84,12 +93,12 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       engineType: effectiveEngine,
     );
 
-    final updatedMessages = [...state.messages, userMessage];
+    final updatedMessages = [...initialMessages, userMessage];
 
     final isOffline = effectiveEngine == ExecutionEngineType.localOnDevice;
 
     // Automatically create and register conversation session if starting new dialogue
-    if (state.messages.isEmpty) {
+    if (initialMessages.isEmpty) {
       unawaited(
         _getChatHistory.createSession(
           title: event.prompt,
@@ -102,6 +111,23 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
 
     unawaited(_getChatHistory.cacheMessage(userMessage));
 
+    final storage =
+        _localStorageService ??
+        (locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null);
+
+    final isConverted = isNewSession
+        ? (storage?.getPreference(
+                key: 'syllabot_converted_$effectiveSessionId',
+              ) !=
+              null)
+        : (state.isConvertedToDeck ||
+            (storage?.getPreference(
+                  key: 'syllabot_converted_$effectiveSessionId',
+                ) !=
+                null));
+
     emit(
       state.copyWith(
         status: SyllabotStatus.streaming,
@@ -112,6 +138,8 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         lastPrompt: event.prompt,
         lastEngine: effectiveEngine,
         lastSocraticMode: event.socraticMode,
+        isConvertedToDeck: isConverted,
+        clearGeneratedDeck: true,
       ),
     );
 
@@ -202,6 +230,16 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     _currentRagReferences = [];
 
     unawaited(_getChatHistory.cacheMessage(botMessage));
+
+    if (locator.isRegistered<UserActivityService>()) {
+      unawaited(
+        locator<UserActivityService>().awardXp(
+          XpActivityCategory.syllabotQuery,
+          sourceId: state.sessionId,
+          metadata: {'engineType': state.engineType.name},
+        ),
+      );
+    }
 
     if (_streamStartTime != null &&
         DateTime.now().difference(_streamStartTime!).inSeconds >= 10) {
@@ -329,6 +367,10 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     LoadChatMessagesEvent event,
     Emitter<SyllabotChatState> emit,
   ) async {
+    if (state.isGeneratingDeck) {
+      return;
+    }
+
     var isConverted = false;
     try {
       final storage =
@@ -350,6 +392,9 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         status: SyllabotStatus.loading,
         sessionId: event.sessionId,
         isConvertedToDeck: isConverted,
+        clearGeneratedDeck: true,
+        messages: [],
+        streamingText: '',
       ),
     );
     final result = await _getChatHistory.getMessages(
@@ -375,6 +420,10 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     StartNewSessionEvent event,
     Emitter<SyllabotChatState> emit,
   ) {
+    if (state.isGeneratingDeck) {
+      return;
+    }
+
     emit(
       state.copyWith(
         status: SyllabotStatus.idle,
@@ -382,6 +431,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
         messages: [],
         streamingText: '',
         isConvertedToDeck: false,
+        clearGeneratedDeck: true,
       ),
     );
   }
@@ -398,6 +448,14 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     ConvertToDeckEvent event,
     Emitter<SyllabotChatState> emit,
   ) async {
+    // 1. Prevent concurrent duplicate conversions
+    if (state.isGeneratingDeck) {
+      return;
+    }
+
+    final targetSessionId =
+        event.sessionId.isNotEmpty ? event.sessionId : state.sessionId;
+
     final storage =
         _localStorageService ??
         (locator.isRegistered<LocalStorageService>()
@@ -406,7 +464,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
     final isAlreadyConverted =
         state.isConvertedToDeck ||
         (storage?.getPreference(
-              key: 'syllabot_converted_${event.sessionId}',
+              key: 'syllabot_converted_$targetSessionId',
             ) !=
             null);
     if (isAlreadyConverted) {
@@ -422,7 +480,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
 
     emit(state.copyWith(status: SyllabotStatus.generatingDeck));
     final result = await _generateDeck(
-      sessionId: event.sessionId,
+      sessionId: targetSessionId,
       deckTitle: event.deckTitle,
       courseCode: event.courseCode,
       messages: state.messages,
@@ -444,7 +502,7 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
           if (storage != null) {
             unawaited(
               storage.savePreference(
-                key: 'syllabot_converted_${event.sessionId}',
+                key: 'syllabot_converted_$targetSessionId',
                 data: deck.id,
               ),
             );
@@ -469,6 +527,21 @@ class SyllabotChatBloc extends Bloc<SyllabotChatEvent, SyllabotChatState> {
       },
     );
   }
+
+  void _onAcknowledgeDeckGenerated(
+    AcknowledgeDeckGeneratedEvent event,
+    Emitter<SyllabotChatState> emit,
+  ) {
+    if (state.status == SyllabotStatus.deckGenerated) {
+      emit(
+        state.copyWith(
+          status: SyllabotStatus.idle,
+          clearGeneratedDeck: true,
+        ),
+      );
+    }
+  }
+
 
   @override
   Future<void> close() async {

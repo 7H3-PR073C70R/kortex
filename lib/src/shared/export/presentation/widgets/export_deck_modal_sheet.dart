@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
@@ -49,8 +51,11 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
   String? _exportMessage;
 
   Future<void> _exportAnki() async {
-    if (locator.isRegistered<SubscriptionGuard>()) {
-      final canExport = await locator<SubscriptionGuard>().requirePro(
+    final guard = locator.isRegistered<SubscriptionGuard>()
+        ? locator<SubscriptionGuard>()
+        : SubscriptionGuard();
+    if (!guard.canExportDeck(DeckExportFormat.anki)) {
+      final canExport = await guard.requirePro(
         context,
         featureName: 'Anki Deck Export',
       );
@@ -92,8 +97,11 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
   }
 
   Future<void> _exportPdf() async {
-    if (locator.isRegistered<SubscriptionGuard>()) {
-      final canExport = await locator<SubscriptionGuard>().requirePro(
+    final guard = locator.isRegistered<SubscriptionGuard>()
+        ? locator<SubscriptionGuard>()
+        : SubscriptionGuard();
+    if (!guard.canExportDeck(DeckExportFormat.pdfPrintable)) {
+      final canExport = await guard.requirePro(
         context,
         featureName: 'Printable PDF Cram Sheets',
       );
@@ -172,6 +180,17 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
   }
 
   Future<void> _exportJson() async {
+    final guard = locator.isRegistered<SubscriptionGuard>()
+        ? locator<SubscriptionGuard>()
+        : SubscriptionGuard();
+    if (!guard.canExportDeck(DeckExportFormat.json)) {
+      final canExport = await guard.requirePro(
+        context,
+        featureName: 'Structured JSON Deck Export',
+      );
+      if (!canExport || !mounted) return;
+    }
+
     setState(() {
       _isExporting = true;
       _exportMessage = 'Packaging structured JSON archive...';
@@ -206,12 +225,26 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
     }
   }
 
+  Future<void> _shareDynamicLink() async {
+    Navigator.of(context).pop();
+    await locator<LinkSharingService>().shareDeck(
+      deckId: widget.deck.id,
+      title: widget.deck.title,
+      description: widget.deck.description,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
     final colors = context.colors;
     final typography = context.typography;
     final l10n = context.l10n;
+
+    final guard = locator.isRegistered<SubscriptionGuard>()
+        ? locator<SubscriptionGuard>()
+        : SubscriptionGuard();
+    final isPro = guard.isPro;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -268,10 +301,21 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
             ),
           ] else ...[
             _ExportOptionTile(
+              icon: Icons.share_location_rounded,
+              iconColor: colors.primary,
+              title: 'Share Dynamic Link',
+              subtitle: 'Generate cross-platform link to open or study deck directly',
+              onTap: () {
+                unawaited(_shareDynamicLink());
+              },
+            ),
+            const SizedBox(height: 12),
+            _ExportOptionTile(
               icon: Icons.flash_on_rounded,
               iconColor: colors.info,
               title: l10n.exportAnkiTitle,
               subtitle: l10n.exportAnkiSubtitle,
+              isPro: !isPro,
               onTap: () {
                 unawaited(_exportAnki());
               },
@@ -282,6 +326,7 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
               iconColor: colors.success,
               title: l10n.exportPdfTitle,
               subtitle: l10n.exportPdfSubtitle,
+              isPro: !isPro,
               onTap: () {
                 unawaited(_exportPdf());
               },
@@ -302,6 +347,7 @@ class _ExportDeckModalSheetState extends State<ExportDeckModalSheet> {
               iconColor: colors.primary,
               title: 'Structured JSON Package',
               subtitle: 'Export complete metadata, formulas, and FSRS metrics',
+              isPro: !isPro,
               onTap: () {
                 unawaited(_exportJson());
               },
@@ -322,6 +368,7 @@ class _ExportOptionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.isPro = false,
   });
 
   final IconData icon;
@@ -329,6 +376,7 @@ class _ExportOptionTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool isPro;
 
   @override
   Widget build(BuildContext context) {
@@ -361,11 +409,41 @@ class _ExportOptionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: typography.callout.bold.copyWith(
-                      color: colors.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: typography.callout.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      if (isPro) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1.5,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colors.primary,
+                                colors.primary.withAlpha(200),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'PRO',
+                            style: typography.caption.bold.copyWith(
+                              color: Colors.white,
+                              fontSize: 8.5,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(

@@ -1,6 +1,6 @@
 name: kortex
 description: Kortexify is a local-first, AI-augmented academic workspace designed to replace fragmented study tools (Anki, Quizlet, Chegg, and unanchored chat interfaces like ChatGPT). By combining zero-latency offline storage, multimodal STEM OCR, local vector retrieval-augmented generation (RAG), and adaptive spaced repetition, Kortexify transforms unstructured academic materials (syllabi, lecture slides, textbooks, and past papers) into an active-recall mastery system in a single document drop.
-version: 1.0.0+1
+version: 1.0.3+5
 publish_to: none
 
 environment:
@@ -27,6 +27,8 @@ dependencies:
   flutter_screenutil: ^5.9.3
   flutter_svg: ^2.2.1
   flutter_tts: ^4.2.5
+  flutter_kokoro_tts: ^0.0.1
+  flutter_edge_tts: ^0.0.2
   flutter_markdown: ^0.7.6
   freezed_annotation: ^3.1.0
   get_it: ^9.2.1
@@ -39,6 +41,7 @@ dependencies:
   liquid_glass_widgets: ^1.2.3
   logger: ^2.6.2
   path_provider: ^2.1.6
+  package_info_plus: ^10.2.1
   pdf: ^3.12.0
   syncfusion_flutter_pdf: ^28.2.9
   google_mlkit_text_recognition: ^0.16.0
@@ -73,7 +76,9 @@ dependencies:
   path: ^1.9.1
   drift: ^2.34.4
   drift_flutter: ^0.3.1
+  sqlite3_flutter_libs: ^0.6.0+eol
   audioplayers: ^6.7.1
+  record: ^6.2.1
   flutter_animate: ^4.5.2
 
 dev_dependencies:

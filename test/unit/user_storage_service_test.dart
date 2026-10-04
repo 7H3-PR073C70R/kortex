@@ -50,4 +50,19 @@ void main() {
     verify(() => mockSecureStorage.write(key: '__refresh_token', value: dummyRefresh)).called(1);
     verify(() => mockLocalStorageService.deletePreference(key: '__refresh_token')).called(greaterThanOrEqualTo(1));
   });
+
+  test('hasActiveSession returns true when refresh token is present', () async {
+    expect(userStorageService.hasActiveSession(), isFalse);
+
+    await userStorageService.saveRefreshToken('active_refresh_token');
+    expect(userStorageService.hasActiveSession(), isTrue);
+  });
+
+  test('hasActiveSession returns false after clearStorage', () async {
+    await userStorageService.saveRefreshToken('active_refresh_token');
+    expect(userStorageService.hasActiveSession(), isTrue);
+
+    userStorageService.clearStorage();
+    expect(userStorageService.hasActiveSession(), isFalse);
+  });
 }

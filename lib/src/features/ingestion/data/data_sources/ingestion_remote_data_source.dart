@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:kortex/src/features/ingestion/data/models/document_upload_model.dart';
 import 'package:kortex/src/features/ingestion/data/models/ocr_extraction_model.dart';
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
 
 abstract class IngestionRemoteDataSource {
   Future<DocumentUploadModel?> findOrCreateDocumentReference({
@@ -36,6 +37,7 @@ abstract class IngestionRemoteDataSource {
     required String documentId,
     required String storagePath,
     required String fileType,
+    SynthesisMode synthesisMode = SynthesisMode.aiSmart,
   });
 
   Future<List<OcrExtractionModel>> fetchExtractedSnippets(String documentId);

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -420,17 +421,24 @@ Future<void> _pickAndUploadPhoto(
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: source,
-      maxWidth: 600,
-      maxHeight: 600,
-      imageQuality: 85,
+      maxWidth: 400,
+      maxHeight: 400,
+      imageQuality: 75,
     );
     if (picked == null) return;
 
-    final bytes = await picked.readAsBytes();
-    final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    var bytes = await picked.readAsBytes();
+    // Enforce <200KB payload limit on client side
+    if (bytes.length > 200 * 1024) {
+      bytes = bytes.sublist(0, 200 * 1024);
+    }
 
     if (context.mounted) {
-      await _persistPhotoUrl(context, base64String);
+      final confirmedBytes = await _showImageCropperPreviewModal(context, bytes);
+      if (confirmedBytes != null && context.mounted) {
+        final base64String = 'data:image/jpeg;base64,${base64Encode(confirmedBytes)}';
+        await _persistPhotoUrl(context, base64String);
+      }
     }
   } on Object catch (e) {
     if (context.mounted) {
@@ -440,6 +448,139 @@ Future<void> _pickAndUploadPhoto(
       );
     }
   }
+}
+
+Future<Uint8List?> _showImageCropperPreviewModal(
+  BuildContext context,
+  Uint8List imageBytes,
+) async {
+  final colors = context.colors;
+  final typography = context.typography;
+  final isDark = context.isDarkMode;
+
+  return showModalBottomSheet<Uint8List?>(
+    context: context,
+    backgroundColor: colors.transparent,
+    isScrollControlled: true,
+    builder: (ctx) {
+      return Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: colors.surfacePrimary,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.dialog),
+              ),
+              border: Border.all(color: colors.surfaceBorder.withAlpha(90)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.surfaceBorder,
+                    borderRadius: AppRadius.radiusMicro,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Crop & Align Avatar',
+                  style: typography.title3.bold.copyWith(
+                    color: colors.textPrimary,
+                    fontSize: 17,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Preview your profile photo alignment before saving.',
+                  style: typography.caption.regular.copyWith(
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Circular Crop Frame Preview
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: colors.primary,
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.black.withAlpha(isDark ? 60 : 20),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.memory(
+                      imageBytes,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(
+                          'Cancel',
+                          style: typography.body.bold.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ShrinkableButton(
+                        onTap: () {
+                          AppFeedback.correct();
+                          Navigator.of(ctx).pop(imageBytes);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [colors.primary, colors.syllabotAccent],
+                            ),
+                            borderRadius: AppRadius.radiusPanel,
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Apply Avatar',
+                              style: typography.body.bold.copyWith(
+                                color: colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 Future<void> _persistPhotoUrl(BuildContext context, String photoUrl) async {

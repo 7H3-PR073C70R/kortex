@@ -56,7 +56,9 @@ class CuratedCourseEntity extends Equatable {
     required this.iconName,
     required this.colorHex,
     this.pdfDownloadUrl,
-    this.syllabusCoverage = 0.75,
+    this.syllabusCoverage = 0.0,
+    this.accuracyPercent,
+    this.retentionRate,
   });
 
   final String id;
@@ -69,6 +71,8 @@ class CuratedCourseEntity extends Equatable {
   final String colorHex;
   final String? pdfDownloadUrl;
   final double syllabusCoverage;
+  final double? accuracyPercent;
+  final double? retentionRate;
 
   @override
   List<Object?> get props => [
@@ -82,6 +86,8 @@ class CuratedCourseEntity extends Equatable {
     colorHex,
     pdfDownloadUrl,
     syllabusCoverage,
+    accuracyPercent,
+    retentionRate,
   ];
 }
 
@@ -111,7 +117,21 @@ class DashboardFeedEntity extends Equatable {
   bool get isHigherEdStudent =>
       calibrationProfile.focus == AcademicFocus.higherEducation;
 
-  bool get isProfileUncalibrated => !calibrationProfile.isCalibrated;
+  bool hasTrackSelectedFor([String? activeTargetTrack]) =>
+      (activeTargetTrack != null && activeTargetTrack.trim().isNotEmpty) ||
+      calibrationProfile.hasTrackSelected ||
+      (targetExamCountdown != null &&
+          targetExamCountdown!.subjectTrack.trim().isNotEmpty);
+
+  bool get hasTrackSelected => hasTrackSelectedFor();
+
+  bool isProfileUncalibratedFor([String? activeTargetTrack]) {
+    if (calibrationProfile.isCalibrated) return false;
+    if (hasTrackSelectedFor(activeTargetTrack) && curatedCourses.isNotEmpty) return false;
+    return true;
+  }
+
+  bool get isProfileUncalibrated => isProfileUncalibratedFor();
 
   DashboardFeedEntity copyWith({
     CalibrationProfile? calibrationProfile,

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
@@ -632,6 +633,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
   }) async {
     // Duplicate check: verify if an identical question/discussion was already created (local cache + remote)
@@ -667,7 +669,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }
     }
 
-    final rawUserId = isAnonymous ? null : _userStorage?.getUserId();
+    final rawUserId = _userStorage?.getUserId();
     final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
         ? rawUserId.trim()
         : null;
@@ -686,6 +688,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           : '';
       enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
     }
+    if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty) {
+      enrichedContent +=
+          '\n<!-- voice_transcript: ${voiceNoteTranscript.trim()} -->';
+    }
     if (tags != null && tags.isNotEmpty) {
       enrichedContent += '\n<!-- tags: ${jsonEncode(tags)} -->';
     }
@@ -703,10 +709,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
         'voice_note_url': voiceNoteUrl.trim(),
       'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty)
+        'voice_note_transcript': voiceNoteTranscript.trim(),
       'author_name': authorName,
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
         'author_avatar': authorAvatar,
+      'is_anonymous': isAnonymous,
     };
 
     final res = await _safeCreateForumPost(payload);
@@ -728,7 +737,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       post = post.copyWith(
         voiceNoteUrl: voiceNoteUrl,
         voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+        voiceNoteTranscript: voiceNoteTranscript,
       );
+    } else if (post.voiceNoteTranscript == null &&
+        voiceNoteTranscript != null &&
+        voiceNoteTranscript.isNotEmpty) {
+      post = post.copyWith(voiceNoteTranscript: voiceNoteTranscript);
     }
     unawaited(_localDataSource?.saveForumPost(post));
     return post;
@@ -765,6 +779,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             ..remove('media_urls')
             ..remove('voice_note_url')
             ..remove('voice_note_duration_seconds')
+            ..remove('voice_note_transcript')
             ..remove('tags')
             ..remove('is_anonymous');
           return _safeCreateForumPost(fallback);
@@ -772,6 +787,56 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<ForumPostModel> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
+  }) async {
+    final body = <String, dynamic>{};
+    if (title != null && title.trim().isNotEmpty) body['title'] = title.trim();
+    if (content != null) {
+      var enrichedContent = content.trim();
+      if (mediaUrls != null && mediaUrls.isNotEmpty) {
+        enrichedContent += '\n<!-- media: ${jsonEncode(mediaUrls)} -->';
+      }
+      if (tags != null && tags.isNotEmpty) {
+        enrichedContent += '\n<!-- tags: ${jsonEncode(tags)} -->';
+      }
+      body['content'] = enrichedContent;
+    }
+    if (track != null && track.trim().isNotEmpty) body['track'] = track.trim();
+    if (latexContent != null && latexContent.trim().isNotEmpty) {
+      body['latex_content'] = latexContent.trim();
+    }
+    if (tags != null && tags.isNotEmpty) body['tags'] = tags;
+    if (mediaUrls != null && mediaUrls.isNotEmpty) body['media_urls'] = mediaUrls;
+
+    final res = await _client.updateForumPost({'id': 'eq.$postId'}, body);
+    final data = res.data;
+    final list = data is List ? data : <dynamic>[];
+    if (list.isNotEmpty) {
+      final updated =
+          ForumPostModel.fromJson(list.first as Map<String, dynamic>);
+      unawaited(_localDataSource?.saveForumPost(updated));
+      return updated;
+    }
+    final fetchedRes = await _client.fetchForumPosts({'id': 'eq.$postId', 'select': '*'});
+    final fetchedData = fetchedRes.data;
+    final fetchedList = fetchedData is List ? fetchedData : <dynamic>[];
+    if (fetchedList.isNotEmpty) {
+      final post =
+          ForumPostModel.fromJson(fetchedList.first as Map<String, dynamic>);
+      unawaited(_localDataSource?.saveForumPost(post));
+      return post;
+    }
+    throw Exception('Failed to update forum post');
   }
 
   @override
@@ -811,13 +876,17 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
+    bool isAnonymous = false,
   }) async {
     final rawUserId = _userStorage?.getUserId();
     final userId = (rawUserId != null && rawUserId.trim().isNotEmpty)
         ? rawUserId.trim()
         : null;
-    final authorName = _userStorage?.getUserDisplayName() ?? 'Scholar';
-    final authorAvatar = _userStorage?.getUserAvatarUrl();
+    final authorName = isAnonymous
+        ? 'Anonymous Scholar'
+        : (_userStorage?.getUserDisplayName() ?? 'Scholar');
+    final authorAvatar = isAnonymous ? null : _userStorage?.getUserAvatarUrl();
 
     var enrichedContent = content.trim();
     if (mediaUrls != null && mediaUrls.isNotEmpty) {
@@ -828,6 +897,10 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
           ? ' duration:$voiceNoteDurationSeconds'
           : '';
       enrichedContent += '\n<!-- voice: ${voiceNoteUrl.trim()}$durPart -->';
+    }
+    if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty) {
+      enrichedContent +=
+          '\n<!-- voice_transcript: ${voiceNoteTranscript.trim()} -->';
     }
 
     final payload = <String, dynamic>{
@@ -841,10 +914,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       if (voiceNoteUrl != null && voiceNoteUrl.trim().isNotEmpty)
         'voice_note_url': voiceNoteUrl.trim(),
       'voice_note_duration_seconds': ?voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null && voiceNoteTranscript.trim().isNotEmpty)
+        'voice_note_transcript': voiceNoteTranscript.trim(),
       'author_name': authorName,
       'author_id': ?userId,
       if (authorAvatar != null && authorAvatar.trim().isNotEmpty)
         'author_avatar': authorAvatar,
+      'is_anonymous': isAnonymous,
     };
 
     final res = await _safeReplyToForumPost(payload);
@@ -865,7 +941,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       reply = reply.copyWith(
         voiceNoteUrl: voiceNoteUrl,
         voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+        voiceNoteTranscript: voiceNoteTranscript,
       );
+    } else if (reply.voiceNoteTranscript == null &&
+        voiceNoteTranscript != null &&
+        voiceNoteTranscript.isNotEmpty) {
+      reply = reply.copyWith(voiceNoteTranscript: voiceNoteTranscript);
     }
     final cache = _replyCache.putIfAbsent(postId, () => []);
     if (!cache.any((r) => r.id == reply.id)) {
@@ -877,6 +958,59 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       controller.add(List.unmodifiable(cache));
     }
     return reply;
+  }
+
+  @override
+  Future<ForumReplyModel> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
+  }) async {
+    final body = <String, dynamic>{
+      'content': content.trim(),
+      if (latexContent != null && latexContent.trim().isNotEmpty)
+        'latex_content': latexContent.trim(),
+    };
+    final res = await _client.updateForumReply({'id': 'eq.$replyId'}, body);
+    final data = res.data;
+    final list = data is List ? data : <dynamic>[];
+    if (list.isNotEmpty) {
+      final updated =
+          ForumReplyModel.fromJson(list.first as Map<String, dynamic>);
+      unawaited(_localDataSource?.saveForumReply(updated));
+      return updated;
+    }
+    throw Exception('Failed to update forum reply');
+  }
+
+  @override
+  Future<bool> deleteForumReply({
+    required String replyId,
+    required String postId,
+  }) async {
+    try {
+      await _client.deleteForumReply({'id': 'eq.$replyId'});
+      final cache = _replyCache[postId];
+      if (cache != null) {
+        cache.removeWhere((r) => r.id == replyId);
+        final controller = _replyControllers[postId];
+        if (controller != null && !controller.isClosed) {
+          controller.add(List.unmodifiable(cache));
+        }
+      }
+      return true;
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.deleteForumReply failed',
+          ),
+        );
+      }
+      return false;
+    }
   }
 
   Future<HttpResponse<dynamic>> _safeReplyToForumPost(
@@ -902,6 +1036,7 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             ..remove('media_urls')
             ..remove('voice_note_url')
             ..remove('voice_note_duration_seconds')
+            ..remove('voice_note_transcript')
             ..remove('is_anonymous');
           return _safeReplyToForumPost(fallback);
         }
@@ -1217,58 +1352,113 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }).ignore();
     }
 
-    // Seed or refresh cache via direct REST call to /rest/v1/forum_replies
-    _client
-        .fetchForumReplies({
+    Future<void> syncRepliesFromRest() async {
+      if (streamController.isClosed) return;
+      try {
+        final res = await _client.fetchForumReplies({
           'select': '*',
           'post_id': 'eq.$postId',
           'order': 'created_at.asc',
-        })
-        .then((res) {
-          try {
-            final rawList = res.data is List ? (res.data as List) : <dynamic>[];
-            if (rawList.isNotEmpty) {
-              final fetchedReplies = rawList
-                  .map(
-                    (r) => ForumReplyModel.fromJson(r as Map<String, dynamic>),
-                  )
-                  .toList();
-              final currentCache = _replyCache.putIfAbsent(postId, () => []);
-              for (final fetched in fetchedReplies) {
-                if (!currentCache.any((r) => r.id == fetched.id)) {
-                  currentCache.add(fetched);
-                  unawaited(_localDataSource?.saveForumReply(fetched));
-                }
-              }
-              if (!streamController.isClosed) {
-                streamController.add(List.unmodifiable(currentCache));
-              }
-            }
-          } on Exception catch (_) {}
-        })
-        .ignore();
-
-    // Listen for new inserts via WebSocket
-    final wsSub = _realtime
-        .watchTable('forum_replies', filter: 'post_id=eq.$postId')
-        .listen((event) {
-          if (event.type == RealtimeEventType.insert) {
-            try {
-              final reply = ForumReplyModel.fromJson(event.record);
-              final cache = _replyCache.putIfAbsent(postId, () => []);
-              if (!cache.any((r) => r.id == reply.id)) {
-                cache.add(reply);
-                unawaited(_localDataSource?.saveForumReply(reply));
-              }
-              if (!streamController.isClosed) {
-                streamController.add(List.unmodifiable(cache));
-              }
-            } on Exception catch (_) {}
-          }
         });
+        final rawList = res.data is List ? (res.data as List) : <dynamic>[];
+        if (rawList.isNotEmpty && !streamController.isClosed) {
+          final fetchedReplies = rawList
+              .map((r) => ForumReplyModel.fromJson(r as Map<String, dynamic>))
+              .toList();
+          final currentCache = _replyCache.putIfAbsent(postId, () => []);
+          var hasChanges = false;
+          for (final fetched in fetchedReplies) {
+            final idx = currentCache.indexWhere((r) => r.id == fetched.id);
+            if (idx == -1) {
+              currentCache.add(fetched);
+              hasChanges = true;
+              unawaited(_localDataSource?.saveForumReply(fetched));
+            } else if (currentCache[idx] != fetched) {
+              currentCache[idx] = fetched;
+              hasChanges = true;
+              unawaited(_localDataSource?.saveForumReply(fetched));
+            }
+          }
+          if (hasChanges && !streamController.isClosed) {
+            streamController.add(List.unmodifiable(currentCache));
+          }
+        }
+      } on Object catch (_) {}
+    }
+
+    // Initial fetch from REST
+    unawaited(syncRepliesFromRest());
+
+    // Fallback reconciliation timer (every 15s) while subscribed to reconcile missed events
+    Timer? fallbackPollTimer;
+    fallbackPollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!streamController.isClosed && streamController.hasListener) {
+        unawaited(syncRepliesFromRest());
+      }
+    });
+
+    StreamSubscription<RealtimeRowEvent>? wsSub;
+    var reconnectAttempts = 0;
+
+    void subscribeRealtime() {
+      if (streamController.isClosed) return;
+      wsSub?.cancel().ignore();
+
+      wsSub = _realtime
+          .watchTable('forum_replies', filter: 'post_id=eq.$postId')
+          .listen(
+            (event) {
+              reconnectAttempts = 0;
+              try {
+                final reply = ForumReplyModel.fromJson(event.record);
+                final cache = _replyCache.putIfAbsent(postId, () => []);
+                if (event.type == RealtimeEventType.insert) {
+                  final idx = cache.indexWhere((r) => r.id == reply.id);
+                  if (idx == -1) {
+                    cache.add(reply);
+                    unawaited(_localDataSource?.saveForumReply(reply));
+                  } else {
+                    cache[idx] = reply;
+                  }
+                  if (!streamController.isClosed) {
+                    streamController.add(List.unmodifiable(cache));
+                  }
+                } else if (event.type == RealtimeEventType.update) {
+                  final idx = cache.indexWhere((r) => r.id == reply.id);
+                  if (idx != -1) {
+                    cache[idx] = reply;
+                    unawaited(_localDataSource?.saveForumReply(reply));
+                    if (!streamController.isClosed) {
+                      streamController.add(List.unmodifiable(cache));
+                    }
+                  }
+                }
+              } on Object catch (_) {}
+            },
+            onError: (Object error) {
+              if (streamController.isClosed) return;
+              reconnectAttempts++;
+              final delaySeconds = math.min(30, math.pow(2, reconnectAttempts).toInt());
+              Timer(Duration(seconds: delaySeconds), () {
+                if (!streamController.isClosed && streamController.hasListener) {
+                  subscribeRealtime();
+                  unawaited(syncRepliesFromRest());
+                }
+              });
+            },
+            onDone: () {
+              if (!streamController.isClosed && streamController.hasListener) {
+                subscribeRealtime();
+              }
+            },
+          );
+    }
+
+    subscribeRealtime();
 
     streamController.onCancel = () {
-      wsSub.cancel().ignore();
+      fallbackPollTimer?.cancel();
+      wsSub?.cancel().ignore();
       _replyControllers.remove(postId);
       _replyCache.remove(postId);
     };
@@ -1312,6 +1502,13 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
       }
       return _getCuratedFallbackCircles(track: track);
     }
+  }
+
+  @override
+  Stream<List<StudyCircleModel>> watchStudyCircles({String? track}) {
+    return _realtime
+        .watchTable('study_circles')
+        .asyncMap((_) => fetchStudyCircles(track: track));
   }
 
   @override
@@ -1453,10 +1650,12 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
   Future<Map<String, dynamic>> recordPodFocusMinutes({
     required String circleId,
     required int minutes,
+    String? activityType,
   }) async {
     try {
       final body = <String, dynamic>{
         'p_minutes': minutes,
+        'p_activity_type': activityType ?? 'general',
       };
       if (circleId.isNotEmpty) {
         body['p_circle_id'] = circleId;
@@ -1709,6 +1908,35 @@ class CommunityRemoteDataSourceImpl implements CommunityRemoteDataSource {
             e,
             stack,
             reason: 'CommunityRemoteDataSource.claimWeeklyXp failed',
+          ),
+        );
+      }
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  }) async {
+    try {
+      final body = <String, dynamic>{'p_xp_delta': xpDelta};
+      if (streakDays != null) body['p_streak'] = streakDays;
+      if (track != null && track.isNotEmpty) body['p_track'] = track;
+      final res = await _client.syncUserProgress(body);
+      if (res.data is Map<String, dynamic>) {
+        return res.data as Map<String, dynamic>;
+      }
+      return {'success': true};
+    } on Object catch (e, stack) {
+      if (_crashlyticsService != null) {
+        unawaited(
+          _crashlyticsService!.recordError(
+            e,
+            stack,
+            reason: 'CommunityRemoteDataSource.syncUserProgress failed',
           ),
         );
       }

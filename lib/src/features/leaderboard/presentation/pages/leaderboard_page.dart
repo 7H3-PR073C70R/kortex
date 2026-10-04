@@ -29,9 +29,16 @@ class LeaderboardPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<CommunityHubBloc>(
-      create: (_) =>
-          locator<CommunityHubBloc>()..add(const LoadCommunityHubEvent()),
+    final hubBloc = useMemoized(() {
+      final bloc = getOrRenewCommunityHubBloc();
+      if (!bloc.isClosed) {
+        bloc.add(const LoadCommunityHubEvent());
+      }
+      return bloc;
+    });
+
+    return BlocProvider<CommunityHubBloc>.value(
+      value: hubBloc,
       child: const _LeaderboardView(),
     );
   }
@@ -114,9 +121,10 @@ class _LeaderboardView extends HookWidget {
             children: [
               RefreshIndicator(
                 onRefresh: () async {
-                  context.read<CommunityHubBloc>().add(
-                    const LoadCommunityHubEvent(),
-                  );
+                  final bloc = getOrRenewCommunityHubBloc();
+                  if (!bloc.isClosed) {
+                    bloc.add(const LoadCommunityHubEvent());
+                  }
                 },
                 color: colors.primary,
                 child: CustomScrollView(

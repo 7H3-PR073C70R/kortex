@@ -5,7 +5,6 @@ import { LunaClient } from "../_shared/luna_client.ts";
 import { corsHeaders } from "./_shared/cors.ts";
 import {
   Message,
-  normalizeModelForBaseUrl,
   selectModelAndParams,
 } from "./_shared/router.ts";
 
@@ -57,28 +56,9 @@ serve(async (req: Request) => {
     const courseCode = body.courseCode;
     const sessionId = body.sessionId;
 
-    let rawPrompt = body.prompt ?? "";
-    let messages: Message[] = [];
+    const { messages, rawPrompt } = buildMessages(body, socraticMode, courseCode);
 
-    if (body.messages && Array.isArray(body.messages) && body.messages.length > 0) {
-      messages = body.messages;
-      const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
-      rawPrompt = lastUserMsg?.content ?? rawPrompt;
-    } else {
-      const systemInstruction = getSystemPrompt(socraticMode);
-      messages = [
-        { role: "system", content: systemInstruction },
-        ...(body.contextHistory ?? []).map((c) => ({
-          role: (c.sender === "user" ? "user" : "assistant") as
-            | "user"
-            | "assistant",
-          content: c.text,
-        })),
-        { role: "user", content: rawPrompt },
-      ];
-    }
-
-    if (!rawPrompt && messages.length === 0) {
+    if (!rawPrompt && (!messages || messages.length === 0)) {
       return new Response(
         JSON.stringify({ error: "Missing required prompt or messages" }),
         {
@@ -94,7 +74,7 @@ serve(async (req: Request) => {
     const selectedModel = routing.model;
     const reasoningEffort = routing.reasoning_effort;
 
-    const cachePrompt = `syllabot:${selectedModel}:${socraticMode}:${rawPrompt.trim().toLowerCase()}`;
+    const cachePrompt = buildCacheKey(selectedModel, socraticMode, messages);
     const cacheResult = await SemanticCacheProvider.getCachedResponse(
       dbClient,
       cachePrompt,
@@ -104,7 +84,8 @@ serve(async (req: Request) => {
     const isCacheHit = Boolean(
       cacheResult.hit &&
       cacheResult.data?.tokens &&
-      !isCorruptedOrMismatchCache(rawPrompt, cacheResult.data.tokens as string[])
+      Array.isArray(cacheResult.data.tokens) &&
+      cacheResult.data.tokens.length > 0
     );
     const cachedTokens = isCacheHit
       ? (cacheResult.data?.tokens as string[])
@@ -184,6 +165,7 @@ serve(async (req: Request) => {
                       parsed.choices?.[0]?.delta?.content ??
                       parsed.choices?.[0]?.delta?.text ??
                       parsed.content ??
+                      parsed.text ??
                       "";
 
                     if (deltaText) {
@@ -211,16 +193,13 @@ serve(async (req: Request) => {
         }
 
         if (!providerSuccess) {
-          const detailMsg =
-            providerErrors.length > 0
-              ? providerErrors.join("; ")
-              : "Unable to complete AI response from Luna provider.";
           console.error(
-            `[syllabot-stream] Provider stream failed: ${detailMsg}`
+            `[syllabot-stream] All AI providers failed (${providerErrors.join("; ")}). Emitting error event to client.`
           );
           sendEvent("error", {
-            error: "PROVIDER_STREAM_ERROR",
-            message: detailMsg,
+            error:
+              "AI services are temporarily busy across all providers. Please check your connection and try again.",
+            code: "AI_PROVIDERS_UNAVAILABLE",
             details: providerErrors,
           });
           controller.close();
@@ -265,7 +244,7 @@ serve(async (req: Request) => {
                 title:
                   rawPrompt.length > 60
                     ? rawPrompt.slice(0, 57) + "..."
-                    : rawPrompt,
+                    : rawPrompt || "Study Session",
                 socratic_mode: socraticMode,
                 updated_at: new Date().toISOString(),
               },
@@ -324,267 +303,105 @@ serve(async (req: Request) => {
   }
 });
 
-function getSystemPrompt(mode: string): string {
+function getSystemPrompt(mode: string, courseCode?: string): string {
+  const baseInstruction = `You are Syllabot, a standard-grade, context-aware AI tutor and academic study copilot powered by Kotexify.${
+    courseCode ? ` Active Course Context: ${courseCode}.` : ""
+  }`;
+
+  const formattingRules = `
+Formatting & Communication Guidelines:
+1. Always maintain full conversation context across all user messages in this chat session.
+2. Mathematics, Scientific Units & Formula Notation:
+   - Always wrap ALL formulas, variables, numbers with units (e.g. $1.0\\ \\text{m/s}^2$, $2\\ \\Omega$, $500\\ \\text{Hz}$, $0.68\\ \\text{m}$, $340\\ \\text{m/s}$), and mathematical symbols in single dollar signs ($...$) for inline math or double dollar signs ($$...$$) for standalone block equations.
+   - NEVER output bare LaTeX commands without dollar signs (e.g. NEVER write (2\\ \\Omega), (1.0\\ \\text{m/s}^2), or (500\\ \\text{Hz}) without enclosing dollar signs).
+   - In multiple-choice options, format options cleanly as "A) $1.0\\ \\text{m/s}^2$", "B) $2.0\\ \\text{m/s}^2$", etc.
+   - Use standard KaTeX commands with clean single backslashes, e.g. $\\frac{a}{b}$, $\\sqrt{x}$, $\\Omega$, $\\text{m/s}^2$.
+3. Use GitHub-flavored markdown with clean headings, bold text, and bulleted/numbered lists for high readability.
+4. When writing code or algorithmic solutions, use syntax-highlighted code blocks with clear inline annotations.
+`;
+
   switch (mode) {
     case "examSim":
-      return "You are Syllabot Exam Simulator. Test the student's mastery using rigorous exam-level multiple-choice or analytical questions. Grade their reasoning and provide structured rubrics.";
+      return `${baseInstruction}
+Mode: Exam Simulator & Rubric Evaluator.
+Your goal is to test the user's conceptual mastery with exam-level analytical questions, multiple-choice questions, or problem sets. Score their reasoning, point out subtle traps or mistakes, and provide structured rubrics.
+${formattingRules}`;
+
     case "directAnswer":
-      return "You are Syllabot, an expert STEM tutor. Provide concise, direct mathematical solutions with complete step-by-step LaTeX formulations.";
+      return `${baseInstruction}
+Mode: Direct Solution & Mastery.
+Provide concise, direct mathematical solutions, derivations, and explanations without unnecessary conversational filler. Formulate complete step-by-step LaTeX solutions.
+${formattingRules}`;
+
     case "deepResearch":
-      return "You are Syllabot Research Assistant. Provide deep academic explanations, derivations, historical context, and formal scientific citations.";
+      return `${baseInstruction}
+Mode: Deep Research Assistant.
+Provide rigorous academic explanations, formal derivations, historical context, underlying mechanisms, and conceptual citations.
+${formattingRules}`;
+
     case "stepByStep":
     default:
-      return "You are Syllabot, an expert pedagogical tutor. Guide the student step-by-step using the Socratic method. Format all mathematical expressions in LaTeX ($$...$$ for display and $...$ for inline). Guide them to discover the solution rather than immediately revealing final numbers.";
+      return `${baseInstruction}
+Mode: Socratic & Pedagogical Tutor.
+Guide the user step-by-step using the Socratic method. Lead them to discover solutions through key questions, hints, and structured breakdowns rather than revealing final answers prematurely.
+${formattingRules}`;
   }
 }
 
-function isCorruptedOrMismatchCache(rawPrompt: string, cachedTokens: string[]): boolean {
-  const fullCached = cachedTokens.join(" ").toLowerCase();
-  const lowerPrompt = rawPrompt.toLowerCase();
+function buildMessages(
+  body: RequestPayload,
+  socraticMode: string,
+  courseCode?: string
+): { messages: Message[]; rawPrompt: string } {
+  let messages: Message[] = [];
+  let rawPrompt = body.prompt ?? "";
 
-  if (
-    (fullCached.includes("noether") || fullCached.includes("hamiltonian") || fullCached.includes("\\mathcal{h}")) &&
-    !lowerPrompt.includes("noether") &&
-    !lowerPrompt.includes("hamiltonian") &&
-    !lowerPrompt.includes("lagrangian")
-  ) {
-    return true;
+  if (body.messages && Array.isArray(body.messages) && body.messages.length > 0) {
+    messages = [...body.messages];
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    rawPrompt = lastUserMsg?.content ?? rawPrompt;
+
+    const hasSystem = messages.some((m) => m.role === "system");
+    if (!hasSystem) {
+      messages.unshift({
+        role: "system",
+        content: getSystemPrompt(socraticMode, courseCode),
+      });
+    }
+  } else {
+    const systemInstruction = getSystemPrompt(socraticMode, courseCode);
+    const historyMessages: Message[] = (body.contextHistory ?? []).map((c) => ({
+      role: (c.sender === "user" || c.sender === "human" ? "user" : "assistant") as
+        | "user"
+        | "assistant",
+      content: c.text,
+    }));
+
+    messages = [
+      { role: "system", content: systemInstruction },
+      ...historyMessages,
+    ];
+
+    if (rawPrompt.trim()) {
+      messages.push({ role: "user", content: rawPrompt });
+    }
   }
 
-  if (
-    fullCached.includes("a **noun** is a fundamental part of speech") &&
-    (lowerPrompt.includes("adverb") ||
-      lowerPrompt.includes("adjective") ||
-      lowerPrompt.includes("verb") ||
-      lowerPrompt.includes("conjunction") ||
-      lowerPrompt.includes("preposition"))
-  ) {
-    return true;
-  }
-
-  if (
-    fullCached.includes("represents a foundational concept in its respective domain") ||
-    fullCached.includes("curiosity led the researcher to a breakthrough")
-  ) {
-    return true;
-  }
-
-  return false;
+  return { messages, rawPrompt };
 }
 
-function getFallbackTokens(
-  prompt: string,
-  isComplex: boolean,
-  contextHistory?: Array<{ sender: string; text: string }>
-): string[] {
-  const cleanPrompt = prompt.replace(/[?!.]+$/, "").trim();
-  const lower = cleanPrompt.toLowerCase();
-  const previousText = (contextHistory ?? [])
-    .map((c) => c.text.toLowerCase())
-    .join(" ");
+function buildCacheKey(
+  selectedModel: string,
+  socraticMode: string,
+  messages: Message[]
+): string {
+  const contextSignature = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => `${m.role}:${m.content}`)
+    .join("||")
+    .trim()
+    .toLowerCase();
 
-  if (
-    lower.includes("all 8") ||
-    lower.includes("8 of them") ||
-    lower.includes("example of all 8") ||
-    lower.includes("8 parts of speech") ||
-    (lower.includes("examples") && lower.includes("parts of speech")) ||
-    ((lower.includes("example") || lower.includes("explain") || lower.includes("details")) &&
-      previousText.includes("parts of speech"))
-  ) {
-    return [
-      "Here is a comprehensive breakdown of all **8 Parts of Speech** with clear definitions, categories, and detailed sentence examples:",
-      "\n\n### 1. Noun (Naming Word)",
-      "\n• **Definition:** Names a person, place, thing, or abstract idea.",
-      '\n• **Example in context:** *"**Marie Curie** conducted pioneering **research** in a modest **laboratory** in **Paris**."*',
-      "\n• **Breakdown:** *Marie Curie* (Proper Noun), *research* (Abstract Noun), *laboratory* (Concrete Noun), *Paris* (Proper Noun).",
-      "\n\n### 2. Pronoun (Noun Substitute)",
-      "\n• **Definition:** Replaces a noun to avoid awkward repetition.",
-      '\n• **Example in context:** *"When the **engineer** finished the simulation, **she** verified that **it** converged without errors."*',
-      "\n• **Breakdown:** *she* refers back to *engineer*; *it* refers back to *simulation*.",
-      "\n\n### 3. Verb (Action or State)",
-      "\n• **Definition:** Expresses a physical action, a mental process, or a state of being.",
-      '\n• **Example in context:** *"The catalyst **accelerates** the chemical reaction while the temperature **remains** constant."*',
-      "\n• **Breakdown:** *accelerates* (Action Verb, Transitive), *remains* (Linking/State Verb).",
-      "\n\n### 4. Adjective (Noun Descriptor)",
-      "\n• **Definition:** Modifies, qualifies, or describes a noun or pronoun, specifying qualities, quantities, or degrees.",
-      '\n• **Example in context:** *"The **autonomous** rover captured **high-resolution** spectra across **three** distinct craters."*',
-      "\n• **Breakdown:** *autonomous* (Descriptive), *high-resolution* (Descriptive), *three* (Quantitative).",
-      "\n\n### 5. Adverb (Modifier of Verbs/Adjectives/Adverbs)",
-      "\n• **Definition:** Modifies a verb, an adjective, or another adverb by answering *How?*, *When?*, *Where?*, or *To what degree?*",
-      '\n• **Example in context:** *"The neural network converged **exceptionally** **rapidly** yesterday."*',
-      "\n• **Breakdown:** *rapidly* (Manner, modifies *converged*), *exceptionally* (Degree, modifies *rapidly*), *yesterday* (Time).",
-      "\n\n### 6. Preposition (Relational Word)",
-      "\n• **Definition:** Shows relationships of location, direction, time, or spatial orientation between nouns and other words.",
-      '\n• **Example in context:** *"The current traveled **through** the superconductor **at** sub-zero temperatures."*',
-      "\n• **Breakdown:** *through* (Spatial orientation), *at* (Condition/state).",
-      "\n\n### 7. Conjunction (Connector)",
-      "\n• **Definition:** Links words, phrases, or clauses together.",
-      '\n• **Example in context:** *"The hypothesis was bold, **yet** the empirical evidence was undeniable **because** every trial reproduced the same result."*',
-      "\n• **Breakdown:** *yet* (Coordinating conjunction), *because* (Subordinating conjunction).",
-      "\n\n### 8. Interjection (Exclamatory Word)",
-      "\n• **Definition:** Expresses sudden emotion, reaction, or exclamation; grammatically independent from the main clause.",
-      '\n• **Example in context:** *"**Eureka!** The crystallographic pattern finally aligned."*',
-      "\n• **Breakdown:** *Eureka!* (Expresses sudden discovery/triumph).",
-      "\n\n---\n*Socratic Practice:* Can you compose a single sentence that successfully incorporates at least **five** of these eight parts of speech?",
-    ];
-  }
-
-  if (
-    lower.includes("parts of speech") ||
-    lower.includes("part of speech") ||
-    lower.includes("part of speach") ||
-    lower.includes("parts of speach")
-  ) {
-    return [
-      "The **parts of speech** are the primary grammatical categories of words based on their syntactic and semantic functions in a sentence.",
-      "\n\n### The 8 Essential Parts of Speech:",
-      "\n1. **Noun:** Names a person, place, thing, or concept (*laboratory*, *entropy*).",
-      "\n2. **Pronoun:** Replaces a noun (*it*, *they*, *who*).",
-      "\n3. **Verb:** Expresses an action or state of being (*synthesize*, *radiate*).",
-      "\n4. **Adjective:** Modifies or describes a noun (*conductive*, *dense*).",
-      "\n5. **Adverb:** Modifies a verb, adjective, or another adverb (*precisely*, *rapidly*).",
-      "\n6. **Preposition:** Indicates spatial or temporal relationships (*across*, *within*).",
-      "\n7. **Conjunction:** Connects clauses or words (*and*, *because*, *although*).",
-      "\n8. **Interjection:** Expresses emotion or exclamation (*eureka!*, *indeed*).",
-      "\n\n*Socratic Check:* Which specific part of speech would you like to explore deeper?",
-    ];
-  }
-
-  if (lower.includes("adverb")) {
-    return [
-      "An **adverb** is a part of speech that modifies or qualifies a **verb**, an **adjective**, or **another adverb**.",
-      "\n\n### 1. Categories of Adverbs:",
-      "\n• **Manner (How?):** *accurately*, *smoothly*, *carefully*",
-      "\n• **Time (When?):** *yesterday*, *already*, *simultaneously*",
-      "\n• **Place (Where?):** *here*, *everywhere*, *downward*",
-      "\n• **Degree (To what extent?):** *extremely*, *sufficiently*, *very*",
-      "\n• **Frequency (How often?):** *frequently*, *periodically*, *never*",
-      "\n\n### 2. Sentence Structure Examples:",
-      '\n1. Modifying a verb: *"The algorithm executed **flawlessly**."*',
-      '\n2. Modifying an adjective: *"The solution was **remarkably** simple."*',
-      '\n3. Modifying another adverb: *"The particle moved **quite** rapidly."*',
-      '\n\n*Socratic Check:* Can you identify the adverb in: *"The researcher examined the specimen carefully"*?',
-    ];
-  }
-
-  if (lower.includes("adjective")) {
-    return [
-      "An **adjective** is a part of speech that modifies, describes, or quantifies a **noun** or **pronoun**.",
-      "\n\n### 1. Types of Adjectives:",
-      "\n• **Descriptive (Qualitative):** *efficient*, *turbulent*, *crystalline*",
-      "\n• **Quantitative:** *three*, *several*, *abundant*, *zero*",
-      "\n• **Demonstrative:** *this*, *that*, *these*, *those*",
-      "\n• **Comparative & Superlative:** *faster / fastest*, *more stable / most stable*",
-      "\n\n### 2. Syntactic Placement:",
-      '\n• **Attributive (Before the noun):** *"A **magnetic** field..."*',
-      '\n• **Predicative (After a linking verb):** *"The reaction is **exothermic**."*',
-      '\n\n*Socratic Check:* What are the adjectives in: *"Two innovative scientists discovered a rare isotope."*?',
-    ];
-  }
-
-  if (/\b(verbs?|action words?)\b/i.test(lower)) {
-    return [
-      "A **verb** is the essential grammatical part of speech that expresses an **action**, an **occurrence**, or a **state of being**.",
-      "\n\n### 1. Primary Classifications:",
-      "\n• **Action Verbs:** *accelerate*, *synthesize*, *radiate*",
-      "\n• **Linking Verbs (State of Being):** *is*, *become*, *remain*, *seem*",
-      "\n• **Auxiliary (Helping) Verbs:** *have*, *can*, *will*, *must*",
-      '\n• **Transitive vs. Intransitive:** Transitive verbs take an object (*"She **proved** the theorem"*); intransitive verbs do not (*"The stars **glow**"*).',
-      '\n\n*Socratic Check:* What is the verb in: *"The enzyme accelerates the biochemical reaction"*, and is it transitive or intransitive?',
-    ];
-  }
-
-  if (/\b(nouns?)\b/i.test(lower)) {
-    return [
-      "A **noun** is a fundamental part of speech that names a **person**, **place**, **thing**, or **idea**.",
-      "\n\n### 1. Categories of Nouns:",
-      "\n• **Common Nouns:** General names for things (e.g., *student*, *city*, *book*).",
-      "\n• **Proper Nouns:** Specific names, always capitalized (e.g., *Wuke Anjolaoluwa Omotoyosi*, *London*, *Kortex*).",
-      "\n• **Abstract Nouns:** Intangible concepts, feelings, or qualities (e.g., *gravity*, *knowledge*, *courage*).",
-      "\n• **Concrete Nouns:** Tangible objects perceptible by the senses (e.g., *apple*, *telescope*).",
-      "\n• **Collective Nouns:** Groups of individuals or items (e.g., *team*, *flock*, *committee*).",
-      "\n\n### 2. Syntactic Function in Sentences:",
-      "\nIn a sentence, a noun typically functions as either:",
-      '\n1. **The Subject:** Who or what performs the action (*"The **algorithm** converged quickly."*)',
-      '\n2. **The Direct Object:** The entity receiving the action (*"The student solved the **equation**."*)',
-      '\n3. **The Object of a Preposition:** (*"Inside the **laboratory**..."*)',
-      '\n\n*Socratic Check:* Can you identify the nouns in this sentence: *"Curiosity led the researcher to a breakthrough"*?',
-    ];
-  }
-
-  if (
-    lower.includes("circle") ||
-    lower.includes("angle at center") ||
-    lower.includes("circumference") ||
-    lower.includes("inscribed") ||
-    lower.includes("chord") ||
-    lower.includes("tangent")
-  ) {
-    return [
-      "Let us prove the fundamental circle theorem from geometric first principles.",
-      "\n\n**Theorem Statement:**",
-      "\nThe angle subtended by an arc at the center is twice the angle subtended by it at any point on the circumference:",
-      "\n$$\\mathbf{\\angle AOB = 2 \\times \\angle APB}$$",
-      "\n\n**1. Geometric Construction:**",
-      "\nLet $O$ be the center of the circle. Draw line $PO$ extending to point $C$ on the circle. Because $OA = OB = OP = r$ (radii of the circle), triangles $\\triangle APO$ and $\\triangle BPO$ are isosceles:",
-      "\n$$\\angle OPA = \\angle OAP = \\alpha, \\quad \\angle OPB = \\angle OBP = \\beta$$",
-      "\n\n**2. Exterior Angle Theorem:**",
-      "\nThe exterior angle of a triangle equals the sum of its two opposite interior angles:",
-      "\n$$\\angle AOC = \\alpha + \\alpha = 2\\alpha, \\quad \\angle BOC = \\beta + \\beta = 2\\beta$$",
-      "\n\n**3. Angle Synthesis & Proof Completion:**",
-      "\nSumming the adjacent angles at the center:",
-      "\n$$\\angle AOB = \\angle AOC + \\angle BOC = 2\\alpha + 2\\beta = 2(\\alpha + \\beta)$$",
-      "\nSince $\\angle APB = \\alpha + \\beta$:",
-      "\n$$\\mathbf{\\angle AOB = 2 \\angle APB \\quad \\blacksquare}$$",
-      "\n\nWould you like to solve a numerical practice problem or convert this theorem into flashcards?",
-    ];
-  }
-
-  if (
-    lower === "whoami" ||
-    lower.includes("what is whoami") ||
-    lower.includes("whoami command")
-  ) {
-    return [
-      "In computing and POSIX-compliant operating systems (Linux, macOS, Unix), **`whoami`** is a standard core utility that prints the effective username associated with the current running process.",
-      "\n\n### 1. Underlying Mechanics:",
-      "\n• **Effective User ID (EUID):** Operating systems enforce file and process permissions based on the *effective user ID*. When you run `whoami`, the system invokes `geteuid()` and maps that numerical identifier to a username in `/etc/passwd` or the directory service.",
-      "\n• **Privilege Boundaries:** If an unprivileged user executes `whoami`, it outputs their username (e.g., `student`). When run via `sudo whoami`, it outputs `root` because the execution context has been elevated to superuser privileges.",
-      "\n\n### 2. Practical Applications:",
-      '\n1. **Shell Script Automation:** Checking runtime privileges before critical tasks (*e.g., `if [ "$(whoami)" != "root" ]; then echo "Requires root"; exit 1; fi`*).',
-      "\n2. **Remote SSH & Container Auditing:** Confirming the active user session in containerized (Docker/Kubernetes) or multi-tenant environments.",
-      "\n\n*Socratic Check:* If a binary has the **SUID (Set User ID)** permission enabled and is owned by `root`, what will `whoami` return when executed by an unprivileged user?",
-    ];
-  }
-
-  if (
-    lower.includes("who are you") ||
-    lower.includes("what are you") ||
-    lower.includes("what is syllabot") ||
-    lower.includes("tell me about yourself")
-  ) {
-    return [
-      "I am **Syllabot**, your adaptive academic AI tutor and study copilot built directly into **Kortex**.",
-      "\n\n### How I Support Your Learning:",
-      "\n• **Socratic Problem Solving:** Guiding you through STEM derivations, proofs, and practice problems step-by-step.",
-      "\n• **Exam Simulation & Rubrics:** Testing your knowledge with exam-level analytical questions and scoring your conceptual reasoning.",
-      "\n• **Course-Integrated RAG:** Aligning explanations with your uploaded lecture notes, syllabus topics, and textbook chunks.",
-      "\n• **Private Hybrid Intelligence:** Running either fast cloud inference or private on-device LLMs whenever you are offline.",
-      "\n\n*What academic subject or exam topic would you like to master today?*",
-    ];
-  }
-
-  return [
-    `Let's break down **"${cleanPrompt}"** from first principles:`,
-    "\n\n### 1. Definition & Core Meaning",
-    `\n**"${cleanPrompt}"** represents a foundational concept in its respective domain. To understand it clearly, we examine its definition, primary characteristics, and operational context.`,
-    "\n\n### 2. Key Components & Mechanics",
-    "\n• **Primary Attributes:** Identify the core properties and distinguishing features.",
-    "\n• **Contextual Relationship:** Understand how this concept connects to related principles.",
-    "\n• **Practical Application:** Observe how it is used in problem-solving and real-world scenarios.",
-    "\n\n### 3. Summary & Socratic Verification",
-    "\nUnderstanding the fundamental definition allows us to apply this concept accurately across varied contexts.",
-    `\n\n*Socratic Question:* How would you explain "${cleanPrompt}" in your own words?`,
-  ];
+  return `syllabot:${selectedModel}:${socraticMode}:${contextSignature}`;
 }
+

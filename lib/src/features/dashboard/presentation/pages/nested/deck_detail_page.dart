@@ -239,7 +239,7 @@ class _DeckDetailContent extends HookWidget {
                                 ),
                               ),
                               child: Text(
-                                'FSRS ACTIVE QUEUE',
+                                'ACTIVE REVIEW QUEUE',
                                 style: typography.caption.bold.copyWith(
                                   color: colors.primary,
                                 ),

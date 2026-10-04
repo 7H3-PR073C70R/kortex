@@ -6,6 +6,7 @@ import 'package:kortex/src/core/services/local_storage_service.dart';
 import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/sync/app_sync_engine.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/domain/entities/auth_status.dart';
 import 'package:kortex/src/features/auth/domain/entities/user_profile_entity.dart';
@@ -19,11 +20,15 @@ import 'package:kortex/src/features/auth/domain/use_cases/reset_password_use_cas
 import 'package:kortex/src/features/auth/domain/use_cases/update_course_track_use_case.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_event.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_state.dart';
+import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
 import 'package:kortex/src/features/community/presentation/bloc/auto_community_cubit.dart';
 import 'package:kortex/src/features/dashboard/domain/repositories/dashboard_repository.dart';
+import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/monetization/data/datasources/revenuecat_service.dart';
 import 'package:kortex/src/features/monetization/domain/use_cases/redeem_promo_code_use_case.dart';
 import 'package:kortex/src/features/profile/data/client/profile_api_client.dart';
+import 'package:kortex/src/features/profile/domain/use_cases/update_display_name_use_case.dart';
+import 'package:kortex/src/features/quiz/domain/repositories/quiz_repository.dart';
 
 /// Main authentication BLoC coordinating domain use cases and reactive state.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -83,16 +88,66 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthCheckRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    final userStorage = locator.isRegistered<UserStorageService>()
+        ? locator<UserStorageService>()
+        : null;
+    final hasSession = userStorage?.hasActiveSession() ?? false;
 
-    final profileRes = await _authRepository.getUserProfile();
-    await profileRes.fold(
-      (failure) async => emit(
+    if (!hasSession) {
+      emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
           sessionStatus: AuthSessionStatus.unauthenticated,
         ),
-      ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(status: AuthStatus.loading));
+
+    final profileRes = await _authRepository.getUserProfile();
+    await profileRes.fold(
+      (failure) async {
+        // Session is active in secure storage; error is transient or device is offline.
+        // Retrieve locally cached profile if available, or synthesize a fallback profile.
+        final cachedProfile = userStorage?.getCachedUserProfile();
+        if (cachedProfile != null) {
+          final isOnboarded = _computeIsOnboarded(cachedProfile);
+          if (locator.isRegistered<UserActivityService>()) {
+            unawaited(
+              locator<UserActivityService>().hydrateFromRemote(
+                streakDays: cachedProfile.streakDays,
+                xpPoints: cachedProfile.xpPoints,
+                streakFreezes: cachedProfile.streakFreezeCount,
+              ),
+            );
+          }
+          emit(
+            state.copyWith(
+              status: AuthStatus.authenticated,
+              userProfile: cachedProfile,
+              sessionStatus: isOnboarded
+                  ? AuthSessionStatus.authenticatedComplete
+                  : AuthSessionStatus.authenticatedNeedsOnboarding,
+            ),
+          );
+        } else {
+          final fallbackProfile = UserProfileEntity(
+            id: userStorage?.getUserId() ?? 'offline_user',
+            email: userStorage?.getUserEmail() ?? '',
+            displayName: userStorage?.getUserDisplayName(),
+            photoUrl: userStorage?.getUserAvatarUrl(),
+            isOnboarded: true,
+          );
+          emit(
+            state.copyWith(
+              status: AuthStatus.authenticated,
+              userProfile: fallbackProfile,
+              sessionStatus: AuthSessionStatus.authenticatedComplete,
+            ),
+          );
+        }
+      },
       (profile) async {
         if (profile.id.isEmpty && profile.email.isEmpty) {
           emit(
@@ -128,6 +183,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             effectiveProfile.subscriptionTier.toLowerCase() != 'pro') {
           effectiveProfile = effectiveProfile.copyWith(subscriptionTier: 'pro');
         }
+        if (isOnboarded) {
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.hasCompletedOnboarding,
+                data: 'true',
+              ),
+            );
+          } on Object catch (_) {}
+        }
         if (isOnboarded && !profile.isOnboarded) {
           try {
             unawaited(
@@ -143,9 +208,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           } on Object catch (_) {}
         }
 
+        // Persist targetTrack locally for leaderboard fallback
+        if (effectiveProfile.targetTrack.isNotEmpty) {
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.userTargetTrack,
+                data: effectiveProfile.targetTrack,
+              ),
+            );
+          } on Object catch (_) {}
+        }
+
         final session = isOnboarded
             ? AuthSessionStatus.authenticatedComplete
             : AuthSessionStatus.authenticatedNeedsOnboarding;
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().hydrateFromRemote(
+              streakDays: effectiveProfile.streakDays,
+              xpPoints: effectiveProfile.xpPoints,
+              streakFreezes: effectiveProfile.streakFreezeCount,
+            ),
+          );
+        }
         emit(
           state.copyWith(
             status: isOnboarded
@@ -166,6 +252,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             );
           } on Object catch (_) {}
           _syncDeviceToken(profile.id);
+          _flushAllPendingSyncs();
         }
       },
     );
@@ -191,27 +278,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthAppResumed event,
     Emitter<AuthState> emit,
   ) async {
+    _flushAllPendingSyncs();
     if (locator.isRegistered<UserStorageService>()) {
       final storage = locator<UserStorageService>();
-      if (storage.isTokenExpired()) {
-        final refreshRes = await _authRepository.refreshSession();
-        await refreshRes.fold(
-          (failure) async {
-            emit(
-              state.copyWith(
-                status: AuthStatus.unauthenticated,
-                sessionStatus: AuthSessionStatus.unauthenticated,
-              ),
-            );
-          },
-          (_) async {
-            add(const AuthCheckRequested());
-          },
-        );
-        return;
+      if (storage.hasActiveSession()) {
+        if (storage.isTokenExpired()) {
+          final refreshRes = await _authRepository.refreshSession();
+          await refreshRes.fold(
+            (failure) async {
+              // Transient network/offline error: preserve session, do NOT unauthenticate
+              // (TokenInterceptor will handle genuine revocation).
+            },
+            (_) async {
+              add(const AuthCheckRequested());
+            },
+          );
+          return;
+        }
       }
     }
     add(const AuthCheckRequested());
+  }
+
+  void _flushAllPendingSyncs() {
+    if (locator.isRegistered<CardSyncQueue>()) {
+      unawaited(locator<CardSyncQueue>().flushPendingLogs());
+    }
+    if (locator.isRegistered<QuizRepository>()) {
+      unawaited(locator<QuizRepository>().flushPendingQuizSubmissions());
+    }
+    if (locator.isRegistered<UserActivityService>()) {
+      unawaited(locator<UserActivityService>().syncPendingProgressToBackend());
+    }
+    if (locator.isRegistered<CommunityRepository>()) {
+      unawaited(locator<CommunityRepository>().flushPendingForumActions());
+    }
+    if (locator.isRegistered<AppSyncEngine>()) {
+      unawaited(locator<AppSyncEngine>().flush());
+    }
   }
 
   void _syncDeviceToken([String? userId]) {
@@ -308,8 +412,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
+          final emailPrefix =
+              user.email.contains('@') ? user.email.split('@').first : '';
+          var resolvedUser = user;
+          if (event.displayName != null &&
+              event.displayName!.trim().isNotEmpty &&
+              event.displayName!.trim() != emailPrefix) {
+            resolvedUser =
+                user.copyWith(displayName: event.displayName!.trim());
+            if (locator.isRegistered<UserStorageService>()) {
+              unawaited(
+                locator<UserStorageService>().saveUserDisplayName(
+                  event.displayName!.trim(),
+                ),
+              );
+            }
+          }
           final hasActiveSession =
-              user.token != null && user.token!.trim().isNotEmpty;
+              resolvedUser.token != null &&
+              resolvedUser.token!.trim().isNotEmpty;
           if (hasActiveSession) {
             try {
               unawaited(
@@ -337,15 +458,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 status: AuthStatus.needsOnboarding,
                 sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
                 needsEmailVerification: false,
-                user: user,
+                user: resolvedUser,
               ),
             );
-            if (user.id.isNotEmpty) {
-              _syncDeviceToken(user.id);
+            if (resolvedUser.id.isNotEmpty) {
+              _syncDeviceToken(resolvedUser.id);
             }
             add(const AuthProfileFetchRequested());
           } else {
-            if (event.promoCode != null && event.promoCode!.trim().isNotEmpty) {
+            if (event.promoCode != null &&
+                event.promoCode!.trim().isNotEmpty) {
               try {
                 unawaited(
                   locator<LocalStorageService>().savePreference(
@@ -360,7 +482,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
                 status: AuthStatus.needsEmailVerification,
                 sessionStatus: AuthSessionStatus.unauthenticated,
                 needsEmailVerification: true,
-                user: user,
+                user: resolvedUser,
               ),
             );
           }
@@ -400,6 +522,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           ),
         ),
         (user) {
+          final emailPrefix =
+              user.email.contains('@') ? user.email.split('@').first : '';
+          var resolvedUser = user;
+          if (locator.isRegistered<UserStorageService>()) {
+            final storedName =
+                locator<UserStorageService>().getUserDisplayName();
+            if ((resolvedUser.displayName == null ||
+                    resolvedUser.displayName!.trim().isEmpty ||
+                    resolvedUser.displayName!.trim() == emailPrefix) &&
+                storedName != null &&
+                storedName.trim().isNotEmpty &&
+                storedName.trim() != emailPrefix) {
+              resolvedUser =
+                  resolvedUser.copyWith(displayName: storedName.trim());
+            }
+          }
           // Only maintain isNewlyRegistered if explicitly initiated by a new registration
           final currentIsNew =
               locator<LocalStorageService>().getPreference(
@@ -437,14 +575,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               status: AuthStatus.needsOnboarding,
               sessionStatus: AuthSessionStatus.authenticatedNeedsOnboarding,
               needsEmailVerification: false,
-              user: user,
+              user: resolvedUser,
             ),
           );
-          if (user.id.isNotEmpty) {
+          if (resolvedUser.id.isNotEmpty) {
             try {
-              unawaited(RevenueCatService.instance.init(user.id));
+              unawaited(RevenueCatService.instance.init(resolvedUser.id));
             } on Object catch (_) {}
-            _syncDeviceToken(user.id);
+            _syncDeviceToken(resolvedUser.id);
           }
           add(const AuthProfileFetchRequested());
         },
@@ -570,6 +708,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       (_) async {},
       (profile) async {
         var mergedProfile = profile;
+        final emailPrefix = mergedProfile.email.contains('@')
+            ? mergedProfile.email.split('@').first
+            : '';
+        if (locator.isRegistered<UserStorageService>()) {
+          final userStorage = locator<UserStorageService>();
+          final storedName = userStorage.getUserDisplayName();
+          final hasDefaultedName = mergedProfile.displayName == null ||
+              mergedProfile.displayName!.trim().isEmpty ||
+              (emailPrefix.isNotEmpty &&
+                  mergedProfile.displayName!.trim() == emailPrefix);
+          if (hasDefaultedName &&
+              storedName != null &&
+              storedName.trim().isNotEmpty &&
+              storedName.trim() != emailPrefix) {
+            mergedProfile =
+                mergedProfile.copyWith(displayName: storedName.trim());
+            if (locator.isRegistered<UpdateDisplayNameUseCase>()) {
+              try {
+                unawaited(
+                  locator<UpdateDisplayNameUseCase>()(storedName.trim()),
+                );
+              } on Object catch (_) {}
+            }
+          }
+          unawaited(userStorage.saveUserProfile(mergedProfile));
+        }
         try {
           final liveStreak = locator<UserActivityService>().getCurrentStreak();
           if (liveStreak > profile.streakDays) {
@@ -642,6 +806,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           } on Object catch (_) {}
         }
 
+        // Persist targetTrack locally so the leaderboard can read it even
+        // when the auth profile has not yet loaded in the current frame.
+        if (mergedProfile.targetTrack.isNotEmpty) {
+          try {
+            unawaited(
+              locator<LocalStorageService>().savePreference(
+                key: PrefKeys.userTargetTrack,
+                data: mergedProfile.targetTrack,
+              ),
+            );
+          } on Object catch (_) {}
+        }
+
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().hydrateFromRemote(
+              streakDays: mergedProfile.streakDays,
+              xpPoints: mergedProfile.xpPoints,
+              streakFreezes: mergedProfile.streakFreezeCount,
+            ),
+          );
+        }
         emit(
           state.copyWith(
             userProfile: mergedProfile,
@@ -730,15 +916,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthDisplayNameUpdated event,
     Emitter<AuthState> emit,
   ) {
-    if (state.userProfile != null) {
-      emit(
-        state.copyWith(
-          userProfile: state.userProfile!.copyWith(
-            displayName: event.displayName,
-          ),
-        ),
+    if (locator.isRegistered<UserStorageService>()) {
+      unawaited(
+        locator<UserStorageService>().saveUserDisplayName(event.displayName),
       );
     }
+    final updatedProfile = state.userProfile?.copyWith(
+      displayName: event.displayName,
+    );
+    final updatedUser = state.user?.copyWith(
+      displayName: event.displayName,
+    );
+    emit(
+      state.copyWith(
+        userProfile: updatedProfile,
+        user: updatedUser,
+      ),
+    );
   }
 
   void _onStreakIncremented(
@@ -772,11 +966,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Persist to Supabase profiles table
       try {
         unawaited(
-          locator<ProfileApiClient>().updateProfile(
-            userId: state.userProfile!.id,
-            streakDays: updatedStreak,
-            streakFreezeCount: liveFreezes,
-          ),
+          locator<ProfileApiClient>()
+              .updateProfile(
+                userId: state.userProfile!.id,
+                streakDays: updatedStreak,
+                streakFreezeCount: liveFreezes,
+              )
+              .catchError((Object error, StackTrace stackTrace) {
+                // Background synchronization error logged safely
+              }),
         );
       } on Object catch (_) {}
     }

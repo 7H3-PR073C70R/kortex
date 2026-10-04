@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/study_activity_tracker.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_duel_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/quiz_duel_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_duel_state.dart';
@@ -15,10 +18,9 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   final QuizDuelRepository _repository;
   StreamSubscription<QuizDuelMatch>? _duelSubscription;
   Timer? _countdownTimer;
-  Timer? _summarySafetyTimer;
   DateTime? _roundStartTime;
 
-  /// Starts searching for a real-time peer or AI study-buddy.
+  /// Starts searching for a real-time peer, joining by room code, or AI study-buddy.
   Future<void> startMatchmaking({
     required String subject,
     required String examBoard,
@@ -26,12 +28,14 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     required String displayName,
     required String avatarUrl,
     int questionCount = 10,
+    String? roomCode,
   }) async {
     emit(
       state.copyWith(
         status: QuizDuelStatus.matching,
         currentUserId: userId,
         clearSelectedOption: true,
+        clearFailure: true,
       ),
     );
 
@@ -42,6 +46,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
       displayName: displayName,
       avatarUrl: avatarUrl,
       questionCount: questionCount,
+      roomCode: roomCode,
     );
 
     result.fold(
@@ -50,6 +55,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
           state.copyWith(
             status: QuizDuelStatus.cancelled,
             errorMessage: failure.message,
+            failure: failure,
           ),
         );
       },
@@ -58,6 +64,7 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
           state.copyWith(
             match: match,
             status: match.status,
+            clearFailure: true,
           ),
         );
         _subscribeToMatchStream(match.duelId);
@@ -98,27 +105,41 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
                 previousStatus != QuizDuelStatus.finished;
 
             if (isMatchCountdown) {
-              _summarySafetyTimer?.cancel();
               _startLobbyCountdown(3);
             } else if (isNewRound) {
-              _summarySafetyTimer?.cancel();
               _startQuestionCountdown(match.durationPerQuestionSeconds);
             } else if (match.status == QuizDuelStatus.roundSummary) {
-              _summarySafetyTimer?.cancel();
-              _summarySafetyTimer = Timer(const Duration(milliseconds: 2800), () async {
-                if (!isClosed && state.status == QuizDuelStatus.roundSummary && state.match != null) {
-                  await _repository.submitDuelAnswer(
-                    duelId: state.match!.duelId,
-                    userId: state.currentUserId,
-                    questionIndex: state.match!.currentQuestionIndex,
-                    optionIndex: state.selectedOptionIndex ?? -1,
-                    responseTimeMs: 15000,
-                  );
-                }
-              });
+              _countdownTimer?.cancel();
             } else if (isJustFinished) {
-              _summarySafetyTimer?.cancel();
+              _countdownTimer?.cancel();
               unawaited(_repository.recordDuelOutcome(match));
+              if (locator.isRegistered<UserActivityService>()) {
+                final isWinner = match.winnerUserId == state.currentUserId;
+                unawaited(
+                  locator<UserActivityService>().awardXp(
+                    isWinner
+                        ? XpActivityCategory.quizDuelWin
+                        : XpActivityCategory.quizDuelParticipation,
+                    sourceId: match.duelId,
+                    metadata: {'isWinner': isWinner, 'subject': match.subject},
+                  ),
+                );
+              }
+              if (locator.isRegistered<StudyActivityTracker>()) {
+                final totalDuelDuration =
+                    match.questions.length * match.durationPerQuestionSeconds;
+                unawaited(
+                  locator<StudyActivityTracker>().recordActivityCompletion(
+                    durationSeconds:
+                        totalDuelDuration > 0 ? totalDuelDuration : 60,
+                    activityType: 'duel',
+                    metadata: {
+                      'duelId': match.duelId,
+                      'subject': match.subject,
+                    },
+                  ),
+                );
+              }
             }
 
             emit(
@@ -226,7 +247,6 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
   /// Exits the current match and frees resources.
   Future<void> leaveMatch() async {
     _countdownTimer?.cancel();
-    _summarySafetyTimer?.cancel();
     if (state.match != null) {
       await _repository.leaveDuel(
         duelId: state.match!.duelId,
@@ -243,10 +263,123 @@ class QuizDuelCubit extends Cubit<QuizDuelState> {
     await _repository.matchWithAiImmediately(duelId: state.match!.duelId);
   }
 
+  /// Requests or accepts a rematch with the duel opponent.
+  Future<void> requestRematch() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: true));
+
+    final result = await _repository.requestRematch(
+      duelId: currentMatch.duelId,
+      userId: state.currentUserId,
+    );
+
+    result.fold(
+      (failure) {
+        emit(
+          state.copyWith(
+            isRematchLoading: false,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (match) {
+        final isNewMatch = match.duelId != currentMatch.duelId;
+        if (isNewMatch) {
+          _subscribeToMatchStream(match.duelId);
+        }
+        emit(
+          state.copyWith(
+            match: match,
+            status: match.status,
+            isRematchLoading: false,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Accepts a rematch challenge requested by rival.
+  Future<void> acceptRematch() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: true));
+
+    final result = await _repository.acceptRematch(
+      duelId: currentMatch.duelId,
+      userId: state.currentUserId,
+    );
+
+    result.fold(
+      (failure) {
+        emit(
+          state.copyWith(
+            isRematchLoading: false,
+            errorMessage: failure.message,
+          ),
+        );
+      },
+      (match) {
+        if (match.duelId != currentMatch.duelId) {
+          _subscribeToMatchStream(match.duelId);
+        }
+        emit(
+          state.copyWith(
+            match: match,
+            status: match.status,
+            isRematchLoading: false,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Declines or cancels an active rematch request.
+  Future<void> declineRematch() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: false));
+
+    await _repository.declineRematch(
+      duelId: currentMatch.duelId,
+      userId: state.currentUserId,
+    );
+
+    emit(
+      state.copyWith(
+        match: currentMatch.copyWith(clearRematch: true),
+        isRematchLoading: false,
+      ),
+    );
+  }
+
+  /// Starts an instant AI rematch if human peer is unresponsive or player prefers AI.
+  Future<void> rematchWithAiImmediately() async {
+    final currentMatch = state.match;
+    if (currentMatch == null) return;
+
+    emit(state.copyWith(isRematchLoading: true));
+
+    final p1 = state.myParticipant;
+    await startMatchmaking(
+      subject: currentMatch.subject,
+      examBoard: currentMatch.examBoard,
+      userId: state.currentUserId,
+      displayName: p1?.displayName ?? 'Scholar',
+      avatarUrl: p1?.avatarUrl ?? '⚡',
+      questionCount: currentMatch.questions.length,
+    );
+
+    await matchWithAiImmediately();
+    emit(state.copyWith(isRematchLoading: false));
+  }
+
   @override
   Future<void> close() {
     _countdownTimer?.cancel();
-    _summarySafetyTimer?.cancel();
     unawaited(_duelSubscription?.cancel());
     return super.close();
   }

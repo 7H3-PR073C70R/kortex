@@ -47,6 +47,9 @@ class AppMultimodalImage extends StatelessWidget {
         clean.startsWith('/')) {
       return clean;
     }
+    if (clean.startsWith('documents/')) {
+      return '${AppApiEndpoint.r2PublicDomain}/$clean';
+    }
     // Relative Supabase card-assets bucket path
     return AppApiEndpoint.getCardAssetPublicUrl(clean);
   }

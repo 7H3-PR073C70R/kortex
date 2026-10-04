@@ -40,5 +40,8 @@ void _initClients() {
     )
     ..registerLazySingleton<QuizDuelWebSocketClient>(
       QuizDuelWebSocketClient.new,
+    )
+    ..registerLazySingleton<AppVersionApiClient>(
+      () => AppVersionApiClient(locator<Dio>()),
     );
 }

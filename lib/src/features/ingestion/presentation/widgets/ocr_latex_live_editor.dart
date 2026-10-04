@@ -17,12 +17,16 @@ class OcrLatexLiveEditor extends HookWidget {
     required this.snippet,
     required this.onChanged,
     this.availableImageUrls = const [],
+    this.cardNumber,
+    this.onDelete,
     super.key,
   });
 
   final OcrExtractionEntity snippet;
   final ValueChanged<OcrExtractionEntity> onChanged;
   final List<String> availableImageUrls;
+  final int? cardNumber;
+  final VoidCallback? onDelete;
 
   void _showDiagramPicker(BuildContext context) {
     final colors = context.colors;
@@ -300,6 +304,21 @@ class OcrLatexLiveEditor extends HookWidget {
     );
     final topicController = useTextEditingController(text: snippet.topic);
 
+    useListenable(latexController);
+
+    useEffect(() {
+      if (rawTextController.text != snippet.rawText) {
+        rawTextController.text = snippet.rawText;
+      }
+      if (latexController.text != (snippet.latexContent ?? '')) {
+        latexController.text = snippet.latexContent ?? '';
+      }
+      if (topicController.text != snippet.topic) {
+        topicController.text = snippet.topic;
+      }
+      return null;
+    }, [snippet.rawText, snippet.latexContent, snippet.topic]);
+
     void notifyUpdate() {
       onChanged(
         snippet.copyWith(
@@ -345,7 +364,9 @@ class OcrLatexLiveEditor extends HookWidget {
                   ),
                 ),
                 child: Text(
-                  l10n.cardQuestionBadge,
+                  cardNumber != null
+                      ? 'CARD #$cardNumber'
+                      : l10n.cardQuestionBadge,
                   style: typography.caption.bold.copyWith(
                     color: colors.primary,
                     fontSize: 10,
@@ -406,6 +427,35 @@ class OcrLatexLiveEditor extends HookWidget {
                   ),
                 ),
               ),
+              if (onDelete != null)
+                PlatformHoverBuilder(
+                  builder: (context, isHovered, child) {
+                    return AnimatedContainer(
+                      duration: AppMotion.snappy,
+                      curve: AppMotion.easeOutCubic,
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? colors.error.withAlpha(25)
+                            : context.colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: isHovered ? colors.error : colors.textMuted,
+                        ),
+                        tooltip: 'Delete Card',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 28,
+                          minHeight: 28,
+                        ),
+                        onPressed: onDelete,
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
 

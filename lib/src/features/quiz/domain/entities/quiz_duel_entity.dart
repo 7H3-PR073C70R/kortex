@@ -163,6 +163,10 @@ class QuizDuelMatch extends Equatable {
     this.latestEmote,
     this.latestEmoteSenderId,
     this.latestEmoteTimestamp,
+    this.roomCode,
+    this.rematchRequestedBy,
+    this.rematchAccepted = false,
+    this.nextDuelId,
   });
 
   factory QuizDuelMatch.fromJson(Map<String, dynamic> json) {
@@ -215,6 +219,10 @@ class QuizDuelMatch extends Equatable {
       latestEmote: json['latestEmote'] as String?,
       latestEmoteSenderId: json['latestEmoteSenderId'] as String?,
       latestEmoteTimestamp: json['latestEmoteTimestamp'] as int?,
+      roomCode: json['roomCode'] as String?,
+      rematchRequestedBy: json['rematchRequestedBy'] as String?,
+      rematchAccepted: json['rematchAccepted'] as bool? ?? false,
+      nextDuelId: json['nextDuelId'] as String?,
     );
   }
 
@@ -234,6 +242,10 @@ class QuizDuelMatch extends Equatable {
   final String? latestEmote;
   final String? latestEmoteSenderId;
   final int? latestEmoteTimestamp;
+  final String? roomCode;
+  final String? rematchRequestedBy;
+  final bool rematchAccepted;
+  final String? nextDuelId;
 
   QuizQuestionEntity? get currentQuestion =>
       (currentQuestionIndex >= 0 && currentQuestionIndex < questions.length)
@@ -279,6 +291,10 @@ class QuizDuelMatch extends Equatable {
         'latestEmoteSenderId': latestEmoteSenderId,
       if (latestEmoteTimestamp != null)
         'latestEmoteTimestamp': latestEmoteTimestamp,
+      if (roomCode != null) 'roomCode': roomCode,
+      if (rematchRequestedBy != null) 'rematchRequestedBy': rematchRequestedBy,
+      'rematchAccepted': rematchAccepted,
+      if (nextDuelId != null) 'nextDuelId': nextDuelId,
     };
   }
 
@@ -299,6 +315,11 @@ class QuizDuelMatch extends Equatable {
     String? latestEmote,
     String? latestEmoteSenderId,
     int? latestEmoteTimestamp,
+    String? roomCode,
+    String? rematchRequestedBy,
+    bool? rematchAccepted,
+    String? nextDuelId,
+    bool clearRematch = false,
   }) {
     return QuizDuelMatch(
       duelId: duelId ?? this.duelId,
@@ -318,6 +339,12 @@ class QuizDuelMatch extends Equatable {
       latestEmote: latestEmote ?? this.latestEmote,
       latestEmoteSenderId: latestEmoteSenderId ?? this.latestEmoteSenderId,
       latestEmoteTimestamp: latestEmoteTimestamp ?? this.latestEmoteTimestamp,
+      roomCode: roomCode ?? this.roomCode,
+      rematchRequestedBy: clearRematch
+          ? null
+          : (rematchRequestedBy ?? this.rematchRequestedBy),
+      rematchAccepted: !clearRematch && (rematchAccepted ?? this.rematchAccepted),
+      nextDuelId: clearRematch ? null : (nextDuelId ?? this.nextDuelId),
     );
   }
 
@@ -339,5 +366,9 @@ class QuizDuelMatch extends Equatable {
     latestEmote,
     latestEmoteSenderId,
     latestEmoteTimestamp,
+    roomCode,
+    rematchRequestedBy,
+    rematchAccepted,
+    nextDuelId,
   ];
 }

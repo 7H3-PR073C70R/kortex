@@ -23,20 +23,43 @@ interface OcrRequestPayload {
 }
 
 /**
+ * Initializes and subscribes to a Supabase Realtime channel once for the request lifecycle.
+ */
+async function initBroadcastChannel(supabase: any, documentId: string): Promise<any> {
+  try {
+    const channel = supabase.channel(`document_ingestion:${documentId}`);
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(() => resolve(), 1200);
+      channel.subscribe((status: string) => {
+        if (status === "SUBSCRIBED" || status === "TIMED_OUT" || status === "CHANNEL_ERROR") {
+          clearTimeout(timer);
+          resolve();
+        }
+      });
+    });
+    return channel;
+  } catch (err) {
+    console.warn("[parse-stem-ocr] Failed to subscribe broadcast channel:", err);
+    return null;
+  }
+}
+
+/**
  * Broadcasts progress updates to client via Supabase Realtime channel.
  */
 async function broadcastProgress(
-  supabase: any,
+  channel: any,
   documentId: string,
   data: {
     status: string;
     progress: number;
     stageMessage: string;
     deckId?: string;
+    error?: string;
   }
 ) {
+  if (!channel) return;
   try {
-    const channel = supabase.channel(`document_ingestion:${documentId}`);
     await channel.send({
       type: "broadcast",
       event: "ingestion_progress",
@@ -46,7 +69,6 @@ async function broadcastProgress(
         timestamp: new Date().toISOString(),
       },
     });
-    await supabase.removeChannel(channel);
   } catch (err) {
     console.warn("[parse-stem-ocr] Realtime progress broadcast notice:", err);
   }
@@ -123,40 +145,43 @@ serve(async (req) => {
       courseTitle ||
       resolvedFilename.replace(/\.[a-zA-Z0-9]+$/, "").trim();
 
-    await broadcastProgress(supabase, documentId, {
-      status: "parsingOcr",
-      progress: 0.15,
-      stageMessage: "Loading document on server compute...",
-    });
+    const broadcastChannel = await initBroadcastChannel(supabase, documentId);
 
-    await supabase
-      .from("documents")
-      .update({ processing_status: "parsingOcr" })
-      .eq("id", documentId);
+    try {
+      await broadcastProgress(broadcastChannel, documentId, {
+        status: "parsingOcr",
+        progress: 0.20,
+        stageMessage: "Loading document on server compute...",
+      });
 
-    let fileBytes: Uint8Array | null = null;
-    if (storagePath) {
-      try {
-        const { data: fileBlob, error: downloadError } = await supabase.storage
-          .from("study-documents")
-          .download(storagePath);
+      await supabase
+        .from("documents")
+        .update({ processing_status: "parsingOcr" })
+        .eq("id", documentId);
 
-        if (!downloadError && fileBlob) {
-          const buffer = await fileBlob.arrayBuffer();
-          fileBytes = new Uint8Array(buffer);
-        } else if (downloadError) {
-          console.warn("[parse-stem-ocr] Storage download error:", downloadError.message);
+      let fileBytes: Uint8Array | null = null;
+      if (storagePath) {
+        try {
+          const { data: fileBlob, error: downloadError } = await supabase.storage
+            .from("study-documents")
+            .download(storagePath);
+
+          if (!downloadError && fileBlob) {
+            const buffer = await fileBlob.arrayBuffer();
+            fileBytes = new Uint8Array(buffer);
+          } else if (downloadError) {
+            console.warn("[parse-stem-ocr] Storage download error:", downloadError.message);
+          }
+        } catch (dlErr) {
+          console.warn("[parse-stem-ocr] Storage download exception:", dlErr);
         }
-      } catch (dlErr) {
-        console.warn("[parse-stem-ocr] Storage download exception:", dlErr);
       }
-    }
 
-    await broadcastProgress(supabase, documentId, {
-      status: "parsingOcr",
-      progress: 0.35,
-      stageMessage: "Extracting text, layout, and visual diagrams on server compute...",
-    });
+      await broadcastProgress(broadcastChannel, documentId, {
+        status: "parsingOcr",
+        progress: 0.40,
+        stageMessage: "Extracting text, layout, and visual diagrams on server compute...",
+      });
 
     const parser = new ServerDocumentParser(supabase);
     let parsedDoc = {
@@ -176,17 +201,19 @@ serve(async (req) => {
       });
       parsedDoc.images = parsedFromFile.images;
       parsedDoc.isScannedOrImage = parsedFromFile.isScannedOrImage;
-      if (parsedFromFile.fullText && parsedFromFile.fullText.length > (extractedText?.length ?? 0)) {
+      if (parsedFromFile.fullText && !parsedFromFile.fullText.startsWith("[Scanned") && parsedFromFile.fullText.length > (extractedText?.length ?? 0)) {
         parsedDoc.fullText = parsedFromFile.fullText;
         parsedDoc.sections = parsedFromFile.sections;
       }
     }
 
-    if ((!parsedDoc.fullText || parsedDoc.fullText.trim().length === 0) && extractedText) {
-      parsedDoc.fullText = extractedText;
+    const hasClientText = Boolean(extractedText && extractedText.trim().length > 0);
+    if (hasClientText && (!parsedDoc.fullText || parsedDoc.fullText.trim().length === 0 || extractedText!.length >= parsedDoc.fullText.length)) {
+      parsedDoc.fullText = extractedText!;
+      parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
-    if (parsedDoc.sections.length === 0 && parsedDoc.fullText.trim().length > 0) {
+    if (parsedDoc.sections.length === 0 && parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")) {
       parsedDoc.sections = parser.segmentIntoSections(parsedDoc.fullText, cleanDeckTitle);
     }
 
@@ -208,15 +235,15 @@ serve(async (req) => {
       console.log(`[parse-stem-ocr] Scanned doc with ${parsedDoc.images.length} image(s): built image-aware section for Luna.`);
     }
 
-    await broadcastProgress(supabase, documentId, {
+    await broadcastProgress(broadcastChannel, documentId, {
       status: "parsingOcr",
-      progress: 0.55,
+      progress: 0.60,
       stageMessage: parsedDoc.isScannedOrImage
         ? "Processing visual OCR and diagram assets..."
         : `Extracted ${parsedDoc.fullText.length > 0 ? `${parsedDoc.sections.length} document sections` : "empty content"} and ${parsedDoc.images.length} diagrams...`,
     });
 
-    await broadcastProgress(supabase, documentId, {
+    await broadcastProgress(broadcastChannel, documentId, {
       status: "generatingCards",
       progress: 0.75,
       stageMessage: "Synthesizing high-yield flashcards with Luna...",
@@ -233,17 +260,24 @@ serve(async (req) => {
       tags: string[];
     }> = [];
 
-    if (parsedDoc.fullText.trim().length > 0 && parsedDoc.fullText.length <= 45000) {
+    const textForSynthesis =
+      parsedDoc.fullText.trim().length > 0 && !parsedDoc.fullText.startsWith("[Scanned")
+        ? (parsedDoc.fullText.length > 45000
+            ? parsedDoc.fullText.slice(0, 45000)
+            : parsedDoc.fullText)
+        : "";
+
+    if (textForSynthesis.length > 0) {
       try {
         console.log(
-          `[parse-stem-ocr] Synthesizing unified deck for "${cleanDeckTitle}" (${parsedDoc.fullText.length} chars, ${parsedDoc.images.length} images) with Luna...`
+          `[parse-stem-ocr] Synthesizing unified deck for "${cleanDeckTitle}" (${textForSynthesis.length} chars, ${parsedDoc.images.length} images) with Luna...`
         );
         const cards = await luna.generateFlashcardsFromSemanticMapping({
-          content: parsedDoc.fullText,
+          content: textForSynthesis,
           topic: cleanDeckTitle,
           courseCode,
           availableImages: parsedDoc.images,
-          cardCountHint: Math.min(30, Math.max(12, Math.round(parsedDoc.fullText.length / 350))),
+          cardCountHint: Math.min(30, Math.max(12, Math.round(textForSynthesis.length / 350))),
         });
 
         for (const c of cards) {
@@ -264,35 +298,31 @@ serve(async (req) => {
     }
 
     if (generatedCards.length === 0 && parsedDoc.sections.length > 0) {
-      console.log(`[parse-stem-ocr] Synthesizing across ${parsedDoc.sections.length} sections in parallel...`);
-      const sectionPromises = parsedDoc.sections.slice(0, 8).map(async (section) => {
+      console.log(`[parse-stem-ocr] Synthesizing across key sections without blowing rate limits...`);
+      const topSections = parsedDoc.sections.slice(0, 3);
+      for (const section of topSections) {
         try {
-          return await luna.generateFlashcardsFromSemanticMapping({
+          const secCards = await luna.generateFlashcardsFromSemanticMapping({
             content: section.text,
             topic: section.title,
             courseCode,
             availableImages: parsedDoc.images,
+            cardCountHint: 6,
           });
+          for (const c of secCards) {
+            generatedCards.push({
+              id: crypto.randomUUID(),
+              front: c.front,
+              back: c.back,
+              back_latex: c.latex_content,
+              explanation: c.explanation || c.hints,
+              image_url: c.image_url,
+              tags: c.tags || [section.title || cleanDeckTitle, courseCode],
+            });
+          }
+          if (generatedCards.length >= 15) break;
         } catch (secErr) {
           console.error(`[parse-stem-ocr] Section "${section.title}" Luna error:`, secErr);
-          return [];
-        }
-      });
-
-      const sectionResults = await Promise.all(sectionPromises);
-      for (let sIdx = 0; sIdx < sectionResults.length; sIdx++) {
-        const secCards = sectionResults[sIdx];
-        const sec = parsedDoc.sections[sIdx];
-        for (const c of secCards) {
-          generatedCards.push({
-            id: crypto.randomUUID(),
-            front: c.front,
-            back: c.back,
-            back_latex: c.latex_content,
-            explanation: c.explanation || c.hints,
-            image_url: c.image_url,
-            tags: c.tags || [sec?.title || cleanDeckTitle, courseCode],
-          });
         }
       }
     }
@@ -324,13 +354,18 @@ serve(async (req) => {
 
             const back = lines.slice(0, 10).join("\n");
 
+            const hasDiagramRef = /\b(?:figure|fig\.?|diagram|chart|illustration|schematic|flowchart|table)\b/i.test(`${sec.title} ${firstLine} ${back}`);
+            const matchedImageUrl = hasDiagramRef
+              ? (parsedDoc.images[pIdx % parsedDoc.images.length]?.url ?? null)
+              : null;
+
             generatedCards.push({
               id: crypto.randomUUID(),
               front,
               back,
               back_latex: null,
               explanation: `Extracted from: ${sec.title}`,
-              image_url: parsedDoc.images[pIdx % parsedDoc.images.length]?.url ?? null,
+              image_url: matchedImageUrl,
               tags: [sec.title, cleanDeckTitle, courseCode].filter(Boolean),
             });
           }
@@ -352,22 +387,32 @@ serve(async (req) => {
     }
 
     if (generatedCards.length === 0) {
-      const hasImages = parsedDoc.images.length > 0;
-      generatedCards.push({
-        id: crypto.randomUUID(),
-        front: `What are the core concepts covered in ${cleanDeckTitle}?`,
-        back: hasImages
-          ? `This document is image-based. Review the ${parsedDoc.images.length} attached diagram(s) for the study content. Re-upload as a text-searchable PDF for richer flashcard generation.`
-          : `No extractable text was found in this document. For best results, upload a text-searchable PDF. Deck title: ${cleanDeckTitle}.`,
-        back_latex: null,
-        explanation: hasImages ? "Visual-only document — see attached diagram(s)" : "Document had no extractable content",
-        image_url: parsedDoc.images[0]?.url ?? null,
-        tags: [cleanDeckTitle, courseCode].filter(Boolean),
+      console.error(
+        `[parse-stem-ocr] Flashcard synthesis failed for '${cleanDeckTitle}'. Emitting failure to progress channel.`
+      );
+      await broadcastProgress(broadcastChannel, documentId, {
+        status: "failed",
+        progress: 1.0,
+        stageMessage:
+          "Flashcard synthesis failed: No study cards could be generated from document content.",
+        error:
+          "Failed to synthesize flashcards across all AI providers. Please check document quality or re-upload as text-searchable PDF.",
       });
-      console.warn(`[parse-stem-ocr] Ultimate fallback activated for '${cleanDeckTitle}' — document had no usable content.`);
+      return new Response(
+        JSON.stringify({
+          error:
+            "Failed to synthesize flashcards from document content across AI providers.",
+          document_id: documentId,
+          snippets: [],
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 422,
+        }
+      );
     }
 
-    await broadcastProgress(supabase, documentId, {
+    await broadcastProgress(broadcastChannel, documentId, {
       status: "syncingDb",
       progress: 0.90,
       stageMessage: `Persisting ${generatedCards.length} flashcards to library...`,
@@ -525,7 +570,7 @@ serve(async (req) => {
       })
       .eq("id", documentId);
 
-    await broadcastProgress(supabase, documentId, {
+    await broadcastProgress(broadcastChannel, documentId, {
       status: "completed",
       progress: 1.0,
       stageMessage: `✨ Deck ready with ${generatedCards.length} cards!`,
@@ -558,6 +603,13 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
+    } finally {
+      if (broadcastChannel) {
+        try {
+          await supabase.removeChannel(broadcastChannel);
+        } catch (_) {}
+      }
+    }
   } catch (error: any) {
     console.error("[parse-stem-ocr] Fatal error:", error);
 

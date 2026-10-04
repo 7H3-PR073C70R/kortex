@@ -5,6 +5,8 @@ import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/document_upload_entity.dart';
 import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_entity.dart';
 
+import 'package:kortex/src/features/ingestion/domain/entities/synthesis_mode.dart';
+
 /// Contract defining study document ingestion, STEM OCR, and deck conversion.
 abstract class IngestionRepository {
   /// Uploads file bytes with automatic SHA-256 deduplication.
@@ -24,6 +26,7 @@ abstract class IngestionRepository {
     required String documentId,
     required String storagePath,
     required String fileType,
+    SynthesisMode synthesisMode = SynthesisMode.aiSmart,
   });
 
   /// Fetches all previously ingested documents for the authenticated user.

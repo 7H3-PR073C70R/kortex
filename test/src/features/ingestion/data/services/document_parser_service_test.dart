@@ -239,5 +239,69 @@ Newton's second law states that force equals mass multiplied by acceleration in 
         );
       },
     );
+
+    test('does not arbitrarily attach images to unrelated textual cards', () {
+      const text = '''
+Definition of Encapsulation: Bundling data and methods that operate on that data within a single unit.
+Definition of Polymorphism: The provision of a single interface to entities of different types.
+Definition of Inheritance: Mechanism of basing an object or class upon another object or class.
+''';
+
+      final snippets = service.synthesizeSnippetsFromDocument(
+        documentId: 'doc_oop',
+        fullText: text,
+        filename: 'oop.pdf',
+        imageUrls: [
+          'https://api.kortex.app/storage/v1/object/public/card-assets/unrelated_chart.jpg',
+          'https://api.kortex.app/storage/v1/object/public/card-assets/logo.png',
+        ],
+      );
+
+      // Since none of the cards mention diagrams/charts, and image filenames do not match topics,
+      // all cards should have null imageUrl!
+      for (final s in snippets) {
+        expect(s.imageUrl, isNull);
+      }
+    });
+
+    test('detects and preserves code blocks with markdown formatting in flashcards', () {
+      const codeDocument = '''
+Section 1: Flutter StatefulWidget Implementation
+The State Lifecycle Pattern
+In Flutter, widgets that maintain mutable state extend StatefulWidget and create a State class:
+```dart
+class CounterWidget extends StatefulWidget {
+  const CounterWidget({super.key});
+
+  @override
+  State<CounterWidget> createState() => _CounterWidgetState();
+}
+```
+
+Section 2: Asynchronous Operations in Dart
+Future and Async Await
+Dart uses Futures and async/await to execute non-blocking operations:
+```dart
+Future<String> fetchUserToken() async {
+  final token = await authService.getToken();
+  return token;
+}
+```
+''';
+
+      final snippets = service.synthesizeSnippetsFromDocument(
+        documentId: 'doc_flutter_code',
+        fullText: codeDocument,
+        filename: 'flutter_development.pdf',
+      );
+
+      expect(snippets.isNotEmpty, isTrue);
+      final codeCard = snippets.firstWhere(
+        (s) => s.rawText.contains('class CounterWidget') || s.rawText.contains('```'),
+      );
+      expect(codeCard.rawText, contains('```dart'));
+      expect(codeCard.rawText, contains('class CounterWidget extends StatefulWidget'));
+      expect(codeCard.rawText, contains('```'));
+    });
   });
 }

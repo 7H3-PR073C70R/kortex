@@ -1,18 +1,25 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kortex/src/core/constants/pref_keys.dart';
 import 'package:kortex/src/core/error/failure.dart';
 import 'package:kortex/src/core/extensions/repository_extension.dart';
 import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
+import 'package:kortex/src/core/utils/uuid_utils.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/community/data/data_sources/community_remote_data_source.dart';
 import 'package:kortex/src/features/community/data/models/forum_post_model.dart';
 import 'package:kortex/src/features/community/domain/entities/forum_post_entity.dart';
 import 'package:kortex/src/features/community/domain/entities/study_community_entity.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
+import 'package:kortex/src/features/community/domain/services/forum_offline_sync_queue.dart';
 import 'package:kortex/src/features/deck_marketplace/domain/entities/shared_deck_entity.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_local_data_source.dart';
 import 'package:kortex/src/features/decks/data/data_sources/decks_remote_data_source.dart';
@@ -27,10 +34,48 @@ class CommunityRepositoryImpl implements CommunityRepository {
   CommunityRepositoryImpl(
     this._remoteDataSource, {
     UserStorageService? userStorage,
-  }) : _userStorage = userStorage;
+    ForumOfflineSyncQueue? offlineSyncQueue,
+    Connectivity? connectivity,
+  })  : _userStorage = userStorage,
+        _offlineSyncQueue = offlineSyncQueue {
+    if (connectivity != null) {
+      _initConnectivityListener(connectivity);
+    }
+  }
 
   final CommunityRemoteDataSource _remoteDataSource;
   final UserStorageService? _userStorage;
+  final ForumOfflineSyncQueue? _offlineSyncQueue;
+  bool _isProcessingSyncQueue = false;
+  StreamSubscription<dynamic>? _connectivitySub;
+
+  void _initConnectivityListener(Connectivity connectivity) {
+    _connectivitySub = connectivity.onConnectivityChanged.listen((results) {
+      final isOnline = results.any(
+        (c) =>
+            c == ConnectivityResult.wifi ||
+            c == ConnectivityResult.mobile ||
+            c == ConnectivityResult.ethernet,
+      );
+      if (isOnline && (_offlineSyncQueue?.hasPendingActions ?? false)) {
+        unawaited(flushPendingForumActions());
+      }
+    });
+  }
+
+  @override
+  Future<int> flushPendingForumActions() async {
+    if (_offlineSyncQueue == null || _isProcessingSyncQueue) return 0;
+    _isProcessingSyncQueue = true;
+    try {
+      return await _offlineSyncQueue.processSyncQueue(this);
+    } on Object catch (e) {
+      debugPrint('[CommunityRepositoryImpl] flushPendingForumActions error: $e');
+      return 0;
+    } finally {
+      _isProcessingSyncQueue = false;
+    }
+  }
 
   String? get _currentUserId => _userStorage?.getUserId();
 
@@ -213,21 +258,81 @@ class CommunityRepositoryImpl implements CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
+  }) async {
+    Either<Failure, ForumPostEntity> result;
+    try {
+      result = await _remoteDataSource
+          .createForumPost(
+            title: title,
+            content: content,
+            track: track,
+            latexContent: latexContent,
+            isQuestion: isQuestion,
+            syllabusTag: syllabusTag,
+            tags: tags,
+            mediaUrls: mediaUrls,
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+          )
+          .then((model) => model.toEntity())
+          .makeRequest();
+    } on Object catch (e) {
+      result = Left(ServerFailure(message: e.toString()));
+    }
+
+    return result.fold(
+      (failure) {
+        if (!_isProcessingSyncQueue && _offlineSyncQueue != null) {
+          final tempPost = ForumPostEntity(
+            id: 'temp-${UuidUtils.generate()}',
+            authorId: _currentUserId ?? 'local_user',
+            authorName: 'You',
+            track: track,
+            title: title,
+            content: content,
+            latexContent: latexContent,
+            isQuestion: isQuestion,
+            syllabusTag: syllabusTag,
+            tags: tags ?? const [],
+            mediaUrls: mediaUrls ?? const [],
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+            createdAt: DateTime.now(),
+          );
+          _offlineSyncQueue.enqueuePost(tempPost);
+          return Right(tempPost);
+        }
+        return Left(failure);
+      },
+      Right.new,
+    );
+  }
+
+  @override
+  Future<Either<Failure, ForumPostEntity>> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
   }) {
     return _remoteDataSource
-        .createForumPost(
+        .updateForumPost(
+          postId: postId,
           title: title,
           content: content,
           track: track,
           latexContent: latexContent,
-          isQuestion: isQuestion,
-          syllabusTag: syllabusTag,
           tags: tags,
           mediaUrls: mediaUrls,
-          voiceNoteUrl: voiceNoteUrl,
-          voiceNoteDurationSeconds: voiceNoteDurationSeconds,
-          isAnonymous: isAnonymous,
         )
         .then((model) => model.toEntity())
         .makeRequest();
@@ -247,18 +352,79 @@ class CommunityRepositoryImpl implements CommunityRepository {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
+    bool isAnonymous = false,
+  }) async {
+    Either<Failure, ForumReplyEntity> result;
+    try {
+      result = await _remoteDataSource
+          .replyToForumPost(
+            postId: postId,
+            content: content,
+            latexContent: latexContent,
+            parentReplyId: parentReplyId,
+            mediaUrls: mediaUrls,
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+          )
+          .then((model) => model.toEntity())
+          .makeRequest();
+    } on Object catch (e) {
+      result = Left(ServerFailure(message: e.toString()));
+    }
+
+    return result.fold(
+      (failure) {
+        if (!_isProcessingSyncQueue && _offlineSyncQueue != null) {
+          final tempReply = ForumReplyEntity(
+            id: 'temp-${UuidUtils.generate()}',
+            postId: postId,
+            parentReplyId: parentReplyId,
+            authorId: _currentUserId ?? 'local_user',
+            authorName: 'You',
+            content: content,
+            latexContent: latexContent,
+            mediaUrls: mediaUrls ?? const [],
+            voiceNoteUrl: voiceNoteUrl,
+            voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+            voiceNoteTranscript: voiceNoteTranscript,
+            isAnonymous: isAnonymous,
+            createdAt: DateTime.now(),
+          );
+          _offlineSyncQueue.enqueueReply(tempReply);
+          return Right(tempReply);
+        }
+        return Left(failure);
+      },
+      Right.new,
+    );
+  }
+
+  @override
+  Future<Either<Failure, ForumReplyEntity>> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
   }) {
     return _remoteDataSource
-        .replyToForumPost(
-          postId: postId,
+        .updateForumReply(
+          replyId: replyId,
           content: content,
           latexContent: latexContent,
-          parentReplyId: parentReplyId,
-          mediaUrls: mediaUrls,
-          voiceNoteUrl: voiceNoteUrl,
-          voiceNoteDurationSeconds: voiceNoteDurationSeconds,
         )
         .then((model) => model.toEntity())
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteForumReply({
+    required String replyId,
+    required String postId,
+  }) {
+    return _remoteDataSource
+        .deleteForumReply(replyId: replyId, postId: postId)
         .makeRequest();
   }
 
@@ -266,10 +432,29 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<Either<Failure, bool>> voteForumPost({
     required String postId,
     required int voteDirection,
-  }) {
-    return _remoteDataSource
-        .voteForumPost(postId: postId, voteDirection: voteDirection)
-        .makeRequest();
+  }) async {
+    Either<Failure, bool> result;
+    try {
+      result = await _remoteDataSource
+          .voteForumPost(postId: postId, voteDirection: voteDirection)
+          .makeRequest();
+    } on Object catch (e) {
+      result = Left(ServerFailure(message: e.toString()));
+    }
+
+    return result.fold(
+      (failure) {
+        if (!_isProcessingSyncQueue && _offlineSyncQueue != null) {
+          _offlineSyncQueue.enqueueVote(
+            postId: postId,
+            voteDirection: voteDirection,
+          );
+          return const Right(true);
+        }
+        return Left(failure);
+      },
+      Right.new,
+    );
   }
 
   @override
@@ -319,6 +504,15 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }
 
   @override
+  Stream<List<StudyCircleEntity>> watchStudyCircles({String? track}) {
+    return _remoteDataSource.watchStudyCircles(track: track).map(
+          (models) => models
+              .map((m) => m.toEntity(currentUserId: _currentUserId))
+              .toList(),
+        );
+  }
+
+  @override
   Future<Either<Failure, StudyCircleEntity>> createStudyCircle({
     required String name,
     required String track,
@@ -361,9 +555,14 @@ class CommunityRepositoryImpl implements CommunityRepository {
   Future<Either<Failure, Map<String, dynamic>>> recordPodFocusMinutes({
     required String circleId,
     required int minutes,
+    String? activityType,
   }) {
     return _remoteDataSource
-        .recordPodFocusMinutes(circleId: circleId, minutes: minutes)
+        .recordPodFocusMinutes(
+          circleId: circleId,
+          minutes: minutes,
+          activityType: activityType,
+        )
         .makeRequest();
   }
 
@@ -606,42 +805,187 @@ class CommunityRepositoryImpl implements CommunityRepository {
     }).makeRequest();
   }
 
+  /// Tracks the last time we pushed XP to Supabase to prevent spamming.
+  DateTime? _lastClaimWeeklyXpTime;
+
   List<LeaderboardEntryEntity> _processLeaderboardList(
     List<LeaderboardEntryEntity> list, {
     String? track,
   }) {
-    if (list.isEmpty) {
-      return const [];
-    }
+    final authProfile = locator.isRegistered<AuthBloc>()
+        ? locator<AuthBloc>().state.userProfile
+        : null;
 
-    final currentUserId = _userStorage?.getUserId();
-    if (currentUserId == null || currentUserId.isEmpty) {
-      return list;
-    }
+    final currentUserId = _userStorage?.getUserId() ?? authProfile?.id;
 
-    final hasCurrentUser = list.any(
-      (e) => e.isCurrentUser || e.userId == currentUserId,
+    final userActivity = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>()
+        : null;
+
+    // ── Streak: prefer live activity service, fall back to auth profile ──
+    final localStreak = userActivity?.getCurrentStreak() ?? 0;
+    final liveStreak = math.max(
+      authProfile?.streakDays ?? 0,
+      localStreak,
     );
-    if (!hasCurrentUser) {
-      final currentUserName =
-          _userStorage?.getUserDisplayName() ?? 'Scholar (You)';
-      final currentUserAvatar = _userStorage?.getUserAvatarUrl();
-      final effectiveTrack = track ?? 'General';
 
-      return List<LeaderboardEntryEntity>.from(list)..add(
-        LeaderboardEntryEntity(
-          id: 'user_$currentUserId',
-          userId: currentUserId,
-          userName: currentUserName,
-          avatarUrl: currentUserAvatar,
-          track: effectiveTrack,
-          rank: list.length + 1,
-          isCurrentUser: true,
-        ),
+    // ── XP: prefer live activity service, fall back to auth profile ─────
+    final liveXp = math.max(
+      authProfile?.xpPoints ?? 0,
+      userActivity?.getXpPoints() ?? 0,
+    );
+
+    // ── Track: auth profile → LocalStorage pref → 'General' ─────────────
+    final profileTrack = authProfile?.targetTrack.trim();
+    String liveTrack;
+    if (profileTrack != null && profileTrack.isNotEmpty) {
+      liveTrack = profileTrack;
+    } else {
+      final storedTrack = locator.isRegistered<LocalStorageService>()
+          ? locator<LocalStorageService>().getPreference(
+              key: PrefKeys.userTargetTrack,
+            )
+          : null;
+      liveTrack =
+          (storedTrack != null && storedTrack.trim().isNotEmpty)
+          ? storedTrack.trim()
+          : 'General';
+    }
+
+    final profileName = authProfile?.displayName?.trim();
+    final liveDisplayName = (profileName != null && profileName.isNotEmpty)
+        ? profileName
+        : (_userStorage?.getUserDisplayName() ?? 'Scholar (You)');
+
+    final liveAvatarUrl =
+        authProfile?.photoUrl ?? _userStorage?.getUserAvatarUrl();
+
+    // ── Throttled background sync to Supabase (at most every 5 minutes) ──
+    final now = DateTime.now();
+    final shouldClaim =
+        currentUserId != null &&
+        currentUserId.isNotEmpty &&
+        liveXp > 0 &&
+        (_lastClaimWeeklyXpTime == null ||
+            now.difference(_lastClaimWeeklyXpTime!) >
+                const Duration(minutes: 5));
+    if (shouldClaim) {
+      _lastClaimWeeklyXpTime = now;
+      unawaited(
+        _remoteDataSource
+            .claimWeeklyXp(xpAmount: liveXp)
+            .catchError((_) => <String, dynamic>{}),
       );
     }
 
-    return list;
+    if (list.isEmpty) {
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        final trackMatches = track == null ||
+            track.isEmpty ||
+            track == 'All' ||
+            liveTrack.toLowerCase() == track.toLowerCase();
+
+        if (trackMatches) {
+          final tier = _calculateLeagueTier(liveXp);
+          return [
+            LeaderboardEntryEntity(
+              id: 'user_$currentUserId',
+              userId: currentUserId,
+              userName: liveDisplayName,
+              avatarUrl: liveAvatarUrl,
+              track: liveTrack,
+              weeklyXp: liveXp,
+              streakDays: liveStreak > 0 ? liveStreak : 1,
+              leagueTier: tier,
+              isCurrentUser: true,
+            ),
+          ];
+        }
+      }
+      return const [];
+    }
+
+    final updatedList = list.map((entry) {
+      final isCurrent = (currentUserId != null &&
+              currentUserId.isNotEmpty &&
+              entry.userId == currentUserId) ||
+          entry.isCurrentUser;
+
+      if (isCurrent) {
+        final streak = liveStreak > 0
+            ? liveStreak
+            : (entry.streakDays > 0 ? entry.streakDays : 1);
+        final xp = liveXp > 0 ? math.max(liveXp, entry.weeklyXp) : entry.weeklyXp;
+        final trackVal = liveTrack.isNotEmpty ? liveTrack : entry.track;
+
+        return entry.copyWith(
+          userName: liveDisplayName,
+          avatarUrl: liveAvatarUrl ?? entry.avatarUrl,
+          streakDays: streak,
+          weeklyXp: xp,
+          track: trackVal,
+          isCurrentUser: true,
+        );
+      }
+
+      if (entry.streakDays <= 0) {
+        final derivedStreak = entry.weeklyXp >= 500
+            ? 7
+            : (entry.weeklyXp >= 200 ? 4 : (entry.weeklyXp >= 50 ? 2 : 1));
+        return entry.copyWith(streakDays: derivedStreak);
+      }
+      return entry;
+    }).toList();
+
+    if (currentUserId != null && currentUserId.isNotEmpty) {
+      final hasCurrentUser = updatedList.any(
+        (e) => e.isCurrentUser || e.userId == currentUserId,
+      );
+      if (!hasCurrentUser) {
+        final trackMatches = track == null ||
+            track.isEmpty ||
+            track == 'All' ||
+            liveTrack.toLowerCase() == track.toLowerCase();
+
+        if (trackMatches) {
+          updatedList.add(
+            LeaderboardEntryEntity(
+              id: 'user_$currentUserId',
+              userId: currentUserId,
+              userName: liveDisplayName,
+              avatarUrl: liveAvatarUrl,
+              track: liveTrack,
+              weeklyXp: liveXp,
+              streakDays: liveStreak > 0 ? liveStreak : 1,
+              isCurrentUser: true,
+            ),
+          );
+        }
+      }
+    }
+
+    // Sort all scholars by weeklyXp descending so everyone is in true rank order!
+    updatedList.sort((a, b) => b.weeklyXp.compareTo(a.weeklyXp));
+
+    // Re-index ranks and calculate league tiers dynamically
+    for (var i = 0; i < updatedList.length; i++) {
+      final item = updatedList[i];
+      final calculatedTier = _calculateLeagueTier(item.weeklyXp);
+      updatedList[i] = item.copyWith(
+        rank: i + 1,
+        leagueTier: calculatedTier,
+      );
+    }
+
+    return updatedList;
+  }
+
+  String _calculateLeagueTier(int xp) {
+    if (xp >= 1000) return "Dean's List";
+    if (xp >= 600) return 'Diamond';
+    if (xp >= 350) return 'Gold';
+    if (xp >= 150) return 'Silver';
+    return 'Bronze';
   }
 
   @override
@@ -650,6 +994,21 @@ class CommunityRepositoryImpl implements CommunityRepository {
   }) {
     return _remoteDataSource
         .claimWeeklyXp(xpAmount: xpAmount)
+        .makeRequest();
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  }) {
+    return _remoteDataSource
+        .syncUserProgress(
+          xpDelta: xpDelta,
+          streakDays: streakDays,
+          track: track,
+        )
         .makeRequest();
   }
 
@@ -715,5 +1074,9 @@ class CommunityRepositoryImpl implements CommunityRepository {
   @override
   Future<Either<Failure, Set<String>>> getFollowedTopics() {
     return _remoteDataSource.getFollowedTopics().makeRequest();
+  }
+
+  Future<void> dispose() async {
+    await _connectivitySub?.cancel();
   }
 }

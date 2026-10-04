@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
@@ -77,13 +78,9 @@ class _ForgotPasswordViewState extends State<_ForgotPasswordView> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state.status == AuthStatus.resetSent) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                  'Password recovery email sent successfully. Please check your inbox.',
-                ),
-                backgroundColor: colors.success,
-              ),
+            context.showSnackBar(
+              message: 'Password recovery email sent successfully. Please check your inbox.',
+              type: SnackBarType.success,
             );
             final router = context.router;
             unawaited(
@@ -92,13 +89,9 @@ class _ForgotPasswordViewState extends State<_ForgotPasswordView> {
               }),
             );
           } else if (state.status == AuthStatus.error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.errorMessage ?? 'Password reset request failed. Please try again.',
-                ),
-                backgroundColor: colors.error,
-              ),
+            context.showSnackBar(
+              message: state.errorMessage ?? 'Password reset request failed. Please try again.',
+              type: SnackBarType.error,
             );
           }
         },

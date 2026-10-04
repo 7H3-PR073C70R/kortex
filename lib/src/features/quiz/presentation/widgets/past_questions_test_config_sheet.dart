@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.dart';
@@ -20,19 +21,20 @@ void showPastQuestionsTestConfigSheet(
   final typography = context.typography;
   final isDark = context.isDarkMode;
 
-  final defaultYears = state.availableYears.isNotEmpty
+  final availableYears = state.availableYears.isNotEmpty
       ? state.availableYears
       : const [2024, 2023, 2022, 2021, 2020, 2019, 2018];
 
-  var isRandomSelection = state.selectedYear == null;
-  var selectedYear =
-      state.selectedYear ??
-      (defaultYears.isNotEmpty ? defaultYears.first : 2024);
-  var selectedCount = state.questions.length > 10
-      ? 10
-      : (state.questions.isEmpty ? 10 : state.questions.length);
+  var selectedYear = state.selectedYear;
   var isTimedMode = true;
   var isMillionaireMode = false;
+
+  final defaultCount = state.questions.length >= 20
+      ? 20
+      : (state.questions.length >= 10
+            ? 10
+            : (state.questions.isEmpty ? 10 : state.questions.length));
+  var selectedCount = defaultCount;
 
   unawaited(
     showModalBottomSheet<void>(
@@ -47,6 +49,13 @@ void showPastQuestionsTestConfigSheet(
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            final filteredPool = selectedYear == null
+                ? state.questions
+                : state.questions.where((q) => q.year == selectedYear).toList();
+            final availableCount = filteredPool.isEmpty
+                ? state.questions.length
+                : filteredPool.length;
+
             return SafeArea(
               top: false,
               child: Align(
@@ -61,12 +70,13 @@ void showPastQuestionsTestConfigSheet(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // 1. Accessible Drag Handle
                           Center(
                             child: Container(
-                              width: 38,
+                              width: 36,
                               height: 4,
                               decoration: BoxDecoration(
-                                color: colors.surfaceBorder,
+                                color: colors.surfaceBorderHighlight,
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.micro,
                                 ),
@@ -74,196 +84,187 @@ void showPastQuestionsTestConfigSheet(
                             ),
                           ),
                           const SizedBox(height: 14),
-                          Text(
-                            'Practice ${state.selectedExam.displayName}',
-                            style: typography.title3.bold.copyWith(
-                              color: colors.textPrimary,
-                              fontSize: 17,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Pick your questions and how the quiz should run.',
-                            style: typography.footnote.regular.copyWith(
-                              color: colors.textSecondary,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
 
-                          // 1. Question Source: mix every year, or one paper
-                          const QuizSectionLabel(label: 'Questions'),
+                          // 2. Header
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: QuizChoiceCard(
-                                  title: 'Mix of all years',
-                                  subtitle: 'Shuffled across every past paper',
-                                  icon: Icons.shuffle_rounded,
-                                  selected: isRandomSelection,
-                                  onTap: () => setSheetState(
-                                    () => isRandomSelection = true,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Practice ${state.selectedExam.displayName}',
+                                      style: typography.title2.bold.copyWith(
+                                        color: colors.textPrimary,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      state.selectedSubject == 'All'
+                                          ? 'All Subjects • Past Questions Bank'
+                                          : '${state.selectedSubject} • Past Questions Bank',
+                                      style: typography.caption.regular.copyWith(
+                                        color: colors.textSecondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: QuizChoiceCard(
-                                  title: 'One paper year',
-                                  subtitle: 'Questions from a single exam year',
-                                  icon: Icons.calendar_today_rounded,
-                                  selected: !isRandomSelection,
-                                  onTap: () => setSheetState(
-                                    () => isRandomSelection = false,
-                                  ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.close_rounded,
+                                  color: colors.textMuted,
+                                  size: 20,
                                 ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                                onPressed: () =>
+                                    Navigator.of(bottomSheetContext).pop(),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 18),
 
-                          // If specific year selected, show year pills
-                          if (!isRandomSelection) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              'Which year?',
-                              style: typography.caption.bold.copyWith(
-                                color: colors.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: defaultYears.map((yr) {
-                                  final isSelected = selectedYear == yr;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: ChoiceChip(
-                                      label: Text('$yr'),
-                                      selected: isSelected,
-                                      onSelected: (_) => setSheetState(
-                                        () => selectedYear = yr,
-                                      ),
-                                      selectedColor: colors.primary.withAlpha(
-                                        isDark ? 60 : 35,
-                                      ),
-                                      backgroundColor: colors.surfaceSecondary
-                                          .withAlpha(100),
-                                      labelStyle: typography.caption.bold
-                                          .copyWith(
-                                            color: isSelected
-                                                ? colors.primary
-                                                : colors.textSecondary,
-                                            fontSize: 12,
-                                          ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ],
-
-                          const SizedBox(height: 16),
-
-                          // 2. How the quiz runs
-                          const SizedBox(height: 16),
-                          const QuizSectionLabel(label: 'How it runs'),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: QuizChoiceCard(
-                                  title: 'Practice',
-                                  subtitle: 'Hints and feedback as you go',
-                                  icon: Icons.school_outlined,
-                                  accentColor: colors.syllabotAccent,
-                                  selected: !isTimedMode && !isMillionaireMode,
-                                  onTap: () => setSheetState(() {
+                          // 3. Mode Selection (Segmented Control + Dynamic Caption)
+                          const QuizSectionLabel(label: 'Quiz Mode'),
+                          QuizModeSegmentedControl(
+                            currentMode: isMillionaireMode
+                                ? QuizPracticeMode.millionaire
+                                : (isTimedMode
+                                      ? QuizPracticeMode.exam
+                                      : QuizPracticeMode.practice),
+                            onModeSelected: (mode) {
+                              setSheetState(() {
+                                switch (mode) {
+                                  case QuizPracticeMode.practice:
                                     isTimedMode = false;
                                     isMillionaireMode = false;
-                                  }),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: QuizChoiceCard(
-                                  title: 'Exam',
-                                  subtitle: 'Timed, results at the end',
-                                  icon: Icons.timer_outlined,
-                                  selected: isTimedMode && !isMillionaireMode,
-                                  onTap: () => setSheetState(() {
+                                  case QuizPracticeMode.exam:
                                     isTimedMode = true;
                                     isMillionaireMode = false;
-                                  }),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: QuizChoiceCard(
-                                  title: 'Millionaire',
-                                  subtitle: 'Climb 12 tiers, bank your prize',
-                                  icon: Icons.military_tech_rounded,
-                                  accentColor: colors.warning,
-                                  selected: isMillionaireMode,
-                                  onTap: () => setSheetState(() {
+                                  case QuizPracticeMode.millionaire:
+                                    isTimedMode = false;
                                     isMillionaireMode = true;
-                                    selectedCount = 12;
-                                  }),
-                                ),
+                                }
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          QuizModeDescription(
+                            mode: isMillionaireMode
+                                ? QuizPracticeMode.millionaire
+                                : (isTimedMode
+                                      ? QuizPracticeMode.exam
+                                      : QuizPracticeMode.practice),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // 4. Question Source / Exam Year (Single-Row Horizontal Pills)
+                          QuizSectionLabel(
+                            label: 'Exam Year',
+                            trailing: Text(
+                              selectedYear == null
+                                  ? 'All years shuffled'
+                                  : 'Paper year $selectedYear',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.primary,
+                                fontSize: 11,
                               ),
-                            ],
+                            ),
                           ),
-                          const SizedBox(height: 16),
-
-                          // 3. Question Count Pills
-                          const QuizSectionLabel(label: 'Question count'),
-                          Row(
-                            children:
-                                (isMillionaireMode ? [12] : [5, 10, 20, 40])
-                                    .map((count) {
-                                      final isSelected = selectedCount == count;
-
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8,
-                                        ),
-                                        child: ChoiceChip(
-                                          label: Text(
-                                            isMillionaireMode
-                                                ? '12 questions'
-                                                : '$count questions',
-                                          ),
-                                          selected: isSelected,
-                                          onSelected: (_) => setSheetState(
-                                            () => selectedCount = count,
-                                          ),
-                                          selectedColor: colors.primary
-                                              .withAlpha(isDark ? 60 : 35),
-                                          backgroundColor: colors
-                                              .surfaceSecondary
-                                              .withAlpha(100),
-                                          labelStyle: typography.caption.bold
-                                              .copyWith(
-                                                color: isSelected
-                                                    ? colors.primary
-                                                    : colors.textSecondary,
-                                              ),
-                                        ),
-                                      );
-                                    })
-                                    .toList(),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: [
+                                QuizYearPill(
+                                  label: 'All Years',
+                                  icon: Icons.shuffle_rounded,
+                                  isSelected: selectedYear == null,
+                                  onTap: () {
+                                    AppFeedback.light();
+                                    setSheetState(() => selectedYear = null);
+                                  },
+                                ),
+                                ...availableYears.map((yr) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(left: 8),
+                                    child: QuizYearPill(
+                                      label: '$yr',
+                                      isSelected: selectedYear == yr,
+                                      onTap: () {
+                                        AppFeedback.light();
+                                        setSheetState(() => selectedYear = yr);
+                                      },
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 18),
 
-                          // 4. Launch CTA
+                          // 5. Question Count (Evenly Expanded Pills - Zero Overflow)
+                          QuizSectionLabel(
+                            label: 'Question Count',
+                            trailing: Text(
+                              isMillionaireMode
+                                  ? '12 Tiers Fixed'
+                                  : (isTimedMode
+                                        ? '${selectedCount}m limit'
+                                        : '$availableCount available'),
+                              style: typography.caption.bold.copyWith(
+                                color: isMillionaireMode
+                                    ? colors.warning
+                                    : colors.textMuted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          if (isMillionaireMode)
+                            const QuizMillionaireNotice()
+                          else
+                            Row(
+                              children: [5, 10, 20, 40].map((count) {
+                                final isSelected = selectedCount == count;
+                                return Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 3,
+                                    ),
+                                    child: QuizCountOptionPill(
+                                      count: count,
+                                      isSelected: isSelected,
+                                      onTap: () {
+                                        AppFeedback.light();
+                                        setSheetState(
+                                          () => selectedCount = count,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          const SizedBox(height: 24),
+
+                          // 6. Launch CTA Button
                           ShrinkableButton(
                             onTap: () {
-                              Navigator.pop(bottomSheetContext);
+                              AppFeedback.medium();
+                              Navigator.of(bottomSheetContext).pop();
 
                               // Pool questions
                               var pool = List<PastQuestionEntity>.from(
                                 state.questions,
                               );
-                              if (!isRandomSelection) {
+                              if (selectedYear != null) {
                                 final filtered = pool
                                     .where((q) => q.year == selectedYear)
                                     .toList();
@@ -274,10 +275,12 @@ void showPastQuestionsTestConfigSheet(
                                 pool.shuffle();
                               }
 
-                              final count =
-                                  selectedCount > pool.length && pool.isNotEmpty
-                                  ? pool.length
-                                  : selectedCount;
+                              final count = isMillionaireMode
+                                  ? 12
+                                  : (selectedCount > pool.length &&
+                                            pool.isNotEmpty
+                                        ? pool.length
+                                        : selectedCount);
 
                               final testQuestions = pool
                                   .take(count)
@@ -286,17 +289,16 @@ void showPastQuestionsTestConfigSheet(
 
                               final testTitle = isMillionaireMode
                                   ? '${state.selectedExam.displayName} Millionaire Challenge'
-                                  : (isRandomSelection
+                                  : (selectedYear == null
                                         ? '${state.selectedExam.displayName} Mixed Past Papers'
                                         : '${state.selectedExam.displayName} $selectedYear Past Paper');
 
-                              Navigator.of(context).pop();
-
+                              final router = context.router;
                               unawaited(
-                                context.router.push(
+                                router.push(
                                   QuizWorkspaceRoute(
                                     deckId:
-                                        'cbt_${state.selectedExam.code}_${isRandomSelection ? "random" : selectedYear}',
+                                        'cbt_${state.selectedExam.code}_${selectedYear ?? "random"}',
                                     deckTitle: testTitle,
                                     subject: state.selectedSubject == 'All'
                                         ? state.selectedExam.displayName
@@ -319,31 +321,49 @@ void showPastQuestionsTestConfigSheet(
                               width: double.infinity,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: colors.primary,
+                                color: isMillionaireMode
+                                    ? colors.warning
+                                    : colors.primary,
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.panel,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: colors.black.withAlpha(
-                                      isDark ? 50 : 20,
-                                    ),
+                                    color:
+                                        (isMillionaireMode
+                                                ? colors.warning
+                                                : colors.primary)
+                                            .withAlpha(isDark ? 60 : 30),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                              child: Center(
-                                child: Text(
-                                  isMillionaireMode
-                                      ? 'Start 12 tiers · Millionaire'
-                                      : (isTimedMode
-                                            ? 'Start $selectedCount questions • $selectedCount min'
-                                            : 'Start $selectedCount questions'),
-                                  style: typography.callout.bold.copyWith(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    isMillionaireMode
+                                        ? Icons.workspace_premium_rounded
+                                        : (isTimedMode
+                                              ? Icons.timer_outlined
+                                              : Icons.play_arrow_rounded),
                                     color: colors.white,
+                                    size: 20,
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    isMillionaireMode
+                                        ? 'Start 12-Tier Millionaire'
+                                        : (isTimedMode
+                                              ? 'Start $selectedCount Questions • ${selectedCount}m'
+                                              : 'Start $selectedCount Questions'),
+                                    style: typography.callout.bold.copyWith(
+                                      color: colors.white,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -359,77 +379,4 @@ void showPastQuestionsTestConfigSheet(
       },
     ),
   );
-}
-
-class ModeOptionCard extends StatelessWidget {
-  const ModeOptionCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-    super.key,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    return ShrinkableButton(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colors.primary.withAlpha(isDark ? 40 : 20)
-              : colors.surfaceSecondary.withAlpha(80),
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: Border.all(
-            color: isSelected
-                ? colors.primary
-                : colors.surfaceBorder.withAlpha(80),
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? colors.primary : colors.textSecondary,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: typography.caption.bold.copyWith(
-                      color: isSelected ? colors.primary : colors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: typography.footnote.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 10.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

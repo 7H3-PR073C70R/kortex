@@ -23,6 +23,8 @@ extension NotificationCategoryExtension on NotificationCategory {
       case 'community':
       case 'circle':
       case 'forum':
+      case 'forum_reply':
+      case 'social_alerts':
       case 'room_invite':
       case 'deck_cloned':
       case 'leaderboard':

@@ -76,7 +76,18 @@ abstract class CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     bool isAnonymous = false,
+  });
+
+  Future<ForumPostModel> updateForumPost({
+    required String postId,
+    String? title,
+    String? content,
+    String? track,
+    String? latexContent,
+    List<String>? tags,
+    List<String>? mediaUrls,
   });
 
   Future<bool> deleteForumPost(String postId);
@@ -89,6 +100,19 @@ abstract class CommunityRemoteDataSource {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
+    bool isAnonymous = false,
+  });
+
+  Future<ForumReplyModel> updateForumReply({
+    required String replyId,
+    required String content,
+    String? latexContent,
+  });
+
+  Future<bool> deleteForumReply({
+    required String replyId,
+    required String postId,
   });
 
   Future<bool> voteForumPost({
@@ -112,6 +136,9 @@ abstract class CommunityRemoteDataSource {
 
   Future<List<StudyCircleModel>> fetchStudyCircles({String? track});
 
+  /// Real-time stream of available study circles / pods via WebSocket.
+  Stream<List<StudyCircleModel>> watchStudyCircles({String? track});
+
   Future<StudyCircleModel> createStudyCircle({
     required String name,
     required String track,
@@ -127,6 +154,7 @@ abstract class CommunityRemoteDataSource {
   Future<Map<String, dynamic>> recordPodFocusMinutes({
     required String circleId,
     required int minutes,
+    String? activityType,
   });
 
   Future<List<SharedDeckModel>> fetchSharedDecks({String? subject});
@@ -158,6 +186,14 @@ abstract class CommunityRemoteDataSource {
   Future<List<LeaderboardEntryModel>> fetchLeaderboards({String? track});
 
   Future<Map<String, dynamic>> claimWeeklyXp({required int xpAmount});
+
+  /// Atomically syncs XP delta, streak, and track to profiles + leaderboards.
+  /// Call this after every XP award event so backend data stays current.
+  Future<Map<String, dynamic>> syncUserProgress({
+    int xpDelta = 0,
+    int? streakDays,
+    String? track,
+  });
 
   Future<StudyCommunityModel> autoProvisionCommunity({
     required String courseCode,

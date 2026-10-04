@@ -8,28 +8,28 @@ part 'flashcard_model.g.dart';
 abstract class FlashcardModel with _$FlashcardModel {
   const factory FlashcardModel({
     required String id,
-    required String deckId,
+    @JsonKey(name: 'deck_id') required String deckId,
     required String front,
     required String back,
-    String? frontLatex,
-    String? backLatex,
-    String? imageUrl,
+    @JsonKey(name: 'front_latex') String? frontLatex,
+    @JsonKey(name: 'back_latex') String? backLatex,
+    @JsonKey(name: 'image_url') String? imageUrl,
     // SM-2 legacy fields — retained for backward compatibility and display.
     @Default(1) int interval,
     @Default(0) int repetitions,
-    @Default(2.5) double easeFactor,
-    DateTime? lastReviewed,
-    DateTime? nextDueDate,
-    String? sourceTopic,
+    @JsonKey(name: 'ease_factor') @Default(2.5) double easeFactor,
+    @JsonKey(name: 'last_reviewed') DateTime? lastReviewed,
+    @JsonKey(name: 'next_due_date') DateTime? nextDueDate,
+    @JsonKey(name: 'source_topic') String? sourceTopic,
     // FSRS-6 native memory state — authoritative source of truth.
-    @Default(0.0) double fsrsStability,
-    @Default(0.0) double fsrsDifficulty,
-    @Default(0) int fsrsElapsedDays,
-    @Default(0) int fsrsScheduledDays,
-    @Default(0) int fsrsLapses,
+    @JsonKey(name: 'stability') @Default(0.0) double fsrsStability,
+    @JsonKey(name: 'difficulty') @Default(0.0) double fsrsDifficulty,
+    @JsonKey(name: 'elapsed_days') @Default(0) int fsrsElapsedDays,
+    @JsonKey(name: 'scheduled_days') @Default(0) int fsrsScheduledDays,
+    @JsonKey(name: 'lapses') @Default(0) int fsrsLapses,
 
     /// FSRS learning state: 0=new, 1=learning, 2=review, 3=relearning.
-    @Default(0) int fsrsState,
+    @JsonKey(name: 'state') @Default(0) int fsrsState,
   }) = _FlashcardModel;
 
   const FlashcardModel._();

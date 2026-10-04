@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/use_case.dart';
 import 'package:kortex/src/di/locator.dart';
+import 'package:kortex/src/features/dashboard/data/models/analytics_summary_model.dart';
 import 'package:kortex/src/features/decks/domain/entities/deck_entity.dart';
 import 'package:kortex/src/features/decks/domain/use_cases/get_user_decks_use_case.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
@@ -30,6 +31,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
        _calculator = calculator ?? const CramWorkloadCalculator(),
        super(const CramPlannerState()) {
     _initDecksListener();
+    _initActivityListener();
   }
 
   final PlannerRepository _repository;
@@ -37,6 +39,7 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
   final CreateExamCountdownUseCase _createExamUseCase;
   final CramWorkloadCalculator _calculator;
   StreamSubscription<DecksState>? _decksSubscription;
+  StreamSubscription<AnalyticsSummaryModel>? _activitySubscription;
 
   void _initDecksListener() {
     if (locator.isRegistered<DecksBloc>()) {
@@ -70,9 +73,41 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
     }
   }
 
+  void _initActivityListener() {
+    if (locator.isRegistered<UserActivityService>()) {
+      _activitySubscription = locator<UserActivityService>()
+          .analyticsSummaryStream
+          .listen((_) {
+        if (state.activeExams.isNotEmpty) {
+          final calibrated = _calibrateExamsWithLiveData(state.activeExams);
+          final (totalDaily, estMins, topPriorityId) =
+              _computeAggregates(calibrated);
+          final primary = state.selectedExam != null
+              ? calibrated.firstWhere(
+                  (e) => e.id == state.selectedExam!.id,
+                  orElse: () => calibrated.first,
+                )
+              : (calibrated.isNotEmpty ? calibrated.first : null);
+          emit(
+            state.copyWith(
+              activeExams: calibrated,
+              selectedExam: primary,
+              dynamicDailyTarget:
+                  primary?.dailyTarget ?? state.dynamicDailyTarget,
+              totalCombinedDailyTarget: totalDaily,
+              estimatedDailyMinutes: estMins,
+              topPriorityExamId: topPriorityId,
+            ),
+          );
+        }
+      });
+    }
+  }
+
   @override
   Future<void> close() async {
     await _decksSubscription?.cancel();
+    await _activitySubscription?.cancel();
     return super.close();
   }
 
@@ -352,6 +387,18 @@ class CramPlannerCubit extends Cubit<CramPlannerState> {
         ),
       ),
       (newExam) {
+        if (locator.isRegistered<UserActivityService>()) {
+          unawaited(
+            locator<UserActivityService>().awardXp(
+              XpActivityCategory.plannerTaskCompletion,
+              sourceId: newExam.id,
+              metadata: {
+                'examName': newExam.examName,
+                'subject': newExam.subjectTrack,
+              },
+            ),
+          );
+        }
         final rawList = List<ExamEventEntity>.from(state.activeExams)
           ..add(newExam);
         final updatedList = _calibrateExamsWithLiveData(rawList)

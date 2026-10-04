@@ -54,11 +54,25 @@ import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 /// - Account & Data: Scholar credentials, Anki/CSV/PDF deck portability,
 ///   and local storage/image cache management.
 @RoutePage()
-class SecuritySettingsPage extends HookWidget {
+class SecuritySettingsPage extends StatelessWidget {
   const SecuritySettingsPage({
     super.key,
     this.initialTabIndex = 0,
   });
+
+  final int initialTabIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<AuthBloc>.value(
+      value: locator<AuthBloc>(),
+      child: _SecuritySettingsView(initialTabIndex: initialTabIndex),
+    );
+  }
+}
+
+class _SecuritySettingsView extends HookWidget {
+  const _SecuritySettingsView({required this.initialTabIndex});
 
   final int initialTabIndex;
 

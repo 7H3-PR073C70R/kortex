@@ -16,6 +16,10 @@ class LoadPastQuestionsEvent extends PastQuestionsEvent {
     this.searchQuery,
     this.courseId,
     this.courseCode,
+    this.isScopedToUserTrack,
+    this.userTrack,
+    this.enrolledCourseCodes,
+    this.enrolledCourseIds,
   });
 
   final ExamCategory? examCategory;
@@ -24,6 +28,10 @@ class LoadPastQuestionsEvent extends PastQuestionsEvent {
   final String? searchQuery;
   final String? courseId;
   final String? courseCode;
+  final bool? isScopedToUserTrack;
+  final String? userTrack;
+  final List<String>? enrolledCourseCodes;
+  final List<String>? enrolledCourseIds;
 
   @override
   List<Object?> get props => [
@@ -33,6 +41,32 @@ class LoadPastQuestionsEvent extends PastQuestionsEvent {
     searchQuery,
     courseId,
     courseCode,
+    isScopedToUserTrack,
+    userTrack,
+    enrolledCourseCodes,
+    enrolledCourseIds,
+  ];
+}
+
+class SetTrackScopeEvent extends PastQuestionsEvent {
+  const SetTrackScopeEvent({
+    required this.isScopedToUserTrack,
+    this.userTrack,
+    this.enrolledCourseCodes,
+    this.enrolledCourseIds,
+  });
+
+  final bool isScopedToUserTrack;
+  final String? userTrack;
+  final List<String>? enrolledCourseCodes;
+  final List<String>? enrolledCourseIds;
+
+  @override
+  List<Object?> get props => [
+    isScopedToUserTrack,
+    userTrack,
+    enrolledCourseCodes,
+    enrolledCourseIds,
   ];
 }
 

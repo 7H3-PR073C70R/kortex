@@ -17,6 +17,17 @@ void _initServices() {
     ..registerLazySingleton<NotificationService>(
       NotificationService.new,
     )
+    ..registerLazySingleton<NotificationRouter>(
+      NotificationRouter.new,
+    )
+    ..registerLazySingleton<DynamicLinkService>(
+      DynamicLinkService.new,
+    )
+    ..registerLazySingleton<LinkSharingService>(
+      () => LinkSharingService(
+        dynamicLinkService: locator<DynamicLinkService>(),
+      ),
+    )
     ..registerLazySingleton<SocialAuthService>(
       SocialAuthService.new,
     )
@@ -45,7 +56,33 @@ void _initServices() {
       ),
     )
     ..registerLazySingleton<UserActivityService>(
-      () => UserActivityServiceImpl(locator<LocalStorageService>()),
+      () => UserActivityServiceImpl(
+        locator<LocalStorageService>(),
+        connectivity: Connectivity(),
+      ),
+    )
+    ..registerLazySingleton<ForumOfflineSyncQueue>(
+      () => ForumOfflineSyncQueue(
+        localStorageService: locator<LocalStorageService>(),
+      ),
+    )
+    ..registerLazySingleton<StudyActivityTracker>(
+      StudyActivityTrackerImpl.new,
+    )
+    ..registerLazySingleton<AssessmentOrchestratorService>(
+      () => AssessmentOrchestratorService(
+        userActivityService: locator<UserActivityService>(),
+        userStorageService: locator<UserStorageService>(),
+        fsrsEngine: locator.isRegistered<FsrsAlgorithmEngine>()
+            ? locator<FsrsAlgorithmEngine>()
+            : null,
+        decksRepository: locator.isRegistered<DecksRepository>()
+            ? locator<DecksRepository>()
+            : null,
+        plannerRepository: locator.isRegistered<PlannerRepository>()
+            ? locator<PlannerRepository>()
+            : null,
+      ),
     )
     ..registerLazySingleton<BiometricAuthService>(
       () => BiometricAuthServiceImpl(locator()),
@@ -58,6 +95,16 @@ void _initServices() {
     )
     ..registerLazySingleton<MediaUploadService>(
       MediaUploadService.new,
+    )
+    ..registerLazySingleton<AudioRecordingService>(
+      AudioRecordingServiceImpl.new,
+    )
+    ..registerLazySingleton<TextToSpeechService>(
+      () => TextToSpeechServiceImpl(
+        localStorageService: locator.isRegistered<LocalStorageService>()
+            ? locator<LocalStorageService>()
+            : null,
+      ),
     )
     ..registerLazySingleton<ThemeCubit>(
       () => ThemeCubit(storageService: locator()),
@@ -112,6 +159,9 @@ void _initServices() {
     ..registerFactory<PastQuestionsBloc>(
       () => PastQuestionsBloc(
         repository: locator<PastQuestionsRepository>(),
+        userActivityService: locator.isRegistered<UserActivityService>()
+            ? locator<UserActivityService>()
+            : null,
       ),
     )
     ..registerLazySingleton<DocumentParserService>(
@@ -148,6 +198,18 @@ void _initServices() {
     ..registerFactory<QuizDuelCubit>(
       () => QuizDuelCubit(
         repository: locator<QuizDuelRepository>(),
+      ),
+    )
+
+    // ── Force-Update ─────────────────────────────────────────────────────────
+    ..registerLazySingleton<CheckForceUpdateUseCase>(
+      () => CheckForceUpdateUseCase(
+        repository: locator<AppVersionRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ForceUpdateService>(
+      () => ForceUpdateService(
+        checkForceUpdateUseCase: locator<CheckForceUpdateUseCase>(),
       ),
     );
 }

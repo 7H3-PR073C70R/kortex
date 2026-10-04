@@ -19,6 +19,7 @@ class TtsConfig {
     required this.baseSpeechRate,
     required this.pitch,
     required this.volume,
+    this.sentencePauseMs = 140,
     this.language = 'en-US',
   });
 
@@ -26,6 +27,8 @@ class TtsConfig {
   factory TtsConfig.forCurrentPlatform({
     VoiceGender gender = VoiceGender.female,
     double speechRateMultiplier = 1.0,
+    double pitch = 1.0,
+    int sentencePauseMs = 140,
     String language = 'en-US',
   }) {
     final isIos = !kIsWeb && Platform.isIOS;
@@ -37,17 +40,15 @@ class TtsConfig {
         ? (gender == VoiceGender.female ? 0.47 : 0.46)
         : (gender == VoiceGender.female ? 0.82 : 0.80);
 
-    // Keep pitch at 1.0 to preserve natural acoustic vocal tract formants
-    // and prevent metallic/vocoder distortion.
-    const naturalPitch = 1.0;
     const standardVolume = 1.0;
 
     return TtsConfig(
       gender: gender,
       speechRateMultiplier: speechRateMultiplier,
       baseSpeechRate: baseRate,
-      pitch: naturalPitch,
+      pitch: pitch,
       volume: standardVolume,
+      sentencePauseMs: sentencePauseMs,
       language: language,
     );
   }
@@ -70,6 +71,9 @@ class TtsConfig {
   /// Output volume (0.0 to 1.0).
   final double volume;
 
+  /// Calculated natural breathing pause (in milliseconds) between spoken sentences.
+  final int sentencePauseMs;
+
   /// Speech locale code (e.g. 'en-US').
   final String language;
 
@@ -79,6 +83,7 @@ class TtsConfig {
     double? baseSpeechRate,
     double? pitch,
     double? volume,
+    int? sentencePauseMs,
     String? language,
   }) {
     return TtsConfig(
@@ -87,6 +92,7 @@ class TtsConfig {
       baseSpeechRate: baseSpeechRate ?? this.baseSpeechRate,
       pitch: pitch ?? this.pitch,
       volume: volume ?? this.volume,
+      sentencePauseMs: sentencePauseMs ?? this.sentencePauseMs,
       language: language ?? this.language,
     );
   }
@@ -101,6 +107,7 @@ class TtsConfig {
           baseSpeechRate == other.baseSpeechRate &&
           pitch == other.pitch &&
           volume == other.volume &&
+          sentencePauseMs == other.sentencePauseMs &&
           language == other.language;
 
   @override
@@ -110,6 +117,7 @@ class TtsConfig {
     baseSpeechRate,
     pitch,
     volume,
+    sentencePauseMs,
     language,
   );
 }

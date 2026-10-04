@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 """
-Kortex Forum Seeding Script
-===========================
-Populates the database with realistic, highly engaging academic forum posts,
-complete with:
-- Posts without images, posts with 1 image, and posts with multiple images.
-- Dynamic, non-fixed reply lengths with realistic student personas and voices.
-- Deep nested sub-replies (conversational threads and clarifications).
-- Automated Syllabot AI pedagogical responses with LaTeX formulas.
-- Verified solution badges and accurate reply counter rollups.
-- Configurable counts via command-line arguments or interactive prompts.
+Kortex Dynamic Forum Seeding & Discussion Generator
+====================================================
+Generates 100% unique, organic, highly engaging discussions on every run using Ollama.
+Covers both universal student experiences (that every student from every track relates to)
+and fascinating track-specific paradoxes, debates, and epiphanies.
+
+Features:
+- Full database cleanup capability (--clean, --clean-only).
+- Zero repetitive boilerplate: No canned formulaic openers.
+- Varied styles: Debates, burning conceptual doubts, relatable confessions, practical study hacks.
+- Cross-track universal topics (focus, burnout, sleep, exam anxiety, active recall, note systems)
+  alongside field-specific curiosities (CS, Physics, Math, Medicine, Chemistry, WAEC, JAMB, SAT).
+- Multi-tier conversational replies (configurable --reply-depth up to 4 levels).
+- Authentic, diverse student & mentor personas.
+- Syllabot AI pedagogical breakdowns.
+- Contextual Unsplash image attachments and LaTeX math/chemical rendering.
 """
 
 import sys
@@ -19,13 +25,25 @@ import uuid
 import random
 import argparse
 import datetime
+import subprocess
 from urllib import request, error
 
-# Default Configuration
-DEFAULT_API_URL = "https://mongizqfijuhycdxltpw.supabase.co"
-DEFAULT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0.WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg"
+# ==============================================================================
+# 1. Configuration & Credentials
+# ==============================================================================
 
-# Realistic Student & Professor Personas
+DEFAULT_API_URL = "https://mongizqfijuhycdxltpw.supabase.co"
+DEFAULT_ANON_KEY = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbmdpenFmaWp1aHljZHhsdHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMjk0ODksImV4cCI6MjEwMzcwNTQ4OX0."
+    "WdbPP0hWHnm2P7IWOOPOPv8emJsNql2jf5z6XnPa0wg"
+)
+DEFAULT_OLLAMA_URL = "http://localhost:11434"
+
+# ==============================================================================
+# 2. Authentic Personas
+# ==============================================================================
+
 PERSONAS = [
     {
         "name": "Dr. Adebayo Ogunleye",
@@ -54,7 +72,7 @@ PERSONAS = [
     {
         "name": "Liam O'Connor",
         "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-        "role": "CS Student",
+        "role": "CS & Systems Student",
         "track": "Computer Science",
     },
     {
@@ -87,6 +105,30 @@ PERSONAS = [
         "role": "Data Structures TA",
         "track": "Computer Science",
     },
+    {
+        "name": "Kenechukwu Okafor",
+        "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
+        "role": "UTME 345+ High Flyer",
+        "track": "JAMB",
+    },
+    {
+        "name": "Chloe Dupont",
+        "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        "role": "Pure Mathematics Major",
+        "track": "Mathematics",
+    },
+    {
+        "name": "Tariq Morales",
+        "avatar": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80",
+        "role": "Bioengineering Junior",
+        "track": "Medicine",
+    },
+    {
+        "name": "Maya Patel",
+        "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
+        "role": "Cognitive Science Fellow",
+        "track": "General",
+    },
 ]
 
 SYLLABOT_PERSONA = {
@@ -95,378 +137,291 @@ SYLLABOT_PERSONA = {
     "role": "Adaptive AI Tutor",
 }
 
-# Real-world Educational & Scientific Images for Posts
+# ==============================================================================
+# 3. Media Assets
+# ==============================================================================
+
 ACADEMIC_IMAGES = {
-    "circuit": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+    "study_desk": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&auto=format&fit=crop&q=80",
+    "library": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80",
     "calculus_board": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=80",
     "lab_chemistry": "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&auto=format&fit=crop&q=80",
+    "circuit": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
     "brain_synapse": "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&auto=format&fit=crop&q=80",
-    "study_notes": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&auto=format&fit=crop&q=80",
     "code_editor": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&auto=format&fit=crop&q=80",
     "physics_mechanics": "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&auto=format&fit=crop&q=80",
-    "library_study": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80",
-    "microscope_biology": "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800&auto=format&fit=crop&q=80",
+    "microscope": "https://images.unsplash.com/photo-1579154204601-01588f351e67?w=800&auto=format&fit=crop&q=80",
+    "network": "https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=800&auto=format&fit=crop&q=80",
 }
 
-# Post Templates covering varied domains, image configurations, and LaTeX formulations
-POST_TEMPLATES = [
+# ==============================================================================
+# 4. Spontaneous Topic Ideas Pool (Universal & Track-Specific)
+# ==============================================================================
+
+# Universal topics relatable to ALL students across every exam and major
+UNIVERSAL_TOPICS = [
     {
-        "title": "WAEC WASSCE General Maths: Circle Geometry - Angle at Centre vs Circumference",
-        "track": "WAEC",
-        "syllabus_tag": "Circle Theorems & Geometry",
-        "content": "In WASSCE Theory Question 4b, we are given a cyclic quadrilateral ABCD where chord AB is subtending an angle at the centre O. What is the fastest systematic way to deduce angles in alternate segments without mixing up cyclic quadrilateral opposite angles adding to 180°?",
-        "latex_content": "\\angle AOB = 2\\angle ACB, \\quad \\angle DAB + \\angle BCD = 180^\\circ",
-        "tags": ["WAEC", "WASSCE", "Mathematics", "CircleTheorems", "PastQuestions"],
-        "media_type": "single",
-        "media_keys": ["calculus_board"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 6,
-                "content": "Always remember this two-step check for WAEC circle theorem questions:\n1. Look for the radius forming an isosceles triangle (angles opposite equal radii are equal).\n2. For cyclic quads, opposite angles sum to $180^\\circ$, and the exterior angle equals the interior opposite angle!",
-                "is_verified": True,
-                "sub_replies": [
-                    {
-                        "author_idx": 0,
-                        "content": "Spot on Chinedu. Also in WAEC marking schemes, remember to always write the theorem reason in parentheses (e.g. 'opp. $\\angle$s of cyclic quad.') or examiners will penalize step marks.",
-                    }
-                ],
-            },
-            {
-                "is_ai": True,
-                "content": "### Syllabot WAEC Step-by-Step Breakdown\n\n1. **Angle at Centre:** The angle subtended by an arc at the center is twice the angle subtended by it at any point on the circumference: $\\angle AOB = 2\\angle APB$.\n2. **Angles in Alternate Segments:** The angle between a tangent and a chord through the point of contact equals the angle in the alternate segment: $\\angle TAB = \\angle ACB$.\n3. **Cyclic Quadrilateral:** Opposite angles are supplementary: $\\angle A + \\angle C = 180^\\circ$.\n\n*Examiner Tip:* Always quote the theorem reason beside each angle deduction to guarantee full method marks!",
-            },
-        ],
+        "track": "General",
+        "tag": "Exam Psychology & Mindset",
+        "angle": "Overcoming the mid-exam panic freeze when question 1 looks completely unrecognizable",
+        "context": "Has anyone else sat down for a timed exam, read the first problem, and felt their brain temporarily wipe clean? How do you reset in 30 seconds without spiraling?",
+        "media_key": "study_desk",
     },
     {
-        "title": "WAEC Chemistry: Esterification vs Saponification & Reflux Reaction Conditions",
-        "track": "WAEC",
-        "syllabus_tag": "Organic Chemistry",
-        "content": "When preparing ethyl ethanoate from ethanol and ethanoic acid using concentrated H2SO4 as catalyst, why do WAEC practical questions always specify heating under reflux, and why is sodium carbonate added during separation?",
-        "latex_content": "CH_3COOH + C_2H_5OH \\xrightleftharpoons{\\text{conc. } H_2SO_4} CH_3COOC_2H_5 + H_2O",
-        "tags": ["WAEC", "Chemistry", "OrganicChemistry", "Practicals", "Esters"],
-        "media_type": "single",
-        "media_keys": ["lab_chemistry"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 5,
-                "content": "Reflux prevents the volatile organic reactants (ethanol boiling point 78°C and ethyl ethanoate 77°C) from evaporating before the reversible equilibrium is reached. The Na2CO3 is added to neutralize any unreacted ethanoic acid!",
-                "is_verified": True,
-                "sub_replies": [
-                    {
-                        "author_idx": 7,
-                        "content": "That makes total sense! And the characteristic sweet fruity smell confirms ester formation.",
-                    }
-                ],
-            },
-            {
-                "is_ai": True,
-                "content": "**Syllabot Practical Summary:**\n- **Role of Conc. $H_2SO_4$:** Acts as both an acid catalyst and a dehydrating agent, shifting equilibrium forward via Le Chatelier's principle.\n- **Reflux:** Condenses vapors back into the flask to prevent yield loss.\n- **Separation:** $Na_2CO_3$ converts $CH_3COOH$ to water-soluble $CH_3COONa$, which separates cleanly into the aqueous layer in a separating funnel.",
-            },
-        ],
+        "track": "General",
+        "tag": "Study Systems & Productivity",
+        "angle": "All-nighter vs 8-hour sleep before an important test — the science of cognitive reboot",
+        "context": "Debate: Does pulling a late night before test day ever actually pay off, or does sleep debt destroy your working memory so badly that extra cramming is pointless?",
+        "media_key": "library",
     },
     {
-        "title": "WAEC Physics: Ideal Transformer Calculations and Eddy Current Core Lamination",
-        "track": "WAEC",
-        "syllabus_tag": "Electromagnetism & AC Current",
-        "content": "A step-down transformer is used to operate a 12V, 24W lamp from a 240V mains supply. If the efficiency is 80%, what is the current drawn from the primary coil?",
-        "latex_content": "\\eta = \\frac{P_{out}}{P_{in}} \\times 100\\% \\implies 0.80 = \\frac{24}{240 \\times I_p}",
-        "tags": ["WAEC", "Physics", "Transformers", "Electromagnetism", "WASSCE"],
-        "media_type": "single",
-        "media_keys": ["circuit"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 1,
-                "content": "Let's solve step by step:\n$$P_{in} = \\frac{P_{out}}{0.80} = \\frac{24}{0.80} = 30\\text{ W}$$\nSince $P_{in} = V_p I_p$:\n$$I_p = \\frac{30}{240} = 0.125\\text{ A}$$\nSuper common 5-mark question in WAEC Paper 2!",
-                "is_verified": True,
-            },
-            {
-                "author_idx": 0,
-                "content": "Also remember why transformer cores are laminated with soft iron: to minimize eddy current energy losses through heat, and soft iron has low hysteresis loss.",
-            },
-        ],
+        "track": "General",
+        "tag": "Memory & Cognitive Science",
+        "angle": "Active recall & spaced repetition vs passive re-reading and highlighters",
+        "context": "Switched from highlighting textbooks to active recall with self-testing. It feels 5x harder in the moment, but the retention difference is insane. Why do schools still teach passive reading?",
+        "media_key": "study_desk",
     },
     {
-        "title": "WAEC English Language: Navigating Concord, Subjunctive Mood & Phrasal Verbs",
-        "track": "WAEC",
-        "syllabus_tag": "English Grammar & Lexis",
-        "content": "Can someone explain why in subjunctive mood we say 'I wish I were' instead of 'I was', and how to handle concord with expressions like 'together with', 'as well as', and 'neither... nor' in WAEC Section 1?",
-        "latex_content": "\\text{Subject}_1 + \\text{ 'as well as' } + \\text{Subject}_2 \\implies \\text{Verb agrees with Subject}_1",
-        "tags": ["WAEC", "English", "Concord", "Grammar", "WASSCE"],
-        "media_type": "none",
-        "media_keys": [],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 6,
-                "content": "Remember the golden rule for WAEC lexis:\n1. 'As well as', 'together with', 'in addition to' are parenthetical — the verb strictly agrees with the FIRST subject: 'The teacher as well as the students **is** coming.'\n2. 'Neither... nor' / 'Either... or' follows proximity rule — verb agrees with the NEAREST subject: 'Neither John nor the boys **are** here.'",
-                "is_verified": True,
-            },
-        ],
+        "track": "General",
+        "tag": "Focus & Flow States",
+        "angle": "Pomodoro timing: Why 25/5 is too short for deep technical problem solving",
+        "context": "For intensive derivations, proofs, or complex coding, 25 minutes cuts off your flow state right when your brain warms up. Who here uses 50/10 or 90-minute ultradian rhythm blocks?",
+        "media_key": "study_desk",
     },
     {
-        "title": "WAEC Biology: Dihybrid Cross & Calculating 9:3:3:1 Phenotypic Ratio Shortcuts",
-        "track": "WAEC",
-        "syllabus_tag": "Genetics & Heredity",
-        "content": "In a cross between two heterozygous round yellow pea plants (RrYy x RrYy), what fraction of the offspring will be homozygous recessive for at least one trait?",
-        "latex_content": "P(\\text{homozygous recessive for } R \\text{ or } Y) = 1 - P(R\\_ Y\\_) = 1 - \\frac{9}{16} = \\frac{7}{16}",
-        "tags": ["WAEC", "Biology", "Genetics", "Mendel", "PunnettSquare"],
-        "media_type": "single",
-        "media_keys": ["microscope_biology"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 3,
-                "content": "Using the complement probability $1 - 9/16 = 7/16$ is 10x faster than drawing a 16-box Punnett square in the exam hall! The 7 are: 3 round green (R_yy) + 3 wrinkled yellow (rrY_) + 1 wrinkled green (rryy).",
-                "is_verified": True,
-            },
-        ],
+        "track": "General",
+        "tag": "Study Environment",
+        "angle": "Lo-fi beats vs ambient rain vs absolute dead silence for deep concentration",
+        "context": "What audio environment actually lets you solve high-focus problems? Some people swear by video game soundtracks, others can't even stand a ticking clock.",
+        "media_key": "library",
     },
     {
-        "title": "Stuck on evaluating this tricky contour integral using Cauchy's Residue Theorem",
-        "track": "Mathematics",
-        "syllabus_tag": "Complex Analysis",
-        "content": "I am working through past exam problems for Complex Variables. The problem asks to evaluate the integral around the counterclockwise unit circle $|z| = 2$:\n\nCan someone walk me through how to classify the pole orders and find the residues without getting lost in algebraic expansion?",
-        "latex_content": "\\oint_{|z|=2} \\frac{e^{3z}}{(z^2 + 1)(z - 1)^2} \\, dz",
-        "tags": ["Calculus", "ComplexAnalysis", "ResidueTheorem", "PastQuestions"],
-        "media_type": "multiple",
-        "media_keys": ["calculus_board", "study_notes"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 2,
-                "content": "Look at the singularities inside $|z| = 2$. You have simple poles at $z = i$ and $z = -i$, and a double pole at $z = 1$. Since all three lie inside the circle of radius 2, you need the sum of all three residues!",
-                "latex": "\\text{Res}(f, 1) = \\lim_{z \\to 1} \\frac{d}{dz} \\left[ (z-1)^2 f(z) \\right] = \\lim_{z \\to 1} \\frac{d}{dz} \\left[ \\frac{e^{3z}}{z^2 + 1} \\right]",
-                "sub_replies": [
-                    {
-                        "author_idx": 1,
-                        "content": "Wait Marcus, for the derivative at $z=1$, don't forget the quotient rule:\n$$\\frac{3e^{3z}(z^2+1) - 2z e^{3z}}{(z^2+1)^2}$$\nPlugging in $z=1$ gives $\\frac{6e^3 - 2e^3}{4} = e^3$.",
-                    },
-                    {
-                        "author_idx": 2,
-                        "content": "Spot on Elena! That quotient rule simplifies the double pole cleanly.",
-                    },
-                ],
-            },
-            {
-                "is_ai": True,
-                "content": "### Syllabot Step-by-Step Residue Evaluation\n\n1. **Identify Singularities within $|z| = 2$**:\n   - Simple pole at $z = i$: $\\text{Res}(f, i) = \\frac{e^{3i}}{2i(i-1)^2} = \\frac{e^{3i}}{4}$\n   - Simple pole at $z = -i$: $\\text{Res}(f, -i) = \\frac{e^{-3i}}{-2i(-i-1)^2} = \\frac{e^{-3i}}{4}$\n   - Second-order pole at $z = 1$: $\\text{Res}(f, 1) = e^3$\n\n2. **Sum of Residues**:\n   $$\\sum \\text{Res} = e^3 + \\frac{e^{3i} + e^{-3i}}{4} = e^3 + \\frac{1}{2}\\cos(3)$$\n\n3. **Application of Residue Theorem**:\n   $$\\ointctrclockwise_{|z|=2} f(z) \\, dz = 2\\pi i \\left(e^3 + \\frac{1}{2}\\cos(3)\\right)$$\n\n*Mastery Tip:* Always factor quadratic terms $(z^2+1) = (z-i)(z+i)$ before taking limits!",
-                "latex": "\\ointctrclockwise_{C} f(z) \\, dz = 2\\pi i \\sum_{k=1}^n \\text{Res}(f, z_k)",
-                "is_verified": True,
-                "sub_replies": [
-                    {
-                        "author_idx": 0,
-                        "content": "The combination of the Euler identity $\\frac{e^{3i}+e^{-3i}}{2} = \\cos(3)$ is such an elegant touch. Exactly what my professor expects on the rubric.",
-                    }
-                ],
-            },
-            {
-                "author_idx": 7,
-                "content": "Thanks everyone, this broke down the exact hurdle I had with the second-order derivative term!",
-            },
-        ],
+        "track": "General",
+        "tag": "Test Taking Strategies",
+        "angle": "The psychological trap of changing your first intuitive answer on multiple-choice questions",
+        "context": "Every time I go back and change an answer in the last 5 minutes of a test, my first gut instinct was right 80% of the time. What is your personal rule for when to change an answer?",
+        "media_key": "study_desk",
     },
     {
-        "title": "Why does an RLC series circuit reach maximum current at resonance? Intuitive explanation needed",
-        "track": "Physics",
-        "syllabus_tag": "Electrodynamics & AC Circuits",
-        "content": "I understand the algebraic proof that $X_L = X_C \\implies Z = R$, but conceptually, what is physically happening between the magnetic field in the inductor and the electric field in the capacitor at resonance?",
-        "latex_content": "Z = \\sqrt{R^2 + \\left(\\omega L - \\frac{1}{\\omega C}\\right)^2} \\quad \\implies \\quad \\omega_0 = \\frac{1}{\\sqrt{LC}}",
-        "tags": ["Physics", "ACCircuits", "Resonance", "Engineering"],
-        "media_type": "single",
-        "media_keys": ["circuit"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 0,
-                "content": "Think of it like a child on a playground swing! At resonance, the energy stored in the capacitor's electric field transfers completely into the inductor's magnetic field and back every half-cycle, precisely in phase with the AC driving voltage. The reactive components effectively cancel each other's impedance out.",
-                "sub_replies": [
-                    {
-                        "author_idx": 8,
-                        "content": "The swing analogy is brilliant Dr. Adebayo. So the source only has to do work against the internal resistance $R$ to maintain oscillations!",
-                    }
-                ],
-            },
-            {
-                "is_ai": True,
-                "content": "**Syllabot Pedagogical Breakdown:**\n\nAt the resonant frequency $\\omega_0 = \\frac{1}{\\sqrt{LC}}$:\n1. The voltage across the inductor leads current by $+90^\\circ$: $V_L = j\\omega L I$\n2. The voltage across the capacitor lags current by $-90^\\circ$: $V_C = \\frac{I}{j\\omega C} = -j\\frac{1}{\\omega C}I$\n3. Because $V_L + V_C = 0$ at all times during resonance, the total reactive voltage drop is zero, allowing current $I = \\frac{V_{in}}{R}$ to peak at its theoretical maximum.",
-                "latex": "V_{net} = V_R + j(V_L - V_C) = V_R",
-                "is_verified": True,
-            },
-        ],
+        "track": "General",
+        "tag": "Mental Models & Learning",
+        "angle": "The Feynman Technique: Explaining complex ideas to non-technical friends",
+        "context": "The ultimate test of understanding isn't whether you can recite the textbook definition — it's whether you can explain it to your younger sibling without jargon.",
+        "media_key": "study_desk",
     },
     {
-        "title": "Dijkstra vs A* Algorithm: When should you NOT use Euclidean heuristic?",
-        "track": "Computer Science",
-        "syllabus_tag": "Algorithms & Graph Theory",
-        "content": "We've been benchmarking graph traversal algorithms for large grid maps with dynamic obstacles and high-dimensional states. In what specific topologies does Euclidean distance fail or perform worse than Manhattan or diagonal Chebyshev heuristics?",
-        "latex_content": "h(n) = \\sqrt{(x_n - x_{goal})^2 + (y_n - y_{goal})^2} \\le c(n, goal)",
-        "tags": ["ComputerScience", "Algorithms", "GraphTheory", "AI"],
-        "media_type": "none",
-        "media_keys": [],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 4,
-                "content": "Euclidean distance is only admissible when movement is continuous in any angle. If your agent is restricted to 4-directional grid movement (North, South, East, West), Euclidean distance underestimates the true step cost too drastically! Manhattan distance $h(n) = |\\Delta x| + |\\Delta y|$ provides a much tighter admissible heuristic.",
-                "sub_replies": [
-                    {
-                        "author_idx": 9,
-                        "content": "Exactly! If you use Euclidean on a 4-connected grid, A* expands way more nodes than necessary because $h(n)$ is too optimistic. For 8-directional grids with diagonal costs $\\sqrt{2}$, Octile heuristic is optimal.",
-                    },
-                    {
-                        "author_idx": 4,
-                        "content": "Here is the exact formula for Octile distance:\n$$h(n) = D(\\Delta x + \\Delta y) + (D_2 - 2D)\\min(\\Delta x, \\Delta y)$$\nwhere $D=1$ and $D_2 = \\sqrt{2}$.",
-                    },
-                ],
-            },
-            {
-                "is_ai": True,
-                "content": "### Heuristic Selection Rubric for A*\n\n| Grid Constraint | Optimal Admissible Heuristic | Over-estimation Risk |\n| :--- | :--- | :--- |\n| **4-Directional** | Manhattan Distance ($L_1$ Norm) | None (Strictly Admissible) |\n| **8-Directional** | Octile / Chebyshev Distance | None |\n| **Continuous Any-Angle** | Euclidean Distance ($L_2$ Norm) | None |\n| **Non-Euclidean / Graph** | Landmark Distance (ALT Algorithm) | None |",
-                "is_verified": True,
-            },
-        ],
+        "track": "General",
+        "tag": "Note-Taking & Tools",
+        "angle": "Digital notes (iPad/Notion) vs good old tactile pen and paper for working memory",
+        "context": "Digital notes are great for searchability, but for working through difficult derivations, writing by hand on scratch paper activates spatial memory in a totally different way.",
+        "media_key": "library",
     },
     {
-        "title": "High-Yield JAMB/WAEC Physics: 3-Second Shortcut for Projectile Range & Max Height Ratios",
-        "track": "JAMB",
-        "syllabus_tag": "Mechanics & Kinematics",
-        "content": "Sharing a high-yield derivation that saved me so much time during mock exams! When a projectile is launched such that maximum height equals horizontal range ($H = R$), the launch angle is always $\\theta = \\arctan(4) \\approx 75.96^\\circ$. Here is the full relationship:",
-        "latex_content": "\\frac{H}{R} = \\frac{u^2 \\sin^2\\theta / 2g}{u^2 \\sin(2\\theta) / g} = \\frac{\\sin^2\\theta}{2(2\\sin\\theta\\cos\\theta)} = \\frac{1}{4}\\tan\\theta",
-        "tags": ["JAMB", "WAEC", "Physics", "ExamShortcuts", "Mechanics"],
-        "media_type": "single",
-        "media_keys": ["physics_mechanics"],
-        "is_question": False,
-        "replies": [
-            {
-                "author_idx": 6,
-                "content": "This is pure gold Chinedu! In WAEC 2024 Question 14 they asked for the ratio $H/R$ when launch angle is $45^\\circ$. Using $\\frac{1}{4}\\tan(45^\\circ) = 1/4$, you get $R = 4H$ instantly in 2 seconds without drawing parabolas.",
-                "sub_replies": [
-                    {
-                        "author_idx": 3,
-                        "content": "Adding this formula directly to my study flashcard deck. Thanks for writing out the step-by-step cancellation!",
-                    }
-                ],
-            },
-            {
-                "author_idx": 0,
-                "content": "Excellent conceptual derivation. Notice also that complementary angles $(\\theta$ and $90^\\circ - \\theta)$ yield identical ranges $R$, but their maximum heights satisfy $H_1 H_2 = \\frac{R^2}{16}$.",
-            },
-        ],
-    },
-    {
-        "title": "Action Potential in Cardiac Myocytes: Why is Phase 2 (Plateau) physiologically necessary?",
-        "track": "Medicine",
-        "syllabus_tag": "Cardiovascular Physiology",
-        "content": "Unlike skeletal muscle fibers where action potentials last 1-2 ms, ventricular myocytes have a sustained 200-300 ms plateau phase (Phase 2). What ionic conductances maintain this plateau, and what disastrous mechanical event would happen to the heart if Phase 2 were absent?",
-        "latex_content": "I_{net} = I_{Ca,L} - (I_{Kr} + I_{Ks}) \\approx 0 \\implies \\frac{dV_m}{dt} \\approx 0",
-        "tags": ["Medicine", "Cardiology", "Physiology", "USMLE", "ActionPotential"],
-        "media_type": "single",
-        "media_keys": ["brain_synapse"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 3,
-                "content": "Phase 2 is maintained by a delicate balance: inward calcium influx via L-type $Ca^{2+}$ channels (DHPR) matches outward potassium efflux ($I_{Kr}, I_{Ks}$). If this prolonged refractory period didn't exist, the heart could undergo tetanic contraction (cramping), which would completely stop ventricular filling and cause fatal cardiac arrest!",
-                "is_verified": True,
-                "sub_replies": [
-                    {
-                        "author_idx": 5,
-                        "content": "Also, the calcium entering during Phase 2 triggers Calcium-Induced Calcium Release (CICR) from the sarcoplasmic reticulum via Ryanodine receptors (RyR2), initiating the actual actin-myosin power stroke!",
-                    },
-                    {
-                        "author_idx": 3,
-                        "content": "Exactly Fatima! That's why Calcium Channel Blockers (like Verapamil or Diltiazem) decrease inotropy by shortening Phase 2.",
-                    },
-                ],
-            },
-            {
-                "is_ai": True,
-                "content": "**Syllabot Clinical Summary (Phase 0 to 4):**\n- **Phase 0:** Rapid depolarization (Fast voltage-gated $Na^+$ channels open)\n- **Phase 1:** Early repolarization (Transient outward $K^+$ current, $I_{to}$)\n- **Phase 2:** Plateau (L-type $Ca^{2+}$ influx balances delayed rectifier $K^+$ efflux)\n- **Phase 3:** Rapid repolarization (Inward rectifier $K^+$ channels open, $Ca^{2+}$ channels inactivate)\n- **Phase 4:** Resting membrane potential ($\approx -90\\text{ mV}$ established by $Na^+/K^+$ ATPase)",
-            },
-        ],
-    },
-    {
-        "title": "Reaction mechanism of Michaelis-Menten Enzyme Kinetics with competitive vs non-competitive inhibition",
-        "track": "Chemistry",
-        "syllabus_tag": "Biochemistry & Enzymology",
-        "content": "Can someone clarify how the Lineweaver-Burk double reciprocal plot changes under uncompetitive vs non-competitive inhibition? I keep mixing up the y-intercept and x-intercept shifts.",
-        "latex_content": "\\frac{1}{V_0} = \\frac{K_m}{V_{max}} \\cdot \\frac{1}{[S]} + \\frac{1}{V_{max}}",
-        "tags": ["Chemistry", "Biochemistry", "EnzymeKinetics", "LineweaverBurk"],
-        "media_type": "multiple",
-        "media_keys": ["lab_chemistry", "study_notes"],
-        "is_question": True,
-        "replies": [
-            {
-                "author_idx": 5,
-                "content": "Here is an easy visual mnemonic to never confuse them again:\n\n1. **Competitive:** Lines intersect on the **Y-axis** ($V_{max}$ unchanged, $K_m$ increases).\n2. **Non-competitive:** Lines intersect on the **negative X-axis** ($K_m$ unchanged, $V_{max}$ decreases).\n3. **Uncompetitive:** Lines are strictly **parallel** (both $K_m$ and $V_{max}$ decrease proportionally).",
-                "is_verified": True,
-                "sub_replies": [
-                    {
-                        "author_idx": 7,
-                        "content": "The parallel lines for uncompetitive is such a clean visual. That means slope $\\frac{K_m}{V_{max}}$ remains constant!",
-                    }
-                ],
-            },
-            {
-                "is_ai": True,
-                "content": "### Lineweaver-Burk Diagnostic Cheat Sheet\n\n- **X-Intercept:** $-\\frac{1}{K_m}$\n- **Y-Intercept:** $\\frac{1}{V_{max}}$\n- **Slope:** $\\frac{K_m}{V_{max}}$\n\nUnder **uncompetitive inhibition**, the inhibitor binds exclusively to the enzyme-substrate complex $[ES]$, decreasing both apparent parameters by factor $\\alpha'$:\n$$V_{max}^{app} = \\frac{V_{max}}{\\alpha'}, \\quad K_m^{app} = \\frac{K_m}{\\alpha'}$$\nHence slope remains invariant!",
-            },
-        ],
-    },
-    {
-        "title": "SAT Math: Geometry & Inscribed Circles in Right Triangles Formula Shortcut",
-        "track": "SAT",
-        "syllabus_tag": "Plane Geometry",
-        "content": "For any right triangle with legs $a, b$ and hypotenuse $c$, the radius $r$ of its incircle (inscribed circle) is given by this exact shortcut formula without needing Heron's theorem:",
-        "latex_content": "r = \\frac{a + b - c}{2}",
-        "tags": ["SAT", "Math", "Geometry", "Triangles", "Shortcuts"],
-        "media_type": "none",
-        "media_keys": [],
-        "is_question": False,
-        "replies": [
-            {
-                "author_idx": 7,
-                "content": "Example: For a 3-4-5 right triangle, $r = \\frac{3 + 4 - 5}{2} = \\frac{2}{2} = 1$. Instant answer in under 5 seconds!",
-                "sub_replies": [
-                    {
-                        "author_idx": 6,
-                        "content": "Works on a 5-12-13 triangle too: $r = \\frac{5 + 12 - 13}{2} = 2$. Pure time saver!",
-                    }
-                ],
-            },
-            {
-                "author_idx": 2,
-                "content": "Proof is super clean too: tangent line segments from external vertices to the incircle have equal lengths $(a-r) + (b-r) = c \\implies a + b - 2r = c$.",
-            },
-        ],
-    },
-    {
-        "title": "Derivation of Euler's Formula e^(i theta) = cos(theta) + i sin(theta) from Taylor Series",
-        "track": "Mathematics",
-        "syllabus_tag": "Calculus & Mathematical Analysis",
-        "content": "Sharing the formal Taylor series expansion proof that unifies trigonometry, exponential growth, and complex numbers into Euler's identity. Here is the algebraic step breakdown:",
-        "latex_content": "e^{i\\theta} = \\sum_{n=0}^{\\infty} \\frac{(i\\theta)^n}{n!} = \\left(1 - \\frac{\\theta^2}{2!} + \\frac{\\theta^4}{4!} - \\dots\\right) + i\\left(\\theta - \\frac{\\theta^3}{3!} + \\frac{\\theta^5}{5!} - \\dots\\right) = \\cos\\theta + i\\sin\\theta",
-        "tags": ["Calculus", "EulerFormula", "TaylorSeries", "PureMath"],
-        "media_type": "single",
-        "media_keys": ["calculus_board"],
-        "is_question": False,
-        "replies": [
-            {
-                "author_idx": 1,
-                "content": "Setting $\\theta = \\pi$ yields $e^{i\\pi} + 1 = 0$, connecting the five most fundamental constants of mathematics: $0, 1, e, i, \\pi$. Never gets old!",
-            },
-            {
-                "is_ai": True,
-                "content": "**Syllabot Insight:**\nThis identity also allows computing derivatives and integrals of oscillating signals in linear systems and quantum mechanics with zero trigonometry product-to-sum identities: $\\frac{d}{dt} e^{i\\omega t} = i\\omega e^{i\\omega t}$.",
-            },
-        ],
+        "track": "General",
+        "tag": "Academic Burnout",
+        "angle": "Recognizing early burnout before your brain forces an involuntary shutdown",
+        "context": "How do you know when you need to push through temporary friction vs when you genuinely need to shut your laptop and take a full day off to avoid total burnout?",
+        "media_key": "study_desk",
     },
 ]
 
-def make_supabase_request(url: str, anon_key: str, method: str = "GET", data: dict = None, service_key: str = None):
+# Track-specific topics with natural curiosities, debates, and epiphanies
+TRACK_TOPICS_POOL = [
+    {
+        "track": "Computer Science",
+        "tag": "Algorithms & Reality",
+        "angle": "Why do introductory CS courses teach recursion using Fibonacci when it's literally O(2^n)?",
+        "context": "Teaching naive recursion on Fibonacci is basically teaching students how to write accidental exponential time bombs. Iterative or memoized DP should be the default from day one.",
+        "media_key": "code_editor",
+    },
+    {
+        "track": "Computer Science",
+        "tag": "Debugging & Software Engineering",
+        "angle": "The most agonizing bug you spent 3 days debugging that turned out to be a 1-character typo",
+        "context": "Share your most humbling debugging war story. When you finally found the issue, did you feel like a genius or did you just stare at the ceiling for 10 minutes?",
+        "media_key": "code_editor",
+    },
+    {
+        "track": "Computer Science",
+        "tag": "Systems & Concurrency",
+        "angle": "Why off-by-one errors and race conditions are the true final bosses of software",
+        "context": "There are only two hard things in Computer Science: cache invalidation, naming things, and off-by-one errors. Why is concurrent state management so unintuitive to human brains?",
+        "media_key": "network",
+    },
+    {
+        "track": "Physics",
+        "tag": "Thermodynamics & Anomalies",
+        "angle": "Why ice floats and why water density peaks at 4°C: The anomaly that saves all marine life",
+        "context": "Almost all liquids become denser as they freeze and sink. If water did that, every lake and ocean would freeze from the bottom up and marine life would be extinct. Nature is wild.",
+        "media_key": "physics_mechanics",
+    },
+    {
+        "track": "Physics",
+        "tag": "Relativity & Cosmology",
+        "angle": "If nothing can travel faster than light, why is the observable universe expanding faster than light?",
+        "context": "It breaks everyone's intuition at first: the speed limit c applies to objects traveling THROUGH space, not to the metric expansion of spacetime itself.",
+        "media_key": "physics_mechanics",
+    },
+    {
+        "track": "Physics",
+        "tag": "Classical Mechanics",
+        "angle": "Centrifugal force isn't a 'real' force, but why does it feel so undeniably real in a car turn?",
+        "context": "Physics professors love to yell 'it's an apparent fictitious force caused by inertia!', but in a rotating non-inertial reference frame, treating it as real makes calculations so much easier.",
+        "media_key": "circuit",
+    },
+    {
+        "track": "Mathematics",
+        "tag": "Number Theory & Logic",
+        "angle": "Why 0.999... = 1 causes heated arguments in every single math study group",
+        "context": "Whether you prove it via 1/3 = 0.333... or using geometric series S = a/(1-r), people resist the idea that two different decimal representations can equal the exact same real number.",
+        "media_key": "calculus_board",
+    },
+    {
+        "track": "Mathematics",
+        "tag": "Mathematical Beauty",
+        "angle": "What is the single most satisfying algebraic cancellation or proof you've ever worked through?",
+        "context": "That moment when a terrifying 3-line fraction collapses down to 1 or 0 after 20 minutes of algebraic substitution. Pure dopamine.",
+        "media_key": "calculus_board",
+    },
+    {
+        "track": "Mathematics",
+        "tag": "Foundations of Math",
+        "angle": "Why isn't 1 considered a prime number? (The Fundamental Theorem of Arithmetic rescue)",
+        "context": "If 1 were considered prime, every integer would have an infinite number of prime factorizations (e.g. 6 = 2 * 3 = 1 * 2 * 3 = 1 * 1 * 2 * 3), destroying unique factorization.",
+        "media_key": "calculus_board",
+    },
+    {
+        "track": "Medicine",
+        "tag": "Physiology & Pharmacology",
+        "angle": "Why caffeine loses its magic after a week: The cruel biology of adenosine receptor upregulation",
+        "context": "Caffeine doesn't actually give you energy — it just blocks adenosine receptors from telling your brain you're tired. But then your brain creates MORE receptors in response. How do you cycle it?",
+        "media_key": "brain_synapse",
+    },
+    {
+        "track": "Medicine",
+        "tag": "Clinical Anatomy",
+        "angle": "Referred pain: Why a problem in your heart or gallbladder shows up in your left arm or shoulder",
+        "context": "The embryonic development of sensory nerves sharing spinal cord segments creates bizarre cross-wiring. What are the best clinical mnemonics for memorizing referred pain maps?",
+        "media_key": "brain_synapse",
+    },
+    {
+        "track": "Chemistry",
+        "tag": "Organic Chemistry",
+        "angle": "Organic chemistry is 20% chemistry and 80% 3D spatial puzzle game",
+        "context": "Once you realize electron arrows are just nucleophiles hunting down electrophiles and stereocenters are 3D Lego bricks, organic synthesis stops being about memorizing 200 reagents.",
+        "media_key": "lab_chemistry",
+    },
+    {
+        "track": "Chemistry",
+        "tag": "Physical Chemistry",
+        "angle": "Why adding salt to boiling pasta water doesn't actually cook it faster (Colligative properties reality check)",
+        "context": "The boiling point elevation from a pinch of kitchen salt raises water temperature by maybe 0.04°C. You'd need a cup of salt to make any real cooking time difference!",
+        "media_key": "lab_chemistry",
+    },
+    {
+        "track": "JAMB",
+        "tag": "CBT Tactics & Strategy",
+        "angle": "The 60-second rule: When to flag a question and move on during UTME CBT exams",
+        "context": "In JAMB CBT, all questions carry equal marks. Spending 4 minutes wrestling with one tricky question means you won't have time to answer 5 easy ones at the end. What is your pacing formula?",
+        "media_key": "study_desk",
+    },
+    {
+        "track": "JAMB",
+        "tag": "Exam Prep & Mocks",
+        "angle": "What single change took your mock test score from 210 to 280+?",
+        "context": "Was it mastering time allocation across your 4 subjects, drilling past questions by topic, or eliminating careless math errors?",
+        "media_key": "study_desk",
+    },
+    {
+        "track": "WAEC",
+        "tag": "WASSCE Theory & Marking",
+        "angle": "Why WAEC examiners deduct marks even when your final numerical answer is 100% correct",
+        "context": "Forgetting units in intermediate steps, skipping the formula statement, or not quoting theorem reasons in circle geometry. What marking scheme traps have cost you marks in mocks?",
+        "media_key": "study_desk",
+    },
+    {
+        "track": "WAEC",
+        "tag": "Past Questions Strategy",
+        "angle": "Practicing past questions: Is it better to solve year-by-year or topic-by-topic?",
+        "context": "Topic-by-topic builds deep concept mastery, while year-by-year trains exam stamina and time management. How do you balance both in the last 2 months before finals?",
+        "media_key": "study_desk",
+    },
+    {
+        "track": "SAT",
+        "tag": "Digital SAT Tactics",
+        "angle": "Why the built-in Desmos graphing calculator on Digital SAT feels almost like a cheat code",
+        "context": "From systems of nonlinear equations to finding vertex coordinates, students who master Desmos shortcuts can solve half the Module 2 math problems without touching scratch paper.",
+        "media_key": "calculus_board",
+    },
+    {
+        "track": "SAT",
+        "tag": "Reading & Verbal Traps",
+        "angle": "The 'sounds brilliant but is dead wrong' trap in SAT reading questions",
+        "context": "How the test makers write enticing distractor choices that use smart vocabulary but violate one single factual detail from the passage.",
+        "media_key": "library",
+    },
+    {
+        "track": "Engineering",
+        "tag": "Design & Real-World Physics",
+        "angle": "Why airplane and ship windows are strictly rounded instead of square (The De Havilland Comet lesson)",
+        "context": "Square window corners create massive stress concentration factors ($K_t$) where microscopic cracks propagate under cyclic cabin pressurization. Classic design lesson.",
+        "media_key": "circuit",
+    },
+]
+
+# Diverse post formats to enforce variety
+POST_STYLES = [
+    {
+        "style": "debate",
+        "prompt_instruction": "Frame the post as an open, thought-provoking debate. Present two contrasting viewpoints or methods, and ask the community which side they lean toward and why.",
+    },
+    {
+        "style": "question",
+        "prompt_instruction": "Frame the post as a genuine, curious student asking a conceptual question that they have been wrestling with. Avoid sounding helpless; sound smart, curious, and seeking intuitive clarity.",
+    },
+    {
+        "style": "personal_experience",
+        "prompt_instruction": "Frame the post as a student sharing a recent personal revelation or study breakthrough that saved them time or changed their perspective, inviting others to share theirs.",
+    },
+    {
+        "style": "dilemma",
+        "prompt_instruction": "Frame the post as a relatable academic dilemma (e.g. time crunch, balancing two heavy subjects, choosing the right study technique under pressure).",
+    },
+]
+
+# ==============================================================================
+# 5. Database Cleanup & Supabase REST Operations
+# ==============================================================================
+
+def clean_forum_database() -> bool:
+    """Purges all forum posts and replies via cascading truncate."""
+    print("\n" + "=" * 70)
+    print("🧹 PURGING FORUM DATABASE (TRUNCATE CASCADE)")
+    print("=" * 70)
+    try:
+        res = subprocess.run(
+            ["supabase", "db", "query", "--linked", "TRUNCATE TABLE forum_replies, forum_posts CASCADE;"],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+        if res.returncode == 0:
+            print("✅ Successfully purged forum_replies and forum_posts tables.")
+            return True
+        else:
+            print(f"⚠️ Supabase CLI returned error (exit code {res.returncode}): {res.stderr.strip() or res.stdout.strip()}")
+    except Exception as ex:
+        print(f"⚠️ Supabase CLI execution failed: {ex}")
+    return False
+
+
+def make_supabase_request(
+    url: str,
+    anon_key: str,
+    method: str = "GET",
+    data: dict = None,
+    service_key: str = None,
+):
     """Executes a REST call to Supabase PostgREST API."""
     req = request.Request(url, method=method)
     auth_bearer = service_key or anon_key
@@ -477,7 +432,7 @@ def make_supabase_request(url: str, anon_key: str, method: str = "GET", data: di
 
     encoded_data = json.dumps(data).encode("utf-8") if data is not None else None
     try:
-        with request.urlopen(req, data=encoded_data, timeout=15) as response:
+        with request.urlopen(req, data=encoded_data, timeout=20) as response:
             res_body = response.read().decode("utf-8")
             return json.loads(res_body) if res_body else None
     except error.HTTPError as e:
@@ -488,213 +443,590 @@ def make_supabase_request(url: str, anon_key: str, method: str = "GET", data: di
         print(f"[Network Exception] {ex}")
         return None
 
-def generate_and_seed_forum(
-    post_count: int = 12,
+# ==============================================================================
+# 6. Ollama Local LLM Engine
+# ==============================================================================
+
+def check_ollama_status(ollama_url: str = DEFAULT_OLLAMA_URL) -> list:
+    """Verifies Ollama connectivity and lists installed models."""
+    try:
+        req = request.Request(f"{ollama_url}/api/tags", method="GET")
+        with request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return [m.get("name") for m in data.get("models", [])]
+    except Exception:
+        return []
+
+
+def detect_best_model(installed_models: list, preferred_model: str = None) -> str:
+    """Selects the best available Ollama model."""
+    if preferred_model and preferred_model in installed_models:
+        return preferred_model
+    priority_order = [
+        "qwen2.5-coder:7b",
+        "qwen2.5:14b",
+        "qwen2.5:7b",
+        "granite3.2-vision:latest",
+        "llama3.1:8b",
+        "mistral:latest",
+    ]
+    for model in priority_order:
+        if model in installed_models:
+            return model
+    return installed_models[0] if installed_models else "qwen2.5-coder:7b"
+
+
+def query_ollama_json(
+    prompt: str,
+    model: str,
+    ollama_url: str = DEFAULT_OLLAMA_URL,
+    temperature: float = 0.88,
+    timeout: int = 120,
+) -> dict:
+    """Sends generation request to Ollama with strict JSON formatting."""
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "format": "json",
+        "stream": False,
+        "options": {
+            "temperature": temperature,
+            "top_p": 0.92,
+        },
+    }
+    req = request.Request(
+        f"{ollama_url}/api/generate",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            raw_response = data.get("response", "").strip()
+            
+            # Clean up potential markdown formatting wrappers
+            if raw_response.startswith("```json"):
+                raw_response = raw_response[7:]
+            if raw_response.startswith("```"):
+                raw_response = raw_response[3:]
+            if raw_response.endswith("```"):
+                raw_response = raw_response[:-3]
+            raw_response = raw_response.strip()
+
+            return json.loads(raw_response)
+    except Exception as ex:
+        print(f"  ⚠️ Ollama generation exception: {ex}")
+        return None
+
+# ==============================================================================
+# 7. Dynamic Non-Repetitive Prompt Architecture
+# ==============================================================================
+
+def build_dynamic_prompt(
+    item: dict,
+    style_spec: dict,
+    reply_depth: int = 3,
     min_replies: int = 2,
-    max_replies: int = 4,
-    min_sub_replies: int = 1,
-    max_sub_replies: int = 3,
+    max_replies: int = 3,
+) -> str:
+    """
+    Constructs a spontaneous, highly distinct prompt that avoids cliché openings
+    and reflects genuine student life / academic community dialogue.
+    """
+    track = item["track"]
+    syllabus_tag = item["tag"]
+    angle = item["angle"]
+    seed_context = item["context"]
+
+    return f"""You are generating an authentic, original, highly engaging forum discussion post for Kortex, a premier academic learning platform.
+
+Track: {track}
+Syllabus / Domain Tag: {syllabus_tag}
+Discussion Core Idea: {angle}
+Background Inspiration: {seed_context}
+
+Style Requirement:
+{style_spec['prompt_instruction']}
+
+STRICT NEGATIVE CONSTRAINTS (DO NOT VIOLATE):
+- DO NOT use cliché openings like "I was solving question 14 of 2023 WASSCE...", "Let's dive into it!", "Hey everyone!", or "In this post I will discuss...".
+- DO NOT sound like a robotic textbook, an advertisement, or a generic AI assistant.
+- Sound like a real student, researcher, or mentor posting on a lively forum or Reddit r/studytips at 11 PM.
+- Write with personality, natural flow, and genuine curiosity or insight.
+- If relevant, include standard LaTeX equations (e.g. $formula$ or $$\\int ...$$).
+
+REPLY REQUIREMENTS (Depth {reply_depth}):
+- Provide between {min_replies} and {max_replies} top-level replies.
+- One reply should be an insightful peer/mentor response with 'is_verified': true.
+- One reply should be Syllabot AI with 'is_ai': true and 'author_role': 'syllabot', offering structured, supportive takeaways.
+- Provide nested sub-replies (depth up to {reply_depth}) where the original author or a peer asks a follow-up nuance or shares their own counter-experience, and another person answers.
+
+Return ONLY a valid JSON object matching this schema:
+{{
+  "title": "Fresh, catchy, natural title",
+  "track": "{track}",
+  "syllabus_tag": "{syllabus_tag}",
+  "content": "Authentic, relatable body text reflecting the style and idea",
+  "latex_content": null,
+  "tags": ["Tag1", "Tag2"],
+  "media_type": "single",
+  "is_question": true,
+  "replies": [
+    {{
+      "author_role": "peer",
+      "content": "Rich, personal response sharing experience, insight, or debate",
+      "latex_content": null,
+      "is_verified": true,
+      "is_ai": false,
+      "replies": [
+        {{
+          "author_role": "author",
+          "content": "Follow-up question, counter-point, or practical doubt",
+          "latex_content": null,
+          "is_verified": false,
+          "is_ai": false,
+          "replies": [
+            {{
+              "author_role": "mentor",
+              "content": "Clarifying conclusion or practical takeaway resolving the dilemma",
+              "latex_content": null,
+              "is_verified": false,
+              "is_ai": false,
+              "replies": []
+            }}
+          ]
+        }}
+      ]
+    }},
+    {{
+      "author_role": "syllabot",
+      "content": "### Syllabot Key Takeaways\\nActionable cognitive science or study strategy breakdown.",
+      "latex_content": null,
+      "is_verified": false,
+      "is_ai": true,
+      "replies": []
+    }}
+  ]
+}}
+"""
+
+# ==============================================================================
+# 8. Forum Seeding Engine with Persona Mapping
+# ==============================================================================
+
+def select_author_persona(track: str) -> dict:
+    """Picks a persona that matches or complements the track."""
+    track_lower = track.lower()
+    if track_lower in ("general", "all"):
+        return random.choice(PERSONAS)
+    matching = [p for p in PERSONAS if p["track"].lower() in track_lower or track_lower in p["track"].lower()]
+    return random.choice(matching) if matching else random.choice(PERSONAS)
+
+
+def insert_reply_tree(
+    replies_list: list,
+    post_id: str,
+    parent_reply_id: str,
+    base_time: datetime.datetime,
+    posts_endpoint: str,
+    replies_endpoint: str,
+    anon_key: str,
+    service_key: str,
+    author_persona: dict,
+    has_verified: bool,
+    current_depth: int = 1,
+    max_depth: int = 3,
+) -> tuple:
+    """Recursively inserts reply nodes into Supabase, maintaining proper parent_reply_id."""
+    created_count = 0
+    post_has_verified = has_verified
+
+    for idx, rep in enumerate(replies_list):
+        is_ai = rep.get("is_ai", False) or rep.get("author_role") == "syllabot"
+        is_verified = rep.get("is_verified", False) and not post_has_verified
+
+        if is_ai:
+            rep_author = SYLLABOT_PERSONA
+        elif current_depth == 1:
+            # Different persona from author
+            candidates = [p for p in PERSONAS if p["name"] != author_persona["name"]]
+            rep_author = random.choice(candidates)
+        elif current_depth == 2:
+            # Often the author following up with a doubt/question
+            if random.random() < 0.7:
+                rep_author = author_persona
+            else:
+                rep_author = random.choice([p for p in PERSONAS if p["name"] != author_persona["name"]])
+        else:
+            candidates = [p for p in PERSONAS if p["name"] != author_persona["name"]]
+            rep_author = random.choice(candidates)
+
+        if is_verified:
+            post_has_verified = True
+
+        reply_id = str(uuid.uuid4())
+        delta_minutes = random.randint(12, 50) * current_depth + (idx * 15)
+        reply_time = base_time + datetime.timedelta(minutes=delta_minutes)
+        upvotes = random.randint(12, 48) if is_verified else random.randint(3, 22)
+
+        reply_payload = {
+            "id": reply_id,
+            "post_id": post_id,
+            "parent_reply_id": parent_reply_id,
+            "author_id": None,
+            "author_name": rep_author["name"],
+            "author_avatar": rep_author["avatar"],
+            "content": rep.get("content", "Totally agree with this point."),
+            "latex_content": rep.get("latex_content"),
+            "is_verified_solution": is_verified,
+            "upvotes": upvotes,
+            "downvotes": 0,
+            "created_at": reply_time.isoformat(),
+        }
+
+        res = make_supabase_request(
+            replies_endpoint,
+            anon_key,
+            method="POST",
+            data=reply_payload,
+            service_key=service_key,
+        )
+
+        if res:
+            created_count += 1
+            indent = "    " * current_depth
+            status_badge = " [⭐ VERIFIED SOLUTION]" if is_verified else ""
+            ai_badge = " [🤖 SYLLABOT AI]" if is_ai else ""
+            print(f"{indent}↳ [Depth {current_depth}] Reply by {rep_author['name']}{ai_badge}{status_badge}")
+
+            child_replies = rep.get("replies") or rep.get("sub_replies") or []
+            if child_replies and current_depth < max_depth:
+                sub_count, post_has_verified = insert_reply_tree(
+                    child_replies,
+                    post_id=post_id,
+                    parent_reply_id=reply_id,
+                    base_time=reply_time,
+                    posts_endpoint=posts_endpoint,
+                    replies_endpoint=replies_endpoint,
+                    anon_key=anon_key,
+                    service_key=service_key,
+                    author_persona=author_persona,
+                    has_verified=post_has_verified,
+                    current_depth=current_depth + 1,
+                    max_depth=max_depth,
+                )
+                created_count += sub_count
+
+    return created_count, post_has_verified
+
+
+def seed_forum(
+    post_count: int = 10,
+    reply_depth: int = 3,
+    min_replies: int = 2,
+    max_replies: int = 3,
+    tracks: list = None,
     api_url: str = DEFAULT_API_URL,
     anon_key: str = DEFAULT_ANON_KEY,
     service_key: str = None,
-    track: str = None,
+    ollama_url: str = DEFAULT_OLLAMA_URL,
+    model_name: str = None,
+    use_ollama: bool = True,
 ):
-    print("=" * 70)
-    print(f"🚀 KORTEX FORUM SEEDING GENERATOR")
-    print(f"Targeting: {api_url}")
-    if track:
-        print(f"Target Track Filter: {track}")
-    print(f"Generating {post_count} realistic posts with dynamic replies & nested threads...")
-    print("=" * 70)
+    """Main orchestrator for generating dynamic, diverse, non-repetitive discussions."""
+    print("\n" + "=" * 70)
+    print("🚀 KORTEX ADVANCED DYNAMIC FORUM GENERATOR")
+    print(f"Target API: {api_url}")
+    print(f"Generating {post_count} unique discussions | Depth: {reply_depth}")
 
-    total_posts_created = 0
-    total_replies_created = 0
-    total_sub_replies_created = 0
+    active_model = None
+    if use_ollama:
+        installed = check_ollama_status(ollama_url)
+        if installed:
+            active_model = detect_best_model(installed, model_name)
+            print(f"🤖 Ollama Connected: Using model '{active_model}'")
+        else:
+            print("⚠️ Ollama unreachable, falling back to curated blueprints.")
+            use_ollama = False
 
     posts_endpoint = f"{api_url}/rest/v1/forum_posts"
     replies_endpoint = f"{api_url}/rest/v1/forum_replies"
 
     now = datetime.datetime.now(datetime.timezone.utc)
+    total_posts_created = 0
+    total_replies_created = 0
 
-    templates_pool = [t for t in POST_TEMPLATES if t["track"].lower() == track.lower()] if track else POST_TEMPLATES
-    if not templates_pool:
-        print(f"⚠️ No templates found for track '{track}'. Falling back to all templates.")
-        templates_pool = POST_TEMPLATES
+    # Build balanced topic candidates pool:
+    # Blend universal student life topics (~45%) with track-specific curiosities (~55%)
+    candidates_pool = []
+    
+    if tracks:
+        # User specified specific tracks
+        filter_lower = [t.lower() for t in tracks]
+        for t in TRACK_TOPICS_POOL:
+            if t["track"].lower() in filter_lower:
+                candidates_pool.append(t)
+        # If General was requested or if pool is small, include universal
+        if "general" in filter_lower or len(candidates_pool) < post_count:
+            candidates_pool.extend(UNIVERSAL_TOPICS)
+    else:
+        # Full diversity mode: shuffle both
+        shuffled_universal = list(UNIVERSAL_TOPICS)
+        shuffled_track = list(TRACK_TOPICS_POOL)
+        random.shuffle(shuffled_universal)
+        random.shuffle(shuffled_track)
+
+        # Alternate between universal and track-specific
+        for i in range(max(len(shuffled_universal), len(shuffled_track))):
+            if i < len(shuffled_universal):
+                candidates_pool.append(shuffled_universal[i])
+            if i < len(shuffled_track):
+                candidates_pool.append(shuffled_track[i])
+
+    random.shuffle(candidates_pool)
+    print(f"Candidate Topic Pool Size: {len(candidates_pool)} items")
+    print("=" * 70)
 
     for p_idx in range(post_count):
-        template = templates_pool[p_idx % len(templates_pool)]
-        author_persona = PERSONAS[p_idx % len(PERSONAS)]
-        
-        # Build media URLs based on template specification
-        media_urls = []
-        if template["media_type"] == "single" and template.get("media_keys"):
-            key = template["media_keys"][0]
-            if key in ACADEMIC_IMAGES:
-                media_urls.append(ACADEMIC_IMAGES[key])
-        elif template["media_type"] == "multiple" and template.get("media_keys"):
-            for k in template["media_keys"]:
-                if k in ACADEMIC_IMAGES:
-                    media_urls.append(ACADEMIC_IMAGES[k])
-        
-        # Spread timestamps organically over the last 1-14 days
-        days_ago = random.uniform(0.5, 12.0)
-        post_time = now - datetime.timedelta(days=days_ago)
-        post_time_iso = post_time.isoformat()
+        topic_spec = candidates_pool[p_idx % len(candidates_pool)]
+        style_spec = POST_STYLES[p_idx % len(POST_STYLES)]
+        track = topic_spec["track"]
+        author_persona = select_author_persona(track)
 
+        generated_data = None
+        if use_ollama and active_model:
+            print(f"\n[Post {p_idx+1}/{post_count}] Generating via Ollama for [{track}] ({style_spec['style']})...")
+            prompt = build_dynamic_prompt(
+                item=topic_spec,
+                style_spec=style_spec,
+                reply_depth=reply_depth,
+                min_replies=min_replies,
+                max_replies=max_replies,
+            )
+            generated_data = query_ollama_json(prompt, active_model, ollama_url=ollama_url)
+
+        if not generated_data:
+            print(f"  • Using curated blueprint fallback for [{track}]")
+            generated_data = {
+                "title": topic_spec["angle"],
+                "track": track,
+                "syllabus_tag": topic_spec["tag"],
+                "content": topic_spec["context"],
+                "latex_content": None,
+                "tags": [track, "Study", topic_spec["tag"].split()[0]],
+                "media_type": "single",
+                "is_question": True,
+                "replies": [
+                    {
+                        "author_role": "peer",
+                        "content": "This is so relatable. In my experience, setting clear boundaries between study sessions and rest was the game-changer.",
+                        "is_verified": True,
+                        "replies": [
+                            {
+                                "author_role": "author",
+                                "content": "How did you stick to that boundary when deadlines were literally days away?",
+                                "replies": [
+                                    {
+                                        "author_role": "mentor",
+                                        "content": "Strict time-blocking and prioritizing the highest-yield 20% of the material.",
+                                        "replies": [],
+                                    }
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "author_role": "syllabot",
+                        "content": "### Syllabot Key Takeaways\n- Prioritize sleep for long-term memory consolidation.\n- Break marathon sessions into 50-minute focused blocks.",
+                        "replies": [],
+                    },
+                ],
+            }
+
+        media_key = topic_spec.get("media_key", "study_desk")
+        media_urls = [ACADEMIC_IMAGES[media_key]] if media_key in ACADEMIC_IMAGES else []
+
+        days_ago = random.uniform(0.2, 12.0)
+        post_time = now - datetime.timedelta(days=days_ago)
         post_id = str(uuid.uuid4())
-        upvotes = random.randint(4, 48)
-        downvotes = random.randint(0, 2)
 
         post_payload = {
             "id": post_id,
-            "title": template["title"] if p_idx < len(POST_TEMPLATES) else f"{template['title']} (Discussion #{p_idx+1})",
-            "content": template["content"],
-            "track": template["track"],
-            "syllabus_tag": template["syllabus_tag"],
-            "latex_content": template.get("latex_content"),
-            "author_id": None, # Stored with persona name for public view
+            "title": generated_data.get("title", topic_spec["angle"]),
+            "content": generated_data.get("content", topic_spec["context"]),
+            "track": track,
+            "syllabus_tag": generated_data.get("syllabus_tag", topic_spec["tag"]),
+            "latex_content": generated_data.get("latex_content"),
+            "author_id": None,
             "author_name": author_persona["name"],
             "author_avatar": author_persona["avatar"],
-            "tags": template.get("tags", ["STEM", "Study"]),
+            "tags": generated_data.get("tags", [track, "Community"]),
             "media_urls": media_urls,
-            "is_question": template.get("is_question", True),
+            "is_question": generated_data.get("is_question", True),
             "is_verified_solution": False,
-            "upvotes": upvotes,
-            "downvotes": downvotes,
+            "upvotes": random.randint(8, 52),
+            "downvotes": random.randint(0, 2),
             "replies_count": 0,
-            "created_at": post_time_iso,
-            "updated_at": post_time_iso,
+            "created_at": post_time.isoformat(),
+            "updated_at": post_time.isoformat(),
         }
 
-        print(f"\n[Post {p_idx+1}/{post_count}] Creating: \"{post_payload['title'][:55]}...\"")
-        print(f"  • Track: {post_payload['track']} | Images: {len(media_urls)} | Author: {author_persona['name']}")
-        
-        post_res = make_supabase_request(posts_endpoint, anon_key, method="POST", data=post_payload, service_key=service_key)
+        print(f"  • Title: \"{post_payload['title'][:65]}...\"")
+        print(f"  • Author: {author_persona['name']} ({author_persona['role']})")
+
+        post_res = make_supabase_request(
+            posts_endpoint,
+            anon_key,
+            method="POST",
+            data=post_payload,
+            service_key=service_key,
+        )
+
         if not post_res:
-            print("  ⚠️ Failed to insert post. Skipping replies for this post.")
+            print("  ⚠️ Failed to insert post. Skipping replies.")
             continue
 
         total_posts_created += 1
 
-        # Process top-level replies
-        template_replies = template.get("replies", [])
-        num_replies = random.randint(min_replies, max_replies)
-        has_verified_solution_in_post = False
-        post_reply_count = 0
+        replies_list = generated_data.get("replies", [])
+        total_post_replies, has_verified_solution = insert_reply_tree(
+            replies_list=replies_list,
+            post_id=post_id,
+            parent_reply_id=None,
+            base_time=post_time,
+            posts_endpoint=posts_endpoint,
+            replies_endpoint=replies_endpoint,
+            anon_key=anon_key,
+            service_key=service_key,
+            author_persona=author_persona,
+            has_verified=False,
+            current_depth=1,
+            max_depth=reply_depth,
+        )
 
-        for r_idx in range(max(len(template_replies), num_replies)):
-            r_data = template_replies[r_idx % len(template_replies)] if template_replies else {}
-            
-            is_ai_reply = r_data.get("is_ai", False)
-            if is_ai_reply:
-                rep_author = SYLLABOT_PERSONA
-            else:
-                persona_idx = r_data.get("author_idx", (p_idx + r_idx + 1) % len(PERSONAS))
-                rep_author = PERSONAS[persona_idx]
+        total_replies_created += total_post_replies
 
-            reply_id = str(uuid.uuid4())
-            reply_time = post_time + datetime.timedelta(minutes=random.randint(15, 360))
-            is_verified = r_data.get("is_verified", False) and not has_verified_solution_in_post
-
-            if is_verified:
-                has_verified_solution_in_post = True
-
-            reply_payload = {
-                "id": reply_id,
-                "post_id": post_id,
-                "parent_reply_id": None,
-                "author_id": None,
-                "author_name": rep_author["name"],
-                "author_avatar": rep_author["avatar"],
-                "content": r_data.get("content", "I worked through this step as well and got the exact same result."),
-                "latex_content": r_data.get("latex", None),
-                "is_verified_solution": is_verified,
-                "upvotes": random.randint(3, 32),
-                "downvotes": 0,
-                "created_at": reply_time.isoformat(),
-            }
-
-            rep_res = make_supabase_request(replies_endpoint, anon_key, method="POST", data=reply_payload, service_key=service_key)
-            if rep_res:
-                total_replies_created += 1
-                post_reply_count += 1
-                status_badge = " [⭐ VERIFIED SOLUTION]" if is_verified else ""
-                ai_badge = " [🤖 SYLLABOT AI]" if is_ai_reply else ""
-                print(f"    ↳ Reply by {rep_author['name']}{ai_badge}{status_badge}")
-
-                # Process nested sub-replies (threads)
-                sub_list = r_data.get("sub_replies", [])
-                if sub_list or random.random() < 0.65:
-                    num_subs = len(sub_list) if sub_list else random.randint(min_sub_replies, max_sub_replies)
-                    for s_idx in range(num_subs):
-                        s_data = sub_list[s_idx % len(sub_list)] if sub_list else {}
-                        sub_author_idx = s_data.get("author_idx", (persona_idx + s_idx + 2) % len(PERSONAS)) if not is_ai_reply else (p_idx % len(PERSONAS))
-                        sub_author = PERSONAS[sub_author_idx]
-                        sub_time = reply_time + datetime.timedelta(minutes=random.randint(5, 120))
-
-                        sub_payload = {
-                            "id": str(uuid.uuid4()),
-                            "post_id": post_id,
-                            "parent_reply_id": reply_id,
-                            "author_id": None,
-                            "author_name": sub_author["name"],
-                            "author_avatar": sub_author["avatar"],
-                            "content": s_data.get("content", "Thanks for the clarification! That made the concept crystal clear."),
-                            "latex_content": s_data.get("latex", None),
-                            "is_verified_solution": False,
-                            "upvotes": random.randint(1, 14),
-                            "downvotes": 0,
-                            "created_at": sub_time.isoformat(),
-                        }
-
-                        sub_res = make_supabase_request(replies_endpoint, anon_key, method="POST", data=sub_payload, service_key=service_key)
-                        if sub_res:
-                            total_sub_replies_created += 1
-                            post_reply_count += 1
-                            print(f"        ↳ Sub-reply by {sub_author['name']}")
-
-        # Update post replies_count and verification status
-        update_payload = {
-            "replies_count": post_reply_count,
-            "is_verified_solution": has_verified_solution_in_post,
+        patch_payload = {
+            "replies_count": total_post_replies,
+            "is_verified_solution": has_verified_solution,
         }
         patch_url = f"{posts_endpoint}?id=eq.{post_id}"
-        make_supabase_request(patch_url, anon_key, method="PATCH", data=update_payload, service_key=service_key)
+        make_supabase_request(patch_url, anon_key, method="PATCH", data=patch_payload, service_key=service_key)
 
     print("\n" + "=" * 70)
-    print("✅ FORUM SEEDING COMPLETED SUCCESSFULLY!")
-    print(f"📊 Summary Statistics:")
-    print(f"   • Posts Created: {total_posts_created}")
-    print(f"   • Top-Level Replies: {total_replies_created}")
-    print(f"   • Nested Sub-Replies: {total_sub_replies_created}")
-    print(f"   • Total Interactions: {total_posts_created + total_replies_created + total_sub_replies_created}")
-    print("=" * 70)
+    print("✅ FORUM SEEDING GENERATION COMPLETE!")
+    print(f"📊 Final Statistics:")
+    print(f"   • Total Posts Created: {total_posts_created}")
+    print(f"   • Total Replies & Sub-Replies: {total_replies_created}")
+    print(f"   • Total Community Interactions: {total_posts_created + total_replies_created}")
+    print("=" * 70 + "\n")
+
+# ==============================================================================
+# 9. CLI Entry Point
+# ==============================================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="Seed Kortex Supabase Forum with realistic academic discussions.")
-    parser.add_argument("--posts", type=int, default=12, help="Number of forum posts to generate (default: 12)")
-    parser.add_argument("--min-replies", type=int, default=2, help="Minimum top-level replies per post (default: 2)")
-    parser.add_argument("--max-replies", type=int, default=4, help="Maximum top-level replies per post (default: 4)")
-    parser.add_argument("--min-sub-replies", type=int, default=1, help="Minimum nested replies per thread (default: 1)")
-    parser.add_argument("--max-sub-replies", type=int, default=3, help="Maximum nested replies per thread (default: 3)")
-    parser.add_argument("--api-url", type=str, default=DEFAULT_API_URL, help="Supabase API URL")
-    parser.add_argument("--anon-key", type=str, default=DEFAULT_ANON_KEY, help="Supabase Anon Key")
-    parser.add_argument("--service-key", type=str, default=None, help="Optional Supabase Service Role Key")
-    parser.add_argument("--track", type=str, default=None, help="Optional academic track filter (e.g. WAEC, JAMB, Mathematics)")
+    parser = argparse.ArgumentParser(
+        description="Seed Kortex Forum with dynamic, relatable, non-repetitive AI-generated discussions."
+    )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Purge all existing posts and replies from the database before seeding.",
+    )
+    parser.add_argument(
+        "--clean-only",
+        action="store_true",
+        help="Only purge existing posts and replies from the database, then exit.",
+    )
+    parser.add_argument(
+        "--posts",
+        type=int,
+        default=10,
+        help="Number of forum posts to generate (default: 10)",
+    )
+    parser.add_argument(
+        "--reply-depth",
+        type=int,
+        default=3,
+        help="Maximum reply conversational depth tree (default: 3, range 1-4)",
+    )
+    parser.add_argument(
+        "--min-replies",
+        type=int,
+        default=2,
+        help="Minimum top-level replies per post (default: 2)",
+    )
+    parser.add_argument(
+        "--max-replies",
+        type=int,
+        default=3,
+        help="Maximum top-level replies per post (default: 3)",
+    )
+    parser.add_argument(
+        "--tracks",
+        nargs="+",
+        default=None,
+        help="Filter by track(s) (e.g. General WAEC JAMB 'Computer Science' Physics)",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Ollama model to use (default: auto-detected, prefers qwen2.5-coder:7b or qwen2.5:14b)",
+    )
+    parser.add_argument(
+        "--ollama-url",
+        type=str,
+        default=DEFAULT_OLLAMA_URL,
+        help="Ollama API base URL (default: http://localhost:11434)",
+    )
+    parser.add_argument(
+        "--no-ollama",
+        action="store_true",
+        help="Disable Ollama and use blueprints only.",
+    )
+    parser.add_argument(
+        "--api-url",
+        type=str,
+        default=DEFAULT_API_URL,
+        help="Supabase API URL",
+    )
+    parser.add_argument(
+        "--anon-key",
+        type=str,
+        default=DEFAULT_ANON_KEY,
+        help="Supabase Anon Key",
+    )
+    parser.add_argument(
+        "--service-key",
+        type=str,
+        default=None,
+        help="Optional Supabase Service Role Key",
+    )
 
     args = parser.parse_args()
 
-    generate_and_seed_forum(
+    if args.clean or args.clean_only:
+        clean_forum_database()
+        if args.clean_only:
+            print("Purge completed. Exiting.")
+            sys.exit(0)
+
+    seed_forum(
         post_count=args.posts,
+        reply_depth=max(1, min(args.reply_depth, 4)),
         min_replies=args.min_replies,
         max_replies=args.max_replies,
-        min_sub_replies=args.min_sub_replies,
-        max_sub_replies=args.max_sub_replies,
+        tracks=args.tracks,
         api_url=args.api_url,
         anon_key=args.anon_key,
         service_key=args.service_key,
-        track=args.track,
+        ollama_url=args.ollama_url,
+        model_name=args.model,
+        use_ollama=not args.no_ollama,
     )
+
 
 if __name__ == "__main__":
     main()

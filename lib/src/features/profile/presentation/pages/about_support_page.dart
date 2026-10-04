@@ -17,6 +17,7 @@ import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_guided_tour_overlay.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Subpage displaying app version, documentation, support, and legal links.
@@ -140,25 +141,39 @@ class AboutSupportPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.surfacePrimary,
-                        borderRadius: AppRadius.radiusBadge,
-                        border: Border.all(
-                          color: colors.surfaceBorder.withAlpha(90),
-                        ),
-                      ),
-                      child: Text(
-                        'v1.0.0+1 • Production Neural Engine',
-                        style: typography.caption.bold.copyWith(
-                          color: colors.primary,
-                          fontSize: 11.5,
-                        ),
-                      ),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) {
+                        final versionStr = snapshot.hasData
+                            ? (snapshot.data!.buildNumber.isNotEmpty
+                                ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+                                : snapshot.data!.version)
+                            : '';
+                        final displayText = versionStr.isNotEmpty
+                            ? 'v$versionStr • Production Neural Engine'
+                            : 'Production Neural Engine';
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.surfacePrimary,
+                            borderRadius: AppRadius.radiusBadge,
+                            border: Border.all(
+                              color: colors.surfaceBorder.withAlpha(90),
+                            ),
+                          ),
+                          child: Text(
+                            displayText,
+                            style: typography.caption.bold.copyWith(
+                              color: colors.primary,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -206,7 +221,7 @@ class AboutSupportPage extends StatelessWidget {
               _buildLinkCard(
                 icon: Icons.help_outline_rounded,
                 title: 'Documentation & Knowledgebase',
-                subtitle: 'Guides on Syllabot AI and FSRS spaced repetition',
+                subtitle: 'Guides on Syllabot AI and smart memory retention',
                 onTap: () => _launchExternalUrl(context, docsUrl),
                 colors: colors,
                 typography: typography,

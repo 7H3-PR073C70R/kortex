@@ -37,6 +37,20 @@ class CommunityForumFeedList extends HookWidget {
 
     final scrollController = useScrollController();
     final isPulseBannerDismissed = useState<bool>(false);
+    final searchController = useTextEditingController(text: state.forumSearchQuery);
+    final debounceTimer = useRef<Timer?>(null);
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
+
+    useEffect(() {
+      return () => debounceTimer.value?.cancel();
+    }, const []);
+
+    useEffect(() {
+      if (searchController.text != state.forumSearchQuery) {
+        searchController.text = state.forumSearchQuery;
+      }
+      return null;
+    }, [state.forumSearchQuery]);
 
     useEffect(
       () {
@@ -63,17 +77,19 @@ class CommunityForumFeedList extends HookWidget {
       ],
     );
 
+
     // Apply local search filtering if user typed in search bar (backend handles sort)
     final filteredPosts = useMemoized(() {
-      if (searchQuery.isEmpty) return state.forumPosts;
-      final query = searchQuery.toLowerCase();
+      final activeQuery = searchQuery.isNotEmpty ? searchQuery : state.forumSearchQuery;
+      if (activeQuery.isEmpty) return state.forumPosts;
+      final query = activeQuery.toLowerCase();
       return state.forumPosts.where((p) {
         return p.title.toLowerCase().contains(query) ||
             p.content.toLowerCase().contains(query) ||
             p.authorName.toLowerCase().contains(query) ||
             p.syllabusTag.toLowerCase().contains(query);
       }).toList();
-    }, [state.forumPosts, searchQuery]);
+    }, [state.forumPosts, searchQuery, state.forumSearchQuery]);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -99,6 +115,8 @@ class CommunityForumFeedList extends HookWidget {
                 },
               ),
             ),
+
+         
 
           // Posts Feed or Empty State
           if (filteredPosts.isEmpty)
@@ -143,7 +161,7 @@ class CommunityForumFeedList extends HookWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+              padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -230,4 +248,5 @@ class CommunityForumFeedList extends HookWidget {
       ),
     );
   }
+
 }

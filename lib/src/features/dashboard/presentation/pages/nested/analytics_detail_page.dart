@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/intl.dart';
+import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
@@ -25,6 +26,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/adaptive_retention_chart.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/streak_shield_indicator.dart';
+import 'package:kortex/src/features/monetization/domain/services/subscription_guard.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/app_liquid_glass_tab_bar.dart';
@@ -42,7 +44,15 @@ class AnalyticsDetailPage extends HookWidget {
 
     useEffect(() {
       dashboardBloc.add(const DashboardStarted());
-      return null;
+      final activityService = locator.isRegistered<UserActivityService>()
+          ? locator<UserActivityService>()
+          : null;
+      final subscription = activityService?.analyticsSummaryStream.listen((_) {
+        dashboardBloc.add(const DashboardRefreshed());
+      });
+      return () {
+        unawaited(subscription?.cancel());
+      };
     }, const []);
 
     return BlocProvider<DashboardBloc>.value(
@@ -118,26 +128,18 @@ class _AnalyticsDetailView extends HookWidget {
                 ? analytics.overallRetentionRate
                 : 0.85;
 
-            final int projectionDays;
-            final List<double> stabilities;
-            if (filterIndex == 0) {
-              projectionDays = 7;
-              stabilities = [4.5, 6.2, 5.0];
-            } else if (filterIndex == 1) {
-              projectionDays = 14;
-              stabilities = [5.5, 7.8, 6.2, 9.0];
-            } else {
-              projectionDays = 28;
-              stabilities = [7.0, 10.5, 8.2, 14.0];
-            }
+            final projectionDays = filterIndex == 0 ? 7 : (filterIndex == 1 ? 14 : 28);
+            final empiricalStability = effectiveRate >= 0.99
+                ? 14.0
+                : (-1.0 / math.log(effectiveRate.clamp(0.01, 0.98))).clamp(2.0, 30.0);
 
             retentionPoints = decayCalculator.calculateProjection(
               projectionDays: projectionDays,
-              cardStabilities: stabilities,
+              cardStabilities: [empiricalStability],
               empiricalRecallRates: [
                 1.0,
                 effectiveRate,
-                effectiveRate * 0.95,
+                (effectiveRate * 0.96).clamp(0.0, 1.0),
               ],
             );
           }
@@ -205,7 +207,16 @@ class _AnalyticsDetailView extends HookWidget {
                   const SizedBox(height: 20),
 
                   // 3. Ebbinghaus Memory Decay & Retention Curve
-                  AdaptiveRetentionChart(points: retentionPoints),
+                  AdaptiveRetentionChart(
+                    points: retentionPoints,
+                    onTriggerNeuralRepair: (day, retrievability) {
+                      _showNeuralRepairBottomSheet(
+                        context,
+                        day,
+                        retrievability,
+                      );
+                    },
+                  ),
                   const SizedBox(height: 20),
 
                   // 4. Weekly Study Volume & Velocity Bar Chart
@@ -517,7 +528,7 @@ class _ExecutiveKpiGrid extends StatelessWidget {
     if (!hasCards) {
       cardsSubtitle = '0 Active Cards';
     } else if (timeframeIndex == 0) {
-      cardsSubtitle = '${analytics.totalCardsMastered} Active FSRS-6 (7d)';
+      cardsSubtitle = '${analytics.totalCardsMastered} Active Cards (7d)';
     } else if (timeframeIndex == 1) {
       cardsSubtitle = '${analytics.totalCardsMastered} Active (30d)';
     } else {
@@ -1635,6 +1646,15 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = context.typography;
+    final activityService = locator.isRegistered<UserActivityService>()
+        ? locator<UserActivityService>()
+        : null;
+    final breakdown = activityService?.getSubjectBreakdown() ?? const {};
+    final weakEntry = breakdown.entries.where((e) => e.value.avgRetention < 0.80).firstOrNull;
+    final subscriptionGuard = locator.isRegistered<SubscriptionGuard>()
+        ? locator<SubscriptionGuard>()
+        : SubscriptionGuard();
+    final isPro = subscriptionGuard.canAccessAiDiagnostics();
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.panel),
@@ -1665,57 +1685,203 @@ class _SyllabotCognitiveInsightsCard extends StatelessWidget {
                 children: [
                   const SyllabotAvatar(size: 26),
                   const SizedBox(width: 8),
-                  Text(
-                    'Syllabot Cognitive Diagnostics',
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                      fontSize: 15,
+                  Expanded(
+                    child: Text(
+                      'Syllabot Cognitive Diagnostics',
+                      style: typography.title3.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
+                  if (!isPro)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [colors.primary, colors.primary.withAlpha(200)],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.badge),
+                      ),
+                      child: Text(
+                        'PRO',
+                        style: typography.caption.bold.copyWith(
+                          color: Colors.white,
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 14),
-              if (insightText != null && insightText!.isNotEmpty) ...[
+              if (!isPro) ...[
                 _InsightRow(
                   icon: Icons.psychology_rounded,
                   iconColor: colors.primary,
-                  title: 'Daily AI Synthesis',
-                  description: insightText!,
+                  title: 'Cognitive Retention Spaced Tracking',
+                  description:
+                      'Daily spaced reviews protect against memory fade and promote long-term recall. '
+                      'Upgrade to Kortex Pro to unlock automated subject decay alerts, personalized cram targets, and deep Ebbinghaus synthesis.',
                   colors: colors,
                 ),
-                const SizedBox(height: 12),
-              ],
-              if (hasData) ...[
-                _InsightRow(
-                  icon: Icons.lightbulb_outline_rounded,
-                  iconColor: colors.warning,
-                  title: 'Peak Recall Focus Window',
-                  description:
-                      'Active recall retention is highest during morning '
-                      'study sessions. Review cards early for maximum '
-                      'consolidation.',
-                  colors: colors,
-                ),
-                const SizedBox(height: 12),
-                _InsightRow(
-                  icon: Icons.alarm_rounded,
-                  iconColor: colors.success,
-                  title: 'Memory Consolidation Tracking',
-                  description:
-                      'Daily spaced reviews prevent Ebbinghaus forgetting '
-                      'decay and promote long-term neural retention.',
-                  colors: colors,
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withAlpha(isDark ? 30 : 16),
+                    borderRadius: BorderRadius.circular(AppRadius.badge),
+                    border: Border.all(
+                      color: colors.primary.withAlpha(isDark ? 80 : 50),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, color: colors.primary, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Unlock Deep AI Diagnostics',
+                              style: typography.caption.bold.copyWith(
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Targeted subject intervention & exam cram forecasting.',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          AppFeedback.selection();
+                          unawaited(
+                            subscriptionGuard.requirePro(
+                              context,
+                              featureName: 'AI Cognitive Diagnostics',
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                          ),
+                        ),
+                        child: const Text('Unlock'),
+                      ),
+                    ],
+                  ),
                 ),
               ] else ...[
-                _InsightRow(
-                  icon: Icons.tips_and_updates_rounded,
-                  iconColor: colors.primary,
-                  title: 'Getting Started with Spaced Repetition',
-                  description:
-                      'Create your first study deck or import lecture '
-                      'materials. Syllabot will generate automated flashcards '
-                      'and track your active recall retention score.',
-                  colors: colors,
+                if (insightText != null && insightText!.isNotEmpty) ...[
+                  _InsightRow(
+                    icon: Icons.psychology_rounded,
+                    iconColor: colors.primary,
+                    title: 'Daily AI Synthesis',
+                    description: insightText!,
+                    colors: colors,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (weakEntry != null) ...[
+                  _InsightRow(
+                    icon: Icons.warning_amber_rounded,
+                    iconColor: colors.error,
+                    title: 'Subject Decay Alert: ${weakEntry.key}',
+                    description:
+                        'Memory recall chance is currently at ${(weakEntry.value.avgRetention * 100).toInt()}%. '
+                        'Syllabot recommends a 15-minute targeted review session today.',
+                    colors: colors,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (hasData) ...[
+                  _InsightRow(
+                    icon: Icons.lightbulb_outline_rounded,
+                    iconColor: colors.warning,
+                    title: 'Peak Recall Focus Window',
+                    description:
+                        'Active recall retention is highest during morning '
+                        'study sessions. Review cards early for maximum '
+                        'consolidation.',
+                    colors: colors,
+                  ),
+                  const SizedBox(height: 12),
+                  _InsightRow(
+                    icon: Icons.alarm_rounded,
+                    iconColor: colors.success,
+                    title: 'Memory Consolidation Tracking',
+                    description:
+                        'Daily spaced reviews protect against memory fade and promote long-term recall.',
+                    colors: colors,
+                  ),
+                ] else ...[
+                  _InsightRow(
+                    icon: Icons.tips_and_updates_rounded,
+                    iconColor: colors.primary,
+                    title: 'Getting Started with Spaced Repetition',
+                    description:
+                        'Create your first study deck or import lecture '
+                        'materials. Syllabot will generate automated flashcards '
+                        'and track your active recall retention score.',
+                    colors: colors,
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          AppFeedback.selection();
+                          context.showSnackBar(
+                            message: 'Syllabot: "Reviewing your study trends. Your memory retention is strongest during morning sessions!"',
+                          );
+                        },
+                        icon: const Icon(Icons.chat_bubble_outline_rounded, size: 15),
+                        label: const Text('Ask Syllabot AI'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          AppFeedback.celebration();
+                          try {
+                            unawaited(context.router.push(const ExamTimetableRoute()));
+                          } on Object catch (_) {}
+                        },
+                        icon: const Icon(Icons.tune_rounded, size: 15),
+                        label: const Text('Cram Targets'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.badge),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -1774,6 +1940,203 @@ class _InsightRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+void _showNeuralRepairBottomSheet(
+  BuildContext context,
+  int day,
+  double retrievability,
+) {
+  final colors = context.colors;
+  final typography = context.typography;
+  final isDark = context.isDarkMode;
+  final percent = (retrievability * 100).toInt();
+
+  unawaited(
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (modalContext) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? colors.surfaceSecondary : colors.surfacePrimary,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: colors.surfaceBorder),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textSecondary.withAlpha(80),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colors.primary.withAlpha(25),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.bolt_rounded, color: colors.primary, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '1-Tap Neural Repair (Day $day)',
+                          style: typography.title3.bold.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Targeted memory reinforcement ($percent% recall chance)',
+                          style: typography.caption.regular.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _NeuralRepairOptionTile(
+                icon: Icons.style_rounded,
+                title: 'Quick Flashcard Memory Refresh',
+                subtitle: 'Focus on due cards to strengthen memory retention',
+                color: colors.primary,
+                onTap: () {
+                  Navigator.of(modalContext).pop();
+                  try {
+                    unawaited(
+                      context.router.push(
+                        const MainRoute(children: [DecksRoute()]),
+                      ),
+                    );
+                  } on Object catch (_) {}
+                },
+              ),
+              const SizedBox(height: 10),
+              _NeuralRepairOptionTile(
+                icon: Icons.quiz_rounded,
+                title: '10-Question Diagnostic Drill',
+                subtitle: 'Fast CBT mock quiz to lock in fading concepts',
+                color: colors.secondary,
+                onTap: () {
+                  Navigator.of(modalContext).pop();
+                  try {
+                    unawaited(context.router.push(PastQuestionsBoardRoute()));
+                  } on Object catch (_) {}
+                },
+              ),
+              const SizedBox(height: 10),
+              _NeuralRepairOptionTile(
+                icon: Icons.psychology_rounded,
+                title: 'Ask Syllabot AI Coach',
+                subtitle: 'Get a personalized 3-step study action plan',
+                color: const Color(0xFF10B981),
+                onTap: () {
+                  Navigator.of(modalContext).pop();
+                  context.showSnackBar(
+                    message: 'Syllabot: Analyzing Day $day memory decay. Focus 15 mins on Organic Chemistry mechanisms today!',
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
+class _NeuralRepairOptionTile extends StatelessWidget {
+  const _NeuralRepairOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colors.surfaceSecondary.withAlpha(120),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: colors.surfaceBorder.withAlpha(60)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withAlpha(30),
+                borderRadius: BorderRadius.circular(AppRadius.badge),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: typography.body.bold.copyWith(
+                      color: colors.textPrimary,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: typography.caption.regular.copyWith(
+                      color: colors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: colors.textSecondary,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

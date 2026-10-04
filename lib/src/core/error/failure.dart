@@ -24,3 +24,27 @@ class CacheFailure extends Failure {
     int? statusCode,
   }) : super(message, statusCode);
 }
+
+class AuthFailure extends Failure {
+  const AuthFailure({
+    String? message,
+    int? statusCode,
+  }) : super(message, statusCode);
+}
+
+class NoQuizQuestionsFailure extends Failure {
+  const NoQuizQuestionsFailure({
+    required this.subject,
+    String? message,
+    int? statusCode,
+  }) : super(
+          message ??
+              'No questions found for $subject. Connect to the internet to generate questions, or create flashcards for this course to play offline.',
+          statusCode,
+        );
+
+  final String subject;
+
+  @override
+  List<Object> get props => [subject, ?message];
+}

@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/chat_message_entity.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_reference_badge.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/rag_source_inspection_sheet.dart';
+import 'package:kortex/src/features/syllabot/presentation/widgets/syllabot_response_formatter.dart';
 import 'package:kortex/src/features/syllabot/presentation/widgets/text_to_speech_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -292,7 +293,9 @@ class _ChatBubbleWidgetState extends State<ChatBubbleWidget> {
                                       unawaited(
                                         Clipboard.setData(
                                           ClipboardData(
-                                            text: widget.message.text,
+                                            text: SyllabotResponseFormatter.format(
+                                              widget.message.text,
+                                            ),
                                           ),
                                         ),
                                       );
@@ -413,20 +416,20 @@ class _FormattedMessageBody extends StatelessWidget {
   final bool isDark;
   final bool isStreaming;
 
+  static final RegExp _markdownTableBlockRegex = RegExp(
+    r'(?:^[ \t]*\|[^\n]+\|[ \t]*\r?\n[ \t]*\|[ \t]*:?[-]+:?[ \t]*(?:\|[ \t]*:?[-]+:?[ \t]*)+[ \t]*\|?[ \t]*(?:\r?\n[ \t]*\|[^\n]+\|[ \t]*)*)',
+    multiLine: true,
+  );
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final typography = context.typography;
 
-    // Sanitize any model prompt template leakage (e.g. <|im_start|>, <think>)
-    final sanitizedText = text
-        .replaceAll(
-          RegExp(r'<\|[a-zA-Z0-9_\-]+\|>|<think>[\s\S]*?<\/think>|<\/?think>'),
-          '',
-        )
-        .trim();
+    // Sanitize prompt artifacts, tags, decode HTML entities, and format LaTeX math delimiters
+    final formattedText = SyllabotResponseFormatter.format(text);
 
-    if (sanitizedText.isEmpty) {
+    if (formattedText.isEmpty) {
       if (isStreaming) {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -463,118 +466,100 @@ class _FormattedMessageBody extends StatelessWidget {
     }
 
     // Append blinking/typewriter cursor during active token streaming
-    final displayText = isStreaming ? '$sanitizedText ▌' : sanitizedText;
+    final displayText = isStreaming ? '$formattedText ▌' : formattedText;
 
-    // Parse $$math$$ blocks and render standard markdown for everything else
-    final parts = displayText.split(r'$$');
-
-    final markdownStyleSheet = MarkdownStyleSheet(
-      p: typography.body.regular.copyWith(
-        color: colors.textPrimary,
-        height: 1.45,
-        fontSize: 14,
-      ),
-      h1: typography.title1.bold.copyWith(
-        color: colors.textPrimary,
-        fontSize: 18,
-      ),
-      h2: typography.title2.bold.copyWith(
-        color: colors.textPrimary,
-        fontSize: 16,
-      ),
-      h3: typography.title3.bold.copyWith(
-        color: colors.textPrimary,
-        fontSize: 15,
-      ),
-      strong: typography.body.bold.copyWith(
-        color: isDark ? colors.syllabotAccent : colors.primary,
-        fontSize: 14,
-      ),
-      em: typography.body.regular.copyWith(
-        color: colors.textSecondary,
-        fontStyle: FontStyle.italic,
-        fontSize: 14,
-      ),
-      code: typography.caption.medium.copyWith(
-        color: isDark ? colors.syllabotAccent : colors.primary,
-        backgroundColor: colors.surfaceSecondary,
-        fontSize: 12.5,
-      ),
-      codeblockDecoration: BoxDecoration(
-        color: isDark ? colors.black.withAlpha(115) : colors.surfaceSecondary,
-        borderRadius: AppRadius.radiusBadge,
-        border: Border.all(
-          color: colors.surfaceBorder.withAlpha(80),
-        ),
-      ),
-      listBullet: typography.body.bold.copyWith(
-        color: colors.primary,
-      ),
-      blockquoteDecoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(
-            color: colors.primary,
-            width: 3,
-          ),
-        ),
-      ),
-      blockquotePadding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
-      blockSpacing: 8,
+    final defaultTextStyle = typography.body.regular.copyWith(
+      color: colors.textPrimary,
+      height: 1.45,
+      fontSize: 14,
     );
 
-    if (parts.length <= 1) {
-      return MarkdownBody(
-        data: displayText,
-        styleSheet: markdownStyleSheet,
+    // If the message contains Markdown tables, isolate them for MarkdownBody
+    // while rendering all natural language, formulas, lists, and code with LatexRichViewer
+    final tableMatches =
+        _markdownTableBlockRegex.allMatches(displayText).toList();
+    if (tableMatches.isEmpty) {
+      return LatexRichViewer(
+        text: displayText,
+        style: defaultTextStyle,
       );
     }
 
-    final children = <Widget>[];
+    final markdownStyleSheet = MarkdownStyleSheet(
+      p: defaultTextStyle,
+      tableHead: typography.body.bold.copyWith(
+        color: isDark ? colors.syllabotAccent : colors.primary,
+        fontSize: 13,
+      ),
+      tableBody: typography.body.regular.copyWith(
+        color: colors.textPrimary,
+        fontSize: 13,
+      ),
+      tableHeadAlign: TextAlign.left,
+      tableBorder: TableBorder.all(
+        color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+      ),
+      tableColumnWidth: const IntrinsicColumnWidth(),
+      tableCellsPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      tablePadding: const EdgeInsets.all(8),
+      tableScrollbarThumbVisibility: true,
+    );
 
-    for (var i = 0; i < parts.length; i++) {
-      final part = parts[i];
-      if (part.trim().isEmpty) continue;
+    final widgets = <Widget>[];
+    var lastIndex = 0;
 
-      if (i.isOdd) {
-        // LaTeX Math Block
-        children.add(
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colors.black.withAlpha(80)
-                  : colors.primary.withAlpha(15),
-              borderRadius: AppRadius.radiusCard,
-              border: Border.all(
-                color: colors.primary.withAlpha(isDark ? 60 : 30),
+    for (final match in tableMatches) {
+      if (match.start > lastIndex) {
+        final precedingText =
+            displayText.substring(lastIndex, match.start).trim();
+        if (precedingText.isNotEmpty) {
+          widgets
+            ..add(
+              LatexRichViewer(
+                text: precedingText,
+                style: defaultTextStyle,
+              ),
+            )
+            ..add(const SizedBox(height: 8));
+        }
+      }
+
+      final tableText = match.group(0)?.trim() ?? '';
+      if (tableText.isNotEmpty) {
+        widgets
+          ..add(
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colors.black.withAlpha(40)
+                    : colors.surfaceSecondary,
+                borderRadius: AppRadius.radiusCard,
+                border: Border.all(
+                  color: colors.surfaceBorder.withAlpha(80),
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: MarkdownBody(
+                data: tableText,
+                styleSheet: markdownStyleSheet,
               ),
             ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Math.tex(
-                part.trim(),
-                textStyle: typography.body.bold.copyWith(
-                  color: isDark ? colors.syllabotAccent : colors.primary,
-                  fontSize: 15,
-                ),
-                onErrorFallback: (err) => Text(
-                  part,
-                  style: typography.caption.medium.copyWith(
-                    color: colors.error,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      } else {
-        // Rich Markdown Block
-        children.add(
-          MarkdownBody(
-            data: part.trim(),
-            styleSheet: markdownStyleSheet,
+          )
+          ..add(const SizedBox(height: 8));
+      }
+
+      lastIndex = match.end;
+    }
+
+    if (lastIndex < displayText.length) {
+      final remaining = displayText.substring(lastIndex).trim();
+      if (remaining.isNotEmpty) {
+        widgets.add(
+          LatexRichViewer(
+            text: remaining,
+            style: defaultTextStyle,
           ),
         );
       }
@@ -582,7 +567,8 @@ class _FormattedMessageBody extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
+      mainAxisSize: MainAxisSize.min,
+      children: widgets,
     );
   }
 }

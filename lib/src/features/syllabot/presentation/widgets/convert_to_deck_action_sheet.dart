@@ -56,6 +56,7 @@ class ConvertToDeckActionSheet extends HookWidget {
       text: initialCourseCode ?? 'GEN 101',
     );
     final createForum = useState<bool>(false);
+    final isSubmitting = useState<bool>(false);
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -258,21 +259,26 @@ class ConvertToDeckActionSheet extends HookWidget {
                     // Action Button
                     AppButton(
                       text: l10n.createDeckAction,
+                      isLoading: isSubmitting.value,
                       prefixIcon: Icon(
                         Icons.auto_awesome,
                         color: colors.white,
                         size: 18,
                       ),
-                      onPressed: () {
-                        unawaited(HapticFeedback.heavyImpact());
-                        Navigator.of(context).pop();
-                        onGenerateDeck(
-                          titleController.text.trim(),
-                          courseController.text.trim(),
-                          createForum: createForum.value,
-                        );
-                      },
+                      onPressed: isSubmitting.value
+                          ? null
+                          : () {
+                              isSubmitting.value = true;
+                              unawaited(HapticFeedback.heavyImpact());
+                              Navigator.of(context).pop();
+                              onGenerateDeck(
+                                titleController.text.trim(),
+                                courseController.text.trim(),
+                                createForum: createForum.value,
+                              );
+                            },
                     ),
+
                   ],
                 ),
               ),

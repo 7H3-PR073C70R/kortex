@@ -229,10 +229,29 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<FetchCourseCommunityStatsUseCase>(
       () => FetchCourseCommunityStatsUseCase(locator<CommunityRepository>()),
     )
-    ..registerFactory<CommunityHubBloc>(
+    ..registerLazySingleton<CommunityHubBloc>(
       () => CommunityHubBloc(
         repository: locator<CommunityRepository>(),
       ),
+    )
+
+    ..registerFactory<ForumCubit>(
+      () => ForumCubit(
+        repository: locator<CommunityRepository>(),
+      ),
+    )
+    ..registerFactory<StudyCircleCubit>(
+      () => StudyCircleCubit(
+        repository: locator<CommunityRepository>(),
+      ),
+    )
+    ..registerFactory<MarketplaceCubit>(
+      () => MarketplaceCubit(
+        repository: locator<CommunityRepository>(),
+      ),
+    )
+    ..registerLazySingleton<HubOverviewCubit>(
+      HubOverviewCubit.new,
     )
     ..registerLazySingleton<AutoCommunityCubit>(
       () => AutoCommunityCubit(
@@ -330,4 +349,23 @@ void _initUseCaseLocator() {
     ..registerLazySingleton<RedeemPromoCodeUseCase>(
       () => RedeemPromoCodeUseCase(locator<PromoCodeRepository>()),
     );
+}
+
+/// Safely resolves CommunityHubBloc, reviving it if it was closed or unmounted.
+CommunityHubBloc getOrRenewCommunityHubBloc() {
+  if (locator.isRegistered<CommunityHubBloc>()) {
+    final bloc = locator<CommunityHubBloc>();
+    if (!bloc.isClosed) {
+      return bloc;
+    }
+    final unregisterResult = locator.unregister<CommunityHubBloc>();
+    if (unregisterResult is Future<dynamic>) {
+      unawaited(unregisterResult.then<void>((_) {}));
+    }
+  }
+  final freshBloc = CommunityHubBloc(
+    repository: locator<CommunityRepository>(),
+  );
+  locator.registerSingleton<CommunityHubBloc>(freshBloc);
+  return freshBloc;
 }

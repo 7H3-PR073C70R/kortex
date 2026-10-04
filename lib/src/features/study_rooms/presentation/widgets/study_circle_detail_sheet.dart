@@ -9,6 +9,7 @@ import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/features/study_rooms/domain/entities/study_circle_entity.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -310,6 +311,19 @@ class StudyCircleDetailSheet extends StatelessWidget {
                               ),
                             ],
                           ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.sports_esports_rounded, size: 20),
+                          color: colors.primary,
+                          tooltip: 'Duel ${member.userName}',
+                          onPressed: () {
+                            unawaited(
+                              QuizDuelMatchmakingSheet.show(
+                                context,
+                                initialSubject: circle.track.isNotEmpty ? circle.track : 'Physics',
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

@@ -54,6 +54,28 @@ class ProfileNavigationMenu extends StatelessWidget {
               },
             ),
             _NavTile(
+              icon: Icons.speed_rounded,
+              iconColor: isDark
+                  ? neural.cyan400
+                  : const Color.fromRGBO(14, 116, 144, 1),
+              chipBg: isDark
+                  ? colors.surfaceSecondary
+                  : const Color.fromRGBO(6, 182, 212, 0.08),
+              chipBorder: isDark
+                  ? colors.surfaceBorder
+                  : const Color.fromRGBO(6, 182, 212, 0.2),
+              hoverIconColor: neural.cyan400,
+              hoverChipBorder: neural.cyan400.withValues(alpha: 0.4),
+              title: 'Study Pace & Review Schedule',
+              subtitle: 'Daily card limits, memory retention goals & reminders',
+              onTap: () {
+                AppFeedback.light();
+                unawaited(
+                  context.router.push(const DeckPaceSettingsRoute()),
+                );
+              },
+            ),
+            _NavTile(
               icon: Icons.psychology_outlined,
               iconColor: neural.purple500,
               chipBg: neural.purple500.withValues(alpha: isDark ? 0.15 : 0.1),

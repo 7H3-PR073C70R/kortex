@@ -53,6 +53,7 @@ final class TriggerOcrParsingEvent extends IngestionEvent {
     this.courseId,
     this.courseCode,
     this.courseTitle,
+    this.synthesisMode = SynthesisMode.aiSmart,
   });
 
   final String documentId;
@@ -61,6 +62,7 @@ final class TriggerOcrParsingEvent extends IngestionEvent {
   final String? courseId;
   final String? courseCode;
   final String? courseTitle;
+  final SynthesisMode synthesisMode;
 }
 
 /// Attach an existing or previously ingested document's study deck to a course.

@@ -136,5 +136,37 @@ void main() {
 
       await cubit.close();
     });
+
+    test('NotificationsCubit deduplicates duplicate notifications', () async {
+      final cubit = NotificationsCubit();
+
+      final notif = NotificationItemEntity(
+        id: 'dup_1',
+        title: '🔥 Protect your study streak!',
+        message: 'You have a 3-day streak at risk today.',
+        timestamp: DateTime.now(),
+        category: NotificationCategory.streak,
+      );
+
+      cubit.addNotification(notif);
+      expect(cubit.state.notifications.length, equals(1));
+
+      // Attempt to add same notification by ID
+      cubit.addNotification(notif);
+      expect(cubit.state.notifications.length, equals(1));
+
+      // Attempt to add identical title/message with different ID right after
+      final duplicateWithDifferentId = NotificationItemEntity(
+        id: 'dup_2',
+        title: '🔥 Protect your study streak!',
+        message: 'You have a 3-day streak at risk today.',
+        timestamp: DateTime.now(),
+        category: NotificationCategory.streak,
+      );
+      cubit.addNotification(duplicateWithDifferentId);
+      expect(cubit.state.notifications.length, equals(1));
+
+      await cubit.close();
+    });
   });
 }

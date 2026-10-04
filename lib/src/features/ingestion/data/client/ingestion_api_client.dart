@@ -50,17 +50,64 @@ extension IngestionStorageUpload on Dio {
     String bucket = AppApiEndpoint.storageBucket,
     void Function(int sent, int total)? onProgress,
   }) async {
-    await post<dynamic>(
-      '${AppApiEndpoint.baseUri}$bucket/$storagePath',
+    try {
+      await post<dynamic>(
+        '${AppApiEndpoint.baseUri}$bucket/$storagePath',
+        data: fileBytes,
+        options: Options(
+          extra: {'silent': true},
+          headers: {
+            'Content-Type': contentType,
+            'x-upsert': 'true',
+          },
+        ),
+        onSendProgress: onProgress,
+      );
+    } on DioException catch (e) {
+      final resData = e.response?.data;
+      final isAlreadyExists = e.response?.statusCode == 409 ||
+          (e.response?.statusCode == 400 &&
+              resData is Map &&
+              (resData['code'] == 'KeyAlreadyExists' ||
+                  resData['error'] == 'Duplicate' ||
+                  resData['statusCode'] == 409 ||
+                  resData['statusCode'] == '409'));
+
+      if (isAlreadyExists) {
+        // Resource already safely stored in Content-Addressable Storage (CAS)
+        return;
+      }
+      rethrow;
+    }
+  }
+
+  /// Uploads an extracted document diagram/image to Cloudflare R2
+  /// under `documents/{documentId}/images/{filename}`.
+  Future<String?> uploadDocumentImageToR2({
+    required String documentId,
+    required String filename,
+    required Uint8List fileBytes,
+    required String contentType,
+    String? token,
+  }) async {
+    final response = await post<Map<String, dynamic>>(
+      '${AppApiEndpoint.baseUri}${AppApiEndpoint.uploadForumMedia}',
       data: fileBytes,
       options: Options(
         extra: {'silent': true},
         headers: {
           'Content-Type': contentType,
-          'x-upsert': 'false',
+          'x-media-type': 'document_image',
+          'x-document-id': documentId,
+          'x-file-name': filename,
+          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
         },
       ),
-      onSendProgress: onProgress,
     );
+    if (response.statusCode == 200 && response.data != null) {
+      final resData = response.data!;
+      return resData['url'] as String? ?? resData['proxyUrl'] as String?;
+    }
+    return null;
   }
 }

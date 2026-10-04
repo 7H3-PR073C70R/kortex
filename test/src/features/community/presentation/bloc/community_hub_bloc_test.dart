@@ -72,6 +72,9 @@ void main() {
       () => mockRepository.streamLeaderboards(track: any(named: 'track')),
     ).thenAnswer((_) => Stream.value([testLeaderboardEntry]));
     when(
+      () => mockRepository.watchStudyCircles(track: any(named: 'track')),
+    ).thenAnswer((_) => const Stream.empty());
+    when(
       () => mockRepository.getBookmarkedForumPostIds(),
     ).thenAnswer((_) async => const Right(<String>{}));
     when(

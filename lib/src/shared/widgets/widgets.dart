@@ -3,6 +3,7 @@ export 'app_avatar.dart';
 export 'app_badge.dart';
 export 'app_bottom_sheet.dart';
 export 'app_button.dart';
+export 'app_code_block_viewer.dart';
 export 'app_dialog.dart';
 export 'app_divider.dart';
 export 'app_empty_state.dart';

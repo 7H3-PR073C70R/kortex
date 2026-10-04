@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kortex/src/core/themes/app_theme.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/study_deck_entity.dart';
+import 'package:kortex/src/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/fsrs_review_deck_card.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/header_profile_bar.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/quick_action_speed_dial.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/retention_heat_map_widget.dart';
 import 'package:kortex/src/features/dashboard/presentation/widgets/syllabot_quick_prompt_bar.dart';
-
+import 'package:kortex/src/features/onboarding_calibration/domain/entities/calibration_profile.dart';
 import 'package:kortex/src/l10n/arb/app_localizations.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 Widget createTestApp(Widget child) {
   return MaterialApp(
@@ -53,6 +56,35 @@ void main() {
       expect(find.text('Hey, Alexander'), findsOneWidget);
       expect(find.text('Neural Scholar'), findsOneWidget);
       expect(find.text('Calibrate Your Neural Workspace'), findsOneWidget);
+    });
+
+    testWidgets('HeaderProfileBar hides calibrate banner when profile is calibrated', (
+      tester,
+    ) async {
+      const analytics = AnalyticsSummaryEntity(
+        currentStreakDays: 12,
+        longestStreakDays: 20,
+        totalCardsMastered: 150,
+        weeklyMinutesStudied: 180,
+        overallRetentionRate: 0.92,
+        academicRank: 'Neural Scholar',
+        xpPoints: 3400,
+        heatMapData: [],
+      );
+
+      await tester.pumpWidget(
+        createTestApp(
+          const HeaderProfileBar(
+            analytics: analytics,
+            isProfileUncalibrated: false,
+            userName: 'Alexander',
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 1500));
+
+      expect(find.text('Hey, Alexander'), findsOneWidget);
+      expect(find.text('Calibrate Your Neural Workspace'), findsNothing);
     });
 
     testWidgets('FsrsReviewDeckCard renders deck details and due badge', (
@@ -145,5 +177,80 @@ void main() {
       expect(find.text('Q-Bank'), findsOneWidget);
       expect(find.text('New Deck'), findsOneWidget);
     });
+
+    testWidgets(
+      'DailyRecallStatusBanner renders due count and is clickable when cards are due',
+      (tester) async {
+        final feed = DashboardFeedEntity(
+          calibrationProfile: const CalibrationProfile(),
+          analyticsSummary: const AnalyticsSummaryEntity(
+            currentStreakDays: 1,
+            longestStreakDays: 1,
+            weeklyMinutesStudied: 10,
+            overallRetentionRate: 0.85,
+            totalCardsMastered: 10,
+            heatMapData: [],
+            xpPoints: 100,
+            academicRank: 'Scholar',
+          ),
+          dueStudyDecks: [
+            StudyDeckEntity(
+              id: 'deck_bio',
+              title: 'Cellular Biology',
+              subject: 'Biology',
+              totalCards: 12,
+              dueCards: 6,
+              retentionRate: 0.85,
+              lastReviewed: DateTime.now(),
+              category: 'Science',
+            ),
+          ],
+          curatedCourses: const [],
+        );
+
+        await tester.pumpWidget(
+          createTestApp(
+            DailyRecallStatusBanner(feed: feed),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('6 DUE'), findsOneWidget);
+        expect(find.text('REVIEW DECK'), findsOneWidget);
+        expect(find.text('Cellular Biology'), findsOneWidget);
+        expect(find.byType(ShrinkableButton), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'DailyRecallStatusBanner renders synced state when no cards are due',
+      (tester) async {
+        const feed = DashboardFeedEntity(
+          calibrationProfile: CalibrationProfile(),
+          analyticsSummary: AnalyticsSummaryEntity(
+            currentStreakDays: 1,
+            longestStreakDays: 1,
+            weeklyMinutesStudied: 10,
+            overallRetentionRate: 0.85,
+            totalCardsMastered: 10,
+            heatMapData: [],
+            xpPoints: 100,
+            academicRank: 'Scholar',
+          ),
+          dueStudyDecks: [],
+          curatedCourses: [],
+        );
+
+        await tester.pumpWidget(
+          createTestApp(
+            const DailyRecallStatusBanner(feed: feed),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('SYNCED'), findsOneWidget);
+        expect(find.byType(ShrinkableButton), findsOneWidget);
+      },
+    );
   });
 }

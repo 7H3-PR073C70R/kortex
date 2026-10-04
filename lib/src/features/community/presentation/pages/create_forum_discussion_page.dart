@@ -9,22 +9,25 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/audio_recording_service.dart';
 import 'package:kortex/src/core/services/media_upload_service.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/community/domain/repositories/community_repository.dart';
-import 'package:kortex/src/features/community/domain/services/spoken_math_converter.dart';
+import 'package:kortex/src/features/community/domain/services/content_moderation_service.dart';
+import 'package:kortex/src/features/community/domain/services/forum_duplicate_detector.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_event.dart';
 import 'package:kortex/src/features/community/presentation/bloc/community_hub_bloc.dart';
+import 'package:kortex/src/features/community/presentation/widgets/moderation_feedback_dialog.dart';
+import 'package:kortex/src/features/community/presentation/widgets/voice_note_recorder_widget.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/latex_rich_viewer.dart';
 import 'package:kortex/src/features/study_rooms/presentation/widgets/voice_note_player_widget.dart';
 import 'package:kortex/src/features/syllabot/data/client/local_llm_engine_client.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/execution_engine_type.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/stream_syllabot_response_use_case.dart';
-import 'package:kortex/src/features/syllabot/presentation/widgets/speech_to_text_handler.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
@@ -93,59 +96,16 @@ class CreateForumDiscussionPage extends HookWidget {
 
     // Media & Voice note attachments state
     final attachedImages = useState<List<String>>([]);
-    final isRecordingVoice = useState<bool>(false);
     final recordedVoiceNoteUrl = useState<String?>(null);
     final voiceNoteDurationSeconds = useState<int>(0);
-    final recordingTimer = useRef<Timer?>(null);
+    final recordedVoiceNoteTranscript = useState<String?>(null);
+    final isRecordingVoice = useState<bool>(false);
+    final voiceRecordingDuration = useState<int>(0);
+    final voiceRecorderController =
+        useMemoized(VoiceNoteRecorderController.new);
 
     final characterCount = useState<int>(0);
     final lastSavedTime = useState<String>('Draft');
-
-    // Speech to Text handler for live voice-to-text dictation with math KaTeX conversion
-    final sttHandler = useMemoized(
-      () => SpeechToTextHandler(
-        onResult: (words) {
-          if (words.trim().isNotEmpty) {
-            final convertedMath =
-                SpokenMathToKaTeXConverter.convertSpokenMathToKaTeX(words);
-            final current = contentController.text;
-            if (current.isEmpty) {
-              contentController.text = convertedMath;
-            } else if (!current.contains(convertedMath)) {
-              contentController.text = '$current $convertedMath';
-            }
-          }
-        },
-        onListeningChanged: (listening) {
-          isRecordingVoice.value = listening;
-          if (listening) {
-            voiceNoteDurationSeconds.value = 0;
-            recordingTimer.value?.cancel();
-            recordingTimer.value = Timer.periodic(const Duration(seconds: 1), (
-              timer,
-            ) {
-              voiceNoteDurationSeconds.value = timer.tick;
-            });
-          } else {
-            recordingTimer.value?.cancel();
-            if (voiceNoteDurationSeconds.value > 0) {
-              recordedVoiceNoteUrl.value ??= 'audio/voice_note.wav';
-            }
-          }
-        },
-        onError: (err) {
-          isRecordingVoice.value = false;
-          recordingTimer.value?.cancel();
-        },
-      ),
-    );
-
-    useEffect(() {
-      return () {
-        recordingTimer.value?.cancel();
-        sttHandler.dispose();
-      };
-    }, []);
 
     useEffect(() {
       void listener() {
@@ -292,29 +252,6 @@ class CreateForumDiscussionPage extends HookWidget {
           ),
         ),
       );
-    }
-
-    Future<void> toggleVoiceRecording() async {
-      try {
-        if (isRecordingVoice.value) {
-          await sttHandler.stopListening();
-          recordingTimer.value?.cancel();
-          if (voiceNoteDurationSeconds.value == 0) {
-            voiceNoteDurationSeconds.value = 5;
-          }
-          recordedVoiceNoteUrl.value ??= 'audio/voice_note.wav';
-        } else {
-          await sttHandler.startListening();
-        }
-      } on Object catch (e) {
-        isRecordingVoice.value = false;
-        recordingTimer.value?.cancel();
-        if (context.mounted) {
-          context.showSnackBar(
-            message: 'Speech recognition unavailable: $e',
-          );
-        }
-      }
     }
 
     void showMathFormulaSheet() {
@@ -565,18 +502,38 @@ class CreateForumDiscussionPage extends HookWidget {
         return;
       }
 
+      // Content safety & anti-abuse moderation check
+      const moderationService = ContentModerationService();
+      final modResult = moderationService.validatePost(
+        title: title,
+        content: content,
+      );
+      if (!modResult.isValid) {
+        unawaited(
+          ModerationFeedbackDialog.show(
+            context,
+            result: modResult,
+            contentTarget: 'discussion',
+          ),
+        );
+        return;
+      }
+
+      final sanitizedTitle = ContentModerationService.sanitizeText(title);
+      final sanitizedContent = ContentModerationService.sanitizeText(content);
+
       // Duplicate post prevention check across existing state
       final currentPosts = context.read<CommunityHubBloc>().state.forumPosts;
-      final isDuplicate = currentPosts.any(
-        (p) =>
-            p.track.toLowerCase() == selectedTrack.value.toLowerCase() &&
-            p.title.trim().toLowerCase() == title.toLowerCase(),
+      final duplicateMatch = ForumDuplicateDetector.findExactOrHighMatch(
+        title: sanitizedTitle,
+        posts: currentPosts,
+        track: selectedTrack.value,
       );
 
-      if (isDuplicate) {
+      if (duplicateMatch != null) {
         context.showSnackBar(
           message:
-              'A discussion thread with this exact title already exists in ${selectedTrack.value}. Please join the existing discussion!',
+              'A highly similar discussion thread "${duplicateMatch.title}" already exists in ${selectedTrack.value}. Please join the existing discussion!',
           type: SnackBarType.error,
         );
         return;
@@ -700,8 +657,8 @@ class CreateForumDiscussionPage extends HookWidget {
 
       if (onSubmit != null) {
         onSubmit!(
-          title: title,
-          content: content.isNotEmpty ? content : title,
+          title: sanitizedTitle,
+          content: sanitizedContent.isNotEmpty ? sanitizedContent : sanitizedTitle,
           track: selectedTrack.value,
           latexContent: latexSnippet,
           isQuestion: true,
@@ -728,8 +685,8 @@ class CreateForumDiscussionPage extends HookWidget {
 
       try {
         final result = await locator<CommunityRepository>().createForumPost(
-          title: title,
-          content: content.isNotEmpty ? content : title,
+          title: sanitizedTitle,
+          content: sanitizedContent.isNotEmpty ? sanitizedContent : sanitizedTitle,
           track: selectedTrack.value,
           latexContent: latexSnippet,
           isQuestion: true,
@@ -740,6 +697,10 @@ class CreateForumDiscussionPage extends HookWidget {
           voiceNoteDurationSeconds: voiceNoteDurationSeconds.value > 0
               ? voiceNoteDurationSeconds.value
               : null,
+          voiceNoteTranscript:
+              recordedVoiceNoteTranscript.value?.trim().isNotEmpty == true
+                  ? recordedVoiceNoteTranscript.value!.trim()
+                  : null,
           isAnonymous: isAnonymous.value,
         );
 
@@ -758,6 +719,19 @@ class CreateForumDiscussionPage extends HookWidget {
             }
           },
           (post) {
+            // Fire-and-forget server-side Groq transcription via Supabase Edge Function.
+            final vnUrl = post.voiceNoteUrl;
+            if (vnUrl != null &&
+                vnUrl.trim().isNotEmpty &&
+                locator.isRegistered<MediaUploadService>()) {
+              unawaited(
+                locator<MediaUploadService>().triggerVoiceNoteTranscription(
+                  audioUrl: vnUrl,
+                  postId: post.id,
+                ),
+              );
+            }
+
             try {
               final hubBloc = context.read<CommunityHubBloc>();
               hubBloc.add(
@@ -1568,71 +1542,59 @@ class CreateForumDiscussionPage extends HookWidget {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          ShrinkableButton(
-                            onTap: toggleVoiceRecording,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isRecordingVoice.value
-                                    ? colors.error
-                                    : colors.primary
-                                        .withAlpha(isDark ? 30 : 15),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isRecordingVoice.value
-                                      ? colors.error
-                                      : colors.primary
-                                          .withAlpha(isDark ? 50 : 30),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AnimatedSwitcher(
-                                    duration: AppMotion.snappy,
-                                    switchInCurve: AppMotion.easeOutCubic,
-                                    child: isRecordingVoice.value
-                                        ? _LiveAudioWaveVisualizer(
-                                            key: const ValueKey('recording_wave'),
-                                            color: colors.white,
-                                          )
-                                        : Icon(
-                                            Icons.mic_rounded,
-                                            key: const ValueKey('idle_mic'),
-                                            size: 16,
-                                            color: colors.primary,
-                                          ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  AnimatedSwitcher(
-                                    duration: AppMotion.snappy,
-                                    switchInCurve: AppMotion.easeOutCubic,
-                                    child: Text(
-                                      isRecordingVoice.value
-                                          ? 'Listening (${voiceNoteDurationSeconds.value}s)...'
-                                          : 'Voice Note & STT',
-                                      key: ValueKey(
-                                        '${isRecordingVoice.value}_${voiceNoteDurationSeconds.value}',
-                                      ),
-                                      style: typography.caption.bold.copyWith(
-                                        color: isRecordingVoice.value
-                                            ? colors.white
-                                            : colors.primary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          VoiceNoteRecorderWidget(
+                            compact: true,
+                            controller: contentController,
+                            recorderController: voiceRecorderController,
+                            onRecordingStateChanged: ({
+                              required isRecording,
+                              required isLocked,
+                              required durationSeconds,
+                              required transcript,
+                            }) {
+                              isRecordingVoice.value = isRecording;
+                              voiceRecordingDuration.value = durationSeconds;
+                              if (transcript.trim().isNotEmpty) {
+                                recordedVoiceNoteTranscript.value = transcript;
+                              }
+                            },
+                            onRecordingComplete: ({
+                              required audioUrl,
+                              required durationSeconds,
+                              required transcript,
+                            }) {
+                              recordedVoiceNoteUrl.value = audioUrl;
+                              voiceNoteDurationSeconds.value = durationSeconds;
+                              recordedVoiceNoteTranscript.value = transcript;
+                            },
+                            onCancel: () {
+                              recordedVoiceNoteUrl.value = null;
+                              voiceNoteDurationSeconds.value = 0;
+                              recordedVoiceNoteTranscript.value = null;
+                            },
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
+
+                      // Voice recording banner if active
+                      if (isRecordingVoice.value) ...[
+                        VoiceRecordingBannerWidget(
+                          durationSeconds: voiceRecordingDuration.value,
+                          transcriptText:
+                              recordedVoiceNoteTranscript.value ?? '',
+                          amplitudeStream:
+                              locator.isRegistered<AudioRecordingService>()
+                                  ? locator<AudioRecordingService>()
+                                      .amplitudeStream
+                                  : null,
+                          onCancel: () =>
+                              unawaited(voiceRecorderController.cancel()),
+                          onDone: () =>
+                              unawaited(voiceRecorderController.finish()),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
 
                       // Voice note player preview if recorded
                       if (recordedVoiceNoteUrl.value != null) ...[
@@ -1641,9 +1603,12 @@ class CreateForumDiscussionPage extends HookWidget {
                           durationSeconds: voiceNoteDurationSeconds.value > 0
                               ? voiceNoteDurationSeconds.value
                               : null,
+                          transcript: recordedVoiceNoteTranscript.value,
+                          showTranscript: false,
                           onDelete: () {
                             recordedVoiceNoteUrl.value = null;
                             voiceNoteDurationSeconds.value = 0;
+                            recordedVoiceNoteTranscript.value = null;
                           },
                         ),
                         const SizedBox(height: 10),
@@ -2183,7 +2148,7 @@ class CreateForumDiscussionPage extends HookWidget {
 }
 
 class _LiveAudioWaveVisualizer extends StatefulWidget {
-  const _LiveAudioWaveVisualizer({required this.color, super.key});
+  const _LiveAudioWaveVisualizer({required this.color});
 
   final Color color;
 

@@ -13,6 +13,7 @@ class ForumPostModel {
     this.latexContent,
     this.isQuestion = false,
     this.isVerifiedSolution = false,
+    this.isAnonymous = false,
     this.syllabusTag = 'General',
     this.upvotes = 0,
     this.downvotes = 0,
@@ -22,6 +23,7 @@ class ForumPostModel {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
     this.socraticHint,
     this.socraticHintGeneratedAt,
     required this.createdAt,
@@ -38,6 +40,7 @@ class ForumPostModel {
   final String? latexContent;
   final bool isQuestion;
   final bool isVerifiedSolution;
+  final bool isAnonymous;
   final String syllabusTag;
   final int upvotes;
   final int downvotes;
@@ -47,6 +50,7 @@ class ForumPostModel {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final String? socraticHint;
   final DateTime? socraticHintGeneratedAt;
   final DateTime createdAt;
@@ -207,26 +211,45 @@ class ForumPostModel {
     return results;
   }
 
-  static ({String? url, int? duration}) extractVoiceNote(
+  static ({String? url, int? duration, String? transcript}) extractVoiceNote(
     String content, {
     String? rawUrl,
     int? rawDuration,
+    String? rawTranscript,
   }) {
+    String? transcript = rawTranscript;
+    if (transcript == null || transcript.trim().isEmpty) {
+      final transcriptMatch = RegExp(
+        r'<!--\s*voice_transcript:\s*([\s\S]*?)\s*-->',
+      ).firstMatch(content);
+      if (transcriptMatch != null) {
+        transcript = transcriptMatch.group(1)?.trim();
+      }
+    }
+
     if (rawUrl != null && rawUrl.trim().isNotEmpty) {
-      return (url: rawUrl.trim(), duration: rawDuration);
+      return (
+        url: rawUrl.trim(),
+        duration: rawDuration,
+        transcript: transcript,
+      );
     }
 
     final voiceMatch = RegExp(
-      r'<!--\s*voice:\s*(\S+?)(?:\s+duration:(\d+))?\s*-->',
+      r'<!--\s*voice:\s*(\S+?)(?:(?:\s+duration:|\s*\|\s*dur:\s*)(\d+))?\s*-->',
     ).firstMatch(content);
     if (voiceMatch != null) {
       final url = voiceMatch.group(1)?.trim();
       final durStr = voiceMatch.group(2);
       final dur = durStr != null ? int.tryParse(durStr) : null;
-      return (url: url, duration: dur ?? rawDuration);
+      return (
+        url: url,
+        duration: dur ?? rawDuration,
+        transcript: transcript,
+      );
     }
 
-    return (url: null, duration: null);
+    return (url: null, duration: null, transcript: transcript);
   }
 
   factory ForumPostModel.fromJson(Map<String, dynamic> json) {
@@ -259,7 +282,18 @@ class ForumPostModel {
       rawDuration:
           (json['voice_note_duration_seconds'] as num?)?.toInt() ??
           (json['voiceNoteDurationSeconds'] as num?)?.toInt(),
+      rawTranscript:
+          json['voice_note_transcript'] as String? ??
+          json['voiceNoteTranscript'] as String?,
     );
+
+    final isAnonymous = json['is_anonymous'] as bool? ??
+        json['isAnonymous'] as bool? ??
+        (json['author_name'] == 'Anonymous Scholar' ||
+            json['author_name'] == 'Anonymous Peer' ||
+            (json['author_name'] as String? ?? '')
+                .toLowerCase()
+                .contains('anonymous'));
 
     return ForumPostModel(
       id: json['id'] as String,
@@ -272,6 +306,7 @@ class ForumPostModel {
       latexContent: json['latex_content'] as String?,
       isQuestion: json['is_question'] as bool? ?? false,
       isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
+      isAnonymous: isAnonymous,
       syllabusTag: json['syllabus_tag'] as String? ?? 'General',
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
       downvotes: (json['downvotes'] as num?)?.toInt() ?? 0,
@@ -284,6 +319,7 @@ class ForumPostModel {
       mediaUrls: parsedMedia,
       voiceNoteUrl: voiceNote.url,
       voiceNoteDurationSeconds: voiceNote.duration,
+      voiceNoteTranscript: voiceNote.transcript,
       socraticHint:
           json['socratic_hint'] as String? ?? json['socraticHint'] as String?,
       socraticHintGeneratedAt: json['socratic_hint_generated_at'] != null
@@ -310,6 +346,7 @@ class ForumPostModel {
       'latex_content': latexContent,
       'is_question': isQuestion,
       'is_verified_solution': isVerifiedSolution,
+      'is_anonymous': isAnonymous,
       'syllabus_tag': syllabusTag,
       'upvotes': upvotes,
       'downvotes': downvotes,
@@ -320,6 +357,8 @@ class ForumPostModel {
       if (voiceNoteUrl != null) 'voice_note_url': voiceNoteUrl,
       if (voiceNoteDurationSeconds != null)
         'voice_note_duration_seconds': voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null)
+        'voice_note_transcript': voiceNoteTranscript,
       if (socraticHint != null) 'socratic_hint': socraticHint,
       if (socraticHintGeneratedAt != null)
         'socratic_hint_generated_at': socraticHintGeneratedAt!
@@ -340,6 +379,7 @@ class ForumPostModel {
     String? latexContent,
     bool? isQuestion,
     bool? isVerifiedSolution,
+    bool? isAnonymous,
     String? syllabusTag,
     int? upvotes,
     int? downvotes,
@@ -349,6 +389,7 @@ class ForumPostModel {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     String? socraticHint,
     DateTime? socraticHintGeneratedAt,
     DateTime? createdAt,
@@ -365,6 +406,7 @@ class ForumPostModel {
       latexContent: latexContent ?? this.latexContent,
       isQuestion: isQuestion ?? this.isQuestion,
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
       syllabusTag: syllabusTag ?? this.syllabusTag,
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
@@ -375,6 +417,7 @@ class ForumPostModel {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       socraticHint: socraticHint ?? this.socraticHint,
       socraticHintGeneratedAt:
           socraticHintGeneratedAt ?? this.socraticHintGeneratedAt,
@@ -395,6 +438,7 @@ class ForumPostModel {
       latexContent: latexContent,
       isQuestion: isQuestion,
       isVerifiedSolution: isVerifiedSolution,
+      isAnonymous: isAnonymous,
       syllabusTag: syllabusTag,
       upvotes: upvotes,
       downvotes: downvotes,
@@ -404,10 +448,41 @@ class ForumPostModel {
       mediaUrls: mediaUrls,
       voiceNoteUrl: voiceNoteUrl,
       voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript,
       socraticHint: socraticHint,
       socraticHintGeneratedAt: socraticHintGeneratedAt,
       createdAt: createdAt,
       replies: replies.map((r) => r.toEntity()).toList(),
+    );
+  }
+
+  factory ForumPostModel.fromEntity(ForumPostEntity entity) {
+    return ForumPostModel(
+      id: entity.id,
+      authorId: entity.authorId,
+      authorName: entity.authorName,
+      authorAvatar: entity.authorAvatar,
+      track: entity.track,
+      title: entity.title,
+      content: entity.content,
+      latexContent: entity.latexContent,
+      isQuestion: entity.isQuestion,
+      isVerifiedSolution: entity.isVerifiedSolution,
+      isAnonymous: entity.isAnonymous,
+      syllabusTag: entity.syllabusTag,
+      upvotes: entity.upvotes,
+      downvotes: entity.downvotes,
+      userVote: entity.userVote,
+      repliesCount: entity.repliesCount,
+      tags: entity.tags,
+      mediaUrls: entity.mediaUrls,
+      voiceNoteUrl: entity.voiceNoteUrl,
+      voiceNoteDurationSeconds: entity.voiceNoteDurationSeconds,
+      voiceNoteTranscript: entity.voiceNoteTranscript,
+      socraticHint: entity.socraticHint,
+      socraticHintGeneratedAt: entity.socraticHintGeneratedAt,
+      createdAt: entity.createdAt,
+      replies: entity.replies.map((r) => ForumReplyModel.fromEntity(r)).toList(),
     );
   }
 }
@@ -423,6 +498,7 @@ class ForumReplyModel {
     required this.content,
     this.latexContent,
     this.isVerifiedSolution = false,
+    this.isAnonymous = false,
     this.upvotes = 0,
     this.downvotes = 0,
     this.userVote = 0,
@@ -430,6 +506,7 @@ class ForumReplyModel {
     this.mediaUrls = const [],
     this.voiceNoteUrl,
     this.voiceNoteDurationSeconds,
+    this.voiceNoteTranscript,
     required this.createdAt,
   });
 
@@ -442,6 +519,7 @@ class ForumReplyModel {
   final String content;
   final String? latexContent;
   final bool isVerifiedSolution;
+  final bool isAnonymous;
   final int upvotes;
   final int downvotes;
   final int userVote;
@@ -449,6 +527,7 @@ class ForumReplyModel {
   final List<String> mediaUrls;
   final String? voiceNoteUrl;
   final int? voiceNoteDurationSeconds;
+  final String? voiceNoteTranscript;
   final DateTime createdAt;
 
   int get netVotes => upvotes - downvotes;
@@ -458,15 +537,17 @@ class ForumReplyModel {
     return ForumPostModel.extractMediaUrls(content, rawMedia);
   }
 
-  static ({String? url, int? duration}) extractVoiceNote(
+  static ({String? url, int? duration, String? transcript}) extractVoiceNote(
     String content, {
     String? rawUrl,
     int? rawDuration,
+    String? rawTranscript,
   }) {
     return ForumPostModel.extractVoiceNote(
       content,
       rawUrl: rawUrl,
       rawDuration: rawDuration,
+      rawTranscript: rawTranscript,
     );
   }
 
@@ -486,7 +567,18 @@ class ForumReplyModel {
       rawDuration:
           (json['voice_note_duration_seconds'] as num?)?.toInt() ??
           (json['voiceNoteDurationSeconds'] as num?)?.toInt(),
+      rawTranscript:
+          json['voice_note_transcript'] as String? ??
+          json['voiceNoteTranscript'] as String?,
     );
+
+    final isAnonymous = json['is_anonymous'] as bool? ??
+        json['isAnonymous'] as bool? ??
+        (json['author_name'] == 'Anonymous Scholar' ||
+            json['author_name'] == 'Anonymous Peer' ||
+            (json['author_name'] as String? ?? '')
+                .toLowerCase()
+                .contains('anonymous'));
 
     return ForumReplyModel(
       id: json['id'] as String,
@@ -500,6 +592,7 @@ class ForumReplyModel {
       content: content,
       latexContent: json['latex_content'] as String?,
       isVerifiedSolution: json['is_verified_solution'] as bool? ?? false,
+      isAnonymous: isAnonymous,
       upvotes: (json['upvotes'] as num?)?.toInt() ?? 0,
       downvotes: (json['downvotes'] as num?)?.toInt() ?? 0,
       userVote:
@@ -515,6 +608,7 @@ class ForumReplyModel {
       mediaUrls: parsedMedia,
       voiceNoteUrl: voiceNote.url,
       voiceNoteDurationSeconds: voiceNote.duration,
+      voiceNoteTranscript: voiceNote.transcript,
       createdAt: DateTime.parse(
         json['created_at'] as String? ?? DateTime.now().toIso8601String(),
       ),
@@ -532,6 +626,7 @@ class ForumReplyModel {
       'content': content,
       'latex_content': latexContent,
       'is_verified_solution': isVerifiedSolution,
+      'is_anonymous': isAnonymous,
       'upvotes': upvotes,
       'downvotes': downvotes,
       'user_vote': userVote,
@@ -540,6 +635,8 @@ class ForumReplyModel {
       if (voiceNoteUrl != null) 'voice_note_url': voiceNoteUrl,
       if (voiceNoteDurationSeconds != null)
         'voice_note_duration_seconds': voiceNoteDurationSeconds,
+      if (voiceNoteTranscript != null)
+        'voice_note_transcript': voiceNoteTranscript,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -554,6 +651,7 @@ class ForumReplyModel {
     String? content,
     String? latexContent,
     bool? isVerifiedSolution,
+    bool? isAnonymous,
     int? upvotes,
     int? downvotes,
     int? userVote,
@@ -561,6 +659,7 @@ class ForumReplyModel {
     List<String>? mediaUrls,
     String? voiceNoteUrl,
     int? voiceNoteDurationSeconds,
+    String? voiceNoteTranscript,
     DateTime? createdAt,
   }) {
     return ForumReplyModel(
@@ -573,6 +672,7 @@ class ForumReplyModel {
       content: content ?? this.content,
       latexContent: latexContent ?? this.latexContent,
       isVerifiedSolution: isVerifiedSolution ?? this.isVerifiedSolution,
+      isAnonymous: isAnonymous ?? this.isAnonymous,
       upvotes: upvotes ?? this.upvotes,
       downvotes: downvotes ?? this.downvotes,
       userVote: userVote ?? this.userVote,
@@ -581,6 +681,7 @@ class ForumReplyModel {
       voiceNoteUrl: voiceNoteUrl ?? this.voiceNoteUrl,
       voiceNoteDurationSeconds:
           voiceNoteDurationSeconds ?? this.voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript ?? this.voiceNoteTranscript,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -596,6 +697,7 @@ class ForumReplyModel {
       content: content,
       latexContent: latexContent,
       isVerifiedSolution: isVerifiedSolution,
+      isAnonymous: isAnonymous,
       upvotes: upvotes,
       downvotes: downvotes,
       userVote: userVote,
@@ -603,6 +705,7 @@ class ForumReplyModel {
       mediaUrls: mediaUrls,
       voiceNoteUrl: voiceNoteUrl,
       voiceNoteDurationSeconds: voiceNoteDurationSeconds,
+      voiceNoteTranscript: voiceNoteTranscript,
       createdAt: createdAt,
     );
   }
@@ -618,6 +721,7 @@ class ForumReplyModel {
       content: entity.content,
       latexContent: entity.latexContent,
       isVerifiedSolution: entity.isVerifiedSolution,
+      isAnonymous: entity.isAnonymous,
       upvotes: entity.upvotes,
       downvotes: entity.downvotes,
       userVote: entity.userVote,
@@ -625,6 +729,7 @@ class ForumReplyModel {
       mediaUrls: entity.mediaUrls,
       voiceNoteUrl: entity.voiceNoteUrl,
       voiceNoteDurationSeconds: entity.voiceNoteDurationSeconds,
+      voiceNoteTranscript: entity.voiceNoteTranscript,
       createdAt: entity.createdAt,
     );
   }

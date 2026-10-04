@@ -17,7 +17,6 @@ import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_state.dart';
 import 'package:kortex/src/features/decks/presentation/widgets/deck_list_tile_card.dart';
-import 'package:kortex/src/features/decks/presentation/widgets/focus_mode_setup_modal.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_empty_state.dart';
@@ -214,7 +213,10 @@ class _DecksView extends HookWidget {
                     children: [
                       // 1. Header Title & Create Action
                       Row(
-                        key: AppTourKeys.decksHeaderKey,
+                        key: AppTourKeys.decksHeaderKey = AppTourKeys.safeKey(
+                          AppTourKeys.decksHeaderKey,
+                          'tour_decks_header',
+                        ),
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
@@ -277,81 +279,14 @@ class _DecksView extends HookWidget {
                       //    One decision at the front door beats four equal tiles.
                       if (state.allDecks.isNotEmpty) ...[
                         _TodayHeroCard(
-                          key: AppTourKeys.decksTodayHeroKey,
+                          key: AppTourKeys.decksTodayHeroKey =
+                              AppTourKeys.safeKey(
+                            AppTourKeys.decksTodayHeroKey,
+                            'tour_decks_today_hero',
+                          ),
                           state: state,
                         ),
-                        const SizedBox(height: 14),
-
-                        // 3. Sprint options demoted to a compact secondary row:
-                        //    still one tap away, no longer competing with the queue.
-                        Text(
-                          l10n.decksSprintLabel,
-                          style: typography.caption.bold.copyWith(
-                            color: colors.textMuted,
-                            fontSize: 11,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          key: AppTourKeys.decksSprintChipsKey,
-                          scrollDirection: Axis.horizontal,
-                          physics: const ClampingScrollPhysics(),
-                          child: Row(
-                            children: [
-                              _SprintChip(
-                                icon: Icons.flash_on_rounded,
-                                label: l10n.decksSprintQuick10,
-                                tone: _SprintTone.primary,
-                                onTap: () => _startSprint(context, state, '10'),
-                              ),
-                              const SizedBox(width: 8),
-                              _SprintChip(
-                                icon: Icons.track_changes_rounded,
-                                label: l10n.decksSprintPower20,
-                                tone: _SprintTone.neutral,
-                                onTap: () => _startSprint(context, state, '20'),
-                              ),
-                              const SizedBox(width: 8),
-                              _SprintChip(
-                                icon: Icons.timer_outlined,
-                                label: l10n.decksSprintSpeedRun,
-                                tone: _SprintTone.warning,
-                                onTap: () {
-                                  AppFeedback.selection();
-                                  unawaited(
-                                    context.router.push(
-                                      StudySessionRoute(
-                                        deckId:
-                                            'sprint:speed:3:${_sprintTargetDeckId(state)}',
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              _SprintChip(
-                                icon: Icons.bolt_rounded,
-                                label: l10n.decksSprintHyperdrive,
-                                tone: _SprintTone.gradient,
-                                onTap: () {
-                                  AppFeedback.selection();
-                                  unawaited(
-                                    FocusModeSetupModal.show(
-                                      context,
-                                      decks: state.allDecks,
-                                      initialDeck: state.allDecks.firstWhere(
-                                        (d) => d.dueCards > 0,
-                                        orElse: () => state.allDecks.first,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
                       ] else ...[
                         const SizedBox(height: 2),
                       ],
@@ -544,7 +479,7 @@ class _DecksView extends HookWidget {
                           AppEmptyState(
                             title: 'No Mastered Decks Yet 🎯',
                             subtitle:
-                                'Keep reviewing your flashcards using FSRS-6 spaced repetition. As your retention reaches 90%+, mastered decks will appear here.',
+                                'Keep reviewing your flashcards with smart spaced repetition. As your memory retention reaches 90%+, mastered decks will appear here.',
                             primaryActionLabel: 'Review All Decks',
                             onPrimaryAction: () =>
                                 context.read<DecksBloc>().add(
@@ -567,17 +502,49 @@ class _DecksView extends HookWidget {
                             ),
                           )
                       else
-                        for (
-                          var index = 0;
-                          index < state.filteredDecks.length;
-                          index++
-                        )
-                          _buildDeckTile(
-                            context,
-                            state.filteredDecks[index],
-                            index,
-                            reduceMotion,
-                          ),
+                        LayoutBuilder(
+                          builder: (context, gridConstraints) {
+                            final isWideScreen = gridConstraints.maxWidth >= 640;
+                            if (isWideScreen) {
+                              final itemWidth = (gridConstraints.maxWidth - 14) / 2;
+                              return Wrap(
+                                spacing: 14,
+                                runSpacing: 14,
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index < state.filteredDecks.length;
+                                    index++
+                                  )
+                                    SizedBox(
+                                      width: itemWidth,
+                                      child: _buildDeckTile(
+                                        context,
+                                        state.filteredDecks[index],
+                                        index,
+                                        reduceMotion,
+                                      ),
+                                    ),
+                                ],
+                              );
+                            }
+                            return Column(
+                              children: [
+                                for (
+                                  var index = 0;
+                                  index < state.filteredDecks.length;
+                                  index++
+                                )
+                                  _buildDeckTile(
+                                    context,
+                                    state.filteredDecks[index],
+                                    index,
+                                    reduceMotion,
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                     ],
                   ),
                 );
@@ -616,25 +583,6 @@ class _DecksView extends HookWidget {
           );
     }
     return tile;
-  }
-
-  /// Sprint pools come from the single due deck when there is exactly one,
-  /// otherwise they run cross-deck over everything.
-  String _sprintTargetDeckId(DecksState state) {
-    final dueDecks = state.allDecks.where((d) => d.dueCards > 0).toList();
-    if (dueDecks.length == 1) return dueDecks.first.id;
-    return 'all';
-  }
-
-  void _startSprint(BuildContext context, DecksState state, String size) {
-    AppFeedback.selection();
-    unawaited(
-      context.router.push(
-        StudySessionRoute(
-          deckId: 'sprint:$size:${_sprintTargetDeckId(state)}',
-        ),
-      ),
-    );
   }
 
   Widget _buildDecksShimmerSkeleton(
@@ -758,10 +706,11 @@ class _TodayHeroCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, heroConstraints) {
+          final isWide = heroConstraints.maxWidth >= 540;
+
+          final headerInfo = Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
@@ -811,90 +760,113 @@ class _TodayHeroCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 14),
-          if (hasDue)
-            ShrinkableButton(
-              onTap: () {
-                AppFeedback.selection();
-                unawaited(
-                  context.router.push(
-                    StudySessionRoute(deckId: reviewDeckId),
-                  ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [colors.primary, colors.syllabotAccent],
-                  ),
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.black.withAlpha(isDark ? 45 : 25),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+          );
+
+          final ctaButton = hasDue
+              ? ShrinkableButton(
+                  onTap: () {
+                    AppFeedback.selection();
+                    unawaited(
+                      context.router.push(
+                        StudySessionRoute(deckId: reviewDeckId),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
                     ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Semantics(
-                  button: true,
-                  label: l10n.decksHeroReviewCta(totalDue),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.play_arrow_rounded,
-                        color: colors.white,
-                        size: 18,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [colors.primary, colors.syllabotAccent],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        l10n.decksHeroReviewCta(totalDue),
-                        style: typography.caption.bold.copyWith(
-                          color: colors.white,
-                          fontSize: 13.5,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.black.withAlpha(isDark ? 45 : 25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
                         ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Semantics(
+                      button: true,
+                      label: l10n.decksHeroReviewCta(totalDue),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.play_arrow_rounded,
+                            color: colors.white,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            l10n.decksHeroReviewCta(totalDue),
+                            style: typography.caption.bold.copyWith(
+                              color: colors.white,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            )
-          else
-            ShrinkableButton(
-              onTap: () {
-                unawaited(HapticFeedback.lightImpact());
-                context.read<DecksBloc>().add(
-                  const DecksFilterChanged('all'),
+                )
+              : ShrinkableButton(
+                  onTap: () {
+                    unawaited(HapticFeedback.lightImpact());
+                    context.read<DecksBloc>().add(
+                          const DecksFilterChanged('all'),
+                        );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? colors.white.withValues(alpha: 0.08)
+                          : colors.black.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: colors.surfaceBorder.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      l10n.decksHeroBrowseDecks,
+                      style: typography.caption.bold.copyWith(
+                        color: colors.textPrimary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
                 );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? colors.white.withValues(alpha: 0.08)
-                      : colors.black.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                  border: Border.all(
-                    color: colors.surfaceBorder.withValues(alpha: 0.6),
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  l10n.decksHeroBrowseDecks,
-                  style: typography.caption.bold.copyWith(
-                    color: colors.textPrimary,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ),
-        ],
+
+          if (isWide) {
+            return Row(
+              children: [
+                Expanded(child: headerInfo),
+                const SizedBox(width: 16),
+                ctaButton,
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              headerInfo,
+              const SizedBox(height: 14),
+              SizedBox(width: double.infinity, child: ctaButton),
+            ],
+          );
+        },
       ),
     );
 
@@ -915,94 +887,6 @@ class _TodayHeroCard extends StatelessWidget {
           duration: 250.ms,
           curve: Curves.easeOutQuint,
         );
-  }
-}
-
-enum _SprintTone { primary, neutral, warning, gradient }
-
-/// Compact secondary action: same destinations as before, no longer shouting.
-class _SprintChip extends StatelessWidget {
-  const _SprintChip({
-    required this.icon,
-    required this.label,
-    required this.tone,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final _SprintTone tone;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final typography = context.typography;
-    final isDark = context.isDarkMode;
-
-    final (Color fg, Color bg, Border? border) = switch (tone) {
-      _SprintTone.primary => (
-        colors.white,
-        colors.primary,
-        null,
-      ),
-      _SprintTone.neutral => (
-        colors.textPrimary,
-        isDark
-            ? colors.white.withValues(alpha: 0.08)
-            : colors.black.withValues(alpha: 0.05),
-        Border.all(color: colors.surfaceBorder.withValues(alpha: 0.6)),
-      ),
-      _SprintTone.warning => (
-        colors.warning,
-        colors.warning.withValues(alpha: isDark ? 0.16 : 0.1),
-        Border.all(color: colors.warning.withValues(alpha: 0.45)),
-      ),
-      _SprintTone.gradient => (
-        colors.white,
-        colors.transparent,
-        null,
-      ),
-    };
-
-    return Semantics(
-      button: true,
-      label: label,
-      child: ShrinkableButton(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          decoration: BoxDecoration(
-            gradient: tone == _SprintTone.gradient
-                ? LinearGradient(
-                    colors: [colors.deepBronze, colors.primary],
-                  )
-                : null,
-            color: tone == _SprintTone.gradient ? null : bg,
-            borderRadius: BorderRadius.circular(AppRadius.badge),
-            border: border,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                color: tone == _SprintTone.gradient ? colors.white : fg,
-                size: 15,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: typography.caption.bold.copyWith(
-                  color: tone == _SprintTone.gradient ? colors.white : fg,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 

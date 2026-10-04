@@ -62,7 +62,13 @@ ALTER TABLE public.decks
     ADD COLUMN IF NOT EXISTS canonical_deck_id UUID REFERENCES public.canonical_decks(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS is_forked BOOLEAN NOT NULL DEFAULT false;
 
+ALTER TABLE public.documents 
+    ADD COLUMN IF NOT EXISTS course_id TEXT,
+    ADD COLUMN IF NOT EXISTS course_code TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_decks_canonical_deck_id ON public.decks(canonical_deck_id);
+CREATE INDEX IF NOT EXISTS idx_documents_course_id ON public.documents(course_id);
+CREATE INDEX IF NOT EXISTS idx_documents_course_code ON public.documents(course_code);
 
 ALTER TABLE public.canonical_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.canonical_decks ENABLE ROW LEVEL SECURITY;
@@ -110,7 +116,7 @@ BEGIN
         RAISE EXCEPTION 'Unauthorized: User session required';
     END IF;
 
-    v_lock_key := ('x' || substr(p_content_hash, 1, 16))::bit(64)::bigint;
+    v_lock_key := ('x' || substr(md5(p_content_hash), 1, 16))::bit(64)::bigint;
     PERFORM pg_advisory_xact_lock(v_lock_key);
 
     v_ext := LOWER(TRIM(LEADING '.' FROM p_file_type));

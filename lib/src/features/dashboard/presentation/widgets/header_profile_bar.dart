@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,10 +8,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/navigation/app_tab_navigation.dart';
+import 'package:kortex/src/core/services/user_storage_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:kortex/src/features/dashboard/domain/entities/analytics_summary_entity.dart';
+import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_animated_entrance.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
@@ -83,20 +88,48 @@ class HeaderProfileBar extends StatelessWidget {
 
     final authState = context.watch<AuthBloc?>()?.state;
     final authProfile = authState?.userProfile;
-    final effectiveName =
+    final email = authProfile?.email ?? authState?.user?.email ?? '';
+    final emailPrefix = email.contains('@') ? email.split('@').first : '';
+
+    var candidateName =
         userName ?? authProfile?.displayName ?? authState?.user?.displayName;
+    if (candidateName == null ||
+        candidateName.trim().isEmpty ||
+        (emailPrefix.isNotEmpty && candidateName.trim() == emailPrefix)) {
+      if (locator.isRegistered<UserStorageService>()) {
+        final storedName = locator<UserStorageService>().getUserDisplayName();
+        if (storedName != null &&
+            storedName.trim().isNotEmpty &&
+            storedName.trim() != emailPrefix) {
+          candidateName = storedName;
+        }
+      }
+    }
+
+    final effectiveName = candidateName;
     final effectivePhoto =
         userPhotoUrl ?? authProfile?.photoUrl ?? authState?.user?.photoUrl;
 
     final displayName =
         (effectiveName != null && effectiveName.trim().isNotEmpty)
-        ? effectiveName.trim().split(' ').first
+        ? effectiveName.trim().split(RegExp(r'\s+')).first
         : l10n.dashboardScholarFallback;
 
     final trimmedName = effectiveName?.trim() ?? '';
     final initials = extractTwoLetterInitials(
       trimmedName.isNotEmpty ? trimmedName : displayName,
     );
+
+    final unreadCount = () {
+      try {
+        final cubit = context.watch<NotificationsCubit?>();
+        if (cubit != null) return cubit.state.unreadCount;
+      } on Object catch (_) {}
+      if (locator.isRegistered<NotificationsCubit>()) {
+        return locator<NotificationsCubit>().state.unreadCount;
+      }
+      return 0;
+    }();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -111,15 +144,7 @@ class HeaderProfileBar extends StatelessWidget {
               child: ShrinkableButton(
                 onTap: () {
                   unawaited(HapticFeedback.lightImpact());
-                  try {
-                    AutoTabsRouter.of(context).setActiveIndex(4);
-                  } on Object catch (_) {
-                    unawaited(
-                      context.navigateTo(
-                        const MainRoute(children: [ProfileRoute()]),
-                      ),
-                    );
-                  }
+                  AppTabNavigation.navigateTo(context, AppMainTab.profile);
                 },
                 child: Row(
                   children:
@@ -144,24 +169,17 @@ class HeaderProfileBar extends StatelessWidget {
                                       ? AppAvatar(
                                           customDimension: 40,
                                           imageUrl: effectivePhoto,
-                                          name:
-                                              effectiveName ??
-                                              displayName,
+                                          name: effectiveName ?? displayName,
                                           borderWidth: 0,
-                                          backgroundColor:
-                                              neural.obsidian850,
-                                          foregroundColor:
-                                              neural.amber300,
+                                          backgroundColor: neural.obsidian850,
+                                          foregroundColor: neural.amber300,
                                         )
                                       : Center(
                                           child: Text(
                                             initials,
-                                            style: typography
-                                                .caption
-                                                .bold
+                                            style: typography.caption.bold
                                                 .copyWith(
-                                                  color:
-                                                      neural.amber300,
+                                                  color: neural.amber300,
                                                   fontSize: 13,
                                                   letterSpacing: 0.5,
                                                 ),
@@ -258,6 +276,7 @@ class HeaderProfileBar extends StatelessWidget {
                           color: neural.amber300,
                           tooltip: 'Notifications',
                           borderHighlightColor: neural.amber,
+                          badgeCount: unreadCount,
                           onTap: () {
                             unawaited(HapticFeedback.lightImpact());
                             unawaited(
@@ -388,6 +407,7 @@ class _HeaderIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onTap,
     this.borderHighlightColor,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
@@ -395,6 +415,7 @@ class _HeaderIconButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onTap;
   final Color? borderHighlightColor;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -409,29 +430,75 @@ class _HeaderIconButton extends StatelessWidget {
           builder: (context, isHovered, child) {
             return ShrinkableButton(
               onTap: onTap,
-              child: AnimatedContainer(
-                duration: AppMotion.snappy,
-                curve: AppMotion.easeOutCubic,
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: neural.obsidian850.withAlpha(
-                    isHovered ? 255 : 230,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedContainer(
+                    duration: AppMotion.snappy,
+                    curve: AppMotion.easeOutCubic,
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: neural.obsidian850.withAlpha(
+                        isHovered ? 255 : 230,
+                      ),
+                      border: Border.all(
+                        color: isHovered
+                            ? (borderHighlightColor ?? neural.emerald).withAlpha(
+                                110,
+                              )
+                            : neural.hairlineStrong,
+                      ),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 16,
+                      color: color,
+                    ),
                   ),
-                  border: Border.all(
-                    color: isHovered
-                        ? (borderHighlightColor ?? neural.emerald).withAlpha(
-                            110,
-                          )
-                        : neural.hairlineStrong,
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: color,
-                ),
+                  if (badgeCount > 0)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: neural.amber400,
+                          borderRadius: BorderRadius.circular(9),
+                          border: Border.all(
+                            color: neural.obsidian950,
+                            width: 1.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: neural.amber400.withAlpha(140),
+                              blurRadius: 6,
+                              spreadRadius: 0.5,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            badgeCount > 99 ? '99+' : '$badgeCount',
+                            style: TextStyle(
+                              color: neural.obsidian950,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             );
           },
@@ -439,7 +506,9 @@ class _HeaderIconButton extends StatelessWidget {
       ),
     );
   }
-}void _showRankProgressSheet(
+}
+
+void _showRankProgressSheet(
   BuildContext context,
   AnalyticsSummaryEntity analytics,
   dynamic authProfile,
@@ -529,11 +598,16 @@ class _HeaderIconButton extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: neural.emerald.withAlpha(30),
                       borderRadius: BorderRadius.circular(AppRadius.badge),
-                      border: Border.all(color: neural.emerald400.withAlpha(100)),
+                      border: Border.all(
+                        color: neural.emerald400.withAlpha(100),
+                      ),
                     ),
                     child: Text(
                       'LEVEL $userLevel SCHOLAR',
@@ -605,12 +679,20 @@ class _HeaderIconButton extends StatelessWidget {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: neural.obsidian850,
-                            borderRadius: BorderRadius.circular(AppRadius.badge),
-                            border: Border.all(color: neural.amber.withAlpha(40)),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.badge,
+                            ),
+                            border: Border.all(
+                              color: neural.amber.withAlpha(40),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.bolt_rounded, size: 18, color: neural.amber400),
+                              Icon(
+                                Icons.bolt_rounded,
+                                size: 18,
+                                color: neural.amber400,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(

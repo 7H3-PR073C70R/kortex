@@ -316,7 +316,7 @@ class StudyCalibrationGraphWidget extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'FSRS Mastery Readiness',
+                        'Memory Mastery Readiness',
                         style: typography.caption.bold.copyWith(
                           color: colors.textSecondary,
                           fontSize: 11,

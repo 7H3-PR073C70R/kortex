@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/app/router/app_router.gr.dart';
 import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
+import 'package:kortex/src/core/services/link_sharing_service.dart';
 import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -24,13 +25,14 @@ import 'package:kortex/src/features/quiz/domain/entities/quiz_question_entity.da
 import 'package:kortex/src/features/quiz/domain/entities/quiz_result_entity.dart';
 import 'package:kortex/src/features/quiz/domain/logic/academic_grade_evaluator.dart';
 import 'package:kortex/src/features/quiz/domain/logic/quiz_content_sanitizer.dart';
+import 'package:kortex/src/features/quiz/domain/services/assessment_orchestrator_service.dart';
 import 'package:kortex/src/features/quiz/domain/use_cases/convert_failed_quiz_to_deck_use_case.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/quiz_session_state.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
 import 'package:kortex/src/shared/widgets/gratification_celebration_overlay.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
 @RoutePage()
 class QuizResultsPage extends StatefulWidget {
@@ -69,6 +71,50 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+
+      // Process closed-loop telemetry, FSRS recalibration, & readiness index via AssessmentOrchestratorService
+      if (locator.isRegistered<AssessmentOrchestratorService>()) {
+        try {
+          final orchestrator = locator<AssessmentOrchestratorService>();
+          final activeTrack =
+              context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+          final effectiveSubject = widget.courseCode?.trim().isNotEmpty == true
+              ? widget.courseCode!.trim()
+              : (widget.result.quizTitle.contains('(')
+                  ? widget.result.quizTitle.split('(').first.trim()
+                  : widget.result.quizTitle.trim());
+          final cleanSubject = effectiveSubject
+              .replaceAll(
+                RegExp(
+                  r'\s+(Diagnostic Quiz|Practice Quiz|Practice Test|Mock Exam|Quiz|Exam)\b',
+                  caseSensitive: false,
+                ),
+                '',
+              )
+              .trim();
+          final subjectToRecord =
+              cleanSubject.isNotEmpty ? cleanSubject : effectiveSubject;
+
+          unawaited(
+            orchestrator.processQuizCompletion(
+              scorePercent: widget.result.scorePercent.toDouble(),
+              totalQuestions: widget.result.totalQuestions,
+              correctAnswers: widget.result.correctAnswers,
+              questions: widget.questions,
+              userAnswers:
+                  widget.questions.map((q) => q.isCorrect ? 1 : 0).toList(),
+              courseCode: subjectToRecord,
+              explicitTrack: activeTrack ?? subjectToRecord,
+            ),
+          );
+        } on Object catch (_) {}
+      }
+
+      if (locator.isRegistered<DashboardBloc>()) {
+        try {
+          locator<DashboardBloc>().add(const DashboardRefreshed());
+        } on Object catch (_) {}
+      }
 
       // If this quiz is associated with an active exam, update its empirical grade in CramPlannerCubit
       if (locator.isRegistered<CramPlannerCubit>()) {
@@ -322,6 +368,104 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 ],
               ),
 
+              // 2.2 Academic Readiness Index Card
+              if (locator.isRegistered<AssessmentOrchestratorService>())
+                Builder(
+                  builder: (context) {
+                    final orchestrator = locator<AssessmentOrchestratorService>();
+                    final readiness = orchestrator
+                        .calculateReadinessIndex(
+                          recentScorePercent:
+                              widget.result.scorePercent.toDouble(),
+                        )
+                        .round();
+                    final readinessColor = readiness >= 75
+                        ? colors.success
+                        : (readiness >= 55
+                              ? colors.syllabotAccent
+                              : colors.warning);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: readinessColor.withAlpha(isDark ? 30 : 15),
+                          borderRadius: BorderRadius.circular(AppRadius.card),
+                          border: Border.all(
+                            color: readinessColor.withAlpha(isDark ? 80 : 50),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: readinessColor.withAlpha(
+                                  isDark ? 50 : 25,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.speed_rounded,
+                                color: readinessColor,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Academic Readiness Index',
+                                    style: typography.caption.bold.copyWith(
+                                      color: colors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '$readiness% Final Exam Mastery',
+                                    style: typography.callout.bold.copyWith(
+                                      color: colors.textPrimary,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: readinessColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                readiness >= 75
+                                    ? 'Exam Ready'
+                                    : (readiness >= 55
+                                          ? 'Building Mastery'
+                                          : 'Action Required'),
+                                style: typography.caption.bold.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
               const SizedBox(height: 18),
 
               // 2.5. Seamless Quick Study Actions
@@ -393,6 +537,94 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                 ),
               ),
 
+              // 2.8 Socratic AI Concept Remediation Banner
+              if (mistakes > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colors.syllabotAccent.withAlpha(isDark ? 40 : 20),
+                          colors.primary.withAlpha(isDark ? 30 : 15),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                      border: Border.all(
+                        color: colors.syllabotAccent.withAlpha(isDark ? 90 : 60),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.psychology_rounded,
+                              color: colors.syllabotAccent,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Socratic AI Concept Remediation',
+                              style: typography.callout.bold.copyWith(
+                                color: colors.textPrimary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'You missed $mistakes question${mistakes > 1 ? 's' : ''}. '
+                          'Syllabot has extracted key concept rules into an instant review recovery deck.',
+                          style: typography.footnote.regular.copyWith(
+                            color: colors.textSecondary,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        InkWell(
+                          onTap: () => unawaited(
+                            _handlePracticeWeakFlashcards(context),
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.badge),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.syllabotAccent,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.badge,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Launch Socratic Recovery Deck',
+                                  style: typography.caption.bold.copyWith(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
               const SizedBox(height: 24),
 
               // 3. Topic breakdown.
@@ -417,92 +649,209 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
                     ),
                   ),
                 )
-              else
-                ...result.weaknesses.asMap().entries.map((entry) {
-                  final weakness = entry.value;
-                  final acc = (weakness.accuracy * 100).toInt();
-                  final isWeak = weakness.isWeak;
-                  final badgeColor = isWeak ? colors.error : colors.success;
+              else ...[
+                () {
+                  final guard = locator.isRegistered<SubscriptionGuard>()
+                      ? locator<SubscriptionGuard>()
+                      : SubscriptionGuard();
+                  final isPro = guard.canAccessAiDiagnostics();
+                  final displayedWeaknesses = isPro
+                      ? result.weaknesses
+                      : result.weaknesses.take(1).toList();
+                  final hiddenCount =
+                      result.weaknesses.length - displayedWeaknesses.length;
 
-                  return QuizStaggeredFade(
-                    index: 1 + (entry.key % 6),
-                    distance: 10,
-                    reduceMotion: reduceMotion,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? colors.surfaceSecondary
-                            : colors.surfacePrimary,
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        border: Border.all(
-                          color: isWeak
-                              ? colors.error.withValues(alpha: 0.3)
-                              : colors.surfaceBorder,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colors.black.withAlpha(isDark ? 20 : 4),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  return Column(
+                    children: [
+                      ...displayedWeaknesses.asMap().entries.map((entry) {
+                        final weakness = entry.value;
+                        final acc = (weakness.accuracy * 100).toInt();
+                        final isWeak = weakness.isWeak;
+                        final badgeColor =
+                            isWeak ? colors.error : colors.success;
+
+                        return QuizStaggeredFade(
+                          index: 1 + (entry.key % 6),
+                          distance: 10,
+                          reduceMotion: reduceMotion,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colors.surfaceSecondary
+                                  : colors.surfacePrimary,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.card,
+                              ),
+                              border: Border.all(
+                                color: isWeak
+                                    ? colors.error.withValues(alpha: 0.3)
+                                    : colors.surfaceBorder,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colors.black.withAlpha(
+                                    isDark ? 20 : 4,
+                                  ),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  weakness.subTopic,
-                                  style: typography.body.bold.copyWith(
-                                    color: colors.textPrimary,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        weakness.subTopic,
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${weakness.correctCount} of '
+                                        '${weakness.totalQuestions} correct',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textMuted,
+                                            ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${weakness.correctCount} of '
-                                  '${weakness.totalQuestions} correct',
-                                  style: typography.caption.regular.copyWith(
-                                    color: colors.textMuted,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.badge,
+                                    ),
+                                    border: Border.all(
+                                      color: badgeColor.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '$acc%',
+                                    style: typography.caption.bold.copyWith(
+                                      color: badgeColor,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
+                        );
+                      }),
+                      if (hiddenCount > 0)
+                        QuizStaggeredFade(
+                          index: 2,
+                          distance: 10,
+                          reduceMotion: reduceMotion,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: badgeColor.withValues(alpha: 0.15),
+                              gradient: LinearGradient(
+                                colors: [
+                                  colors.primary.withAlpha(isDark ? 35 : 18),
+                                  if (isDark)
+                                    colors.surfaceSecondary
+                                  else
+                                    colors.surfacePrimary,
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(
-                                AppRadius.badge,
+                                AppRadius.card,
                               ),
                               border: Border.all(
-                                color: badgeColor.withValues(alpha: 0.4),
+                                color: colors.primary.withAlpha(
+                                  isDark ? 80 : 50,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              '$acc%',
-                              style: typography.caption.bold.copyWith(
-                                color: badgeColor,
-                                fontSize: 13,
-                              ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withAlpha(25),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.psychology_rounded,
+                                    color: colors.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '$hiddenCount more cognitive weakness breakdown${hiddenCount > 1 ? 's' : ''}',
+                                        style: typography.body.bold.copyWith(
+                                          color: colors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Unlock complete AI diagnostic insights and personalized weak-point flashcards',
+                                        style: typography.caption.regular
+                                            .copyWith(
+                                              color: colors.textSecondary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ShrinkableButton(
+                                  onTap: () => guard.requirePro(
+                                    context,
+                                    featureName: 'Cognitive AI Diagnostics',
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.card - 4,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Unlock',
+                                      style: typography.caption.bold.copyWith(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                    ],
                   );
-                }),
+                }(),
+              ],
 
               // 4. What to look at next, framed forward instead of punitive.
               if (mistakes > 0) ...[
@@ -1031,66 +1380,92 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
   Future<void> _handleShareResult(BuildContext context) async {
     unawaited(HapticFeedback.lightImpact());
     final result = widget.result;
-    final message =
-        'I scored ${result.scorePercent}% on "${result.quizTitle}" in '
-        'Kortex (${result.correctAnswers} of ${result.totalQuestions} '
-        'correct).';
-    try {
-      final box = context.findRenderObject() as RenderBox?;
-      final origin = box != null && box.hasSize
-          ? box.localToGlobal(Offset.zero) & box.size
-          : null;
-      await SharePlus.instance.share(
-        ShareParams(
-          text: message,
-          sharePositionOrigin: origin,
-        ),
-      );
-    } on Object catch (_) {
-      // Share failed — fall back to clipboard.
-      await Clipboard.setData(ClipboardData(text: message));
-      if (context.mounted) {
-        context.showSnackBar(
-          message: context.l10n.quizResultCopied,
-          type: SnackBarType.success,
-        );
-      }
-    }
+    final deckId = result.id.isNotEmpty ? result.id : 'general-quiz';
+    await locator<LinkSharingService>().shareQuizDuel(
+      duelId: 'quiz-score-${result.id}',
+      deckId: deckId,
+      deckTitle: result.quizTitle,
+    );
   }
 
   void _handleAskClassForHelp(BuildContext context) {
     unawaited(HapticFeedback.lightImpact());
-    final incorrectQuestions = _missedQuestions;
-    final questionToAsk = incorrectQuestions.isNotEmpty
-        ? incorrectQuestions.first
-        : widget.questions.firstOrNull;
+    final allQuestions = widget.questions.isNotEmpty
+        ? widget.questions
+        : _missedQuestions;
 
-    final topicTag = questionToAsk?.subTopic.trim().isNotEmpty == true
-        ? questionToAsk!.subTopic.trim()
+    if (allQuestions.isEmpty) {
+      context.showSnackBar(
+        message: 'No quiz questions available to discuss.',
+      );
+      return;
+    }
+
+    if (allQuestions.length == 1) {
+      _openCreatePostForQuestions(context, [allQuestions.first]);
+      return;
+    }
+
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: context.isDarkMode
+            ? context.colors.surfaceSecondary
+            : context.colors.surfacePrimary,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetCtx) {
+          return _QuizForumQuestionSelectorSheet(
+            questions: allQuestions,
+            missedQuestions: _missedQuestions,
+            onConfirm: (selected) {
+              Navigator.of(sheetCtx).pop();
+              _openCreatePostForQuestions(context, selected);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _openCreatePostForQuestions(
+    BuildContext context,
+    List<QuizQuestionEntity> questions,
+  ) {
+    if (questions.isEmpty) return;
+
+    final isSingle = questions.length == 1;
+    final primaryQuestion = questions.first;
+    final topicTag = primaryQuestion.subTopic.trim().isNotEmpty
+        ? primaryQuestion.subTopic.trim()
         : (widget.courseCode ?? 'Quiz review');
 
     final contentBuf = StringBuffer();
-    if (questionToAsk != null) {
-      contentBuf.writeln(questionToAsk.prompt.replaceAll('**', ''));
-      if (questionToAsk.options.isNotEmpty) {
+
+    if (isSingle) {
+      final q = primaryQuestion;
+      contentBuf.writeln(q.prompt.replaceAll('**', ''));
+      if (q.options.isNotEmpty) {
         contentBuf
           ..writeln()
           ..writeln('Options:');
-        for (final opt in questionToAsk.options) {
+        for (final opt in q.options) {
           contentBuf.writeln('• ${opt.replaceAll('**', '')}');
         }
       }
       contentBuf
         ..writeln()
         ..writeln(
-          'Your Answer: ${questionToAsk.userSelectedAnswer ?? 'Unanswered'}',
+          'Your Answer: ${q.userSelectedAnswer ?? 'Unanswered'}',
         )
-        ..writeln('Correct Answer: ${questionToAsk.correctAnswer}');
-      if (questionToAsk.explanation.isNotEmpty) {
+        ..writeln('Correct Answer: ${q.correctAnswer}');
+      if (q.explanation.isNotEmpty) {
         contentBuf
           ..writeln()
           ..writeln(
-            'Explanation:\n${questionToAsk.explanation.replaceAll('**', '')}',
+            'Explanation:\n${q.explanation.replaceAll('**', '')}',
           );
       }
       contentBuf
@@ -1099,47 +1474,94 @@ class _QuizResultsPageState extends State<QuizResultsPage> {
           'I missed this one during practice. Can someone break down how '
           'to approach it?',
         );
+    } else {
+      contentBuf.writeln(
+        'I am reviewing my practice session and would appreciate help breaking down these questions:\n',
+      );
+      for (var i = 0; i < questions.length; i++) {
+        final q = questions[i];
+        contentBuf
+          ..writeln('### Question ${i + 1}')
+          ..writeln(q.prompt.replaceAll('**', ''));
+        if (q.options.isNotEmpty) {
+          contentBuf
+            ..writeln()
+            ..writeln('Options:');
+          for (final opt in q.options) {
+            contentBuf.writeln('• ${opt.replaceAll('**', '')}');
+          }
+        }
+        contentBuf
+          ..writeln()
+          ..writeln('• Your Answer: ${q.userSelectedAnswer ?? 'Unanswered'}')
+          ..writeln('• Correct Answer: ${q.correctAnswer}');
+        if (q.explanation.isNotEmpty) {
+          contentBuf.writeln(
+            '• Explanation: ${q.explanation.replaceAll('**', '')}',
+          );
+        }
+        if (i < questions.length - 1) {
+          contentBuf.writeln('\n---\n');
+        }
+      }
+      contentBuf.writeln(
+        '\nCan someone explain the concepts and how to solve these?',
+      );
     }
+
+    final initialTitle = isSingle
+        ? '[$topicTag] Question discussion'
+        : '[$topicTag] Review: ${questions.length} Quiz Questions';
+
+    final firstLatex = questions
+        .firstWhere(
+          (q) => q.latexFormula != null && q.latexFormula!.isNotEmpty,
+          orElse: () => primaryQuestion,
+        )
+        .latexFormula;
 
     unawaited(
       CreatePostBottomSheet.show(
         context,
         lockedTrack: widget.courseCode,
-        initialTitle: '[$topicTag] Question discussion',
+        initialTitle: initialTitle,
         initialContent: contentBuf.toString().trim(),
-        initialLatex: questionToAsk?.latexFormula,
+        initialLatex: firstLatex,
         initialSyllabusTag: topicTag,
         initialIsQuestion: true,
-        contextBadge: 'Practice question • $topicTag',
-        onSubmit:
-            ({
-              required title,
-              required content,
-              required track,
-              latexContent,
-              isQuestion = true,
-              syllabusTag = 'General',
-              isAnonymous = true,
-            }) {
-              if (locator.isRegistered<CommunityHubBloc>()) {
-                final effectiveTag = questionToAsk?.subTopic ?? syllabusTag;
-                locator<CommunityHubBloc>().add(
-                  CreateForumPostEvent(
-                    title: title,
-                    content: content,
-                    track: track,
-                    latexContent: latexContent,
-                    isQuestion: true,
-                    syllabusTag: effectiveTag,
-                    isAnonymous: isAnonymous,
-                  ),
-                );
-              }
-              context.showSnackBar(
-                message: 'Posted to your class. Replies show up in the feed.',
-                type: SnackBarType.success,
-              );
-            },
+        contextBadge: isSingle
+            ? 'Practice question • $topicTag'
+            : '${questions.length} Practice questions • $topicTag',
+        onSubmit: ({
+          required title,
+          required content,
+          required track,
+          latexContent,
+          isQuestion = true,
+          syllabusTag = 'General',
+          isAnonymous = true,
+        }) {
+          if (locator.isRegistered<CommunityHubBloc>()) {
+            final effectiveTag = primaryQuestion.subTopic.trim().isNotEmpty
+                ? primaryQuestion.subTopic.trim()
+                : syllabusTag;
+            locator<CommunityHubBloc>().add(
+              CreateForumPostEvent(
+                title: title,
+                content: content,
+                track: track,
+                latexContent: latexContent,
+                isQuestion: true,
+                syllabusTag: effectiveTag,
+                isAnonymous: isAnonymous,
+              ),
+            );
+          }
+          context.showSnackBar(
+            message: 'Posted to your class. Replies show up in the feed.',
+            type: SnackBarType.success,
+          );
+        },
       ),
     );
   }
@@ -1401,6 +1823,479 @@ class _ResultQuickActionButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuizForumQuestionSelectorSheet extends StatefulWidget {
+  const _QuizForumQuestionSelectorSheet({
+    required this.questions,
+    required this.missedQuestions,
+    required this.onConfirm,
+  });
+
+  final List<QuizQuestionEntity> questions;
+  final List<QuizQuestionEntity> missedQuestions;
+  final ValueChanged<List<QuizQuestionEntity>> onConfirm;
+
+  @override
+  State<_QuizForumQuestionSelectorSheet> createState() =>
+      _QuizForumQuestionSelectorSheetState();
+}
+
+class _QuizForumQuestionSelectorSheetState
+    extends State<_QuizForumQuestionSelectorSheet> {
+  bool _isMultipleMode = false;
+  late int _selectedSingleIndex;
+  late Set<int> _selectedMultipleIndices;
+
+  @override
+  void initState() {
+    super.initState();
+    final firstMissedIdx = widget.missedQuestions.isNotEmpty
+        ? widget.questions.indexOf(widget.missedQuestions.first)
+        : 0;
+    _selectedSingleIndex = firstMissedIdx >= 0 ? firstMissedIdx : 0;
+
+    _selectedMultipleIndices = <int>{};
+    if (widget.missedQuestions.isNotEmpty) {
+      for (final mq in widget.missedQuestions) {
+        final idx = widget.questions.indexOf(mq);
+        if (idx >= 0) _selectedMultipleIndices.add(idx);
+      }
+    }
+    if (_selectedMultipleIndices.isEmpty && widget.questions.isNotEmpty) {
+      _selectedMultipleIndices.add(0);
+    }
+  }
+
+  void _selectAllMissed() {
+    setState(() {
+      _selectedMultipleIndices.clear();
+      for (final mq in widget.missedQuestions) {
+        final idx = widget.questions.indexOf(mq);
+        if (idx >= 0) _selectedMultipleIndices.add(idx);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      _selectedMultipleIndices =
+          List.generate(widget.questions.length, (i) => i).toSet();
+    });
+  }
+
+  void _clearAll() {
+    setState(() {
+      _selectedMultipleIndices.clear();
+    });
+  }
+
+  void _submit() {
+    if (_isMultipleMode) {
+      if (_selectedMultipleIndices.isEmpty) return;
+      final sortedIndices = _selectedMultipleIndices.toList()..sort();
+      final selectedList =
+          sortedIndices.map((i) => widget.questions[i]).toList();
+      widget.onConfirm(selectedList);
+    } else {
+      if (_selectedSingleIndex < 0 ||
+          _selectedSingleIndex >= widget.questions.length) {
+        return;
+      }
+      widget.onConfirm([widget.questions[_selectedSingleIndex]]);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    final selectedCount =
+        _isMultipleMode ? _selectedMultipleIndices.length : 1;
+
+    return SafeArea(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: colors.textSecondary.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ask Class for Help',
+                        style: typography.headline.bold.copyWith(
+                          color: colors.textPrimary,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Select question(s) to post to the study forum',
+                        style: typography.caption.regular.copyWith(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: colors.textSecondary,
+                    size: 20,
+                  ),
+                  tooltip: 'Close',
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colors.surfaceTertiary.withValues(alpha: 0.5)
+                    : colors.surfaceSecondary,
+                borderRadius: AppRadius.radiusCard,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _ModeTab(
+                      label: 'Single Question',
+                      icon: Icons.filter_1_rounded,
+                      isSelected: !_isMultipleMode,
+                      onTap: () => setState(() => _isMultipleMode = false),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: _ModeTab(
+                      label: 'Multiple Questions',
+                      icon: Icons.checklist_rounded,
+                      isSelected: _isMultipleMode,
+                      onTap: () => setState(() => _isMultipleMode = true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_isMultipleMode) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  if (widget.missedQuestions.isNotEmpty)
+                    ActionChip(
+                      label: Text(
+                        'Missed (${widget.missedQuestions.length})',
+                        style: typography.caption.bold.copyWith(fontSize: 11),
+                      ),
+                      avatar: Icon(
+                        Icons.highlight_off_rounded,
+                        size: 14,
+                        color: colors.error,
+                      ),
+                      backgroundColor: colors.error.withValues(alpha: 0.1),
+                      side: BorderSide(
+                        color: colors.error.withValues(alpha: 0.25),
+                      ),
+                      onPressed: _selectAllMissed,
+                    ),
+                  ActionChip(
+                    label: Text(
+                      'All (${widget.questions.length})',
+                      style: typography.caption.bold.copyWith(fontSize: 11),
+                    ),
+                    backgroundColor: colors.primary.withValues(alpha: 0.1),
+                    side: BorderSide(
+                      color: colors.primary.withValues(alpha: 0.25),
+                    ),
+                    onPressed: _selectAll,
+                  ),
+                  ActionChip(
+                    label: Text(
+                      'Clear',
+                      style: typography.caption.regular.copyWith(fontSize: 11),
+                    ),
+                    backgroundColor: Colors.transparent,
+                    side: BorderSide(
+                      color: colors.textSecondary.withValues(alpha: 0.2),
+                    ),
+                    onPressed: _clearAll,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: widget.questions.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final q = widget.questions[index];
+                  final isMissed = widget.missedQuestions.contains(q);
+                  final isSelected = _isMultipleMode
+                      ? _selectedMultipleIndices.contains(index)
+                      : _selectedSingleIndex == index;
+
+                  return InkWell(
+                    onTap: () {
+                      unawaited(HapticFeedback.selectionClick());
+                      setState(() {
+                        if (_isMultipleMode) {
+                          if (isSelected) {
+                            _selectedMultipleIndices.remove(index);
+                          } else {
+                            _selectedMultipleIndices.add(index);
+                          }
+                        } else {
+                          _selectedSingleIndex = index;
+                        }
+                      });
+                    },
+                    borderRadius: AppRadius.radiusCard,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colors.primary
+                                .withValues(alpha: isDark ? 0.18 : 0.08)
+                            : (isDark
+                                ? colors.surfaceTertiary.withValues(alpha: 0.3)
+                                : colors.surfaceSecondary
+                                    .withValues(alpha: 0.6)),
+                        borderRadius: AppRadius.radiusCard,
+                        border: Border.all(
+                          color: isSelected
+                              ? colors.primary
+                              : colors.surfaceTertiary.withValues(alpha: 0.4),
+                          width: isSelected ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _isMultipleMode
+                                ? (isSelected
+                                    ? Icons.check_box_rounded
+                                    : Icons.check_box_outline_blank_rounded)
+                                : (isSelected
+                                    ? Icons.radio_button_checked_rounded
+                                    : Icons.radio_button_off_rounded),
+                            color: isSelected
+                                ? colors.primary
+                                : colors.textSecondary.withValues(alpha: 0.6),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.primary
+                                            .withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'Q${index + 1}',
+                                        style: typography.caption.bold.copyWith(
+                                          color: colors.primary,
+                                          fontSize: 10.5,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isMissed) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: colors.error
+                                              .withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          'Missed',
+                                          style: typography.caption.bold.copyWith(
+                                            color: colors.error,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    if (q.subTopic.trim().isNotEmpty) ...[
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          q.subTopic.trim(),
+                                          style: typography.caption.regular
+                                              .copyWith(
+                                            color: colors.textSecondary,
+                                            fontSize: 10.5,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  q.prompt.replaceAll('**', ''),
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.textPrimary,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 48,
+              child: FilledButton.icon(
+                onPressed: (_isMultipleMode && selectedCount == 0)
+                    ? null
+                    : _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppRadius.radiusCard,
+                  ),
+                ),
+                icon: const Icon(Icons.forum_rounded, size: 18),
+                label: Text(
+                  _isMultipleMode
+                      ? 'Discuss $selectedCount Questions'
+                      : 'Discuss Selected Question',
+                  style: typography.subhead.bold.copyWith(
+                    color: colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final typography = context.typography;
+    final isDark = context.isDarkMode;
+
+    return InkWell(
+      onTap: () {
+        unawaited(HapticFeedback.lightImpact());
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? colors.surfacePrimary : colors.white)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected ? colors.primary : colors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: typography.caption.bold.copyWith(
+                color: isSelected ? colors.textPrimary : colors.textSecondary,
+                fontSize: 11.5,
+              ),
             ),
           ],
         ),

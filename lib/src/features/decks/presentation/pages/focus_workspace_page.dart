@@ -269,6 +269,8 @@ class _FocusWorkspacePageState extends State<FocusWorkspacePage> {
                             onSwipeRight: () => unawaited(_cubit.rateCard(3)),
                             onSwipeUp: () => unawaited(_cubit.rateCard(4)),
                             onSwipeDown: () => unawaited(_cubit.rateCard(2)),
+                            onOpenParkingLot: () =>
+                                unawaited(ThoughtParkingLotSheet.show(context)),
                           ),
                         ),
                       ),

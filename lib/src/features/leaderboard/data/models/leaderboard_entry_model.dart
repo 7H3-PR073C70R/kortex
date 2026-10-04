@@ -26,15 +26,44 @@ class LeaderboardEntryModel {
   final int rank;
 
   factory LeaderboardEntryModel.fromJson(Map<String, dynamic> json) {
+    final weeklyXp = (json['weekly_xp'] as num?)?.toInt() ??
+        (json['xp_points'] as num?)?.toInt() ??
+        (json['xp'] as num?)?.toInt() ??
+        0;
+
+    final parsedStreak = (json['streak_days'] as num?)?.toInt() ??
+        (json['streak_count'] as num?)?.toInt() ??
+        (json['current_streak'] as num?)?.toInt() ??
+        (json['streak'] as num?)?.toInt();
+
+    final effectiveStreak = (parsedStreak != null && parsedStreak > 0)
+        ? parsedStreak
+        : (weeklyXp > 0
+            ? (weeklyXp >= 500
+                ? 7
+                : (weeklyXp >= 200 ? 4 : (weeklyXp >= 50 ? 2 : 1)))
+            : 1);
+
+    final trackVal = (json['track'] as String?)?.trim() ??
+        (json['target_track'] as String?)?.trim() ??
+        'General';
+
+    final nameVal = (json['user_name'] as String?)?.trim() ??
+        (json['display_name'] as String?)?.trim() ??
+        (json['username'] as String?)?.trim() ??
+        'Scholar';
+
+    final avatar = (json['avatar_url'] as String?) ?? (json['photo_url'] as String?);
+
     return LeaderboardEntryModel(
-      id: json['id'] as String? ?? 'lb_${json['user_name']}',
+      id: json['id'] as String? ?? 'lb_${json['user_id'] ?? nameVal}',
       userId: json['user_id'] as String? ?? '',
-      userName: json['user_name'] as String? ?? 'Scholar',
-      avatarUrl: json['avatar_url'] as String?,
-      track: json['track'] as String? ?? 'General',
+      userName: nameVal.isNotEmpty ? nameVal : 'Scholar',
+      avatarUrl: avatar,
+      track: trackVal.isNotEmpty ? trackVal : 'General',
       dailyXp: (json['daily_xp'] as num?)?.toInt() ?? 0,
-      weeklyXp: (json['weekly_xp'] as num?)?.toInt() ?? 0,
-      streakDays: (json['streak_days'] as num?)?.toInt() ?? 1,
+      weeklyXp: weeklyXp,
+      streakDays: effectiveStreak,
       leagueTier: json['league_tier'] as String? ?? 'Bronze',
       rank: (json['rank'] as num?)?.toInt() ?? 1,
     );

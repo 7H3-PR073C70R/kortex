@@ -18,6 +18,15 @@ void _initDataSource() {
         storageService: locator<LocalStorageService>(),
       ),
     )
+    ..registerLazySingleton<CalibrationRemoteDataSource>(
+      () => CalibrationRemoteDataSourceImpl(
+        locator<Dio>(),
+        userStorageService: locator<UserStorageService>(),
+        crashlytics: locator.isRegistered<CrashlyticsService>()
+            ? locator<CrashlyticsService>()
+            : null,
+      ),
+    )
     ..registerLazySingleton<DashboardRemoteDataSource>(
       () => DashboardRemoteDataSourceImpl(
         locator<DashboardApiClient>(),
@@ -36,6 +45,7 @@ void _initDataSource() {
         userStorage: locator<UserStorageService>(),
         storageService: locator<LocalStorageService>(),
         localDataSource: locator<DecksLocalDataSource>(),
+        connectivity: Connectivity(),
       ),
     )
     ..registerLazySingleton<SyllabotRemoteDataSource>(
@@ -116,6 +126,11 @@ void _initDataSource() {
     ..registerLazySingleton<PromoCodeRemoteDataSource>(
       () => PromoCodeRemoteDataSourceImpl(
         dio: locator<Dio>(),
+      ),
+    )
+    ..registerLazySingleton<AppVersionRemoteDataSource>(
+      () => AppVersionRemoteDataSourceImpl(
+        apiClient: locator<AppVersionApiClient>(),
       ),
     );
 }

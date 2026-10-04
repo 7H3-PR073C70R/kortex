@@ -11,6 +11,8 @@ import 'package:kortex/src/core/themes/app_motion.dart';
 import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:kortex/src/features/dashboard/domain/entities/dashboard_feed_entity.dart';
+import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_bloc.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
@@ -70,7 +72,17 @@ class PastQuestionsBoardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userTrack = context.read<AuthBloc?>()?.state.userProfile?.targetTrack;
+    final userProfile = context.read<AuthBloc?>()?.state.userProfile;
+    final userTrack = userProfile?.targetTrack;
+    final dashboardFeed = context.read<DashboardBloc?>()?.state.feed;
+    final enrolledCourses =
+        dashboardFeed?.curatedCourses ?? const <CuratedCourseEntity>[];
+    final enrolledCodes = enrolledCourses
+        .map((c) => c.courseCode)
+        .where((code) => code.trim().isNotEmpty)
+        .toList();
+    final enrolledIds = enrolledCourses.map((c) => c.id).toList();
+
     final initialExam = resolveExamCategory(initialExamCode, userTrack);
 
     return MultiBlocProvider(
@@ -81,6 +93,10 @@ class PastQuestionsBoardPage extends StatelessWidget {
               LoadPastQuestionsEvent(
                 examCategory: initialExam,
                 subject: initialSubject,
+                isScopedToUserTrack: true,
+                userTrack: userTrack ?? 'WAEC',
+                enrolledCourseCodes: enrolledCodes,
+                enrolledCourseIds: enrolledIds,
               ),
             ),
         ),
@@ -729,29 +745,106 @@ class _HeroTrackBanner extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Track Scope Toggle Segment
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
+                        padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
-                          color: colors.primary.withAlpha(isDark ? 60 : 30),
+                          color: isDark
+                              ? colors.surfaceSecondary.withAlpha(200)
+                              : colors.surfaceSecondary.withAlpha(120),
                           borderRadius: BorderRadius.circular(AppRadius.badge),
+                          border: Border.all(
+                            color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.verified_rounded,
-                              size: 13,
-                              color: colors.primary,
+                            GestureDetector(
+                              onTap: () {
+                                AppFeedback.selection();
+                                context.read<PastQuestionsBloc>().add(
+                                  const SetTrackScopeEvent(isScopedToUserTrack: true),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: state.isScopedToUserTrack
+                                      ? colors.primary
+                                      : colors.transparent,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.badge - 2),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.tune_rounded,
+                                      size: 12,
+                                      color: state.isScopedToUserTrack
+                                          ? colors.white
+                                          : colors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'My Track Scope',
+                                      style: typography.caption.bold.copyWith(
+                                        color: state.isScopedToUserTrack
+                                            ? colors.white
+                                            : colors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 5),
-                            Text(
-                              exam.displayName,
-                              style: typography.caption.bold.copyWith(
-                                color: colors.primary,
-                                fontSize: 11,
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              onTap: () {
+                                AppFeedback.selection();
+                                context.read<PastQuestionsBloc>().add(
+                                  const SetTrackScopeEvent(isScopedToUserTrack: false),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: !state.isScopedToUserTrack
+                                      ? colors.primary
+                                      : colors.transparent,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.badge - 2),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.public_rounded,
+                                      size: 12,
+                                      color: !state.isScopedToUserTrack
+                                          ? colors.white
+                                          : colors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Explore All Tracks',
+                                      style: typography.caption.bold.copyWith(
+                                        color: !state.isScopedToUserTrack
+                                            ? colors.white
+                                            : colors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -767,21 +860,102 @@ class _HeroTrackBanner extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    '${exam.displayName} Question Bank',
-                    style: typography.title3.bold.copyWith(
-                      color: colors.textPrimary,
-                      letterSpacing: -0.2,
-                      fontSize: 17,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Pick a subject to practice questions, filter by year, or run a full timed exam.',
-                    style: typography.caption.regular.copyWith(
-                      color: colors.textSecondary,
-                      fontSize: 11.5,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              state.isScopedToUserTrack
+                                  ? 'My Track: ${exam.displayName} ($userTrack)'
+                                  : 'Explore ${exam.displayName} Question Bank',
+                              style: typography.title3.bold.copyWith(
+                                color: colors.textPrimary,
+                                letterSpacing: -0.2,
+                                fontSize: 17,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              state.isScopedToUserTrack
+                                  ? 'Showing questions customized for your track & enrolled courses.'
+                                  : 'Browsing all available questions across tracks & institutions.',
+                              style: typography.caption.regular.copyWith(
+                                color: colors.textSecondary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (!state.isScopedToUserTrack) ...[
+                        const SizedBox(width: 8),
+                        PopupMenuButton<ExamCategory>(
+                          color: isDark
+                              ? colors.surfaceSecondary
+                              : colors.surfacePrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.panel),
+                            side: BorderSide(
+                              color: colors.surfaceBorder.withAlpha(isDark ? 80 : 120),
+                            ),
+                          ),
+                          onSelected: (category) {
+                            AppFeedback.selection();
+                            context.read<PastQuestionsBloc>().add(
+                              ChangeExamCategoryEvent(category),
+                            );
+                          },
+                          itemBuilder: (context) {
+                            return ExamCategory.values.map((cat) {
+                              final isSelected = state.selectedExam == cat;
+                              return PopupMenuItem<ExamCategory>(
+                                value: cat,
+                                child: Text(
+                                  cat.displayName,
+                                  style: typography.caption.bold.copyWith(
+                                    color: isSelected
+                                        ? colors.primary
+                                        : colors.textPrimary,
+                                  ),
+                                ),
+                              );
+                            }).toList();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withAlpha(isDark ? 50 : 25),
+                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              border: Border.all(
+                                color: colors.primary.withAlpha(isDark ? 80 : 50),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  exam.displayName,
+                                  style: typography.caption.bold.copyWith(
+                                    color: colors.primary,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.arrow_drop_down_rounded,
+                                  size: 18,
+                                  color: colors.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Row(

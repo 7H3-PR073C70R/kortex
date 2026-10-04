@@ -205,7 +205,7 @@ abstract class AppLocalizations {
   /// Badge for slide 3
   ///
   /// In en, this message translates to:
-  /// **'FSRS-6 RECALL'**
+  /// **'SMART MEMORY RECALL'**
   String get onboardingSlide3Badge;
 
   /// Title for slide 3
@@ -601,7 +601,7 @@ abstract class AppLocalizations {
   /// Hero bullet feature 2
   ///
   /// In en, this message translates to:
-  /// **'Adaptive FSRS-6 spaced repetition schedules'**
+  /// **'Adaptive smart review schedules that fit your pace'**
   String get authDesktopFeature2;
 
   /// Hero bullet feature 3
@@ -979,7 +979,7 @@ abstract class AppLocalizations {
   /// Completion message in conversational calibration
   ///
   /// In en, this message translates to:
-  /// **'You\'re all set! I\'ve personalized your study engine with adaptive FSRS scheduling and tailored your daily quotas. Let\'s conquer this semester.'**
+  /// **'You\'re all set! I\'ve personalized your study engine with smart memory scheduling and tailored your daily quotas. Let\'s conquer this semester.'**
   String get calibrationChatReady;
 
   /// University option in chat mode
@@ -1171,7 +1171,7 @@ abstract class AppLocalizations {
   /// Spaced repetition goal
   ///
   /// In en, this message translates to:
-  /// **'Spaced Repetition (FSRS-6) Mastery'**
+  /// **'Long-Term Memory Mastery'**
   String get calibrationGoalSpacedRep;
 
   /// Mock exams goal
@@ -1463,7 +1463,7 @@ abstract class AppLocalizations {
   /// Description for flashcards slide
   ///
   /// In en, this message translates to:
-  /// **'Dive into structured flashcards for core topics in {field}. Master key concepts instantly with FSRS-6 Spaced Repetition.'**
+  /// **'Dive into structured flashcards for core topics in {field}. Master key concepts with smart spaced reviews scheduled right before you forget.'**
   String contentFlashcardsDesc(String field);
 
   /// Tagline for Socratic AI tutoring slide
@@ -1517,7 +1517,7 @@ abstract class AppLocalizations {
   /// Content recommendation feature 2
   ///
   /// In en, this message translates to:
-  /// **'Automated FSRS-6 spaced repetition decks'**
+  /// **'Automated smart spaced-review decks'**
   String get contentFeature2;
 
   /// Content recommendation feature 3
@@ -2177,7 +2177,7 @@ abstract class AppLocalizations {
   /// FSRS-6 queue badge label
   ///
   /// In en, this message translates to:
-  /// **'FSRS-6 ACTIVE QUEUE'**
+  /// **'ACTIVE REVIEW QUEUE'**
   String get deckDetailFsrsQueueBadge;
 
   /// Back of flashcard badge
@@ -2303,7 +2303,7 @@ abstract class AppLocalizations {
   /// Title for Ebbinghaus retention breakdown
   ///
   /// In en, this message translates to:
-  /// **'Memory Retention Curve (FSRS-6)'**
+  /// **'Memory Retention Over Time'**
   String get analyticsRetentionCurveTitle;
 
   /// Count of mastered concept cards
@@ -2333,7 +2333,7 @@ abstract class AppLocalizations {
   /// Subtitle for Decks page
   ///
   /// In en, this message translates to:
-  /// **'Active recall queues powered by SuperMemo-2'**
+  /// **'Active recall flashcard decks with smart scheduling'**
   String get decksSubtitle;
 
   /// Search input hint for decks
@@ -2363,7 +2363,7 @@ abstract class AppLocalizations {
   /// Empty state subtitle for decks
   ///
   /// In en, this message translates to:
-  /// **'Ingest lecture notes or past papers to generate FSRS-6 spaced repetition decks automatically.'**
+  /// **'Upload lecture notes or past papers to generate smart review decks automatically.'**
   String get decksEmptyStateSubtitle;
 
   /// Button to create a new deck
@@ -2591,7 +2591,7 @@ abstract class AppLocalizations {
   /// Subtitle on session summary page
   ///
   /// In en, this message translates to:
-  /// **'Your neural pathways have been reinforced. FSRS-6 intervals updated.'**
+  /// **'Great work! Your memory has been reinforced and review dates have been scheduled.'**
   String get sessionSummarySubtitle;
 
   /// Stat label for reviewed cards
@@ -2629,6 +2629,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review More Decks'**
   String get sessionSummaryReviewAgain;
+
+  /// Celebratory title when review session retention is high
+  ///
+  /// In en, this message translates to:
+  /// **'Deck Conquered! 🏆'**
+  String get sessionSummaryDeckConquered;
+
+  /// Button to restudy or replay the current deck
+  ///
+  /// In en, this message translates to:
+  /// **'Study Deck Again'**
+  String get sessionSummaryStudyAgain;
+
+  /// Button to browse all flashcard decks
+  ///
+  /// In en, this message translates to:
+  /// **'Browse All Decks'**
+  String get sessionSummaryBrowseDecks;
 
   /// Title of the Syllabot AI feature
   ///
@@ -3248,10 +3266,10 @@ abstract class AppLocalizations {
   /// **'{count} in this room'**
   String inThisRoom(int count);
 
-  /// Header title for creating a study circle
+  /// Header title for creating a study pod
   ///
   /// In en, this message translates to:
-  /// **'Create Study Circle'**
+  /// **'Create Study Pod'**
   String get createStudyCircleTitle;
 
   /// Subtitle explaining micro-pod study circles
@@ -3260,13 +3278,13 @@ abstract class AppLocalizations {
   /// **'Micro-pods of up to 6 students hold each other accountable to hit weekly focus goals.'**
   String get studyCircleMicroPodsSubtitle;
 
-  /// Label for circle name input
+  /// Label for pod name input
   ///
   /// In en, this message translates to:
-  /// **'Circle Name'**
+  /// **'Pod Name'**
   String get circleNameLabel;
 
-  /// Hint text for circle name input
+  /// Hint text for pod name input
   ///
   /// In en, this message translates to:
   /// **'e.g. 2026 JAMB Physics Slayers'**
@@ -3293,7 +3311,7 @@ abstract class AppLocalizations {
   /// Button to submit and create a study circle
   ///
   /// In en, this message translates to:
-  /// **'Launch Study Circle'**
+  /// **'Launch Study Pod'**
   String get launchStudyCircleAction;
 
   /// Notice when circle has no members yet
@@ -3857,7 +3875,7 @@ abstract class AppLocalizations {
   /// Label for predicted memory retention curve in dashboard chart
   ///
   /// In en, this message translates to:
-  /// **'Predicted Retention (FSRS-4.5)'**
+  /// **'Predicted Memory Retention'**
   String get predictedRetentionLabel;
 
   /// Label for actual measured retention curve in dashboard chart
@@ -3869,7 +3887,7 @@ abstract class AppLocalizations {
   /// Description of FSRS-6 scheduler
   ///
   /// In en, this message translates to:
-  /// **'Adaptive 21-parameter neural scheduling with personalized forgetting curve modeling'**
+  /// **'Smart adaptive scheduling that learns how fast you forget each card to review at the optimal moment'**
   String get fsrsModeDescription;
 
   /// Title of spaced repetition algorithm settings section
@@ -4697,7 +4715,7 @@ abstract class AppLocalizations {
   /// Feature 3 title on paywall
   ///
   /// In en, this message translates to:
-  /// **'FSRS-6 Spaced Repetition Engine'**
+  /// **'Smart Spaced Repetition Engine'**
   String get paywallFeature3Title;
 
   /// Feature 3 subtitle on paywall
@@ -5339,7 +5357,7 @@ abstract class AppLocalizations {
   /// Title for slide 3 of welcome walkthrough
   ///
   /// In en, this message translates to:
-  /// **'Adaptive Spaced Repetition (FSRS-6)'**
+  /// **'Smart Memory & Spaced Repetition'**
   String get welcomeWalkthroughSlide3Title;
 
   /// Description for slide 3 of welcome walkthrough

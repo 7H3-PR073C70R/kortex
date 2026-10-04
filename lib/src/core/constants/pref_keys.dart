@@ -20,6 +20,10 @@ class PrefKeys {
   static const String syllabotSocraticMode =
       '__kortex_syllabot_socratic_mode__';
   static const String syllabotVoiceGender = '__kortex_syllabot_voice_gender__';
+  static const String syllabotVoiceName = '__kortex_syllabot_voice_name__';
+  static const String kokoroVoiceName = '__kortex_kokoro_voice_name__';
+  static const String edgeVoiceName = '__kortex_edge_voice_name__';
+  static const String syllabotVoicePitch = '__kortex_syllabot_voice_pitch__';
   static const String syllabotSpeechRate = '__kortex_syllabot_speech_rate__';
   static const String pastQuestionBookmarks =
       '__kortex_past_question_bookmarks__';
@@ -39,9 +43,14 @@ class PrefKeys {
       '__kortex_persisted_shared_decks__';
   static const String userDisplayName = '__kortex_user_display_name__';
   static const String userAvatarUrl = '__kortex_user_avatar_url__';
+  static const String userTargetTrack = '__kortex_user_target_track__';
   static const String dailySyllabotCount = '__kortex_daily_syllabot_count__';
   static const String lastSyllabotDate = '__kortex_last_syllabot_date__';
   static const String proEntitlementCacheDate =
       '__kortex_pro_entitlement_cache_date__';
   static const String pendingPromoCode = '__kortex_pending_promo_code__';
+  static const String cachedUserProfile = '__kortex_cached_user_profile__';
+
+  /// ISO-8601 timestamp of the last successful app-version check.
+  static const String lastVersionCheckTime = '__kortex_last_version_check_time__';
 }

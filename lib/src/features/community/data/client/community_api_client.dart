@@ -46,6 +46,11 @@ abstract class CommunityApiClient {
     @Header('Prefer') String prefer = 'return=representation',
   });
 
+  @DELETE(AppApiEndpoint.forumReplies)
+  Future<HttpResponse<dynamic>> deleteForumReply(
+    @Queries() Map<String, dynamic> query,
+  );
+
   @POST(AppApiEndpoint.verifyForumReplyRpc)
   Future<HttpResponse<dynamic>> verifyForumReply(
     @Body() Map<String, dynamic> body,
@@ -186,6 +191,13 @@ abstract class CommunityApiClient {
   Future<HttpResponse<dynamic>> claimWeeklyXp(
     @Body() Map<String, dynamic> body,
   );
+
+  /// Atomically syncs XP delta, streak, and track to profiles + leaderboards.
+  @POST(AppApiEndpoint.syncUserProgressRpc)
+  Future<HttpResponse<dynamic>> syncUserProgress(
+    @Body() Map<String, dynamic> body,
+  );
+
 
   @POST(AppApiEndpoint.autoProvisionCommunityRpc)
   Future<HttpResponse<dynamic>> autoProvisionCommunity(
