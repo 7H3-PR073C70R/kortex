@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
 import 'package:kortex/src/core/utils/either.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
@@ -10,6 +11,8 @@ import 'package:mocktail/mocktail.dart';
 
 class MockPastQuestionsRepository extends Mock
     implements PastQuestionsRepository {}
+
+class MockUserActivityService extends Mock implements UserActivityService {}
 
 void main() {
   group('PastQuestionsBloc Test Suite', () {
@@ -106,6 +109,40 @@ void main() {
       verify: (b) {
         expect(b.state.answeredQuestions, equals(1));
         expect(b.state.correctAnswers, equals(1));
+      },
+    );
+
+    blocTest<PastQuestionsBloc, PastQuestionsState>(
+      'SelectOptionEvent records study session on UserActivityService when question is first answered',
+      build: () {
+        final mockActivity = MockUserActivityService();
+        when(
+          () => mockActivity.recordStudySession(
+            cardsReviewed: any(named: 'cardsReviewed'),
+            durationSeconds: any(named: 'durationSeconds'),
+            retentionScore: any(named: 'retentionScore'),
+            masteredCards: any(named: 'masteredCards'),
+            activityCategory: any(named: 'activityCategory'),
+            subject: any(named: 'subject'),
+          ),
+        ).thenAnswer((_) async {});
+        return PastQuestionsBloc(
+          repository: mockRepository,
+          userActivityService: mockActivity,
+        );
+      },
+      seed: () => const PastQuestionsState(
+        status: PastQuestionsStatus.loaded,
+        questions: [tQuestion],
+      ),
+      act: (b) => b.add(
+        const SelectOptionEvent(
+          questionId: 'waec_math_2024_q1',
+          optionIndex: 1,
+        ),
+      ),
+      verify: (b) {
+        expect(b.state.answeredQuestions, equals(1));
       },
     );
 

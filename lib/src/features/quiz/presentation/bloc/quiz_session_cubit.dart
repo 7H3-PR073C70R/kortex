@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kortex/src/core/services/app_feedback_service.dart';
 import 'package:kortex/src/core/services/crashlytics_service.dart';
+import 'package:kortex/src/core/services/local_storage_service.dart';
+import 'package:kortex/src/core/services/notification_service.dart';
 import 'package:kortex/src/core/services/performance_service.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_activity_service.dart';
@@ -16,6 +19,7 @@ import 'package:kortex/src/features/dashboard/presentation/bloc/dashboard_event.
 import 'package:kortex/src/features/decks/data/data_sources/card_sync_queue.dart';
 import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart';
 import 'package:kortex/src/features/decks/domain/logic/fsrs_scheduler.dart';
+import 'package:kortex/src/features/decks/domain/models/fsrs_user_settings.dart';
 import 'package:kortex/src/features/decks/domain/repositories/decks_repository.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
@@ -949,6 +953,30 @@ class QuizSessionCubit extends Cubit<QuizSessionState> {
                 activityType: isCbt ? 'cbt' : 'quiz',
               ),
             );
+          }
+        } on Object catch (_) {}
+
+        // Reschedule daily study reminder forward so streak notifications do not fire redundantly today
+        try {
+          if (locator.isRegistered<NotificationService>()) {
+            final notifs = locator<NotificationService>();
+            final storage = locator.isRegistered<LocalStorageService>()
+                ? locator<LocalStorageService>()
+                : null;
+            final raw = storage?.getPreference(key: FsrsUserSettings.storageKey);
+            final settings = raw != null
+                ? FsrsUserSettings.fromJson(
+                    jsonDecode(raw) as Map<String, dynamic>,
+                  )
+                : const FsrsUserSettings();
+            if (settings.remindersEnabled) {
+              unawaited(
+                notifs.scheduleStudyReminder(
+                  hour: settings.preferredReminderHour,
+                  minute: settings.preferredReminderMinute,
+                ),
+              );
+            }
           }
         } on Object catch (_) {}
 

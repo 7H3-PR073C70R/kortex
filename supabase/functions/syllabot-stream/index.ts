@@ -311,7 +311,11 @@ function getSystemPrompt(mode: string, courseCode?: string): string {
   const formattingRules = `
 Formatting & Communication Guidelines:
 1. Always maintain full conversation context across all user messages in this chat session.
-2. Format all mathematical expressions using single dollar signs ($...$) for inline equations and double dollar signs ($$...$$) for block equations.
+2. Mathematics, Scientific Units & Formula Notation:
+   - Always wrap ALL formulas, variables, numbers with units (e.g. $1.0\\ \\text{m/s}^2$, $2\\ \\Omega$, $500\\ \\text{Hz}$, $0.68\\ \\text{m}$, $340\\ \\text{m/s}$), and mathematical symbols in single dollar signs ($...$) for inline math or double dollar signs ($$...$$) for standalone block equations.
+   - NEVER output bare LaTeX commands without dollar signs (e.g. NEVER write (2\\ \\Omega), (1.0\\ \\text{m/s}^2), or (500\\ \\text{Hz}) without enclosing dollar signs).
+   - In multiple-choice options, format options cleanly as "A) $1.0\\ \\text{m/s}^2$", "B) $2.0\\ \\text{m/s}^2$", etc.
+   - Use standard KaTeX commands with clean single backslashes, e.g. $\\frac{a}{b}$, $\\sqrt{x}$, $\\Omega$, $\\text{m/s}^2$.
 3. Use GitHub-flavored markdown with clean headings, bold text, and bulleted/numbered lists for high readability.
 4. When writing code or algorithmic solutions, use syntax-highlighted code blocks with clear inline annotations.
 `;

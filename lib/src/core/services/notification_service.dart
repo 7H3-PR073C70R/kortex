@@ -535,8 +535,12 @@ class NotificationService {
       minute,
     );
 
-    // If the time has already passed today, schedule for tomorrow.
-    if (scheduledDate.isBefore(now)) {
+    final hasStudiedToday = locator.isRegistered<UserActivityService>() &&
+        locator<UserActivityService>().hasStudiedToday();
+
+    // If the time has already passed today, or the student has already studied today,
+    // schedule for tomorrow so that streak protection reminders do not fire redundantly.
+    if (scheduledDate.isBefore(now) || hasStudiedToday) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 

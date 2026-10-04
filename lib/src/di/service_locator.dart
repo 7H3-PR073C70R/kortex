@@ -159,6 +159,9 @@ void _initServices() {
     ..registerFactory<PastQuestionsBloc>(
       () => PastQuestionsBloc(
         repository: locator<PastQuestionsRepository>(),
+        userActivityService: locator.isRegistered<UserActivityService>()
+            ? locator<UserActivityService>()
+            : null,
       ),
     )
     ..registerLazySingleton<DocumentParserService>(

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:kortex/src/core/services/user_activity_service.dart';
+import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/quiz/domain/entities/past_question_entity.dart';
 import 'package:kortex/src/features/quiz/domain/repositories/past_questions_repository.dart';
 import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_event.dart';
@@ -8,7 +10,9 @@ import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.
 class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
   PastQuestionsBloc({
     required PastQuestionsRepository repository,
+    UserActivityService? userActivityService,
   }) : _repository = repository,
+       _userActivityService = userActivityService,
        super(const PastQuestionsState()) {
     on<LoadPastQuestionsEvent>(_onLoadPastQuestions);
     on<SetTrackScopeEvent>(_onSetTrackScope);
@@ -22,6 +26,7 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
   }
 
   final PastQuestionsRepository _repository;
+  final UserActivityService? _userActivityService;
 
   Future<void> _onSetTrackScope(
     SetTrackScopeEvent event,
@@ -210,10 +215,16 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
     );
   }
 
-  void _onSelectOption(
+  Future<void> _onSelectOption(
     SelectOptionEvent event,
     Emitter<PastQuestionsState> emit,
-  ) {
+  ) async {
+    final targetIndex =
+        state.questions.indexWhere((q) => q.id == event.questionId);
+    final prevQuestion =
+        targetIndex != -1 ? state.questions[targetIndex] : null;
+    final wasAlreadyAnswered = prevQuestion?.isAnswered ?? false;
+
     final updated = state.questions.map((q) {
       if (q.id == event.questionId) {
         return q.copyWith(userSelectedOptionIndex: event.optionIndex);
@@ -222,6 +233,29 @@ class PastQuestionsBloc extends Bloc<PastQuestionsEvent, PastQuestionsState> {
     }).toList();
 
     emit(state.copyWith(questions: updated));
+
+    // If answering this past question for the first time, record study progress
+    // so that streaks increase and streak protection applies without flashcards.
+    if (prevQuestion != null && !wasAlreadyAnswered) {
+      try {
+        final activity = _userActivityService ??
+            (locator.isRegistered<UserActivityService>()
+                ? locator<UserActivityService>()
+                : null);
+        if (activity != null) {
+          final isCorrect =
+              event.optionIndex == prevQuestion.correctOptionIndex;
+          await activity.recordStudySession(
+            cardsReviewed: 1,
+            durationSeconds: 30,
+            retentionScore: isCorrect ? 1.0 : 0.0,
+            masteredCards: isCorrect ? 1 : 0,
+            activityCategory: 'past_questions',
+            subject: prevQuestion.subject,
+          );
+        }
+      } on Object catch (_) {}
+    }
   }
 
   Future<void> _onToggleBookmark(

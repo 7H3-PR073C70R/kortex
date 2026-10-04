@@ -256,6 +256,38 @@ Fact stated[^1].
       expect(result.contains('break down'), isFalse);
       expect(result, equals('Photosynthesis occurs in chloroplasts.'));
     });
+
+    test('pronounces percentage ranges properly like 0-100% as zero to hundred percent', () {
+      const input = 'Your score is between 0-100%, and confidence is 0% - 100%.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('zero to hundred percent'));
+      expect(result.contains('0-100%'), isFalse);
+      expect(result.contains('%'), isFalse);
+
+      const singleInput = 'Starting from 0% all the way up to 100%.';
+      final singleResult = SpeechTextNormalizer.normalize(singleInput);
+      expect(singleResult, contains('zero percent'));
+      expect(singleResult, contains('hundred percent'));
+    });
+
+    test('pronounces number ranges properly like 0-100 as zero to hundred', () {
+      const input = 'Score between 0-100 or 10-20 points.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('zero to hundred'));
+      expect(result, contains('10 to 20'));
+    });
+
+    test('pronounces / as or where appropriate while keeping scientific units and fractions', () {
+      const input = 'Choose true/false, yes/no, A/B, or 0/1. The car moves at 60 km/h with 1/2 tank.';
+      final result = SpeechTextNormalizer.normalize(input);
+      expect(result, contains('true or false'));
+      expect(result, contains('yes or no'));
+      expect(result, contains('A or B'));
+      expect(result, contains('0 or 1'));
+      expect(result, contains('kilometers per hour'));
+      expect(result, contains('one half'));
+      expect(result.contains('/'), isFalse);
+    });
   });
 
   group('TtsConfig', () {
