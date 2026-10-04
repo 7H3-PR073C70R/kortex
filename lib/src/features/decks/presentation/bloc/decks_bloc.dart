@@ -233,43 +233,61 @@ class DecksBloc extends Bloc<DecksEvent, DecksState> {
       }).toList();
     }
 
-    // Sort decks according to due date:
-    // 1. Decks with dueCards > 0 come first.
-    // 2. Among due decks, sort by highest due count descending.
-    // 3. For upcoming non-due decks, sort by earliest nextDueDate ascending.
-    // 4. Stable fallback: lastStudied or title.
+    // Three-tier sort: Due → Undone → Done
+    //
+    // Tier 1 — Due:   dueCards > 0  (needs review right now)
+    // Tier 2 — Undone: dueCards == 0 && masteryRate < 1.0  (in progress / new)
+    // Tier 3 — Done:  dueCards == 0 && masteryRate >= 1.0  (fully mastered)
+    //
+    // Within Tier 1: sort by highest due count descending, then earliest due date.
+    // Within Tier 2: sort by lowest masteryRate first (most work needed), then title.
+    // Within Tier 3: sort by most recently studied descending, then title.
+    int tier(DeckEntity d) {
+      if (d.dueCards > 0) return 0; // Due
+      if (d.masteryRate < 1.0) return 1; // Undone
+      return 2; // Done
+    }
+
     list.sort((a, b) {
-      final aDue = a.dueCards > 0;
-      final bDue = b.dueCards > 0;
+      final aTier = tier(a);
+      final bTier = tier(b);
 
-      if (aDue && !bDue) return -1;
-      if (!aDue && bDue) return 1;
+      // Cross-tier: lower tier number wins
+      if (aTier != bTier) return aTier.compareTo(bTier);
 
-      if (aDue && bDue) {
+      // ── Within Tier 1 (Due) ──────────────────────────────────────────────
+      if (aTier == 0) {
         final countCmp = b.dueCards.compareTo(a.dueCards);
         if (countCmp != 0) return countCmp;
+
+        final aEarliest = _findEarliestDueDate(a);
+        final bEarliest = _findEarliestDueDate(b);
+        if (aEarliest != null && bEarliest != null) {
+          final dateCmp = aEarliest.compareTo(bEarliest);
+          if (dateCmp != 0) return dateCmp;
+        }
       }
 
-      final aEarliest = _findEarliestDueDate(a);
-      final bEarliest = _findEarliestDueDate(b);
-
-      if (aEarliest != null && bEarliest != null) {
-        final dateCmp = aEarliest.compareTo(bEarliest);
-        if (dateCmp != 0) return dateCmp;
-      } else if (aEarliest != null) {
-        return -1;
-      } else if (bEarliest != null) {
-        return 1;
+      // ── Within Tier 2 (Undone) ───────────────────────────────────────────
+      if (aTier == 1) {
+        // Show decks with least mastery first (most work to do)
+        final masteryCmp = a.masteryRate.compareTo(b.masteryRate);
+        if (masteryCmp != 0) return masteryCmp;
       }
 
-      if (a.lastStudied != null && b.lastStudied != null) {
-        return b.lastStudied!.compareTo(a.lastStudied!);
-      } else if (a.lastStudied != null) {
-        return -1;
-      } else if (b.lastStudied != null) {
-        return 1;
+      // ── Within Tier 3 (Done) ─────────────────────────────────────────────
+      if (aTier == 2) {
+        // Most recently studied at top of the done section
+        if (a.lastStudied != null && b.lastStudied != null) {
+          return b.lastStudied!.compareTo(a.lastStudied!);
+        } else if (a.lastStudied != null) {
+          return -1;
+        } else if (b.lastStudied != null) {
+          return 1;
+        }
       }
 
+      // Stable final fallback
       return a.title.toLowerCase().compareTo(b.title.toLowerCase());
     });
 
