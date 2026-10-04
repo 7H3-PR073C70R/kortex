@@ -249,6 +249,10 @@ Widget _buildHeaderActionButton(
   );
 }
 
+/// Breakpoint at which Hub tabs switch from a single-column list to a 2-column grid.
+/// Used for tablet, landscape phone, and desktop layouts.
+const double _kHubGridBreakpoint = 600;
+
 class _StudyHubView extends HookWidget {
   const _StudyHubView();
 
@@ -583,6 +587,10 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
     final l10n = context.l10n;
     final isDark = context.isDarkMode;
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isGrid = screenWidth >= _kHubGridBreakpoint;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
+
     final userTrack = widget.targetTrack?.trim();
 
     final filteredRooms = widget.state.studyRooms.where((room) {
@@ -818,9 +826,48 @@ class _LiveRoomsTabState extends State<_LiveRoomsTab> {
                     ),
                   ),
                 )
-              else
+              else if (isGrid)
+                // 2-column grid layout for tablet / landscape / desktop
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.45,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final room = filteredRooms[index];
+                        return LiveFocusRoomCard(
+                          room: room,
+                          onJoinTap: () {
+                            unawaited(
+                              context.router.push(
+                                LiveStudyRoomRoute(room: room),
+                              ),
+                            );
+                          },
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
+                      },
+                      childCount: filteredRooms.length,
+                    ),
+                  ),
+                )
+              else
+                // Single-column list for compact / portrait phone
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -914,6 +961,7 @@ class _StudyCirclesTab extends StatelessWidget {
     final typography = context.typography;
 
     final isDark = context.isDarkMode;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -1052,8 +1100,10 @@ class _StudyCirclesTab extends StatelessWidget {
                   ),
                 )
               else
+                // Study Circles stay single-column — cards are tall/complex with
+                // progress bars and member contribution lists.
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -1139,6 +1189,10 @@ class _DeckMarketplaceTab extends HookWidget {
     final colors = context.colors;
     final typography = context.typography;
     final isDark = context.isDarkMode;
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isGrid = screenWidth >= _kHubGridBreakpoint;
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     final selectedCategory = useState<String>('All');
     final searchQuery = useState<String>('');
@@ -1251,6 +1305,7 @@ class _DeckMarketplaceTab extends HookWidget {
                                   focusedBorder: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   isDense: true,
+                                  fillColor: Colors.transparent,
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 onChanged: (val) {
@@ -1367,9 +1422,53 @@ class _DeckMarketplaceTab extends HookWidget {
                     ),
                   ),
                 )
-              else
+              else if (isGrid)
+                // 2-column grid layout for tablet / landscape / desktop
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 140),
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.55,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final deck = filteredDecks[index];
+                        return MarketplaceDeckCard(
+                          deck: deck,
+                          onCloneTap: () {
+                            context.read<CommunityHubBloc>().add(
+                              CloneDeckEvent(deck.id),
+                            );
+                          },
+                          onTap: () {
+                            unawaited(
+                              context.router.push(
+                                DeckMarketplaceDetailRoute(deck: deck),
+                              ),
+                            );
+                          },
+                        )
+                            .animate(
+                              delay: (index < 6 ? index * 45 : 0).ms,
+                            )
+                            .fadeIn(duration: 200.ms)
+                            .slideY(
+                              begin: 0.04,
+                              end: 0,
+                              curve: Curves.easeOutCubic,
+                            );
+                      },
+                      childCount: filteredDecks.length,
+                    ),
+                  ),
+                )
+              else
+                // Single-column list for compact / portrait phone
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {

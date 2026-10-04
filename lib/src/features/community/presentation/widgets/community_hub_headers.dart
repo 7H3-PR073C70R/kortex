@@ -118,6 +118,7 @@ class CommunitySearchHeader extends StatelessWidget {
                         color: colors.textSecondary.withAlpha(160),
                         fontSize: 13,
                       ),
+                      fillColor: Colors.transparent,
                       border: InputBorder.none,
                       errorBorder: InputBorder.none,
                       disabledBorder: InputBorder.none,

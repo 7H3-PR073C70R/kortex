@@ -39,6 +39,7 @@ class CommunityForumFeedList extends HookWidget {
     final isPulseBannerDismissed = useState<bool>(false);
     final searchController = useTextEditingController(text: state.forumSearchQuery);
     final debounceTimer = useRef<Timer?>(null);
+    final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 80;
 
     useEffect(() {
       return () => debounceTimer.value?.cancel();
@@ -160,7 +161,7 @@ class CommunityForumFeedList extends HookWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 140),
+              padding: EdgeInsets.fromLTRB(16, 0, 16, bottomPadding),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
