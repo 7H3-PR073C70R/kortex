@@ -203,7 +203,8 @@ class _OtpView extends HookWidget {
                     ),
                     child: Column(
                       children: [
-                        if (Navigator.canPop(context)) ...[
+                        if (Navigator.canPop(context) &&
+                            AppBackButton.shouldShow(context)) ...[
                           const Align(
                             alignment: Alignment.centerLeft,
                             child: AppBackButton(),

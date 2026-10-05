@@ -16,7 +16,8 @@ import 'package:kortex/src/features/decks/domain/use_cases/get_deck_cards_use_ca
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/export/presentation/widgets/export_deck_modal_sheet.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -95,19 +96,26 @@ class _DeckDetailContent extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
-        backgroundColor: colors.transparent,
-        elevation: 0,
-        leading: AppBackButton(
-          semanticLabel: l10n.deckDetailBackSemantics,
-        ),
+      appBar: AppAdaptiveAppBar(
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: l10n.navTabDecks,
+            onTap: () {
+              if (context.router.canPop()) {
+                context.router.pop();
+              }
+            },
+          ),
+          AppBreadcrumbItem(
+            label: deck?.title ?? l10n.deckDetailTitle,
+          ),
+        ],
         title: Text(
           deck?.title ?? l10n.deckDetailTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: typography.title3.bold.copyWith(color: colors.textPrimary),
         ),
-        centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(Icons.ios_share_rounded, color: colors.textPrimary),

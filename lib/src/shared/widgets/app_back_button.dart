@@ -24,6 +24,7 @@ class AppBackButton extends StatelessWidget {
     this.size = 20.0,
     this.icon,
     this.semanticLabel,
+    this.forceShow = false,
   });
 
   /// Custom callback on back tap. If null, automatically attempts `context.maybePop()`.
@@ -44,6 +45,45 @@ class AppBackButton extends StatelessWidget {
   /// Optional accessibility label. Defaults to localizations `backButton`.
   final String? semanticLabel;
 
+  /// Whether to force the back button to display even on desktop/web wide layouts (>= 1024).
+  /// Defaults to false.
+  final bool forceShow;
+
+  /// Breakpoint at which the desktop navigation rail is active and back buttons are hidden.
+  static const double desktopBreakpoint = 1024;
+
+  /// Returns true if back button should be visible on the current screen layout.
+  static bool shouldShow(BuildContext context, {bool forceShow = false}) {
+    if (forceShow) return true;
+    return MediaQuery.sizeOf(context).width < desktopBreakpoint;
+  }
+
+  /// Convenience factory for AppBar leading widgets that returns null when wide,
+  /// preventing AppBar from allocating leading width on wide layouts.
+  static Widget? adaptiveLeading(
+    BuildContext context, {
+    Key? key,
+    VoidCallback? onPressed,
+    Color? color,
+    Color? backgroundColor,
+    double size = 20.0,
+    IconData? icon,
+    String? semanticLabel,
+    bool forceShow = false,
+  }) {
+    if (!shouldShow(context, forceShow: forceShow)) return null;
+    return AppBackButton(
+      key: key,
+      onPressed: onPressed,
+      color: color,
+      backgroundColor: backgroundColor,
+      size: size,
+      icon: icon,
+      semanticLabel: semanticLabel,
+      forceShow: forceShow,
+    );
+  }
+
   static bool get _isApplePlatform {
     if (kIsWeb) return false;
     return Platform.isIOS || Platform.isMacOS;
@@ -58,6 +98,10 @@ class AppBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!shouldShow(context, forceShow: forceShow)) {
+      return const SizedBox.shrink();
+    }
+
     final colors = context.colors;
     final l10n = context.l10n;
     final effectiveColor = color ?? colors.textPrimary;

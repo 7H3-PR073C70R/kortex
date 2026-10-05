@@ -1191,7 +1191,19 @@ void _handleTabTap(
       ),
     );
   } else {
-    // If already active, trigger light haptic feedback
+    // If already active, trigger light haptic feedback and pop nested tab stack to root
     unawaited(HapticFeedback.lightImpact());
+    try {
+      final currentChild = tabsRouter.currentChild;
+      if (currentChild != null) {
+        final innerStack =
+            tabsRouter.innerRouterOf<StackRouter>(currentChild.name);
+        if (innerStack != null && innerStack.canPop()) {
+          innerStack.popUntilRoot();
+        }
+      }
+    } on Object catch (_) {
+      // Safe fallback if tab has no nested stack
+    }
   }
 }

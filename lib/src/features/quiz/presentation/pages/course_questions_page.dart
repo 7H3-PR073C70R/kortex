@@ -19,7 +19,8 @@ import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_tes
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -94,11 +95,28 @@ class _CourseQuestionsView extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
-        backgroundColor: colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: const AppBackButton(),
+      appBar: AppAdaptiveAppBar(
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Study Hub',
+            onTap: () {
+              if (context.router.canPop()) {
+                context.router.pop();
+              }
+            },
+          ),
+          AppBreadcrumbItem(
+            label: 'Questions',
+            onTap: () {
+              if (context.router.canPop()) {
+                context.router.pop();
+              }
+            },
+          ),
+          AppBreadcrumbItem(
+            label: courseCode ?? courseTitle,
+          ),
+        ],
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

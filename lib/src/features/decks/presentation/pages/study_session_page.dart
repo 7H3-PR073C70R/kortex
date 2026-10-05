@@ -220,7 +220,17 @@ class _StudySessionView extends HookWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const AppBackButton(),
+                        if (AppBackButton.shouldShow(context))
+                          const AppBackButton()
+                        else
+                          TextButton.icon(
+                            onPressed: () => context.router.maybePop(),
+                            icon: const Icon(Icons.close_rounded, size: 16),
+                            label: const Text('Exit'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: colors.textSecondary,
+                            ),
+                          ),
                         Text(
                           'Study Session',
                           style: typography.subhead.bold.copyWith(
@@ -446,6 +456,18 @@ class _StudySessionView extends HookWidget {
                   } else if (key == LogicalKeyboardKey.space ||
                       key == LogicalKeyboardKey.enter) {
                     cubit.toggleFlip();
+                  } else if (key == LogicalKeyboardKey.escape) {
+                    unawaited(cubit.saveSessionCheckpoint().then((_) {
+                      if (context.mounted) {
+                        if (context.router.canPop()) {
+                          context.router.pop();
+                        } else {
+                          unawaited(
+                            context.router.replaceAll([const MainRoute()]),
+                          );
+                        }
+                      }
+                    }));
                   } else if (state.isFlipped) {
                     if (key == LogicalKeyboardKey.digit1 ||
                         key == LogicalKeyboardKey.numpad1) {

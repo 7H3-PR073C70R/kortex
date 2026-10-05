@@ -25,7 +25,8 @@ import 'package:kortex/src/features/planner/presentation/bloc/cram_planner_state
 import 'package:kortex/src/features/planner/presentation/widgets/manage_exam_modal_sheet.dart';
 import 'package:kortex/src/features/planner/presentation/widgets/study_calibration_graph_widget.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
@@ -673,16 +674,22 @@ class _ExamTimetablePageState extends State<ExamTimetablePage> {
         builder: (context) {
           return Scaffold(
             backgroundColor: colors.backgroundPrimary,
-            appBar: AppBar(
+            appBar: AppAdaptiveAppBar(
               backgroundColor: colors.backgroundPrimary,
-              elevation: 0,
-              leading: const AppBackButton(),
-              title: Text(
-                'Exam Timetable',
-                style: typography.headline.bold.copyWith(
-                  color: colors.textPrimary,
+              breadcrumbs: [
+                AppBreadcrumbItem(
+                  label: 'Dashboard',
+                  onTap: () {
+                    if (context.router.canPop()) {
+                      context.router.pop();
+                    }
+                  },
                 ),
-              ),
+                const AppBreadcrumbItem(
+                  label: 'Exam Timetable',
+                ),
+              ],
+              titleText: 'Exam Timetable',
               actions: [
                 IconButton(
                   icon: Icon(

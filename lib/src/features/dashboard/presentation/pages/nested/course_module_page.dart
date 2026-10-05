@@ -30,7 +30,8 @@ import 'package:kortex/src/features/quiz/presentation/bloc/past_questions_state.
 import 'package:kortex/src/features/quiz/presentation/widgets/add_past_question_modal_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/cbt_practice_config_modal_sheet.dart';
 import 'package:kortex/src/features/syllabot/domain/entities/socratic_mode.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_dialog.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -300,11 +301,21 @@ class _CourseModuleView extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: colors.backgroundPrimary,
-          appBar: AppBar(
+          appBar: AppAdaptiveAppBar(
             backgroundColor: colors.backgroundPrimary,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            leading: const AppBackButton(),
+            breadcrumbs: [
+              AppBreadcrumbItem(
+                label: 'Dashboard',
+                onTap: () {
+                  if (context.router.canPop()) {
+                    context.router.pop();
+                  }
+                },
+              ),
+              AppBreadcrumbItem(
+                label: courseCode,
+              ),
+            ],
             title: Text(
               courseCode,
               style: typography.title3.bold.copyWith(
@@ -312,7 +323,6 @@ class _CourseModuleView extends StatelessWidget {
                 fontSize: 17.5,
               ),
             ),
-            centerTitle: true,
             actions: [
               IconButton(
                 icon: Icon(

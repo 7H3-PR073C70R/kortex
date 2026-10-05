@@ -114,13 +114,20 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
         ? l10n.sessionSummaryDeckConquered
         : l10n.sessionSummaryTitle;
 
-    return Scaffold(
-      backgroundColor: isDark
-          ? colors.backgroundPrimary
-          : colors.surfacePrimary,
-      body: Stack(
-        alignment: Alignment.topCenter,
-        children: [
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            _handleSafeExit(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: isDark
+              ? colors.backgroundPrimary
+              : colors.surfacePrimary,
+          body: Stack(
+            alignment: Alignment.topCenter,
+            children: [
           if (celebrate && !reduceMotion)
             Positioned(
               top: 0,
@@ -514,7 +521,9 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

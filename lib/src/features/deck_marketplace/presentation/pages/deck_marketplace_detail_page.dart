@@ -21,8 +21,9 @@ import 'package:kortex/src/features/decks/domain/entities/flashcard_entity.dart'
 import 'package:kortex/src/features/decks/presentation/bloc/decks_bloc.dart';
 import 'package:kortex/src/features/decks/presentation/bloc/decks_event.dart';
 import 'package:kortex/src/l10n/l10n.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
 import 'package:kortex/src/shared/widgets/app_avatar.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_logo_loader.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
@@ -212,11 +213,20 @@ class DeckMarketplaceDetailPage extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
-        backgroundColor: colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: const AppBackButton(),
+      appBar: AppAdaptiveAppBar(
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Marketplace',
+            onTap: () {
+              if (context.router.canPop()) {
+                context.router.pop();
+              }
+            },
+          ),
+          AppBreadcrumbItem(
+            label: deck.title,
+          ),
+        ],
         title: Text(
           deck.title,
           style: typography.title3.bold.copyWith(

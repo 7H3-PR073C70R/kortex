@@ -12,7 +12,8 @@ import 'package:kortex/src/features/ingestion/domain/entities/ocr_extraction_ent
 import 'package:kortex/src/features/ingestion/presentation/widgets/ocr_latex_live_editor.dart';
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shrinkable_button.dart';
 
@@ -113,16 +114,16 @@ class OcrPreviewPage extends HookWidget {
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.backgroundPrimary,
-        elevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          l10n.ocrPreviewTitle,
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
+        titleText: l10n.ocrPreviewTitle,
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Ingestion',
+            onTap: () => context.router.maybePop(),
           ),
-        ),
+          AppBreadcrumbItem(label: l10n.ocrPreviewTitle),
+        ],
       ),
       body: SafeArea(
         top: false,

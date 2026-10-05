@@ -12,7 +12,8 @@ import 'package:kortex/src/di/locator.dart';
 import 'package:kortex/src/features/notifications/domain/entities/notification_item_entity.dart';
 import 'package:kortex/src/features/notifications/presentation/bloc/notifications_cubit.dart';
 import 'package:kortex/src/features/notifications/presentation/widgets/notification_tile.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 
 @RoutePage()
 class NotificationsPage extends StatelessWidget {
@@ -46,20 +47,18 @@ class _NotificationsView extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: isDark
             ? colors.backgroundPrimary
             : colors.surfacePrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          'Notifications',
-          style: typography.title2.bold.copyWith(
-            color: colors.textPrimary,
-            letterSpacing: -0.5,
+        titleText: 'Notifications',
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Dashboard',
+            onTap: () => context.router.maybePop(),
           ),
-        ),
+          const AppBreadcrumbItem(label: 'Notifications'),
+        ],
         actions: [
           if (state.notifications.any((n) => !n.isRead))
             Padding(

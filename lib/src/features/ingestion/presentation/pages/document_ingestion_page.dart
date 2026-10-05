@@ -26,6 +26,7 @@ import 'package:kortex/src/features/ingestion/presentation/widgets/upload_progre
 import 'package:kortex/src/features/syllabot/domain/use_cases/generate_document_embeddings_use_case.dart';
 import 'package:kortex/src/l10n/l10n.dart';
 import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 
 @RoutePage()
@@ -162,7 +163,8 @@ class _DocumentIngestionView extends HookWidget {
                 backgroundColor: colors.transparent,
                 elevation: 0,
                 pinned: true,
-                leading: const AppBackButton(),
+                leading: AppBackButton.adaptiveLeading(context),
+                leadingWidth: AppBackButton.shouldShow(context) ? null : 0,
                 flexibleSpace: ClipRect(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -171,12 +173,22 @@ class _DocumentIngestionView extends HookWidget {
                     ),
                   ),
                 ),
-                title: Text(
-                  l10n.ingestionTitle,
-                  style: typography.title3.bold.copyWith(
-                    color: colors.textPrimary,
-                  ),
-                ),
+                title: AppBackButton.shouldShow(context)
+                    ? Text(
+                        l10n.ingestionTitle,
+                        style: typography.title3.bold.copyWith(
+                          color: colors.textPrimary,
+                        ),
+                      )
+                    : AppBreadcrumbs(
+                        items: [
+                          AppBreadcrumbItem(
+                            label: 'Dashboard',
+                            onTap: () => context.router.maybePop(),
+                          ),
+                          AppBreadcrumbItem(label: l10n.ingestionTitle),
+                        ],
+                      ),
                 centerTitle: false,
               ),
               SliverToBoxAdapter(

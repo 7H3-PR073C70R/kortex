@@ -24,7 +24,8 @@ import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_event.
 import 'package:kortex/src/features/ingestion/presentation/bloc/ingestion_state.dart';
 import 'package:kortex/src/features/ingestion/presentation/widgets/generated_card_preview_tile.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_button.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
@@ -154,18 +155,16 @@ class _GeneratedCardsReviewView extends HookWidget {
 
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      appBar: AppBar(
+      appBar: AppAdaptiveAppBar(
         backgroundColor: colors.backgroundPrimary,
-        surfaceTintColor: colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          l10n.reviewCardsTitle,
-          style: typography.title3.bold.copyWith(
-            color: colors.textPrimary,
+        titleText: l10n.reviewCardsTitle,
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Ingestion',
+            onTap: () => context.router.maybePop(),
           ),
-        ),
+          AppBreadcrumbItem(label: l10n.reviewCardsTitle),
+        ],
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),

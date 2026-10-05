@@ -9,6 +9,7 @@ import 'package:kortex/src/core/extensions/snackbar_extension.dart';
 import 'package:kortex/src/core/extensions/theme_extension.dart';
 import 'package:kortex/src/core/services/study_activity_tracker.dart';
 import 'package:kortex/src/core/services/user_storage_service.dart';
+import 'package:kortex/src/core/themes/app_radius.dart';
 import 'package:kortex/src/core/themes/color/app_theme_colors_extension.dart';
 import 'package:kortex/src/core/themes/typography/typography_theme_extension.dart';
 import 'package:kortex/src/di/locator.dart';
@@ -856,13 +857,20 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
             if (didPop) return;
             _handleExit(context);
           },
-          child: FloatingReactionOverlay(
-            controller: _reactionController,
-            child: Scaffold(
-              key: _scaffoldKey,
-              backgroundColor: isDark
-                  ? colors.backgroundPrimary
-                  : colors.surfacePrimary,
+          child: CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.escape): () =>
+                  _handleExit(context),
+            },
+            child: Focus(
+              autofocus: true,
+              child: FloatingReactionOverlay(
+                controller: _reactionController,
+                child: Scaffold(
+                  key: _scaffoldKey,
+                  backgroundColor: isDark
+                      ? colors.backgroundPrimary
+                      : colors.surfacePrimary,
               drawer: _RoomControlDrawer(
                 state: state,
                 currentUserId: widget.currentUserId,
@@ -880,15 +888,20 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               appBar: AppBar(
                 backgroundColor: colors.transparent,
                 elevation: 0,
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_rounded,
-                    color: colors.textPrimary,
-                    size: 22,
-                  ),
-                  tooltip: 'Leave Room',
-                  onPressed: () => _handleExit(context),
-                ),
+                automaticallyImplyLeading: false,
+                leading: MediaQuery.sizeOf(context).width >= 1024
+                    ? null
+                    : IconButton(
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: colors.textPrimary,
+                          size: 22,
+                        ),
+                        tooltip: 'Leave Room',
+                        onPressed: () => _handleExit(context),
+                      ),
+                leadingWidth:
+                    MediaQuery.sizeOf(context).width >= 1024 ? 0 : null,
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -973,6 +986,35 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
                   ],
                 ),
                 actions: [
+                  if (MediaQuery.sizeOf(context).width >= 1024)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: TextButton.icon(
+                        onPressed: () => _handleExit(context),
+                        icon: Icon(
+                          Icons.logout_rounded,
+                          size: 16,
+                          color: colors.error,
+                        ),
+                        label: Text(
+                          'Leave Room',
+                          style: typography.caption.bold.copyWith(
+                            color: colors.error,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: colors.error.withAlpha(25),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.badge),
+                          ),
+                        ),
+                      ),
+                    ),
                   // Chat trigger with unread badge
                   Stack(
                     clipBehavior: Clip.none,
@@ -1162,7 +1204,9 @@ class _LiveStudyRoomViewState extends State<_LiveStudyRoomView>
               ),
             ),
           ),
-        );
+        ),
+      ),
+    );
       },
     );
   }

@@ -24,7 +24,8 @@ import 'package:kortex/src/features/quiz/presentation/widgets/past_questions_tes
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_duel_matchmaking_sheet.dart';
 import 'package:kortex/src/features/quiz/presentation/widgets/quiz_shell.dart';
 import 'package:kortex/src/l10n/l10n.dart';
-import 'package:kortex/src/shared/widgets/app_back_button.dart';
+import 'package:kortex/src/shared/widgets/app_adaptive_app_bar.dart';
+import 'package:kortex/src/shared/widgets/app_breadcrumbs.dart';
 import 'package:kortex/src/shared/widgets/app_text_field.dart';
 import 'package:kortex/src/shared/widgets/platform_hover_builder.dart';
 import 'package:kortex/src/shared/widgets/shimmer_placeholder.dart';
@@ -141,19 +142,21 @@ class _PastQuestionsBoardView extends HookWidget {
       backgroundColor: isDark
           ? colors.backgroundPrimary
           : colors.surfacePrimary,
-      appBar: AppBar(
-        backgroundColor: colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: const AppBackButton(),
-        title: Text(
-          'Past Questions & Practice',
-          style: typography.title2.bold.copyWith(
-            color: colors.textPrimary,
-            fontSize: 18,
+      appBar: AppAdaptiveAppBar(
+        breadcrumbs: [
+          AppBreadcrumbItem(
+            label: 'Study Hub',
+            onTap: () {
+              if (context.router.canPop()) {
+                context.router.pop();
+              }
+            },
           ),
-        ),
-        centerTitle: true,
+          const AppBreadcrumbItem(
+            label: 'Past Questions',
+          ),
+        ],
+        titleText: 'Past Questions & Practice',
         actions: [
           IconButton(
             icon: Icon(
