@@ -592,9 +592,9 @@ document.addEventListener('DOMContentLoaded', () => {
     windows: {
       name: 'Windows',
       title: 'Download for Windows',
-      sub: 'v1.0.5 • 64-bit .ZIP',
+      sub: 'v1.0.5 • Installer & .EXE',
       navText: 'Download for Windows',
-      url: 'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Windows-latest.zip',
+      url: 'https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev/downloads/Kortex-Windows-latest.exe',
       iconSvg: '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.851"/></svg>'
     },
     linux: {

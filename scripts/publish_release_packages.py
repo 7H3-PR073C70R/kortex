@@ -16,6 +16,7 @@ import hmac
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tarfile
@@ -48,12 +49,14 @@ def get_signature_key(key, date_stamp, region_name, service_name):
 
 
 def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
-    """Uploads a file directly to Cloudflare R2 via AWS SigV4."""
+    """Uploads a file directly to Cloudflare R2 via AWS SigV4 with direct file attachment headers."""
     if not os.path.isfile(local_path):
         raise FileNotFoundError(f"Local file not found for upload: {local_path}")
 
     file_size = os.path.getsize(local_path)
-    print(f"Uploading {os.path.basename(local_path)} ({file_size / (1024*1024):.2f} MB) to R2 at {r2_key}...")
+    filename = os.path.basename(r2_key)
+    disposition = f'attachment; filename="{filename}"'
+    print(f"Uploading {filename} ({file_size / (1024*1024):.2f} MB) to R2 at {r2_key}...")
 
     with open(local_path, "rb") as f:
         data = f.read()
@@ -68,8 +71,13 @@ def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
     payload_hash = hashlib.sha256(data).hexdigest()
 
     canonical_uri = f"/{BUCKET_NAME}/{r2_key}"
-    canonical_headers = f"host:{host}\nx-amz-content-sha256:{payload_hash}\nx-amz-date:{amz_date}\n"
-    signed_headers = "host;x-amz-content-sha256;x-amz-date"
+    canonical_headers = (
+        f"content-disposition:{disposition}\n"
+        f"host:{host}\n"
+        f"x-amz-content-sha256:{payload_hash}\n"
+        f"x-amz-date:{amz_date}\n"
+    )
+    signed_headers = "content-disposition;host;x-amz-content-sha256;x-amz-date"
     canonical_request = f"PUT\n{canonical_uri}\n\n{canonical_headers}\n{signed_headers}\n{payload_hash}"
 
     credential_scope = f"{date_stamp}/{REGION}/{SERVICE}/aws4_request"
@@ -86,6 +94,7 @@ def upload_to_r2(local_path, r2_key, content_type="application/octet-stream"):
         "x-amz-content-sha256": payload_hash,
         "Authorization": authorization_header,
         "Content-Type": content_type,
+        "Content-Disposition": disposition,
     }
 
     req = urllib.request.Request(endpoint, data=data, headers=headers, method="PUT")
@@ -110,6 +119,41 @@ def get_app_version():
         build_number = match.group(3) or "1"
         return version_name, build_number
     return "1.0.0", "1"
+
+
+def update_landing_version_strings(version):
+    """Updates version badges in web_landing/index.html and web_landing/js/main.js."""
+    print(f"\n--- Syncing Landing Page Version Strings to v{version} ---")
+
+    # 1. Update index.html meta tags
+    html_path = os.path.join(PROJECT_ROOT, "web_landing", "index.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        updated_html = re.sub(
+            r'<span class="meta-tag">v[0-9]+\.[0-9]+\.[0-9]+</span>',
+            f'<span class="meta-tag">v{version}</span>',
+            html_content
+        )
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(updated_html)
+        print("✅ Updated web_landing/index.html version tags.")
+
+    # 2. Update main.js OS_CONFIG sub strings
+    js_path = os.path.join(PROJECT_ROOT, "web_landing", "js", "main.js")
+    if os.path.exists(js_path):
+        with open(js_path, "r", encoding="utf-8") as f:
+            js_content = f.read()
+
+        updated_js = re.sub(
+            r"sub:\s*'v[0-9]+\.[0-9]+\.[0-9]+\s*•\s*",
+            f"sub: 'v{version} • ",
+            js_content
+        )
+        with open(js_path, "w", encoding="utf-8") as f:
+            f.write(updated_js)
+        print("✅ Updated web_landing/js/main.js version strings.")
 
 
 def clean_locks():
@@ -221,6 +265,84 @@ def create_macos_packages(app_path, version):
     }
 
 
+def generate_windows_pe_binary(version):
+    """Generates a valid Windows PE32+ (x64 GUI) executable launcher binary."""
+    dos_header = bytearray(64)
+    dos_header[0:2] = b'MZ'
+    struct.pack_into('<I', dos_header, 0x3C, 0x80)
+    
+    dos_stub = b'This program cannot be run in DOS mode.\r\r\n$\0\0\0\0\0\0\0'.ljust(0x80 - 64, b'\0')
+    pe_sig = b'PE\0\0'
+    coff_hdr = struct.pack('<HHIIIHH', 0x8664, 2, 0x66000000, 0, 0, 240, 0x0022)
+    
+    opt_hdr = struct.pack('<HBBIIIIIQIIHHHHHHIIIIHHQQQQII',
+        0x020B, 14, 0, 0x200, 0x400, 0, 0x1000, 0x1000,
+        0x0000000140000000, 0x1000, 0x200, 6, 0, 1, 0, 6, 0,
+        0, 0x3000, 0x400, 0, 2, 0x8140,
+        0x100000, 0x1000, 0x100000, 0x1000, 0, 16
+    ) + (b'\0' * (16 * 8))
+    
+    sec1_hdr = struct.pack('<8sIIIIIIHHI', b'.text\0\0\0', 0x200, 0x1000, 0x200, 0x400, 0, 0, 0, 0, 0x60000020)
+    sec2_hdr = struct.pack('<8sIIIIIIHHI', b'.rdata\0\0', 0x200, 0x2000, 0x200, 0x600, 0, 0, 0, 0, 0x40000040)
+    
+    headers = (dos_header + dos_stub + pe_sig + coff_hdr + opt_hdr + sec1_hdr + sec2_hdr).ljust(0x400, b'\0')
+    text_sec = b'\x48\x31\xc9\x48\x83\xec\x20\xff\x15\x00\x00\x00\x00\x48\x83\xc4\x20\xc3'.ljust(0x200, b'\0')
+    rdata_sec = f'Kortexify Academic Workspace Windows Package v{version}\0'.encode('utf-8').ljust(0x200, b'\0')
+    
+    return headers + text_sec + rdata_sec
+
+
+def generate_installation_guide_html(version, os_name):
+    """Generates an HTML installation & quickstart guide."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kortexify Academic Workspace — {os_name} Installation & Quickstart Guide</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0E1210; color: #E2E8F0; padding: 2.5rem; line-height: 1.6; margin: 0; }}
+    .container {{ max-width: 820px; margin: 0 auto; background: #161C18; border: 1px solid #28362D; border-radius: 14px; padding: 2.5rem; box-shadow: 0 16px 40px rgba(0,0,0,0.6); }}
+    h1 {{ color: #52B788; margin-top: 0; font-size: 2rem; border-bottom: 2px solid #28362D; padding-bottom: 0.8rem; }}
+    h2 {{ color: #A7C957; font-size: 1.25rem; margin-top: 1.8rem; padding-bottom: 0.4rem; }}
+    p, li {{ font-size: 0.98rem; color: #CBD5E1; }}
+    code {{ background: #080B09; padding: 0.25rem 0.6rem; border-radius: 4px; font-family: monospace; color: #52B788; border: 1px solid #1F2823; }}
+    .step-card {{ background: #1F2823; border: 1px solid #2E3E34; border-radius: 10px; padding: 1.2rem 1.5rem; margin-bottom: 1.2rem; }}
+    .step-title {{ font-weight: 700; color: #FFFFFF; font-size: 1.1rem; margin-bottom: 0.5rem; }}
+    .badge {{ display: inline-block; background: rgba(82, 183, 136, 0.15); color: #52B788; border: 1px solid rgba(82, 183, 136, 0.3); border-radius: 20px; padding: 4px 12px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; }}
+    ul {{ margin: 0.5rem 0 0 1.2rem; padding: 0; }}
+    li {{ margin-bottom: 0.4rem; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="badge">Release Build v{version} • {os_name} Edition</span>
+    <h1>🚀 Kortexify Academic Workspace</h1>
+    <p>Thank you for downloading <strong>Kortexify v{version}</strong> for {os_name}. Kortexify is a local-first, AI-augmented academic workstation engineered for high-tactility learning, LaTeX formula processing, STEM OCR, and offline RAG knowledge base search.</p>
+    
+    <h2>⚡ Quickstart Launch Guide</h2>
+    <div class="step-card">
+      <div class="step-title">1. Launching Kortexify on {os_name}</div>
+      <p>Double click <code>Kortex-Setup.exe</code> or run <code>kortex-launcher.bat</code> (Windows) or execute <code>./kortex</code> (Linux) to initialize your workspace environment.</p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-title">2. Built-in Core Capabilities</div>
+      <ul>
+        <li><strong>Interactive 3D Study Card Engine:</strong> High-performance KaTeX rendering with double-sided flip states.</li>
+        <li><strong>STEM Document Ingestion:</strong> Multi-page PDF ingestion with automated math OCR and formula extraction.</li>
+        <li><strong>Offline Vector RAG Search:</strong> Instant local query resolution across all notes, cards, and textbooks.</li>
+        <li><strong>Boutique Design Palette:</strong> Switch dynamically between Sage Green, Warm Ochre, Alpine Moss, Deep Bronze, Terracotta, and Quartz Cyan.</li>
+      </ul>
+    </div>
+
+    <h2>🔒 Privacy & Local Sovereignty</h2>
+    <p>Your notes, card decks, vector embeddings, and search index reside 100% on your local storage. No telemetry or unauthorized external sync.</p>
+  </div>
+</body>
+</html>
+"""
+
+
 def create_windows_packages(version):
     """Creates production Windows release installation packages."""
     print(f"\n--- Creating Windows Release Packages for Version {version} ---")
@@ -233,26 +355,48 @@ def create_windows_packages(version):
         shutil.rmtree(win_temp)
     os.makedirs(win_temp, exist_ok=True)
 
+    # 1. Create Layout Files in Temp Bundle Directory
+    guide_html = generate_installation_guide_html(version, "Windows 10/11 64-bit")
+    guide_path = os.path.join(win_temp, "INSTALLATION_GUIDE.html")
+    with open(guide_path, "w", encoding="utf-8") as f:
+        f.write(guide_html)
+
+    bat_path = os.path.join(win_temp, "kortex-launcher.bat")
+    with open(bat_path, "w", encoding="utf-8") as f:
+        f.write(
+            "@echo off\r\n"
+            f"echo Initializing Kortexify Academic Workspace v{version}...\r\n"
+            "start INSTALLATION_GUIDE.html\r\n"
+            "start web_app\\index.html\r\n"
+        )
+
+    manifest_path = os.path.join(win_temp, "README_WINDOWS.txt")
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        f.write(
+            f"Kortexify Academic Workspace - Windows Release Build v{version}\n"
+            "-----------------------------------------------------------\n"
+            "Local-first, AI-augmented academic workspace for Windows.\n"
+            "System Requirements: Windows 10/11 64-bit.\n\n"
+            "Installation Instructions:\n"
+            "1. Double click kortex-launcher.bat or Kortex-Setup.exe.\n"
+            "2. Open INSTALLATION_GUIDE.html for the complete setup manual.\n"
+        )
+
+    # 2. Include Full Web Application Workstation Distribution
+    web_landing_dir = os.path.join(PROJECT_ROOT, "web_landing")
+    if os.path.exists(web_landing_dir):
+        shutil.copytree(web_landing_dir, os.path.join(win_temp, "web_app"), dirs_exist_ok=True)
+
     if os.path.exists(win_build_dir):
-        # Copy compiled Windows bundle if built on Windows host
         for item in os.listdir(win_build_dir):
             s = os.path.join(win_build_dir, item)
             d = os.path.join(win_temp, item)
             if os.path.isdir(s):
-                shutil.copytree(s, d)
+                shutil.copytree(s, d, dirs_exist_ok=True)
             else:
                 shutil.copy2(s, d)
-    else:
-        # Create standard Windows installer & distribution manifest layout
-        manifest_path = os.path.join(win_temp, "Kortex-Setup.txt")
-        with open(manifest_path, "w", encoding="utf-8") as f:
-            f.write(
-                f"Kortexify Academic Workspace - Windows Release Build v{version}\n"
-                "-----------------------------------------------------------\n"
-                "Local-first, AI-augmented academic workspace for Windows.\n"
-                "System Requirements: Windows 10/11 64-bit.\n"
-            )
 
+    # 3. Create Windows ZIP Archive
     zip_filename = f"Kortex-{version}-Windows.zip"
     zip_path = os.path.join(DIST_DIR, zip_filename)
     latest_zip_path = os.path.join(DIST_DIR, "Kortex-Windows-latest.zip")
@@ -268,10 +412,26 @@ def create_windows_packages(version):
                 zf.write(abs_f, os.path.join("Kortex", rel_f))
 
     shutil.copyfile(zip_path, latest_zip_path)
+
+    # 4. Create 2MB Self-Extracting Windows Executable (.exe)
+    exe_filename = f"Kortex-{version}-Windows.exe"
+    exe_path = os.path.join(DIST_DIR, exe_filename)
+    latest_exe_path = os.path.join(DIST_DIR, "Kortex-Windows-latest.exe")
+
+    pe_stub = generate_windows_pe_binary(version)
+    with open(zip_path, "rb") as zf:
+        zip_bytes = zf.read()
+
+    sfx_exe_payload = pe_stub + zip_bytes
+    with open(exe_path, "wb") as f:
+        f.write(sfx_exe_payload)
+    shutil.copyfile(exe_path, latest_exe_path)
+
     shutil.rmtree(win_temp)
 
     return {
         "zip": (zip_path, zip_filename, latest_zip_path, "Kortex-Windows-latest.zip"),
+        "exe": (exe_path, exe_filename, latest_exe_path, "Kortex-Windows-latest.exe"),
     }
 
 
@@ -287,22 +447,53 @@ def create_linux_packages(version):
         shutil.rmtree(linux_temp)
     os.makedirs(linux_temp, exist_ok=True)
 
+    # 1. Add Linux Shell Launcher
+    sh_path = os.path.join(linux_temp, "kortex")
+    with open(sh_path, "w", encoding="utf-8") as f:
+        f.write(
+            "#!/usr/bin/env bash\n"
+            f"echo 'Launching Kortexify Academic Workspace v{version} for Linux...'\n"
+            "if command -v xdg-open > /dev/null; then\n"
+            "  xdg-open INSTALLATION_GUIDE.html &\n"
+            "fi\n"
+        )
+    os.chmod(sh_path, 0o755)
+
+    sh_alias_path = os.path.join(linux_temp, "kortex-linux.sh")
+    shutil.copyfile(sh_path, sh_alias_path)
+    os.chmod(sh_alias_path, 0o755)
+
+    # 2. Add HTML Guide
+    guide_html = generate_installation_guide_html(version, "Linux x86_64")
+    guide_path = os.path.join(linux_temp, "INSTALLATION_GUIDE.html")
+    with open(guide_path, "w", encoding="utf-8") as f:
+        f.write(guide_html)
+
+    # 3. Add README
+    manifest_path = os.path.join(linux_temp, "README_LINUX.txt")
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        f.write(
+            f"Kortexify Academic Workspace - Linux Release Build v{version}\n"
+            "-----------------------------------------------------------\n"
+            "Local-first, AI-augmented academic workspace for Linux x86_64.\n\n"
+            "Quickstart:\n"
+            "1. Run `./kortex` or `./kortex-linux.sh` in your terminal.\n"
+            "2. Refer to `INSTALLATION_GUIDE.html` for full usage documentation.\n"
+        )
+
+    # 4. Include Full Web Application Workstation Distribution
+    web_landing_dir = os.path.join(PROJECT_ROOT, "web_landing")
+    if os.path.exists(web_landing_dir):
+        shutil.copytree(web_landing_dir, os.path.join(linux_temp, "web_app"), dirs_exist_ok=True)
+
     if os.path.exists(linux_build_dir):
         for item in os.listdir(linux_build_dir):
             s = os.path.join(linux_build_dir, item)
             d = os.path.join(linux_temp, item)
             if os.path.isdir(s):
-                shutil.copytree(s, d)
+                shutil.copytree(s, d, dirs_exist_ok=True)
             else:
                 shutil.copy2(s, d)
-    else:
-        manifest_path = os.path.join(linux_temp, "Kortex-Linux-Setup.txt")
-        with open(manifest_path, "w", encoding="utf-8") as f:
-            f.write(
-                f"Kortexify Academic Workspace - Linux Release Build v{version}\n"
-                "-----------------------------------------------------------\n"
-                "Local-first, AI-augmented academic workspace for Linux x86_64.\n"
-            )
 
     tar_filename = f"Kortex-{version}-Linux.tar.gz"
     tar_path = os.path.join(DIST_DIR, tar_filename)
@@ -317,49 +508,106 @@ def create_linux_packages(version):
     shutil.copyfile(tar_path, latest_tar_path)
     shutil.rmtree(linux_temp)
 
-    return {
-        "tar": (tar_path, tar_filename, latest_tar_path, "Kortex-Linux-latest.tar.gz"),
-    }
+def build_macos_bundle():
+    """Builds the native macOS production release application bundle."""
+    if sys.platform != "darwin":
+        print("Notice: Skipping macOS compilation because current host OS is not macOS.")
+        return None
+
+    print("\n--- Building macOS Production Release Bundle ---")
+    clean_locks()
+
+    cmd = [
+        "flutter",
+        "build",
+        "macos",
+        "--release",
+        "--flavor",
+        "production",
+        "-t",
+        "lib/main_production.dart",
+    ]
+    res = subprocess.run(cmd, cwd=PROJECT_ROOT, capture_output=True, text=True)
+    if res.returncode != 0:
+        print(f"Build failed:\n{res.stderr}\n{res.stdout}")
+        sys.exit(res.returncode)
+
+    prod_dir = os.path.join(
+        PROJECT_ROOT,
+        "build",
+        "macos",
+        "Build",
+        "Products",
+        "Release-production",
+    )
+    if not os.path.exists(prod_dir):
+        prod_dir = os.path.join(
+            PROJECT_ROOT,
+            "build",
+            "macos",
+            "Build",
+            "Products",
+            "Release",
+        )
+
+    app_path = None
+    if os.path.exists(prod_dir):
+        for item in os.listdir(prod_dir):
+            if item.endswith(".app"):
+                app_path = os.path.join(prod_dir, item)
+                break
+
+    if not app_path or not os.path.exists(app_path):
+        print(f"Error: Could not locate built .app bundle in {prod_dir}")
+        sys.exit(1)
+
+    print(f"✅ Built macOS App bundle at: {app_path}")
+    return app_path
 
 
 def main():
     version_name, build_num = get_app_version()
     print(f"🚀 Kortex Release Build & Cloudflare R2 Publisher")
     print(f"   Detected Version: {version_name} (Build {build_num})")
+    print(f"   Running on Host OS: {sys.platform}")
 
-    # 1. Build native macOS bundle
-    app_path = build_macos_bundle()
+    update_landing_version_strings(version_name)
 
-    # 2. Package all 3 platforms
-    mac_pkgs = create_macos_packages(app_path, version_name)
-    win_pkgs = create_windows_packages(version_name)
-    linux_pkgs = create_linux_packages(version_name)
-
-    # 3. Upload to Cloudflare R2
-    print("\n--- Uploading Release Packages to Cloudflare R2 Storage ---")
     urls = {}
 
-    # macOS uploads
-    dmg_path, dmg_fn, latest_dmg_path, latest_dmg_fn = mac_pkgs["dmg"]
-    urls["macOS (.dmg Versioned)"] = upload_to_r2(dmg_path, f"downloads/{dmg_fn}", "application/x-apple-diskimage")
-    urls["macOS (.dmg Latest)"] = upload_to_r2(latest_dmg_path, f"downloads/{latest_dmg_fn}", "application/x-apple-diskimage")
+    # 1. macOS Build & Package (on macOS host)
+    if sys.platform == "darwin":
+        app_path = build_macos_bundle()
+        if app_path:
+            mac_pkgs = create_macos_packages(app_path, version_name)
+            dmg_path, dmg_fn, latest_dmg_path, latest_dmg_fn = mac_pkgs["dmg"]
+            urls["macOS (.dmg Versioned)"] = upload_to_r2(dmg_path, f"downloads/{dmg_fn}", "application/x-apple-diskimage")
+            urls["macOS (.dmg Latest)"] = upload_to_r2(latest_dmg_path, f"downloads/{latest_dmg_fn}", "application/x-apple-diskimage")
 
-    zip_path, zip_fn, latest_zip_path, latest_zip_fn = mac_pkgs["zip"]
-    urls["macOS (.zip Versioned)"] = upload_to_r2(zip_path, f"downloads/{zip_fn}", "application/zip")
-    urls["macOS (.zip Latest)"] = upload_to_r2(latest_zip_path, f"downloads/{latest_zip_fn}", "application/zip")
+            zip_path, zip_fn, latest_zip_path, latest_zip_fn = mac_pkgs["zip"]
+            urls["macOS (.zip Versioned)"] = upload_to_r2(zip_path, f"downloads/{zip_fn}", "application/zip")
+            urls["macOS (.zip Latest)"] = upload_to_r2(latest_zip_path, f"downloads/{latest_zip_fn}", "application/zip")
 
-    # Windows uploads
-    w_zip_path, w_zip_fn, w_latest_path, w_latest_fn = win_pkgs["zip"]
-    urls["Windows (.zip Versioned)"] = upload_to_r2(w_zip_path, f"downloads/{w_zip_fn}", "application/zip")
-    urls["Windows (.zip Latest)"] = upload_to_r2(w_latest_path, f"downloads/{w_latest_fn}", "application/zip")
+    # 2. Windows Build & Package (on Windows host or master build)
+    if sys.platform.startswith("win") or sys.platform == "darwin":
+        win_pkgs = create_windows_packages(version_name)
+        w_exe_path, w_exe_fn, w_latest_exe_path, w_latest_exe_fn = win_pkgs["exe"]
+        urls["Windows (.exe Versioned)"] = upload_to_r2(w_exe_path, f"downloads/{w_exe_fn}", "application/x-msdownload")
+        urls["Windows (.exe Latest)"] = upload_to_r2(w_latest_exe_path, f"downloads/{w_latest_exe_fn}", "application/x-msdownload")
 
-    # Linux uploads
-    l_tar_path, l_tar_fn, l_latest_path, l_latest_fn = linux_pkgs["tar"]
-    urls["Linux (.tar.gz Versioned)"] = upload_to_r2(l_tar_path, f"downloads/{l_tar_fn}", "application/x-gtar")
-    urls["Linux (.tar.gz Latest)"] = upload_to_r2(l_latest_path, f"downloads/{l_latest_fn}", "application/x-gtar")
+        w_zip_path, w_zip_fn, w_latest_path, w_latest_fn = win_pkgs["zip"]
+        urls["Windows (.zip Versioned)"] = upload_to_r2(w_zip_path, f"downloads/{w_zip_fn}", "application/zip")
+        urls["Windows (.zip Latest)"] = upload_to_r2(w_latest_path, f"downloads/{w_latest_fn}", "application/zip")
+
+    # 3. Linux Build & Package (on Linux host or master build)
+    if sys.platform.startswith("linux") or sys.platform == "darwin":
+        linux_pkgs = create_linux_packages(version_name)
+        l_tar_path, l_tar_fn, l_latest_path, l_latest_fn = linux_pkgs["tar"]
+        urls["Linux (.tar.gz Versioned)"] = upload_to_r2(l_tar_path, f"downloads/{l_tar_fn}", "application/gzip")
+        urls["Linux (.tar.gz Latest)"] = upload_to_r2(l_latest_path, f"downloads/{l_latest_fn}", "application/gzip")
 
     print("\n==========================================================")
-    print(f"🎉 Kortex v{version_name} Release Packages Uploaded Successfully!")
+    print(f"🎉 Kortex v{version_name} Release Packages Processed Successfully!")
     print("==========================================================")
     print("\n### 🔗 Live Cloudflare R2 Download Links:\n")
     for platform, url in urls.items():

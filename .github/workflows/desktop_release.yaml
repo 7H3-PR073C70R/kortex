@@ -1,0 +1,101 @@
+name: Build & Publish Native Desktop Releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    name: Build Native ${{ matrix.os-name }} Desktop Release
+    runs-on: ${{ matrix.runner-os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner-os: windows-latest
+            os-name: Windows
+          - runner-os: ubuntu-latest
+            os-name: Linux
+          - runner-os: macos-latest
+            os-name: macOS
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Java Development Kit (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Linux Build Dependencies
+        if: matrix.runner-os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      - name: Get Flutter Dependencies
+        run: flutter pub get
+
+      - name: Build Native Windows Executable
+        if: matrix.runner-os == 'windows-latest'
+        run: |
+          flutter build windows --release --flavor production -t lib/main_production.dart
+
+      - name: Build Native Linux Desktop Bundle
+        if: matrix.runner-os == 'ubuntu-latest'
+        run: |
+          flutter build linux --release --flavor production -t lib/main_production.dart
+
+      - name: Build Native macOS Bundle
+        if: matrix.runner-os == 'macos-latest'
+        run: |
+          flutter build macos --release --flavor production -t lib/main_production.dart
+
+      - name: Package & Upload Native Release Artifacts to Cloudflare R2
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
+        run: python scripts/publish_release_packages.py
+
+  deploy-web-landing:
+    name: Deploy Updated Web Landing to Firebase Hosting
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Sync Landing Page Version Strings
+        run: |
+          python -c "from scripts.publish_release_packages import update_landing_version_strings, get_app_version; version, _ = get_app_version(); update_landing_version_strings(version)"
+
+      - name: Deploy Landing Page to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KORTEX_STUDY_APP_2026 }}'
+          channelId: live
+          projectId: kortex-study-app-2026

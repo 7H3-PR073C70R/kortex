@@ -2559,6 +2559,8 @@ button {
   gap: 0.8rem;
   width: 100%;
   max-width: 520px;
+  position: relative;
+  z-index: 1000;
 }
 
 .hero-download-capsule {
@@ -2571,6 +2573,7 @@ button {
   box-shadow: 0 8px 24px var(--color-primary-subtle);
   overflow: visible;
   position: relative;
+  z-index: 1001;
   transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
@@ -2655,16 +2658,23 @@ button {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 290px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  width: 320px;
+  background-color: #121715 !important;
+  border: 1px solid var(--border-highlight, rgba(255, 255, 255, 0.12));
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: 8px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  padding: 10px;
   display: none;
   flex-direction: column;
   gap: 4px;
-  z-index: 100;
+  z-index: 999999 !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+[data-theme="light"] .hero-download-menu {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .hero-download-menu.show {
