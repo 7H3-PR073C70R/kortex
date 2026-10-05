@@ -54,7 +54,7 @@ jobs:
       - name: Build Native Windows Executable
         if: matrix.runner-os == 'windows-latest'
         run: |
-          flutter build windows --release --flavor production -t lib/main_production.dart
+          flutter build windows --release --flavor production -t lib/main_production.dart --extra-gen-args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 
       - name: Build Native Linux Desktop Bundle
         if: matrix.runner-os == 'ubuntu-latest'
