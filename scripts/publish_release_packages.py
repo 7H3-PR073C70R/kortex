@@ -32,11 +32,11 @@ if sys.platform.startswith("win"):
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # Cloudflare R2 Credentials & Configuration
-ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "70d5976cda85543f749219264f8391f0")
-ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "45baa62136f37a008f6bb338d27ca708")
-SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "cf4d750fbf1ff5ee3b7037e87e8f92540794260fdcdc4d82931244b2fd320246")
-BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "kortex-forum-media")
-PUBLIC_DOMAIN = os.environ.get("R2_PUBLIC_DOMAIN", "https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev").rstrip("/")
+ACCOUNT_ID = (os.environ.get("R2_ACCOUNT_ID") or "70d5976cda85543f749219264f8391f0").strip()
+ACCESS_KEY_ID = (os.environ.get("R2_ACCESS_KEY_ID") or "45baa62136f37a008f6bb338d27ca708").strip()
+SECRET_ACCESS_KEY = (os.environ.get("R2_SECRET_ACCESS_KEY") or "cf4d750fbf1ff5ee3b7037e87e8f92540794260fdcdc4d82931244b2fd320246").strip()
+BUCKET_NAME = (os.environ.get("R2_BUCKET_NAME") or "kortex-forum-media").strip()
+PUBLIC_DOMAIN = (os.environ.get("R2_PUBLIC_DOMAIN") or "https://pub-48d140cd04784f4b93fd2941eedd7223.r2.dev").rstrip("/")
 REGION = "auto"
 SERVICE = "s3"
 
