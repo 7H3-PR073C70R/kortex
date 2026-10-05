@@ -389,7 +389,7 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
                                   Icons.keyboard_arrow_down_rounded,
                                   color: colors.textSecondary,
                                 ),
-                                items: [5, 10, 15, 20, 30, 40, 50, 100].map((count) {
+                                items: ({...[5, 10, 15, 20, 25, 30, 40, 50, 100], _newCardsPerDay}.toList()..sort()).map((count) {
                                   return DropdownMenuItem<int>(
                                     value: count,
                                     child: Text(
@@ -457,7 +457,7 @@ class _DeckPaceSettingsPageState extends State<DeckPaceSettingsPage> {
                                   Icons.keyboard_arrow_down_rounded,
                                   color: colors.textSecondary,
                                 ),
-                                items: [25, 50, 100, 150, 200, 300, 500].map((cap) {
+                                items: ({...[25, 50, 100, 150, 200, 300, 500], _maxReviewsPerDay}.toList()..sort()).map((cap) {
                                   return DropdownMenuItem<int>(
                                     value: cap,
                                     child: Text(
